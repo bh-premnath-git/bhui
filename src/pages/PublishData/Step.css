@@ -1,0 +1,11 @@
+.step {
+    color: green;
+}
+
+.stepperButton .MuiStepIcon-active {
+    color:black;
+}
+
+.stepperButton .MuiStepIcon-completed {
+    color: green
+}

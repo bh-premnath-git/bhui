@@ -1,0 +1,130 @@
+# This workflow will build Docker Image and publish it to AWS ECR & Google Artifact Registry
+
+name: Main -- Build Docker Image and push to GAR
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+env:
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  DEFAULT_IMAGE_TAG: "latest"
+  IMAGE_NAME: bh-ui
+  GIT_HASH: ${{ github.event.pull_request.head.sha }}
+  BRANCH_NAME: ""
+  CURRENT_APP_VER: ${{ vars.APP_VER }}
+  PROJECT_ID: 'nprd-bh-use1-dev'
+  AR_REPO_LOCATION: 'us-python'
+  PR_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-snapshots'
+  MAIN_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-public'
+  SERVICE_ACCOUNT: 'bh-cicd-dev@nprd-bh-use1-dev.iam.gserviceaccount.com' 
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/609754835936/locations/global/workloadIdentityPools/dev-gh-actions-pool/providers/dev-ghactions-provider'
+
+# A wrkfow is made up of ome or more jobs that can run sequentially or parallel
+
+jobs:
+  main-build-docker-image-push-gar:
+    name: Main -- Build Docker Image and push to GAR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Google Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          access_token_lifetime: 1800s
+          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
+      
+      - name: Configure Docker to use Google Artifact Registry
+        run: |
+          gcloud --quiet auth configure-docker us-docker.pkg.dev
+      
+      - name: Extract Branch Name
+        run: |-
+          echo "BRANCH_NAME=$(GITHUB_REF#refs/heads/)" >> GITHUB_ENV
+      
+      - name: Checking the PR Number and Set IMAGE_TAG variable to PR_Number
+        if: github.event_name == 'pull_request'
+        run: |-
+          CURRENT_APP_VER="${CURRENT_APP_VER:-1.0.0}"
+          GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER:-0}"
+          PR_NUMBER="${PR_NUMBER:-0}"
+
+          PR_IMAGE_TAG="$CURRENT_APP_VER-$GITHUB_RUN_NUMBER-PR.$PR_NUMBER"
+
+          echo "IMAGE_TAG=$PR_IMAGE_TAG" >> $GITHUB_ENV
+          echo "Generated IMAGE_TAG: $IMAGE_TAG"
+
+      - name: Pull Request -- Build Docker image
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Image Tag is: $IMAGE_TAG"
+          echo "Image Name is: $IMAGE_NAME"
+          docker build --no-cache \
+            --tag "$PR_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" .
+      
+      - name: Pull Request -- Push Docker image
+        if: github.event_name == 'pull_request'
+        run: |
+          docker push "$PR_GAR_URL/$IMAGE_NAME:$IMAGE_TAG"
+      
+      - name: Main Branch and Set IMAGE_TAG variable
+        if: github.event_name == 'push'
+        run: |-
+          CURRENT_APP_VER="${CURRENT_APP_VER:-1.0.0}"
+          GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER:-0}"          
+          MAIN_IMAGE_TAG="$CURRENT_APP_VER-$GITHUB_RUN_NUMBER-rc"
+          echo "IMAGE_TAG=$MAIN_IMAGE_TAG" >> $GITHUB_ENV
+          echo "Generated IMAGE_TAG: $IMAGE_TAG"
+          echo "GIT_HASH=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+      
+      - name: Main Branch -- Build Docker Image
+        if: github.event_name == 'push'
+        run: |-        
+          docker build --no-cache \
+            --tag "$MAIN_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" \
+            --tag "$MAIN_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG" \
+            --tag "$MAIN_GAR_URL/$IMAGE_NAME:$GIT_HASH" .
+          
+      - name: Main Branch -- Push Docker Image
+        if: github.event_name == 'push'
+        run: |-        
+          docker push "$MAIN_GAR_URL/$IMAGE_NAME:$IMAGE_TAG"
+          docker push "$MAIN_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG"
+          docker push "$MAIN_GAR_URL/$IMAGE_NAME:$GIT_HASH"
+        
+      - name: Pull Request -- MSTeams Notifications
+        if: github.event_name == 'pull_request'
+        run: |-
+          cat << EOF > message.json
+          {"@type": "MessageCard","@context":"https://schema.org/extensions","summary":"Building Docker Image - 'bh-authoring-api'","themeColor":"abcdef","title":"Pull Request Docker Image ${IMAGE_NAME}:${IMAGE_TAG} is Pushed to PR# GAR Docker Repo","sections":[{"facts":[{"name":"Repository:","value":"$GITHUB_REPOITORY"},{"name":"Branch:","value":"$GITHUB_REF_NAME"},{"name":"Commit:","value":"$GITHUB_SHA"}]}],"potentialAction":[{"@type":"OpenUri","name":"View on GitHub","targets":[{"os":"default","url":"GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"}]}]}
+          EOF
+            curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" --header 'Content-Type: application/json' -d @message.json
+
+      - name: Main Branch -- MSTeams Notifications
+        if: github.event_name == 'push'
+        run: |-
+          cat << EOF > message.json
+          {"@type": "MessageCard","@context":"https://schema.org/extensions","summary":"Building Docker Image - 'bh-authoring-api'","themeColor":"abcdef","title":"Main (or) Release Docker Image ${IMAGE_NAME}:${IMAGE_TAG} is Pushed to Main GAR Docker Repo","sections":[{"facts":[{"name":"Repository:","value":"$GITHUB_REPOITORY"},{"name":"Branch:","value":"$GITHUB_REF_NAME"},{"name":"Commit:","value":"$GITHUB_SHA"}]}],"potentialAction":[{"@type":"OpenUri","name":"View on GitHub","targets":[{"os":"default","url":"GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"}]}]}
+          EOF
+            curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" --header 'Content-Type: application/json' -d @message.json
+  
+  
+

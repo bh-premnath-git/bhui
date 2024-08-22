@@ -11,7 +11,7 @@ on:
 env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   DEFAULT_IMAGE_TAG: "latest"
-  IMAGE_NAME: bh-authoring-api
+  IMAGE_NAME: bh-ui
   GIT_HASH: ${{ github.event.pull_request.head.sha }}
   BRANCH_NAME: ""
   CURRENT_APP_VER: ${{ vars.APP_VER }}

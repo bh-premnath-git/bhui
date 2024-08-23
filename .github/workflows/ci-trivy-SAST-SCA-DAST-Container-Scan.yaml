@@ -1,0 +1,138 @@
+name: Trivy AquaSec Scan and Notify via Email & Teams
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DEFAULT_IMAGE_TAG: "latest"
+  IMAGE_NAME: bh-ui
+  PROJECT_ID: 'nprd-bh-use1-dev'
+  MAIN_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-public'
+  SERVICE_ACCOUNT: 'bh-cicd-dev@nprd-bh-use1-dev.iam.gserviceaccount.com' 
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/609754835936/locations/global/workloadIdentityPools/dev-gh-actions-pool/providers/dev-ghactions-provider'
+
+jobs:
+  sast_sca_scan:
+    name: SAST & SCA Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run SAST & SCA scan with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          security-checks: 'vuln,secret'
+          format: 'json'
+          output: 'trivy_sast_sca_scan_report.json'
+      
+      - name: Convert Trivy DAST Vulnerability Scan Report JSON to HTML
+        run: |
+          # Start the HTML file
+          echo "<html><body><h1>Trivy SAST/SCA Vulnerability Scan Report</h1><table border=\"1\">" > trivy_sast_sca_scan_report.html
+          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_sast_sca_scan_report.html
+          # Process the JSON and generate HTML table rows
+          cat trivy_sast_sca_scan_report.json | jq -r '
+          .Results[]? | .Target as $target |
+            .Vulnerabilities[]? |
+            "<tr><td>\($target)</td><td>\(.VulnerabilityID // "N/A")</td><td>\(.Severity // "N/A")</td><td>\(.Description // "N/A")</td></tr>"
+          ' >> trivy_sast_sca_scan_report.html
+    
+          # Close the HTML tags
+          echo "</table></body></html>" >> trivy_sast_sca_scan_report.html
+
+      - name: Upload SAST & SCA scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-sast-sca-scan-report
+          path: trivy_sast_sca_scan_report.html
+
+  dast_scan:
+    name: DAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run DAST scan with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'config'
+          format: 'table'
+          output: 'trivy_dast_scan_report.txt'
+      
+      - name: Convert Trivy DAST Vulnerability Scan Report to HTML
+        run: |
+          echo "<html><body><h1>Trivy DAST Scan Report</h1><pre>" > trivy_dast_scan_report.html
+          cat trivy_dast_scan_report.txt >> trivy_dast_scan_report.html
+          echo "</pre></body></html>" >> trivy_dast_scan_report.html
+             
+      - name: Upload DAST scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-dast-scan-report
+          path: trivy_dast_scan_report.html
+
+  container_scan:
+    name: Container Image Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          access_token_lifetime: 1800s
+          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
+      
+      - name: Configure Docker to use Google Artifact Registry
+        run: |
+          gcloud --quiet auth configure-docker us-docker.pkg.dev
+
+      - name: Pull Docker image
+        run: docker pull $MAIN_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG
+
+      - name: Run container scan with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'image'
+          image-ref: '${{ env.MAIN_GAR_URL }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_IMAGE_TAG }}'
+          format: 'json'
+          output: 'trivy_container_scan_report.json'
+      
+      - name: Convert Trivy Container Vulnerability Scan Report JSON to HTML
+        run: |
+          # Start the HTML file
+          echo "<html><body><h1>Trivy Container Vulnerability Scan Report</h1><table border=\"1\">" > trivy_container_scan_report.html
+          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_container_scan_report.html
+
+          # Process the JSON and generate HTML table rows
+          cat trivy_container_scan_report.json | jq -r '
+            .Results[]? | .Target as $target |
+            .Vulnerabilities[]? |
+            "<tr><td>\($target)</td><td>\(.VulnerabilityID // "N/A")</td><td>\(.Severity // "N/A")</td><td>\(.Description // "N/A")</td></tr>"
+          ' >> trivy_container_scan_report.html
+
+          # Close the HTML tags
+          echo "</table></body></html>" >> trivy_container_scan_report.html
+
+      - name: Upload container scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-container-scan-report
+          path: trivy_container_scan_report.html

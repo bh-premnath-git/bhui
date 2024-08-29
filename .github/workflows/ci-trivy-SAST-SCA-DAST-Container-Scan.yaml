@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run SAST & SCA scan with Trivy
         uses: aquasecurity/trivy-action@0.24.0
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run DAST scan with Trivy
         uses: aquasecurity/trivy-action@0.24.0
@@ -87,7 +87,7 @@ jobs:
       id-token: 'write'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Google Auth
         id: auth

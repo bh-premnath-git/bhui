@@ -48,7 +48,7 @@ jobs:
           echo "</table></body></html>" >> trivy_sast_sca_scan_report.html
 
       - name: Upload SAST & SCA scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-sast-sca-scan-report
           path: trivy_sast_sca_scan_report.html
@@ -74,7 +74,7 @@ jobs:
           echo "</pre></body></html>" >> trivy_dast_scan_report.html
              
       - name: Upload DAST scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-dast-scan-report
           path: trivy_dast_scan_report.html
@@ -132,7 +132,7 @@ jobs:
           echo "</table></body></html>" >> trivy_container_scan_report.html
 
       - name: Upload container scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-container-scan-report
           path: trivy_container_scan_report.html

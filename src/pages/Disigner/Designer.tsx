@@ -46,7 +46,7 @@ function Designer() {
                                 <Button
                                     variant="contained"
                                     component={Link}
-                                    to={`/Designer/BuildPipeLine`}
+                                    to={`/Designer/Build Data PipeLine`}
                                     className="card_header_button dark bg-dark fw-bold" sx={{ textTransform: 'none', '&:hover': {   
                                         backgroundColor: 'black',
                                         color:'white' // Same color as normal state

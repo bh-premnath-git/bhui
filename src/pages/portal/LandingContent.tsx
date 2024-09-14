@@ -44,7 +44,7 @@ return (
 										variant="contained"
 										className="sign-in-button bg-dark text-white mmf fs-3"
 										aria-label="Sign in"
-										to={`/Admin-Console/Projects/New`}
+										to={`/Admin-Console/Environment/New`}
 									>
 										Setup a Project
 									</Button>
@@ -53,7 +53,7 @@ return (
 										variant="contained"
 										className="sign-in-button bg-dark text-white"
 										aria-label="Sign in"
-										to={`/Admin-Console/Projects/New`}
+										to={`/Admin-Console/Environment/New`}
 									>Setup a Project
 
 								</Button> */}

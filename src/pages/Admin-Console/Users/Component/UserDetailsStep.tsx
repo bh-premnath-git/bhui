@@ -173,62 +173,94 @@ function UserDetailsStep() {
 		// Set submitting to false to indicate form submission is complete
 		setSubmitting(false);
 	};
+	async function add(value) {
+		const url = '/bh_user'; // Adjust the endpoint URL as needed
+		const result = await ApiService('8011', 'post', url, value);
+		console.log(result)
 
+		if (result) {
+			handleNext1();
+		}
+	}
 
 	const createKeyCloakUser = async (value) => {
-		const userData = {
-			username: `${value?.bh_user_first_name}`,
-			email: value?.user_email_id,
-			password: 'password',
-			// access_token: adminAccessToken
-		};
 
-		try {
-			const response = await axios.post('http://localhost:8005/create-user', userData);
-			console.log(response.data);
-			if (response?.data?.message) {
-				const url = '/bh_user'; // Adjust the endpoint URL as needed
-				const result = await ApiService('8011', 'post', url, value);
-				console.log(result)
-
-				if (result) {
-					navigate(`/Admin-Console/Users`);
+		fetch('http://localhost:8005/create-user', {
+			method: 'POST',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				user: {
+					username: `${value?.bh_user_first_name}`,
+					email: value?.user_email_id,
+					password: 'Bighammer@123',
+					first_name: `${value?.bh_user_first_name}`,
+					last_name: `${value?.bh_user_last_name}`,
+					enabled: true,
+					email_verified: true,
+					credentials: [
+						{
+							type: 'password',
+							value: 'password',
+							temporary: false
+						}
+					]
+				},
+				token_data: {
+					server_url: 'http://keycloak:8080',
+					username: 'admin',
+					password: 'password',
+					grant_type: 'password',
+					realm_name: 'master',
+					client_id: 'admin-cli'
 				}
-			}
-			return response.data;
-		} catch (error: any) {
-			notification.error({
-				message: error?.response?.data?.detail,
-				duration: 3, // Duration in seconds
-				placement: 'bottomRight', // Position of the snack bar
+			})
+		})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				add(value)
+				console.log('User creation successful:', data);
+				notification.success({
+					message: 'User creation successful',
+					duration: 3, // Duration in seconds
+					placement: 'bottomRight', // Position of the snack bar
+				});
+			})
+			.catch(error => {
+				console.error('Error creating user:', error);
 			});
-			console.error('Error creating user:', error?.response?.data?.detail);
 
-			throw error;
-		}
+
 	};
 	const toggleSuccessDialog = () => {
-        setShowSuccessDialog(!showSuccessDialog);
-    };
-	const navigateUsers = () =>{
+		setShowSuccessDialog(!showSuccessDialog);
+	};
+	const navigateUsers = () => {
 		navigate("/Admin Console/Manage Data Platform Users");
 	}
 	const handleNext1 = () => {
 		toggleSuccessDialog();
 		handleClickOpen();
 		setTimeout(() => {
-		  navigateUsers();
+			navigateUsers();
 		}, 4000); // 4000 milliseconds = 4 seconds
-	  };
-	  const [open, setOpen] = useState(false);
+	};
+	const [open, setOpen] = useState(false);
 
-	  const handleClickOpen = () => {
+	const handleClickOpen = () => {
 		setOpen(true);
-	  };
-	
-	  const handleClose = () => {
+	};
+
+	const handleClose = () => {
 		setOpen(false);
-	  };
+	};
 
 
 	return (
@@ -432,23 +464,23 @@ function UserDetailsStep() {
 									type="submit"
 									color='primary'
 									disabled={!isValid || !dirty}
-									onClick={handleNext1}
+									// onClick={handleNext1}
 								>
 									{userData ? 'Update User' : 'Add User'}
 								</Button>
 
 							</div>
 							{showSuccessDialog && (
-								 <CommonDialog
-								 open={open}
-								 onClose={handleClose}
-								 title=""
-								 description="User Added Successfully"
-								 imageUrl="/src/assets/Successful.png"
-								 additionalContent="You'll be automatically redirected to homepage shortly"
-							   />
+								<CommonDialog
+									open={open}
+									onClose={handleClose}
+									title=""
+									description="User Added Successfully"
+									imageUrl="/src/assets/Successful.png"
+									additionalContent="You'll be automatically redirected to homepage shortly"
+								/>
 
-                    )}
+							)}
 						</Form>
 					)}
 				</Formik >

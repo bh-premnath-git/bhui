@@ -39,7 +39,7 @@ export default function CodePipelineTable() {
     const [openAddLink, setOpenAddLink] = useState(false);
     const [selectedOption, setSelectedOption] :any= useState('');
     const projectList = [
-        {'id':1,'name':'All Projects'},
+        {'id':1,'name':'All Environment'},
         {'id':2,'name':'Project1'},
         {'id':3,'name':'Project2'},
         {'id':4,'name':'Project3'},

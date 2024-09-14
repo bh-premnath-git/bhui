@@ -8,6 +8,9 @@ import { jwtDecode } from "jwt-decode";
 import Keycloak from 'keycloak-js';
 import { httpClient } from '../configration/HttpClient';
 import { Button, Divider, Popover } from '@mui/material';
+import BuildPipeLineHeader from '../pages/BuildPipeline/BuildPipeLineHeader';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 // const keycloak = new Keycloak({
 //     url: 'http://localhost:8080/',
@@ -41,7 +44,7 @@ import { Button, Divider, Popover } from '@mui/material';
 //     console.error("Authentication Failed");
 // })
 
-const Header: any = ({onLogout, step}) => {
+const Header: any = ({ onLogout, step }) => {
     const location = useLocation();
     // const navigate = useNavigate();
 
@@ -49,7 +52,7 @@ const Header: any = ({onLogout, step}) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [openAddLink, setOpenAddLink] = useState(false);
     const [tokenData, setTokenData]: any = useState();
-
+    
     const handleClose1 = () => {
         setAnchorEl(null);
     };
@@ -63,7 +66,7 @@ const Header: any = ({onLogout, step}) => {
         // window.location.reload();
     };
 
-    
+
     const handleOpen1 = (event: any) => {
         setAnchorEl(event.currentTarget);
     };
@@ -88,6 +91,13 @@ const Header: any = ({onLogout, step}) => {
 
     if (hideHeader) {
         return null; // Return null if the Header should be hidden
+    } else if (pathname === "/Designer/Build-Data-Pipe-Line") {
+        console.log(pathname)
+        return (
+            <>
+                <BuildPipeLineHeader />
+            </>
+        )
     } else {
         return (
             <div className='header d-flex justify-content-between'>
@@ -119,9 +129,9 @@ const Header: any = ({onLogout, step}) => {
                     }}
                 // sx={{ width: 300 }}
                 >
-                    <Button className='mmf' sx={{ mx: 1, color: 'black',textTransform:'none' }} onClick={openLinkDialog1} >LogOut</Button><br />
+                    <Button className='mmf' sx={{ mx: 1, color: 'black', textTransform: 'none' }} onClick={openLinkDialog1} >LogOut</Button><br />
                     <Divider style={{ color: 'grey' }} />
-                    <Button className='mmf' sx={{ mx: 1, color: 'black',textTransform:'none' }}>Edit Profile</Button><br />
+                    <Button className='mmf' sx={{ mx: 1, color: 'black', textTransform: 'none' }}>Edit Profile</Button><br />
                 </Popover>
 
             </div>

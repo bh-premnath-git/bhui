@@ -1,9 +1,10 @@
-import ProjectsHeader from './ProjectsHeader';
 import ProjectsTable from './ProjectsTable';
 import { useEffect, useState } from 'react';
 import { Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import ApiService from '../../../services/ApiServices';
+import ProTableData from '../../github-project/ProTableData';
+import EnvironmentHeader from './EnvironmentHeader';
 
 
 
@@ -66,10 +67,12 @@ function Projects() {
 	return (
 		<>
 
-			<div className='m-32' style={{ marginTop: '100px' }}>
-				<ProjectsHeader search={searchProject} />
+			<div className='' style={{ marginTop: '100px' }}>
+				<EnvironmentHeader search={searchProject} />
 				<br></br>
-				{projectList.length > 0 ? (
+                <ProTableData />
+
+				{/* {projectList.length > 0 ? (
 					<ProjectsTable data={{ 'project': projectList, 'codesDtl': codesDtl, 'platformRegion': platformRegion }} />
 				) : (projectList.length == 0 && !isLoading) ? (
 					<>
@@ -86,7 +89,7 @@ function Projects() {
 							<Button className='px-12 py-2 bg-dark'
 							sx={{textTransform:'none'}}
 								component={Link}
-								to="/Admin-Console/Projects/New"
+								to="/Admin-Console/Environment/New"
 								variant="contained"
 								// startIcon={<SwombSvgIcon>heroicons-outline:plus</SwombSvgIcon>}
 								size="small"
@@ -98,7 +101,7 @@ function Projects() {
 
 				) : (
 					<p>Loading...</p>
-				)}
+				)} */}
 
 			</div>
 

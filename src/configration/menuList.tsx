@@ -24,11 +24,12 @@ export const menuList = [
     {
         name: "Designer",
         icon: <TiFlowSwitch className='h5' />,
-        link: "/Designer",
+        link: "/Designers",
         submenu: [
             { name: "Onboard Data", link: "/Designer/Onboard Data" },
-            { name: "Build Data Pipelines", link: "/Designer/Build Data PipeLine" },
+            { name: "Build Data Pipelines", link: "/Designer/Build Data Pipe Line" },
             { name: "Code Data Pipelines", link: "/Designer/Code Data Pipelines" },
+            { name: "Manage Flow", link: "/Designer/Manage Flow" },
             { name: " Publish Data", link: "/Designer/Publish Data" }
         ]
     },

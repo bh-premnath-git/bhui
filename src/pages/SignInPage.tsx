@@ -44,7 +44,7 @@ function SignInPage() {
 
         console.log(email)
         console.log(password)
-        navigate("/Landing", { replace: true, });
+        navigate("/Home", { replace: true, });
     }
 
     return (

@@ -121,7 +121,7 @@ function ConfigureLifecyclePolicyTab(props:any) {
 		await goToProject();
 	}
 	const goToProject = () => {
-		navigate('/All Projects')
+		navigate('/All Environment')
 
 	}
 	const toggleSuccessDialog = () => {

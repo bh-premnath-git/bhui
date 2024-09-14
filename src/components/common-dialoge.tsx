@@ -54,6 +54,7 @@ const CommonDialog: React.FC<CommonDialogProps> = ({ open, onClose, title, descr
           </Typography>
         )}
          {additionalContent}
+         
       </DialogContent>
     </Dialog>
   );

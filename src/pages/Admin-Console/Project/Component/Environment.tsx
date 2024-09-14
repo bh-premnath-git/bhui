@@ -9,12 +9,13 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import * as React from 'react';
 import ProjectHeader from './ProjectHeader';
-import ProjectDetailsTab from './tabs/ProjectDetailsTab';
+import ProjectDetailsTab from './tabs/EnvDetailsTab';
 import PreconfiguredZonesTab from './tabs/PreconfiguredZonesTab';
 import CreateLakeTab from './tabs/CreateLakeTab';
 import AccessDetailsTab from './tabs/AccessDetailsTab';
 import ConfigureLifecyclePolicyTab from './tabs/ConfigureLifecyclePolicyTab';
 import { Box, Step, StepButton, StepContent, StepLabel, Stepper } from '@mui/material';
+import EnvDetailsTab from './tabs/EnvDetailsTab';
 /**
  * Form Validation Schema
  */
@@ -28,12 +29,9 @@ const schema = yup.object().shape({
 /**
  * The project page.
  */
-function Project({handleBreadStep}:any) {
+function Environment({ handleBreadStep }: any) {
 
 	const [data, setData]: any = useState({});
-
-
-	const routeParams = useParams();
 	const [tabValue, setTabValue] = useState(0);
 	const [noProject, setNoProject] = useState(false);
 	const methods = useForm({
@@ -63,13 +61,12 @@ function Project({handleBreadStep}:any) {
 		standard_zone: {},
 		archive_zone: {}
 	});
-	
+
 	const steps = [
-		'Project Details',
-		'Access Details',
+		'Environment Details',
 		'Configure Lake',
 		'Preconfigured Zones',
-		'Lifecycle Policy'
+		'Configure Lifecycle Policy'
 	];
 
 	function handleTabChange(event: SyntheticEvent, value: number) {
@@ -128,54 +125,6 @@ function Project({handleBreadStep}:any) {
 	};
 
 	const handleNext = (formData: any) => {
-		if (formData.bh_project_id) {
-			var id = formData.bh_project_id;
-			setData(id)
-			console.log(id)
-		}
-		if (activeStep === 0) {
-			console.log(formData)
-			// var data=stepperData;
-			// data.bh_project_id=formData.bh_project_id;
-			// data.bh_project_cld_id=formData.bh_project_cld_id;
-			// data.bh_project_name=formData.bh_project_name;
-			// data.cloud_region_cd=formData.cloud_region_cd;
-			// data.tags=formData.tags;
-
-
-		} else if (activeStep === 1) {
-			// var data=stepperData;
-			// data.access_type_cd=formData.access_type_cd;
-			// data.access_details=formData.access_details;
-			// setStepperData(data)
-			// console.log(stepperData)
-		} else if (activeStep === 2) {
-			var temp = stepperData;
-			if (data !== undefined) {
-				temp.bh_project_id = data;
-			}
-			temp.business_url = formData.business_url;
-			temp.lake_name = formData.lake_name;
-			temp.lake_desc = formData.lake_desc;
-			temp.env_cd = formData.env_cd;
-			setStepperData(temp)
-			// console.log(stepperData)
-
-		} else if (activeStep === 3) {
-			// var data=stepperData;
-			// data.preconfigured_zone=formData.preconfigured_zone;
-			// setStepperData(data)
-			// console.log(stepperData)
-		} else if (activeStep === 4) {
-			// var data=stepperData;
-			// data.standard_zone=formData.standard_zone;
-			// data.archive_zone=formData.archive_zone;
-			// setStepperData(data)
-			console.log(stepperData)
-			// goToSave();
-		}
-
-
 
 		setActiveStep((prevActiveStep) => prevActiveStep + 1);
 		handleBreadStep((prevActiveStep) => prevActiveStep + 1);
@@ -209,32 +158,32 @@ function Project({handleBreadStep}:any) {
 		<>
 			<ProjectHeader />
 			<br></br>
-			<div className="flex flex-col w-full border-0  shadow p-5 sm:w-auto sm:flex-row space-y-16 sm:space-y-0 flex-1 items-center justify-center space-x-16">
-				<Box sx={{ width: '80%', m:'auto', paddingTop: '10px' }}>
+			<div className="container m-auto shadow" style={{ height: 'auto', overflowY: 'auto' }}>
+				<Box sx={{ width: '80%', m: 'auto', paddingTop: '10px' }}>
 					<Stepper activeStep={activeStep} alternativeLabel >
 						{steps.map((label, index) => (
 							<Step key={label} completed={completed[index]} sx={{
 								'& .MuiStepLabel-root .Mui-completed': {
-								  color: 'green', // circle color (COMPLETED)
+									color: 'green', // circle color (COMPLETED)
 								},
 								'& .MuiStepLabel-label.Mui-completed.MuiStepLabel-alternativeLabel':
-								  {
-								  color: 'green', 
-								  fontWeight:'bold'// Just text label (COMPLETED)
-								  },
+								{
+									color: 'green',
+									fontWeight: 'bold'// Just text label (COMPLETED)
+								},
 								'& .MuiStepLabel-root .Mui-active': {
-								  color: 'black', 
-								  fontWeight:'bold'
-								  
+									color: 'black',
+									fontWeight: 'bold'
+
 								},
 								'& .MuiStepLabel-label.Mui-active.MuiStepLabel-alternativeLabel':
-								  {
-								  color: 'black', // Just text label (ACTIVE)
-								  },
-								'& .MuiStepLabel-root .Mui-active .MuiStepIcon-text': {
-								  fill: 'white', // circle's number (ACTIVE)
+								{
+									color: 'black', // Just text label (ACTIVE)
 								},
-								}}>
+								'& .MuiStepLabel-root .Mui-active .MuiStepIcon-text': {
+									fill: 'white', // circle's number (ACTIVE)
+								},
+							}}>
 								<StepButton className='text-white' color="inherit" onClick={handleStep(index)}>
 									{label}
 								</StepButton>
@@ -256,15 +205,13 @@ function Project({handleBreadStep}:any) {
 							<React.Fragment>
 								<Box sx={{ width: '100%', justifyContent: 'left' }}>
 									{activeStep === 0 ?
-										<ProjectDetailsTab onNext={handleNext} data={data} onBack={handleBack} />
-										: activeStep === 1 ? <AccessDetailsTab onNext={handleNext} data={data} onBack={handleBack} />
-											: activeStep === 2 ? <CreateLakeTab onNext={handleNext} data={data} onBack={handleBack} />
-												: activeStep === 3 ? <PreconfiguredZonesTab data={stepperData} onNext={handleNext} onBack={handleBack} />
-													: <ConfigureLifecyclePolicyTab onNext={handleNext} data={data} onBack={handleBack} />}
+										<EnvDetailsTab onNext={handleNext} data={data} onBack={handleBack} />
+										// : activeStep === 1 ? <AccessDetailsTab onNext={handleNext} data={data} onBack={handleBack} />
+										: activeStep === 1 ? <CreateLakeTab onNext={handleNext} data={data} onBack={handleBack} />
+											: activeStep === 2 ? <PreconfiguredZonesTab data={stepperData} onNext={handleNext} onBack={handleBack} />
+												: <ConfigureLifecyclePolicyTab onNext={handleNext} data={data} onBack={handleBack} />}
 
 								</Box>
-
-
 							</React.Fragment>
 						)}
 					</div>
@@ -276,6 +223,7 @@ function Project({handleBreadStep}:any) {
 								</Button> */}
 
 				</Box>
+				<br></br>
 			</div>
 
 
@@ -283,4 +231,4 @@ function Project({handleBreadStep}:any) {
 	);
 }
 
-export default Project;
+export default Environment;

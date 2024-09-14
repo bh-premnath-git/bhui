@@ -139,7 +139,7 @@ function ProjectsTable(props: any) {
 
 	function handleClick(item: any) {
 		console.log(item)
-		navigate(`/Admin-Console/Projects/new`, { state: item });
+		navigate(`/Admin-Console/Environment/New`, { state: item });
 	}
 
 

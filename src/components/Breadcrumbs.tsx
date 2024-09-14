@@ -48,7 +48,7 @@ const Crumbs: React.FC<{ currentStep?: number }> = ({ currentStep }) => {
           const isLast = index === pathnames.length - 1;
           const decodedName = decodeURIComponent(name);
           const isPublishData = routeTo.startsWith('/Designer/targetsteps');
-          const isProjectData = routeTo.startsWith('/Admin-Console/Projects/New');
+          const isProjectData = routeTo.startsWith('/Admin-Console/Environment/New');
           const isOnboardData = routeTo.startsWith('/Designer/Onboard-Data');
           const isCustomerData = routeTo.startsWith('/Admin%20Console/Manage%20Customer/Add%20Customer');
           const stepName = isPublishData && currentStep !== undefined ? `Publish Data > ${publishDataSteps[currentStep]}` : decodedName;

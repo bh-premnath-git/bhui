@@ -38,7 +38,7 @@ function UsersTable(props: any,) {
 	const receivedData = props.data;
 	
 	const [anchorEl, setAnchorEl] = useState(null);
-	const [codesDtl, setCodesDtl] = useState([]);
+	const [codesDtl, setCodesDtl]:any = useState(localStorage.getItem('codesDtl'));
 	const [selectedItem, setSelectedItem]:any = useState(null);
 
 	const  navigate  = useNavigate();
@@ -56,14 +56,10 @@ function UsersTable(props: any,) {
 	});
 
 	function findValue(value:any) {
-		// console.log(value)
-		// console.log(codesDtl)
-		if (Array.isArray(codesDtl)) {
-			// Now you can safely use the filter method
-			var filteredData: any = codesDtl.find((code:any) => code.id.toString() === value?.toString());
-			// console.log(filteredData)
+		var staticData=JSON.parse(codesDtl)
+		if (Array.isArray(staticData)) {
+			var filteredData: any = staticData.find((code:any) => code.id.toString() === value?.toString());
 			return filteredData?.dtl_desc?.toString()
-			// Further processing...
 		} else {
 			console.error('codesDtl is not an array.');
 			return ''
@@ -172,7 +168,7 @@ function UsersTable(props: any,) {
 		<div >
 				<Table style={{border:'1px solid #f2f3f5'}}
 					stickyHeader 
-					className="min-w-xl"
+					className="myHeadFont"
 					aria-labelledby="tableTitle"
 				>
 					<UsersTableHead
@@ -214,18 +210,18 @@ function UsersTable(props: any,) {
 									>
 										<TableCell  sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8"
-											component="th"
+											className="myFont"
+											// component="th"
 											scope="row"
 											align="center"
-										>{`${n.bh_user_first_name} ${n.bh_user_middle_name} ${n.bh_user_last_name} `}
+										>{`${n.bh_user_first_name} ${n.bh_user_last_name} `}
 
 										</TableCell>
 
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8"
-											component="th"
+											className="myFont"
+											// component="th"
 											scope="row"
 											align="center"
 										>
@@ -234,7 +230,7 @@ function UsersTable(props: any,) {
 
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8 truncate"
+											className=" truncate myFont"
 											component="th"
 											scope="row"
 											align="left"
@@ -243,7 +239,7 @@ function UsersTable(props: any,) {
 												n?.project_details?.map((data:any, index:any) => (
 													<>
 														<TableRow key={data.projectSno}>
-															<TableCell>Project{index + 1}</TableCell>
+															<TableCell className='myFont'>Project{index + 1}</TableCell>
 
 															<TableCell>
 																<span style={{ backgroundColor: "#feecc6", padding: '6px', borderRadius: '4px', fontWeight: '600' }}>{data.project?.label}</span>
@@ -255,7 +251,7 @@ function UsersTable(props: any,) {
 															{
                                                             data?.projectRole?.map((item: any, index: any) => (
                                                                 <>
-                                                                    <TableCell > <span style={{ backgroundColor: "#d4f5e7", padding: '6px', borderRadius: '4px', fontWeight: '600' }}>{item.dtl_desc}</span> </TableCell>
+                                                                    <TableCell key={index} > <span style={{ backgroundColor: "#d4f5e7", padding: '6px', borderRadius: '4px', fontWeight: '600' }}>{item.dtl_desc}</span> </TableCell>
                                                                 </>
                                                             ))
                                                         }
@@ -268,7 +264,7 @@ function UsersTable(props: any,) {
 										</TableCell>
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8"
+											className="myFont"
 											component="th"
 											scope="row"
 											align="center"
@@ -282,18 +278,16 @@ function UsersTable(props: any,) {
 										</TableCell>
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8"
-											component="th"
+											className="myFont"
+											// component="th"
 											scope="row"
 											align="center"
 										>
 											{formattedDate(n.created_at)}
-											{/* n.created_at */}
 										</TableCell>
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8"
-											component="th"
+											className="myFont"
 											scope="row"
 											align="center"
 										>
@@ -302,7 +296,7 @@ function UsersTable(props: any,) {
 
 										<TableCell sx={{ borderBottom: '1px solid #f2f3f5'}}
 
-											className="p-4 md:p-8 cursor-pointer"
+											className=" cursor-pointer myFont"
 											component="th"
 											scope="row"
 											align="center"

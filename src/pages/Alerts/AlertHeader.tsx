@@ -1,109 +1,138 @@
-import { Controller, useFormContext } from 'react-hook-form';
-import { Box, Typography, Stack } from '@mui/material';
+import { Box, Typography, Stack, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
+import { PieChart } from '@mui/x-charts/PieChart';
+import { useEffect, useState } from 'react';
 import ApiService from '../../services/ApiServices';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
     ...theme.typography.body2,
-    padding: theme.spacing(1),
+    padding: theme.spacing(0.5), // Reduced padding
     textAlign: 'start',
-    // color: theme.palette.text.secondary,
 }));
 
+const size = {
+    width: 180,  // Reduced width
+    height: 150, // Reduced height
+};
 
+const pieChartData = {
+    freshness: [
+        { value: 50, label: 'Total 50', color: '#07a260' },
+        { value: 5, label: 'Enabled 5', color: '#69be70' }
+    ],
+    health: [
+        { value: 50, label: 'Total 30', color: '#f7a01f' },
+        { value: 50, label: 'Enabled 20', color: '#f1c381' }
+    ],
+    volume: [
+        { value: 10, label: 'Total 70', color: '#69caf2' },
+        { value: 3, label: 'Enabled 10', color: '#0198d7' }
+    ],
+    security: [
+        { value: 50, label: 'Total 40', color: '#05aaad' },
+        { value: 20, label: 'Enabled 15', color: '#8cd8d9' }
+    ],
+    cost: [
+        { value: 20, label: 'Total 60', color: '#8237e3' },
+        { value: 5, label: 'Enabled 10', color: '#b88af3' }
+    ],
+    platform: [
+        { value: 10, label: 'Total 45', color: '#c049c0' },
+        { value: 10, label: 'Enabled 25', color: '#ed96ed' }
+    ],
+};
+ 
+ 
 
 function AlertHeader() {
     const [isLoading, setIsLoading] = useState(false);
-    const [templateCountList, setTemplateCountList]:any = useState();
+    const [templateCountList, setTemplateCountList] = useState([]);
+
     useEffect(() => {
-        fetchJobDetails()
-    }, [])
+        fetchJobDetails();
+    }, []);
 
     const fetchJobDetails = async () => {
-        var params = { "skip": 0, 'limit': 3 }
+        const params = { "skip": 0, 'limit': 3 };
         try {
-            setIsLoading(true)
+            setIsLoading(true);
             const result = await ApiService('8004', 'post', '/monitor_template_data/count', params);
             console.log(result);
-            if (result&&result.length>0&&result[0]?.get_monitor_template_data) {
-                setTemplateCountList(result[0]?.get_monitor_template_data)
+            if (result && result.length > 0 && result[0]?.get_monitor_template_data) {
+                setTemplateCountList(result[0]?.get_monitor_template_data);
             }
-            setIsLoading(false)
+            setIsLoading(false);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
 
+    const renderPieChartWithLabels = (title, data) => (
+        <Stack direction="row" alignItems="center" spacing={1}> {/* Reduced spacing */}
+            <Stack sx={{ width: 90, height: 160 }}> {/* Adjusted height */}
+                <Typography variant="h6" sx={{ mb: 0.2 }}> {/* Reduced margin below text */}
+                    {title}
+                </Typography>
+                <PieChart
+                    width={size.width}
+                    height={size.height}
+                    series={[{ data, innerRadius: 20 }]}
+                    slotProps={{
+                        legend: { hidden: true },
+                    }}
+                />
+            </Stack>
+            <Stack sx={{ ml: 1, mt: 1 }}> {/* Reduced margins */}
+                {data.map((item, index) => (
+                    <Stack direction="row" spacing={0.5} key={index} alignItems="center">
+                        <Box
+                            sx={{
+                                width: 8, // Reduced dot size
+                                height: 8,
+                                backgroundColor: item.color,
+                                borderRadius: '50%',
+                            }}
+                        />
+                        <Typography variant="body2">{item.label}</Typography>
+                    </Stack>
+                ))}
+            </Stack>
+        </Stack>
+    );
+
     return (
-        <>
-            <Box sx={{ width: '100%' }} >
-                <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }} >
-                    <Grid item xs={4} >
-                        <Item sx={{ px: 3, borderRadius: '1px' }}>
-                            <Typography fontSize={26} fontFamily={'Inter'} >
+        <Box sx={{ width: '100%' }}>
+            <Grid container xs={12} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid item xs={12}>
+                    <Item sx={{ borderRadius: '1px' }} elevation={0} className='shadow-sm'>
+                        <Stack direction={"row"} justifyContent={"space-between"} alignItems={'center'}>
+                            <Typography px={3} sx={{ fontSize: "30px" }}>
                                 Alert Summary
                             </Typography>
-                            <Stack direction={'row'} spacing={2} justifyContent={'space-evenly'} my={4}>
-                                {templateCountList?.map((item: any,index:number) => (
-                                    <Stack key={index} style={{marginRight:"2px solid grey"}}>
-                                        <Typography className='myHeadFont' fontSize={22} fontFamily={'Inter'}>{item?.type?? 'Freshness'}</Typography>
-                                        <Typography variant='h4' fontWeight={'bold'} fontFamily={'Inter'}>{item?.count?? '0'}</Typography>
-                                    </Stack>
-                                ))}
-
-                            </Stack>
-                        </Item>
-                    </Grid>
-                    <Grid item xs={8}>
-                        <Item sx={{ borderRadius: '1px' }}>
-                            <Typography fontSize={26} px={3} fontFamily={'Inter'}>
-                                Total Monitors Enabled
-                            </Typography>
-                            <Stack direction={'row'} spacing={3} my={2} px={3}>
-                                <Stack>
-                                    <Box fontFamily={'Inter'} sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px' }}>Freshness : </span> <span className='h5 fw-bold'>50</span>
-                                    </Box>
-                                </Stack>
-                                <Stack fontFamily={'Inter'}>
-                                    <Box sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px', fontFamily: 'inter' }}>Field Health : </span> <span className='h5 fw-bold'>20</span>
-                                    </Box>
-                                </Stack>
-                                <Stack>
-                                    <Box sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px' }}>Volume : </span> <span className='h5 fw-bold'>10</span>
-                                    </Box>
-                                </Stack>
-                                <Stack>
-                                    <Box sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px' }}>Security And Compliance : </span> <span className='h5 fw-bold'>50</span>
-                                    </Box>
-                                </Stack>
-
-                            </Stack>
-                            <Stack direction={'row'} spacing={3} px={3} mb={4}>
-                                <Stack>
-                                    <Box sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px' }}>Cost Monitor : </span> <span className='h5 fw-bold'>20</span>
-                                    </Box>
-                                </Stack>
-                                <Stack>
-                                    <Box sx={{ bgcolor: '#f2f2f2', color: '#505050', textAlign: 'center', py: 1, px: 1, borderRadius: '5px' }}>
-                                        <span className='myHeadFont' style={{ fontSize: '17px' }}>Platform Health : </span> <span className='h5 fw-bold'>10</span>
-                                    </Box>
-                                </Stack>
-                            </Stack>
-                        </Item>
-                    </Grid>
-
+                            <div style={{ position: 'absolute', top: 20, right: 100 }}>
+                                <img src="public/assets/designer/Bg design.png" alt="" width={'200px'} />
+                            </div>
+                        </Stack>
+                        <Stack direction={'row'} spacing={4} mt={1} px={2}> {/* Reduced spacing and padding */}
+                            {renderPieChartWithLabels('Freshness', pieChartData.freshness)}
+                            <Divider orientation="vertical" flexItem />
+                            {renderPieChartWithLabels('Health', pieChartData.health)}
+                            <Divider orientation="vertical" flexItem />
+                            {renderPieChartWithLabels('Volume', pieChartData.volume)}
+                            <Divider orientation="vertical" flexItem />
+                            {renderPieChartWithLabels('Security', pieChartData.security)}
+                            <Divider orientation="vertical" flexItem />
+                            {renderPieChartWithLabels('Cost', pieChartData.cost)}
+                            <Divider orientation="vertical" flexItem />
+                            {renderPieChartWithLabels('Platform', pieChartData.platform)}
+                        </Stack>
+                    </Item>
                 </Grid>
-            </Box>
-        </>
+            </Grid>
+        </Box>
     );
 }
 

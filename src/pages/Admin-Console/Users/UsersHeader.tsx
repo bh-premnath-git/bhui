@@ -36,19 +36,7 @@ function UsersHeader(props:any) {
 					// label="Search By Keywords"
 					placeholder='Search By Keywords'
 					id="outlined-start-adornment"
-					sx={{
-						m: 1,
-						width: '35ch',
-						'& fieldset': {
-							borderColor: '#f2f3f5', // Change border color to light grey
-						},
-						'&:hover fieldset': {
-							borderColor: '#f2f3f5', // Add hover effect
-						},
-						'&.Mui-focused fieldset': {
-							borderColor: '#f2f3f5', // Add focus effect
-						}
-					}}
+					className='shadow-sm'
 					InputProps={{
 						startAdornment: (
 							<InputAdornment position="start">
@@ -66,11 +54,12 @@ function UsersHeader(props:any) {
 					initial={{ opacity: 0, x: 20 }}
 					animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }}
 				>
-					<Button className='bg-dark text-white' sx={{padding:'10px',backgroundColor:'black',color:'white','& hover':{background:'black'}}}
+					<Button className='bg-dark text-white myFont'
+					 sx={{backgroundColor:'black',textTransform:'none',
+						color:'white','& hover':{background:'black'}}}
 						component={Link}
 						to="/Admin Console/Manage Data Platform Users/Add User"
 						variant="contained"
-						size="small"
 					>
 						Add User
 					</Button>

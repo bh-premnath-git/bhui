@@ -55,11 +55,11 @@ function ProjectHeader() {
 					className="whitespace-nowrap mx-4 py-2 bg-dark text-white" 
 					variant="contained"
 					component={Link}
-					to="/All Projects"
+					to="/All Environment"
 					size="small"
 					sx={{textTransform:'none'}}
 				>
-					View All Projects
+					View All Environment
 				</Button>
 			</motion.div>
 		</div>

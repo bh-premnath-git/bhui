@@ -3,6 +3,7 @@ import axios, { AxiosRequestConfig } from "axios";
 interface HeadersWithAuthorization extends AxiosRequestConfig {
   headers: {
     Authorization?: string;
+    [key: string]: any; // Allow other headers
   };
 }
 
@@ -11,7 +12,8 @@ const ApiService = async (
   method: string,
   url: string,
   data: any = null,
-  params: any = null
+  params: any = null,
+  additionalHeaders: Record<string, string> = {} // Optional headers
 ) => {
   const DOMAIN = "http://localhost";
   const BASE_URL = `${DOMAIN}:${PORT_NUMBER}/api/v1`;
@@ -19,9 +21,12 @@ const ApiService = async (
   try {
     let headers: HeadersWithAuthorization = { headers: {} };
     const token = sessionStorage?.getItem("token") ?? null;
-    if (token!=null) {
+    if (token) {
       headers.headers.Authorization = `Bearer ${JSON.parse(token)}`;
     }
+
+    // Merge additional headers with existing headers
+    headers.headers = { ...headers.headers, ...additionalHeaders };
 
     const axiosInstance = axios.create({
       baseURL: BASE_URL,

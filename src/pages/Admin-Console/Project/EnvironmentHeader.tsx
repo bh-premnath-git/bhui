@@ -12,7 +12,7 @@ import { debounce } from 'lodash';
 /**
  * The projects header.
  */
-function ProjectsHeader(props:any) {
+function EnvironmentHeader(props:any) {
 
 	const { search } = props;
 	const [searchValue, setSearchValue] = useState('');
@@ -39,13 +39,13 @@ function ProjectsHeader(props:any) {
 							m: 1,
 							width: '35ch',
 							'& fieldset': {
-								borderColor: '#f2f3f5', // Change border color to light grey
+								borderColor: '#f2f3f5', 
 							},
 							'&:hover fieldset': {
-								borderColor: '#f2f3f5', // Add hover effect
+								borderColor: '#f2f3f5',
 							},
 							'&.Mui-focused fieldset': {
-								borderColor: '#f2f3f5', // Add focus effect
+								borderColor: '#f2f3f5',
 							}
 						}}
 						InputProps={{
@@ -66,14 +66,13 @@ function ProjectsHeader(props:any) {
 					>
 						<Button className='fw-bold bg-dark text-white '
 							component={Link}
-							to="/Admin-Console/Projects/New"
+							to="/Admin-Console/Environment/New"
 							variant="contained"
-							// startIcon={<SwombSvgIcon>heroicons-outline:plus</SwombSvgIcon>}
-							// size="small"
+						
 							sx={{textTransform:'none'}}
 
 						>
-							Create New Project
+							Create New Environment
 						</Button>
 					</motion.div>
 				</Stack>
@@ -82,4 +81,4 @@ function ProjectsHeader(props:any) {
 	);
 }
 
-export default ProjectsHeader;
+export default EnvironmentHeader;

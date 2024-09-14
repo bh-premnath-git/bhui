@@ -12,7 +12,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 const projectsName = [
-    { title: 'All Projects', },
+    { title: 'All Environment', },
     { title: 'Project Name 1', },
     { title: 'Project Name 2', },
     { title: 'Project Name 3', },

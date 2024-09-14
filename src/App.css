@@ -1,5 +1,5 @@
 #root {
-  min-width: 95%;
+  min-width: 100%;
   min-height: 100vh;
 }
 
@@ -11,9 +11,9 @@
 }
 
 .content {
-  margin-top: 6% !important;
+  margin-top: 4% !important;
   margin-left: 7%;
-  /* margin-right: 4%; */
+  margin-right: 4%;
   text-align: start !important;
   /* margin: 6% !important;
   position: relative;
@@ -158,7 +158,7 @@ body {
 .myHeadFont{
   font-family: 'Inter' !important;
   font-weight: 700 !important;
-  font-size: 16px !important;
+  font-size: 1px !important;
 }
 
 .mff{
@@ -179,9 +179,37 @@ body {
 
 .ant-picker-focused {
   box-shadow: none !important;
-  border-color: #f0f2f5 !important;
+  border-color: #ffffff !important;
 }
 
 .ant-picker-large { 
   height: 52px !important;
+}
+
+.bg-pink{
+  background-color: #FF7396;
+}
+
+
+.bg-porple{
+  background-color: #804FBF;
+}
+.bg-orange{
+  background-color: #F7A01F;
+}
+
+.bg-rose{
+  background-color: #C049C0;
+}
+.bg-box{
+  background-color: #F6F7F7;
+}
+
+label{
+  margin-top: 3px !important;
+  margin-bottom: 3px !important;
+}
+
+.error{
+color: red !important;
 }

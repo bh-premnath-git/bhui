@@ -54,30 +54,32 @@ function MonitorPage() {
     return (
         <>
             <Stack >
-                <Typography variant='h5' fontWeight={'bold'} fontFamily={'inter'} mx={5} my={2}>Please Select a KPI to monitor</Typography>
+                <Typography variant='h6' fontWeight={'bold'} className='mmf'
+                fontFamily={'inter'} mx={5} my={2}>Please Select a KPI to monitor</Typography>
                 <Box sx={{ width: '100%' }}>
                     <Grid container rowSpacing={5} columnSpacing={{ xs: 2, sm: 3, md: 3 }} >
                         {jobDetailList.map((job: any, index: number) => (
-                            <Grid key={index} item xs={3.5} ml={5} >
-                                <Item sx={{ px: 3, borderRadius: '1px', border: 1, borderColor: '#f2f2f8' }}>
+                            <Grid key={index} item xs={3.5} ml={5} style={{boxShadow:'none'}} >
+                                <Item  style={{boxShadow:'none'}} className='rounded shadow-sm' sx={{ px: 3, borderRadius: '1px', border: 1, borderColor: '#f2f2f8' }}>
                                     <Box sx={{
                                         // bgcolor: colors[index]?.bgcolor || '#ffdefe',
                                         color: colors[index % 5]?.color || '#e82cc8',
                                         fontFamily: 'inter', borderRadius: '5px', my: 1,
-                                        textAlign: 'center'
+                                        textAlign: 'start'
                                     }}>
-                                        <span className='p-2 rounded'
+                                        <span className='p-2 myFont'
                                             style={{
+                                                borderRadius:'3px',
                                                 fontSize: '15px', fontFamily: 'inter',
                                                 backgroundColor: colors[index]?.bgcolor || '#ffdefe'
                                             }}>
                                             {job?.monitor_template_name}</span>
                                     </Box>
-                                    <Typography my={2}>
+                                    <Typography my={2} className='mmf'>
                                         {job?.monitor_description}
                                     </Typography>
                                     <Stack alignItems={'center'}>
-                                        <Button variant="contained" sx={{
+                                        <Button variant="contained" className='myFont' sx={{
                                             bgcolor: 'black', color: 'white', width: 110,
                                             textTransform: 'none',
                                             '&:hover': {

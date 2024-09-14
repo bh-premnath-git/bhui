@@ -10,7 +10,8 @@ import TableRow from '@mui/material/TableRow';
 import {
     Box, Typography, Stack, Popover, Button,
     Dialog, DialogTitle, DialogContent,
-    DialogContentText, DialogActions, TextField, Chip, Divider
+    DialogContentText, DialogActions, TextField, Chip, Divider,
+    hexToRgb
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import IconButton from '@mui/material/IconButton';
@@ -36,7 +37,7 @@ const columns: readonly Column[] = [
     {
         id: 'type',
         label: 'Type',
-        minWidth: 120,
+        minWidth: 100,
         align: 'left',
         // format: (value: number) => value.toLocaleString('en-US'),
     },
@@ -50,7 +51,7 @@ const columns: readonly Column[] = [
     {
         id: 'time',
         label: 'Timestamp',
-        minWidth: 170,
+        minWidth: 120,
         align: 'left',
         // format: (value: number) => value.toFixed(2),
     },
@@ -61,13 +62,13 @@ const columns: readonly Column[] = [
         align: 'left',
         // format: (value: number) => value.toFixed(2),
     },
-    {
-        id: 'runstatus',
-        label: 'Run Status',
-        minWidth: 250,
-        align: 'left',
-        // format: (value: number) => value.toFixed(2),
-    },
+    // {
+    //     id: 'runstatus',
+    //     label: 'Run Status',
+    //     minWidth: 250,
+    //     align: 'left',
+    //     // format: (value: number) => value.toFixed(2),
+    // },
     {
         id: 'action',
         label: 'Action',
@@ -93,10 +94,10 @@ const validationSchemaLink = Yup.object({
     label: Yup.string().required('User Name is required'),
 });
 
-export default function AlertTableDtl({jobDetailList}) {
+export default function AlertTableDtl({ jobDetailList }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const [openAddLink, setOpenAddLink] = useState(false);
-    
+
     const [jobDetail, setJobDetail] = useState();
     const [codesDtl, setCodesDtl]: any = useState(localStorage.getItem('codesDtl'));
 
@@ -116,14 +117,12 @@ export default function AlertTableDtl({jobDetailList}) {
     const closeLinkDialog = () => {
         setOpenAddLink(false)
     }
-    
-
     const colors = [
-        { bgcolor: '#d0f4e8', color: '#00c286' },
-        { bgcolor: '#fff4dc', color: '#dd8f00' },
-        { bgcolor: '#d2f1f9', color: '#3ac4e7' },
-        { bgcolor: '#fdfee0', color: '#928f32' },
-        { bgcolor: '#f6defe', color: '#ad00e2' },
+        { bgcolor: '#07a260', color: '#ffff' },
+        { bgcolor: '#f7a01f', color: '#ffff' },
+        { bgcolor: '#0198d7', color: '#ffff' },
+        { bgcolor: '#05aaad', color: '#ffff' },
+        { bgcolor: '#c049c0', color: '#ffff' },
     ];
     function findValue(value: any) {
         var data = JSON.parse(codesDtl)
@@ -138,7 +137,7 @@ export default function AlertTableDtl({jobDetailList}) {
 
     }
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -156,156 +155,173 @@ export default function AlertTableDtl({jobDetailList}) {
     };
 
     return (
-        <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '1px' }}>
-            <TableContainer sx={{ maxHeight: 440 }}>
-                <Table stickyHeader aria-label="sticky table">
-                    <TableHead >
-                        <TableRow >
-                            {columns.map((column) => (
-                                <TableCell className='myHeadFont'
-                                    key={column.id}
-                                    align={column.align}
-                                    style={{ minWidth: column.minWidth, backgroundColor: '#f2f2f8', fontSize: '16px' }}
-                                >
-                                    {column.label}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {jobDetailList?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                            .map((row: any, index: any) => (
+        <>
+            <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '1px' }}>
+                <TableContainer sx={{ maxHeight: 440 }}>
+                    <Table stickyHeader aria-label="sticky table">
+                        <TableHead >
+                            <TableRow >
+                                {columns.map((column) => (
+                                    <TableCell className='myHeadFont text-bold text-lg'
+                                        key={column.id}
+                                        align={column.align}
+                                        style={{ minWidth: column.minWidth, backgroundColor: '#f2f2f8', fontSize: '16px' }}
+                                    >
+                                        {column.label}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {jobDetailList?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((row: any, index: any) => (
+                                    <TableRow key={index} hover role="checkbox" tabIndex={-1}>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '3px' }} // Reduced padding
+                                        >
+                                            {row?.project_name}
+                                        </TableCell>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            {row?.source_name}
+                                        </TableCell>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            <span
+                                                className="p-2 m-0" // Removed w-10 to set a consistent width using style
+                                                style={{
+                                                    display: 'inline-block', // Ensure it's treated as a block-level element for consistent width
+                                                    width: '200px', // Set the desired consistent width
+                                                    color: colors[index]?.color || '#e82cc8',
+                                                    backgroundColor: colors[index % 6]?.bgcolor || '#2c2c2c', // 
+                                                    textAlign: 'center', // Center the text inside the span
+                                                    borderRadius: '4px', // Optional: Rounded corners for a better look
+                                                }}
+                                            >
+                                                {row?.monitor?.monitor_template_data?.monitor_template_name}
+                                            </span>
+                                        </TableCell>
 
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            {row?.alert_description}
+                                        </TableCell>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            {formatDate(row?.created_on)}
+                                        </TableCell>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            <span className="p-2 rounded" style={{ color: row?.monitor?.status == "active" ? 'green' : "gray" }}>{row?.monitor?.status == "active" ? "Open" : "Closed"}</span>
+                                        </TableCell>
 
-                                <TableRow  
-                                key={index} hover role="checkbox" tabIndex={-1}>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5', }}>{row?.project_name}
-                                    </TableCell>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>{row?.source_name}
-                                    </TableCell>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>
-                                        <span className='p-2 rounded' style={{
-                                            color: colors[index % 5]?.color || '#e82cc8',
-                                            backgroundColor: colors[index]?.bgcolor || '#ffdefe'
-                                        }}>{row?.monitor?.monitor_template_data?.monitor_template_name}</span>
-                                    </TableCell>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>{row?.alert_description}
-                                    </TableCell>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>{formatDate(row?.created_on)}
-                                    </TableCell>
+                                        <TableCell
+                                            className="myFont"
+                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
+                                        >
+                                            <IconButton onClick={handleOpen}>
+                                                <MoreVertIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                        </TableBody>
 
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>
-                                        <span className='p-2 rounded' style={{
+                    </Table>
+                </TableContainer>
+                <Popover
+                    elevation={1}
+                    id={id}
+                    open={open}
+                    anchorEl={anchorEl}
+                    onClose={handleClose}
+                    anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                    }}
+                // sx={{ width: 300 }}
+                >
+                    <Button sx={{ my: 1, mx: 1 }} onClick={openLinkDialog}>
+                        Acknowledge Alert
+                    </Button><br />
+                    <Button sx={{ mx: 1 }}>Close Alert</Button><br />
 
-                                        }}> {findValue(row?.alert_status)} </span>
-                                    </TableCell>
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>
+                </Popover>
+                <Dialog open={openAddLink} onClose={closeLinkDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
+                    <DialogTitle px={2}>Acknowledge Alert</DialogTitle>
+                    <DialogContent sx={{ width: '100%', height: '400px' }} >
+                        <Formik
+                            initialValues={{ url: '', label: '' }}
+                            validationSchema={validationSchemaLink}
+                            onSubmit={linkSubmit}
+                        >
+                            {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
+                                <Form style={{ textAlign: 'center' }}>
+                                    <div>
+                                        <div style={{ paddingTop: '2px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '12px' }}>
+                                            <label htmlFor="url">Are you sure you want to acknowledge Alert? If yes,please provide comment below.</label>
+                                        </div>
+                                        <Field type="text" id="comment" name="comment" placeholder="Type your comment here" multiline rows={5} as={TextField} sx={{
+                                            width: '100%',
+                                        }} />
+
+                                    </div>
+
+                                    <div>
+                                        <div style={{ paddingTop: '14px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '14px' }}>
+                                            <label className='py-12 my-12' htmlFor="label">Assign User<span style={{ color: 'red' }}>*</span></label>
+
+                                        </div>
+                                        <Field type="text" id="label" name="label" placeholder="Enter User Name" as={TextField} sx={{ width: '100%' }} />
+                                        <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
+                                            <ErrorMessage name="label" component="div" />
+                                        </div>
+                                    </div>
+                                    <Stack direction={"row"} spacing={1} sx={{ mt: 2 }}>
                                         <Stack>
-                                            <div>
-                                                <span style={{ fontWeight: 'bold' }}>Last Run :</span>
-                                                <span> {formatDate(row?.created_on)}</span>
-                                            </div>
+                                            <AddCircleIcon sx={{ color: '#42CD3F', mt: 1 }} />
                                         </Stack>
                                         <Stack>
-                                            <div>
-                                                <span style={{ fontWeight: 'bold' }}>Next Run :</span>
-                                                <span> {formatDate(row?.updated_on)}</span>
-                                            </div>
+                                            <Button onClick={openLinkDialog}>
+                                                <Typography variant='subtitle1' fontWeight={"bold"} sx={{ color: '#42CD3F', }} >
+                                                    ADD ATTACHMENTS
+                                                </Typography>
+                                            </Button>
                                         </Stack>
-                                    </TableCell>
-
-                                    <TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>
-                                        <IconButton onClick={handleOpen}>
-                                            <MoreVertIcon />
-                                        </IconButton>
-                                    </TableCell>
-
-                                </TableRow>
-
-                            ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Popover
-                elevation={1}
-                id={id}
-                open={open}
-                anchorEl={anchorEl}
-                onClose={handleClose}
-                anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left',
-                }}
-                transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                }}
-            // sx={{ width: 300 }}
-            >
-                <Button sx={{ my: 1, mx: 1 }} onClick={openLinkDialog}>
-                    Acknowledge Alert
-                </Button><br />
-                <Button sx={{ mx: 1 }}>Close Alert</Button><br />
-
-            </Popover>
-            <Dialog open={openAddLink} onClose={closeLinkDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
-                <DialogTitle px={2}>Acknowledge Alert</DialogTitle>
-                <DialogContent sx={{ width: '100%', height: '400px' }} >
-                    <Formik
-                        initialValues={{ url: '', label: '' }}
-                        validationSchema={validationSchemaLink}
-                        onSubmit={linkSubmit}
-                    >
-                        {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
-                            <Form style={{ textAlign: 'center' }}>
-                                <div>
-                                    <div style={{ paddingTop: '2px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '12px' }}>
-                                        <label htmlFor="url">Are you sure you want to acknowledge Alert? If yes,please provide comment below.</label>
-                                    </div>
-                                    <Field type="text" id="comment" name="comment" placeholder="Type your comment here" multiline rows={5} as={TextField} sx={{
-                                        width: '100%',
-                                    }} />
-
-                                </div>
-
-                                <div>
-                                    <div style={{ paddingTop: '14px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '14px' }}>
-                                        <label className='py-12 my-12' htmlFor="label">Assign User<span style={{ color: 'red' }}>*</span></label>
-
-                                    </div>
-                                    <Field type="text" id="label" name="label" placeholder="Enter User Name" as={TextField} sx={{ width: '100%' }} />
-                                    <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                        <ErrorMessage name="label" component="div" />
-                                    </div>
-                                </div>
-                                <Stack direction={"row"} spacing={1} sx={{ mt: 2 }}>
-                                    <Stack>
-                                        <AddCircleIcon sx={{ color: '#42CD3F', mt: 1 }} />
                                     </Stack>
-                                    <Stack>
-                                        <Button onClick={openLinkDialog}>
-                                            <Typography variant='subtitle1' fontWeight={"bold"} sx={{ color: '#42CD3F', }} >
-                                                ADD ATTACHMENTS
-                                            </Typography>
-                                        </Button>
-                                    </Stack>
-                                </Stack>
 
 
-                                <DialogActions sx={{ mt: 4, justifyContent: 'center', }} >
+                                    <DialogActions sx={{ mt: 4, justifyContent: 'center', }} >
 
-                                    <Button onClick={closeLinkDialog} variant="outlined"
-                                        size="large" sx={{ width: '25%', bgcolor: 'white', borderColor: 'black' }}  >Close</Button>
-                                    <Button type='submit' variant="contained"
-                                        color="secondary"
-                                        size="large" sx={{ width: '50%' }}>Acknowledge Alert</Button>
-                                    {/* disabled={!values.tagKey || !values.tagValue} */}
-                                </DialogActions>
-                            </Form>
-                        )}
-                    </Formik>
-                </DialogContent>
-            </Dialog>
+                                        <Button onClick={closeLinkDialog} variant="outlined"
+                                            size="large" sx={{ width: '25%', bgcolor: 'white', borderColor: 'black' }}  >Close</Button>
+                                        <Button type='submit' variant="contained"
+                                            color="secondary"
+                                            size="large" sx={{ width: '50%' }}>Acknowledge Alert</Button>
+                                        {/* disabled={!values.tagKey || !values.tagValue} */}
+                                    </DialogActions>
+                                </Form>
+                            )}
+                        </Formik>
+                    </DialogContent>
+                </Dialog>
+
+            </Paper>
             <TablePagination
                 rowsPerPageOptions={[10, 25, 100]}
                 component="div"
@@ -315,6 +331,6 @@ export default function AlertTableDtl({jobDetailList}) {
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
             />
-        </Paper>
+        </>
     );
 }

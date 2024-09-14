@@ -132,7 +132,7 @@ function UsersTableHead(props: UsersTableHeadPropsType) {
 										? lighten(theme.palette.background.default, 0.4)
 										: lighten(theme.palette.background.default, 0.02)
 							}}
-							className="p-6 md:p-12"
+							className="myHeadFont"
 							key={row.id}
 							align={row.align}
 							padding={row.disablePadding ? 'none' : 'normal'}

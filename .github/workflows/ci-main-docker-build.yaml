@@ -15,12 +15,11 @@ env:
   GIT_HASH: ${{ github.event.pull_request.head.sha }}
   BRANCH_NAME: ""
   CURRENT_APP_VER: ${{ vars.APP_VER }}
-  PROJECT_ID: 'nprd-bh-use1-dev'
-  AR_REPO_LOCATION: 'us-python'
-  PR_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-snapshots'
-  MAIN_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-public'
-  SERVICE_ACCOUNT: 'bh-cicd-dev@nprd-bh-use1-dev.iam.gserviceaccount.com' 
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/609754835936/locations/global/workloadIdentityPools/dev-gh-actions-pool/providers/dev-ghactions-provider'
+  REPOSITORY: "058264070106.dkr.ecr.us-east-1.amazonaws.com"
+  PR_GAR_URL: '058264070106.dkr.ecr.us-east-1.amazonaws.com'
+  MAIN_GAR_URL: '058264070106.dkr.ecr.us-east-1.amazonaws.com'
+  ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  AWS_REGION: "us-east-1"
 
 # A wrkfow is made up of ome or more jobs that can run sequentially or parallel
 
@@ -38,23 +37,14 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Setup Google Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: Google Auth
-        id: auth
-        uses: 'google-github-actions/auth@v2'
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          access_token_lifetime: 1800s
-          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
       
-      - name: Configure Docker to use Google Artifact Registry
-        run: |
-          gcloud --quiet auth configure-docker us-docker.pkg.dev
+      - name: Log in to Amazon ECR
+        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.REPOSITORY }}
       
       - name: Extract Branch Name
         run: |-
@@ -125,6 +115,3 @@ jobs:
           {"@type": "MessageCard","@context":"https://schema.org/extensions","summary":"Building Docker Image - 'bh-authoring-api'","themeColor":"abcdef","title":"Main (or) Release Docker Image ${IMAGE_NAME}:${IMAGE_TAG} is Pushed to Main GAR Docker Repo","sections":[{"facts":[{"name":"Repository:","value":"$GITHUB_REPOITORY"},{"name":"Branch:","value":"$GITHUB_REF_NAME"},{"name":"Commit:","value":"$GITHUB_SHA"}]}],"potentialAction":[{"@type":"OpenUri","name":"View on GitHub","targets":[{"os":"default","url":"GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"}]}]}
           EOF
             curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" --header 'Content-Type: application/json' -d @message.json
-  
-  
-

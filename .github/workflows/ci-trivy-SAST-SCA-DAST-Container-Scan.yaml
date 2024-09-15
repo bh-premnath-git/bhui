@@ -11,10 +11,11 @@ on:
 env:
   DEFAULT_IMAGE_TAG: "latest"
   IMAGE_NAME: bh-ui
-  PROJECT_ID: 'nprd-bh-use1-dev'
-  MAIN_GAR_URL: 'us-docker.pkg.dev/nprd-bh-use1-dev/bh-docker-public'
-  SERVICE_ACCOUNT: 'bh-cicd-dev@nprd-bh-use1-dev.iam.gserviceaccount.com' 
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/609754835936/locations/global/workloadIdentityPools/dev-gh-actions-pool/providers/dev-ghactions-provider'
+  REPOSITORY: "058264070106.dkr.ecr.us-east-1.amazonaws.com"
+  ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  AWS_REGION: "us-east-1"
+
+# A wrkfow is made up of ome or more jobs that can run sequentially or parallel
 
 jobs:
   sast_sca_scan:
@@ -89,29 +90,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Google Auth
-        id: auth
-        uses: 'google-github-actions/auth@v2'
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          access_token_lifetime: 1800s
-          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
       
-      - name: Configure Docker to use Google Artifact Registry
-        run: |
-          gcloud --quiet auth configure-docker us-docker.pkg.dev
+      - name: Log in to Amazon ECR
+        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.REPOSITORY }}
+      
 
       - name: Pull Docker image
-        run: docker pull $MAIN_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG
+        run: docker pull $REPOSITORY/$IMAGE_NAME:$DEFAULT_IMAGE_TAG
 
       - name: Run container scan with Trivy
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: 'image'
-          image-ref: '${{ env.MAIN_GAR_URL }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_IMAGE_TAG }}'
+          image-ref: '${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_IMAGE_TAG }}'
           format: 'json'
           output: 'trivy_container_scan_report.json'
       

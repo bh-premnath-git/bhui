@@ -3,15 +3,15 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { Button, MenuItem, Stack, Chip, Select, FormHelperText } from '@mui/material';
 import TagDialog from '../../common/TagDialog';
 import CustomField from '../../common/CustomField';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 import useToast from '../../components/teast-service';
 import * as Yup from 'yup';
 import CommonDialog from '../../components/common-dialoge';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import { RootState } from '../../Redux/store';
 import { isEmpty } from '../../common/CustomTable';
-import { updateProject } from '../../redux/ProjectSlice';
+import { updateProject } from '../../Redux/ProjectSlice';
 
 function ProjectForm() {
     const { editProjectData } = useSelector((state: RootState) => state.projectApi);

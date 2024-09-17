@@ -10,7 +10,7 @@ import * as yup from 'yup';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { debounce,  } from 'lodash';
 import { useEffect, useState } from 'react';
-import SwombLoading from "../../portal/SwombLoading";
+import SwombLoading from "../../Portal/SwombLoading";
 import DotLoader from "../../../components/DotLoader";
 /**
  * The Meta-Data app.

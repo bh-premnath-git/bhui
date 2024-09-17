@@ -10,7 +10,7 @@ import { httpClient } from '../configration/HttpClient';
 import { Button, Divider, Popover } from '@mui/material';
 import BuildPipeLineHeader from '../pages/BuildPipeline/BuildPipeLineHeader';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store';
+import { RootState } from '../Redux/store';
 
 // const keycloak = new Keycloak({
 //     url: 'http://localhost:8080/',

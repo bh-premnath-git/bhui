@@ -5,7 +5,7 @@ import * as React from 'react';
 import { ErrorMessage, Field, Form, Formik } from 'formik';
 import * as yup from 'yup';
 import { IoIosAddCircle } from 'react-icons/io';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 
 const validationSchema = yup.object({
 	tagKey: yup.string().required('Tag Key is required'),

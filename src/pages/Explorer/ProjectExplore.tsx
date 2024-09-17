@@ -5,7 +5,7 @@ import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import './ExploreProject.css';
 import { useEffect, useState } from "react";
 import { CiMenuKebab } from "react-icons/ci";
-import ApiService from "../../services/ApiServices";
+import ApiService from "../../Services/ApiServices";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { MdOutlineQueryBuilder } from "react-icons/md";
 import { FaSearch } from "react-icons/fa";

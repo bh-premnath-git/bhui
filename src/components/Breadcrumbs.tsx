@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import '../styles/breadcrums.css';
+import '../Styles/breadcrums.css';
 import { FaChevronRight } from "react-icons/fa";
 
 const Crumbs: React.FC<{ currentStep?: number }> = ({ currentStep }) => {

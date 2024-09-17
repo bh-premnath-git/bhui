@@ -3,7 +3,7 @@ import React from 'react';
 import { IoAddCircle, IoCloseSharp } from 'react-icons/io5';
 import { Form, Formik } from 'formik';
 import CustomField from '../../../common/CustomField';
-import { COLORS } from '../../../utils/constants';
+import { COLORS } from '../../../Utils/constants';
 
 export default function AddSortPopUp({ openSort, handleSortClose }) {
     const [checked, setChecked] = React.useState(true);

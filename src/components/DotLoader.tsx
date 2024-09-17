@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/DotLoader.css';
+import '../Styles/DotLoader.css';
 
 const DotLoader = () => {
   return (

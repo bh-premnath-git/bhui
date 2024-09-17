@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import ManageProjectHeader from './ManageProjectHeader';
 import ProTableData from './ProTableData';
 import { useDispatch, useSelector } from 'react-redux';
-import { getGitProject } from '../../redux/ProjectSlice';
-import { RootState } from '../../redux/store';
+import { getGitProject } from '../../Redux/ProjectSlice';
+import { RootState } from '../../Redux/store';
 
 export default function AllProject() {
     const dispatch = useDispatch();

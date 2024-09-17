@@ -3,7 +3,7 @@ import React from 'react';
 import { IoAddCircle, IoCloseSharp } from 'react-icons/io5';
 import { Form, Formik } from 'formik';
 import CustomField from '../../../common/CustomField';
-import { COLORS } from '../../../utils/constants';
+import { COLORS } from '../../../Utils/constants';
 
 export default function AddFilterPopUp({ openFilter, handleFilterClose }) {
     const conditionList = [{ id: 1, conditionName: 'Greater than equal to' }, { id: 2, conditionName: 'Less than equal to' }, { id: 3, conditionName: 'equal to' }]

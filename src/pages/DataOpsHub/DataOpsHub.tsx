@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-import ChartComponent from './chartdata';
+import ChartComponent from './Chartdata';
 import TotalBarChart from '../../charts/TotalBarChart';
 import BarChart from '../../charts/BarChart';
 import BumpChart from '../../charts/BumpChart';

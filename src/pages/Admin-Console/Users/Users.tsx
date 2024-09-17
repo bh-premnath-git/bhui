@@ -2,7 +2,7 @@ import UsersHeader from './UsersHeader';
 import UsersTable from './UsersTable';
 import { useEffect, useState } from 'react';
 import { Button, Stack } from '@mui/material';
-import ApiService from '../../../services/ApiServices';
+import ApiService from '../../../Services/ApiServices';
 
 import { Link } from 'react-router-dom';
 

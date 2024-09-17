@@ -8,7 +8,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import useToast from '../../../../../components/teast-service';
-import ApiService from '../../../../../services/ApiServices';
+import ApiService from '../../../../../Services/ApiServices';
 import { color } from 'framer-motion';
 
 const validationSchema = yup.object().shape({

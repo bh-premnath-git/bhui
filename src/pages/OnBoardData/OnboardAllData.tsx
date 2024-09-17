@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // import OnBoardHeader from '.Header';
 // import OnboardTables from '.Tables';
 import { Stack } from '@mui/material';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 import OnBoardHeader from './OnboardHeader';
 import OnBoardTables from './OnboardTables';
 

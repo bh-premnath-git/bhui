@@ -2,7 +2,7 @@ import Card from '@mui/material/Card';
 import { Button } from "@mui/material";
 import { Link } from 'react-router-dom';
 // import '../styles/Designer.css'
-import "../../styles/Designer.css";
+import "../../Styles/Designer.css";
 
 function Designer() {
     return (

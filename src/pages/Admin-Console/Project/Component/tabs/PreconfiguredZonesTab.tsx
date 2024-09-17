@@ -3,7 +3,7 @@ import { FormControl, FormControlLabel, TextField, InputLabel, MenuItem, Radio, 
 import * as React from 'react';
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import * as Yup from 'yup';
-import ApiService from '../../../../../services/ApiServices';
+import ApiService from '../../../../../Services/ApiServices';
 /**
  * The inventory tab.
  */

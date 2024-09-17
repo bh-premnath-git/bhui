@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import ApiService from "../services/ApiServices";
+import ApiService from "../Services/ApiServices";
 
 export interface ApiState {
   dataSource: any;

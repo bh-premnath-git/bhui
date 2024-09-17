@@ -1,9 +1,9 @@
 import { MenuItem } from '@mui/material';
 import CustomTable, { generateColumnsFromData } from '../../common/CustomTable';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import { RootState } from '../../Redux/store';
 import { useNavigate } from 'react-router-dom';
-import { setEditProjectData } from '../../redux/ProjectSlice';
+import { setEditProjectData } from '../../Redux/ProjectSlice';
 
 const ProTableData = () => {
     const { gitProjectList } = useSelector((state: RootState) => state.projectApi);

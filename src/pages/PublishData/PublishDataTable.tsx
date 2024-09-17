@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Link } from 'react-router-dom';
 import Divider from '@mui/material/Divider';
-import { formatDate } from "../../utils/dateFormatter";
+import { formatDate } from "../../Utils/dateFormatter";
 import DateDisplay from "../../components/DateDisplay";
 
 

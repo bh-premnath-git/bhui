@@ -20,8 +20,8 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useEffect } from 'react';
-import ApiService from '../../services/ApiServices';
-import { formatDate } from '../../utils/dateFormatter';
+import ApiService from '../../Services/ApiServices';
+import { formatDate } from '../../Utils/dateFormatter';
 
 interface Column {
     id: 'project' | 'pipeline' | 'type' | 'details' | 'time' | 'status' | 'runstatus' | 'action';

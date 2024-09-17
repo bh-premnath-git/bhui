@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Background, BackgroundVariant } from 'reactflow';
 import 'reactflow/dist/style.css';
-import '../../../styles/indexx.css';
+import '../../../Styles/indexx.css';
 import VisualSideBar from './VisualSideBar';
-import VisualResizebleNode from '../../portal/VisualResizebleNode';
+import VisualResizebleNode from '../../Portal/VisualResizebleNode';
 
 // Define the type for reactFlowInstance
 type ReactFlowInstanceType = {

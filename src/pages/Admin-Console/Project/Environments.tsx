@@ -2,8 +2,8 @@ import ProjectsTable from './ProjectsTable';
 import { useEffect, useState } from 'react';
 import { Button } from '@mui/material';
 import { Link } from 'react-router-dom';
-import ApiService from '../../../services/ApiServices';
-import ProTableData from '../../github-project/ProTableData';
+import ApiService from '../../../Services/ApiServices';
+import ProTableData from '../../GithubProject/ProTableData';
 import EnvironmentHeader from './EnvironmentHeader';
 
 

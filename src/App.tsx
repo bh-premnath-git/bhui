@@ -7,38 +7,38 @@ import { httpClient } from './configration/HttpClient'
 import { useState, Suspense, lazy } from 'react'
 
 import { Provider } from 'react-redux'
-import store from './redux/store'
+import store from './Redux/store'
 import { elements } from 'chart.js'
 
 const BuildDataPipeLine = lazy(() => import('./pages/BuildPipeline/BuildDataPipeLine'));
 const DotLoader = lazy(() => import('./components/DotLoader'));
-const Landing = lazy(() => import('./pages/portal/Landing'));
+const Landing = lazy(() => import('./pages/Portal/Landing'));
 const DashBoard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Home = lazy(() => import('./pages/Home'));
-const Catalog = lazy(() => import('./pages/catalog/Catalog'));
-const Catalogs = lazy(() => import('./pages/catalog/components/Catalogs'));
-const Designer = lazy(() => import('./pages/Disigner/Designer'));
-const Designers = lazy(() => import('./pages/Disigners/Designers'));
+const Catalog = lazy(() => import('./pages/Catalog/Catalog'));
+const Catalogs = lazy(() => import('./pages/Catalog/components/Catalogs'));
+const Designer = lazy(() => import('./pages/Designer/Designer'));
+const Designers = lazy(() => import('./pages/Designers/Designers'));
 const OnboardLanding = lazy(() => import('./pages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./pages/OnBoardData/OnboardAllData'));
 const CodePipelineLanding = lazy(() => import('./pages/BuildPipeline/CodePipelineLanding'));
 const BuildDataPipeLines = lazy(() => import('./pages/BuildPipeline/home/BuildDataPipeLine'));
 // const VisualEtlHeader = lazy(() => import('./pages/BuildPipeline/components/VisualEtlHeader'));
 const Userlanding = lazy(() => import('./pages/Admin-Console/Admin-Console'));
-const DataOpsHub = lazy(() => import('./pages/DataOpsHub/dataOpsHub'));
+const DataOpsHub = lazy(() => import('./pages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./pages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./pages/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./pages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./pages/Alerts/MonitorPage'));
-const NoPage = lazy(() => import('./pages/portal/NoPage'));
+const NoPage = lazy(() => import('./pages/Portal/NoPage'));
 const Configure = lazy(() => import('./pages/Alerts/Configure'));
 const Users = lazy(() => import('./pages/Admin-Console/Users/Users'));
 const User = lazy(() => import('./pages/Admin-Console/Users/Component/User'));
 const Customers = lazy(() => import('./pages/Admin-Console/Customer/Customers'));
 const Customer = lazy(() => import('./pages/Admin-Console/Customer/component/Customer'));
 const Projects = lazy(() => import('./pages/Admin-Console/Project/Environments'));
-const AllProject = lazy(() => import('./pages/github-project/AllProject'));
-const ProjectForm = lazy(() => import('./pages/github-project/ProjectForm'));
+const AllProject = lazy(() => import('./pages/GithubProject/AllProject'));
+const ProjectForm = lazy(() => import('./pages/GithubProject/ProjectForm'));
 const Environment = lazy(() => import('./pages/Admin-Console/Project/Component/Environment'));
 const PublishData = lazy(() => import('./pages/PublishData/PublishData'));
 const Target = lazy(() => import('./pages/PublishData/Target'));

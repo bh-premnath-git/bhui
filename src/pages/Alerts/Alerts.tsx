@@ -3,8 +3,8 @@ import AlertTableHead from './AlertTableHead';
 import AlertTableDtl from './AlertTableBody';
 import { Stack } from '@mui/material';
 import { useEffect, useState } from 'react';
-import ApiService from '../../services/ApiServices';
-import { removeDuplicates } from '../../utils/removeDuplicates';
+import ApiService from '../../Services/ApiServices';
+import { removeDuplicates } from '../../Utils/removeDuplicates';
 
 function Alerts() {
 	const [isLoading, setIsLoading] = useState(false);

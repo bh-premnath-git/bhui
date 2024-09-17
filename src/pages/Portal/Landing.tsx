@@ -2,9 +2,9 @@ import { motion } from 'framer-motion';
 import { Stack, Typography, Box, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import LandingContent from './LandingContent';
-import LocalStorageService from '../../services/local-storage-service';
+import LocalStorageService from '../../Services/local-storage-service';
 import React, { useEffect, useState } from 'react';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 
 const Landing = () => {
 	const [roles, setRoles] = useState([]);

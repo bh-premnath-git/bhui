@@ -7,7 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as yup from 'yup';
 import { useLocation } from 'react-router';
-import ApiService from '../../../../../services/ApiServices';
+import ApiService from '../../../../../Services/ApiServices';
 import CommonDialog from '../../../../../components/common-dialoge';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 

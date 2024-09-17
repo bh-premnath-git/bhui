@@ -2,7 +2,7 @@ import React from 'react';
 import { EdgeProps, getBezierPath } from 'reactflow';
 import { FaTachometerAlt } from 'react-icons/fa'; // meter icon
 import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import { RootState } from '../../Redux/store';
 import PipeLinePopUp from './meterComponents/pipeLinePopUp';
 import { Stack } from '@mui/material';
 

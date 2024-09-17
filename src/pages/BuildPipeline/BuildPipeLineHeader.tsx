@@ -11,8 +11,8 @@ import ConfigDailog from './components/ConfigDailog';
 import { useNavigate } from 'react-router-dom';
 import Codepage from './components/CodePage';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
-import { toggle } from '../../redux/ToggleSlice';
+import { RootState } from '../../Redux/store';
+import { toggle } from '../../Redux/ToggleSlice';
 import CreateCluster from './CreateCluster';
 import CommonDialog from '../../components/common-dialoge';
 

@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { useEffect, useState } from 'react';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',

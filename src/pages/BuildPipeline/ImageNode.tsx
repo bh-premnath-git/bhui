@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { Handle, NodeProps, Position } from "reactflow";
-import { setIsHover, setSelectedOption } from "../../redux/BuildPipeLineSlice";
+import { setIsHover, setSelectedOption } from "../../Redux/BuildPipeLineSlice";
 import { GoCopy, GoTrash } from "react-icons/go";
 import { FiAlertCircle, FiEdit3 } from "react-icons/fi";
 import { IconButton } from "@mui/material";

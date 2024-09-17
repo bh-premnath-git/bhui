@@ -15,8 +15,8 @@ import { IoSearchCircleOutline } from "react-icons/io5";
 import { FaAngleDown } from "react-icons/fa";
 import { MdKeyboardArrowUp } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { getConfig } from "../../../../redux/BuildPipeLineSlice";
-import { RootState } from "../../../../redux/store";
+import { getConfig } from "../../../../Redux/BuildPipeLineSlice";
+import { RootState } from "../../../../Redux/store";
 
 export default function NewSourcePopUp({ isOpen, onClose }) {
     const [isShowAll, setIsShowAll] = useState(false);

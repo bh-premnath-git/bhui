@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import "../styles/MenuItem.css";
-import { COLORS } from '../utils/constants';
+import "../Styles/MenuItem.css";
+import { COLORS } from '../Utils/constants';
 
 interface MenuItem {
   name: string;

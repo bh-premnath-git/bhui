@@ -1,5 +1,5 @@
 import { Button, Stack } from '@mui/material';
-import ApiService from '../../../services/ApiServices';
+import ApiService from '../../../Services/ApiServices';
 import CustomersHeader from './CustomersHeader';
 import CustomersTable from './CustomersTable';
 import { useEffect, useState } from 'react';

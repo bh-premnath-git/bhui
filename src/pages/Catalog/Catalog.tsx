@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import ApiService from '../../services/ApiServices';
+import ApiService from '../../Services/ApiServices';
 import CatalogHead from './CatalogHead';
 import CatalogTableBody from './CatalogTableBody';
 import { Stack } from '@mui/material';

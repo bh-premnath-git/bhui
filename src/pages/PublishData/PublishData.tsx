@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Link, useNavigate } from 'react-router-dom';
 import Divider from '@mui/material/Divider';
-import ApiService from "../../services/ApiServices";
+import ApiService from "../../Services/ApiServices";
 import { Field, Form, Formik } from "formik";
 import * as Yup from 'yup';
 import { BiSolidSearchAlt2 } from "react-icons/bi";

@@ -17,7 +17,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import * as Yup from 'yup';
 import About from './About';
-import ApiService from '../../../services/ApiServices';
+import ApiService from '../../../Services/ApiServices';
 import ShowAll from './Lineage/ShowAll';
 import { LuCalendarDays } from "react-icons/lu";
 import { BsChatDots } from "react-icons/bs";

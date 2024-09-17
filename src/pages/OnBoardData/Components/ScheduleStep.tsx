@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import * as yup from 'yup';
-import ApiService from '../../../services/ApiServices';
+import ApiService from '../../../Services/ApiServices';
 import { ErrorMessage, Field, Form, Formik } from 'formik';
 
 const validationSchema = yup.object().shape({

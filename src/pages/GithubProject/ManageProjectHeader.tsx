@@ -5,9 +5,9 @@ import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomAutoComplete from '../../common/CustomAutoComplete';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import { RootState } from '../../Redux/store';
 import SearchIcon from '@mui/icons-material/Search';
-import { getGitProject } from '../../redux/ProjectSlice';
+import { getGitProject } from '../../Redux/ProjectSlice';
 
 interface Project {
     bh_project_name: string;

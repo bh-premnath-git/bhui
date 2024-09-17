@@ -17,7 +17,7 @@ import React, { useEffect, useState } from "react";
 
 import OnboardSelectSource from "./OnboardSelectSource";
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
-import ApiService from "../../../services/ApiServices";
+import ApiService from "../../../Services/ApiServices";
 import Sources from "./Sources";
 import ConfigurationStep from "./ConfigurationStep";
 import TaggingStep from "./TaggingStep";

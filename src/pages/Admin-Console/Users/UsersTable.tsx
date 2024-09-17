@@ -14,7 +14,7 @@ import UsersTableHead from './UsersTableHead';
 import { Chip, IconButton, Menu, MenuItem } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Label, MoreVert } from '@mui/icons-material';
-import ApiService from '../../../services/ApiServices';
+import ApiService from '../../../Services/ApiServices';
 import { useNavigate } from 'react-router-dom';
 
 

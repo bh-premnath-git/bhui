@@ -5,8 +5,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import { debounce } from 'lodash';
 import NewSourcePopUp from '../pages/BuildPipeline/components/popups/NewSourcePopUp';
 import { useDispatch, useSelector } from 'react-redux';
-import { getSource } from '../redux/BuildPipeLineSlice';
-import { RootState } from '../redux/store';
+import { getSource } from '../Redux/BuildPipeLineSlice';
+import { RootState } from '../Redux/store';
 
 const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, dataSet }) => {
     const [showText, setShowText] = useState(false);

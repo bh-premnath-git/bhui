@@ -1,0 +1,91 @@
+{
+    "purpose": "Flow Configuration - All the nodes in flow screen is driven by this json file",
+    "modules": [
+        {
+            "module_name": "Sensor",
+            "nodes": [
+                {
+                    "node_name": "HTTP Sensor",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false
+                        }
+                    ]
+                },
+                {
+                    "node_name": "S3 Sensor",
+                    "order": 2
+                },
+                {
+                    "node_name": "EMR Cluster Sensor",
+                    "order": 3
+                },
+                {
+                    "node_name": "EMR Pipeline Sensor",
+                    "order": 4
+                },
+                {
+                    "node_name": "SFTP Sensor",
+                    "order": 5
+                },
+                {
+                    "node_name": "Dataproc Cluster Sensor",
+                    "order": 6
+                },
+                {
+                    "node_name": "Dataproc Pipeline Sensor",
+                    "order": 6
+                }
+            ]
+        }
+    ]
+}

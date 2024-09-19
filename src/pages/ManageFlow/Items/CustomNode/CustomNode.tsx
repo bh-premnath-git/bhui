@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position, Align, NodeToolbar } from 'reactflow';
 import { Copy, Trash, Info, Edit } from 'lucide-react';
-import styles from './CustomNode.module.css';
 import Modal from '../../../../components/ModalWithPortal';
 import CustomNodeTap from '../CustomNodeTap/CustomNodeTap';
+import styles from './CustomNode.module.css';
 
 interface CustomNodeProps {
   data: {
@@ -45,12 +45,9 @@ const NodeContent: React.FC<{
 
   const spanRef = useRef<HTMLSpanElement>(null);
 
-  // Focus on the span when editing starts
   useEffect(() => {
     if (isEditing && spanRef.current) {
       spanRef.current.focus();
-
-      // Select the text inside the span
       const range = document.createRange();
       range.selectNodeContents(spanRef.current);
       const sel = window.getSelection();
@@ -66,21 +63,14 @@ const NodeContent: React.FC<{
   };
 
   return (
-    <div className={styles.label} style={{ backgroundColor: color, position: 'relative' }}>
+    <div className={styles.label} style={{ backgroundColor: color }}>
       <img src={icon} alt={label} width="24" height="24" />
       <span
         ref={spanRef}
         contentEditable={isEditing}
         suppressContentEditableWarning
         onBlur={handleBlur}
-        style={{
-          width: '90px',
-          fontSize: '0.55rem',
-          position: 'absolute',
-          top: '150%',
-          left: '-20%',
-          outline: isEditing ? '1px solid blue' : 'none',
-        }}
+        className={`${styles.nodeContent} ${isEditing ? styles.editingContent : ''}`}
       >
         {displayLabel}
       </span>
@@ -105,22 +95,46 @@ const NodeHandles: React.FC<{ backgroundColor: string }> = ({ backgroundColor })
   </>
 );
 
-// Updated ToolbarContent with the tooltip fix
 const ToolbarContent: React.FC<{
   onDelete: () => void;
   onEdit: () => void;
   onClone: () => void;
   label: string;
-}> = ({ onDelete, onEdit, onClone, label }) => (
-  <>
-    <Copy className={styles.toolbarIcon} onClick={onClone} />
-    <Trash className={styles.toolbarIcon} onClick={onDelete} />
-    <span className={styles.toolbarIcon} title={label}>
-      <Info />
-    </span>
-    <Edit className={styles.toolbarIcon} onClick={onEdit} />
-  </>
-);
+}> = ({ onDelete, onEdit, onClone, label }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  const handleInfoMouseEnter = (event: React.MouseEvent<SVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPosition({ x: rect.left, y: rect.bottom });
+    setShowTooltip(true);
+  };
+
+  const handleInfoMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
+  return (
+    <>
+      <Copy className={styles.toolbarIcon} onClick={onClone} />
+      <Trash className={styles.toolbarIcon} onClick={onDelete} />
+      <Info
+        className={styles.toolbarIcon}
+        onMouseEnter={handleInfoMouseEnter}
+        onMouseLeave={handleInfoMouseLeave}
+      />
+      <Edit className={styles.toolbarIcon} onClick={onEdit} />
+      {showTooltip && (
+        <div
+          className={styles.tooltip}
+          style={{ left: tooltipPosition.x, top: tooltipPosition.y }}
+        >
+          {label}
+        </div>
+      )}
+    </>
+  );
+};
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   const [isHovered, setIsHovered] = useState(false);

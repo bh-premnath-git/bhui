@@ -51,8 +51,8 @@ const FlowPlayground: React.FC = () => {
             ...nodeToClone,
             id: `${nodeToClone.id}-${Date.now()}`,
             position: {
-              x: nodeToClone.position.x + 20,
-              y: nodeToClone.position.y + 20,
+              x: nodeToClone.position.x + 100,
+              y: nodeToClone.position.y + 100,
             },
             data: {
               ...nodeToClone.data,

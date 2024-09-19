@@ -48,6 +48,7 @@ const CodePipelineTable = lazy(() => import('./pages/CodePipeline/CodePipelineTa
 const CodePipelineData = lazy(() => import('./pages/CodePipeline/CodepipelineData'));
 const Explorer = lazy(() => import('./pages/Explorer/Explorer'));
 const ManageFlow = lazy(() => import('./pages/ManageFlow/ManageFlow'));
+const FlowPlayGround = lazy(() => import('./pages/ManageFlow/FlowPlayGround'));
 
 let initOptions = {
   url: 'http://localhost:8080/',
@@ -157,6 +158,7 @@ function App() {
     { path: "/Designer/Codepipeline1", element: <CodePipelineData/> },
     { path: "/DataOps Hub/Explorer", element: <Explorer/> },
     { path: "/Designer/Manage Flow", element: <ManageFlow/> },
+    { path: "/Designer/FlowPlayGround", element: <FlowPlayGround/> },
   ];
   return (
     <Provider store={store}>

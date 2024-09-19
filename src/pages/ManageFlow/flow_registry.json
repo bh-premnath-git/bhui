@@ -1,0 +1,989 @@
+{
+    "purpose": "Flow Configuration - All the nodes in flow screen is driven by this json file",
+    "modules": [
+        {
+            "module_name": "Sensor",
+            "color": "#F7A01F",
+            "icon": "/src/assets/flow/Source.svg",
+            "nodes": [
+                {
+                    "node_name": "HTTP Sensor",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "S3 Sensor",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "EMR Cluster Sensor",
+                    "order": 3,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "EMR Pipeline Sensor",
+                    "order": 4,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "SFTP Sensor",
+                    "order": 5,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Dataproc Cluster Sensor",
+                    "order": 6,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Dataproc Pipeline Sensor",
+                    "order": 6,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Data Transfer",
+            "color": "#FF7396",
+            "icon": "/src/assets/flow/Join.svg",
+            "nodes": [
+                {
+                    "node_name": "SFTPtoS3",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "SFTPtoSnowflake",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "TableauExtract",
+                    "order": 3,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Spark/SQL",
+            "color": "#34C7C9",
+            "icon": "/src/assets/flow/Transform.svg",
+            "nodes": [
+                {
+                    "node_name": "Databricks Pipeline",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "EMR Pipeline",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "EMR Create Cluster",
+                    "order": 3,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Dataproc Pipeline",
+                    "order": 4,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "SnowflakeSQL",
+                    "order": 5,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Model",
+                    "order": 6,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Trigger/Notify",
+            "color": "#FF7396",
+            "icon": "/src/assets/flow/Join.svg",
+            "nodes": [
+                {
+                    "node_name": "Email",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Slack",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Trigger DAG",
+                    "order": 3,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Custom",
+            "color": "#F7A01F",
+            "icon": "/src/assets/flow/Source.svg",
+            "nodes": [
+                {
+                    "node_name": "Script",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Branch",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "Python",
+                    "order": 3,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Subgraph",
+            "color": "#34C7C9",
+            "icon": "/src/assets/flow/Transform.svg",
+            "nodes": [
+                {
+                    "node_name": "Taskgroup",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/connections/http_sensor/",
+                            "mandatory": true,
+                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Request Parameters",
+                            "property_key": "request_parameters",
+                            "ui_type": "json",
+                            "order": 3,
+                            "mandatory": false,
+                            "help_text": "Request parameters for the HTTP Request"
+                        },
+                        {
+                            "property_name": "Request Headers",
+                            "property_key": "request_headers",
+                            "ui_type": "json",
+                            "order": 4,
+                            "mandatory": false,
+                            "help_text": "HTTP Header request parameters"
+                        },
+                        {
+                            "property_name": "Poll interval (seconds)",
+                            "property_key": "poll_interval",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
+                        },
+                        {
+                            "property_name": "Request Timeout (seconds)",
+                            "property_key": "request_timeout",
+                            "ui_type": "number",
+                            "order": 6,
+                            "mandatory": false,
+                            "help_text": "Request timeout in seconds"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
+                        }
+                    ]
+                },
+                {
+                    "node_name": "ForEachLoop",
+                    "order": 2,
+                    "layout": "2-column",
+                    "properties": [
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "End Point",
+                            "property_key": "end_point",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

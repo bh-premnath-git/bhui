@@ -1,0 +1,22 @@
+.customNode {
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.label {
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background-color: #718096;
+}
+
+.toolbarIcon {
+  margin: 0 5px;
+  cursor: pointer;
+  color: black;
+}

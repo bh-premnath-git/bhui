@@ -1,9 +1,14 @@
-import { Box, Button, Stack } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, Stack, TextField } from '@mui/material';
 import { Form, Formik } from 'formik';
-import React from 'react';
 import CustomField from '../../common/CustomField';
+import Modal from '../../components/ModalWithPortal';
+import CreateFlowForm from '../../components/CreateFlowForm/CreateFlowForm';
+
 
 function ManageFlowHeader() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const projectList = [
         { value: '', label: 'None' },
         { value: '10', label: 'Ten' },
@@ -17,6 +22,14 @@ function ManageFlowHeader() {
         { value: 'B', label: 'Branch B' },
         { value: 'C', label: 'Branch C' },
     ];
+
+    const handleCreateNewFlow = () => {
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+    };
 
     return (
         <Box>
@@ -111,6 +124,7 @@ function ManageFlowHeader() {
                                 <Button className='bg-dark'
                                     variant='contained'
                                     sx={{ bgcolor: "black", mt: 4, width: '180px', height: '40px', textTransform: "none" }}  // Adjust button size here
+                                    onClick={handleCreateNewFlow}
                                 >
                                     Create New Flow
                                 </Button>
@@ -119,6 +133,9 @@ function ManageFlowHeader() {
                     </Form>
                 )}
             </Formik>
+            <Modal isOpen={isModalOpen} onClose={closeModal}>
+                <CreateFlowForm onClose={closeModal} />
+            </Modal>
         </Box>
     );
 }

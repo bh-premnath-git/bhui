@@ -1,0 +1,109 @@
+.modal {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 18px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 15px;
+}
+
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.field label {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.field select,
+.field input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.scheduleInput {
+  position: relative;
+}
+
+.clockIcon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.addNotes {
+  margin-top: -10px;
+}
+
+.addNotes a {
+  color: #0077ff;
+  text-decoration: none;
+}
+
+.alertSettings {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.alertSettings h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.checkboxGroup {
+  display: flex;
+  gap: 20px;
+}
+
+.checkboxGroup label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.closeButton {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #333;
+  color: white;
+}
+
+.createButton {
+  background-color: #333;
+  padding: 8px 16px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

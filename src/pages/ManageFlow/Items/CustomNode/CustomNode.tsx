@@ -16,41 +16,117 @@ interface CustomNodeProps {
     toolbarPosition?: Position;
     toolbarAlign?: Align;
     onDelete: (nodeId: string) => void;
+    onClone: (nodeId: string) => void;
   };
   id: string;
 }
 
-const NodeContent: React.FC<{ label: string; color: string; icon: string; selectedNode: any }> = ({ label, color, icon, selectedNode }) => {
+const NodeContent: React.FC<{
+  label: string;
+  color: string;
+  icon: string;
+  selectedNode: any;
+  editedContent: string;
+  onContentChange: (newContent: string) => void;
+  isEditing: boolean;
+  onFinishEditing: () => void;
+}> = ({
+  label,
+  color,
+  icon,
+  selectedNode,
+  editedContent,
+  onContentChange,
+  isEditing,
+  onFinishEditing,
+}) => {
   const selectedLabel = selectedNode.node_name;
+  const displayLabel = editedContent || selectedLabel;
+
+  const spanRef = useRef<HTMLSpanElement>(null);
+
+  // Focus on the span when editing starts
+  useEffect(() => {
+    if (isEditing && spanRef.current) {
+      spanRef.current.focus();
+
+      // Select the text inside the span
+      const range = document.createRange();
+      range.selectNodeContents(spanRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
+
+  const handleBlur = (e: React.FocusEvent<HTMLSpanElement>) => {
+    const newContent = e.currentTarget.textContent || '';
+    onContentChange(newContent);
+    onFinishEditing();
+  };
+
   return (
-    <>
-      <div className={styles.label} style={{ backgroundColor: color, position: 'relative' }}>
-        <img src={icon} alt={label} width="24" height="24" />
-        <span style={{ width: '250px', fontSize: '0.55rem', position: 'absolute', top: '150%', left: '-20%' }}>{selectedLabel}</span>
-      </div>
-    </>
-  )
+    <div className={styles.label} style={{ backgroundColor: color, position: 'relative' }}>
+      <img src={icon} alt={label} width="24" height="24" />
+      <span
+        ref={spanRef}
+        contentEditable={isEditing}
+        suppressContentEditableWarning
+        onBlur={handleBlur}
+        style={{
+          width: '250px',
+          fontSize: '0.55rem',
+          position: 'absolute',
+          top: '150%',
+          left: '-20%',
+          outline: isEditing ? '1px solid blue' : 'none',
+        }}
+      >
+        {displayLabel}
+      </span>
+    </div>
+  );
 };
 
 const NodeHandles: React.FC<{ backgroundColor: string }> = ({ backgroundColor }) => (
-  <React.Fragment>
-    <Handle type="target" style={{ backgroundColor, borderColor: backgroundColor }} position={Position.Left} className={styles.handle} />
-    <Handle type="source" style={{ backgroundColor, borderColor: backgroundColor }} position={Position.Right} className={styles.handle} />
-  </React.Fragment>
+  <>
+    <Handle
+      type="target"
+      style={{ backgroundColor, borderColor: backgroundColor }}
+      position={Position.Left}
+      className={styles.handle}
+    />
+    <Handle
+      type="source"
+      style={{ backgroundColor, borderColor: backgroundColor }}
+      position={Position.Right}
+      className={styles.handle}
+    />
+  </>
 );
 
-const ToolbarContent: React.FC<{ onDelete: () => void }> = ({ onDelete }) => (
+// Updated ToolbarContent with the tooltip fix
+const ToolbarContent: React.FC<{
+  onDelete: () => void;
+  onEdit: () => void;
+  onClone: () => void;
+  label: string;
+}> = ({ onDelete, onEdit, onClone, label }) => (
   <>
-    <Copy className={styles.toolbarIcon} />
+    <Copy className={styles.toolbarIcon} onClick={onClone} />
     <Trash className={styles.toolbarIcon} onClick={onDelete} />
-    <Info className={styles.toolbarIcon} />
-    <Edit className={styles.toolbarIcon} />
+    <span className={styles.toolbarIcon} title={label}>
+      <Info />
+    </span>
+    <Edit className={styles.toolbarIcon} onClick={onEdit} />
   </>
 );
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
   const handleMouseEnter = () => {
@@ -74,6 +150,22 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
     data.onDelete(id);
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleClone = () => {
+    data.onClone(id);
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setEditedContent(newContent);
+  };
+
+  const handleFinishEditing = () => {
+    setIsEditing(false);
+  };
+
   useEffect(() => {
     return () => {
       if (timeoutRef.current !== null) {
@@ -81,6 +173,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
       }
     };
   }, []);
+
+  const displayLabel = editedContent || data.selectedNode.node_name;
 
   return (
     <>
@@ -99,10 +193,24 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <ToolbarContent onDelete={handleDelete} />
+            <ToolbarContent
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              onClone={handleClone}
+              label={displayLabel}
+            />
           </NodeToolbar>
         )}
-        <NodeContent label={data.label} color={data.color} icon={data.icon} selectedNode={data.selectedNode} />
+        <NodeContent
+          label={data.label}
+          color={data.color}
+          icon={data.icon}
+          selectedNode={data.selectedNode}
+          editedContent={editedContent}
+          onContentChange={handleContentChange}
+          isEditing={isEditing}
+          onFinishEditing={handleFinishEditing}
+        />
         <NodeHandles backgroundColor={data.color} />
       </div>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>

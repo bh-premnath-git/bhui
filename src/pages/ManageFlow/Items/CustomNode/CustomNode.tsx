@@ -74,7 +74,7 @@ const NodeContent: React.FC<{
         suppressContentEditableWarning
         onBlur={handleBlur}
         style={{
-          width: '250px',
+          width: '90px',
           fontSize: '0.55rem',
           position: 'absolute',
           top: '150%',

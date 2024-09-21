@@ -4,11 +4,13 @@ import ReactFlow, {
   addEdge,
   useNodesState,
   useEdgesState,
-  Controls,
   Connection,
   Node,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+
+import { useReactFlow, Panel } from 'reactflow';
+import { ZoomIn, ZoomOut, Maximize, Minimize } from 'lucide-react';
 
 import CustomNode from './Items/CustomNode/CustomNode';
 import CustomEdge from './Items/CustomEdge/CustomEdge';
@@ -22,6 +24,59 @@ const nodeTypes = {
 
 const edgeTypes = {
   custom: CustomEdge,
+};
+
+
+const CustomControls = () => {
+  const { zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
+
+  const handleZoomIn = () => {
+    zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    zoomOut();
+  };
+
+  const handleFitView = () => {
+    fitView();
+  };
+
+  const handleResetView = () => {
+    setViewport({ x: 0, y: 0, zoom: 1 });
+  };
+
+  return (
+    <Panel position="bottom-center">
+      <div className={styles.controlsContainer}>
+       
+        <button
+          onClick={handleFitView}
+          className={styles.controlButton}
+        >
+          <Maximize size={20} />
+        </button>
+        <button
+          onClick={handleResetView}
+          className={styles.controlButton}
+        >
+          <Minimize size={20} />
+        </button>
+        <button
+          onClick={handleZoomIn}
+          className={styles.controlButton}
+        >
+          <ZoomIn size={20} />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className={styles.controlButton}
+        >
+          <ZoomOut size={20} />
+        </button>
+      </div>
+    </Panel>
+  );
 };
 
 const FlowPlayground: React.FC = () => {
@@ -51,12 +106,12 @@ const FlowPlayground: React.FC = () => {
             ...nodeToClone,
             id: `${nodeToClone.id}-${Date.now()}`,
             position: {
-              x: nodeToClone.position.x + 100,
-              y: nodeToClone.position.y + 100,
+              x: nodeToClone.position.x + 150,
+              y: nodeToClone.position.y + 150,
             },
             data: {
               ...nodeToClone.data,
-              onDelete: onDeleteNode, // Ensure functions are included
+              onDelete: onDeleteNode,
               onClone: onCloneNode,
             },
           };
@@ -86,8 +141,8 @@ const FlowPlayground: React.FC = () => {
           nodes: nodeType.nodes,
           color: nodeType.color,
           selectedNode: selectedNode || null,
-          onDelete: onDeleteNode, // Pass the delete function to the node
-          onClone: onCloneNode, // Pass the clone function to the node
+          onDelete: onDeleteNode,
+          onClone: onCloneNode,
         },
       };
 
@@ -108,7 +163,7 @@ const FlowPlayground: React.FC = () => {
         edgeTypes={edgeTypes}
         fitView
       >
-        <Controls />
+        <CustomControls />
       </ReactFlow>
     ),
     [nodes, edges, onNodesChange, onEdgesChange, onConnect]

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { X } from 'lucide-react';
 import styles from './Toolbar.module.css';
 import flowRegistry from "../../flow_registry.json";
 
@@ -23,9 +23,13 @@ interface ToolbarItemProps {
 interface DropdownProps {
   nodes: any[];
   onItemClick: (nodeName: string) => void;
+  onClose: () => void;
+  title: string;
+  icon: string;
+  color: string;
 }
 
-const Dropdown: React.FC<DropdownProps> = ({ nodes, onItemClick }) => {
+const Dropdown: React.FC<DropdownProps> = ({ nodes, onItemClick, onClose, title, icon, color }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const filteredNodes = useMemo(
     () =>
@@ -37,20 +41,32 @@ const Dropdown: React.FC<DropdownProps> = ({ nodes, onItemClick }) => {
 
   return (
     <div className={styles.dropdown} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.dropdownHeader}>
+        <span className={styles.dropdownTitle}>{title}</span>
+        <button className={styles.closeButton} onClick={onClose}>
+          <X size={20} />
+        </button>
+      </div>
       <div className={styles.searchContainer}>
         <input
           type="text"
-          placeholder="Search"
+          placeholder="Search By Sensor Name"
           className={styles.searchInput}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Search className={styles.searchIcon} size={16} />
       </div>
       <ul className={styles.dropdownList}>
         {filteredNodes.map((node, index) => (
-          <li key={index} onClick={() => onItemClick(node.node_name)}>
-            <span>{node.node_name}</span>
+          <li key={index} className={styles.dropdownItem} onClick={() => onItemClick(node.node_name)}>
+            <div className={styles.itemIcon} style={{ backgroundColor: color }}>
+              <img src={icon} alt={node.node_name} width="16" height="16" />
+            </div>
+            <span
+              className={styles.itemIndicator}
+              style={{ '--indicator-color': color } as React.CSSProperties}
+            ></span>
+            <span className={styles.itemName}>{node.node_name}</span>
           </li>
         ))}
       </ul>
@@ -84,10 +100,8 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({ node, onClick }) => {
   return (
     <div ref={ref} className={styles.toolbarItemWrapper}>
       <div
-      style={{ backgroundColor: node.color }}
-        className={`${styles.toolbarItem} ${
-          isOpen ? styles.active : ''
-        } ${isHovered ? styles.hovered : ''}`}
+        style={{ backgroundColor: node.color }}
+        className={`${styles.toolbarItem} ${isOpen ? styles.active : ''} ${isHovered ? styles.hovered : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -97,7 +111,14 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({ node, onClick }) => {
       </div>
       {isOpen && (
         <div className={styles.dropdownWrapper}>
-          <Dropdown nodes={node.nodes} onItemClick={handleItemClick} />
+          <Dropdown
+            nodes={node.nodes}
+            onItemClick={handleItemClick}
+            onClose={() => setIsOpen(false)}
+            title={`Select ${node.label}`}
+            icon={node.icon}
+            color={node.color}
+          />
         </div>
       )}
     </div>

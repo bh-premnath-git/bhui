@@ -9,40 +9,9 @@ import Keycloak from 'keycloak-js';
 import { httpClient } from '../configration/HttpClient';
 import { Button, Divider, Popover } from '@mui/material';
 import BuildPipeLineHeader from '../pages/BuildPipeline/BuildPipeLineHeader';
+import FlowHeader from '../pages/ManageFlow/FlowHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/store';
-
-// const keycloak = new Keycloak({
-//     url: 'http://localhost:8080/',
-//     realm: 'bighammer-realm',
-//     clientId: 'bighammer-ui',
-// });
-// keycloak.init({
-//     onLoad: 'login-required', // Supported values: 'check-sso' , 'login-required'
-//     checkLoginIframe: true,
-//     pkceMethod: 'S256'
-// }).then((auth) => {
-//     if (auth) {
-//         console.log('Authenticated');
-//         // navigate()
-//     //     sessionStorage.setItem('authenticated', 'true');
-//     //   sessionStorage.setItem('token',  JSON.stringify(keycloak!.token!));
-//     //   window.location.reload()
-
-//       /* http client will use this header in every request it sends */
-//     //   httpClient.defaults.headers.common['Authorization'] = `Bearer ${keycloak.token}`;
-//     //   window.location.href = '/landing'; 
-//     //   window.location.reload();
-//     //   keycloak.onTokenExpired = () => {
-//     //     console.log('token expired');
-//     //   }
-//     } else {
-//         console.log('Not authenticated');
-//     }
-// }, () => {
-//     /* Notify the user if necessary */
-//     console.error("Authentication Failed");
-// })
 
 const Header: any = ({ onLogout, step }) => {
     const location = useLocation();
@@ -96,6 +65,12 @@ const Header: any = ({ onLogout, step }) => {
         return (
             <>
                 <BuildPipeLineHeader />
+            </>
+        )
+    }else if (pathname === '/Designer/FlowPlayGround') {
+        return (
+            <>
+                <FlowHeader />
             </>
         )
     } else {

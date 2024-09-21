@@ -1,0 +1,48 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+}
+
+.title {
+  margin-left: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.iconGroup {
+  display: flex;
+  align-items: center;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin-left: 0.5rem;
+  color: #6c757d;
+}
+
+.iconButton:hover {
+  color: #495057;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.statusDot {
+  color: green;
+  margin-right: 0.5rem;
+}
+
+.statusText {
+  font-size: 0.9rem;
+  color: #6c757d;
+}

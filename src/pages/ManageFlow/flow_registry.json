@@ -3,8 +3,8 @@
     "modules": [
         {
             "module_name": "Sensor",
-            "color": "#F7A01F",
-            "icon": "/src/assets/flow/Source.svg",
+            "color": "#07A260",
+            "icon": "/src/assets/flow/Sensor.svg",
             "nodes": [
                 {
                     "node_name": "HTTP Sensor",
@@ -236,8 +236,8 @@
         },
         {
             "module_name": "Data Transfer",
-            "color": "#FF7396",
-            "icon": "/src/assets/flow/Join.svg",
+            "color": "#8237E3",
+            "icon": "/src/assets/flow/Transfer.svg",
             "nodes": [
                 {
                     "node_name": "SFTPtoS3",
@@ -377,8 +377,8 @@
         },
         {
             "module_name": "Spark/SQL",
-            "color": "#34C7C9",
-            "icon": "/src/assets/flow/Transform.svg",
+            "color": "#0FBAEF",
+            "icon": "/src/assets/flow/Pipeline.svg",
             "nodes": [
                 {
                     "node_name": "Databricks Pipeline",
@@ -587,8 +587,8 @@
         },
         {
             "module_name": "Trigger/Notify",
-            "color": "#FF7396",
-            "icon": "/src/assets/flow/Join.svg",
+            "color": "#C049C0",
+            "icon": "/src/assets/flow/Notify.svg",
             "nodes": [
                 {
                     "node_name": "Email",
@@ -728,8 +728,8 @@
         },
         {
             "module_name": "Custom",
-            "color": "#F7A01F",
-            "icon": "/src/assets/flow/Source.svg",
+            "color": "#2B64D4",
+            "icon": "/src/assets/flow/Other.svg",
             "nodes": [
                 {
                     "node_name": "Script",
@@ -869,8 +869,8 @@
         },
         {
             "module_name": "Subgraph",
-            "color": "#34C7C9",
-            "icon": "/src/assets/flow/Transform.svg",
+            "color": "#F3C603",
+            "icon": "/src/assets/flow/SubFlow.svg",
             "nodes": [
                 {
                     "node_name": "Taskgroup",
@@ -981,6 +981,37 @@
                             "mandatory": false,
                             "help_text": "End point of the API"
                         }
+                    ]
+                }
+            ]
+        },
+        {
+            "module_name": "Alerts",
+            "color": "#F7A01F",
+            "icon": "/src/assets/flow/Alert.svg",
+            "nodes": [
+                {
+                    "node_name": "DQ Alert",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {}
+                    ]
+                },
+                {
+                    "node_name": "Cost Alert",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {}
+                    ]
+                },
+                {
+                    "node_name": "File not arrival Alert",
+                    "order": 1,
+                    "layout": "2-column",
+                    "properties": [
+                        {}
                     ]
                 }
             ]

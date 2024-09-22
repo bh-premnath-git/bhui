@@ -1,4 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 .modal {
+  font-family: 'Inter', sans-serif;
   background-color: white;
   border-radius: 8px;
   padding: 20px;
@@ -8,9 +11,9 @@
 }
 
 .title {
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 600;
   margin-bottom: 20px;
-  text-align: center;
 }
 
 .form {
@@ -33,13 +36,16 @@
 .field label {
   font-size: 14px;
   margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
 }
 
 .field select,
 .field input {
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 14px;
 }
 
 .scheduleInput {
@@ -51,6 +57,7 @@
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
+  color: #757575;
 }
 
 .addNotes {
@@ -58,8 +65,9 @@
 }
 
 .addNotes a {
-  color: #0077ff;
+  color: #007bff;
   text-decoration: none;
+  font-size: 14px;
 }
 
 .alertSettings {
@@ -70,6 +78,7 @@
 .alertSettings h3 {
   font-size: 16px;
   margin-bottom: 15px;
+  font-weight: 600;
 }
 
 .checkboxGroup {
@@ -81,29 +90,384 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+}
+
+.checkboxGroup input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #757575;
+  border-radius: 2px;
+  position: relative;
+}
+
+.checkboxGroup label.checked input[type="checkbox"] {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.checkboxGroup label.checked input[type="checkbox"]::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.field select,
+.field input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;  /* Explicitly set white background */
+  color: #333;  /* Dark gray, almost black text color */
+}
+
+/* Add styles for placeholder text */
+.field select::placeholder,
+.field input::placeholder {
+  color: #aaa;  /* Light gray color for placeholder text */
+}
+
+/* Optional: Style for focus state */
+.field select:focus,
+.field input:focus {
+  outline: none;
+  border-color: #6200EE;  /* Purple border on focus to match the title color */
+  box-shadow: 0 0 0 2px rgba(98, 0, 238, 0.1);  /* Subtle purple glow */
 }
 
 .buttons {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;  /* Center the buttons */
   gap: 10px;
   margin-top: 20px;
 }
 
 .closeButton {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
-  background-color: #333;
-  color: white;
+  background-color: white;
+  color: #333;
+  font-size: 14px;
 }
 
 .createButton {
   background-color: #333;
-  padding: 8px 16px;
+  padding: 10px 20px;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+}
+
+.addNotes {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.addNotesLink {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.addNotesLink:hover {
+  text-decoration: underline;
+}
+
+.arrowIcon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  margin-left: 4px;
+}
+
+.arrowIcon.open {
+  transform: rotate(180deg);
+}
+
+.notesWrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 0;
+}
+
+.notesWrapper.open {
+  max-height: 200px; /* Adjust this value based on your needs */
+  opacity: 1;
+}
+
+.notesTextarea {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+  background-color: white;
+  color: black;
+}
+
+
+.scheduleModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.scheduleModalContent {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+}
+
+.closeModalButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.scheduleTypes {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.scheduleTypeButton {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.scheduleTypeButton.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.repeatEvery {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.repeatEvery input {
+  width: 60px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.scheduleModalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.scheduleModalButtons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.scheduleModalButtons button:first-child {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.scheduleModalButtons button:last-child {
+  background-color: #007bff;
+  color: white;
+}
+
+.scheduleTypes {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  background-color: #f0f0f0;
+  border-radius: 20px;
+  padding: 4px;
+}
+
+.scheduleTypeButton {
+  padding: 8px 12px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 16px;
+  transition: background-color 0.3s, color 0.3s;
+  flex: 1;
+  text-align: center;
+}
+
+.scheduleTypeButton.active {
+  background-color: #007bff;
+  color: white;
+  font-weight: 500;
+}
+
+.repeatEvery {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.repeatEvery input {
+  width: 60px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.scheduleModalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.scheduleModalButtons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.scheduleModalButtons button:first-child {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.scheduleModalButtons button:last-child {
+  background-color: #007bff;
+  color: white;
+}
+.scheduleModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 110%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.scheduleModalContent {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+}
+
+.closeModalButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.scheduleTypes {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 5px;
+}
+
+.scheduleTypeButton {
+  padding: 8px 12px;
+  border: none;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+  text-align: center;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.scheduleTypeButton.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.repeatEvery {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.repeatEvery input {
+  width: 60px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.scheduleModalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.scheduleModalButtons button {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  background-color: white;
+  color: #333;
+}
+
+.scheduleModalButtons button:last-child {
+  background-color: #333;
+  color: white;
+  border-color: #333;
 }

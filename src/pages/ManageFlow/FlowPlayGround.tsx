@@ -26,6 +26,8 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
+const proOptions = { hideAttribution: true };
+
 
 const CustomControls = () => {
   const { zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
@@ -156,6 +158,7 @@ const FlowPlayground: React.FC = () => {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        proOptions={proOptions}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

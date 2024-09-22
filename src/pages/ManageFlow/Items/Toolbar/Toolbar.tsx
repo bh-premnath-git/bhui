@@ -50,7 +50,7 @@ const Dropdown: React.FC<DropdownProps> = ({ nodes, onItemClick, onClose, title,
       <div className={styles.searchContainer}>
         <input
           type="text"
-          placeholder="Search By Sensor Name"
+          placeholder={`Search By ${title.replace(/\bselect\s+/i, '')} Name`}
           className={styles.searchInput}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

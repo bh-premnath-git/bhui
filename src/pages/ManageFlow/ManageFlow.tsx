@@ -13,17 +13,10 @@ function ManageFlow() {
         { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
         { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
         { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
-        { Name: 'Customers Daily', Schedule: "Daily 8 Am", Environment: "Development", Project: "Ingestion", CreatedBy: "JohnDoe", LastUpdatedOn: "5/8/2024", lastExecutedOn: "10/8/2024", Action: "Disabled" },
     ]
 
     const columns = generateColumnsFromData(manageFlowDataList);
 
-    // Modify the data to wrap "Action" column with light gray color
     const modifiedData = manageFlowDataList.map((row) => ({
         ...row,
         Action: (
@@ -34,7 +27,7 @@ function ManageFlow() {
     }));
     const tableStyles = {
         headerCell: {
-            fontSize: '18px', // Increase font size here
+            fontSize: '18px',
             fontWeight: 'bold',
         },
     };

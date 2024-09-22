@@ -2,7 +2,7 @@ import Card from '@mui/material/Card';
 import { Button, Stack } from "@mui/material";
 import { Link } from 'react-router-dom';
 // import '../styles/Designer.css'
-import "../../styles/Designer.css";
+import "/src/Styles/Designer.css";
 import AdminCard from '../../common/AdminCard';
 
 function Designers() {

@@ -41,7 +41,7 @@ function BuildPipeLineHeader() {
     return (
         <div className='d-flex flex-row align-items-center border-bottom py-2 bg-light' style={{ position: 'relative' }}>
             <div className="mx-4">
-                <img src="/assets/logo/logo.png" alt="" width={50} />
+                <img src="/assets/logo/fixLogo.svg" alt="" width={50} />
 
             </div>
             <RiArrowLeftSLine className='border rounded px-2' style={{ height: '40px', width: '40px' }} />

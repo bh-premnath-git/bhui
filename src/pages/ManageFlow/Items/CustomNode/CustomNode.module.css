@@ -52,8 +52,75 @@
   width: 90px;
   font-size: 0.55rem;
   position: absolute;
-  top: 150%;
-  left: -20%;
+  top: 110%;
+  left: -50%;
+  text-align: center;
+}
+
+.editingContent {
+  outline: 1px solid blue;
+}
+
+.tooltip {
+  position: fixed;
+  background-color: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100000000000;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+.customNode {
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.label {
+  font-weight: 600;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background-color: #718096;
+}
+
+.nodeToolbar {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toolbarContent {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+}
+
+.toolbarIcon {
+  margin: 0 5px;
+  cursor: pointer;
+  color: black;
+}
+
+.nodeContent {
+  width: 90px;
+  font-size: 0.55rem;
+  position: absolute;
+  top: 110%;
+  left: -50%;
   text-align: center;
 }
 

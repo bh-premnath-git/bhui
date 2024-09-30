@@ -67,7 +67,7 @@ function Designers() {
                     ))}
                 </div>
                 <div style={{position:'absolute',bottom:0,right:0}}>
-                    <img src="public/assets/designer/Bg design.png" alt="" width={'600px'} />
+                    <img src="/assets/designer/Bg design.png" alt="" width={'600px'} />
                 </div>
             </Stack>
         </>

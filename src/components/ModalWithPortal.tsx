@@ -55,7 +55,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    width: '130%',
+    width: '120%',
     pointerEvents: 'auto',
     backgroundColor: '#fff',
     backgroundClip: 'padding-box',

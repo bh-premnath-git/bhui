@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { CiPlay1, CiPause1 } from "react-icons/ci";
 import styles from './Toolbar.module.css';
 import flowRegistry from "../../flow_registry.json";
 
@@ -28,6 +29,15 @@ interface DropdownProps {
   icon: string;
   color: string;
 }
+
+const PlayPauseContent = () => {
+  return (
+    <div className={styles.playPauseContent}>
+      <div><CiPlay1 size={20} /></div>
+      <div><CiPause1 size={20} /></div>
+    </div>
+  );
+};
 
 const Dropdown: React.FC<DropdownProps> = ({ nodes, onItemClick, onClose, title, icon, color }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,7 +116,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({ node, onClick }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <img src={node.icon} alt={node.label} width="24" height="24" />
+        <img src={node.icon} alt={node.label} width="32" height="32" />
         <span className={styles.itemLabel}>{node.label}</span>
       </div>
       {isOpen && (
@@ -136,6 +146,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ onAddNode }) => {
 
   return (
     <div className={styles.toolbarContainer}>
+      <PlayPauseContent />
       <div className={styles.toolbar}>
         {modules.map((module, index) => (
           <ToolbarItem

@@ -1,28 +1,41 @@
-import { useState } from 'react';
-import { Box, Button, Stack, TextField } from '@mui/material';
+import {  useState } from 'react';
+import { Box, Button, Stack } from '@mui/material';
 import { Form, Formik } from 'formik';
 import CustomField from '../../common/CustomField';
 import Modal from '../../components/ModalWithPortal';
 import CreateFlowForm from '../../components/CreateFlowForm/CreateFlowForm';
+import {  useAppSelector } from '../../Redux/hooks';
 
+
+  interface Project {
+    Name: string;
+    ProjectId: number;
+    BranchNames: string[];
+  }
 
 function ManageFlowHeader() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const projectList = [
-        { value: '', label: 'None' },
-        { value: '10', label: 'Ten' },
-        { value: '20', label: 'Twenty' },
-        { value: '30', label: 'Thirty' },
-    ];
+  const { flowProjectList } = useAppSelector((state) => state.flowApi);
 
-    const branchList = [
-        { value: '', label: 'None' },
-        { value: 'A', label: 'Branch A' },
-        { value: 'B', label: 'Branch B' },
-        { value: 'C', label: 'Branch C' },
-    ];
 
+const projectList = [
+    { value: '', label: 'None' },
+    ...flowProjectList.map((project: Project| any) => ({
+      value: project.ProjectId.toString(),
+      label: project.Name
+    }))
+  ];
+
+  const branchList = [
+    { value: '', label: 'None' },
+    ...flowProjectList.flatMap((project: Project| any) =>
+      project.BranchNames.map(branch => ({
+        value: branch,
+        label: `${branch}`
+      }))
+    )
+  ];
     const handleCreateNewFlow = () => {
         setIsModalOpen(true);
     };
@@ -134,7 +147,7 @@ function ManageFlowHeader() {
                 )}
             </Formik>
             <Modal isOpen={isModalOpen} onClose={closeModal}>
-                <CreateFlowForm onClose={closeModal} />
+                <CreateFlowForm  onClose={closeModal} />
             </Modal>
         </Box>
     );

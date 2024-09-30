@@ -4,6 +4,9 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import MoreVert from '@mui/icons-material/MoreVert';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../Redux/hooks';
+import { setSelectedFlowFromList } from '../Redux/FlowSlice';
 
 // Styled TableRow component
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -18,8 +21,9 @@ interface CustomTableProps<T> {
     data: T[];
     rowsPerPageOptions?: number[];
     menuActions?: (row: T, index: number) => React.ReactNode;
-    className?:any;
+    className?: any;
     headerCellStyle?: React.CSSProperties;
+    metaData?: any;
 }
 
 const CustomTable = <T extends unknown>({
@@ -28,12 +32,17 @@ const CustomTable = <T extends unknown>({
     rowsPerPageOptions = [5, 10, 25],
     menuActions,
     className,
-    headerCellStyle
+    headerCellStyle,
+    metaData
 }: CustomTableProps<T>) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(rowsPerPageOptions[0]);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [menuIndex, setMenuIndex] = useState<number | null>(null);
+
+    const navigate = useNavigate();
+
+    const dispatch = useAppDispatch();
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -54,10 +63,18 @@ const CustomTable = <T extends unknown>({
         setMenuIndex(null);
     };
 
+    const handleRoeClick = async (event: React.MouseEvent, row: any) => {
+        event.preventDefault();
+        if (metaData) {
+            await dispatch(setSelectedFlowFromList(metaData.find(meta => meta.Name === row.Name)));
+            navigate('/Designer/FlowPlayGround');
+        }
+    }
+
     return (
         <div className={className}>
             <Table>
-                <TableHead sx={{ background: '#f2f3f5'}} >
+                <TableHead sx={{ background: '#f2f3f5' }} >
                     <TableRow>
                         {columns.map((column) => (
                             <TableCell
@@ -66,21 +83,21 @@ const CustomTable = <T extends unknown>({
                                 style={headerCellStyle} // Apply headerCellStyle
                             >
                                 {column.label}
-                            </TableCell>                        ))}
-                        {menuActions&&(<TableCell className='myHeadFont'>Action</TableCell>)}
+                            </TableCell>))}
+                        {menuActions && (<TableCell className='myHeadFont'>Action</TableCell>)}
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {data
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((row, index) => (
-                            <StyledTableRow key={index}>
+                            <StyledTableRow style={{ cursor: 'pointer' }} key={index} onClick={(e) => { handleRoeClick(e, row) }}>
                                 {columns.map((column) => (
                                     <TableCell className='p-2 m-0 text-left' key={column.key as string}>{(row[column.key] as React.ReactNode)}</TableCell>
                                 ))}
-                                {menuActions&&(<TableCell className='m-0 p-0'>
+                                {menuActions && (<TableCell className='m-0 p-0'>
                                     <div style={{ boxShadow: 'none' }}>
-                                        <IconButton 
+                                        <IconButton
                                             id={`basic-button-${index}`}
                                             aria-controls={`simple-menu-${index}`}
                                             aria-haspopup="true"
@@ -102,7 +119,8 @@ const CustomTable = <T extends unknown>({
                                     </div>
                                 </TableCell>)}
                             </StyledTableRow>
-                        ))}
+                        )
+                        )}
                 </TableBody>
             </Table>
             <TablePagination

@@ -42,8 +42,6 @@ function SignInPage() {
 
     async function onSubmit({ email, password }: InferType<typeof schema>) {
 
-        console.log(email)
-        console.log(password)
         navigate("/Home", { replace: true, });
     }
 

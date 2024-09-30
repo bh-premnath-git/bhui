@@ -1,17 +1,17 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import Sidebar from './components/Sidebar'
-import Header from './components/Header'
-import { menuList } from './configration/menuList'
-import Keycloak from 'keycloak-js';
-import { httpClient } from './configration/HttpClient'
-import { useState, Suspense, lazy } from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { useState, Suspense, lazy, useEffect, useRef } from 'react';
+import { Provider } from 'react-redux';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import { menuList } from './configration/menuList';
+import kc from './configration/keycloak';
+import { httpClient } from './configration/HttpClient';
+import store from './Redux/store';
 
-import { Provider } from 'react-redux'
-import store from './Redux/store'
-import { elements } from 'chart.js'
-
+// Lazy-loaded components
 const BuildDataPipeLine = lazy(() => import('./pages/BuildPipeline/BuildDataPipeLine'));
 const DotLoader = lazy(() => import('./components/DotLoader'));
+const RedirectToHome = lazy(() => import('./components/RediectToHome'));
 const Landing = lazy(() => import('./pages/Portal/Landing'));
 const DashBoard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Home = lazy(() => import('./pages/Home'));
@@ -23,7 +23,6 @@ const OnboardLanding = lazy(() => import('./pages/OnBoardData/Components/Onboard
 const OnboardAllData = lazy(() => import('./pages/OnBoardData/OnboardAllData'));
 const CodePipelineLanding = lazy(() => import('./pages/BuildPipeline/CodePipelineLanding'));
 const BuildDataPipeLines = lazy(() => import('./pages/BuildPipeline/home/BuildDataPipeLine'));
-// const VisualEtlHeader = lazy(() => import('./pages/BuildPipeline/components/VisualEtlHeader'));
 const Userlanding = lazy(() => import('./pages/Admin-Console/Admin-Console'));
 const DataOpsHub = lazy(() => import('./pages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./pages/Dataops/Dataops'));
@@ -50,137 +49,143 @@ const Explorer = lazy(() => import('./pages/Explorer/Explorer'));
 const ManageFlow = lazy(() => import('./pages/ManageFlow/ManageFlow'));
 const FlowPlayGround = lazy(() => import('./pages/ManageFlow/FlowPlayGround'));
 
-let initOptions = {
-  url: 'http://localhost:8080/',
-  realm: 'bighammer-realm',
-  clientId: 'bighammer-ui',
-}
-let kc = new Keycloak(initOptions);
-if (!sessionStorage.getItem('authenticated')) {
-  kc.init({
-    onLoad: 'login-required', // Supported values: 'check-sso' , 'login-required'
-    checkLoginIframe: true,
-    pkceMethod: 'S256'
-  }).then((auth) => {
-    if (!auth) {
-      // window.location.reload();
-    } else {
-      console.info("Authenticated");
-      console.log('auth', auth);
-      console.log('Keycloak', kc);
-      console.log('Access Token', kc.token);
-
-      sessionStorage.setItem('authenticated', 'true');
-      sessionStorage.setItem('token', JSON.stringify(kc!.token!));
-
-      httpClient.defaults.headers.common['Authorization'] = `Bearer ${kc.token}`;
-      window.location.href = '/Home';
-      kc.onTokenExpired = () => {
-        console.log('token expired');
-      }
-    }
-  }, () => {
-    console.error("Authentication Failed");
-  });
-}
 
 function App() {
-  const [infoMessage, setInfoMessage] = useState('');
   const [step, setStep] = useState<any>();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const menuItems: any[] = menuList;
+  const keycloakInitialized = useRef(false);
 
-  const callBackend = () => {
-    httpClient.get('https://mockbin.com/request')
+  useEffect(() => {
+    const initializeKeycloak = async () => {
+      if (keycloakInitialized.current) {
+        return;
+      }
+
+      keycloakInitialized.current = true;
+
+      try {
+        const authenticated = await kc.init({
+          onLoad: 'login-required',
+          checkLoginIframe: true,
+          pkceMethod: 'S256',
+        });
+
+        if (authenticated) {
+          setIsAuthenticated(true);
+          sessionStorage.setItem('authenticated', 'true');
+          sessionStorage.setItem('token', JSON.stringify(kc.token));
+          httpClient.defaults.headers.common['Authorization'] = `Bearer ${kc.token}`;
+          startTokenRefresh();
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Failed to initialize Keycloak', error);
+      }
+    };
+
+    initializeKeycloak();
+
+    return () => {
+      stopTokenRefresh();
+    };
+  }, []);
+  
+  // Function to start token refresh process
+  const startTokenRefresh = () => {
+    kc.onTokenExpired = () => {
+      kc.updateToken(30) // Refresh token if it expires in the next 30 seconds
+        .then((refreshed) => {
+          if (refreshed) {
+            sessionStorage.setItem('token', JSON.stringify(kc.token));
+            httpClient.defaults.headers.common['Authorization'] = `Bearer ${kc.token}`;
+          } else {
+            console.warn('Token is still valid, no refresh needed');
+          }
+        })
+        .catch(() => {
+          console.error('Failed to refresh the token, or the session has expired');
+          logout(); // Optionally, log out if the token cannot be refreshed
+        });
+    };
   };
 
-  const menuItems: any[] = menuList;
+  // Function to stop token refresh process
+  const stopTokenRefresh = () => {
+    kc.clearToken();
+  };
 
-  async function logout() {
-    kc.init({
-      onLoad: 'login-required',
-      checkLoginIframe: true,
-      pkceMethod: 'S256'
-    }).then((auth) => {
-      if (auth) {
-        console.log('Authenticated');
-      } else {
-        console.log('Not authenticated');
-      }
-    }, () => {
-      console.error("Authentication Failed");
-    })
-    await sessionStorage.removeItem('token');
-    await sessionStorage.removeItem('authenticated');
-
-    await kc.logout({
-      redirectUri: 'http://localhost:5000/landing'
+  function logout() {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authenticated');
+    kc.logout({
+      redirectUri: 'http://localhost:5000/landing',
     });
   }
 
   function handleBreadStep(step: any) {
     setStep(step);
   }
+
   const routeList = [
-    { path: "/Designer/Build-Data-Pipe-Line", element: <BuildDataPipeLine/> },
-    { path: "/Designer/Build Data Pipe Line", element: <BuildDataPipeLines/> },
-    { path: "/", element: <DotLoader/> },
-    { path: "/Landing", element: <Landing/> },
-    { path: "/Home", element: <DashBoard/> },
-    { path: "/Data-Config", element: <Home/> },
-    { path: "/Data Catalog", element: <Catalog/> },
-    { path: "/Catalog/Catalogs", element: <Catalogs/> },
-    { path: "/Designer", element: <Designer/> },
-    { path: "/Designers", element: <Designers/> },
-    { path: "/Designer/Onboard-Data", element: <OnboardLanding handleBreadStep={handleBreadStep}/> },
-    { path: "/Designer/Onboard Data", element: <OnboardAllData/> },
-    { path: "/Designer/Build Data PipeLine", element: <CodePipelineLanding/> },
-    // { path: "/Designer/BuildPipeLine/new", element: <VisualEtlHeader/> },
-    { path: "/Admin Console", element: <Userlanding/> },
-    { path: "/DataOps Hub/Dashboard", element: <DataOpsHub/> },
-    { path: "/DataOps Hub/Ops Hub", element: <Dataops/> },
-    { path: "/DataOps-Hub/Dataops/View-All-Log", element: <ShowingLogs/> },
-    { path: "/Alerts", element: <Alerts/> },
-    { path: "/Alerts/New Monitor", element: <MonitorPage/> },
-    { path: "/Alerts/New Monitor/Monitor", element: <Configure/> },
-    { path: "*", element: <NoPage/> },
-    { path: "/Admin Console/Manage Data Platform Users", element: <Users/> },
-    { path: "/Admin Console/Manage Data Platform Users/Add User", element: <User/> },
-    { path: "/Admin Console/Manage Customer", element: <Customers/> },
-    { path: "/Admin Console/Manage Customer/Add Customer", element: <Customer handleBreadStep={handleBreadStep}/> },
-    { path: "/All Environment", element: <Projects/> },
-    { path: "/All Projects", element: <AllProject/> },
-    { path: "/All Projects/New", element: <ProjectForm/> },
-    { path: "/Admin-Console/Environment/New", element: <Environment handleBreadStep={handleBreadStep}/> },
-    { path: "/Designer/Publish Data", element: <PublishData/> },
-    { path: "/Designer/targetsteps", element: <Target handleBreadStep={handleBreadStep}/> },
-    { path: "/publisher/runquarydetails", element: <RunquaryDetails/> },
-    { path: "/publisher/publishdatatable", element: <PublishDataTable/> },
-    { path: "/Designer/Code Data Pipelines", element: <CodePipelineTable/> },
-    { path: "/Designer/Codepipeline1", element: <CodePipelineData/> },
-    { path: "/DataOps Hub/Explorer", element: <Explorer/> },
-    { path: "/Designer/Manage Flow", element: <ManageFlow/> },
-    { path: "/Designer/FlowPlayGround", element: <FlowPlayGround/> },
+    { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
+    { path: '/Designer/Build Data Pipe Line', element: <BuildDataPipeLines /> },
+    { path: '/', element: <RedirectToHome /> },
+    { path: '/Landing', element: <Landing /> },
+    { path: '/Home', element: <DashBoard /> },
+    { path: '/Data-Config', element: <Home /> },
+    { path: '/Data Catalog', element: <Catalog /> },
+    { path: '/Catalog/Catalogs', element: <Catalogs /> },
+    { path: '/Designer', element: <Designer /> },
+    { path: '/Designers', element: <Designers /> },
+    { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
+    { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
+    { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
+    { path: '/Admin Console', element: <Userlanding /> },
+    { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
+    { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
+    { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
+    { path: '/Alerts', element: <Alerts /> },
+    { path: '/Alerts/New Monitor', element: <MonitorPage /> },
+    { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
+    { path: '*', element: <NoPage /> },
+    { path: '/Admin Console/Manage Data Platform Users', element: <Users /> },
+    { path: '/Admin Console/Manage Data Platform Users/Add User', element: <User /> },
+    { path: '/Admin Console/Manage Customer', element: <Customers /> },
+    { path: '/Admin Console/Manage Customer/Add Customer', element: <Customer handleBreadStep={handleBreadStep} /> },
+    { path: '/All Environment', element: <Projects /> },
+    { path: '/All Projects', element: <AllProject /> },
+    { path: '/All Projects/New', element: <ProjectForm /> },
+    { path: '/Admin-Console/Environment/New', element: <Environment handleBreadStep={handleBreadStep} /> },
+    { path: '/Designer/Publish Data', element: <PublishData /> },
+    { path: '/Designer/targetsteps', element: <Target handleBreadStep={handleBreadStep} /> },
+    { path: '/publisher/runquarydetails', element: <RunquaryDetails /> },
+    { path: '/publisher/publishdatatable', element: <PublishDataTable /> },
+    { path: '/Designer/Code Data Pipelines', element: <CodePipelineTable /> },
+    { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
+    { path: '/DataOps Hub/Explorer', element: <Explorer /> },
+    { path: '/Designer/Manage Flow', element: <ManageFlow /> },
+    { path: '/Designer/FlowPlayGround', element: <FlowPlayGround /> },
   ];
+
   return (
     <Provider store={store}>
       <BrowserRouter>
         <Header onLogout={logout} step={step} />
         <Sidebar menuItems={menuItems} />
-        <div className='content'>
+        <div className="content">
           <Suspense fallback={<DotLoader />}>
             <Routes>
               {routeList.map((route, index) => (
-                <Route
-                  key={index}
-                  path={route.path}
-                  element={route.element}
-                />
+                <Route key={index} path={route.path} element={route.element} />
               ))}
             </Routes>
           </Suspense>
         </div>
       </BrowserRouter>
     </Provider>
-  )
+  );
 }
 
-export default App
+export default App;

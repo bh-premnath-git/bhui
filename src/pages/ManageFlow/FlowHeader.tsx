@@ -1,32 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IoMdSettings } from "react-icons/io";
 import { BsFillPencilFill } from 'react-icons/bs';
-import { GoDotFill } from "react-icons/go";
-import { FiCornerDownLeft } from 'react-icons/fi';
+import { FiLink } from 'react-icons/fi';
+import { AiOutlineCloudSync } from 'react-icons/ai';
+import { RiArrowLeftSLine } from "react-icons/ri";
 import styles from './FlowHeader.module.css';
+import SettingsModal from './SettingsModal/SettingsModal';
+import Modal from '../../components/ModalWithPortal';
+import { useAppSelector } from '../../Redux/hooks';
+import { RootState } from '../../Redux/store';
+
 
 const FlowHeader: React.FC = () => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const openSettings = () => setIsSettingsOpen(true);
+  const closeSettings = () => setIsSettingsOpen(false);
+
+  const navigate = useNavigate();
+  const { selectedFlowFromList } = useAppSelector((state: RootState) => state.flowApi);
+
   return (
-    <div className={`${styles.header} d-flex justify-content-between`}>
-      <div className="d-flex p-2">
-        <img src="/assets/logo/logo.png" alt="Logo" width={50} />
-        <h6 className={styles.title}>Flow-Type 1</h6>
+    <div className={styles.header}>
+      <div className={styles.logoSection}>
+        <img src="/assets/logo/fixLogo.svg" alt="Logo" className={styles.logo} />
       </div>
-      <div className={styles.iconGroup}>
-        <button className={styles.iconButton}>
-          <FiCornerDownLeft />
+      <div className={styles.middleSection}>
+        <button className={styles.iconButton} onClick={() => navigate("/Designer/Manage Flow")}>
+          <RiArrowLeftSLine size={32} />
         </button>
-        <button className={styles.iconButton}>
-          <BsFillPencilFill />
+        <div className={styles.autoSave}>
+          <AiOutlineCloudSync className={styles.cloudIcon} />
+        </div>
+        <div className={styles.flowTypeInput}>
+          <input type="text" defaultValue={selectedFlowFromList?.Name ?? "Flow 1"} />
+          <BsFillPencilFill className={styles.editIcon} />
+        </div>
+        <button className={styles.detachButton}>
+          Detach Cluster
+          <FiLink className={styles.linkIcon} />
         </button>
-        <button className={styles.iconButton}>
+        <button className={styles.icon2Button} onClick={openSettings}>
           <IoMdSettings />
         </button>
-        <div className={styles.statusIndicator}>
-          <GoDotFill className={styles.statusDot} />
-          <span className={styles.statusText}>Visual</span>
+      </div>
+      <div className={styles.rightSection}>
+        <div className={styles.toggleContainer}>
+          <span className={styles.toggleLabel}>Visual</span>
+          <label className={styles.switch}>
+            <input type="checkbox" />
+            <span className={styles.slider}></span>
+          </label>
+          <span className={styles.toggleLabel}>Code</span>
         </div>
       </div>
+      <Modal isOpen={isSettingsOpen} onClose={closeSettings}>
+        <SettingsModal onClose={closeSettings} />
+      </Modal>
     </div>
   );
 };

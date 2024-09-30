@@ -15,7 +15,7 @@ const initialState: ApiState = {
   error: null,
   gitProjectList: [],
   searchProjectList: [],
-  param: { },
+  param: {},
   editProjectData: {}
 };
 
@@ -24,13 +24,35 @@ interface ApiResponse {
   name: string;
 }
 
+interface CreateProjectData {
+  bh_project_name: string;
+  bh_github_provider: number;
+  bh_github_username: string;
+  bh_github_email: string;
+  bh_default_branch: string;
+  bh_github_url: string;
+  bh_github_token_url: string;
+  status: string;
+  tags: Record<string, any>;
+}
+
 export const getGitProject: any = createAsyncThunk(
   'admin-console/gitproject',
   async (params: any, thunkAPI) => {
-    alert(JSON.stringify(params))
     try {
       const response = await ApiService('8011', 'get', '/bh_project/list/', null, params);
-      return response;
+      const transformed: any[] = response.map((item: any) => {
+        return {
+          Project_Name: item.bh_project_name,
+          ["YTD_Cost ($)"]: item.ytd_cost,
+          ["Current_Month_Cost ($)"]: item.current_month_cost,
+          ["Total Storage (GB)"]: item.total_storage,
+          total_data_sources: item.total_data_sources,
+          status: item.status,
+          ...item
+        }
+      })
+      return transformed;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -42,7 +64,48 @@ export const updateProject: any = createAsyncThunk(
   async (projectData: any, thunkAPI) => {
     try {
       const { bh_project_id, ...updateData } = projectData;
-      const response = await ApiService('8011', 'put', `/bh_project/${bh_project_id}/`, updateData);
+      const {
+        ["Project_Name"]: _,
+        ["YTD_Cost ($)"]: __,
+        ["Current_Month_Cost ($)"]: ___,
+        ["Total Storage (GB)"]: ____,
+        ...remain
+      } = updateData;
+      const response = await ApiService('8011', 'put', `/bh_project/${bh_project_id}/`, remain);
+      const transformed = {
+        Project_Name: response.bh_project_name,
+        ["YTD_Cost ($)"]: response.ytd_cost,
+        ["Current_Month_Cost ($)"]: response.current_month_cost,
+        ["Total Storage (GB)"]: response.total_storage,
+        total_data_sources: response.total_data_sources,
+        status: response.status,
+        ...response
+      }
+
+      return transformed;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createProject: any = createAsyncThunk(
+  'All Projects/New',
+  async (projectData: CreateProjectData, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'post', '/bh_project/', projectData);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const searchProject: any = createAsyncThunk(
+  'prjects/searchProject',
+  async (value: string, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/bh_project/search?bh_project_name=${value}`);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -89,7 +152,6 @@ const projectSlice = createSlice({
         updateProject.fulfilled,
         (state, action: PayloadAction<ApiResponse>) => {
           state.loading = false;
-          alert(JSON.stringify(action.payload))
           const index = state.gitProjectList.findIndex(
             (project: ApiResponse) => project?.bh_project_id == action.payload?.bh_project_id
           );
@@ -100,6 +162,43 @@ const projectSlice = createSlice({
       )
       .addCase(
         updateProject.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+      .addCase(createProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        createProject.fulfilled,
+        (state, action: PayloadAction<ApiResponse>) => {
+          state.loading = false;
+          state.gitProjectList.push(action.payload);
+          state.searchProjectList.push(action.payload);
+        }
+      )
+      .addCase(
+        createProject.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+      .addCase(searchProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        searchProject.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.searchProjectList = action.payload;
+        }
+      )
+      .addCase(
+        searchProject.rejected,
         (state, action: PayloadAction<string>) => {
           state.loading = false;
           state.error = action.payload;

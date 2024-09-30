@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
 .modal {
   font-family: 'Inter', sans-serif;
   background-color: white;
@@ -121,7 +119,7 @@
 
 .field select,
 .field input {
-  padding: 10px;
+  padding: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
@@ -273,23 +271,38 @@
   border-color: #007bff;
 }
 
-.repeatEvery {
+.repeatSchedule {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
 }
 
-.repeatEvery input {
+.repeatEvery {
+  display: flex;
+  align-items: center;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inputRow input {
   width: 60px;
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 16px;
+  text-align: center;
+  background: white;
+  color: black;
 }
 
 .scheduleModalButtons {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
 }
 
@@ -352,12 +365,6 @@
   border-radius: 4px;
   font-size: 16px;
   text-align: center;
-}
-
-.scheduleModalButtons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 .scheduleModalButtons button {
@@ -450,11 +457,6 @@
   text-align: center;
 }
 
-.scheduleModalButtons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
 
 .scheduleModalButtons button {
   padding: 8px 16px;

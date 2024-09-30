@@ -1,7 +1,7 @@
 export default function NoPage(){
     return (
         <>
-        <h1> Fount</h1>
+        <h1>Page Not Found</h1>
         </>
     )
 }

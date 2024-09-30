@@ -13,10 +13,6 @@ import * as Yup from 'yup';
 import { BiSolidSearchAlt2 } from "react-icons/bi";
 import DateDisplay from "../../components/DateDisplay";
 
-
-
-
-
 const validationSchema = Yup.object().shape({
     bh_project_id: Yup.string(),
     delivery_name: Yup.string(),

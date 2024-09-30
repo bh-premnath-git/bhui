@@ -1,113 +1,90 @@
-import ProjectsTable from './ProjectsTable';
-import { useEffect, useState } from 'react';
-import { Button } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Button, Box, CircularProgress, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../../Redux/store';
+import { listEnvironments, Environment } from '../../../Redux/EnvironmentSlice';
 import ApiService from '../../../Services/ApiServices';
+import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
+
 import ProTableData from '../../GithubProject/ProTableData';
 import EnvironmentHeader from './EnvironmentHeader';
+import { searchProject } from '../../../Redux/ProjectSlice';
+
+const NoEnvironmentsComponent = () => (
+  <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ mt: 4 }}>
+    <img src="/assets/userlanding/Layer34.svg" alt="No environments" style={{ width: '5%' }} />
+    <Typography variant="h6" sx={{ mt: 2 }}>No Environments Available</Typography>
+    <Button
+      sx={{
+        mt: 2,
+        px: 3,
+        py: 1,
+        backgroundColor: 'black',
+        color: 'white',
+        textTransform: 'none',
+        '&:hover': {
+          backgroundColor: 'white',
+          color: 'black',
+          border: '1px solid black',
+        },
+      }}
+      component={Link}
+      to="/Admin-Console/Environment/New"
+      variant="contained"
+      size="small"
+    >
+      Create New Environment
+    </Button>
+  </Box>
+);
+
+function Environments() {
+  const dispatch: ThunkDispatch<RootState, unknown, AnyAction> = useDispatch();
+  const { environmentList, loading, error } = useSelector((state: RootState) => state.environmentApi);
 
 
+  useEffect(() => {
+    dispatch(listEnvironments());
+  }, [dispatch]);
 
-function Projects() {
-	const [projectList, setProjectList] = useState([]);
-	const [codesDtl, setCodesDtl] = useState([]);
-	const [platformRegion, setPlatformRegion] = useState([]);
-	const [isLoading, setIsLoading] = useState(false);
+  
+  const handleEdit = (index: number) => {
+    // Implement edit functionality for environments
+  };
 
-	useEffect(() => {
-		getItem();
-		fetchProject();
-		getPlatformRegion();
-		console.log(projectList);
+  const handleStatusChange = (index: number) => {
+    // Implement status change functionality for environments
+  };
 
-	}, [codesDtl != null]);
-	const getItem = async () => {
-		var value: any = await localStorage.getItem('codesDtl');
-		setCodesDtl(value)
-		console.log(value);
-	};
-	const getPlatformRegion = async () => {
-		var value: any = await localStorage.getItem('platformRegion');
-		setPlatformRegion(value)
-		console.log(value);
-
-
-	};
-
-	const fetchProject = async () => {
-		try {
-			setIsLoading(true)
-			const result = await ApiService('8011', 'get', '/bh_project/search/');
-			console.log(result);
-			setProjectList(result)
-			setIsLoading(false)
-
-		} catch (error) {
-			console.error('Error fetching data:', error);
-		}
-	};
-	const searchProject = async (search: any) => {
-		console.log('Parent function called' + search);
-		try {
-			const params: any = {
-				bh_project_name: search,
-			};
-			setIsLoading(true)
-			const result = await ApiService('8011','', '/bh_project/search/', null, params);
-			console.log(result);
-			setProjectList(result)
-			setIsLoading(false)
-		} catch (error) {
-			console.error('Error fetching data:', error);
-		}
-
-	};
-
-
-	return (
-		<>
-
-			<div className='' style={{ marginTop: '100px' }}>
-				<EnvironmentHeader search={searchProject} />
-				<br></br>
-                <ProTableData />
-
-				{/* {projectList.length > 0 ? (
-					<ProjectsTable data={{ 'project': projectList, 'codesDtl': codesDtl, 'platformRegion': platformRegion }} />
-				) : (projectList.length == 0 && !isLoading) ? (
-					<>
-						<div style={{ textAlign: 'center', marginLeft: '46%', marginTop: '20%' }}>
-							<img src="assets/images/userlanding/Layer 34.png" width={'15%'} />
-
-						</div>
-						<div style={{ textAlign: 'center', marginTop: '2%', fontSize: '16px' }}>
-							No Project Available
-
-
-						</div>
-						<div style={{ textAlign: 'center', marginTop: '2%', fontSize: '16px' }}>
-							<Button className='px-12 py-2 bg-dark'
-							sx={{textTransform:'none'}}
-								component={Link}
-								to="/Admin-Console/Environment/New"
-								variant="contained"
-								// startIcon={<SwombSvgIcon>heroicons-outline:plus</SwombSvgIcon>}
-								size="small"
-							>
-								Create New Project
-							</Button>
-						</div>
-					</>
-
-				) : (
-					<p>Loading...</p>
-				)} */}
-
-			</div>
-
-
-		</>
-	);
+  return (
+    <Box sx={{ mt: 8, px: 2 }}>
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Typography color="error">Error: {error}</Typography>
+      ) : environmentList.length > 0 ? (
+        <>
+          <EnvironmentHeader search={searchProject} />
+          <ProTableData
+            data={environmentList}
+            excludeKeys={[
+              'created_at', 'updated_at', 'created_by', 'updated_by', 'bh_env_id', 'bh_env_name', 
+              'bh_env_provider', 'cloud_provider_cd', 'pvt_key', 'tags', 'access_key', 'status_cd', 
+              'airflow_bucket_name', 'project_id', 'bh_env_provider_name', 'cloud_provider_name', 'cloud_region_cd', 'location', 'airflow_env_name', 
+              'airflow_url', 'secret_access_key'
+            ]}
+            onEdit={handleEdit}
+            onStatusChange={handleStatusChange}
+          />
+        </>
+      ) : (
+        <NoEnvironmentsComponent />
+      )}
+    </Box>
+  );
 }
 
-export default Projects;
+export default Environments;

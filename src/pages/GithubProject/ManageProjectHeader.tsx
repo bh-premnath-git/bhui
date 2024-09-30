@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomAutoComplete from '../../common/CustomAutoComplete';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import SearchIcon from '@mui/icons-material/Search';
 import { getGitProject } from '../../Redux/ProjectSlice';
 
 interface Project {
@@ -17,11 +16,15 @@ interface Pipeline {
     status: string;
 }
 
+interface FormValues {
+    bh_project_name: string;
+    status: string | null;
+}
+
 export default function ManageProjectHeader() {
     const navigate = useNavigate();
-    const dispatch=useDispatch();
-    const { param, gitProjectList,searchProjectList } = useSelector((state: RootState) => state.projectApi);
-    console.log(gitProjectList)
+    const dispatch = useAppDispatch();
+    const { searchProjectList } = useAppSelector((state: RootState) => state.projectApi);
 
     const pipeLineList: Pipeline[] = [
         { status: 'Active' },
@@ -35,27 +38,24 @@ export default function ManageProjectHeader() {
     });
 
     // Initial Values
-    const initialValues = {
+    const initialValues: FormValues = {
         bh_project_name: '',
         status: null,
     };
 
-    const handleSubmit = (values: any) => {
-        console.log('Form values:', values);
-        dispatch(getGitProject(values))
-        // Handle form submission logic here
+    const handleSubmit = (values: FormValues) => {
+        dispatch(getGitProject(values));
     };
-    
 
     const handleNewProject = () => navigate('/All Projects/New');
 
     return (
-        <Formik
+        <Formik<FormValues>
             initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
         >
-            {({ isSubmitting, values }) => (
+            {() => (
                 <Form>
                     <Stack direction="row" spacing={4} justifyContent="space-between">
                         <Stack direction="row" spacing={4}>
@@ -63,34 +63,19 @@ export default function ManageProjectHeader() {
                                 name="bh_project_name"
                                 options={searchProjectList}
                                 placeholder="Filter by project name"
-                                getOptionLabel={(option: any) => option?.bh_project_name}
+                                getOptionLabel={(option: Project) => option.bh_project_name}
                             />
                             <CustomAutoComplete
                                 name="status"
                                 options={pipeLineList}
                                 placeholder="Status"
-                                getOptionLabel={(option) => option.status}
+                                getOptionLabel={(option: Pipeline) => option.status}
                             />
                         </Stack>
 
-                        <Stack direction={'row'} spacing={2}>
-                            <Button 
-                                variant="contained"
-                                 type="submit"
-                                sx={{
-                                    bgcolor: 'black',
-                                    color: 'white',
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                        bgcolor: 'black',
-                                    },
-                                }}
-                            >
-                                <SearchIcon sx={{ mr: 1, fontSize: 16 }} />
-                                Search
-                            </Button>
-                            <Button onClick={handleNewProject}
-                               
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                onClick={handleNewProject}
                                 variant="contained"
                                 sx={{
                                     bgcolor: 'black',
@@ -106,8 +91,7 @@ export default function ManageProjectHeader() {
                         </Stack>
                     </Stack>
                 </Form>
-            )
-            }
+            )}
         </Formik>
     );
 }

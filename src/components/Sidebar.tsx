@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import "../Styles/MenuItem.css";
 import { COLORS } from '../Utils/constants';
@@ -12,24 +12,35 @@ interface MenuItem {
 
 const Sidebar: React.FC<{ menuItems: MenuItem[] }> = ({ menuItems }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null); // Track selected item
+  const [menuClicked, setMenuClicked] = useState(false);
   const location = useLocation();
   const { pathname } = location;
 
-  const handleMouseEnter = () => setIsHovered(true);
-  const handleMouseLeave = () => setIsHovered(false);
+  const handleMouseEnter = () => {
+    if (!menuClicked) {
+      setIsHovered(true);
+    }
+  };
 
-  const handleMenuItemClick = (itemName: string) => setSelectedItem(itemName);
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setMenuClicked(false);
+  };
 
-  // Define an array of paths where the Sidebar should be hidden
+  // Collapse sidebar when pathname changes
+  useEffect(() => {
+    setIsHovered(false);
+    setMenuClicked(true);
+  }, [pathname]);
+
   const pathsToHideSidebar = ['/'];
-
-  // Check if the current path is in the array of paths to hide the Sidebar
   const hideSidebar = pathsToHideSidebar.includes(pathname);
 
+  const filteredMenuItems = menuItems.filter(item => item.name !== 'Home');
+
   if (hideSidebar) {
-    return null; // Return null if the Sidebar should be hidden
-  }else{
+    return null;
+  } else {
     return (
       <div
         className="sidebar mt-3"
@@ -40,33 +51,67 @@ const Sidebar: React.FC<{ menuItems: MenuItem[] }> = ({ menuItems }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <ul className='text-dark mx-2' style={{ textAlign: isHovered ? 'start' : 'center' }}>
-          {menuItems.map((menuItem, index) => (
-            <Link key={index} to={menuItem.link} className='text-dark'>
-  
-              <li  className={`${menuItem.submenu ? 'sun' : 'hover'}  ${selectedItem === menuItem.name ? 'selected' : ''}`} onClick={() => handleMenuItemClick(menuItem.name)}>
-                {menuItem.icon}
-                {isHovered && <span className="sidebar-text px-2 h6">{menuItem.name}</span>}
+        <ul
+          className='text-dark mx-2'
+          style={{ textAlign: isHovered ? 'start' : 'center' }}
+        >
+          {filteredMenuItems.map((menuItem, index) => {
+            // Check if current pathname matches menuItem link or any of its submenu links
+            const isSubItemSelected =
+              menuItem.submenu &&
+              menuItem.submenu.some(subItem => pathname === subItem.link);
+
+            const isMenuItemSelected = pathname === menuItem.link || isSubItemSelected;
+
+            return (
+              <li
+                key={index}
+                className={`${menuItem.submenu ? 'has-submenu' : ''} ${
+                  isMenuItemSelected ? 'selected' : ''
+                }`}
+              >
+                <Link
+                  to={menuItem.link}
+                  className={`text-dark sidebar-link ${
+                    isMenuItemSelected ? 'selected-link' : ''
+                  }`}
+                >
+                  {menuItem.icon}
+                  {isHovered && (
+                    <span className="sidebar-text px-2 h6">{menuItem.name}</span>
+                  )}
+                </Link>
                 {menuItem.submenu && isHovered && (
                   <ul className="submenu">
-                    {menuItem.submenu.map((subItem, subIndex) => (
-                      <Link to={subItem.link} key={subIndex}>
-                        <li  className='hover '>
-                          <span style={{marginRight:'16px'}}></span>{subItem.name}</li>
-                      </Link>
-                    ))}
+                    {menuItem.submenu.map((subItem, subIndex) => {
+                      const isSubItemActive = pathname === subItem.link;
+
+                      return (
+                        <li
+                          key={subIndex}
+                          className={`${isSubItemActive ? 'selected' : ''}`}
+                        >
+                          <Link
+                            to={subItem.link}
+                            className={`submenu-link ${
+                              isSubItemActive ? 'selected-link' : ''
+                            }`}
+                          >
+                            <span style={{ marginRight: '16px' }}></span>
+                            {subItem.name}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </li>
-            </Link>
-  
-          ))}
+            );
+          })}
         </ul>
       </div>
     );
   }
-
- 
 };
 
 export default Sidebar;

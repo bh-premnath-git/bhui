@@ -13,7 +13,6 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
     const [selected, setSelected] = React.useState(false);
     const dispatch = useDispatch();
     const { dataSource } = useSelector((state: RootState) => state.buildPipeLineApi);
-    console.log(dataSource)
     const handleClick = () => {
         setShowText(!showText);
     };

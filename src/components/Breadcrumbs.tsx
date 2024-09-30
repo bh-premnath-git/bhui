@@ -55,7 +55,6 @@ const Crumbs: React.FC<{ currentStep?: number }> = ({ currentStep }) => {
           const proName = isProjectData && currentStep !== undefined ? ` ${projectSteps[currentStep]}` : decodedName;
           const onboardName = isOnboardData && currentStep !== undefined ? ` ${onboardSteps[currentStep]}` : decodedName;
           const customerName = isCustomerData && currentStep !== undefined ? ` ${customerSteps[currentStep]}` : decodedName;
-          console.log(routeTo)
           return (
             <li key={name} className={`crumb-item ${isLast ? 'active' : ''} h6 mt-1`}>
               {isPublishData ? (

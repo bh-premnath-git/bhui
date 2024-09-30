@@ -21,7 +21,6 @@ function Customers() {
 				relation_ship_owner: search
 			}; 
 			const result = await ApiService('8011', 'get', '/customer/search', null, params);
-			console.log(result);
 			setManageCustomerList(result)
 		} catch (error) {
 			console.error('Error fetching data:', error);

@@ -113,7 +113,7 @@ function AlertHeader() {
                                 Alert Summary
                             </Typography>
                             <div style={{ position: 'absolute', top: 20, right: 100 }}>
-                                <img src="public/assets/designer/Bg design.png" alt="" width={'200px'} />
+                                <img src="/assets/designer/Bg design.png" alt="" width={'200px'} />
                             </div>
                         </Stack>
                         <Stack direction={'row'} spacing={4} mt={1} px={2}> {/* Reduced spacing and padding */}

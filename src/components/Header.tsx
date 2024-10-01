@@ -50,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, step }) => {
   return (
     <header className="flex items-center justify-between px-6 py-1 bg-white shadow-sm">
       <div className="flex items-center space-x-4">
-        <img src="/assets/logo/fixLogo.svg" alt="Logo" className="w-12 h-12" />
+        <img src="/assets/logo/fixLogo.svg" alt="Logo" className="w-10 h-10" />
         <Breadcrumbs currentStep={step} />
       </div>
       <Button

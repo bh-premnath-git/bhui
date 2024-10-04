@@ -1,98 +1,94 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { jwtDecode } from "jwt-decode";
-import { Avatar, Button, Popover, Divider } from '@mui/material';
-import BuildPipeLineHeader from '../pages/BuildPipeline/BuildPipeLineHeader';
-import FlowHeader from '../pages/ManageFlow/FlowHeader';
-import Breadcrumbs from './Breadcrumbs';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import React from "react";
+import { ChevronDown } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import logo from "/assets/logo/fixLogo.svg";
 
 interface HeaderProps {
-  onLogout: () => void;
-  step: any;
+  isAuthenticated?: boolean;
+  logout?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, step }) => {
+export function Header(props: HeaderProps) {
+
   const location = useLocation();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [tokenData, setTokenData] = useState<any>(null);
+  const navigate = useNavigate();
+  const { pathname } = location;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = sessionStorage.getItem('token');
-      if (token) {
-        const decoded = jwtDecode(token);
-        setTokenData(decoded);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const renderHeaderContent = (renderContent: (() => React.ReactNode) | React.ReactNode | string) => {
+    if (typeof renderContent === 'function') {
+      return renderContent();
+    }
+    if (React.isValidElement(renderContent)) {
+      return renderContent;
+    }
+    if (typeof renderContent === 'string') {
+      return <div className="text-lg font-semibold">{renderContent}</div>;
+    }
+    return null;
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const openLinkDialog = () => {
-    onLogout();
-    handleClose();
-  };
-
-  const pathsToHideHeader = ['/'];
-  const hideHeader = pathsToHideHeader.includes(location.pathname);
-
-  if (hideHeader) return null;
-  if (location.pathname === "/Designer/Build-Data-Pipe-Line") return <BuildPipeLineHeader />;
-  if (location.pathname === '/Designer/FlowPlayGround') return <FlowHeader />;
   return (
-    <header className="flex items-center justify-between px-6 py-1 bg-white shadow-sm">
-      <div className="flex items-center space-x-4">
-        <img src="/assets/logo/fixLogo.svg" alt="Logo" className="w-10 h-10" />
-        <Breadcrumbs currentStep={step} />
-      </div>
-      <Button
-        onClick={handleOpen}
-        style={{ 
-          color: 'black', 
-          textTransform: 'none',
-          backgroundColor: 'transparent'
-        }}
-        endIcon={<ArrowDropDownIcon />}
-      >
-        <Avatar
-          src="/assets/logo/logo.png"
-          alt={tokenData?.name}
-          style={{ marginRight: '8px', width: '35px', height: '35px' }}
-          className="rounded-circle"
-        />
-        <div className="flex flex-col items-start">
-          <span className="text-sm font-medium myHeadFont">{tokenData?.email || 'User'}</span>
-          <span className="text-xs text-secondary myFont">{tokenData?.name || 'Admin'}</span>
+    <header className="flex items-center justify-between px-6 py-3 bg-white border-b">
+      <div className="flex items-center">
+        <div className="pr-4 border-r">
+          <img
+            src={logo}
+            className="h-8 w-8 cursor-pointer"
+            sizes="(min-width: 904px) 32vw, 64vw"
+            width={32}
+            height={32}
+            onClick={() => navigate("/dashboard")}
+          />
         </div>
-      </Button>
-      <Popover
-        id={Boolean(anchorEl) ? 'user-popover' : undefined}
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-      >
-        <Button className='mmf' sx={{ mx: 1, color: 'black', textTransform: 'none' }} onClick={openLinkDialog}>LogOut</Button>
-        <Divider style={{ color: 'grey' }} />
-        <Button className='mmf' sx={{ mx: 1, color: 'black', textTransform: 'none' }} onClick={handleClose}>Edit Profile</Button>
-      </Popover>
+        <div className="pl-4">
+          {renderHeaderContent(renderingHeadContent(pathname))}
+        </div>
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="flex items-center space-x-3 bg-transparent hover:bg-gray-100 p-2 rounded-lg transition-colors">
+            <img
+              src="https://assets.imgix.net/examples/pione.jpg"
+              sizes="(min-width: 1024px) 40vw, 90vw"
+              className="rounded-full"
+              width={24}
+              height={24}
+              alt="User avatar"
+            />
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium">John Doe</span>
+              <span className="text-xs text-gray-500">Admin</span>
+            </div>
+            <ChevronDown className="h-4 w-4 text-gray-500" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Log out</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
-};
+}
 
-export default Header;
+function renderingHeadContent(content: string) {
+  // console.log(content);
+  if (content === "/dashboard") {
+    return <span className="w-2/5 font-bold">Dashboard</span>;
+  }
+  return "";
+}

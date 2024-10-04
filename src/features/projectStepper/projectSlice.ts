@@ -1,6 +1,6 @@
 // src/features/stepper/stepperSlice.js
 import { createSlice } from '@reduxjs/toolkit';
-import ProjectDetailsTab from '../../pages/Admin-Console/Project/Component/tabs/EnvDetailsTab';
+import ProjectDetailsTab from '../../oldpages/Admin-Console/Project/Component/tabs/EnvDetailsTab';
 
 const initialState = {
   currentStep: 1,

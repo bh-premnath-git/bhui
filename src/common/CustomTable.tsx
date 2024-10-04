@@ -5,8 +5,8 @@ import {
 import { styled } from '@mui/material/styles';
 import MoreVert from '@mui/icons-material/MoreVert';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../Redux/hooks';
-import { setSelectedFlowFromList } from '../Redux/FlowSlice';
+import { useAppDispatch } from '../redux/hooks';
+import { setSelectedFlowFromList } from '../redux/FlowSlice';
 
 // Styled TableRow component
 const StyledTableRow = styled(TableRow)(({ theme }) => ({

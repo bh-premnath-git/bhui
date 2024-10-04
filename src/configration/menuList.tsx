@@ -1,4 +1,3 @@
-import { CgNotes } from "react-icons/cg";
 import { FaRegFile } from "react-icons/fa";
 import { FiHome } from "react-icons/fi";
 import { TiFlowSwitch } from "react-icons/ti";
@@ -7,45 +6,40 @@ import { MdOutlinePerson } from "react-icons/md";
 
 export const menuList = [
     {
-        name: "Home",
+        label: "Home",
         icon: <FiHome className='h5' />,
-        link: "/Home"
+        path: "/dashboard"
     },
     {
-        name: "Data Catalog",
+        label: "Data Catalog",
         icon: <FaRegFile className='h5' />,
-        link: "/Data Catalog"
+        path: "/data-catalog"
     },
-    // {
-    //     name: "Data Glossary",
-    //     icon: <CgNotes className='h5' />,
-    //     link: "/Data Glossary"
-    // },
     {
-        name: "Designer",
+        label: "Designer",
         icon: <TiFlowSwitch className='h5' />,
-        link: "/Designers",
-        submenu: [
-            { name: "Onboard Data", link: "/Designer/Onboard Data" },
-            { name: "Build Data Pipelines", link: "/Designer/Build Data Pipe Line" },
-            { name: "Code Data Pipelines", link: "/Designer/Code Data Pipelines" },
-            { name: "Manage Flow", link: "/Designer/Manage Flow" },
-            { name: " Publish Data", link: "/Designer/Publish Data" }
+        path: "/designer",
+        subPaths: [
+           /*  { label: "Onboard Data", path: "/designer/onboard-data" }, */
+            { label: "Build Data Pipelines", path: "/designer/build-data-pipe-line" },
+           /*  { label: "Code Data Pipelines", path: "/designer/code-data-pipelines" }, */
+            { label: "Manage Flow", path: "/designer/manage-flow" },
+           /*  { label: "Publish Data", path: "/designer/publish-data" } */
         ]
     },
     {
-        name: "DataOps Hub",
+        label: "DataOps Hub",
         icon: <MdOutlinePodcasts className='h5' />,
-        link: "/DataOps Hub/Dashboard",
-        submenu: [
-            { name: "Ops Hub", link: "/DataOps Hub/Ops Hub" },
-            { name: "Explorer", link: "/DataOps Hub/Explorer" },
-            { name: "Alerts", link: "/Alerts" },
+        path: "/dataops-hub/dashboard",
+        subPaths: [
+            { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
+            { label: "Explorer", path: "/dataops-hub/explorer" },
+            { label: "Alerts", path: "/alerts" },
         ]
     },
     {
-        name: "Admin Console",
+        label: "Admin Console",
         icon: <MdOutlinePerson className='h5' />,
-        link: "/Admin Console"
+        path: "/admin-console"
     },
 ]

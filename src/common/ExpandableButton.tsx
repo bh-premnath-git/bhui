@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import SearchIcon from '@mui/icons-material/Search';
 import { debounce } from 'lodash';
-import NewSourcePopUp from '../pages/BuildPipeline/components/popups/NewSourcePopUp';
+import NewSourcePopUp from '../oldpages/BuildPipeline/components/popups/NewSourcePopUp';
 import { useDispatch, useSelector } from 'react-redux';
-import { getSource } from '../Redux/BuildPipeLineSlice';
-import { RootState } from '../Redux/store';
+import { getSource } from '../redux/BuildPipeLineSlice';
+import { RootState } from '../redux/store';
 
 const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, dataSet }) => {
     const [showText, setShowText] = useState(false);
@@ -46,15 +46,15 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
             dispatch(getSource({ offset: 0, limit: 10, order_desc: false }));
         }
 
-    }, [dispatch,dataSource.length>0])
+    }, [dispatch, dataSource.length > 0])
 
-    const imgList=[
-        {id:1,img:'/assets/buildPipeline/7.png',line:'/assets/buildPipeline/Line 1.png'},
-        {id:2,img:'/assets/buildPipeline/bigquery.png',line:'/assets/buildPipeline/Line 5.png'},
-        {id:3,img:'/assets/buildPipeline/file.png',line:'/assets/buildPipeline/Line 5.png'},
-        {id:4,img:'/assets/buildPipeline/gcs.png',line:'/assets/buildPipeline/Line 5.png'},
-        {id:5,img:'/assets/buildPipeline/snowflake.png',line:'/assets/buildPipeline/Line 5.png'},
-        {id:6,img:'/assets/buildPipeline/xl.png',line:'/assets/buildPipeline/Line 1.png'}
+    const imgList = [
+        { id: 1, img: '/assets/buildPipeline/7.png', line: '/assets/buildPipeline/Line 1.png' },
+        { id: 2, img: '/assets/buildPipeline/bigquery.png', line: '/assets/buildPipeline/Line 5.png' },
+        { id: 3, img: '/assets/buildPipeline/file.png', line: '/assets/buildPipeline/Line 5.png' },
+        { id: 4, img: '/assets/buildPipeline/gcs.png', line: '/assets/buildPipeline/Line 5.png' },
+        { id: 5, img: '/assets/buildPipeline/snowflake.png', line: '/assets/buildPipeline/Line 5.png' },
+        { id: 6, img: '/assets/buildPipeline/xl.png', line: '/assets/buildPipeline/Line 1.png' }
     ];
     const getRandomImage = () => {
         const randomIndex = Math.floor(Math.random() * imgList.length);
@@ -129,8 +129,8 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
             </div>
             <NewSourcePopUp isOpen={selected} onClose={closePopup} />
         </>
- 
+
     );
 };
-       
+
 export default ExpandableButton;

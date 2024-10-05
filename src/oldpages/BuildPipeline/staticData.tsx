@@ -1,0 +1,258 @@
+import { useSelector } from "react-redux";
+
+export const buildData = [
+    {
+        id: 1,
+        icon: <img src="/assets/buildPipeline/13.png" alt="" width={18} height={18} />,
+        text: 'Source',
+        className: 'bg-orange text-white ',
+        title: 'Source',
+        dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/8.png',
+                line: '/assets/buildPipeline/Line 2.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/9.png',
+                line: '/assets/buildPipeline/Line 3.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 2, icon: <img src="/assets/buildPipeline/14.png" alt="" width={18} height={18} />,
+        text: 'Target', className: 'bg-success text-white', title: 'Target', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 3, icon: <img src="/assets/buildPipeline/15.png" alt="" width={18} height={18} />,
+        text: 'Filter', className: 'bg-warning text-white', title: 'Filter', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/8.png',
+                line: '/assets/buildPipeline/Line 2.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/8.png',
+                line: '/assets/buildPipeline/Line 2.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/8.png',
+                line: '/assets/buildPipeline/Line 2.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 4, icon: <img src="/assets/buildPipeline/16.png" alt="" width={18} height={18} />,
+        text: 'Join', className: 'bg-pink text-white ', title: 'Join', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/9.png',
+                line: '/assets/buildPipeline/Line 3.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/9.png',
+                line: '/assets/buildPipeline/Line 3.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/9.png',
+                line: '/assets/buildPipeline/Line 3.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 5, icon: <img src="/assets/buildPipeline/17.png" alt="" width={18} height={18} />,
+        text: 'Router', className: 'bg-porple text-white', title: 'Router', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/route.png',
+                line: '/assets/buildPipeline/Line 4.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/route.png',
+                line: '/assets/buildPipeline/Line 4.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/route.png',
+                line: '/assets/buildPipeline/Line 4.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 6, icon: <img src="/assets/buildPipeline/18.png" alt="" width={18} height={18} />,
+        text: 'Transform', className: 'bg-info text-white', title: 'Transform', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/11.png',
+                line: '/assets/buildPipeline/Line 5.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/11.png',
+                line: '/assets/buildPipeline/Line 5.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/11.png',
+                line: '/assets/buildPipeline/Line 5.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 7, icon: <img src="/assets/buildPipeline/19.png" alt="" width={18} height={18} />,
+        text: 'Ship', className: 'bg-rose text-white', title: 'Ship', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/ship.png',
+                line: '/assets/buildPipeline/Line 6.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/ship.png',
+                line: '/assets/buildPipeline/Line 6.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/ship.png',
+                line: '/assets/buildPipeline/Line 6.png',
+                title: 'Order',
+            }
+        ]
+    },
+    {
+        id: 8, icon: <img src="/assets/buildPipeline/20.png" alt="" width={18} height={18} />,
+        text: '', className: 'bg-dark-lin', title: 'Transformation', dataSet: [
+            {
+                id: 1,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            },
+            {
+                id: 2,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            },
+            {
+                id: 3,
+                lead: '/assets/buildPipeline/7.png',
+                line: '/assets/buildPipeline/Line 1.png',
+                title: 'Order',
+            }
+        ]
+    },
+    // { id: 7, icon: <IoMdAdd />, text: 'Add Transformation', className: 'bg-white text-dark border',line: '/assets/buildPipeline/Line 1.png',titles: ['Sort', 'Aggregate', 'Lookup', 'Aggregate', 'Deduplicate', 'Limit','Aggregate','Union']},
+];
+
+
+export const transformList = [
+    {
+        id: 1,
+        lead: '/assets/buildPipeline/sort.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Sort',
+    },
+    {
+        id: 2,
+        lead: '/assets/buildPipeline/aggrigate.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Aggregate',
+    },
+    {
+        id: 3,
+        lead: '/assets/buildPipeline/lookup.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Lookup',
+    },
+    {
+        id: 4,
+        lead: '/assets/buildPipeline/dq.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'DQ Check',
+    },
+    {
+        id: 5,
+        lead: '/assets/buildPipeline/dedupe.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Dedupe',
+    },
+    {
+        id: 6,
+        lead: '/assets/buildPipeline/repartician.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Repartition ',
+    },
+    {
+        id: 7,
+        lead: '/assets/buildPipeline/sql.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'SQL Transformation',
+    },
+    {
+        id: 8,
+        lead: '/assets/buildPipeline/union.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Union',
+    },
+    {
+        id: 9,
+        lead: '/assets/buildPipeline/limit.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Limit',
+    },
+    {
+        id: 10,
+        lead: '/assets/buildPipeline/change-detection.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Change Detection',
+    }
+];
+

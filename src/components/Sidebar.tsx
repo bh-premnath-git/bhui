@@ -1,117 +1,110 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import "../Styles/MenuItem.css";
-import { COLORS } from '../Utils/constants';
+import { menuList } from '@/configration/menuList';
 
-interface MenuItem {
-  name: string;
+interface NavItem {
   icon: React.ReactNode;
-  link: string;
-  submenu?: { name: string; link: string }[];
+  path: string;
+  label: string;
+  subPaths?: { path: string; label: string }[];
 }
 
-const Sidebar: React.FC<{ menuItems: MenuItem[] }> = ({ menuItems }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [menuClicked, setMenuClicked] = useState(false);
-  const location = useLocation();
-  const { pathname } = location;
+const navItems: NavItem[] = menuList;
 
-  const handleMouseEnter = () => {
-    if (!menuClicked) {
-      setIsHovered(true);
-    }
-  };
+export function Sidebar() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [shouldCollapse, setShouldCollapse] = useState(false);
+  const { pathname } = useLocation();
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMenuClicked(false);
-  };
-
-  // Collapse sidebar when pathname changes
   useEffect(() => {
-    setIsHovered(false);
-    setMenuClicked(true);
-  }, [pathname]);
+    setIsMounted(true);
+  }, []);
 
-  const pathsToHideSidebar = ['/'];
-  const hideSidebar = pathsToHideSidebar.includes(pathname);
-
-  const filteredMenuItems = menuItems.filter(item => item.name !== 'Home');
-
-  if (hideSidebar) {
+  if (!isMounted) {
     return null;
-  } else {
-    return (
-      <div
-        className="sidebar mt-3"
-        style={{
-          width: isHovered ? 280 : 80,
-          backgroundColor: COLORS.SidebarBg
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <ul
-          className='text-dark mx-2'
-          style={{ textAlign: isHovered ? 'start' : 'center' }}
-        >
-          {filteredMenuItems.map((menuItem, index) => {
-            // Check if current pathname matches menuItem link or any of its submenu links
-            const isSubItemSelected =
-              menuItem.submenu &&
-              menuItem.submenu.some(subItem => pathname === subItem.link);
+  }
 
-            const isMenuItemSelected = pathname === menuItem.link || isSubItemSelected;
-
-            return (
-              <li
-                key={index}
-                className={`${menuItem.submenu ? 'has-submenu' : ''} ${
-                  isMenuItemSelected ? 'selected' : ''
-                }`}
-              >
+  return (
+    <aside
+      className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
+        isExpanded ? 'w-64' : 'w-16'
+      }`}
+      onMouseEnter={() => {
+        if (!shouldCollapse) {
+          setIsExpanded(true);
+        }
+      }}
+      onMouseLeave={() => {
+        setIsExpanded(false);
+        setShouldCollapse(false);
+      }}
+      role="navigation"
+      aria-label="Main Navigation"
+    >
+      <div className="flex flex-col h-full p-2">
+        <nav className="flex-1 mt-1 overflow-y-auto">
+          <ul className="space-y-1">
+            {navItems.map((item) => (
+              <li key={item.path} className="relative">
                 <Link
-                  to={menuItem.link}
-                  className={`text-dark sidebar-link ${
-                    isMenuItemSelected ? 'selected-link' : ''
+                  to={item.path}
+                  className={`flex items-center p-2 rounded-lg text-black transition-colors duration-200 ${
+                    pathname === item.path
+                      ? 'text-white bg-gray-400'
+                      : 'hover:text-white hover:bg-gray-400'
                   }`}
+                  aria-current={pathname === item.path ? 'page' : undefined}
+                  onClick={() => {
+                    setIsExpanded(false);
+                    setShouldCollapse(true);
+                  }}
                 >
-                  {menuItem.icon}
-                  {isHovered && (
-                    <span className="sidebar-text px-2 h6">{menuItem.name}</span>
-                  )}
+                  <span className="flex items-center min-w-[22px] mr-1">{item.icon}</span>
+                  <span
+                    className={`whitespace-nowrap transition-all duration-300 ${
+                      isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </Link>
-                {menuItem.submenu && isHovered && (
-                  <ul className="submenu">
-                    {menuItem.submenu.map((subItem, subIndex) => {
-                      const isSubItemActive = pathname === subItem.link;
-
-                      return (
-                        <li
-                          key={subIndex}
-                          className={`${isSubItemActive ? 'selected' : ''}`}
+                {item.subPaths && (
+                  <ul
+                    className={`ml-6 space-y-1 overflow-hidden transition-all duration-300 ${
+                      isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+                    role="menu"
+                    aria-label={`${item.label} submenu`}
+                  >
+                    {item.subPaths.map((subPath) => (
+                      <li key={subPath.path} role="none">
+                        <Link
+                          to={subPath.path}
+                          className={`flex items-center p-1.5 text-sm rounded-md text-black transition-colors duration-200 ${
+                            pathname === subPath.path
+                              ? 'text-white bg-gray-400'
+                              : 'hover:text-white hover:bg-gray-400'
+                          }`}
+                          role="menuitem"
+                          aria-current={pathname === subPath.path ? 'page' : undefined}
+                          onClick={() => {
+                            setIsExpanded(false);
+                            setShouldCollapse(true);
+                          }}
                         >
-                          <Link
-                            to={subItem.link}
-                            className={`submenu-link ${
-                              isSubItemActive ? 'selected-link' : ''
-                            }`}
-                          >
-                            <span style={{ marginRight: '16px' }}></span>
-                            {subItem.name}
-                          </Link>
-                        </li>
-                      );
-                    })}
+                          <span className="w-1.5 h-1.5 mr-2"></span>
+                          <span className="whitespace-nowrap">{subPath.label}</span>
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        </nav>
       </div>
-    );
-  }
-};
-
-export default Sidebar;
+    </aside>
+  );
+}

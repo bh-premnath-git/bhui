@@ -70,8 +70,8 @@ const columns: ColumnConfig[] = [
     key: 'status',
     header: 'Status',
     type: 'badge',
-    sortable: false,
-    filterable: false,
+    sortable: true,
+    filterable: true,
     badgeConfig: {
       colorMap: {
         active: 'bg-green-500',

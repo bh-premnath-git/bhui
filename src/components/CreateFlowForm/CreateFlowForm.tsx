@@ -174,20 +174,20 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
         dispatch(setSelectedFlowFromList(result.payload));
         setModalStatus('success');
         setTimeout(() => {
-          navigate('/Designer/FlowPlayGround');
+          navigate('/designer/flow-playground');
           setIsModalOpen(false);
         }, 4000);
       } else {
         setModalStatus('error');
         setTimeout(() => {
-          navigate('/Designer/Manage Flow');
+          navigate('/designer/manage-flow');
           setIsModalOpen(false);
         }, 3000);
       }
     } catch (err) {
       setModalStatus('error');
       setTimeout(() => {
-        navigate('/Designer/Manage Flow');
+        navigate('/designer/manage-flow');
         setIsModalOpen(false);
       }, 3000);
     }

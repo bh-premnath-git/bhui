@@ -98,3 +98,48 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+
+.bg-pink{
+  background-color: #FF7396;
+}
+
+
+.bg-porple{
+  background-color: #804FBF;
+}
+.bg-rose{
+  background-color: #C049C0;
+}
+.bg-box{
+  background-color: #F6F7F7;
+}
+
+label{
+  margin-top: 3px !important;
+  margin-bottom: 3px !important;
+}
+
+.error{
+color: red !important;
+}
+.bg-orange{
+  background-color: #F7A01F;
+}
+.bg-dark-lin{
+  background-image: linear-gradient(to right, rgb(20, 18, 18) , rgb(126, 126, 125)); 
+} 
+
+.css-78c6dr-MuiToolbar-root-MuiTablePagination-toolbar {
+  align-items: baseline !important;
+}
+
+.fw-bold{
+  font-weight: bolder !important;
+}
+
+th{
+  font-size: 15px !important;
+  font-weight: bold !important;
+  font-family: 'Inter';
+}

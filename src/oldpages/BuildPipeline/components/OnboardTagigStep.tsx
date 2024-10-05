@@ -8,6 +8,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as yup from 'yup';
 import { useLocation } from 'react-router';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import TagDialog from '../../../common/TagDialog';
 type Tag = {
     tagKey: string;
     tagValue: string;
@@ -60,55 +61,16 @@ function OnboardTaggingStep(props: any) {
                     />
                 ))}
             </div>
+            <TagDialog
+                    isOpen={isOpen}
+                    closeDialog={() => setIsOpen(false)}
+                    tags={tags}
+                    setTags={setTags}
+                />
 
-            <Dialog open={isOpen} onClose={() => setIsOpen(false)} PaperProps={{ sx: { borderRadius: '2px' } }}>
-                <DialogTitle mx={2} px={5} className='text-start'>Add Tags</DialogTitle>
-                <DialogContent sx={{ width: '350px' }}>
-                    <Formik
-                        initialValues={{ tagKey: '', tagValue: '' }}
-                        validationSchema={validationSchema}
-                        onSubmit={handleSubmit}
-                        enableReinitialize={true}
-                    >
-                        {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
-                            <Form style={{ textAlign: 'center' }}>
-                                <div>
-                                    <div style={{ paddingTop: '8px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '21px' }}>
-                                        <label htmlFor="tagKey">Tag Key</label>
-                                    </div>
-                                    <Field type="text" id="tagKey" name="tagKey" as={TextField} />
-                                    <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                        <ErrorMessage name="tagKey" component="div" />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{ paddingTop: '8px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '21px' }}>
-                                        <label className='py-12 my-12' htmlFor="tagValue">Tag Value</label>
-                                    </div>
-                                    <Field type="text" id="tagValue" name="tagValue" as={TextField} />
-                                    <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                        <ErrorMessage name="tagValue" component="div" />
-                                    </div>
-                                </div>
-
-                                <DialogActions sx={{ justifyContent: 'space-between', mx: 3, my: 2 }}>
-                                    <Button onClick={() => setIsOpen(false)} variant="contained" size="large"
-                                        className='bg-secondary'>
-                                        Close
-                                    </Button>
-                                    <Button type='submit' variant="contained" className='bg-dark' size="large" sx={{ width: 80 }}>
-                                        Ok
-                                    </Button>
-                                </DialogActions>
-                            </Form>
-                        )}
-                    </Formik>
-                </DialogContent>
-            </Dialog>
-
+           
             <div className='text-start text-success'>
-                <Button onClick={() => setIsOpen(true)}
+                <Button onClick={() => setIsOpen(true)} sx={{textTransform:'none'}}
                     className="group inline-flex items-center mt-2 -ml-4 py-2 px-4 rounded cursor-pointer">
                     <AddCircleIcon style={{ color: 'green' }} />
                     <span className={`ml-8 font-large group-hover:underline `} style={{ color: 'green', fontWeight: '600' }}>Add a Tag</span>

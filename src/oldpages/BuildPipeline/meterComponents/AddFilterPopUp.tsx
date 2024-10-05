@@ -3,9 +3,9 @@ import React from 'react';
 import { IoAddCircle, IoCloseSharp } from 'react-icons/io5';
 import { Form, Formik } from 'formik';
 import CustomField from '../../../common/CustomField';
-import { COLORS } from '../../../Utils/constants';
+import { COLORS } from '@/Utils/constants';
 
-export default function AddFilterPopUp({ openFilter, handleFilterClose }) {
+export default function AddFilterPopUp({ openFilter, handleFilterClose }:any) {
     const conditionList = [{ id: 1, conditionName: 'Greater than equal to' }, { id: 2, conditionName: 'Less than equal to' }, { id: 3, conditionName: 'equal to' }]
     const columnList = [{ id: 1, columnName: 'Id' }, { id: 2, columnName: 'Name' }, { id: 3, columnName: 'Age' }]
     return (
@@ -31,7 +31,6 @@ export default function AddFilterPopUp({ openFilter, handleFilterClose }) {
 
                     onSubmit={(values, { setSubmitting }) => {
                         setTimeout(() => {
-                            alert(JSON.stringify(values, null, 2));
                             setSubmitting(false);
                         }, 400);
                     }}

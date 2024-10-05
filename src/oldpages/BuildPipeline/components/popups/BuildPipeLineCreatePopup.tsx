@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Button, Stack, Typography, Modal, Link } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Form, Formik, useFormik } from 'formik';
 import * as Yup from 'yup';
 import CustomField from '../../../../common/CustomField';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store';
+import { getGitProject } from '../../../../redux/ProjectSlice';
+import { insertPipeline } from '../../../../redux/BuildPipeLineSlice';
+import { toast, ToastContainer, ToastPosition } from 'react-toastify';
 
 const style = {
     position: 'absolute' as 'absolute',
@@ -13,8 +18,8 @@ const style = {
     transform: 'translate(-50%, -50%)',
     width: 600,
     bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
+    // border: '2px solid #000',
+    boxShadow: 2,
     p: 4,
 };
 
@@ -24,21 +29,18 @@ interface BuildPipeLineCreatePopupProps {
     open: boolean;
 }
 
-const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ handleClose, open }) => {
-    const navigate = useNavigate();
-    const projectList = [
-        { value: '', label: 'None' },
-        { value: '10', label: 'Ten' },
-        { value: '20', label: 'Twenty' },
-        { value: '30', label: 'Thirty' },
-    ];
+const validationSchema = Yup.object().shape({
+    bh_project_id: Yup.string().required('Project is required'),
+    git_branch: Yup.string().required('Branch is required'),
+    pipeline_name: Yup.string().required('Name is required'),
+});
 
-    const branchList = [
-        { value: '', label: 'None' },
-        { value: 'A', label: 'Branch A' },
-        { value: 'B', label: 'Branch B' },
-        { value: 'C', label: 'Branch C' },
-    ];
+const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ handleClose, open }) => {
+    const {gitProjectList } = useSelector((state: RootState) => state.projectApi);
+    const dispatch = useDispatch();
+    
+
+    const navigate = useNavigate();
 
 
     return (
@@ -57,16 +59,37 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                 </Typography>
                 <Formik
                     initialValues={{
-                        project: '',
-                        branch: '',
-                        name: ''
+                        bh_project_id: '',
+                        git_branch: '',
+                        pipeline_name: ''
                     }}
+                    validationSchema={validationSchema}
 
-                    onSubmit={(values, { setSubmitting }) => {
+                    onSubmit={async (values, { setSubmitting }) => {
+                        let body: any = values;
+                        body.tag = {};
                         // setTimeout(() => {
+                        console.log(body)
+                        var result = await dispatch(insertPipeline(body))
+                        console.log(result);
+                        if (result && result?.payload) {
+                            handleClose();
                             navigate('/Designer/Build-Data-Pipe-Line')
-                            // alert(JSON.stringify(values, null, 2));
-                            setSubmitting(false);
+                        } else {
+                            toast.success("Success Notification !", {
+                                position: 'top-center' as ToastPosition,
+                                progress: undefined,
+                                isLoading: false,
+                                hideProgressBar: true,
+                                style: {
+                                    marginTop: '50px',
+                                    fontWeight: 'bold',
+                                    fontSize: '14px' // Adjust the margin-top value as needed
+                                },
+                            });
+                        }
+                        // alert(JSON.stringify(values, null, 2));
+                        setSubmitting(false);
                         // }, 400);
                     }}
                 >
@@ -77,31 +100,30 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                 <Stack className='w-100'>
                                     <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Project</Stack>
                                     <CustomField
-                                        name="project"
+                                        name="bh_project_id"
                                         label="Project"
                                         controlName="select"
-                                        options={projectList}
-                                        valueKey="value"
-                                        labelKey="label"
+                                        options={gitProjectList}
+                                        valueKey="bh_project_id"
+                                        labelKey="bh_project_name"
                                         size="small"
                                     />
                                 </Stack>
                                 <Stack className='w-100'>
                                     <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Branch</Stack>
                                     <CustomField
-                                        name="branch"
+                                        name="git_branch"
                                         label="Branch"
-                                        controlName="select"
-                                        options={branchList}
-                                        valueKey="value"
-                                        labelKey="label"
+                                        controlName="input"
+                                        placeholder="Enter branch"
                                         size="small"
                                     />
+
                                 </Stack>
                                 <Stack className='w-100'>
                                     <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Name</Stack>
                                     <CustomField
-                                        name="name"
+                                        name="pipeline_name"
                                         label="Name"
                                         controlName="input"
                                         placeholder="Enter name"
@@ -110,7 +132,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                 </Stack>
 
                             </Stack>
-                            <Link
+                            {/* <Link
                                 component="button"
                                 variant="body2"
                                 onClick={() => {
@@ -120,7 +142,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                             >
                                 Add Notes
                                 <ExpandMoreIcon sx={{ ml: 1, color: '#71cce1' }} />
-                            </Link>
+                            </Link> */}
                             <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={'center'}>
                                 <Button className='w-25'
                                     variant="outlined"
@@ -137,6 +159,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                     Create Pipeline
                                 </Button>
                             </Stack>
+                            <ToastContainer />
                         </Form>
                     )}
                 </Formik>

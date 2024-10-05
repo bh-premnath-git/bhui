@@ -164,6 +164,7 @@ function CatalogsHead(props:any) {
                     <TextField
                         variant="outlined"
                         placeholder="Search"
+                        size='small'
                         fullWidth
                         value={searchValue}
                         onChange={searchDataSource}
@@ -179,7 +180,7 @@ function CatalogsHead(props:any) {
                     />
                 </Grid>
                 <Grid item xs={2} textAlign={'center'}>
-                    <Button variant='contained' sx={{ color: 'white', backgroundColor: '#000', my: '8px' }}>
+                    <Button variant='contained' sx={{ color: 'white', backgroundColor: '#000', textTransform:'none' }}>
                         Request Access
                     </Button>
                 </Grid>

@@ -12,6 +12,7 @@ import OnboardTaggingStep from "../OnboardTagigStep";
 import PreviewTable from "../PreviewTable";
 
 export default function OrderPopUp({ isOpen, onClose, nodeData }) {
+    console.log(nodeData)
     const [selected, setSelected] = React.useState(0);
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
 
@@ -92,11 +93,11 @@ export default function OrderPopUp({ isOpen, onClose, nodeData }) {
                                         key={label}
                                         onClick={() => handleClick(index)}
                                         sx={{
-                                            backgroundColor: selected === index ? 'black' : 'lightgray',
+                                            backgroundColor: selected === index ? 'black' : '#DBDBDB',
                                             color: selected === index ? 'white' : 'black',
                                             textTransform: 'none', px: 4,
                                             '&:hover': {
-                                                backgroundColor: selected === index ? 'black' : 'lightgray',
+                                                backgroundColor: selected === index ? 'black' : '#DBDBDB',
                                                 color: selected === index ? 'white' : 'black',
                                             },
                                         }}
@@ -106,7 +107,7 @@ export default function OrderPopUp({ isOpen, onClose, nodeData }) {
                                 ))}
                             </ButtonGroup>
                         </Box>
-                        <Button
+                        {/* <Button
                             className="mmf"
                             variant="contained"
                             sx={{
@@ -123,7 +124,7 @@ export default function OrderPopUp({ isOpen, onClose, nodeData }) {
                         >
                             <BorderColorIcon sx={{ mx: 1 }} />
                             Generate Description
-                        </Button>
+                        </Button> */}
 
                         <Popover
                             id={id}

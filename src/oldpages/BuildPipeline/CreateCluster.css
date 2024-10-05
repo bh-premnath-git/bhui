@@ -87,6 +87,17 @@ a {
    */
 
 
-   .inswitch{
-    box-shadow: none !important;
-   }
+.inswitch {
+  box-shadow: none !important;
+}
+
+
+.exbtn:hover > .show-text {
+  display: block;
+  opacity: 1; 
+}
+.show-text {
+  display: none;
+  transition: opacity 0.9s; /* add transition to opacity */
+  opacity: 0; /* set initial opacity to 0 */
+}

@@ -8,11 +8,11 @@ import WebhookOutlinedIcon from '@mui/icons-material/WebhookOutlined';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import ApiService from '../../Services/ApiServices';
 import { motion } from 'framer-motion';
 import { Typography } from 'antd';
 import CloseIcon from '@mui/icons-material/Close';
 import { AiOutlineCheckCircle } from "react-icons/ai";
+import ApiService from '@/Services/ApiServices';
 
 
 
@@ -65,7 +65,7 @@ function CatalogHead(props: any) {
     const [projects, setProjects]: any = useState<Project[]>([]);
     const [selectedValue, setSelectedValue]: any = useState('');
     const [selectedValue1, setSelectedValue1]: any = useState('');
-    const [selectedConsumer, setSelectedConsumer]: any = useState(''); 
+    const [selectedConsumer, setSelectedConsumer]: any = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [selectedTag, setSelectedTag] = useState({ data_src_id: '', data_src_name: '' });
     console.log(props.dataSourceList)
@@ -84,13 +84,13 @@ function CatalogHead(props: any) {
     //     { 'id': 2, 'tagkey': 'key2', 'tagvalue': 'value2' },
 
     // ]
-    const handleChange = (value) => {
+    const handleChange = (value:any) => {
         setSelectedValue1(value);
     };
-    const handleChangeConsumer = (value) => {
+    const handleChangeConsumer = (value:any) => {
         setSelectedConsumer(value);
     };
-    const handleChangeTag = (field, value) => {
+    const handleChangeTag = (field:any, value:any) => {
         setSelectedTag(prevState => ({
             ...prevState,
             [field]: value,
@@ -120,8 +120,8 @@ function CatalogHead(props: any) {
         setSearchValue(value);
         debouncedSearchLayout(value);
         setSelectedRow(selectedRow)
-      
-        
+
+
     };
     const handleMenuItemClick = (value: any) => {
         setSelectedValue(value);
@@ -189,9 +189,9 @@ function CatalogHead(props: any) {
     // };
     const handleSearchDatasource = () => {
         console.log(selectedTag)
-		const selectedRow = props.dataSourceList.find(data => data.data_src_name === selectedTag.data_src_name);
-		props.onSearch(selectedTag,selectedRow); // Pass the selected value and row to the parent component
-	};
+        const selectedRow = props.dataSourceList.find((data:any) => data.data_src_name === selectedTag.data_src_name);
+        props.onSearch(selectedTag, selectedRow); // Pass the selected value and row to the parent component
+    };
     return (
         <>
             <Stack justifyContent={'space-between'} direction="row">
@@ -200,16 +200,16 @@ function CatalogHead(props: any) {
                     <Stack>
                         <FormControl sx={{ minWidth: 200 }}>
 
-                            <Select
+                            <Select size='small'
                                 labelId="project-select-label"
                                 value={selectedValue}
                                 onChange={(e) => handleMenuItemClick(e.target.value)}
                                 startAdornment={<WebhookOutlinedIcon sx={{ marginRight: 1 }} />}
                                 displayEmpty
-                                renderValue={(value: any) => (value ? projects.find(project => project.value === value)?.label : 'Select a project')}
+                                renderValue={(value: any) => (value ? projects.find((project:any) => project.value === value)?.label : 'Select a project')}
                             >
-                                <MenuItem disabled value="">
-                                    <em>Select a project</em>
+                                <MenuItem disabled value="" sx={{ fontFamily: 'Inter' }}>
+                                    Select a project
                                 </MenuItem>
                                 {projects.map((project: any) => (
                                     <MenuItem key={project.value} value={project.value}>
@@ -218,60 +218,22 @@ function CatalogHead(props: any) {
                                 ))}
                             </Select>
                         </FormControl>
-                        {/* <Stack mt={2}>
-                    {selectedValue && (
-                            <Box mt={2} display="flex" alignItems="center"  justifyContent={"space-between"} 
-                            sx={{backgroundColor:'#d9f7ec',width:'80%',height:'40%',borderRadius:'15px',padding:'15px'}}>
-                                <Typography>{projects.find(project => project.value === selectedValue)?.label}</Typography>
-                                <IconButton onClick={handleClearSelection} size="small">
-                                    <CloseIcon sx={{fontSize:'15px'}}/>
-                                </IconButton>
-                            </Box>
-                        )}
-                    </Stack> */}
+
                     </Stack>
 
-                    {/* <List>
-                    <ListItemButton
-                        sx={{
-                            bgcolor: 'white',
-                            border: 0.5,
-                            borderColor: '#f2f3f5',
-                            borderRadius: 1,
-                        }}
-                        onClick={toggleList}
-                    >
-                        <WebhookOutlinedIcon sx={{ paddingRight: 1 }} />
-                        <ListItemText primary="Owner" />
-                        {open ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                </List> */}
-                    {/* <List>
-                    <ListItemButton sx={{
-                        bgcolor: 'background.paper', border: 0.5,
-                        borderColor: '#f2f3f5', borderRadius: 1,
-                    }} >
 
-                        <WebhookOutlinedIcon sx={{ paddingRight: 1 }} />
-
-                        <ListItemText primary="Tag" />
-                        {open ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-
-                </List> */}
                     <FormControl sx={{ m: 3, minWidth: 150 }}>
-                        <Select
-
+                        <Select size='small'
                             value={selectedTag.data_src_name || ''}
                             onChange={(e) => handleChangeTag('data_src_name', e.target.value)}
                             startAdornment={<WebhookOutlinedIcon sx={{ marginRight: 1 }} />}
-                             variant='outlined'
+                            variant='outlined'
                             displayEmpty
-                            >
+                        >
                             <MenuItem value="" disabled>
-                                <em>Data Source</em>
+                                Data Source
                             </MenuItem>
-                            {props.searchDataList.map((tag) => (
+                            {props.searchDataList.map((tag:any) => (
                                 <MenuItem key={tag.data_src_id} value={tag.data_src_name}>
                                     {tag.data_src_name}
                                 </MenuItem>
@@ -279,43 +241,17 @@ function CatalogHead(props: any) {
                         </Select>
                     </FormControl>
 
-                    {/* <List>
-                    <ListItemButton sx={{
-                        bgcolor: 'background.paper', border: 0.5,
-                        borderColor: '#f2f3f5', borderRadius: 1,
-                    }}
-                    >
 
-                        <WebhookOutlinedIcon sx={{ paddingRight: 1 }} />
-
-                        <ListItemText primary="Classification" />
-                        {open ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-
-                </List> */}
-                    {/* <List >
-                    <ListItemButton sx={{
-                        bgcolor: 'background.paper', border: 0.5,
-                        borderColor: '#f2f3f5', borderRadius: 1,
-                    }}
-                    >
-                        <WebhookOutlinedIcon sx={{ paddingRight: 1 }} />
-                        <ListItemText primary="Consumer" />
-                        {open ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                </List> */}
                     <FormControl sx={{ m: 3, minWidth: 150 }}>
-                        <Select
-
+                        <Select size='small'
                             value={selectedConsumer}
                             onChange={(e) => handleChangeConsumer(e.target.value)}
                             startAdornment={<WebhookOutlinedIcon sx={{ marginRight: 1 }} />}
                             variant='outlined'
                             displayEmpty
-
                         >
                             <MenuItem value="" disabled>
-                                <em>Consumer</em>
+                                Consumer
                             </MenuItem>
                             {consumerList.map((consumerList) => (
                                 <MenuItem key={consumerList.id} value={consumerList.id}>
@@ -323,34 +259,10 @@ function CatalogHead(props: any) {
                                 </MenuItem>
                             ))}
                         </Select>
-                        {/* <Box mt={2}>
-                        {selectedConsumer && (
-                            <Box mt={2} display="flex" alignItems="center" justifyContent={'space-between'}   
-                            sx={{backgroundColor:'#d9f7ec',width:'100%',height:'40%',borderRadius:'15px',padding:'15px'}}>
-                                <Typography>{consumerList.find(consumerItem => consumerItem.id === selectedConsumer)?.consumer}</Typography>
-                                <IconButton onClick={handleClearSelectionConsumer} size="small">
-                                    <CloseIcon sx={{fontSize:'15px'}} />
-                                </IconButton>
-                            </Box>
-                        )}
-                    </Box> */}
                     </FormControl>
-                    {/* <List>
-                    <ListItemButton sx={{
-                        bgcolor: 'background.paper', border: 0.5,
-                        borderColor: '#f2f3f5', borderRadius: 1,
-                    }} >
 
-                        <SwapVertIcon sx={{ paddingRight: 1 }} />
-
-                        <ListItemText primary="Sort" />
-                        {open ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-
-                </List> */}
                     <FormControl sx={{ m: 3, minWidth: 150 }}>
-                        <Select
-
+                        <Select size='small'
                             value={selectedValue1}
                             onChange={(e) => handleChange(e.target.value)}
                             startAdornment={<AiOutlineCheckCircle style={{ marginRight: 1 }} fontSize={'30px'} />}
@@ -359,76 +271,69 @@ function CatalogHead(props: any) {
 
                         >
                             <MenuItem value="" disabled>
-                                <em>Status</em>
+                                Status
                             </MenuItem>
-                            {status.map((statusItem) => (
+                            {status.map((statusItem:any) => (
                                 <MenuItem key={statusItem.id} value={statusItem.id}>
                                     {statusItem.status}
                                 </MenuItem>
                             ))}
                         </Select>
-                        {/* <Box mt={2}>
-                        {selectedValue1 && (
-                            <Box mt={2} display="flex" alignItems="center" justifyContent={'space-between'} 
-                            sx={{backgroundColor:'#d9f7ec',width:'80%',height:'40%',borderRadius:'15px',padding:'15px'}}>
-                                <Typography>{status.find(statusItem => statusItem.id === selectedValue1)?.status}</Typography>
-                                <IconButton onClick={handleClearSelection1} size="small">
-                                    <CloseIcon sx={{fontSize:'15px'}}/>
-                                </IconButton>
-                            </Box>
-                        )}
-                    </Box> */}
+
                     </FormControl>
                 </Stack>
-                <Stack padding={2} paddingTop={4}>
-                    <Search
-                        sx={{
-                            bgcolor: 'background.paper',
-                            border: 0.5,
-                            borderColor: '#f2f3f5',
-                            borderRadius: 1,
-                        }}
+                <Stack direction={'row'}>
+                    <Stack padding={2} paddingTop={2}>
+                        <Search
+                            sx={{
+                                bgcolor: 'background.paper',
+                                border: 0.5,
+                                borderColor: '#f2f3f5',
+                                borderRadius: 1,
+                            }}
+                        >
+                            <SearchIconWrapper>
+                                <SearchIcon />
+                            </SearchIconWrapper>
+                            <StyledInputBase
+                                placeholder="Search…"
+                                inputProps={{ 'aria-label': 'search' }}
+                                value={searchValue}
+                                onChange={searchDataSource}
+                            />
+                        </Search>
+                    </Stack>
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }}
                     >
-                        <SearchIconWrapper>
-                            <SearchIcon />
-                        </SearchIconWrapper>
-                        <StyledInputBase
-                            placeholder="Search…"
-                            inputProps={{ 'aria-label': 'search' }}
-                            value={searchValue}
-                            onChange={searchDataSource}
-                        />
-                    </Search>
-                </Stack>
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }}
-                >
-                    <Button
-                        className="bg-dark h6 text-white"
-                        sx={{
-                            mx: 2,
-                            p: 1,
-                            my: 3,
-                            backgroundColor: '#000',
-                            color: 'white',
-                            whiteSpace: 'nowrap',  // Ensure the text does not break into multiple lines
-                            textTransform: 'none', // Preserve the button text casing
-                        }}
+                        <Button
+                            className="bg-dark h6 text-white"
+                            sx={{
+                                px: 2,
+                                py: 1,
+                                my: 2,
+                                backgroundColor: '#000',
+                                color: 'white',
+                                whiteSpace: 'nowrap',  // Ensure the text does not break into multiple lines
+                                textTransform: 'none', // Preserve the button text casing
+                            }}
 
-                        variant="contained"
-                        onClick={() => handleSearchDatasource()}
-                    >
-                        Search
-                    </Button>
-                </motion.div>
+                            variant="contained"
+                            onClick={() => handleSearchDatasource()}
+                        >
+                            Search
+                        </Button>
+                    </motion.div>
+                </Stack>
+
             </Stack>
             <Stack direction={'row'} spacing={1}>
                 <Stack>
                     {selectedValue && (
                         <Box display="flex" alignItems="center" justifyContent={"space-between"}
                             sx={{ backgroundColor: '#d9f7ec', width: '100%', height: '40%', borderRadius: '15px', padding: '15px' }}>
-                            <Typography>{projects.find(project => project.value === selectedValue)?.label}</Typography>
+                            <Typography>{projects.find((project:any) => project.value === selectedValue)?.label}</Typography>
                             <IconButton onClick={handleClearSelection} size="small">
                                 <CloseIcon sx={{ fontSize: '15px' }} />
                             </IconButton>
@@ -468,7 +373,7 @@ function CatalogHead(props: any) {
                         {selectedValue1 && (
                             <Box display="flex" alignItems="center" justifyContent={'space-between'}
                                 sx={{ backgroundColor: '#d9f7ec', width: '100%', height: '40%', borderRadius: '15px', padding: '15px' }}>
-                                <Typography>{status.find(statusItem => statusItem.id === selectedValue1)?.status}</Typography>
+                                <Typography>{status.find((statusItem:any) => statusItem.id === selectedValue1)?.status}</Typography>
                                 <IconButton onClick={handleClearSelection1} size="small">
                                     <CloseIcon sx={{ fontSize: '15px' }} />
                                 </IconButton>

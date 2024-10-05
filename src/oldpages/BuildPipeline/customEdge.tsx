@@ -40,8 +40,8 @@ const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, target
                 y={labelY - 15} // Centering the icon vertically
                 style={{ overflow: 'visible' }}
             >
-                {/* Meter Icon */}
-                {isRun && (<Stack className='text-center' sx={{ fontSize: '6px', mx: 'auto' }} >{Math.floor((Math.random() * 100) + 1)} row</Stack>)}
+                {/* Meter Icon */} 
+                {isRun&&(<Stack className='text-center' sx={{fontSize:'6px',mx:'auto'}} >{Math.floor((Math.random() * 100) + 1)} row</Stack>)}
 
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
 

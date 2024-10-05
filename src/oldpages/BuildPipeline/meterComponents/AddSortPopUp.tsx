@@ -3,11 +3,11 @@ import React from 'react';
 import { IoAddCircle, IoCloseSharp } from 'react-icons/io5';
 import { Form, Formik } from 'formik';
 import CustomField from '../../../common/CustomField';
-import { COLORS } from '../../../Utils/constants';
+import { COLORS } from '@/Utils/constants';
 
-export default function AddSortPopUp({ openSort, handleSortClose }) {
+export default function AddSortPopUp({ openSort, handleSortClose }:any) {
     const [checked, setChecked] = React.useState(true);
-    const handleChange = (event) => {
+    const handleChange = (event:any) => {
         setChecked(event.target.checked);
     };
     const columnList = [{ id: 1, columnName: 'Id' }, { id: 2, columnName: 'Name' }, { id: 3, columnName: 'Age' }]
@@ -32,7 +32,6 @@ export default function AddSortPopUp({ openSort, handleSortClose }) {
                     initialValues={{ column: '' }}
                     onSubmit={(values, { setSubmitting }) => {
                         setTimeout(() => {
-                            alert(JSON.stringify(values, null, 2));
                             setSubmitting(false);
                         }, 400);
                     }}

@@ -28,14 +28,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, parentWidth, c
     width: '100%',
     height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 940,
+    zIndex: 40,
   };
 
   const modalStyle: React.CSSProperties = {
     position: 'fixed',
     top: 0,
     left: 0,
-    zIndex: 950,
+    zIndex: 50,
     width: `${parentWidth ?? '100%'}`,
     height: '100%',
     overflow: 'hidden',

@@ -99,6 +99,9 @@ function GitProjectTable({
   const createNewFn = () => {
     navigate("/all-projects/new");
   };
+  const actionFn =(rowData: any, action: string) => {
+   // console.log("Action:", action, "Row Data:", rowData);    
+  }
   return (
     <div className="container mx-auto p-4">
       <FlexibleTable
@@ -108,6 +111,7 @@ function GitProjectTable({
         defaultItemsPerPage={10}
         tableName="Project"
         createNewFn={createNewFn}
+        actionFn={actionFn}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 .flowPlayground {
-  height: 95vh;
+  height: 85vh;
+  width: 90vw;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -33,6 +34,9 @@
 }
 
 .customControlsPanel {
+  position: absolute;
+  bottom: 0px;
+  z-index: 1000;
   display: flex;
   padding: 0 50px;
   border-top: 1px solid #5e5959;

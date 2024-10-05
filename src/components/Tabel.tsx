@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, Filter, ChevronUp, ChevronDown } from "lucide-react";
+import { PlusCircle, Filter, ChevronUp, ChevronDown, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,8 +45,9 @@ interface TableProps {
   defaultItemsPerPage?: number;
   tableName?: string;
   createNewFn?: () => void;
-  actionFn?: (id: string) => void;
-  playFn?: (id: string) => void;
+  actionFn?: (rowData: any, action: string) => void;
+  playRow?: boolean;
+  playRowFn?: (rowData: any) => void;
 }
 
 type SortConfig = {
@@ -81,6 +82,7 @@ const CustomTableHeader: React.FC<{
             {column.header} {column.sortable && getSortIcon(column.key)}
           </TableHead>
         ))}
+        <TableHead></TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -89,36 +91,67 @@ const CustomTableHeader: React.FC<{
 const TableBodyComponent: React.FC<{
   data: any[];
   columns: ColumnConfig[];
-}> = React.memo(({ data, columns }) => (
+  actionFn?: (rowData: any, action: string) => void;
+  playRow?: boolean;
+  playRowFn?: (rowData: any) => void;
+}> = React.memo(({ data, columns, actionFn, playRow, playRowFn }) => (
   <TableBody>
     {data.map((row, index) => (
-      <TableRow key={index}>
+      <TableRow key={index}
+        onClick={
+          playRow && playRowFn
+            ? () => playRowFn(row)
+            : undefined
+        }
+        className={playRow ? "cursor-pointer hover:bg-gray-100" : ""}
+      >
         {columns.map((column) => (
           <TableCell key={column.key}>
             {column.render
               ? column.render(row[column.key])
               : column.type === "image"
-              ? (
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={row[column.key]} alt={row[column.key]} />
-                  <AvatarFallback>
-                    {row[column.key]
-                      ? row[column.key][0]
-                      : <PlusCircle className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-              )
-              : column.type === "badge" && column.badgeConfig
-              ? (
-                <Badge
-                  className={`${column.badgeConfig.colorMap[row[column.key]]} text-white`}
-                >
-                  {row[column.key]}
-                </Badge>
-              )
-              : row[column.key]}
+                ? (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={row[column.key]} alt={row[column.key]} />
+                    <AvatarFallback>
+                      {row[column.key]
+                        ? row[column.key][0]
+                        : <PlusCircle className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                )
+                : column.type === "badge" && column.badgeConfig
+                  ? (
+                    <Badge
+                      className={`${column.badgeConfig.colorMap[row[column.key]]} text-white`}
+                    >
+                      {row[column.key]}
+                    </Badge>
+                  )
+                  : row[column.key]}
           </TableCell>
         ))}
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" sideOffset={-15}>
+              <DropdownMenuItem
+                onClick={() => actionFn && actionFn(row, "edit")}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => actionFn && actionFn(row, "changeStatus")}
+              >
+                Change Status
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
       </TableRow>
     ))}
   </TableBody>
@@ -129,10 +162,11 @@ export function FlexibleTable({
   columns,
   itemsPerPageOptions = [5, 15, 25],
   defaultItemsPerPage = 5,
-  tableName="",
+  tableName = "",
   createNewFn,
   actionFn,
-  playFn,
+  playRow = false,
+  playRowFn,
 }: TableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
@@ -199,8 +233,8 @@ export function FlexibleTable({
           ? prevConfig.direction === "asc"
             ? "desc"
             : prevConfig.direction === "desc"
-            ? null
-            : "asc"
+              ? null
+              : "asc"
           : "asc",
     }));
   };
@@ -219,11 +253,37 @@ export function FlexibleTable({
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <Button variant="default" onClick={()=>{
-          functionCreation();
-        }}>
-          New {tableName} <PlusCircle className="ml-2 h-4 w-4" />
-        </Button>
+        {columns.filter((col) => col.filterable).map((column) => (
+          <DropdownMenu key={column.key}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
+                {filters[column.key] || "All"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                onClick={() => handleFilter(column.key, "All")}
+              >
+                All
+              </DropdownMenuItem>
+              {Array.from(
+                new Set(
+                  data
+                    .map((item) => item[column.key])
+                    .filter((value) => value !== undefined)
+                )
+              ).map((value) => (
+                <DropdownMenuItem
+                  key={value}
+                  onClick={() => handleFilter(column.key, value)}
+                >
+                  {value}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ))}
         <div className="flex space-x-2">
           <Input
             placeholder="Search"
@@ -231,37 +291,11 @@ export function FlexibleTable({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          {columns.filter((col) => col.filterable).map((column) => (
-            <DropdownMenu key={column.key}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
-                  {filters[column.key] || "All"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => handleFilter(column.key, "All")}
-                >
-                  All
-                </DropdownMenuItem>
-                {Array.from(
-                  new Set(
-                    data
-                      .map((item) => item[column.key])
-                      .filter((value) => value !== undefined)
-                  )
-                ).map((value) => (
-                  <DropdownMenuItem
-                    key={value}
-                    onClick={() => handleFilter(column.key, value)}
-                  >
-                    {value}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ))}
+          <Button variant="default" className="bg-gray-900 text-white hover:bg-gray-800" onClick={() => {
+            functionCreation();
+          }}>
+            New {tableName} <PlusCircle className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </div>
       <Table>
@@ -270,11 +304,13 @@ export function FlexibleTable({
           sortConfig={sortConfig}
           requestSort={requestSort}
         />
-        <TableBodyComponent data={paginatedData} columns={columns} />
+        <TableBodyComponent data={paginatedData} columns={columns} actionFn={actionFn} playRow={playRow} playRowFn={playRowFn}
+        />
       </Table>
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center space-x-2">
           <Button
+            className="bg-gray-900 text-white hover:bg-gray-800"
             onClick={() =>
               setCurrentPage((prev) => Math.max(prev - 1, 1))
             }
@@ -286,6 +322,7 @@ export function FlexibleTable({
             Page {currentPage} of {totalPages}
           </span>
           <Button
+            className="bg-gray-900 text-white hover:bg-gray-800"
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }

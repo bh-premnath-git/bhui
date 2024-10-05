@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { EdgeProps, getBezierPath } from 'reactflow';
 import styles from './CustomEdge.module.css';
 
@@ -22,6 +22,10 @@ const CustomEdge: React.FC<EdgeProps> = ({
     targetPosition,
   });
 
+  const onDoubleClick = useCallback(() => {
+    data.deleteEdge(id); // Calls the delete function when double-clicked
+  }, [id, data]);
+
   return (
     <>
       <path
@@ -29,6 +33,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
         style={style}
         className={styles.edgePath}
         d={edgePath}
+        onDoubleClick={onDoubleClick}
       />
       <text>
         <textPath

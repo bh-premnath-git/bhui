@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position, Align, NodeToolbar } from 'reactflow';
 import { Copy, Trash, Info, Edit } from 'lucide-react';
-import Modal from '../../../../oldcomponents/ModalWithPortal';
+import Modal from '@/portal/ModalPortal';
 import CustomNodeTap from '../CustomNodeTap/CustomNodeTap';
 import styles from './CustomNode.module.css';
 
@@ -115,7 +115,7 @@ const ToolbarContent: React.FC<{
   };
 
   return (
-    <>
+    <span className={styles.toolbarContent}>
       <Copy className={styles.toolbarIcon} onClick={onClone} />
       <Trash className={styles.toolbarIcon} onClick={onDelete} />
       <Info
@@ -132,7 +132,7 @@ const ToolbarContent: React.FC<{
           {label}
         </div>
       )}
-    </>
+    </span>
   );
 };
 

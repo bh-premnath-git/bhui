@@ -387,7 +387,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend verticalAlign="bottom" height={16} />
           </LineChart>
         </ChartCard>
 

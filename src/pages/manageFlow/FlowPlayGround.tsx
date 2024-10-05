@@ -8,6 +8,10 @@ import ReactFlow, {
   Node,
   useReactFlow,
   Panel,
+  EdgeChange,
+  NodeChange,
+  BackgroundVariant,
+  Background,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { ZoomIn, ZoomOut, Minimize } from 'lucide-react';
@@ -50,7 +54,7 @@ const CustomControls = () => {
   };
 
   return (
-    <Panel position="bottom-center" className={styles.customControlsPanel}>
+    <div className={styles.customControlsPanel}>
       <div className={styles.controlsContainer}>
         <button
           onClick={handleResetView}
@@ -82,7 +86,7 @@ const CustomControls = () => {
         </button>
       </div>
       <DataPreviewModal isOpen={isDataPreviewOpen} onClose={() => setIsDataPreviewOpen(false)} />
-    </Panel>
+    </div>
   );
 };
 
@@ -183,7 +187,7 @@ const FlowPlayground: React.FC = () => {
   );
 
   const wrappedOnNodesChange = useCallback(
-    (changes) => {
+    (changes: NodeChange[]) => {
       onNodesChange(changes);
       setTimeout(() => logCurrentState(), 300);
     },
@@ -191,12 +195,81 @@ const FlowPlayground: React.FC = () => {
   );
 
   const wrappedOnEdgesChange = useCallback(
-    (changes) => {
+    (changes: EdgeChange[]) => {
       onEdgesChange(changes);
       setTimeout(() => logCurrentState(), 3000);
     },
     [onEdgesChange, logCurrentState]
   );
+
+  const checkNodeProximityAndConnect = useCallback(() => {
+    const HANDLE_WIDTH = 16;
+    const HANDLE_HEIGHT = 44;
+    const NODE_WIDTH = 150;
+    const NODE_HEIGHT = 80;
+    const HANDLE_OFFSET_X = 8;
+
+    const handles: any[] = [];
+
+    nodes.forEach((node) => {
+      const leftHandle = {
+        nodeId: node.id,
+        handleId: 'left',
+        type: 'target',
+        x: node.position.x - HANDLE_WIDTH + HANDLE_OFFSET_X,
+        y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
+        width: HANDLE_WIDTH,
+        height: HANDLE_HEIGHT,
+      };
+      const rightHandle = {
+        nodeId: node.id,
+        handleId: 'right',
+        type: 'source',
+        x: node.position.x + NODE_WIDTH - HANDLE_OFFSET_X,
+        y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
+        width: HANDLE_WIDTH,
+        height: HANDLE_HEIGHT,
+      };
+      handles.push(leftHandle, rightHandle);
+    });
+
+    const newEdges: any[] = [];
+
+    for (let i = 0; i < handles.length; i++) {
+      const handleA = handles[i];
+      for (let j = i + 1; j < handles.length; j++) {
+        const handleB = handles[j];
+
+        if (
+          handleA.type !== handleB.type &&
+          handleA.nodeId !== handleB.nodeId &&
+          rectanglesOverlap(handleA, handleB)
+        ) {
+          const sourceHandle = handleA.type === 'source' ? handleA : handleB;
+          const targetHandle = handleA.type === 'target' ? handleA : handleB;
+
+          if (!edges.some((edge) => edge.source === sourceHandle.nodeId && edge.target === targetHandle.nodeId)) {
+            const newEdge = {
+              id: `e${sourceHandle.nodeId}-${targetHandle.nodeId}`,
+              source: sourceHandle.nodeId,
+              target: targetHandle.nodeId,
+              animated: true,
+              style: { stroke: '#888' },
+            };
+            newEdges.push(newEdge);
+          }
+        }
+      }
+    }
+
+    if (newEdges.length > 0) {
+      setEdges((eds) => [...eds, ...newEdges]);
+    }
+  }, [nodes, edges, setEdges]);
+
+  const onNodeDragStop = useCallback(() => {
+    checkNodeProximityAndConnect();
+  }, [checkNodeProximityAndConnect]);
 
   const reactFlowComponent = useMemo(
     () => (
@@ -207,14 +280,16 @@ const FlowPlayground: React.FC = () => {
         onNodesChange={wrappedOnNodesChange}
         onEdgesChange={wrappedOnEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
       >
         <CustomControls />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     ),
-    [nodes, edges, wrappedOnNodesChange, wrappedOnEdgesChange, onConnect]
+    [nodes, edges, wrappedOnNodesChange, wrappedOnEdgesChange, onConnect, onNodeDragStop]
   );
 
   return (
@@ -226,5 +301,14 @@ const FlowPlayground: React.FC = () => {
     </div>
   );
 };
+
+function rectanglesOverlap(rect1: { x: number; width: any; y: number; height: any; }, rect2: { x: number; width: any; y: number; height: any; }) {
+  return !(
+    rect1.x + rect1.width < rect2.x ||
+    rect1.x > rect2.x + rect2.width ||
+    rect1.y + rect1.height < rect2.y ||
+    rect1.y > rect2.y + rect2.height
+  );
+}
 
 export default FlowPlayground;

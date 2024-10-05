@@ -34,7 +34,7 @@ export default function ProjectCreationComponent() {
           <Label htmlFor="projectName">Project Name</Label>
           <Input 
             id="projectName" 
-            placeholder="Ingeston" 
+            placeholder="Project Name" 
             className="h-9 w-1/2"
           />
         </div>
@@ -44,7 +44,7 @@ export default function ProjectCreationComponent() {
       <div className="space-y-4">
         <div className="grid grid-cols-4 gap-4">
           <div>
-            <Label htmlFor="githubProvider">Github Provider</Label>
+            <Label htmlFor="githubProvider">Git Provider</Label>
             <Select value={selectedProvider} onValueChange={setSelectedProvider}>
               <SelectTrigger className="w-full">
                 <SelectValue className="whitespace-nowrap overflow-hidden text-ellipsis">
@@ -59,11 +59,11 @@ export default function ProjectCreationComponent() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="githubUsername">Github Username</Label>
+            <Label htmlFor="githubUsername">Git Username</Label>
             <Input id="githubUsername" placeholder="Github Name 1" />
           </div>
           <div>
-            <Label htmlFor="githubEmail">Github Email</Label>
+            <Label htmlFor="githubEmail">Git Email</Label>
             <Input id="githubEmail" placeholder="abc@github.com" />
           </div>
           <div>
@@ -74,11 +74,11 @@ export default function ProjectCreationComponent() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="repositoryUrl">Github Repository URL</Label>
+            <Label htmlFor="repositoryUrl">Git Repository URL</Label>
             <Input id="repositoryUrl" placeholder="Https://Github.Com/Lorem_ipsum" />
           </div>
           <div>
-            <Label htmlFor="githubToken">Github Token</Label>
+            <Label htmlFor="githubToken">Git Token</Label>
             <Input id="githubToken" type="password" placeholder="********" />
           </div>
         </div>

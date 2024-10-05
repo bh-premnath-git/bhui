@@ -9,8 +9,6 @@ import store from './store/store';
 
 // Lazy-loaded components
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
-const DotLoader = lazy(() => import('./oldcomponents/DotLoader'));
-const RedirectToHome = lazy(() => import('./oldcomponents/RediectToHome'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
 const Home = lazy(() => import('./oldpages/Home'));
@@ -28,7 +26,6 @@ const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
-const NoPage = lazy(() => import('./oldpages/Portal/NoPage'));
 const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
 const Users = lazy(() => import('./oldpages/Admin-Console/Users/Users'));
 const User = lazy(() => import('./oldpages/Admin-Console/Users/Component/User'));
@@ -45,8 +42,7 @@ const PublishDataTable = lazy(() => import('./oldpages/PublishData/PublishDataTa
 const CodePipelineTable = lazy(() => import('./oldpages/CodePipeline/CodePipelineTable'));
 const CodePipelineData = lazy(() => import('./oldpages/CodePipeline/CodepipelineData'));
 const Explorer = lazy(() => import('./oldpages/Explorer/Explorer'));
-const ManageFlow = lazy(() => import('./oldpages/ManageFlow/ManageFlow'));
-const FlowPlayGround = lazy(() => import('./oldpages/ManageFlow/FlowPlayGround'));
+const ManageFlow = lazy(() => import('@/pages/manageFlow/FlowPlayGround'));
 
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const Loading = lazy(() => import('@/pages/loadingPage'));
@@ -59,6 +55,7 @@ const EnvironmentCreate = lazy(() => import('@/pages/environmentCreate'));
 const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
+const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
 
 interface LayoutProps {
   isAuthenticated: boolean;
@@ -166,13 +163,14 @@ function App() {
     { path: "/all-environment", element: <AllEnvironments /> },
     { path: "/all-environment/new", element: <EnvironmentCreate /> },
     { path: "/designer/manage-flow", element: <AllFlows /> },
+    { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
     { path: '/Designer/Build Data Pipe Line', element: <BuildDataPipeLines /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },
-    { path: '/Data Catalog', element: <Catalog /> },
+    { path: '/data-catalog', element: <Catalog /> },
     { path: '/Catalog/Catalogs', element: <Catalogs /> },
     { path: '/Designer', element: <Designer /> },
     { path: '/Designers', element: <Designers /> },
@@ -201,14 +199,13 @@ function App() {
     { path: '/Designer/Code Data Pipelines', element: <CodePipelineTable /> },
     { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
     { path: '/DataOps Hub/Explorer', element: <Explorer /> },
-    { path: '/Designer/Manage Flow', element: <ManageFlow /> },
-    { path: '/Designer/FlowPlayGround', element: <FlowPlayGround /> },
+    { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
   ];
 
   return (
     <Provider store={store}>
       <BrowserRouter>
-        <Suspense fallback={<DotLoader />}>
+        <Suspense fallback={<Loading />}>
           <Routes>
             <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
               {routeList.map((route, index) => (

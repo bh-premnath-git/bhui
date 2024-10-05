@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
 import { Avatar, Button, Popover, Divider } from '@mui/material';
 import BuildPipeLineHeader from '../oldpages/BuildPipeline/BuildPipeLineHeader';
-import FlowHeader from '../oldpages/ManageFlow/FlowHeader';
+import FlowHeader from '../pages/manageFlow/FlowHeader';
 import Breadcrumbs from './Breadcrumbs';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 

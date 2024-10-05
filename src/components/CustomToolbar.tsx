@@ -127,8 +127,8 @@ export function CustomToolbarComponent() {
   const [flowType, setFlowType] = useState("Flow_type 1")
 
   return (
-    <div className="bg-background">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 rounded-lg shadow space-y-2 sm:space-y-0">
+    <div className="bg-background w-[200%]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Button variant="ghost" size="icon" aria-label="Go back">
             <ChevronLeft className="h-4 w-4" />

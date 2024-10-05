@@ -10,8 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import logo from "/assets/logo/fixLogo.svg";
+import { CustomToolbarComponent } from "./CustomToolbar";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -38,9 +38,9 @@ export function Header(props: HeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-white border-b">
+    <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-400 border-solid">
       <div className="flex items-center">
-        <div className="pr-4 border-r">
+        <div className="pr-4">
           <img
             src={logo}
             className="h-8 w-8 cursor-pointer"
@@ -66,7 +66,7 @@ export function Header(props: HeaderProps) {
               alt="User avatar"
             />
             <div className="flex flex-col items-start">
-              <span className="text-sm font-medium">John Doe</span>
+              <span className="text-sm text-gray-500 font-medium">John Doe</span>
               <span className="text-xs text-gray-500">Admin</span>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -89,6 +89,27 @@ function renderingHeadContent(content: string) {
   // console.log(content);
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold">Dashboard</span>;
+  }
+  if (content === "/admin-console") {
+    return <span className="w-2/5 font-bold">Admin Console</span>;
+  }
+  if (content === "/all-projects") {
+    return <span className="w-2/5 font-bold">Admin Console &gt; Projects</span>;
+  }
+  if (content === "/all-projects/new") {
+    return <span className="w-2/5 font-bold">Admin Console &gt; Projects &gt; New</span>;
+  }
+  if (content === "/all-environment") {
+    return <span className="w-2/5 font-bold">Admin Console &gt; Environments</span>;
+  }
+  if (content === "/all-environment/new") {
+    return <span className="w-2/5 font-bold">Admin Console &gt; Environments &gt; New</span>;
+  }
+  if (content === "/designer/manage-flow") {
+    return <span className="w-2/5 font-bold">Designer &gt; Manage Flow</span>;
+  }
+  if(content === "/designer/flow-playground"){
+    return <CustomToolbarComponent />
   }
   return "";
 }

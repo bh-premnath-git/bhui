@@ -64,8 +64,9 @@ const StyledRouterLink = styled(RouterLink)(({ theme }) => ({
 const Container = styled('div')(({ theme }) => ({
   display: 'flex',
   flexWrap: 'wrap',
+  alignItems: 'center',
   justifyContent: 'center',
-  padding: theme.spacing(2),
+  padding: theme.spacing(10),
 }));
 
 interface AdminItem {

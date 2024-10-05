@@ -365,12 +365,12 @@ export default function DashboardComponent() {
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 12 }}
+              tick={{ fill: "#888", fontSize: 10 }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 12 }}
+              tick={{ fill: "#888", fontSize: 10 }}
               domain={["dataMin - 5", "dataMax + 5"]}
             />
             <Tooltip />

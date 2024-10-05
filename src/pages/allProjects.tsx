@@ -58,20 +58,20 @@ const columns: ColumnConfig[] = [
     key: 'Total Storage (GB)',
     header: 'Total Storage (GB)',
     type: 'number',
-    sortable: true,
+    sortable: false,
   },
   {
     key: 'total_data_sources',
     header: 'Total Data Sources',
     type: 'number',
-    sortable: true,
+    sortable: false,
   },
   {
     key: 'status',
     header: 'Status',
     type: 'badge',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     badgeConfig: {
       colorMap: {
         active: 'bg-green-500',

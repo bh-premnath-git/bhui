@@ -81,7 +81,7 @@ function PreviewTable() {
 
     return (
         <Paper elevation={0} sx={{ width: '100%', overflow: 'hidden' }}>
-            <TableContainer sx={{ maxHeight: 440 }}>
+            <TableContainer sx={{ maxHeight: 500 }}>
                 <Table stickyHeader aria-label="sticky table">
                     <TableHead>
                         <TableRow>
@@ -90,7 +90,7 @@ function PreviewTable() {
                                     key={column.id}
                                     align={column.align}
                                     style={{ minWidth: column.minWidth }}
-                                    sx={{ backgroundColor: 'lightgray', fontWeight: 'bold' }}
+                                    sx={{ backgroundColor: '#E9E9E9', fontWeight: 'bold' }}
 
                                 >
                                     {column.label}

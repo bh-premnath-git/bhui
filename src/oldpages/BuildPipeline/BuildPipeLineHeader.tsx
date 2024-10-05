@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { toggle } from '../../redux/ToggleSlice';
 import CreateCluster from './CreateCluster';
-import CommonDialog from '../../oldcomponents/common-dialoge';
+import CommonDialog from '../../components/common-dialoge';
 
 function BuildPipeLineHeader() {
     const [arrow, setArrow] = useState(false)
@@ -30,6 +30,8 @@ function BuildPipeLineHeader() {
         setOpenConfig(false)
     }
     const isToggled = useSelector((state: RootState) => state.toggle.isToggled);
+    const navigate=useNavigate();
+
     const dispatch = useDispatch();
     const [cluster, setCluster] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
@@ -41,10 +43,10 @@ function BuildPipeLineHeader() {
     return (
         <div className='d-flex flex-row align-items-center border-bottom py-2 bg-light' style={{ position: 'relative' }}>
             <div className="mx-4">
-                <img src="/assets/logo/fixLogo.svg" alt="" width={50} />
+                <img src="/assets/logo/logo.png" alt="" width={50} />
 
             </div>
-            <RiArrowLeftSLine className='border rounded px-2' style={{ height: '40px', width: '40px' }} />
+            <RiArrowLeftSLine onClick={()=>navigate(-1)} className='border rounded px-2' style={{ height: '40px', width: '40px' }} />
             <Tooltip title={'Saved 15s ago'} placement='bottom'>
                 <img src="/assets/buildPipeline/image.png" alt="" className='mx-3' style={{ height: '35px', width: '35px' }} data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Disabled popover" />
             </Tooltip>
@@ -145,7 +147,7 @@ function BuildPipeLineHeader() {
 
             </div>
             <div className="float-end px-4" style={{ marginLeft: 'auto' }}>
-                <Stack direction={'row'} spacing={2} alignContent={'center'} alignItems={'center'}>
+                <Stack direction={'row'} spacing={2} alignContent={'center'} alignItems={'center'}> 
                     Visual
                     <Switch color='success' onChange={() => dispatch(toggle())} checked={isToggled} />
                     Code

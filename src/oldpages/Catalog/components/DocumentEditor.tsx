@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ReactQuill from 'react-quill';
+// import ReactQuill from 'react-quill';
 // import 'react-quill/dist/quill.snow.css'; 
 // import 'src/styles/DocumentEditor.css'
 export default function DocumentEditor(){
@@ -32,14 +32,14 @@ export default function DocumentEditor(){
       // Update the state with the new content 
       setValue(content);
     };
-    return(
-        <ReactQuill
-        theme="snow" // Specify theme ('snow' or 'bubble')
-        value={value}
-        modules={modules}
-        formats={formats}
-        onChange={handleChange}
-        style={{ height: '400px' }} // Specify the height of the editor
-      />
+    return(<></>
+      //   <ReactQuill
+      //   theme="snow" // Specify theme ('snow' or 'bubble')
+      //   value={value}
+      //   modules={modules}
+      //   formats={formats}
+      //   onChange={handleChange}
+      //   style={{ height: '400px' }} // Specify the height of the editor
+      // />
     )
 }

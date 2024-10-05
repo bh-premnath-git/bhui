@@ -1,11 +1,12 @@
 import React from 'react';
-import { Modal, Box, Button, TextField, IconButton, InputAdornment } from '@mui/material';
+import { Modal, Box, Button, TextField, IconButton, InputAdornment, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import { Formik, Form, Field } from 'formik';
 
 export default function FilterPopUp({ isOpen, onClose, nodeData }) {
+    console.log(nodeData)
     const initialValues = {
         description1: '',
         logic1: '',
@@ -38,9 +39,9 @@ export default function FilterPopUp({ isOpen, onClose, nodeData }) {
                 }}
             >
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box component="h2">Filter 1</Box>
+                    <Box component="h5">{nodeData.display}</Box>
                     <Box display="flex" alignItems="center">
-                        <Button
+                        {/* <Button
                             variant="contained"
                             className='bg-dark'
                             onClick={handleSchemaClick}
@@ -57,14 +58,34 @@ export default function FilterPopUp({ isOpen, onClose, nodeData }) {
                                 style={{ width: '30px', height: '30px' }}
                             />
                             Generate Description
-                        </Button>
+                        </Button> */}
                         <IconButton onClick={onClose} sx={{ ml: 2 }}>
                             <CloseIcon />
                         </IconButton>
                     </Box>
                 </Box>
-
-                <Formik
+                <TextField
+                    id="outlined-multiline-static"
+                    fullWidth
+                    size='small'
+                    // label="Multiline Text Area"
+                    multiline
+                    // autoRows
+                    minRows={1}
+                    maxRows={20 }
+                    // defaultValue="Default value"
+                    placeholder="Enter your condition here"
+                />
+                <div className="text-center mt-3">
+                    <Button onClick={onClose}
+                        sx={{ textTransform: 'none' }}
+                        className="ml-8 px-4 bg-dark text-white myFont"
+                        variant="contained"
+                    >
+                        Save
+                    </Button>
+                </div>
+                {/* <Formik
                     initialValues={initialValues}
                     onSubmit={handleSubmit}
                 >
@@ -168,7 +189,7 @@ export default function FilterPopUp({ isOpen, onClose, nodeData }) {
                             </Box>
                         </Form>
                     )}
-                </Formik>
+                </Formik> */}
             </Box>
         </Modal>
     );

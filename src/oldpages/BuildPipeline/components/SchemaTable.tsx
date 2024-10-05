@@ -57,19 +57,19 @@ function createData(
 }
 
 const rows = [
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, 'Lorem Ispusm Is..', <Stack direction={"row"} > <Typography sx={{ backgroundColor: 'lightgray', mx: 2, p: '5px', borderRadius: 1 }}>Infer Schema from Data<ClearIcon /></Typography></Stack>, <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked disabled color="success" />, <Checkbox defaultChecked disabled color="success" />, 'Lorem Ispusm Is..', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked disabled color="success" />, <Checkbox defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked disabled color="success" />, <Checkbox defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox defaultChecked color="success" />, <Checkbox defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox defaultChecked sx={{'&.Mui-checked': {color: '#07A260'}}} color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, 'Lorem Ispusm Is..', <Stack direction={"row"} > <Typography sx={{ backgroundColor: '#E9E9E9', mx: 2, p: '5px', borderRadius: 1 ,fontSize:'14px'}}>Infer Schema from Data<ClearIcon sx={{fontSize:'14px'}} /></Typography></Stack>, <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, 'Lorem Ispusm Is..', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
+    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
 ];
 
 function SchemaTable() {
@@ -110,11 +110,11 @@ function SchemaTable() {
                     <TableHead>
                         <TableRow>
                             {columns.map((column) => (
-                                <TableCell className='myHeadFont'
+                                <TableCell className=''
                                     key={column.id}
                                     align={column.align}
                                     style={{ minWidth: column.minWidth }}
-                                    sx={{ backgroundColor: 'lightgray', fontWeight: 'bold' }}
+                                    sx={{ backgroundColor: '#E9E9E9', fontWeight: 'bold' }}
                                 >
                                     {column.label}
                                 </TableCell>
@@ -137,6 +137,7 @@ function SchemaTable() {
                                                 )}
                                                 {column.id === 'datatype' && (
                                                     <Select
+                                                    size='small'
                                                         value={age}
                                                         onChange={handleChange}
                                                         displayEmpty
@@ -188,8 +189,8 @@ function SchemaTable() {
 
             <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth>
                 <Stack direction={"row"} justifyContent={"space-between"}>
-                    <DialogTitle fontWeight={"bold"}>Add Description</DialogTitle>
-                    <ClearIcon sx={{ my: 2.5, mx: 2 }} onClick={handleCloseDialog} />
+                    <DialogTitle fontWeight={"bold"} sx={{fontSize:'15px'}}>Add Description</DialogTitle>
+                    <ClearIcon sx={{ my: 1, mx: 2 }} onClick={handleCloseDialog} />
                 </Stack>
 
                 <DialogContent>

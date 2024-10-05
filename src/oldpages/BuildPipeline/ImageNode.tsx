@@ -15,12 +15,13 @@ export interface CustomNodeData {
     isShow?: boolean;
     onDelete?: () => void;
     onClone?: (nodeData: CustomNodeData) => void;
+    dataList?:any;
 }
 
 export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnectable }: any) => {
     const dispatch = useDispatch();
 
-    function handlePop(data) {
+    function handlePop(data:any) {
         dispatch(setSelectedOption(data.label));
         dispatch(setIsHover(true));
     }
@@ -60,7 +61,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                 <div
                     style={{
                         position: 'absolute',
-                        top: -25,
+                        top: -10,
                         left: 0,
                         // padding: '2px', 
                         cursor: 'pointer',
@@ -71,20 +72,15 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                         border: '1px solid #f2f2f2',
                         display: 'flex',
                         gap: '4px',
+                        alignContent:'center',
+                        alignItems:'center'
                     }}
                 >
-                    <IconButton sx={{ py: '4px', px: '1px', m: 0 }} onClick={handleClone} aria-label="copy">
-                        <GoCopy size={10} color="black" />
-                    </IconButton>
-                    <IconButton sx={{ py: '4px', px: '1px', m: 0 }} onClick={handleDelete} aria-label="delete">
-                        <GoTrash size={10} color="black" />
-                    </IconButton>
-                    <IconButton sx={{ py: '4px', px: '1px', m: 0 }} aria-label="info">
-                        <FiAlertCircle size={10} />
-                    </IconButton>
-                    <IconButton sx={{ py: '4px', px: '1px', m: 0 }} aria-label="edit">
-                        <FiEdit3 className="mx-1" size={10} />
-                    </IconButton>
+                    <img style={{margin:'1px'}} src="/assets/buildPipeline/copy.png" alt="" width={10} height={10} onClick={handleClone}/>
+                    <img style={{margin:'1px'}} src="/assets/buildPipeline/trash.png" alt="" width={10} height={10} onClick={handleDelete}/>
+                    <img style={{margin:'1px'}} src="/assets/buildPipeline/info-circle.png" alt="" width={10} height={10} />
+                    <img style={{margin:'1px'}} src="/assets/buildPipeline/edit-2.png" alt="" width={10} height={10} />
+                   
 
                 </div>
             )}

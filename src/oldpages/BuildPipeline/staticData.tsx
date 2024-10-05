@@ -1,3 +1,4 @@
+import { useSelector } from "react-redux";
 
 export const buildData = [
     {
@@ -190,3 +191,68 @@ export const buildData = [
     },
     // { id: 7, icon: <IoMdAdd />, text: 'Add Transformation', className: 'bg-white text-dark border',line: '/assets/buildPipeline/Line 1.png',titles: ['Sort', 'Aggregate', 'Lookup', 'Aggregate', 'Deduplicate', 'Limit','Aggregate','Union']},
 ];
+
+
+export const transformList = [
+    {
+        id: 1,
+        lead: '/assets/buildPipeline/sort.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Sort',
+    },
+    {
+        id: 2,
+        lead: '/assets/buildPipeline/aggrigate.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Aggregate',
+    },
+    {
+        id: 3,
+        lead: '/assets/buildPipeline/lookup.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Lookup',
+    },
+    {
+        id: 4,
+        lead: '/assets/buildPipeline/dq.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'DQ Check',
+    },
+    {
+        id: 5,
+        lead: '/assets/buildPipeline/dedupe.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Dedupe',
+    },
+    {
+        id: 6,
+        lead: '/assets/buildPipeline/repartician.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Repartition ',
+    },
+    {
+        id: 7,
+        lead: '/assets/buildPipeline/sql.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'SQL Transformation',
+    },
+    {
+        id: 8,
+        lead: '/assets/buildPipeline/union.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Union',
+    },
+    {
+        id: 9,
+        lead: '/assets/buildPipeline/limit.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Limit',
+    },
+    {
+        id: 10,
+        lead: '/assets/buildPipeline/change-detection.png',
+        line: '/assets/buildPipeline/Line 7.png',
+        title: 'Change Detection',
+    }
+];
+

@@ -27,7 +27,7 @@ export default function BuildDataTableHeader() {
 
     return (
         <>
-            <Stack direction={'row'} justifyContent={'space-between'} spacing={2}>
+            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} spacing={2}>
                 <Stack>
                     <TextField className='my-1 '
                         value={searchValue}

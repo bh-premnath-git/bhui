@@ -10,14 +10,12 @@ import { RootState } from "../../redux/store";
 import OrderPopUp from "./components/popups/orderPopUp";
 import { CustomNodeData, ImageNode } from "./ImageNode";
 import FilterPopUp from "./components/popups/FilterPopUp";
-import { CiPlay1 } from "react-icons/ci";
 import { Alert, IconButton, Popover, Snackbar, Tooltip } from "@mui/material";
-import { CiPause1 } from "react-icons/ci";
 import PlayPopUp from "./components/popups/PlayPopUp";
 import Codepage from "./components/CodePage";
 import CloseIcon from '@mui/icons-material/Close';
-import { setIsHover, setIsRun } from "../../redux/BuildPipeLineSlice";
-import CustomEdge from "./CustomEdge";
+import { getConfig, getSource, setIsHover, setIsRun } from "../../redux/BuildPipeLineSlice";
+import CustomEdge from "./customEdge";
 import BuildPipePopup from "./components/popups/BuildPipePopup";
 import ControlPanel from "./ControlPanel";
 
@@ -49,6 +47,12 @@ export default function BuildDataPipeLine() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    useEffect(() => {
+        dispatch(getConfig({ connection_type: 'source' }));
+        dispatch(getSource({ offset: 0, limit: 10, order_desc: false }));
+        console.log('first' + selectedOption)
+    }, [dispatch]);
+
     useEffect(() => {
         setNodes([]);
         setEdges([
@@ -82,7 +86,7 @@ export default function BuildDataPipeLine() {
         [setEdges]
     );
 
-    const addNode = (lead: string, title: string, index: number) => {
+    const addNode = (lead: string, title: string, name: string, dataList?: any) => {
         const newNodeId = `${nodeIdCounter}`;
         setNodeIdCounter((prevId) => prevId + 1);
 
@@ -95,12 +99,13 @@ export default function BuildDataPipeLine() {
                     alt: `New Node ${newNodeId}`,
                 },
                 label: `${title} `,
-                display: `${title} ${index + 1}`,
+                display: `${name}`,
                 isShow: false,
                 onDelete: () => handleDelete(newNodeId),
                 onClone: () => cloneNode(newNode),
+                dataList: dataList
             },
-            position: { x: Math.random() * 200, y: Math.random() * 200 },
+            position: { x: 0 + (nodes?.length * 110), y: -150 },
         };
 
         setNodes((nds): any => [...nds, newNode]);
@@ -161,7 +166,6 @@ export default function BuildDataPipeLine() {
         setIsOverlayOpen(true);
     };
     const handleOverlayClose = () => {
-        // alert()
         setIsOverlayOpen(false);
     };
 
@@ -221,7 +225,7 @@ export default function BuildDataPipeLine() {
                     {selectedOption.toLowerCase().trim() === "filter" &&
                         <FilterPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
-                    {selectedOption.toLowerCase().trim() === "order" &&
+                    {selectedOption.toLowerCase().trim() === "source" &&
                         <OrderPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
                 </>

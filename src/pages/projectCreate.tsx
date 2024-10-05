@@ -159,14 +159,14 @@ export default function ProjectCreationComponent() {
         const result = await dispatch(createProject(values));
         if (result.payload) {
           showToast('Project created successfully', { color: '#4caf50' });
-          navigate('/all-projects');
+          navigate('/admin-console');
         }
       } else {
         // Update existing project
         const response = await dispatch(updateProject(values));
         if (response.payload) {
           showToast('Project updated successfully', { color: '#4caf50' });
-          navigate('/all-projects');
+          navigate('/admin-console');
         }
       }
     } catch (error: any) {

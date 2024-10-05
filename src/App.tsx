@@ -32,7 +32,6 @@ const User = lazy(() => import('./oldpages/Admin-Console/Users/Component/User'))
 const Customers = lazy(() => import('./oldpages/Admin-Console/Customer/Customers'));
 const Customer = lazy(() => import('./oldpages/Admin-Console/Customer/component/Customer'));
 const Projects = lazy(() => import('./oldpages/Admin-Console/Project/Environments'));
-const ProjectForm = lazy(() => import('./oldpages/GithubProject/ProjectForm'));
 const Environment = lazy(() => import('./oldpages/Admin-Console/Project/Component/Environment'));
 const PublishData = lazy(() => import('./oldpages/PublishData/PublishData'));
 const Target = lazy(() => import('./oldpages/PublishData/Target'));
@@ -188,7 +187,6 @@ function App() {
     { path: '/Admin Console/Manage Customer', element: <Customers /> },
     { path: '/Admin Console/Manage Customer/Add Customer', element: <Customer handleBreadStep={handleBreadStep} /> },
     { path: '/All Environment', element: <Projects /> },
-    { path: '/All Projects/New', element: <ProjectForm /> },
     { path: '/Admin-Console/Environment/New', element: <Environment handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Publish Data', element: <PublishData /> },
     { path: '/Designer/targetsteps', element: <Target handleBreadStep={handleBreadStep} /> },

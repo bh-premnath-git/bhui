@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position, Align, NodeToolbar } from 'reactflow';
 import { Copy, Trash, Info, Edit } from 'lucide-react';
 import Modal from '@/portal/ModalPortal';
-import CustomNodeTap from '../CustomNodeTap/CustomNodeTap';
-import styles from './CustomNode.module.css';
+import CustomNodeTap from '@/components/ReactFlowComps/Items/CustomNodeTap/CustomNodeTap';
+import styles from '@/components/ReactFlowComps/Items/CustomNode/CustomNode.module.css';
 
 interface CustomNodeProps {
   data: {

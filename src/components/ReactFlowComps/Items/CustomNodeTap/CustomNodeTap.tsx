@@ -2,7 +2,7 @@ import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { X } from 'lucide-react';
-import styles from './CustomNodeTap.module.css';
+import styles from '@/components/ReactFlowComps/Items/CustomNodeTap/CustomNodeTap.module.css';
 
 interface ModalContentProps {
     nodeData: any;

@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CiPlay1, CiPause1 } from "react-icons/ci";
-import styles from './Toolbar.module.css';
-import flowRegistry from "../../flow_registry.json";
+import styles from '@/components/ReactFlowComps/Items/Toolbar/Toolbar.module.css';
+import flowRegistry from "@/pages/manageFlow/flow_registry.json";
 
 interface NodeType {
   type: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import styles from './DataPreviewModal.module.css';
+import styles from '@/components/ReactFlowComps/DataPreviewModal/DataPreviewModal.module.css';
 
 interface DataPreviewModalProps {
   isOpen: boolean;

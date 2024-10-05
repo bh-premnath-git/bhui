@@ -7,7 +7,6 @@ import ReactFlow, {
   Connection,
   Node,
   useReactFlow,
-  Panel,
   EdgeChange,
   NodeChange,
   BackgroundVariant,
@@ -16,12 +15,12 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { ZoomIn, ZoomOut, Minimize } from 'lucide-react';
 
-import CustomNode from './Items/CustomNode/CustomNode';
-import CustomEdge from './Items/CustomEdge/CustomEdge';
-import Toolbar from './Items/Toolbar/Toolbar';
-import styles from './FlowPlayground.module.css';
-import { NodeType } from './types';
-import DataPreviewModal from './DataPreviewModal/DataPreviewModal';
+import CustomNode from '@/components/ReactFlowComps/Items/CustomNode/CustomNode';
+import CustomEdge from '@/components/ReactFlowComps/Items/CustomEdge/CustomEdge';
+import Toolbar from '@/components/ReactFlowComps/Items/Toolbar/Toolbar';
+import styles from '@/pages/manageFlow/FlowPlayground.module.css';
+import { NodeType } from '@/pages/manageFlow/types';
+import DataPreviewModal from '@/components/ReactFlowComps/DataPreviewModal/DataPreviewModal';
 
 const nodeTypes = {
   custom: CustomNode,

@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { EdgeProps, getBezierPath } from 'reactflow';
-import styles from './CustomEdge.module.css';
+import styles from '@/components/ReactFlowComps/Items/CustomEdge/CustomEdge.module.css';
 
 const CustomEdge: React.FC<EdgeProps> = ({
   id,

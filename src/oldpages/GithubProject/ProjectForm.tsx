@@ -47,7 +47,7 @@ const textFieldStyle = {
     },
 };
 
-const isEmpty = (obj) => {
+const isEmpty = (obj: { constructor?: any; }) => {
     return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
 };
 
@@ -200,7 +200,7 @@ function ProjectForm() {
 
     const renderTextField = (name: string, label: string, placeholder: string, type: string = 'text') => (
         <Field name={name}>
-            {({ field }) => (
+            {({ field }: any) => (
                 <TextField
                     {...field}
                     fullWidth
@@ -237,7 +237,7 @@ function ProjectForm() {
                             <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                                 <Box width="40%">
                                     <Field name="bh_project_name">
-                                        {({ field }) => (
+                                        {({ field }: any) => (
                                             <TextField
                                                 {...field}
                                                 fullWidth
@@ -278,7 +278,7 @@ function ProjectForm() {
                             <Stack direction="row" spacing={2}>
                                 <Box width="25%">
                                     <Field name="bh_github_provider">
-                                        {({ field }) => (
+                                        {({ field }: any) => (
                                             <Select
                                                 {...field}
                                                 fullWidth
@@ -323,7 +323,7 @@ function ProjectForm() {
                                 </Box>
                                 <Box width="50%">
                                     <Field name="bh_github_token_url">
-                                        {({ field }) => (
+                                        {({ field }: any) => (
                                             <TextField
                                                 {...field}
                                                 fullWidth

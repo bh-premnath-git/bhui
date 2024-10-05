@@ -221,7 +221,7 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               {intervals.map((interval) => (
                 <Button
                   key={interval}
-                  variant={selectedInterval === interval ? "default" : "outline"}
+                  variant={selectedInterval === interval ? "sky" : "outline"}
                   onClick={() => setSelectedInterval(interval)}
                   className="flex-1 px-2 py-1 text-sm"
                 >
@@ -238,7 +238,7 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Close
               </Button>
-              <Button onClick={handleSave}>Save</Button>
+              <Button className="bg-slate-400" onClick={handleSave}>Save</Button>
             </div>
           </DialogFooter>
         </DialogContent>

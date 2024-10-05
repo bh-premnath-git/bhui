@@ -188,7 +188,7 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
       <Formik
         initialValues={initialValue}
         validationSchema={validationSchema}
@@ -216,9 +216,9 @@ export default function ProjectCreationComponent() {
                 <ErrorMessage name="bh_project_name" component="div" className="text-red-500" />
               </div>
               <Button
-                variant="outline"
+                variant="dark"
                 className="mt-1"
-                onClick={() => navigate('/All Projects')}
+                onClick={() => navigate('/all-projects')}
               >
                 View All Projects
               </Button>
@@ -364,7 +364,7 @@ export default function ProjectCreationComponent() {
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      variant="outline"
+                      variant="transparent"
                       className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />

@@ -15,9 +15,11 @@ const StyledCard = styled(Card)(({ theme }) => ({
     flexDirection: 'column',
     alignItems: 'center',
     transition: 'all 0.3s ease-in-out',
+    border: `1px solid ${theme.palette.divider}`,
     '&:hover': {
       transform: 'scale(1.0002)',
       boxShadow: theme.shadows[8],
+      border: 'none',
     },
 }));
 

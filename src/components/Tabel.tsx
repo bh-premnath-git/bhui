@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils"
+
 
 interface ColumnConfig {
   key: string;
@@ -59,7 +61,8 @@ const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
   sortConfig: SortConfig;
   requestSort: (key: string) => void;
-}> = React.memo(({ columns, sortConfig, requestSort }) => {
+  className?: string;
+}> = React.memo(({ columns, sortConfig, requestSort, className }) => {
   const getSortIcon = (key: string) => {
     if (sortConfig.key === key) {
       if (sortConfig.direction === "asc")
@@ -71,7 +74,7 @@ const CustomTableHeader: React.FC<{
   };
 
   return (
-    <TableHeader>
+    <TableHeader className={cn("bg-gray-200",className)}>
       <TableRow>
         {columns.map((column) => (
           <TableHead
@@ -82,7 +85,7 @@ const CustomTableHeader: React.FC<{
             {column.header} {column.sortable && getSortIcon(column.key)}
           </TableHead>
         ))}
-        <TableHead></TableHead>
+        <TableHead>Action</TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -97,16 +100,17 @@ const TableBodyComponent: React.FC<{
 }> = React.memo(({ data, columns, actionFn, playRow, playRowFn }) => (
   <TableBody>
     {data.map((row, index) => (
-      <TableRow key={index}
+      <TableRow 
+      key={index}
         onClick={
           playRow && playRowFn
             ? () => playRowFn(row)
             : undefined
         }
-        className={playRow ? "cursor-pointer hover:bg-gray-100" : ""}
+        className={playRow ? "cursor-pointer border-none" : "border-none"}
       >
         {columns.map((column) => (
-          <TableCell key={column.key}>
+          <TableCell key={column.key} className="text-justify">
             {column.render
               ? column.render(row[column.key])
               : column.type === "image"
@@ -300,6 +304,7 @@ export function FlexibleTable({
       </div>
       <Table>
         <CustomTableHeader
+        className="text-black"
           columns={columns}
           sortConfig={sortConfig}
           requestSort={requestSort}

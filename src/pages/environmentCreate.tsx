@@ -681,7 +681,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button variant="outline" onClick={handleBack} disabled={activeTab === TABS[0]}>
           Back
         </Button>
-        <Button onClick={handleNext}>
+        <Button className="bg-gray-800 text-white hover:bg-gray-700" onClick={handleNext}>
           {activeTab === TABS[TABS.length - 1] ? "Create Environment" : "Next"}
         </Button>
       </div>

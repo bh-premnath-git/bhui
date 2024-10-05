@@ -32,7 +32,8 @@ body {
 }
 
 .recharts-legend-item-text{
-  font-size: .72rem;
+  font-size: .472rem;
+  padding-left: .24rem;
 }
 
 @layer base {

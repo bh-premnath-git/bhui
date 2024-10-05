@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { useAppSelector } from "@/redux/hooks";
+import React, { useLayoutEffect, useState } from "react";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import Modal  from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
+import { listFlows } from '@/redux/FlowSlice';
 interface Flow {
   id: number;
   Name: string;
@@ -61,6 +62,10 @@ const columns: ColumnConfig[] = [
 ];
 
 const AllFlows: React.FC = () => {
+  const dispatch = useAppDispatch();
+  useLayoutEffect(() => {
+    dispatch(listFlows());
+  }, [dispatch]);
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi
   );

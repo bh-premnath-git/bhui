@@ -1,8 +1,9 @@
-import React from "react";
-import { useAppSelector } from "@/redux/hooks";
+import React, { useLayoutEffect } from "react";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import { useNavigate } from "react-router-dom";
+import { listEnvironments } from '@/redux/EnvironmentSlice';
 
 // Define the Environment interface based on your data structure
 interface Environment {
@@ -77,6 +78,10 @@ const columns: ColumnConfig[] = [
 ];
 
 const AllEnvironments: React.FC = () => {
+  const dispatch = useAppDispatch();
+  useLayoutEffect(() => {
+    dispatch(listEnvironments());
+  }, [dispatch]);
   const { environmentList, loading, error } = useAppSelector(
     (state: RootState) => state.environmentApi
   );

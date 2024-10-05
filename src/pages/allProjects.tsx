@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { FlexibleTable } from "@/components/Tabel";
-import { useAppSelector } from "@/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
+import { getGitProject } from '@/redux/ProjectSlice';
 
 // Define types in a separate file for better organization
 interface GitProject {
@@ -89,6 +90,11 @@ function GitProjectTable({
   error,
 }: GitProjectTableProps) {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  useLayoutEffect(() => {
+    dispatch(getGitProject());
+  }, [dispatch]);
+
   if (loading) {
     return <div>Loading...</div>;
   }

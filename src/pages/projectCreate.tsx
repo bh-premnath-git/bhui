@@ -227,32 +227,37 @@ export default function ProjectCreationComponent() {
             <div className="space-y-4 mt-4">
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="bh_github_provider">Git Provider</Label>
+                  <Label htmlFor="bh_github_provider">Github Provider</Label>
                   <Field name="bh_github_provider">
-                    {({ field }: any) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={(value: string) => {
-                          setFieldValue('bh_github_provider', value);
-                          setSelectedProvider(value);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue className="whitespace-nowrap overflow-hidden text-ellipsis">
-                            {githubProviderList.find(
-                              (item) => item.id.toString() === field.value
-                            )?.dtl_desc || 'Select Provider'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {githubProviderList.map((provider) => (
-                            <SelectItem key={provider.id} value={provider.id.toString()}>
-                              {provider.dtl_desc}
+                    {({ field }: any) => {
+                      return (
+                        <Select
+                          value={field.value || 'select-provider'}
+                          onValueChange={(value: string) => {
+                            setFieldValue('bh_github_provider', value === 'select-provider' ? '' : value);
+                            setSelectedProvider(value === 'select-provider' ? '' : value);
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue className="whitespace-nowrap overflow-hidden text-ellipsis">
+                              {field.value
+                                ? githubProviderList.find((item) => item.id.toString() === field.value)?.dtl_desc
+                                : 'Select Provider'}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select-provider" disabled>
+                              Select Provider
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                            {githubProviderList.map((provider) => (
+                              <SelectItem key={provider.id} value={provider.id.toString()}>
+                                {provider.dtl_desc}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    }}
                   </Field>
                   <ErrorMessage
                     name="bh_github_provider"
@@ -261,10 +266,10 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_username">Git Username</Label>
+                  <Label htmlFor="bh_github_username">Github Username</Label>
                   <Field name="bh_github_username">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_username" placeholder="Git Username" />
+                      <Input {...field} id="bh_github_username" placeholder="Github Username" />
                     )}
                   </Field>
                   <ErrorMessage
@@ -274,10 +279,10 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_email">Git Email</Label>
+                  <Label htmlFor="bh_github_email">Github Email</Label>
                   <Field name="bh_github_email">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_email" placeholder="abc@github.com" />
+                      <Input {...field} id="bh_github_email" placeholder="user@github.com" />
                     )}
                   </Field>
                   <ErrorMessage
@@ -298,7 +303,7 @@ export default function ProjectCreationComponent() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="bh_github_url">Git Repository URL</Label>
+                  <Label htmlFor="bh_github_url">Github Repository URL</Label>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_url" placeholder="https://github.com/..." />
@@ -307,7 +312,7 @@ export default function ProjectCreationComponent() {
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_token_url">Git Token</Label>
+                  <Label htmlFor="bh_github_token_url">Github Token</Label>
                   <Field name="bh_github_token_url">
                     {({ field }: any) => (
                       <Input
@@ -336,7 +341,7 @@ export default function ProjectCreationComponent() {
                   className="text-[#70e5e8] hover:underline hover:underline-offset-4 cursor-pointer bg-transparent border-none p-0 font-semibold transition-all duration-200"
                   onClick={() => handleVerification(values)}
                 >
-                  Validate Git Credentials
+                  Validate Github Credentials
                 </button>
               </div>
 

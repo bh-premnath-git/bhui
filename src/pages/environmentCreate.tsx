@@ -139,7 +139,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: value as TabType });
     }
   };
-  console.log("EnvironmentCreate", state);
 
   return (
     <div className="container mx-auto p-4 space-y-4">

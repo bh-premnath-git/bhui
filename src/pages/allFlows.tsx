@@ -5,7 +5,7 @@ import { FlexibleTable } from "@/components/Tabel";
 import Modal  from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
-import { listFlows } from '@/redux/FlowSlice';
+import { listFlows, getFlowProjectList } from '@/redux/FlowSlice';
 interface Flow {
   id: number;
   Name: string;
@@ -65,6 +65,7 @@ const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
   useLayoutEffect(() => {
     dispatch(listFlows());
+    dispatch(getFlowProjectList({}));
   }, [dispatch]);
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi

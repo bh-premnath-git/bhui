@@ -131,6 +131,8 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex < TABS.length - 1) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: TABS[currentIndex + 1] });
+    }else{
+      console.log('Creating Environment with state:', state);
     }
   };
 

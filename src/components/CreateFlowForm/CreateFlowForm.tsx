@@ -125,7 +125,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
-
+  
   const updateBranches = useCallback(() => {
     if (formData.selectedProject) {
       const project = data.find((p: Project) => p.ProjectId === formData.selectedProject);

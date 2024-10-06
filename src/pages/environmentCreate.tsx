@@ -6,6 +6,7 @@ import { EnvironmentTab } from '@/components/EnvironmentsTabs/EnvironmentTab';
 import { ConfigureLakeTab } from '@/components/EnvironmentsTabs/ConfigureLakeTab';
 import { PreConfigureZonesTab } from '@/components/EnvironmentsTabs/PreConfigureZonesTab';
 import { ConfigureLifecycleTab } from '@/components/EnvironmentsTabs/ConfigureLifecycleTab';
+import { useNavigate } from 'react-router-dom';
 
 // Types
 type Tag = { key: string; value: string };
@@ -119,7 +120,7 @@ function reducer(state: State, action: Action): State {
 
 export default function EnvironmentConsoleComponent(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
-
+  const navigate = useNavigate();
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex > 0) {
@@ -131,7 +132,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex < TABS.length - 1) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: TABS[currentIndex + 1] });
-    }else{
+    } else {
       console.log('Creating Environment with state:', state);
     }
   };
@@ -159,7 +160,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               ))}
             </TabsList>
           </div>
-          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700">
+          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/all-environment')}>
             View All Environments
           </Button>
         </div>

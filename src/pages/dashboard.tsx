@@ -373,7 +373,7 @@ export default function DashboardComponent() {
               tick={{ fill: "#888", fontSize: 10 }}
               domain={["dataMin - 5", "dataMax + 5"]}
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Line
                 key={`"proj"-${index}`}
@@ -403,7 +403,7 @@ export default function DashboardComponent() {
               tickLine={false}
             />
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Area
                 key={`"proj"-${index}`}
@@ -459,7 +459,7 @@ export default function DashboardComponent() {
               fill="#fff"
               filter="url(#shadow)"
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
@@ -505,7 +505,7 @@ export default function DashboardComponent() {
               fill="#fff"
               filter="url(#shadow)"
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
@@ -532,7 +532,7 @@ export default function DashboardComponent() {
               tickLine={false}
               domain={[0, 100]}
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -559,7 +559,7 @@ export default function DashboardComponent() {
               tickLine={false}
               width={100}
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -578,7 +578,7 @@ export default function DashboardComponent() {
               tickLine={false}
             />
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
             <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
@@ -603,7 +603,7 @@ export default function DashboardComponent() {
               tickLine={false}
               domain={[minValue, maxValue]}
             />
-            <Tooltip />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Line
                 key={`proj-${index}`}

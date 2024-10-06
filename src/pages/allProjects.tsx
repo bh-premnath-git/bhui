@@ -4,6 +4,8 @@ import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
 import { getGitProject } from '@/redux/ProjectSlice';
+import { Spinner } from "@/components/ui/spinner";
+import { ErrorDisplay } from "@/components/ui/error-display";
 
 // Define types in a separate file for better organization
 interface GitProject {
@@ -96,11 +98,11 @@ function GitProjectTable({
   }, [dispatch]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Spinner size="lg" />;
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return <ErrorDisplay message={error.message} />;
   }
   const createNewFn = () => {
     navigate("/all-projects/new");

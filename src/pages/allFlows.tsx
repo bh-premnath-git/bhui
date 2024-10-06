@@ -6,6 +6,8 @@ import Modal  from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
 import { listFlows, getFlowProjectList } from '@/redux/FlowSlice';
+import { Spinner } from "@/components/ui/spinner";
+import { ErrorDisplay } from "@/components/ui/error-display";
 interface Flow {
   id: number;
   Name: string;
@@ -75,11 +77,11 @@ const AllFlows: React.FC = () => {
 
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Spinner size="lg" />;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <ErrorDisplay message={error} />;
   }
   const funcCreateFlow = () => {
     setIsModalOpen(true);

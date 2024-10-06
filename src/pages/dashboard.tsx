@@ -376,7 +376,7 @@ export default function DashboardComponent() {
             <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Line
-                key={`"proj"-${index}`}
+                key={`${proj}-${index}`}
                 type="linear"
                 dataKey={proj}
                 stroke={COLORS[index % COLORS.length]}
@@ -406,7 +406,7 @@ export default function DashboardComponent() {
             <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Area
-                key={`"proj"-${index}`}
+                key={`${proj}-${index}`}
                 type="linear"
                 dataKey={proj}
                 stackId="1"
@@ -442,7 +442,7 @@ export default function DashboardComponent() {
             >
               {chartData.ingestion.map((_entry, index) => (
                 <Cell
-                  key={`cell-${index}`}
+                  key={`${_entry}-${index}`}
                   fill={COLORS[index % COLORS.length]}
                   stroke="none"
                 />
@@ -488,7 +488,7 @@ export default function DashboardComponent() {
             >
               {chartData.publish.map((_entry, index) => (
                 <Cell
-                  key={`cell-${index}`}
+                  key={`${_entry}-${index}`}
                   fill={COLORS[index % COLORS.length]}
                   stroke="none"
                 />
@@ -606,7 +606,7 @@ export default function DashboardComponent() {
             <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
             {projects.map((proj, index) => (
               <Line
-                key={`proj-${index}`}
+                key={`${proj}-${index}`}
                 type="monotone"
                 dataKey={proj}
                 stroke={COLORS[index % COLORS.length]}

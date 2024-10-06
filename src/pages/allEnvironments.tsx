@@ -4,6 +4,8 @@ import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import { useNavigate } from "react-router-dom";
 import { listEnvironments } from '@/redux/EnvironmentSlice';
+import { Spinner } from "@/components/ui/spinner";
+import { ErrorDisplay } from "@/components/ui/error-display";
 
 // Define the Environment interface based on your data structure
 interface Environment {
@@ -88,15 +90,16 @@ const AllEnvironments: React.FC = () => {
   const navigate = useNavigate();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Spinner size="lg" />;
+
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <ErrorDisplay message={error} />;
   }
-///all-environment/new
-  const createNewFn=()=>{
-    
+  ///all-environment/new
+  const createNewFn = () => {
+
     navigate("/all-environment/new");
   };
 

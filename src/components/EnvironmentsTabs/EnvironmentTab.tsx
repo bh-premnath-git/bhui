@@ -42,7 +42,7 @@ const PlatformSelector: React.FC<{
   selectedPlatform: string;
   setSelectedPlatform: (id: string) => void;
 }> = ({ selectedPlatform, setSelectedPlatform }) => (
-  <div className="flex justify-between">
+  <div className="flex flex-wrap gap-3">
     {PLATFORMS.map((platform) => (
       <div
         key={platform.id}
@@ -58,7 +58,7 @@ const PlatformSelector: React.FC<{
           className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
             selectedPlatform === platform.id
               ? "border-green-500 bg-green-500"
-              : "border-gray-300"
+              : "border-gray-500 bg-gray-200"
           }`}
         >
           {selectedPlatform === platform.id && (
@@ -183,8 +183,9 @@ const InputField: React.FC<{
   placeholder: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}> = ({ label, id, placeholder, value, onChange }) => (
-  <div className="space-y-2 w-[45%]">
+  className?: string;
+}> = ({ label, id, placeholder, value, onChange, className }) => (
+  <div className={`space-y-2 w-[45%] ${className}`}>
     <Label htmlFor={id}>{label}</Label>
     <Input
       id={id}
@@ -202,7 +203,8 @@ const SelectField: React.FC<{
   options: { value: string; label: string }[];
   value: SelectFieldValue;
   onChange: (value: string) => void;
-}> = ({ label, id, options, value, onChange }) => {
+  className?: string;
+}> = ({ label, id, options, value, onChange, className }) => {
   // Convert the current value to a string for the Select component
   const stringValue = value?.toString();
 
@@ -215,7 +217,7 @@ const SelectField: React.FC<{
   };
 
   return (
-    <div className="space-y-2 w-[45%]">
+    <div className={`space-y-2 w-[45%] ${className}`}>
       <Label htmlFor={id}>{label}</Label>
       <Select value={stringValue} onValueChange={handleChange}>
         <SelectTrigger id={id} className="w-[60%]">
@@ -278,12 +280,119 @@ export const EnvironmentTab: React.FC<{
   const [environment, setEnvironment] = useState("");
   const [projectId, setProjectId] = useState("");
   const [location, setLocation] = useState("");
+  const [accessKey, setAccessKey] = useState("")
+  const [secretAccessKey, setSecretAccessKey] = useState("")
+  const [airflowUrl, setAirflowUrl] = useState("")
+  const [airflowDagBucket, setAirflowDagBucket] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadClick = (): void => {
     fileInputRef.current?.click();
   };
+  const handleValidate = () => {
+    // Implement validation logic here
+    console.log("Validating credentials...")
+  }
 
+  const renderCredentialsForm = () => {
+    if (selectedPlatform === "aws") {
+      return (
+        <>
+          <div className="w-full flex justify-between items-start space-x-4">
+            <InputField
+              label="AWS Project ID*"
+              id="aws-project-id"
+              placeholder="Enter Project Id"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="w-1/2"
+            />
+            <SelectField
+              label="Location*"
+              id="location"
+              options={[
+                { value: "us-east", label: "US East" },
+                { value: "us-west", label: "US West" },
+                { value: "eu-central", label: "EU Central" },
+              ]}
+              value={location}
+              onChange={setLocation}
+              className="w-1/2"
+            />
+          </div>
+          <div className="w-full flex justify-between items-start space-x-4">
+            <InputField
+              label="Access Key"
+              id="access-key"
+              placeholder="Enter Access Key"
+              value={accessKey}
+              onChange={(e) => setAccessKey(e.target.value)}
+              className="w-1/2"
+            />
+            <InputField
+              label="Secret Access Key"
+              id="secret-access-key"
+              placeholder="Enter Secret Access Key"
+              value={secretAccessKey}
+              onChange={(e) => setSecretAccessKey(e.target.value)}
+              className="w-1/2"
+            />
+          </div>
+          <div className="w-80 flex justify-end mt-2">
+            <button
+              onClick={handleValidate}
+              className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline hover:underline-offset-4 transition-all duration-200"
+            >
+              Validate
+            </button>
+          </div>
+          <div className="w-full flex justify-between items-start space-x-4">
+            <InputField
+              label="Airflow URL"
+              id="airflow-url"
+              placeholder="Enter Airflow URL"
+              value={airflowUrl}
+              onChange={(e) => setAirflowUrl(e.target.value)}
+              className="w-1/2"
+            />
+            <InputField
+              label="Airflow DAG Bucket"
+              id="airflow-dag-bucket"
+              placeholder="Enter Airflow DAG Bucket"
+              value={airflowDagBucket}
+              onChange={(e) => setAirflowDagBucket(e.target.value)}
+              className="w-1/2"
+            />
+          </div>
+        </>
+      )
+    } else if (selectedPlatform === "google-cloud") {
+      return (
+        <div className="w-full flex justify-between items-start space-x-4">
+          <InputField
+            label="GCP Project ID*"
+            id="gcp-project-id"
+            placeholder="Enter Project Id"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="w-1/2"
+          />
+          <SelectField
+            label="Location*"
+            id="location"
+            options={[
+              { value: "us-east", label: "US East" },
+              { value: "us-west", label: "US West" },
+              { value: "eu-central", label: "EU Central" },
+            ]}
+            value={location}
+            onChange={setLocation}
+            className="w-1/2"
+          />
+        </div>
+      )
+    }
+  }
   return (
     <div className="space-y-6">
       <div className="w-full flex justify-between items-start">
@@ -315,35 +424,18 @@ export const EnvironmentTab: React.FC<{
       </div>
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Credentials</h3>
-        <div className="w-full flex justify-between items-start">
-          <InputField
-            label="GCP Project ID*"
-            id="gcp-project-id"
-            placeholder="Enter Project Id"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-          />
-          <SelectField
-            label="Location*"
-            id="location"
-            options={[
-              { value: "us-east", label: "US East" },
-              { value: "us-west", label: "US West" },
-              { value: "eu-central", label: "EU Central" },
-            ]}
-            value={location}
-            onChange={setLocation}
-          />
-        </div>
-        <div className="w-full">
-          <div className="space-y-2">
-            <Label htmlFor="private-key">Private Key*</Label>
-            <FileUpload
-              handleUploadClick={handleUploadClick}
-              fileInputRef={fileInputRef}
-            />
+        {renderCredentialsForm()}
+        {selectedPlatform === "google-cloud" && (
+          <div className="w-full">
+            <div className="space-y-2">
+              <Label htmlFor="private-key">Private Key*</Label>
+              <FileUpload
+                handleUploadClick={handleUploadClick}
+                fileInputRef={fileInputRef}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <TagInput tags={tags} setTags={setTags} />
       </div>
     </div>

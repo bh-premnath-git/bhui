@@ -84,7 +84,7 @@ const initialState: State = {
     { key: "Department", value: "Tech" },
     { key: "Region", value: "USA" },
   ],
-  selectedPlatform: "google-cloud",
+  selectedPlatform: "aws",
   zoneDetails: INITIAL_ZONE_DETAILS,
   businessUrl: "",
   lakeName: "",
@@ -144,7 +144,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
+    <div className="container mx-auto p-2 space-y-4">
       <Tabs value={state.activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex-1 flex justify-center">

@@ -188,7 +188,7 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
+    <div className="max-w-6xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
       <Formik
         initialValues={initialValue}
         validationSchema={validationSchema}
@@ -417,7 +417,7 @@ export default function ProjectCreationComponent() {
             <div className="flex justify-center mt-6">
               <Button
                 type="submit"
-                className="w-1/3 bg-gray-900 text-white hover:bg-gray-800"
+                className="w-1/6 bg-gray-900 text-white hover:bg-gray-800"
                 disabled={isTokenValid === 'inValid' || !isValid}
               >
                 {isEmpty(editProjectData) ? 'Create Project' : 'Update Project'}

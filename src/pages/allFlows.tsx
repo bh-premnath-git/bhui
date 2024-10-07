@@ -40,7 +40,8 @@ const columns: ColumnConfig[] = [
   {
     key: 'Environment',
     header: 'Environment ID',
-    sortable: false,
+    sortable: true,
+    filterable: true,
     type: 'number',
   },
   {
@@ -123,7 +124,7 @@ const AllFlows: React.FC = () => {
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Flow"
+        tableName="Create New Flow"
         createNewFn={funcCreateFlow}
         playRow={true}
         playRowFn={playground}

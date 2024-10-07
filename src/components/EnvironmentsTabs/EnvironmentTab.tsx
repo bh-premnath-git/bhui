@@ -8,21 +8,24 @@ import { Check, PlusCircle, X } from 'lucide-react';
 
 // Types
 type Tag = { key: string; value: string };
-type Platform = { id: string; name: string; logo: string };
+type Platform = { id: string; name: string; logo: string, cloud_provider: number };
+type SelectFieldValue = string | number | undefined;
 
 // Constants
 const PLATFORMS: Platform[] = [
   {
-    id: "google-cloud",
-    name: "Google Cloud",
-    logo: "/src/assets/environments/google.svg?height=40&width=40",
-  },
-  {
     id: "aws",
     name: "Amazon Web Services",
     logo: "/src/assets/environments/aws.svg?height=40&width=40",
+    cloud_provider: 101
   },
   {
+    id: "google-cloud",
+    name: "Google Cloud",
+    logo: "/src/assets/environments/google.svg?height=40&width=40",
+    cloud_provider: 102
+  },
+  /* {
     id: "azure",
     name: "Microsoft Azure",
     logo: "/src/assets/environments/azure.svg?height=40&width=40",
@@ -31,7 +34,7 @@ const PLATFORMS: Platform[] = [
     id: "bighammer",
     name: "BigHammer.ai",
     logo: "/src/assets/environments/bighammer.svg?height=40&width=40",
-  },
+  }, */
 ];
 
 // Helper Components
@@ -197,25 +200,38 @@ const SelectField: React.FC<{
   label: string;
   id: string;
   options: { value: string; label: string }[];
-  value: string;
+  value: SelectFieldValue;
   onChange: (value: string) => void;
-}> = ({ label, id, options, value, onChange }) => (
-  <div className="space-y-2 w-[45%]">
-    <Label htmlFor={id}>{label}</Label>
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="w-[60%]">
-        <SelectValue placeholder={`Select ${label}`} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-);
+}> = ({ label, id, options, value, onChange }) => {
+  // Convert the current value to a string for the Select component
+  const stringValue = value?.toString();
+
+  // Handle the change event
+  const handleChange = (newValue: string) => {
+    // Convert back to number if it was originally a number
+    const originalOption = options.find(opt => opt.value.toString() === newValue);
+    const finalValue = originalOption ? originalOption.value : newValue;
+    onChange(finalValue.toString());
+  };
+
+  return (
+    <div className="space-y-2 w-[45%]">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={stringValue} onValueChange={handleChange}>
+        <SelectTrigger id={id} className="w-[60%]">
+          <SelectValue placeholder={`Select ${label}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value.toString()} value={option.value.toString()}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
 
 const FileUpload: React.FC<{
   handleUploadClick: () => void;
@@ -282,9 +298,9 @@ export const EnvironmentTab: React.FC<{
           label="Environment*"
           id="environment-select"
           options={[
-            { value: "dev", label: "Development" },
-            { value: "staging", label: "Staging" },
-            { value: "prod", label: "Production" },
+            { value: "301", label: "Development" },
+            { value: "302", label: "Staging" },
+            { value: "303", label: "Production" },
           ]}
           value={environment}
           onChange={setEnvironment}

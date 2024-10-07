@@ -74,8 +74,8 @@ const columns: ColumnConfig[] = [
     key: 'status',
     header: 'Status',
     type: 'badge',
-    sortable: false,
-    filterable: false,
+    sortable: true,
+    filterable: true,
     badgeConfig: {
       colorMap: {
         active: 'bg-green-500',
@@ -133,7 +133,7 @@ function GitProjectTable({
   if (gitProjectList.length === 0) {
     return <EmptyComponent />;
   }
-  
+
   return (
     <div className="container mx-auto p-4">
       <FlexibleTable

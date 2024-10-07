@@ -9,7 +9,7 @@ import * as React from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import CatalogsBody from './CatalogsBody';
+import CatalogsBody from '../../../pages/dataCatalog/catalogsBody';
 import Lineage from './Lineage/Lineage';
 import Properties from './properties/Properties';
 import ValidationDtl from './validation/validationbody';

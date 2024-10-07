@@ -10,7 +10,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import { Input } from '@/components/ui/input';
-import CatalogsBody from '@/oldpages/Catalog/components/CatalogsBody';
+import CatalogsBody from '@/pages/dataCatalog/catalogsBody';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getDataSourceLayout } from '@/redux/CatalogSlice';
@@ -56,9 +56,8 @@ function a11yProps(index: number) {
 
 
 function CatalogSchema() {
-    const { layoutList, selectedDataSource }: any = useSelector((state: RootState) => state.catalogApi);
+    const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
     
-    console.log(layoutList)
     const [value, setValue] = React.useState(0);
     const [searchValue, setSearchValue] = useState('');
     const debouncedSearchLayout = debounce((value) => {

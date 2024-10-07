@@ -168,8 +168,7 @@ function DataCatalogTable({
 
     // alert(JSON.stringify(rowData))
     dispatch(setSelectedDataSource(rowData))
-    navigate('/Designer/DataCatalog/schema')
-    // console.log("Action:", action, "Row Data:", rowData);    
+    navigate('/DataCatalog/schema')
   }
 
 

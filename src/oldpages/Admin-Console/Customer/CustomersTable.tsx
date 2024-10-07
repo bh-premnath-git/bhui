@@ -135,7 +135,6 @@ function CustomersTable(props: any) {
 		return `${day}-${month}-${year}`;
 	};
 	async function handleCellClick(item: any) {
-		console.log(item);
 		setSelectedItem(item)
 	}
 

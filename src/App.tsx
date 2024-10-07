@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
+import DataCatalog from './pages/dataCatalog';
 
 // Lazy-loaded components
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
@@ -196,6 +197,7 @@ function App() {
     { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
     { path: '/DataOps Hub/Explorer', element: <Explorer /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
+    { path: '/Designer/DataCatalog', element: <DataCatalog /> },
   ];
 
   return (

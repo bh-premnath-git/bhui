@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import styles from './CreateFlowForm.module.css';
-import { useAppDispatch, useAppSelector } from '../../redux/hooks';
-import { createFlow, setSelectedFlowFromList } from '../../redux/FlowSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { createFlow, setSelectedFlowFromList } from '@/redux/FlowSlice';
 import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalModal";
 
 // Types
@@ -125,10 +125,9 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
-  
   const updateBranches = useCallback(() => {
     if (formData.selectedProject) {
-      const project = data.find((p: Project) => p.ProjectId === formData.selectedProject);
+      const project = data.find((p: Project) => (p.ProjectId).toString() === formData.selectedProject);
       setBranches(project?.BranchNames || []);
       setFormData(prev => ({ ...prev, selectedBranch: '' }));
     } else {

@@ -1,15 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Check, PlusCircle, X } from 'lucide-react';
+import { Check, PlusCircle, X  } from 'lucide-react';
+import { FileUpload } from '@/components/FileUploadComp';
 
 // Types
 type Tag = { key: string; value: string };
 type Platform = { id: string; name: string; logo: string, cloud_provider: number };
 type SelectFieldValue = string | number | undefined;
+
 
 // Constants
 const PLATFORMS: Platform[] = [
@@ -235,36 +237,6 @@ const SelectField: React.FC<{
   );
 };
 
-const FileUpload: React.FC<{
-  handleUploadClick: () => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-}> = ({ handleUploadClick, fileInputRef }) => (
-  <div className="border-2 border-dashed rounded-md p-4 text-center w-[70%]">
-    <div className="group">
-      <PlusCircle
-        className="mx-auto p-2 rounded-full transition-colors duration-300 h-8 w-8 text-gray-400 flex items-center justify-center bg-gray-200 group-hover:bg-black group-hover:text-gray-400"
-        aria-hidden="true"
-      />
-    </div>
-    <p className="mt-2 text-sm text-gray-600">
-      Drag & Drop your file here or{" "}
-      <span
-        className="upload-text text-blue-500 cursor-pointer transition-all duration-300 ease-in-out hover:text-blue-700"
-        onClick={handleUploadClick}
-      >
-        Upload
-      </span>
-    </p>
-    <input
-      type="file"
-      id="private-key"
-      className="sr-only"
-      ref={fileInputRef}
-      aria-label="Upload private key file"
-    />
-  </div>
-);
-
 export const EnvironmentTab: React.FC<{
   selectedPlatform: string;
   setSelectedPlatform: (id: string) => void;
@@ -284,11 +256,11 @@ export const EnvironmentTab: React.FC<{
   const [secretAccessKey, setSecretAccessKey] = useState("")
   const [airflowUrl, setAirflowUrl] = useState("")
   const [airflowDagBucket, setAirflowDagBucket] = useState("")
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUploadClick = (): void => {
-    fileInputRef.current?.click();
-  };
+  const handleFileUpload = (file: File) => {
+    console.log('File uploaded:', file.name)
+    // Here you can add logic to send the file to your server or process it
+  }
   const handleValidate = () => {
     // Implement validation logic here
     console.log("Validating credentials...")
@@ -368,6 +340,7 @@ export const EnvironmentTab: React.FC<{
       )
     } else if (selectedPlatform === "google-cloud") {
       return (
+        <>
         <div className="w-full flex justify-between items-start space-x-4">
           <InputField
             label="GCP Project ID*"
@@ -389,7 +362,27 @@ export const EnvironmentTab: React.FC<{
             onChange={setLocation}
             className="w-1/2"
           />
+
         </div>
+        <div className="w-full flex justify-between items-start space-x-4">
+            <InputField
+              label="Airflow URL"
+              id="airflow-url"
+              placeholder="Enter Airflow URL"
+              value={airflowUrl}
+              onChange={(e) => setAirflowUrl(e.target.value)}
+              className="w-1/2"
+            />
+            <InputField
+              label="Airflow DAG Bucket"
+              id="airflow-dag-bucket"
+              placeholder="Enter Airflow DAG Bucket"
+              value={airflowDagBucket}
+              onChange={(e) => setAirflowDagBucket(e.target.value)}
+              className="w-1/2"
+            />
+          </div>
+        </>
       )
     }
   }
@@ -429,10 +422,9 @@ export const EnvironmentTab: React.FC<{
           <div className="w-full">
             <div className="space-y-2">
               <Label htmlFor="private-key">Private Key*</Label>
-              <FileUpload
-                handleUploadClick={handleUploadClick}
-                fileInputRef={fileInputRef}
-              />
+              <div className='w-1/2'>
+              <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
+              </div>
             </div>
           </div>
         )}

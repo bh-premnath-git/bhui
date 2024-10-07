@@ -167,7 +167,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
 
         <Card className="w-full mt-4">
           <CardContent className="p-6">
-            <div className="max-w-[800px] mx-auto">
+            <div className="max-w-[850px] mx-auto">
               <TabsContent value="environment">
                 <EnvironmentTab
                   selectedPlatform={state.selectedPlatform}

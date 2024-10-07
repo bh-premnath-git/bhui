@@ -74,7 +74,7 @@ const CustomTableHeader: React.FC<{
   };
 
   return (
-    <TableHeader className={cn("bg-gray-200",className)}>
+    <TableHeader className={cn("bg-gray-200 text-black font-bold",className)}>
       <TableRow>
         {columns.map((column) => (
           <TableHead

@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardActions, CardContent, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useAppDispatch } from '@/redux/hooks';
-import { getGitProject } from '@/redux/ProjectSlice';
-import { listEnvironments } from '@/redux/EnvironmentSlice';
-import { listFlows } from '@/redux/FlowSlice';
+
 
 const StyledCard = styled(Card)(({ theme }) => ({
     maxWidth: 300,
@@ -116,15 +113,7 @@ const adminList: AdminItem[] = [
 ];
 
 const Userlanding: React.FC = () => {
-  const dispatch = useAppDispatch();
   const [hoveredId, setHoveredId] = useState<number | null>(null);
-
-  useEffect(() => {
-    dispatch(getGitProject({}));
-    dispatch(listEnvironments());
-    dispatch(listFlows());
-  }, [dispatch]);
-
   return (
     <Container>
       {adminList.map((item) => (

@@ -6,13 +6,13 @@ import { MdOutlinePerson } from "react-icons/md";
 export const menuList = [
     {
         label: "Data Catalog",
-        icon: <FaRegFile className='h4' />,
+        icon: <img src="/assets/menu/catalog.png" alt="data-catalog" width={20} height={20} />,
         path: "/data-catalog"
     },
     {
         label: "Designer",
-        icon: <TiFlowSwitch className='h4' />,
-        path: "/designer",
+        icon: <img src="/assets/menu/designer.png" alt="Designer"  width={20} height={20} />,
+        path: "/designers",
         subPaths: [
            /*  { label: "Onboard Data", path: "/designer/onboard-data" }, */
             { label: "Build Data Pipelines", path: "/designer/build-data-pipe-line" },
@@ -23,7 +23,9 @@ export const menuList = [
     },
     {
         label: "DataOps Hub",
-        icon: <MdOutlinePodcasts className='h4' />,
+        // icon: <MdOutlinePodcasts className='h4' />,
+        icon: <img src="/assets/menu/dataops.png" alt="DataOps"  width={20} height={20} />,
+
         path: "/dataops-hub/dashboard",
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
@@ -33,7 +35,8 @@ export const menuList = [
     },
     {
         label: "Admin Console",
-        icon: <MdOutlinePerson className='h4' />,
+        icon: <img src="/assets/menu/admin.svg" alt="DataOps"  width={20} height={20} />,
+        // icon: <MdOutlinePerson className='h4' />,
         path: "/admin-console"
     },
 ]

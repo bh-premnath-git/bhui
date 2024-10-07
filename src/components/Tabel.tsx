@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils"
 interface ColumnConfig {
   key: string;
   header: string;
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any,row:any) => React.ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   type?: "text" | "number" | "date" | "image" | "badge";
@@ -112,7 +112,7 @@ const TableBodyComponent: React.FC<{
         {columns.map((column) => (
           <TableCell key={column.key} className="text-justify">
             {column.render
-              ? column.render(row[column.key])
+              ? column.render(row[column.key],row)
               : column.type === "image"
                 ? (
                   <Avatar className="h-8 w-8">

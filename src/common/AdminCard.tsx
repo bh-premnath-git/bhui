@@ -23,8 +23,8 @@ const AdminCard: React.FC<AdminCardProps> = ({ id, img, title, desc, buttonText,
     return (
         <div style={{ padding: "10px", marginTop: "0px"}} className='mx-4'>
             <Card elevation={0} className={`${cardHover?'shadow-lg':'shadow-sm'} 'mx-4'`} key={id}
-         onMouseEnter={()=>setIsCardHover(true)} onMouseLeave={()=>setIsCardHover(false)}  style={{height:'40vh',width:'100%'}}>
-                <div className="text-center m-auto mt-3" style={{ padding: "10px", marginTop: "40px", borderRadius: '12pc', width: '70px', height: '70px' }}>
+         onMouseEnter={()=>setIsCardHover(true)} onMouseLeave={()=>setIsCardHover(false)}  style={{width:'100%'}}>
+                <div className="text-center m-auto mt-3" style={{ padding: "10px", marginTop: "40px", borderRadius: '12pc', width: '70px',}}>
                     <img width={60}
                         src={img}
                         alt="logo"

@@ -50,6 +50,7 @@ interface TableProps {
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
+  background?:string
 }
 
 type SortConfig = {
@@ -171,6 +172,7 @@ export function FlexibleTable({
   actionFn,
   playRow = false,
   playRowFn,
+  background='gray',
 }: TableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
@@ -295,10 +297,10 @@ export function FlexibleTable({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Button variant="default" className="bg-gray-900 text-white hover:bg-gray-800" onClick={() => {
+          <Button variant="default" className={`${background} hover:${background} " text-white "`} onClick={() => {
             functionCreation();
           }}>
-            New {tableName} <PlusCircle className="ml-2 h-4 w-4" />
+         {tableName} <PlusCircle className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>

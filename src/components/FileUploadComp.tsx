@@ -94,18 +94,15 @@ export function FileUpload({ onFileUpload, maxSize = 5 * 1024 * 1024 }: FileUplo
             ? "Drop the file here"
             : (
               <>
-                Drag & Drop your file here or{" "}
+                Drag & Drop your file or{" "}
                 <span
                   className="upload-text text-primary cursor-pointer transition-all duration-300 ease-in-out hover:text-primary-foreground"
                 >
-                  Click to Upload
+                  Upload
                 </span>
               </>
             )
           }
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          (Max file size: {maxSize / 1024 / 1024}MB)
         </p>
       </div>
 

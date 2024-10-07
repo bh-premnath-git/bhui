@@ -8,6 +8,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getdataSourceList } from "@/redux/CatalogSlice";
+import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { LinearProgress } from "@mui/material";
 
 // Define types in a separate file for better organization
 interface CatalogInter {
@@ -18,7 +20,7 @@ interface CatalogInter {
   bh_project_id: number;
   data_src_tags: object;
   data_source_metadata: Array<object>[];
-  data_src_last_updated: string;
+  data_src_last_updated: any;
 }
 interface projectInter {
   bh_project_id: number,
@@ -76,7 +78,54 @@ const columns: ColumnConfig[] = [
     render: (value: string | null) => value || 'Jhon',
 
   },
+  {
+    key: 'total_consumers',
+    header: 'Total Consumers',
+    sortable: true,
+    filterable: true,
+    type: 'text',
+    render: (value: string | null) => value || '12',
 
+  },
+  {
+    key: 'total_records',
+    header: 'Total Records',
+    sortable: true,
+    filterable: false,
+    type: 'text',
+    render: (value: string | null) => value || '125',
+
+  },
+  {
+    key: 'data_src_quality',
+    header: 'Quality',
+    sortable: true,
+    filterable: true,
+    type: 'text',
+    render: (value: string ) => {
+      return (
+        <>
+          <LinearProgress variant="determinate"
+            value={parseInt(value, 10)}
+            sx={{ backgroundColor: 'lightgray', height: '1.5rem', }}
+            style={{ borderRadius: '10px', }}
+            color={parseInt(value, 10) < 50 ? 'warning' : 'success'}
+
+          />
+        </>
+      )
+    },
+
+  },
+  {
+    key: 'data_src_last_updated',
+    header: 'Last Updated',
+    sortable: true,
+    filterable: false,
+    type: 'text',
+    render: (value: any) => formatedDate(value),
+
+  },
 ];
 
 const EmptyComponent: React.FC = () => {
@@ -118,7 +167,7 @@ function DataCatalogTable({
   }
 
   const createNewFn = () => {
-    navigate("/all-projects/new");
+    // navigate("/all-projects/new");
   };
   const actionFn = (rowData: any, action: string) => {
     // console.log("Action:", action, "Row Data:", rowData);    
@@ -135,9 +184,10 @@ function DataCatalogTable({
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Project"
+        tableName="Xplore"
         createNewFn={createNewFn}
         actionFn={actionFn}
+        background='bg-green-700'
       />
     </div>
   );

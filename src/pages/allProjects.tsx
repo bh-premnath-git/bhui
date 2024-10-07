@@ -141,7 +141,7 @@ function GitProjectTable({
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Project"
+        tableName="New Project"
         createNewFn={createNewFn}
         actionFn={actionFn}
       />

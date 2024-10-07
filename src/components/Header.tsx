@@ -108,6 +108,9 @@ function renderingHeadContent(content: string) {
   if (content === "/designer/manage-flow") {
     return <span className="w-2/5 font-bold">Designer &gt; Manage Flow</span>;
   }
+  if (content === "/Designer/DataCatalog") {
+    return <span className="w-2/5 font-bold">Designer &gt; Data Catalog</span>;
+  }
   if(content === "/designer/flow-playground"){
     return <CustomToolbarComponent />
   }

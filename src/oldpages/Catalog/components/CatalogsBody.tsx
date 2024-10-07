@@ -21,6 +21,8 @@ import ApiService from '../../../Services/ApiServices';
 import ShowAll from './Lineage/ShowAll';
 import { LuCalendarDays } from "react-icons/lu";
 import { BsChatDots } from "react-icons/bs";
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 interface Column {
     id: string;
     label: string;
@@ -53,80 +55,14 @@ function createData(field: React.ReactNode, description: React.ReactNode, tags: 
     return { field, description, tags, glossaryterms, edit };
 }
 
-const rows: Row[] = [
-    createData(<Stack>
-        <Typography variant='h6'>FieldName 2</Typography>
-        <Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography>
-    </Stack>,
-        <Typography>Loream Ipusum is simply  Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck',
-        'Glossary Terms 1',
-        <MoreVertIcon />
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 2</Typography><Typography variant='body2'>String Primary Key </Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', ' Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 3</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 4</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 5</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 6</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 7</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 8</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 9</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 10</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 11</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 12</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 13</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 14</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-    createData(<Stack><Typography variant='h6'> FieldName 15</Typography><Typography variant='body2'><Stack direction={'row'} spacing={2} pt={1}><Box sx={{ backgroundColor: '#e5e7e7' }}>String </Box><Box sx={{ backgroundColor: '#e5e7e7' }}>Primary Key</Box> </Stack></Typography></Stack>,
-        <Typography>Loream Ipusum is simply Dummy Test of <br />The Printing and Typecasting Industry.<br />Loream Ipusm Text</Typography>,
-        'Department >> Teck', 'Glossary Terms 1', <MoreVertIcon />,
-    ),
-
-];
 
 
 export default function CatalogsBody(props:any) {
 	const [codesDtl, setCodesDtl] = useState([]);
-
-    const data = props.data;
+    const {layoutList}=useSelector((state:RootState)=>state.catalogApi);
+console.log(layoutList)
+    const data = layoutList;
+    console.log(data)
     const search=props.search;
     const [selectedRow, setSelectedRow] = useState<Row | null>(null);
     const [open, setOpen] = useState(false);
@@ -153,7 +89,7 @@ export default function CatalogsBody(props:any) {
     };
     const [anchorEl, setAnchorEl] = useState(null);
 
-    const handleClick = (event) => {
+    const handleClick = (event:any) => {
       setAnchorEl(event.currentTarget);
     };
     const handleClose1 = () => {
@@ -221,10 +157,10 @@ export default function CatalogsBody(props:any) {
             <Stack direction={'row'} spacing={1}>
                 <Paper sx={{ width: '100%', overflow: 'hidden',borderRadius:'4px',border:'1px solid lightgrey' }} elevation={0}>
                   <Stack sx={{p:'16px'}}>
-                    <Stack direction={'row'}  >
-                  <Typography variant='h6' fontWeight={'bold'}>{data.data_src_name}</Typography>
-                  <Typography color={'#008cda'} fontSize={'15px'} onClick={handleClickOpen} paddingLeft={'83%'} sx={{textDecoration: 'underline'}}>Show All</Typography>
-                  <ShowAll open2={open2}  handleClose1={handleClose1} data={data} dataSourceList={dataSourceList}  />
+                    <Stack direction={'row'} justifyContent={'space-between'} >
+                  <Typography variant='h6' fontWeight={'bold'}>{layoutList[0].data_src_lyt_name}</Typography>
+                  <Typography color={'#008cda'} fontSize={'15px'} onClick={handleClickOpen} sx={{textDecoration: 'underline'}}>Show All</Typography>
+                  <ShowAll open2={open2}  handleClose1={handleClose1} data={data} dataSourceList={layoutList}  />
                   </Stack>
                     <TableContainer sx={{ maxHeight: 800}}>
                         <Table stickyHeader aria-label="sticky table"  style={{border:'1px solid #f2f3f5'}} >
@@ -248,7 +184,7 @@ export default function CatalogsBody(props:any) {
                             </TableHead>
                             <TableBody >
 
-                                {dataSourceList[0]?.layout_fields.map((row:any, index:any) => {
+                                {layoutList[0]?.layout_fields.map((row:any, index:any) => {
                                     return (
                                         <TableRow  className='pt-1 ' key={index} hover role="checkbox" tabIndex={-1} onClick={() => handleRowClick(row)} >
 
@@ -284,7 +220,7 @@ export default function CatalogsBody(props:any) {
                     <TablePagination
                         rowsPerPageOptions={[10, 50, 100]}
                         component="div"
-                        count={dataSourceList[0]?.layout_fields?.length}
+                        count={layoutList[0]?.layout_fields?.length}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
@@ -294,7 +230,7 @@ export default function CatalogsBody(props:any) {
                   </Stack>
                 </Paper>
                 <Paper sx={{ width: '25%', overflow: 'hidden',borderRadius:'4px' ,border:'1px solid lightgrey'}} elevation={0}>
-                    <About data={props.data}/>
+                    <About/>
                 </Paper>
                 <Popover
 					elevation={1}

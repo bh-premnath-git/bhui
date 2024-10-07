@@ -7,6 +7,7 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import DataCatalog from './pages/dataCatalog';
+import CatalogSchema from './pages/catalogSchema';
 
 // Lazy-loaded components
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
@@ -198,6 +199,7 @@ function App() {
     { path: '/DataOps Hub/Explorer', element: <Explorer /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
     { path: '/Designer/DataCatalog', element: <DataCatalog /> },
+    { path: '/Designer/DataCatalog/schema', element: <CatalogSchema /> },
   ];
 
   return (

@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils"
 interface ColumnConfig {
   key: string;
   header: string;
-  render?: (value: any,row:any) => React.ReactNode;
+  render?: (value: any, row: any) => React.ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   type?: "text" | "number" | "date" | "image" | "badge";
@@ -50,14 +50,14 @@ interface TableProps {
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
-  background?:string
+  background?: string
 }
 
 type SortConfig = {
   key: string;
   direction: "asc" | "desc" | null;
 };
-
+const tableNameCheckList = ["Create New Flow", "Create New Project", "Create New Environment"]
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
   sortConfig: SortConfig;
@@ -75,7 +75,7 @@ const CustomTableHeader: React.FC<{
   };
 
   return (
-    <TableHeader className={cn("bg-gray-200 text-black font-bold",className)}>
+    <TableHeader className={cn("bg-gray-200 text-black font-bold", className)}>
       <TableRow>
         {columns.map((column) => (
           <TableHead
@@ -101,8 +101,8 @@ const TableBodyComponent: React.FC<{
 }> = React.memo(({ data, columns, actionFn, playRow, playRowFn }) => (
   <TableBody>
     {data.map((row, index) => (
-      <TableRow 
-      key={index}
+      <TableRow
+        key={index}
         onClick={
           playRow && playRowFn
             ? () => playRowFn(row)
@@ -113,7 +113,7 @@ const TableBodyComponent: React.FC<{
         {columns.map((column) => (
           <TableCell key={column.key} className="text-justify">
             {column.render
-              ? column.render(row[column.key],row)
+              ? column.render(row[column.key], row)
               : column.type === "image"
                 ? (
                   <Avatar className="h-8 w-8">
@@ -172,7 +172,7 @@ export function FlexibleTable({
   actionFn,
   playRow = false,
   playRowFn,
-  background='gray',
+  background = 'gray',
 }: TableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
@@ -259,38 +259,38 @@ export function FlexibleTable({
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-      <div className="flex space-x-4">
-        {columns.filter((col) => col.filterable).map((column) => (
-          <DropdownMenu key={column.key}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
-                {filters[column.key] || "All"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => handleFilter(column.key, "All")}
-              >
-                All
-              </DropdownMenuItem>
-              {Array.from(
-                new Set(
-                  data
-                    .map((item) => item[column.key])
-                    .filter((value) => value !== undefined)
-                )
-              ).map((value) => (
+        <div className="flex space-x-4">
+          {columns.filter((col) => col.filterable).map((column) => (
+            <DropdownMenu key={column.key}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
+                  {filters[column.key] || "All"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
                 <DropdownMenuItem
-                  key={value}
-                  onClick={() => handleFilter(column.key, value)}
+                  onClick={() => handleFilter(column.key, "All")}
                 >
-                  {value}
+                  All
                 </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ))}
+                {Array.from(
+                  new Set(
+                    data
+                      .map((item) => item[column.key])
+                      .filter((value) => value !== undefined)
+                  )
+                ).map((value) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => handleFilter(column.key, value)}
+                  >
+                    {value}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
         </div>
         <div className="flex space-x-2">
           <Input
@@ -299,16 +299,21 @@ export function FlexibleTable({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Button variant="default" className={`${background} hover:${background} " text-white "`} onClick={() => {
-            functionCreation();
-          }}>
-         {tableName} <PlusCircle className="ml-2 h-4 w-4" />
+          <Button
+            variant="default"
+            className={`${tableNameCheckList.includes(tableName)
+                ? "bg-gray-900 text-white hover:bg-gray-800"
+                : `${background} hover:${background} text-white`
+              }`}
+            onClick={functionCreation}
+          >
+            {tableName} <PlusCircle className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
       <Table>
         <CustomTableHeader
-        className="text-black"
+          className="text-black"
           columns={columns}
           sortConfig={sortConfig}
           requestSort={requestSort}

@@ -128,7 +128,7 @@ const AllEnvironments: React.FC = () => {
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Environment"
+        tableName="Create New Environment"
         createNewFn={createNewFn}
       />
     </div>

@@ -5,6 +5,7 @@ import ProjectSlice from '@/redux/ProjectSlice';
 import FlowSlice from '@/redux/FlowSlice';
 import Environment from '@/redux/EnvironmentSlice';
 import CatalogSlice from '@/redux/CatalogSlice';
+import UserSlice from '@/redux/UserSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
     environmentApi: Environment,
     toggle: toggleReducer,
     flowApi: FlowSlice,
-    catalogApi:CatalogSlice
+    catalogApi:CatalogSlice,
+    userApi:UserSlice,
   },
 });
 export type RootState = ReturnType<typeof store.getState>;

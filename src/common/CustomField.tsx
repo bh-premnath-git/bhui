@@ -1,6 +1,7 @@
 import React from 'react';
 import { Field, ErrorMessage } from 'formik';
 import { TextField, Select, MenuItem, FormControl, FormHelperText, InputLabel } from '@mui/material';
+import { Label } from '@/components/ui/label';
 
 interface FormFieldProps {
     name: string;
@@ -55,7 +56,9 @@ const CustomField: React.FC<FormFieldProps> = ({
                             ))}
                         </Select>
                     ) : (
-                        <TextField
+                       <>
+                       <Label className='font-normal'>{label}</Label>
+                        <TextField className='shadow-sm rounded'
                             {...field}
                             size={size}
                             type={type}
@@ -66,6 +69,7 @@ const CustomField: React.FC<FormFieldProps> = ({
                             onChange={handleChange}
                             InputProps={{ 'aria-label': label }}
                         />
+                       </>
                     );
                 }}
             </Field>

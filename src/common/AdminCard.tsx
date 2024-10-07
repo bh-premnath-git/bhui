@@ -17,10 +17,13 @@ interface AdminCardProps {
 
 const AdminCard: React.FC<AdminCardProps> = ({ id, img, title, desc, buttonText, link,style }) => {
     const [isHovered, setIsHovered] = useState<boolean>(false);
+    const [cardHover, setIsCardHover]=useState<boolean>(false);
+        
 
     return (
-        <div style={{ padding: "10px", marginTop: "0px"}} className='mx-4' key={id}>
-            <Card elevation={0}  className='shadow-sm' style={{height:'39vh',width:'100%'}}>
+        <div style={{ padding: "10px", marginTop: "0px"}} className='mx-4'>
+            <Card elevation={0} className={`${cardHover?'shadow-lg':'shadow-sm'} 'mx-4'`} key={id}
+         onMouseEnter={()=>setIsCardHover(true)} onMouseLeave={()=>setIsCardHover(false)}  style={{height:'40vh',width:'100%'}}>
                 <div className="text-center m-auto mt-3" style={{ padding: "10px", marginTop: "40px", borderRadius: '12pc', width: '70px', height: '70px' }}>
                     <img width={60}
                         src={img}
@@ -28,27 +31,26 @@ const AdminCard: React.FC<AdminCardProps> = ({ id, img, title, desc, buttonText,
                         className="text-center m-auto"
                     />
                 </div>
-                <CardContent style={{ textAlign: 'center' }}>
+                <CardContent style={{ textAlign: 'center',height:'220px' }}>
                     <Typography gutterBottom variant="h6" component="div"
-                        style={{ width: '160px', height: '70px', margin: 'auto', padding: '4px', fontWeight: 'bold' }}>
+                        style={{ margin: 'auto', padding: '4px', fontWeight: 'bold' }}>
                         {title}
                     </Typography>
                     <br />
                     <Typography variant="body2" color="text.secondary"
-                        style={{ paddingLeft: '8px', paddingRight: '8px', width: '230px' }}>
+                        style={{ paddingLeft: '8px', paddingRight: '8px', width: '250px' }}>
                         {desc}
-                        <br />
                     </Typography>
                 </CardContent>
                 <CardActions style={{ justifyContent: 'center' }}>
-                    <div className="w-full inline-flex text-center justify-center content-center p-10">
+                    <div className="w-full inline-flex text-center justify-center content-center ">
                         <Link className='rounded'
                             to={link}
                             style={{
                                 textDecoration: isHovered ? 'none' : 'underline',
                                 background: isHovered ? 'black' : 'transparent',
                                 color: isHovered ? 'white' : 'black',
-                                padding: '12px'
+                                padding: '6px 18px'
                             }}
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}

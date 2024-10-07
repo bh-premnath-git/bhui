@@ -56,8 +56,8 @@ const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
 const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
-const DataCatalog = lazy(() => import('@/pages/dataCatalog'));
-const CatalogsSchema = lazy(() => import('@/pages/catalogSchema'));
+const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
+const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;

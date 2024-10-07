@@ -100,7 +100,6 @@ const CatalogSlice = createSlice({
       .addCase(
         getDataSourceLayout.fulfilled,
         (state, action: PayloadAction<ApiResponse[]>) => {
-          alert(JSON.stringify(action))
           state.loading = false;
           state.layoutList = action.payload;
           // if (state.searchProjectList?.length === 0) {

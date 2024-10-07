@@ -46,6 +46,7 @@ interface TableProps {
   itemsPerPageOptions?: number[];
   defaultItemsPerPage?: number;
   tableName?: string;
+  isSearch?:boolean;
   createNewFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
@@ -168,6 +169,7 @@ export function FlexibleTable({
   itemsPerPageOptions = [5, 15, 25],
   defaultItemsPerPage = 5,
   tableName = "",
+  isSearch=true,
   createNewFn,
   actionFn,
   playRow = false,
@@ -293,13 +295,13 @@ export function FlexibleTable({
           ))}
         </div>
         <div className="flex space-x-2">
-          <Input
+          {isSearch&&(<Input
             placeholder="Search"
             className="w-44"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Button
+          />)}
+          {tableName!=''&&(<Button
             variant="default"
             className={`${tableNameCheckList.includes(tableName)
                 ? "bg-gray-900 text-white hover:bg-gray-800"
@@ -308,7 +310,7 @@ export function FlexibleTable({
             onClick={functionCreation}
           >
             {tableName} <PlusCircle className="ml-2 h-4 w-4" />
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Table>

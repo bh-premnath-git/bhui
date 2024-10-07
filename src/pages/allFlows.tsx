@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { listFlows, getFlowProjectList } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
+import { FileQuestion } from "lucide-react";
+
 interface Flow {
   id: number;
   Name: string;
@@ -62,7 +64,20 @@ const columns: ColumnConfig[] = [
     type: 'text',
   },
 ];
-
+const EmptyComponent: React.FC<{ onAddFlow: () => void }> = ({ onAddFlow }) => {
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <FileQuestion size={64} className="text-gray-400 mb-4" />
+      <h2 className="text-2xl font-semibold text-gray-700 mb-2">No Flow Available</h2>
+      <button
+        onClick={onAddFlow}
+        className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+      >
+        Add Flow
+      </button>
+    </div>
+  );
+};
 const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
   useLayoutEffect(() => {
@@ -92,6 +107,10 @@ const AllFlows: React.FC = () => {
 const playground = (data: any) => {
   navigate("/designer/flow-playground")
   
+}
+
+if (flows.length === 0) {
+  return <EmptyComponent onAddFlow={funcCreateFlow} />;
 }
   return (
     <div className="container mx-auto p-4">

@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
-import Modal  from "@/portal/ModalPortal"
+import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
 import { listFlows, getFlowProjectList } from '@/redux/FlowSlice';
@@ -99,19 +99,23 @@ const AllFlows: React.FC = () => {
     return <ErrorDisplay message={error} />;
   }
   const funcCreateFlow = () => {
-    setIsModalOpen(true);
+    setIsModalOpen(()=>(true));
   }
   const closeModal = () => {
     setIsModalOpen(false);
-};
-const playground = (data: any) => {
-  navigate("/designer/flow-playground")
-  
-}
+  };
+  const playground = (data: any) => {
+    navigate("/designer/flow-playground")
 
-if (flows.length === 0) {
-  return <EmptyComponent onAddFlow={funcCreateFlow} />;
-}
+  }
+
+  if (flows.length === 0) {
+    return <><EmptyComponent onAddFlow={funcCreateFlow} />
+    <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <CreateFlowForm onClose={closeModal} />
+      </Modal>
+    </>;
+  }
   return (
     <div className="container mx-auto p-4">
       <FlexibleTable

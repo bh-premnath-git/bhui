@@ -58,6 +58,8 @@ const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
 const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
 const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
 const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
+const AllUsers = lazy(() => import('@/pages/allUsers'));
+const AddUser = lazy(() => import('@/pages/addUser'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -201,6 +203,8 @@ function App() {
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
     { path: '/DataCatalog', element: <DataCatalog /> },
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
+    { path: '/AllUsers', element: <AllUsers /> },
+    { path: '/AddUser', element: <AddUser /> },
   ];
 
   return (

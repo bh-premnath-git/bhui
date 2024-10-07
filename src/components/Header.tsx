@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logo from "/assets/logo/fixLogo.svg";
 import { CustomToolbarComponent } from "./CustomToolbar";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -38,7 +40,7 @@ export function Header(props: HeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-400 border-solid">
+    <header className="flex items-center justify-between px-4 py-3 bg-white border border-1 border-b-gray-200 ">
       <div className="flex items-center">
         <div className="pr-4">
           <img
@@ -86,6 +88,8 @@ export function Header(props: HeaderProps) {
 }
 
 function renderingHeadContent(content: string) {
+  const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
+
   // console.log(content);
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold">Dashboard</span>;
@@ -108,8 +112,11 @@ function renderingHeadContent(content: string) {
   if (content === "/designer/manage-flow") {
     return <span className="w-2/5 font-bold">Designer &gt; Manage Flow</span>;
   }
-  if (content === "/Designer/DataCatalog") {
-    return <span className="w-2/5 font-bold">Designer &gt; Data Catalog</span>;
+  if (content === "/DataCatalog") {
+    return <span className="w-2/5 font-bold"> Data Catalog</span>;
+  }
+  if (content === "/DataCatalog/schema") {
+    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0].data_src_lyt_name} &gt; Schema</span>;
   }
   if(content === "/designer/flow-playground"){
     return <CustomToolbarComponent />

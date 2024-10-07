@@ -144,3 +144,27 @@ th{
   font-weight: bold !important;
   font-family: 'Inter';
 }
+
+
+.disabledTextField .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.disabledTextField .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #eef0f2 !important;
+  /* Adjust border color as needed */
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #eef0f2 !important;
+  /* Adjust border color as needed */
+}
+
+.MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+  border-color: #eef0f2 !important;
+  /* Default border color */
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #eef0f2 !important;
+  /* Focus border color */
+}

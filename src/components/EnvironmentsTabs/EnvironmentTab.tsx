@@ -13,16 +13,16 @@ type Platform = { id: string; name: string; logo: string };
 // Constants
 const PLATFORMS: Platform[] = [
   {
-    id: "google-cloud",
-    name: "Google Cloud",
-    logo: "/src/assets/environments/google.svg?height=40&width=40",
-  },
-  {
     id: "aws",
     name: "Amazon Web Services",
     logo: "/src/assets/environments/aws.svg?height=40&width=40",
   },
   {
+    id: "google-cloud",
+    name: "Google Cloud",
+    logo: "/src/assets/environments/google.svg?height=40&width=40",
+  },
+  /* {
     id: "azure",
     name: "Microsoft Azure",
     logo: "/src/assets/environments/azure.svg?height=40&width=40",
@@ -31,7 +31,7 @@ const PLATFORMS: Platform[] = [
     id: "bighammer",
     name: "BigHammer.ai",
     logo: "/src/assets/environments/bighammer.svg?height=40&width=40",
-  },
+  }, */
 ];
 
 // Helper Components

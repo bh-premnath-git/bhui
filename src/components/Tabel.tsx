@@ -257,6 +257,7 @@ export function FlexibleTable({
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
+      <div className="flex space-x-4">
         {columns.filter((col) => col.filterable).map((column) => (
           <DropdownMenu key={column.key}>
             <DropdownMenuTrigger asChild>
@@ -288,6 +289,7 @@ export function FlexibleTable({
             </DropdownMenuContent>
           </DropdownMenu>
         ))}
+        </div>
         <div className="flex space-x-2">
           <Input
             placeholder="Search"

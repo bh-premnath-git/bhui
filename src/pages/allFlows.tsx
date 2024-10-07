@@ -40,7 +40,8 @@ const columns: ColumnConfig[] = [
   {
     key: 'Environment',
     header: 'Environment ID',
-    sortable: false,
+    sortable: true,
+    filterable: true,
     type: 'number',
   },
   {

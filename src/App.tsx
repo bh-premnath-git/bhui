@@ -6,9 +6,10 @@ import { Header } from '@/components/Header';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
-import DataCatalog from './pages/dataCatalog';
 
 // Lazy-loaded components
+
+
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
@@ -55,7 +56,8 @@ const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
 const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
-
+const DataCatalog = lazy(() => import('@/pages/dataCatalog'));
+const CatalogsSchema = lazy(() => import('@/pages/catalogSchema'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -197,7 +199,8 @@ function App() {
     { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
     { path: '/DataOps Hub/Explorer', element: <Explorer /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
-    { path: '/Designer/DataCatalog', element: <DataCatalog /> },
+    { path: '/DataCatalog', element: <DataCatalog /> },
+    { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
   ];
 
   return (

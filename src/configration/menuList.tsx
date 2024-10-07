@@ -7,7 +7,7 @@ export const menuList = [
     {
         label: "Data Catalog",
         icon: <img src="/assets/menu/catalog.png" alt="data-catalog" width={20} height={20} />,
-        path: "/data-catalog"
+        path: "/DataCatalog"
     },
     {
         label: "Designer",

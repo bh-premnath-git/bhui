@@ -6,6 +6,10 @@ import { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { formatDate } from '@/Utils/dateFormatter';
+import TagDialog from '@/common/TagDialog';
 
 const validationSchema = Yup.object({
     tagKey: Yup.string().required('Tag Key is required'),
@@ -16,12 +20,14 @@ const validationSchemaLink = Yup.object({
     label: Yup.string().required('Label is required'),
 });
 
-export default function About(props:any) {
+export default function About(props: any) {
+    const { layoutList } = useSelector((state: RootState) => state.catalogApi);
+
     const [open, setOpen] = useState(false);
     const [openAddLink, setOpenAddLink] = useState(false);
     const [closeAddLink, setCloseAddLink] = useState()
     const data = props.data;
-    const [tags, setTag]:any = useState([]);
+    const [tags, setTag]: any = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [tagKey, setTagKey] = useState('');
     const [tagValue, setTagValue] = useState('');
@@ -38,9 +44,9 @@ export default function About(props:any) {
     const closeLinkDialog = () => {
         setOpenAddLink(false)
     }
-    const handleTagDelete = (i:any) => {
+    const handleTagDelete = (i: any) => {
         console.log(i)
-        const updatedTags = tags.filter((_:any, index:any) => index !== i);
+        const updatedTags = tags.filter((_: any, index: any) => index !== i);
 
         setTag(updatedTags)
         // tags.splice(index,1);		
@@ -52,7 +58,7 @@ export default function About(props:any) {
         setSubmitting(false);
         setIsOpen(false);
     };
-    const linkSubmit = (values:any, { setSubmitting }: { setSubmitting: (isSubmitting: any) => void }) => {
+    const linkSubmit = (values: any, { setSubmitting }: { setSubmitting: (isSubmitting: any) => void }) => {
         console.log('Form values:', values);
         tags.push(values)
         setSubmitting(false);
@@ -72,13 +78,13 @@ export default function About(props:any) {
     };
     return (
         <Stack sx={{ p: '16px' }}>
-            <Typography variant='body2' sx={{ p: '4px',fontSize:'10px' }}>Last Updated On: {data.data_src_last_updated}</Typography>
+            <Typography variant='body2' sx={{ p: '4px', fontSize: '10px' }}>Last Updated On: <span className="font-bold"> {formatDate(layoutList[0].updated_at)}</span></Typography>
             <Divider />
             <Stack className='mt-12'>
                 <Typography variant='body2' fontWeight={'600'} fontSize={'17px'}>About</Typography>
                 <Typography variant='body1' fontSize={'13px'} color={'#5e5e5e'}>Loream Ipusum is simply Dummy Test of The <br></br>Printing and Typecasting Industry.Loream Ipusm <br></br> Text Typecasting Industry.</Typography>
                 <Stack direction={"row"} justifyContent={'space-between'}>
-                    <Stack sx={{fontSize:'14px'}}>
+                    <Stack sx={{ fontSize: '14px' }}>
                         <Button onClick={openLinkDialog}>
                             <Typography variant='subtitle2' fontWeight={"bold"} sx={{ color: '#00b060', }} onClick={addTag}>
                                 <AddCircleIcon sx={{ color: '#00b060' }} /> ADD LINK
@@ -92,7 +98,7 @@ export default function About(props:any) {
             </Stack>
             <Divider />
 
-            <Stack mt={2} sx={{fontSize:'14px'}}>
+            <Stack mt={2} sx={{ fontSize: '14px' }}>
                 <Typography variant='body2' fontWeight={'600'} fontSize={'17px'}>Owners</Typography>
 
                 <Stack>
@@ -120,58 +126,19 @@ export default function About(props:any) {
                             </Stack> */}
                 <div className='text-left  mb-10'>
                     <p style={{ marginTop: '2px' }}>
-                        {tags.map((tag:any, index:any) => (
+                        {tags.map((tag: any, index: any) => (
                             <Chip label={`${tag.tagKey} >> ${tag.tagValue}`} variant="outlined" style={{ fontSize: '12px', borderRadius: '5px', background: '#eeeeee', marginLeft: `${index == 0 ? '' : '16px'}` }}
                                 onDelete={() => handleTagDelete(index)} />
                         ))}
                     </p>
                 </div>
-                <Dialog open={isOpen} onClose={closeDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
-                    <DialogTitle mx={2} px={5}>ADD TAGS</DialogTitle>
-                    <DialogContent sx={{ width: '350px', }} >
-                        <Formik
-                            initialValues={{ tagKey: '', tagValue: '' }}
-                            validationSchema={validationSchema}
-                            onSubmit={handleSubmit}
-                        >
-                            {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
-                                <Form style={{ textAlign: 'center' }}>
-                                    <div>
-                                        <div style={{ paddingTop: '8px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '21px' }}>
-                                            <label htmlFor="tagKey">Tag Key</label>
-                                        </div>
-                                        <Field type="text" id="tagKey" name="tagKey" as={TextField} />
-                                        <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                            <ErrorMessage name="tagKey" component="div" />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div style={{ paddingTop: '8px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '21px' }}>
-                                            <label className='py-12 my-12' htmlFor="tagValue">Tag Value</label>
-
-                                        </div>
-                                        <Field type="text" id="tagValue" name="tagValue" as={TextField} />
-                                        <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                            <ErrorMessage name="tagValue" component="div" />
-                                        </div>
-                                    </div>
-
-
-                                    <DialogActions sx={{ justifyContent: 'space-between', mx: 3, mb: 2 }} >
-
-                                        <Button onClick={closeDialog} variant="contained"
-                                            size="large">Close</Button>
-                                        <Button type='submit' variant="contained"
-                                            color="secondary"
-                                            size="large" sx={{ width: 80 }} disabled={!values.tagKey || !values.tagValue}>Ok</Button>
-
-                                    </DialogActions>
-                                </Form>
-                            )}
-                        </Formik>
-                    </DialogContent>
-                </Dialog>
+                <TagDialog
+                                isOpen={isOpen}
+                                closeDialog={() => setIsOpen(false)}
+                                tags={tags}
+                                setTags={setTag}
+                            />
+               
                 <Dialog open={openAddLink} onClose={closeLinkDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
                     <DialogTitle px={2}>Add Link</DialogTitle>
                     <DialogContent sx={{ width: '420px', height: '300px' }} >
@@ -220,11 +187,11 @@ export default function About(props:any) {
                 </Dialog>
                 {/* onClick={addTag} */}
                 <div className='text-left'>
-                <Stack onClick={openDialog} sx={{fontSize:'14px'}}>
-                    <Typography variant='subtitle2' fontWeight={"bold"} sx={{ color: '#00b060', }} onClick={addTag}>
-                        <AddCircleIcon sx={{ color: '#00b060', mr: '4px' }} />  ADD TAGS
-                    </Typography>
-                </Stack>
+                    <Stack onClick={openDialog} sx={{ fontSize: '14px' }}>
+                        <Typography variant='subtitle2' fontWeight={"bold"} sx={{ color: '#00b060', }} onClick={addTag}>
+                            <AddCircleIcon sx={{ color: '#00b060', mr: '4px' }} />  ADD TAGS
+                        </Typography>
+                    </Stack>
                     {/* <Button onClick={openDialog}
                         className="group inline-flex items-center  -ml-4 py-1 px-1 rounded cursor-pointer">
                         <SwombSvgIcon style={{ color: '#00b060' }} size={20}>heroicons-solid:plus-circle</SwombSvgIcon>

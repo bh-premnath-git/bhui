@@ -33,7 +33,7 @@ const TagDialog: React.FC<TagDialogProps> = ({ isOpen, closeDialog, tags, setTag
 
     return (
         <Dialog open={isOpen} onClose={closeDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
-            <DialogTitle mx={2} px={5}>Add Tags</DialogTitle>
+            <DialogTitle >Add Tags</DialogTitle>
             <DialogContent sx={{ width: '350px' }}>
                 <Formik
                     initialValues={initialValues}
@@ -63,11 +63,11 @@ const TagDialog: React.FC<TagDialogProps> = ({ isOpen, closeDialog, tags, setTag
                                 error
                             />
                             <DialogActions sx={{ justifyContent: 'space-between', mt: 2 }}>
-                                <Button onClick={closeDialog} variant="contained" sx={{ textTransform: 'none' }}>Close</Button>
+                                <Button onClick={closeDialog} variant="contained" sx={{ textTransform: 'none',backgroundColor:'gray' }} >Close</Button>
                                 <Button
                                     type="submit"
                                     variant="contained"
-                                    sx={{ textTransform: 'none' }}
+                                    sx={{ textTransform: 'none',backgroundColor:'black' }}
                                     disabled={isSubmitting || !isValid}
                                 >
                                     Ok

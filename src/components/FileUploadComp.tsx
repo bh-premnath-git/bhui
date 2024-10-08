@@ -114,7 +114,7 @@ export function FileUpload({ onFileUpload, maxSize = 5 * 1024 * 1024 }: FileUplo
       )}
 
       {file && (
-        <div className="bg-white p-4 rounded-md">
+        <div className="bg-gray-100 p-2 w-1/2 rounded-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">{file.name}</span>
             <button
@@ -125,7 +125,7 @@ export function FileUpload({ onFileUpload, maxSize = 5 * 1024 * 1024 }: FileUplo
               <X size={18} />
             </button>
           </div>
-          <div className="w-full bg-background rounded-full h-2.5 mb-2">
+          <div className="w-full bg-blue-500 rounded-full h-2.5 mb-2">
             <div
               className="bg-primary h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}

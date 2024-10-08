@@ -26,6 +26,7 @@ type EnvironmentTabState = {
   airflowUrl: string;
   airflowDagBucket: string;
   privateKeyFile: File | null;
+  verification: boolean;
 };
 
 // Constants
@@ -69,14 +70,14 @@ type Action =
   | { type: 'SET_LAKE_DESCRIPTION'; payload: string }
   | { type: 'SET_STANDARD_ZONE_CONFIG'; payload: LifecycleConfig }
   | { type: 'SET_ARCHIVE_ZONE_CONFIG'; payload: LifecycleConfig }
-  | { type: 'SET_ENVIRONMENT_TAB'; payload: Partial<EnvironmentTabState> };
+  | { type: 'SET_ENVIRONMENT_TAB'; payload: Partial<EnvironmentTabState> }
+  | { type: 'SET_VERIFICATION'; payload: boolean };
 
 
 const initialState: State = {
   activeTab: TABS[0],
   tags: [
     { key: "Department", value: "Tech" },
-    { key: "Region", value: "USA" },
   ],
   selectedPlatform: "aws",
   zoneDetails: INITIAL_ZONE_DETAILS,
@@ -95,6 +96,7 @@ const initialState: State = {
     airflowUrl: "",
     airflowDagBucket: "",
     privateKeyFile: null,
+    verification: false
   },
 };
 
@@ -123,6 +125,9 @@ function reducer(state: State, action: Action): State {
         ...state,
         environmentTab: { ...state.environmentTab, ...action.payload }
       };
+    case 'SET_VERIFICATION':
+      return { ...state, environmentTab: { ...state.environmentTab, verification: action.payload } };
+
     default:
       return state;
   }
@@ -179,6 +184,10 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     dispatch({ type: 'SET_ENVIRONMENT_TAB', payload: changes });
   };
 
+  const handleChangeVerification = (data: boolean) => {
+    dispatch({ type: 'SET_VERIFICATION', payload: data });
+  }
+
   return (
     <div className="container mx-auto p-2 space-y-4">
       <Tabs value={state.activeTab} onValueChange={handleTabChange} className="w-full">
@@ -226,6 +235,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                   airflowUrl={state.environmentTab.airflowUrl}
                   airflowDagBucket={state.environmentTab.airflowDagBucket}
                   privateKeyFile={state.environmentTab.privateKeyFile}
+                  chamgeVerification={handleChangeVerification}
                 />
               </TabsContent>
               <TabsContent value="configure-lake">

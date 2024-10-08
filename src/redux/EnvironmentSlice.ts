@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import ApiService from "../Services/ApiServices";
-import Environment from "../oldpages/Admin-Console/Project/Component/Environment";
+import {ApiService} from "@/services/apiServices";
 
 export interface Environment {
   id: string;

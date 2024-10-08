@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import ApiService from '@/Services/ApiServices';
+import useToast from '@/oldcomponents/teast-service';
 
 // Types
 type Tag = { key: string; value: string };
@@ -24,6 +24,7 @@ type EnvironmentTabState = {
   airflowUrl: string;
   airflowDagBucket: string;
   privateKeyFile: File | null;
+  chamgeVerification: (data: boolean) => void;
 };
 
 // Constants
@@ -222,6 +223,10 @@ type EnvironmentTabProps = {
   onChange: (changes: Partial<EnvironmentTabState>) => void;
 } & EnvironmentTabState;
 
+const validationSchema = Yup.object().shape({
+  environmentName: Yup.string().required('Environment name is required'),
+});
+
 export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   selectedPlatform,
   setSelectedPlatform,
@@ -236,8 +241,11 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   airflowUrl,
   airflowDagBucket,
   privateKeyFile,
+  chamgeVerification,
   onChange,
 }) => {
+  const [ToastComponent, showToast] = useToast();
+  const [isTestConnection, setIsTestConnection] = useState(false);
   const handleChange = (field: keyof EnvironmentTabState, value: string | File | null) => {
     if(selectedPlatform === "google-cloud") {
       onChange({ [field]: value });
@@ -253,9 +261,32 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     handleChange('privateKeyFile', file);
   };
 
-  const handleValidate = () => {
-    console.log("Validating credentials...");
-    // Implement credential validation logic here
+  const handleValidate = async() => {
+    
+    try {
+      const values = {
+        aws_access_key_id: accessKey,
+        aws_secret_access_key: secretAccessKey
+      }  
+      const result = await ApiService('8011', 'post', `/aws/test_connection`, values);
+      if (result.status) {
+        setIsTestConnection(true)
+        chamgeVerification(true);
+        showToast('Successfully able to connect', { color: '#00b060' });
+      }else{
+        setIsTestConnection(false)
+        chamgeVerification(false);
+        showToast('Failed to connect', { color: '#FF0000' });
+      }
+
+    } catch (error) {
+      setIsTestConnection(false)
+      chamgeVerification(false);
+        showToast('Failed to connect', { color: '#FF0000' });
+    }
+
+    // /api/v1/aws/test_connection
+    
   };
 
   const renderCredentialsForm = () => {
@@ -329,9 +360,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               label="Location*"
               id="location"
               options={[
-                { value: "us-east", label: "US East" },
-                { value: "us-west", label: "US West" },
-                { value: "eu-central", label: "EU Central" },
+                { value: "1", label: "US East" },
+                { value: "2", label: "US West" },
+                { value: "3", label: "EU Central" },
               ]}
               value={location}
               onChange={(value) => handleChange('location', value)}
@@ -343,9 +374,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               <Label htmlFor="private-key">Private Key*</Label>
               <div className="w-1/2">
                 <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
-                {privateKeyFile && (
-                  <p className="mt-2 text-sm text-gray-600">Uploaded file: {privateKeyFile.name}</p>
-                )}
               </div>
             </div>
           </div>
@@ -403,6 +431,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         </div>
         <TagInput tags={tags} setTags={setTags} />
       </div>
+      <ToastComponent />
     </div>
   );
 };

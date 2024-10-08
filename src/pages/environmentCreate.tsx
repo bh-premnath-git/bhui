@@ -8,10 +8,9 @@ import { PreConfigureZonesTab } from '@/components/EnvironmentsTabs/PreConfigure
 import { ConfigureLifecycleTab } from '@/components/EnvironmentsTabs/ConfigureLifecycleTab';
 import { useNavigate } from 'react-router-dom';
 import { createEnvironment } from '@/redux/EnvironmentSlice';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { RootState } from '@/store/store';
+import { useAppDispatch } from '@/redux/hooks';
 import { Spinner } from "@/components/ui/spinner";
-import { ErrorDisplay } from "@/components/ui/error-display";
+import useToast from '@/oldcomponents/teast-service';
 
 // Types
 type Tag = { key: string; value: string };

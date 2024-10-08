@@ -130,6 +130,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const navigate = useNavigate();
@@ -176,7 +177,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
     try {
       setIsModalOpen(true);
       setModalStatus('loading');
-
+      setIsLoading(() => true);
       const result = await dispatch(createFlow(payload));
 
       if (createFlow.fulfilled.match(result)) {
@@ -199,6 +200,8 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
         navigate('/designer/manage-flow');
         setIsModalOpen(false);
       }, 3000);
+    }finally {
+      setIsLoading(() => false);
     }
   };
 
@@ -337,7 +340,9 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
             Close
           </button>
           <button type="submit" className={styles.createButton}>
-            Create Flow
+          {
+                  isLoading ? <Spinner /> : null
+                }{ "Create Flow"}
           </button>
         </div>
       </form>

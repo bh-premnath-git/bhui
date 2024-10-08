@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -135,6 +135,7 @@ function reducer(state: State, action: Action): State {
 export default function EnvironmentConsoleComponent(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
   const dispatchApi = useAppDispatch();
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const handleBack = (): void => {
@@ -144,7 +145,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     }
   };
 
-  const handleNext = (): void => {
+  const handleNext = async(): Promise<void> => {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex < TABS.length - 1) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: TABS[currentIndex + 1] });
@@ -160,6 +161,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         access_key: state.environmentTab.accessKey,
         secret_access_key: state.environmentTab.secretAccessKey
       }
+      setIsLoading(()=>true);
       dispatchApi(createEnvironment(values))
         .then((response: any) => {
           if (response.type === "environment/create/fulfilled")
@@ -168,6 +170,8 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         .catch((error: any) => {
           console.error(error)
           navigate('/all-environment');
+        }).finally(() => {
+          setIsLoading(()=>false);
         });
 
     }
@@ -288,8 +292,10 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button variant="outline" onClick={handleBack} disabled={state.activeTab === TABS[0]}>
           Back
         </Button>
-        <Button className="bg-gray-800 text-white hover:bg-gray-700" onClick={handleNext}>
-          {state.activeTab === TABS[TABS.length - 1] ? "Create Environment" : "Next"}
+        <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext}>
+          {state.activeTab === TABS[TABS.length - 1] ? <>{
+                  isLoading ? <Spinner /> : null
+                }{"Create Environment"}</> : "Next"}
         </Button>
       </div>
     </div>

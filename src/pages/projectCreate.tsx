@@ -69,7 +69,7 @@ export default function ProjectCreationComponent() {
     bh_github_provider: '',
     bh_github_username: '',
     bh_github_email: '',
-    bh_default_branch: 'Main',
+    bh_default_branch: '',
     bh_github_url: '',
     bh_github_token_url: '',
     tags: { tagList: [] },
@@ -159,14 +159,14 @@ export default function ProjectCreationComponent() {
         const result = await dispatch(createProject(values));
         if (result.payload) {
           showToast('Project created successfully', { color: '#4caf50' });
-          navigate('/admin-console');
+          navigate('/all-projects');
         }
       } else {
         // Update existing project
         const response = await dispatch(updateProject(values));
         if (response.payload) {
           showToast('Project updated successfully', { color: '#4caf50' });
-          navigate('/admin-console');
+          navigate('/all-projects');
         }
       }
     } catch (error: any) {
@@ -295,18 +295,18 @@ export default function ProjectCreationComponent() {
                   <Label htmlFor="bh_default_branch">Default Branch</Label>
                   <Field name="bh_default_branch">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_default_branch" placeholder="Main" />
+                      <Input {...field} id="bh_default_branch" placeholder="<main>" />
                     )}
                   </Field>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="bh_github_url">Github Repository URL</Label>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." />
+                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..."  className='w-2/3'/>
                     )}
                   </Field>
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
@@ -324,6 +324,7 @@ export default function ProjectCreationComponent() {
                           setIsTokenValid('inValid');
                           field.onChange(e);
                         }}
+                        className='w-2/3'
                       />
                     )}
                   </Field>
@@ -433,11 +434,16 @@ export default function ProjectCreationComponent() {
             <DialogHeader>
               <DialogTitle>Project Already Exists</DialogTitle>
             </DialogHeader>
+            <div className="flex flex-col items-center justify-center gap-2 py-2">
             <p className="text-gray-700">
-              A project with this name already exists. Please choose a different name.
+              A project with this name already exists.
             </p>
+            <p className="text-gray-700">
+              Please choose a different name.
+            </p>
+            </div>
             <DialogFooter>
-              <Button onClick={() => setProjectExistsModalOpen(false)}>Close</Button>
+              <Button className='text-white bg-black' onClick={() => setProjectExistsModalOpen(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

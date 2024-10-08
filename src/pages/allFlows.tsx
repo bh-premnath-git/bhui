@@ -5,7 +5,7 @@ import { FlexibleTable } from "@/components/Tabel";
 import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
-import { listFlows, getFlowProjectList } from '@/redux/FlowSlice';
+import { listFlows, getFlowProjectList, getEnvironmentList } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
@@ -84,6 +84,7 @@ const AllFlows: React.FC = () => {
   useLayoutEffect(() => {
     dispatch(listFlows());
     dispatch(getFlowProjectList({}));
+    dispatch(getEnvironmentList());
   }, [dispatch]);
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi

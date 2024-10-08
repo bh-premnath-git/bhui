@@ -15,6 +15,7 @@ interface FormFieldProps {
     valueKey?: string; // Key to access the value in options
     labelKey?: string; // Key to access the label in options
     onChange?: (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => void;
+    required?: boolean; // Flag for required fields
 }
 
 const CustomField: React.FC<FormFieldProps> = ({
@@ -28,12 +29,11 @@ const CustomField: React.FC<FormFieldProps> = ({
     options = [],
     valueKey = 'value',
     labelKey = 'label',
-    onChange
+    onChange,
+    required = false // Default to false if not passed
 }) => {
     return (
-       
-       <FormControl fullWidth variant="outlined" margin="normal" sx={{mt:1}}>
-
+        <FormControl fullWidth variant="outlined" margin="normal" sx={{ mt: 1 }}>
             <Field name={name}>
                 {({ field, form }: { field: any; form: any }) => {
                     const handleChange = (event: React.ChangeEvent<{ name?: string; value: unknown }>) => {
@@ -42,40 +42,52 @@ const CustomField: React.FC<FormFieldProps> = ({
                     };
 
                     return controlName === 'select' ? (
-                        <Select
-                            {...field}
-                            size={size}
-                            disabled={disabled}
-                            onChange={handleChange}
-                            inputProps={{ 'aria-label': label }}
-                        >
-                            {options.map((option, index) => (
-                                <MenuItem key={index} value={option[valueKey]}>
-                                    {option[labelKey]}
-                                </MenuItem>
-                            ))}
-                        </Select>
+                        <>
+                            {label && (
+                                <Label className="font-normal">
+                                    {label} {required && <span style={{ color: 'red' }}>*</span>}
+                                </Label>
+                            )}
+                            <Select
+                                {...field}
+                                size={size}
+                                disabled={disabled}
+                                onChange={handleChange}
+                                inputProps={{ 'aria-label': label }}
+                            >
+                                {options.map((option, index) => (
+                                    <MenuItem key={index} value={option[valueKey]}>
+                                        {option[labelKey]}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </>
                     ) : (
-                       <>
-                       <Label className='font-normal'>{label}</Label>
-                        <TextField className='shadow-sm rounded'
-                            {...field}
-                            size={size}
-                            type={type}
-                            placeholder={placeholder}
-                            variant="outlined"
-                            fullWidth
-                            disabled={disabled}
-                            onChange={handleChange}
-                            InputProps={{ 'aria-label': label }}
-                        />
-                       </>
+                        <>
+                            {label && (
+                                <Label className="font-normal">
+                                    {label} {required && <span style={{ color: 'red' }}>*</span>}
+                                </Label>
+                            )}
+                            <TextField
+                                {...field}
+                                size={size}
+                                type={type}
+                                placeholder={placeholder}
+                                variant="outlined"
+                                fullWidth
+                                disabled={disabled}
+                                onChange={handleChange}
+                                InputProps={{ 'aria-label': label }}
+                                className="shadow-sm rounded"
+                            />
+                        </>
                     );
                 }}
             </Field>
 
             <ErrorMessage name={name}>
-                {msg => <FormHelperText error>{msg}</FormHelperText>}
+                {(msg) => <FormHelperText error>{msg}</FormHelperText>}
             </ErrorMessage>
         </FormControl>
     );

@@ -7,8 +7,6 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 
-// Lazy-loaded components
-
 
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
@@ -60,6 +58,8 @@ const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
 const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
 const AllUsers = lazy(() => import('@/pages/allUsers'));
 const AddUser = lazy(() => import('@/pages/addUser'));
+const AllCustomers = lazy(() => import('@/pages/allCustomers'));
+const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -205,6 +205,8 @@ function App() {
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
     { path: '/AllUsers', element: <AllUsers /> },
     { path: '/AddUser', element: <AddUser /> },
+    { path: '/AllCustomers', element: <AllCustomers /> },
+    { path: '/AddCustomers', element: <AddCustomers /> },
   ];
 
   return (

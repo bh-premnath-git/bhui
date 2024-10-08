@@ -1,10 +1,13 @@
 import ApiService from "@/Services/ApiServices";
+import LocalStorageService from "@/Services/local-storage-service";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
   userDataList: any;
+  codesDtl: any;
   loading: boolean;
   error: string | null;
+
 
 }
 
@@ -12,6 +15,7 @@ const initialState: ApiState = {
   loading: false,
   error: null,
   userDataList: [],
+  codesDtl: []
 };
 
 interface ApiResponse {
@@ -33,12 +37,30 @@ export const getUserDataList: any = createAsyncThunk(
 );
 
 
+export const getCodesDtl: any = createAsyncThunk(
+  'user/getCodesDtl',
+  async (params: any, thunkAPI) => {
+    // alert(JSON.stringify(params))
+    try {
+
+      let data =await LocalStorageService.getItem('codesDtl');
+      return data;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+
 
 const UserSlice = createSlice({
   name: "api/buildDataPipeline",
   initialState,
   reducers: {
-   
+    setCodesData: (state) => {
+      let data = LocalStorageService.getItem('codesDtl');
+      state.codesDtl = data;
+    },
 
   },
   extraReducers: (builder) => {
@@ -52,11 +74,31 @@ const UserSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.userDataList = action.payload;
-         
+
         }
       )
       .addCase(
         getUserDataList.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(getCodesDtl.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getCodesDtl.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.codesDtl = action.payload;
+
+        }
+      )
+      .addCase(
+        getCodesDtl.rejected,
         (state, action: PayloadAction<string>) => {
           state.loading = false;
           state.error = action.payload;
@@ -68,4 +110,4 @@ const UserSlice = createSlice({
 });
 
 export default UserSlice.reducer;
-// export const { setSelectedDataSource } = UserSlice.actions;
+export const { setCodesData } = UserSlice.actions;

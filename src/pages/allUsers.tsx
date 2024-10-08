@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect } from "react";
 import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
@@ -7,9 +7,10 @@ import { getGitProject } from '@/redux/ProjectSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
-import { getUserDataList } from "@/redux/UserSlice";
+import { getCodesDtl, getUserDataList, setCodesData } from "@/redux/UserSlice";
 import { Stack } from "@mui/material";
 import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { useDispatch } from "react-redux";
 
 // Define types in a separate file for better organization
 interface userData {
@@ -21,17 +22,22 @@ interface userData {
     user_status_cd: number;
     user_admin_status_cd: number;
     project_details: Array<any>[];
-    created_at:any;
-    updated_at:any
+    created_at: any;
+    updated_at: any
+}
+interface codesData {
+    id: number;
+    dtl_desc: string;
 }
 
+
 interface UserDetailTableProps {
+    columns:ColumnConfig[]
     userList: userData[];
     loading: boolean;
     error: { message: string } | null;
 }
 
-// Define the ColumnConfig type based on what FlexibleTable expects
 type ColumnConfig = {
     key: string;
     header: string;
@@ -43,90 +49,6 @@ type ColumnConfig = {
     };
     render?: (value: any, row: any) => React.ReactNode;
 };
-
-// Define column configurations outside the component for better performance
-const columns: ColumnConfig[] = [
-    {
-        key: 'bh_user_first_name',
-        header: 'Full Name',
-        sortable: true,
-        filterable: true,
-        type: 'text',
-        render: (value, row) => {
-            return (
-                <>
-                    {row?.bh_user_first_name}  {row?.bh_user_middle_name}  {row?.bh_user_last_name}
-                </>
-            )
-        }
-
-    },
-    {
-        key: 'user_email_id',
-        header: 'Email ID',
-        type: 'number',
-        sortable: false,
-    },
-    {
-        key: 'project_details',
-        header: 'Project Details',
-        type: 'number',
-        sortable: false,
-        render: (value, row) => {
-            return (
-                <>
-                    {row?.project_details?.map((item: any, index: number) => (
-                        <div key={index}>
-                            <Stack direction={'row'}>
-                                <span >
-                                    <b>project{index + 1}  </b></span>:   <span className="mx-2">
-                                    {item.project?.label}
-                                </span>
-                            </Stack>
-                            <Stack direction={'row'}>
-                                <span className="font-bold p-1">
-                                Role :
-                                </span>
-                                {item.projectRole?.map((role: any, j: number) => (
-                                    <Stack key={j} direction={'row'}>
-                                        <Stack className="p-1 rounded-sm" direction={'row'} sx={{backgroundColor:`${role?.dtl_desc=='Admin'||role?.dtl_desc=='Super Admin'?'#feecc6':'#d4f5e7'}`}}>
-                                                {role?.dtl_desc}
-                                        </Stack>
-                                    </Stack>
-                                ))}
-
-                            </Stack>
-                        </div>
-
-                    ))}
-                </>
-            )
-        }
-
-    },
-    {
-        key: 'user_status_cd',
-        header: 'Status',
-        type: 'number',
-        sortable: false,
-    },
-    {
-        key: 'created_at',
-        header: 'Created On',
-        type: 'number',
-        sortable: false,
-        render:(value:any)=>formatedDate(value)
-    },
-    {
-        key: 'updated_at',
-        header: 'Last Active On',
-        type: 'number',
-        sortable: false,
-        render:(value:any)=>formatedDate(value)
-    },
-    
-
-];
 
 const EmptyComponent: React.FC = () => {
     const navigate = useNavigate();
@@ -146,6 +68,7 @@ const EmptyComponent: React.FC = () => {
 };
 
 function UserDetailTable({
+    columns,
     userList,
     loading,
     error,
@@ -192,15 +115,103 @@ function UserDetailTable({
 }
 
 const AllUsers: React.FC = () => {
-    const { userDataList, loading, error: apiError } = useAppSelector(
+    const { codesDtl, userDataList, loading, error: apiError } = useAppSelector(
         (state: RootState) => state.userApi
     );
-
     const error = apiError ? { message: apiError } : null;
-
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(getCodesDtl());
+        console.log(codesDtl)
+    }, [dispatch, codesDtl.length == 0]);
+    const columns: ColumnConfig[] = [
+        {
+            key: 'bh_user_first_name',
+            header: 'Full Name',
+            sortable: true,
+            filterable: true,
+            type: 'text',
+            render: (value, row) => {
+                return (
+                    <>
+                        {row?.bh_user_first_name}  {row?.bh_user_middle_name}  {row?.bh_user_last_name}
+                    </>
+                )
+            }
+    
+        },
+        {
+            key: 'user_email_id',
+            header: 'Email ID',
+            type: 'number',
+            sortable: false,
+        },
+        {
+            key: 'project_details',
+            header: 'Project Details',
+            type: 'number',
+            sortable: false,
+            render: (value, row) => {
+                return (
+                    <>
+                        {row?.project_details?.map((item: any, index: number) => (
+                            <div key={index}>
+                                <Stack direction={'row'}>
+                                    <span >
+                                        <b>project{index + 1}  </b></span>:   <span className="mx-2">
+                                        {item.project?.label}
+                                    </span>
+                                </Stack>
+                                <Stack direction={'row'}>
+                                    <span className="font-bold p-1">
+                                        Role :
+                                    </span>
+                                    {item.projectRole?.map((role: any, j: number) => (
+                                        <Stack key={j} direction={'row'} spacing={1}>
+                                            <Stack className="p-1 rounded-sm mx-1" direction={'row'} sx={{ backgroundColor: `${role?.dtl_desc == 'Admin' || role?.dtl_desc == 'Super Admin' ? '#feecc6' : '#d4f5e7'}` }}>
+                                                {role?.dtl_desc}
+                                            </Stack>
+                                        </Stack>
+                                    ))}
+    
+                                </Stack>
+                            </div>
+    
+                        ))}
+                    </>
+                )
+            }
+    
+        },
+        {
+            key: 'user_status_cd',
+            header: 'Status',
+            type: 'number',
+            sortable: false,
+            render:(value)=>codesDtl.find((item:any)=>item.id==value).dtl_desc
+        },
+        {
+            key: 'created_at',
+            header: 'Created On',
+            type: 'number',
+            sortable: false,
+            render: (value: any) => formatedDate(value)
+        },
+        {
+            key: 'updated_at',
+            header: 'Last Active On',
+            type: 'number',
+            sortable: false,
+            render: (value: any) => formatedDate(value)
+        },
+    
+    
+    ];
+    
     return (
         <UserDetailTable
             userList={userDataList}
+            columns={columns}
             loading={loading}
             error={error}
         />

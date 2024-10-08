@@ -174,29 +174,31 @@ const AddUser = () => {
                 enableReinitialize
             >
                 {({ values, isSubmitting, isValid, dirty }) => (
-                    <Form>
+                    <Form className='w-10/12 m-auto'>
 
                         <div className="text-center">
                             <Label className='font-normal '> Fill in the details below to add a new user.</Label>
 
                         </div>
                         <Grid container spacing={2} className='m-1'>
-                            <Grid item xs={2}>
+                            <Grid item xs={2.5}>
                                 <CustomField
                                     name="bh_user_first_name"
                                     label="First Name"
-                                    placeholder='Enter First name '
+                                    placeholder='Enter First name'
+                                    required={true}
                                 />
                             </Grid>
-                            <Grid item xs={2}>
+                            <Grid item xs={2.5}>
                                 <CustomField
                                     name="bh_user_middle_name"
                                     label="Middle Name"
                                     placeholder='Enter Middle name '
                                 />
                             </Grid>
-                            <Grid item xs={2}>
+                            <Grid item xs={2.5}>
                                 <CustomField
+                                    required={true}
                                     name="bh_user_last_name"
                                     label="Last Name"
                                     placeholder='Enter Last name '
@@ -204,11 +206,11 @@ const AddUser = () => {
                             </Grid>
                         </Grid>
                         <Grid container spacing={2} className='m-1'>
-                            <Grid item xs={5}>
+                            <Grid item xs={6}>
                                 <CustomField
                                     name="user_email_id"
                                     label="Email"
-                                    placeholder='Enter Email '
+                                    placeholder='Enter Email ' required={true}
                                 />
                             </Grid>
 
@@ -217,8 +219,8 @@ const AddUser = () => {
 
 
                         <Grid container spacing={2} className='m-1'>
-                            <Grid item xs={5}>
-                                <Label className='font-normal'>Status</Label>
+                            <Grid item xs={6}>
+                                <Label className='font-normal'>Status <span style={{ color: 'red' }}>*</span></Label>
                                 <Field name="user_status_cd">
                                     {({ field }: any) => (
                                         <RadioGroup {...field} row>
@@ -238,8 +240,8 @@ const AddUser = () => {
                                 </Field>
                             </Grid>
 
-                            <Grid item xs={5}>
-                                <Label className='font-normal'>Admin User</Label>
+                            <Grid item xs={6}>
+                                <Label className='font-normal'>Admin User <span style={{ color: 'red' }}>*</span></Label>
                                 <Field name="user_admin_status_cd">
                                     {({ field }: any) => (
                                         <RadioGroup {...field} row>
@@ -263,8 +265,8 @@ const AddUser = () => {
                                 <>
                                     {values.project_details.map((project: any, index: number) => (
                                         <Grid container spacing={2} key={index} className='m-1'>
-                                            <Grid item xs={5}>
-                                                <Label className='font-normal'>Project {index + 1}</Label>
+                                            <Grid item xs={6}>
+                                                <Label className='font-normal'>Project {index + 1} <span style={{ color: 'red' }}>*</span></Label>
 
                                                 <Field
                                                     name={`project_details.${index}.project`}
@@ -284,8 +286,8 @@ const AddUser = () => {
                                                 />
                                                 <ErrorMessage name={`project_details.${index}.project`} component="div" />
                                             </Grid>
-                                            <Grid item xs={5}>
-                                                <Label className='font-normal'>Project Role</Label>
+                                            <Grid item xs={6}>
+                                                <Label className='font-normal'>Project Role <span style={{ color: 'red' }}>*</span></Label>
 
                                                 <Field
                                                     name={`project_details.${index}.projectRole`}

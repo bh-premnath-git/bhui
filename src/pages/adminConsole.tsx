@@ -92,7 +92,7 @@ const adminList: AdminItem[] = [
     title: "Manage Customer",
     desc: "Select this option to manage consumers",
     buttonText: 'Manage Customer',
-    link: '/admin-console/manage-customer'
+    link: '/AllCustomers'
   },
   {
     id: 3,

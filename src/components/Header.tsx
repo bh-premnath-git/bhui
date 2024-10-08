@@ -118,6 +118,12 @@ function renderingHeadContent(content: string) {
   if (content === "/DataCatalog/schema") {
     return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0].data_src_lyt_name} &gt; Schema</span>;
   }
+  if (content === "/AllUsers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console </span>&gt; Manage Data Platform User</span>;
+  }
+  if (content === "/AddUser") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User </span>&gt; Add User</span>;
+  }
   if(content === "/designer/flow-playground"){
     return <CustomToolbarComponent />
   }

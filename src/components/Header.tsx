@@ -98,19 +98,19 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold">Admin Console</span>;
   }
   if (content === "/all-projects") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Projects</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects</span>;
   }
   if (content === "/all-projects/new") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Projects &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects &gt; New</span>;
   }
   if (content === "/all-environment") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Environments</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments</span>;
   }
   if (content === "/all-environment/new") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Environments &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments &gt; New</span>;
   }
   if (content === "/designer/manage-flow") {
-    return <span className="w-2/5 font-bold">Designer &gt; Manage Flow</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Designer</span> &gt; Manage Flow</span>;
   }
   if (content === "/DataCatalog") {
     return <span className="w-2/5 font-bold"> Data Catalog</span>;

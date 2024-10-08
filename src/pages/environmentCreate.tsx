@@ -77,7 +77,6 @@ type Action =
 const initialState: State = {
   activeTab: TABS[0],
   tags: [
-    { key: "Department", value: "Tech" },
   ],
   selectedPlatform: "aws",
   zoneDetails: INITIAL_ZONE_DETAILS,
@@ -251,7 +250,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               <TabsContent value="preconfigure-zones">
                 <PreConfigureZonesTab
                   zoneDetails={state.zoneDetails}
-                  handleUrlChange={(index, newUrl) => {
+                  handleUrlsChange={(index, newUrl) => {
                     const newZoneDetails = [...state.zoneDetails];
                     newZoneDetails[index].url = newUrl;
                     dispatch({ type: 'SET_ZONE_DETAILS', payload: newZoneDetails });

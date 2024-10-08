@@ -27,8 +27,8 @@ const ZoneDetailItem: React.FC<{
 
 export const PreConfigureZonesTab: React.FC<{
   zoneDetails: ZoneDetail[];
-  handleUrlChange: (index: number, newUrl: string) => void;
-}> = ({ zoneDetails, handleUrlChange }) => {
+  handleUrlsChange: (index: number, newUrl: string) => void;
+}> = ({ zoneDetails, handleUrlsChange }) => {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <p className="text-sm text-gray-600 mb-4">
@@ -45,7 +45,7 @@ export const PreConfigureZonesTab: React.FC<{
             key={index}
             zone={zone}
             index={index}
-            handleUrlChange={handleUrlChange}
+            handleUrlChange={handleUrlsChange}
           />
         ))}
       </div>

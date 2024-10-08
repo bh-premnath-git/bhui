@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,15 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
-import * as Yup from 'yup';
 import ApiService from '@/Services/ApiServices';
 import useToast from '@/oldcomponents/teast-service';
 
 // Types
 type Tag = { key: string; value: string };
 type Platform = { id: string; name: string; logo: string; cloud_provider: number };
-type SelectFieldValue = string | number | undefined;
-type EnvironmentTabState = {
+
+interface EnvironmentTabProps {
+  selectedPlatform: string;
+  setSelectedPlatform: (platform: string) => void;
+  tags: Tag[];
+  setTags: (newTags: Tag[] | ((prevTags: Tag[]) => Tag[])) => void;
+  onChange: (changes: Partial<FormValues>) => void;
   environmentName: string;
   environment: string;
   projectId: string;
@@ -24,9 +30,21 @@ type EnvironmentTabState = {
   airflowUrl: string;
   airflowDagBucket: string;
   privateKeyFile: File | null;
-  chamgeVerification: (data: boolean) => void;
-};
+  chamgeVerification: (verified: boolean) => void;
+}
 
+interface FormValues {
+  environmentName: string;
+  environment: string;
+  projectId: string;
+  location: string;
+  accessKey: string;
+  secretAccessKey: string;
+  airflowUrl: string;
+  airflowDagBucket: string;
+  privateKeyFile: File | null;
+  selectedPlatform: string;
+}
 // Constants
 const PLATFORMS: Platform[] = [
   {
@@ -43,25 +61,49 @@ const PLATFORMS: Platform[] = [
   },
 ];
 
+// Validation Schema
+const validationSchema = Yup.object().shape({
+  environmentName: Yup.string().required('Environment name is required'),
+  environment: Yup.string().required('Environment is required'),
+  projectId: Yup.string().required('Project ID is required'),
+  location: Yup.string().required('Location is required'),
+  selectedPlatform: Yup.string().required('Platform is required'),
+  accessKey: Yup.string().when('selectedPlatform', {
+    is: 'aws',
+    then: () => Yup.string().required('Access Key is required for AWS'),
+    otherwise: () => Yup.string().notRequired(),
+  }),
+  secretAccessKey: Yup.string().when('selectedPlatform', {
+    is: 'aws',
+    then: () => Yup.string().required('Secret Access Key is required for AWS'),
+    otherwise: () => Yup.string().notRequired(),
+  }),
+  privateKeyFile: Yup.mixed().when('selectedPlatform', {
+    is: 'google-cloud',
+    then: () => Yup.mixed().required('Private Key File is required for Google Cloud'),
+    otherwise: () => Yup.mixed().notRequired(),
+  }),
+  airflowUrl: Yup.string().url('Invalid URL format').notRequired(),
+  airflowDagBucket: Yup.string().notRequired(),
+});
+
 // Helper Components
 const PlatformSelector: React.FC<{
   selectedPlatform: string;
-  setSelectedPlatform: (id: string) => void;
-}> = ({ selectedPlatform, setSelectedPlatform }) => (
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
+}> = ({ selectedPlatform, setFieldValue }) => (
   <div className="flex flex-wrap gap-3">
     {PLATFORMS.map((platform) => (
       <div
         key={platform.id}
-        className={`flex flex-row items-center space-x-3 border rounded-md p-3 cursor-pointer ${
-          selectedPlatform === platform.id ? "border-green-500" : "border-gray-200"
-        }`}
-        onClick={() => setSelectedPlatform(platform.id)}
+        className={`flex flex-row items-center space-x-3 border rounded-md p-3 cursor-pointer ${selectedPlatform === platform.id ? "border-green-500" : "border-gray-200"
+          }`}
+        onClick={() => setFieldValue('selectedPlatform', platform.id)}
         style={{ width: "22%" }}
       >
         <div
-          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-            selectedPlatform === platform.id ? "border-green-500 bg-green-500" : "border-gray-500 bg-gray-200"
-          }`}
+          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedPlatform === platform.id ? "border-green-500 bg-green-500" : "border-gray-500 bg-gray-200"
+            }`}
         >
           {selectedPlatform === platform.id && <Check className="w-3 h-3 text-white" />}
         </div>
@@ -99,7 +141,7 @@ const TagInput: React.FC<{
     <div className="space-y-2">
       <Label>Add Tags</Label>
       <p className="text-sm text-gray-600">
-        Add one or more tags to easily identify compute instances created by bighammer.ai in your AWS account (e.g., Key: Product, Value: Bighammer.ai)
+        Add one or more tags to easily identify compute instances created by bighammer.ai in your cloud account
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
         {tags.map((tag, index) => (
@@ -166,72 +208,12 @@ const TagInput: React.FC<{
   );
 };
 
-const InputField: React.FC<{
-  label: string;
-  id: string;
-  placeholder: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  className?: string;
-}> = ({ label, id, placeholder, value, onChange, className }) => (
-  <div className={`space-y-2 w-[45%] ${className}`}>
-    <Label htmlFor={id}>{label}</Label>
-    <Input id={id} placeholder={placeholder} className="w-[60%]" value={value} onChange={onChange} />
-  </div>
-);
-
-const SelectField: React.FC<{
-  label: string;
-  id: string;
-  options: { value: string; label: string }[];
-  value: SelectFieldValue;
-  onChange: (value: string) => void;
-  className?: string;
-}> = ({ label, id, options, value, onChange, className }) => {
-  const stringValue = value?.toString();
-
-  const handleChange = (newValue: string) => {
-    const originalOption = options.find((opt) => opt.value.toString() === newValue);
-    const finalValue = originalOption ? originalOption.value : newValue;
-    onChange(finalValue.toString());
-  };
-
-  return (
-    <div className={`space-y-2 w-[45%] ${className}`}>
-      <Label htmlFor={id}>{label}</Label>
-      <Select value={stringValue} onValueChange={handleChange}>
-        <SelectTrigger id={id} className="w-[60%]">
-          <SelectValue placeholder={`Select ${label}`} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value.toString()} value={option.value.toString()}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-};
-
-type EnvironmentTabProps = {
-  selectedPlatform: string;
-  setSelectedPlatform: (id: string) => void;
-  tags: Tag[];
-  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
-  onChange: (changes: Partial<EnvironmentTabState>) => void;
-} & EnvironmentTabState;
-
-const validationSchema = Yup.object().shape({
-  environmentName: Yup.string().required('Environment name is required'),
-});
-
 export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   selectedPlatform,
   setSelectedPlatform,
   tags,
   setTags,
+  onChange,
   environmentName,
   environment,
   projectId,
@@ -242,196 +224,250 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   airflowDagBucket,
   privateKeyFile,
   chamgeVerification,
-  onChange,
 }) => {
   const [ToastComponent, showToast] = useToast();
   const [isTestConnection, setIsTestConnection] = useState(false);
-  const handleChange = (field: keyof EnvironmentTabState, value: string | File | null) => {
-    if(selectedPlatform === "google-cloud") {
-      onChange({ [field]: value });
-      onChange({ ["accessKey"]: "" });
-      onChange({ ["secretAccessKey"]: "" });
-    }else{
-      onChange({ [field]: value });
-      onChange({["privateKeyFile"]: null});
+
+  const handleValidate = async (values: FormValues) => {
+    try {
+      const result = await ApiService('8011', 'post', `/aws/test_connection`, {
+        aws_access_key_id: values.accessKey,
+        aws_secret_access_key: values.secretAccessKey
+      });
+      if (result.status) {
+        setIsTestConnection(true);
+        showToast('Successfully able to connect', { color: '#00b060' });
+      } else {
+        setIsTestConnection(false);
+        showToast('Failed to connect', { color: '#FF0000' });
+      }
+    } catch (error) {
+      setIsTestConnection(false);
+      showToast('Failed to connect', { color: '#FF0000' });
+    }
+  };
+
+  const handleSetTags: React.Dispatch<React.SetStateAction<Tag[]>> = (newTags) => {
+    if (typeof newTags === 'function') {
+      setTags((prevTags) => newTags(prevTags));
+    } else {
+      setTags(newTags);
     }
   };
 
   const handleFileUpload = (file: File) => {
-    handleChange('privateKeyFile', file);
-  };
-
-  const handleValidate = async() => {
-    
-    try {
-      const values = {
-        aws_access_key_id: accessKey,
-        aws_secret_access_key: secretAccessKey
-      }  
-      const result = await ApiService('8011', 'post', `/aws/test_connection`, values);
-      if (result.status) {
-        setIsTestConnection(true)
-        chamgeVerification(true);
-        showToast('Successfully able to connect', { color: '#00b060' });
-      }else{
-        setIsTestConnection(false)
-        chamgeVerification(false);
-        showToast('Failed to connect', { color: '#FF0000' });
-      }
-
-    } catch (error) {
-      setIsTestConnection(false)
-      chamgeVerification(false);
-        showToast('Failed to connect', { color: '#FF0000' });
-    }
-
-    // /api/v1/aws/test_connection
-    
-  };
-
-  const renderCredentialsForm = () => {
-    if (selectedPlatform === "aws") {
-      return (
-        <>
-          <div className="w-full flex justify-between items-start space-x-4">
-            <InputField
-              label="AWS Project ID*"
-              id="aws-project-id"
-              placeholder="Enter Project Id"
-              value={projectId}
-              onChange={(e) => handleChange('projectId', e.target.value)}
-              className="w-1/2"
-            />
-            <SelectField
-              label="Location*"
-              id="location"
-              options={[
-                { value: "1", label: "US East" },
-                { value: "2", label: "US West" },
-                { value: "3", label: "EU Central" },
-              ]}
-              value={location}
-              onChange={(value) => handleChange('location', value)}
-              className="w-1/2"
-            />
-          </div>
-          <div className="w-full flex justify-between items-start space-x-4">
-            <InputField
-              label="Access Key"
-              id="access-key"
-              placeholder="Enter Access Key"
-              value={accessKey}
-              onChange={(e) => handleChange('accessKey', e.target.value)}
-              className="w-1/2"
-            />
-            <InputField
-              label="Secret Access Key"
-              id="secret-access-key"
-              placeholder="Enter Secret Access Key"
-              value={secretAccessKey}
-              onChange={(e) => handleChange('secretAccessKey', e.target.value)}
-              className="w-1/2"
-            />
-          </div>
-          <div className="w-80 flex justify-end mt-2">
-            <button
-              onClick={handleValidate}
-              type="button"
-              className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline hover:underline-offset-4 transition-all duration-200"
-            >
-              Validate
-            </button>
-          </div>
-        </>
-      );
-    } else if (selectedPlatform === "google-cloud") {
-      return (
-        <>
-          <div className="w-full flex justify-between items-start space-x-4">
-            <InputField
-              label="GCP Project ID*"
-              id="gcp-project-id"
-              placeholder="Enter Project Id"
-              value={projectId}
-              onChange={(e) => handleChange('projectId', e.target.value)}
-              className="w-1/2"
-            />
-            <SelectField
-              label="Location*"
-              id="location"
-              options={[
-                { value: "1", label: "US East" },
-                { value: "2", label: "US West" },
-                { value: "3", label: "EU Central" },
-              ]}
-              value={location}
-              onChange={(value) => handleChange('location', value)}
-              className="w-1/2"
-            />
-          </div>
-          <div className="w-full">
-            <div className="space-y-2">
-              <Label htmlFor="private-key">Private Key*</Label>
-              <div className="w-1/2">
-                <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
-              </div>
-            </div>
-          </div>
-        </>
-      );
-    }
+    onChange({ privateKeyFile: file });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="w-full flex justify-between items-start">
-        <InputField
-          label="Environment Name*"
-          id="environment-name"
-          placeholder="Enter Environment Name"
-          value={environmentName}
-          onChange={(e) => handleChange('environmentName', e.target.value)}
-        />
-        <SelectField
-          label="Environment*"
-          id="environment-select"
-          options={[
-            { value: "301", label: "Development" },
-            { value: "302", label: "Staging" },
-            { value: "303", label: "Production" },
-          ]}
-          value={environment}
-          onChange={(value) => handleChange('environment', value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Select Platform*</Label>
-        <PlatformSelector selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform} />
-      </div>
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Credentials</h3>
-        {renderCredentialsForm()}
-        <div className="w-full flex justify-between items-start space-x-4">
-          <InputField
-            label="Airflow URL"
-            id="airflow-url"
-            placeholder="Enter Airflow URL"
-            value={airflowUrl}
-            onChange={(e) => handleChange('airflowUrl', e.target.value)}
-            className="w-1/2"
-          />
-          <InputField
-            label="Airflow DAG Bucket"
-            id="airflow-dag-bucket"
-            placeholder="Enter Airflow DAG Bucket"
-            value={airflowDagBucket}
-            onChange={(e) => handleChange('airflowDagBucket', e.target.value)}
-            className="w-1/2"
-          />
-        </div>
-        <TagInput tags={tags} setTags={setTags} />
-      </div>
-      <ToastComponent />
-    </div>
+    <Formik
+      initialValues={{
+        environmentName,
+        environment,
+        projectId,
+        location,
+        accessKey,
+        secretAccessKey,
+        airflowUrl,
+        airflowDagBucket,
+        privateKeyFile,
+        selectedPlatform,
+      }}
+      validationSchema={validationSchema}
+      onSubmit={(values, formikHelpers) => { }}
+    >
+      {({ values, errors, touched, setFieldValue, handleChange, handleBlur }) => (
+        <Form className="space-y-6">
+          <div className="w-full flex justify-between items-start">
+            <div className="space-y-2 w-[45%]">
+              <Label htmlFor="environmentName">Environment Name*</Label>
+              <Field
+                as={Input}
+                id="environmentName"
+                name="environmentName"
+                placeholder="Enter Environment Name"
+                className="w-[60%]"
+                onChange={(e: { target: { value: any; }; }) => {
+                  handleChange(e);
+                  onChange({ environmentName: e.target.value });
+                }}
+              />
+              <ErrorMessage name="environmentName" component="div" className="text-red-500 text-sm" />
+            </div>
+            <div className="space-y-2 w-[45%]">
+              <Label htmlFor="environment">Environment*</Label>
+              <Select
+                onValueChange={(value) => {
+                  setFieldValue('environment', value);
+                  onChange({ environment: value });
+                }}
+                value={values.environment}
+              >
+                <SelectTrigger className="w-[60%]">
+                  <SelectValue placeholder="Select Environment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="301">Development</SelectItem>
+                  <SelectItem value="302">Staging</SelectItem>
+                  <SelectItem value="303">Production</SelectItem>
+                </SelectContent>
+              </Select>
+              <ErrorMessage name="environment" component="div" className="text-red-500 text-sm" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Select Platform*</Label>
+            <PlatformSelector
+              selectedPlatform={values.selectedPlatform}
+              setFieldValue={(field, value) => {
+                setFieldValue(field, value);
+                setSelectedPlatform(value);
+                onChange({ selectedPlatform: value });
+              }}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Credentials</h3>
+            <div className="w-full flex justify-between items-start space-x-4">
+              <div className="space-y-2 w-1/2">
+                <Label htmlFor="projectId">Project ID*</Label>
+                <Field
+                  as={Input}
+                  id="projectId"
+                  name="projectId"
+                  placeholder="Enter Project Id"
+                  className="w-[60%]"
+                  onChange={(e: { target: { value: any; }; }) => {
+                    handleChange(e);
+                    onChange({ projectId: e.target.value });
+                  }}
+                />
+                <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
+              </div>
+              <div className="space-y-2 w-1/2">
+                <Label htmlFor="location">Location*</Label>
+                <Select
+                  onValueChange={(value) => {
+                    setFieldValue('location', value);
+                    onChange({ location: value });
+                  }}
+                  value={values.location}
+                >
+                  <SelectTrigger className="w-[60%]">
+                    <SelectValue placeholder="Select Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">US East</SelectItem>
+                    <SelectItem value="2">US West</SelectItem>
+                    <SelectItem value="3">EU Central</SelectItem>
+                  </SelectContent>
+                </Select>
+                <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
+              </div>
+            </div>
+
+            {values.selectedPlatform === 'aws' && (
+              <>
+                <div className="w-full flex justify-between items-start space-x-4">
+                  <div className="space-y-2 w-1/2">
+                    <Label htmlFor="accessKey">Access Key</Label>
+                    <Field
+                      as={Input}
+                      id="accessKey"
+                      name="accessKey"
+                      placeholder="Enter Access Key"
+                      className="w-[60%]"
+                      onChange={(e: { target: { value: any; }; }) => {
+                        handleChange(e);
+                        onChange({ accessKey: e.target.value });
+                      }}
+                    />
+                    <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
+                  </div>
+                  <div className="space-y-2 w-1/2">
+                    <Label htmlFor="secretAccessKey">Secret Access Key</Label>
+                    <Field
+                      as={Input}
+                      id="secretAccessKey"
+                      name="secretAccessKey"
+                      type="password"
+                      placeholder="Enter Secret Access Key"
+                      className="w-[60%]"
+                      onChange={(e: { target: { value: any; }; }) => {
+                        handleChange(e);
+                        onChange({ secretAccessKey: e.target.value });
+                      }}
+                    />
+                    <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
+                  </div>
+                </div>
+                <div className="w-1/4-plus flex justify-center mt-2">
+                  <button
+                    onClick={() => handleValidate(values)}
+                    type="button"
+                    className="text-custom-color hover:text-blue-800 cursor-pointer hover:underline hover:underline-offset-4 transition-all duration-200"
+                  >
+                    Validate
+                  </button>
+                </div>
+              </>
+            )}
+
+            {values.selectedPlatform === 'google-cloud' && (
+              <div className="w-full">
+                <div className="space-y-2">
+                  <Label htmlFor="privateKeyFile">Private Key*</Label>
+                  <div className="w-1/2">
+                  <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
+                  </div>
+                  <ErrorMessage name="privateKeyFile" component="div" className="text-red-500 text-sm" />
+                </div>
+              </div>
+            )}
+
+            <div className="w-full flex justify-between items-start space-x-4">
+              <div className="space-y-2 w-1/2">
+                <Label htmlFor="airflowUrl">Airflow URL</Label>
+                <Field
+                  as={Input}
+                  id="airflowUrl"
+                  name="airflowUrl"
+                  placeholder="Enter Airflow URL"
+                  className="w-[60%]"
+                  onChange={(e: { target: { value: any; }; }) => {
+                    handleChange(e);
+                    onChange({ airflowUrl: e.target.value });
+                  }}
+                />
+                <ErrorMessage name="airflowUrl" component="div" className="text-red-500 text-sm" />
+              </div>
+              <div className="space-y-2 w-1/2">
+                <Label htmlFor="airflowDagBucket">Airflow DAG Bucket</Label>
+                <Field
+                  as={Input}
+                  id="airflowDagBucket"
+                  name="airflowDagBucket"
+                  placeholder="Enter Airflow DAG Bucket"
+                  className="w-[60%]"
+                  onChange={(e: { target: { value: any; }; }) => {
+                    handleChange(e);
+                    onChange({ airflowDagBucket: e.target.value });
+                  }}
+                />
+                <ErrorMessage name="airflowDagBucket" component="div" className="text-red-500 text-sm" />
+              </div>
+            </div>
+
+            <TagInput tags={tags} setTags={handleSetTags} />
+          </div>
+
+          <ToastComponent />
+        </Form>
+      )}
+    </Formik>
   );
 };
+
+export default EnvironmentTab;                

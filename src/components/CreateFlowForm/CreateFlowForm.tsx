@@ -36,6 +36,15 @@ interface CreateFlowPayload {
   };
 }
 
+interface IntervalState {
+  selectedInterval: string;
+  repeatEvery: string;
+  repeatAt: string;
+  selectedDays: string[];
+  selectedMonth: string;
+  selectedDate: string;
+}
+
 // Subcomponents
 const SelectField: React.FC<{
   name: string;
@@ -111,6 +120,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
     scheduleInterval: '',
     recipientEmail: '',
   });
+  const [intervalData, setIntervalData] = useState<IntervalState | null>(null);
   const [branches, setBranches] = useState<string[]>([]);
   const [alerts, setAlerts] = useState({
     onJobStart: true,
@@ -190,6 +200,16 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
         setIsModalOpen(false);
       }, 3000);
     }
+  };
+
+  const handleIntervalStateChange = (state: IntervalState) => {
+    console.log("Interval Modal State:", state);
+    setIntervalData(state);
+  };
+
+  const handleIntervalSave = (interval: string) => {
+    console.log("Saved Interval:", interval);
+    setFormData(prev => ({ ...prev, scheduleInterval: interval }));
   };
 
   const openIntervalModal = () => {
@@ -323,7 +343,8 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
       </form>
       <IntervalModalComponent 
         ref={intervalModalRef}
-        onSave={(interval) => handleInputChange('scheduleInterval', interval)}
+        onSave={handleIntervalSave}
+        onStateChange={handleIntervalStateChange}
       />
     </div>
   );

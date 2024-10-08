@@ -1,7 +1,3 @@
-import { FaRegFile } from "react-icons/fa";
-import { TiFlowSwitch } from "react-icons/ti";
-import { MdOutlinePodcasts } from "react-icons/md";
-import { MdOutlinePerson } from "react-icons/md";
 
 export const menuList = [
     {
@@ -26,7 +22,7 @@ export const menuList = [
         // icon: <MdOutlinePodcasts className='h4' />,
         icon: <img src="/assets/menu/dataops.png" alt="DataOps"  width={20} height={20} />,
 
-        path: "/dataops-hub/dashboard",
+        path: "/dashboard",
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },

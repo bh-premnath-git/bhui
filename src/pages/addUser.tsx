@@ -35,23 +35,21 @@ const AddUser = () => {
     const [selectedOption, setSelectedOption] = useState('Enable');
 	const [open, setOpen] = useState(false);
 	const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-
     const [initialValue, setInitialValue] = useState({
         bh_user_first_name: '',
         bh_user_middle_name: '',
         bh_user_last_name: '',
         user_email_id: '',
-        user_status_cd: '',
-        user_admin_status_cd: '',
+        user_status_cd: '601',
+        user_admin_status_cd: '2102',
         project_details: [{ project: null, projectRole: [] }]
     });
 
     const navigate = useNavigate();
     const location = useLocation();
-    const userData = location.state;
+    const userData = location.state?.rowData;
 
     useEffect(() => {
-        if (userData) setInitialValue(userData);
 
         const fetchData = async () => {
             try {
@@ -71,6 +69,8 @@ const AddUser = () => {
                     label: proj.bh_project_name
                 }));
                 setProjects(tempProjects);
+                if (userData) setInitialValue(userData);
+
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -79,11 +79,13 @@ const AddUser = () => {
         fetchData();
     }, [userData]);
 
+
+
     const addUser = async (values: any, { setSubmitting }: any) => {
         try {
             if (userData) {
                 await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
-                navigate(`/Admin-Console/Users`);
+                navigate(`/AllUsers`);
             } else {
                 createKeyCloakUser(values);
             }
@@ -177,7 +179,7 @@ const AddUser = () => {
                     <Form className='w-10/12 m-auto'>
 
                         <div className="text-center">
-                            <Label className='font-normal '> Fill in the details below to add a new user.</Label>
+                            <Label className='font-normal text-md '> Fill in the details below to add a new user.</Label>
 
                         </div>
                         <Grid container spacing={2} className='m-1'>
@@ -263,7 +265,7 @@ const AddUser = () => {
                         <FieldArray name="project_details">
                             {({ push }) => (
                                 <>
-                                    {values.project_details.map((project: any, index: number) => (
+                                    {values?.project_details?.map((project: any, index: number) => (
                                         <Grid container spacing={2} key={index} className='m-1'>
                                             <Grid item xs={6}>
                                                 <Label className='font-normal'>Project {index + 1} <span style={{ color: 'red' }}>*</span></Label>
@@ -325,7 +327,7 @@ const AddUser = () => {
 
                         <div className='text-center mt-6'>
                             <Button type="submit" variant="contained" sx={{textTransform:'none'}} className='bg-black text-white px-5 my-3' disabled={isSubmitting || !(isValid && dirty)}>
-                                Add User
+                                {userData?'Update User':'Add User'}
                             </Button>
                         </div>
                         {showSuccessDialog && (

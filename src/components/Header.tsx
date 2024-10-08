@@ -124,7 +124,13 @@ function renderingHeadContent(content: string) {
   if (content === "/AddUser") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User </span>&gt; Add User</span>;
   }
-  if(content === "/designer/flow-playground"){
+  if (content === "/AllCustomers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; </span> Manage Customer </span>;
+  }
+  if (content === "/AddCustomers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
+  }
+  if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent />
   }
   return "";

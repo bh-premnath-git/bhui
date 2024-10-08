@@ -11,6 +11,8 @@ import { getCodesDtl, getUserDataList, setCodesData } from "@/redux/UserSlice";
 import { Stack } from "@mui/material";
 import { formatDate, formatedDate } from "@/Utils/dateFormatter";
 import { useDispatch } from "react-redux";
+import { COLORS } from "@/Utils/constants";
+import ApiService from "@/Services/ApiServices";
 
 // Define types in a separate file for better organization
 interface userData {
@@ -32,7 +34,7 @@ interface codesData {
 
 
 interface UserDetailTableProps {
-    columns:ColumnConfig[]
+    columns: ColumnConfig[]
     userList: userData[];
     loading: boolean;
     error: { message: string } | null;
@@ -75,7 +77,7 @@ function UserDetailTable({
 }: UserDetailTableProps) {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    useLayoutEffect(() => {
+    useEffect(() => {
         dispatch(getUserDataList());
     }, [dispatch]);
 
@@ -91,7 +93,20 @@ function UserDetailTable({
         navigate("/AddUser");
     };
     const actionFn = (rowData: any, action: string) => {
-        // console.log("Action:", action, "Row Data:", rowData);    
+        action == 'edit' ? editFn(rowData) : changeStatus(rowData)
+    }
+
+    const editFn = (rowData: any) => {
+        navigate("/AddUser", { state: { rowData } });
+    }
+
+    const changeStatus = async (rowData: any) => {
+        let data: any = { ...rowData }
+        data.user_status_cd == 601 ? data.user_status_cd = 602 : data.user_status_cd = 601;
+        let result = await ApiService('8011', 'put', `/bh_user/${data.bh_user_id}`, data);
+        if (result) {
+            dispatch(getUserDataList());
+        }
     }
 
     if (userList.length === 0) {
@@ -122,7 +137,6 @@ const AllUsers: React.FC = () => {
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(getCodesDtl());
-        console.log(codesDtl)
     }, [dispatch, codesDtl.length == 0]);
     const columns: ColumnConfig[] = [
         {
@@ -138,7 +152,7 @@ const AllUsers: React.FC = () => {
                     </>
                 )
             }
-    
+
         },
         {
             key: 'user_email_id',
@@ -173,22 +187,30 @@ const AllUsers: React.FC = () => {
                                             </Stack>
                                         </Stack>
                                     ))}
-    
+
                                 </Stack>
                             </div>
-    
+
                         ))}
                     </>
                 )
             }
-    
+
         },
         {
             key: 'user_status_cd',
             header: 'Status',
             type: 'number',
             sortable: false,
-            render:(value)=>codesDtl.find((item:any)=>item.id==value).dtl_desc
+            render: (value) => (
+                <>
+                    <div style={{ color: value == 601 ? COLORS.green : COLORS.gray }}>
+                        {codesDtl.find((item: any) => item.id == value).dtl_desc}
+                    </div>
+                </>
+            )
+
+
         },
         {
             key: 'created_at',
@@ -204,10 +226,10 @@ const AllUsers: React.FC = () => {
             sortable: false,
             render: (value: any) => formatedDate(value)
         },
-    
-    
+
+
     ];
-    
+
     return (
         <UserDetailTable
             userList={userDataList}

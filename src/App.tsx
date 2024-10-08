@@ -20,19 +20,12 @@ const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/Onbo
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
 const BuildDataPipeLines = lazy(() => import('./oldpages/BuildPipeline/home/BuildDataPipeLine'));
-const Userlanding = lazy(() => import('./oldpages/Admin-Console/Admin-Console'));
 const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
 const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
-const Users = lazy(() => import('./oldpages/Admin-Console/Users/Users'));
-const User = lazy(() => import('./oldpages/Admin-Console/Users/Component/User'));
-const Customers = lazy(() => import('./oldpages/Admin-Console/Customer/Customers'));
-const Customer = lazy(() => import('./oldpages/Admin-Console/Customer/component/Customer'));
-const Projects = lazy(() => import('./oldpages/Admin-Console/Project/Environments'));
-const Environment = lazy(() => import('./oldpages/Admin-Console/Project/Component/Environment'));
 const PublishData = lazy(() => import('./oldpages/PublishData/PublishData'));
 const Target = lazy(() => import('./oldpages/PublishData/Target'));
 const RunquaryDetails = lazy(() => import('./oldpages/PublishData/RunquaryDetails'));
@@ -180,19 +173,12 @@ function App() {
     { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
     { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
-    { path: '/Admin Console', element: <Userlanding /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
     { path: '/Alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
-    { path: '/Admin Console/Manage Data Platform Users', element: <Users /> },
-    { path: '/Admin Console/Manage Data Platform Users/Add User', element: <User /> },
-    { path: '/Admin Console/Manage Customer', element: <Customers /> },
-    { path: '/Admin Console/Manage Customer/Add Customer', element: <Customer handleBreadStep={handleBreadStep} /> },
-    { path: '/All Environment', element: <Projects /> },
-    { path: '/Admin-Console/Environment/New', element: <Environment handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Publish Data', element: <PublishData /> },
     { path: '/Designer/targetsteps', element: <Target handleBreadStep={handleBreadStep} /> },
     { path: '/publisher/runquarydetails', element: <RunquaryDetails /> },

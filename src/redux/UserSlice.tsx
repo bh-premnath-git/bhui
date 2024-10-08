@@ -57,11 +57,11 @@ const UserSlice = createSlice({
   name: "api/buildDataPipeline",
   initialState,
   reducers: {
-    setCodesData: (state) => {
+    setCodesData: (state,pa) => {
       let data = LocalStorageService.getItem('codesDtl');
       state.codesDtl = data;
     },
-
+    
   },
   extraReducers: (builder) => {
     builder

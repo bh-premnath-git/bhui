@@ -10,6 +10,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { color } from 'framer-motion';
 import ApiService from '@/Services/ApiServices';
 import useToast from '@/oldcomponents/teast-service';
+import CustomField from '@/common/CustomField';
+import { Label } from '@/components/ui/label';
 
 const validationSchema = yup.object().shape({
 	connections: yup.array().of(
@@ -27,7 +29,7 @@ function ConnectionStep(props: any) {
 	const { onNext, data, onBack } = props;
 
 	const [tragetPlatformList, setTragetPlatformList]: any = useState([]);
-	const [dynamicFields, setDynamicFields]:any = useState({});
+	const [dynamicFields, setDynamicFields]: any = useState({});
 	const [isTestConnection, setIsTestConnection] = useState(false);
 	const [isUpdate, setIsUpdate] = useState(false);
 	const [ToastComponent, showToast] = useToast();
@@ -69,11 +71,10 @@ function ConnectionStep(props: any) {
 		}
 	}, [props.data]);
 
-	const fetchConnectionField = async (id:any, index:any) => {
+	const fetchConnectionField = async (id: any, index: any) => {
 		try {
 			const result = await ApiService('8011', 'get', `/codes_hdr/${id}`);
-			console.log(result.codes_dtl)
-			setDynamicFields((prevFields:any) => ({
+			setDynamicFields((prevFields: any) => ({
 				...prevFields,
 				[index]: result.codes_dtl
 			}));
@@ -82,16 +83,13 @@ function ConnectionStep(props: any) {
 		}
 	};
 
-	const handleClick = async (values:any, index:any) => {
-		console.log(values.connections[index]?.connection_details)
+	const handleClick = async (values: any, index: any) => {
 		var body = {
 			'aws_access_key_id': values.connections[index]?.connection_details?.access_key,
 			"aws_secret_access_key": values.connections[index]?.connection_details?.secret_access_key,
 		}
 		try {
 			const result = await ApiService('8011', 'post', `/aws/test_connection`, body);
-			console.log(result)
-
 			if (result.status) {
 				setIsTestConnection(true)
 				showToast('Successfully able to connect', { color: '#00b060' });
@@ -107,8 +105,7 @@ function ConnectionStep(props: any) {
 		}
 	};
 
-	const saveData = async (values:any, { setSubmitting }:any) => {
-		console.log(values)
+	const saveData = async (values: any, { setSubmitting }: any) => {
 		try {
 			for (let connection of values.connections) {
 				connection.customer_id = props.data;
@@ -126,33 +123,27 @@ function ConnectionStep(props: any) {
 		}
 	};
 
-	const handleChange = (index:any, setFieldValue:any, event:any) => {
+	const handleChange = (index: any, setFieldValue: any, event: any) => {
 		setIsTestConnection(false)
 		const platformCode = event.target.value;
-		const id = tragetPlatformList.find((platform:any) => platform.id === platformCode)?.dtl_id_filter;
+		const id = tragetPlatformList.find((platform: any) => platform.id === platformCode)?.dtl_id_filter;
 		setFieldValue(`connections[${index}].target_delivery_platform_cd`, platformCode);
 		fetchConnectionField(id, index);
 	};
 
-	const renderDynamicFields = (fields:any, index:any) => {
-        return <Stack direction={'row'}>
-            {fields.map((field: any) => (
-                <div key={field.id} style={{ width: '100%', margin: '10px 10px' }}>
-                    <Typography sx={{ fontWeight: '500', textAlign: 'start', my: '8px' }} variant="body2">
-                        {convertToReadableFormat(field.dtl_desc)}
-						<span style={{color:'red'}}>*</span>
-                    </Typography>
-                    <Field size='small' as={TextField} name={`connections[${index}].connection_details.${field.dtl_desc.toLowerCase().replace(' ', '_')}`} placeholder={convertToReadableFormat(field.dtl_desc)} fullWidth />
-                    <div style={{ color: 'red', textAlign: 'start' }}>
-                        <ErrorMessage name={`connections[${index}].connection_details.${field.dtl_desc.toLowerCase().replace(' ', '_')}`} />
-                    </div>
-                </div>
-            ))}
-        </Stack>;
-    };
-    function convertToReadableFormat(input:any) {
-        return input.replace(/_/g, ' ');
-      }
+	const renderDynamicFields = (fields: any, index: any) => {
+		return <Stack direction={'row'}>
+			{fields.map((field: any) => (
+				<div key={field.id} style={{ width: '100%', margin: '10px 10px' }}>
+					<CustomField name={`connections[${index}].connection_details.${field.dtl_desc.toLowerCase().replace(' ', '_')}`}
+						placeholder={convertToReadableFormat(field.dtl_desc)} label={convertToReadableFormat(field.dtl_desc)} />
+				</div>
+			))}
+		</Stack>;
+	};
+	function convertToReadableFormat(input: any) {
+		return input.replace(/_/g, ' ');
+	}
 
 	return (
 		<Formik
@@ -162,14 +153,14 @@ function ConnectionStep(props: any) {
 			enableReinitialize={true}
 		>
 			{({ values, setFieldValue }) => (
-				<Form>
+				<Form className='w-10/12 m-auto'>
 					<FieldArray name="connections">
 						{({ push, remove }) => (
 							<div style={{ textAlign: 'start' }}>
 								{values.connections.map((connection, index) => (
-									<Accordion style={{ margin: '10px' }} 
-									className='shadow-sm rounded'
-									elevation={0} key={index}>
+									<Accordion style={{ margin: '10px' }}
+										className='shadow-sm rounded'
+										elevation={0} key={index}>
 										<AccordionSummary
 											expandIcon={<ExpandMoreIcon />}
 											aria-controls="panel1-content"
@@ -180,29 +171,24 @@ function ConnectionStep(props: any) {
 										<AccordionDetails>
 											<Stack direction={'row'}>
 												<Stack width={'100%'} className='px-1'>
-													<Typography sx={{ fontWeight: '500', textAlign: 'start', my: '8px' }} variant="body2">
-														Connection Name <span style={{ color: 'red' }}> *</span>
-													</Typography>
-													<Field size='small' as={TextField} name={`connections[${index}].connection_name`} placeholder="Connection Name" fullWidth />
-													<div style={{ color: 'red', textAlign: 'start' }}>
-														<ErrorMessage name={`connections[${index}].connection_name`} />
-													</div>
+													<CustomField name={`connections[${index}].connection_name`} placeholder="Connection Name" label='Connection Name' />
 												</Stack>
-												<Stack width={'100%'} className='px-1'>
-													<Typography sx={{ fontWeight: '500', textAlign: 'start', my: '8px' }} variant="body2">
-														Target Delivery Platform <span style={{ color: 'red' }}> *</span>
-													</Typography>
+												<Stack width={'100%'} className='px-1 mt-2'>
+													<Label className="font-normal">
+														Target Delivery Platform
+													</Label>
+
 													<Field
 														name={`connections[${index}].target_delivery_platform_cd`}
-														render={({ field }:any) => (
-															<Select size='small'
+														render={({ field }: any) => (
+															<Select size='small' className='shadow-sm'
 																{...field}
 																fullWidth
 																value={field.value}
 																onChange={(event) => handleChange(index, setFieldValue, event)}
 																placeholder="Target Delivery Platform"
 															>
-																{tragetPlatformList?.map((targetPlatform:any) => (
+																{tragetPlatformList?.map((targetPlatform: any) => (
 																	<MenuItem key={targetPlatform.id} value={targetPlatform.id}>
 																		{targetPlatform.dtl_desc}
 																	</MenuItem>
@@ -216,13 +202,13 @@ function ConnectionStep(props: any) {
 												</Stack>
 											</Stack>
 											{dynamicFields[index] && renderDynamicFields(dynamicFields[index], index)}
-											<div style={{ textAlign: 'center', padding: '8px', margin: '8px', color: 'blue', fontWeight: 'bold', fontSize: '14px' }}>
-												<button type="button" onClick={() => handleClick(values, index)}>Test Connection</button>
+											<div className='text-cyan-400 ' style={{ textAlign: 'center', padding: '8px', margin: '8px', fontSize: '14px' }}>
+												<button type="button" className='underline' onClick={() => handleClick(values, index)}>Test Connection</button>
 											</div>
 											<div>
 												<ToastComponent />
 											</div>
-											<div style={{ float: 'right', padding: '8px', margin: '8px', color: 'red', fontWeight: 'bold' }}>
+											<div style={{ float: 'right', padding: '8px', margin: '8px', color: 'red',}}>
 												<button type="button" onClick={() => remove(index)}>Remove</button>
 											</div>
 										</AccordionDetails>
@@ -244,14 +230,14 @@ function ConnectionStep(props: any) {
 					</FieldArray>
 					<br />
 					<Stack direction={'row'} mt={10} justifyContent={'space-between'}>
-						<Button sx={{textTransform:'none'}}
+						<Button sx={{ textTransform: 'none' }}
 							className="bg-secondary text-white"
 							variant="contained"
 							onClick={onBack}
 						>
 							Back
 						</Button>
-						<Button sx={{textTransform:'none'}}
+						<Button sx={{ textTransform: 'none' }}
 							className="bg-dark text-white"
 							variant="contained"
 							type='submit'

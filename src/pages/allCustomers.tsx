@@ -9,7 +9,7 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getUserDataList } from "@/redux/UserSlice";
 import { Stack } from "@mui/material";
-import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { getCustomerList } from "@/redux/CustomerSlice";
 
 // Define types in a separate file for better organization
 interface customer {
@@ -50,13 +50,7 @@ const columns: ColumnConfig[] = [
         sortable: true,
         filterable: true,
         type: 'text',
-        render: (value, row) => {
-            return (
-                <>
-                    {row?.bh_user_first_name}  {row?.bh_user_middle_name}  {row?.bh_user_last_name}
-                </>
-            )
-        }
+        
 
     },
     {
@@ -101,7 +95,8 @@ function CustomerTable({
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     useLayoutEffect(() => {
-        dispatch(getUserDataList());
+        console.log(customerList)
+        dispatch(getCustomerList());
     }, [dispatch]);
 
     if (loading) {
@@ -116,8 +111,17 @@ function CustomerTable({
         navigate("/AddCustomers");
     };
     const actionFn = (rowData: any, action: string) => {
-        // console.log("Action:", action, "Row Data:", rowData);    
+        action == 'edit' ? editFn(rowData) : changeStatus(rowData)
     }
+
+    const editFn = (rowData: any) => {
+        navigate("/AddCustomers", { state: { rowData } });
+    }
+
+    const changeStatus = async (rowData: any) => {
+      
+    }
+
 
     if (customerList.length === 0) {
         return <EmptyComponent />;

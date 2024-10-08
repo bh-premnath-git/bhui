@@ -13,6 +13,7 @@ import CustomerDetailsStep from '@/components/CustomerTabs/CustomerDetailsStep';
 import ConnectionStep from '@/components/CustomerTabs/ConnectionStep';
 import AlertProfileStep from '@/components/CustomerTabs/AlertProfileStep';
 import TaggingStep from '@/components/CustomerTabs/TaggingStep';
+import { COLORS } from '@/Utils/constants';
 /**
  * Form Validation Schema
  */
@@ -25,12 +26,8 @@ const schema = yup.object().shape({
 
 function AddCustomers() {
 	const location = useLocation();
-	const [manageCustomerId, setManageCustomerId] = useState(location.state?location.state?.customer_id:null);
+	const [manageCustomerId, setManageCustomerId] = useState(location.state?.rowData ? location.state?.rowData?.customer_id : null);
 	const [noCustomer, setNoCustomer] = useState(false);
-
-
-
-
 	const steps = [
 		'Customer Details',
 		'Connection Details',
@@ -112,7 +109,6 @@ function AddCustomers() {
 		setCompleted({});
 	};
 
-// console.log(location.state)
 
 	return (
 		<>
@@ -122,26 +118,17 @@ function AddCustomers() {
 					<Stepper activeStep={activeStep} alternativeLabel>
 						{steps.map((label, index) => (
 							<Step key={label} completed={completed[index]} sx={{
-								'& .MuiStepLabel-root .Mui-completed': {
-									color: 'green', // circle color (COMPLETED)
-								},
-								'& .MuiStepLabel-label.Mui-completed.MuiStepLabel-alternativeLabel':
-								{
-									color: 'green',
-									fontWeight: 'bold'// Just text label (COMPLETED)
+								'& .MuiStepLabel-root .Mui-completed': { color: COLORS.green },
+								'& .MuiStepLabel-label.Mui-completed.MuiStepLabel-alternativeLabel': {
+									color: COLORS.green,
+									fontWeight: 'bold'
 								},
 								'& .MuiStepLabel-root .Mui-active': {
 									color: 'black',
 									fontWeight: 'bold'
-
 								},
-								'& .MuiStepLabel-label.Mui-active.MuiStepLabel-alternativeLabel':
-								{
-									color: 'black', // Just text label (ACTIVE)
-								},
-								'& .MuiStepLabel-root .Mui-active .MuiStepIcon-text': {
-									fill: 'white', // circle's number (ACTIVE)
-								},
+								'& .MuiStepLabel-label.Mui-active.MuiStepLabel-alternativeLabel': { color: 'black' },
+								'& .MuiStepLabel-root .Mui-active .MuiStepIcon-text': { fill: 'white' },
 							}}>
 								<StepButton style={{ fontWeight: 'bold' }} color="inherit" onClick={handleStep(index)}>
 									{label}
@@ -149,7 +136,7 @@ function AddCustomers() {
 							</Step>
 						))}
 					</Stepper>
-					<div className="m-auto max-w-3xl content-center text-center">
+					<div className="m-auto content-center text-center">
 						{allStepsCompleted() ? (
 							<React.Fragment>
 								<Typography sx={{ mt: 2, mb: 1 }}>
@@ -162,7 +149,7 @@ function AddCustomers() {
 							</React.Fragment>
 						) : (
 							<React.Fragment>
-								<Box sx={{ width: '90%',margin:'auto' }}>
+								<Box sx={{ width: '100%', margin: 'auto' }}>
 									{activeStep === 0 ?
 										<CustomerDetailsStep onNext={handleNext} data={manageCustomerId} onBack={handleBack} />
 										: activeStep === 1 ? <ConnectionStep onNext={handleNext} data={manageCustomerId} onBack={handleBack} />

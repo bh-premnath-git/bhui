@@ -3,15 +3,16 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import { Controller, useFormContext, useForm } from 'react-hook-form';
 
-import {Typography,
+import {
+	Typography,
 	Button, Stack,
 	Grid
 } from '@mui/material';
 import * as yup from 'yup';
 import { Formik, Form, Field } from 'formik';
-import ConnectionDetailsStep from './ConnectionDetailsStep';
 import { useLocation } from 'react-router';
 import ApiService from '@/Services/ApiServices';
+import CustomField from '@/common/CustomField';
 
 
 
@@ -27,7 +28,7 @@ const schema = yup.object().shape({
 function CustomerDetailsStep(props: any) {
 	const { onNext, data } = props;
 	const location = useLocation();
-	const customerData = location.state;
+	const customerData = location.state?.rowData;
 	const [initialValue, setInitialValue] = React.useState({
 		relation_ship_owner: '',
 		relation_ship_owner_email: '',
@@ -36,12 +37,10 @@ function CustomerDetailsStep(props: any) {
 
 	});
 	React.useEffect(() => {
-		console.log(customerData)
 		if (customerData) {
 			const fetchConnection = async () => {
 				try {
 					const result = await ApiService('8011', 'get', `/customer/${customerData.customer_id}`);
-					console.log(result);
 					if (result) {
 						setInitialValue(result)
 					}
@@ -64,7 +63,6 @@ function CustomerDetailsStep(props: any) {
 			try {
 				const url = `/customer/${customerData.customer_id}`;
 				const result = await ApiService('8011', 'put', url, customerData);
-				console.log(result)
 				onNext(result)
 			}
 			catch (error) {
@@ -74,14 +72,12 @@ function CustomerDetailsStep(props: any) {
 			try {
 				const url = '/customer';
 				const result = await ApiService('8011', 'post', url, values);
-				console.log(result)
 				onNext(result)
 			}
 			catch (error) {
 				console.error('Error fetching Status', error);
 			}
 		}
-		console.log('Form values:', values);
 		setSubmitting(false);
 	};
 
@@ -92,99 +88,31 @@ function CustomerDetailsStep(props: any) {
 				validationSchema={schema}
 				onSubmit={saveData}
 				enableReinitialize={true}
-			// onSubmit={(values, { setSubmitting }) => {
-			// 	onNext(values)
-			// 	console.log(values);
-			// 	setSubmitting(false);
-			// }}
+
 			>
 				{({ errors, touched, isSubmitting }) => (
 					<Form>
-						<Grid container spacing={4} style={{ marginTop: '8px' }}>
-							{/* First item in the row */}
-							<Grid item xs={6}>
-
-								<>
-									<Typography className='my-1 text-start' sx={{ fontWeight: '500', fontSize: '15px' }} variant="body2" >
-										Customer Relationship Owner <span style={{ color: 'red' }}>*</span>
-									</Typography>
-
-									<Field className='text-start'
-										name="relation_ship_owner"
-										placeholder="Enter Customer Relationship Owner Name"
-										size={'small'}
-										as={TextField}
-										error={errors.relation_ship_owner && touched.relation_ship_owner}
-										helperText={errors.relation_ship_owner && touched.relation_ship_owner ? errors.relation_ship_owner : ''}
-										fullWidth
-										variant="outlined"
-										required
-									/>
-								</>
-								{/* )} */}
-								{/* /> */}
+						<Grid className='m-auto' xs={10} container spacing={6} style={{ marginTop: '8px' }}>
+							<Grid item xs={6} className='text-start'>
+								<CustomField name='relation_ship_owner' label="Customer Relationship Owner"
+									placeholder="Enter Customer Relationship Owner Name" required={true} />
 							</Grid>
-							<Grid item xs={6}>
-								<>
-									<Typography className='my-1 text-start' sx={{ fontWeight: '500', fontSize: '15px' }} variant="body2" >
-										Customer Relationship Owner Email ID <span style={{ color: 'red' }}>*</span>
-									</Typography>
-									
-									<Field size='small'
-										name="relation_ship_owner_email"
-										placeholder="Enter Email Id"
-										as={TextField}
-										error={errors.relation_ship_owner_email && touched.relation_ship_owner_email}
-										helperText={errors.relation_ship_owner_email && touched.relation_ship_owner_email ? errors.relation_ship_owner_email : ''}
-										fullWidth
-										variant="outlined"
-										required
-									/>
-								</>
-								{/* )} */}
-								{/* /> */}
+							<Grid item xs={6} className='text-start'>
+								<CustomField name='relation_ship_owner_email' label="Customer Relationship Owner Email ID"
+									placeholder="Enter Customer Relationship Owner Email ID" required={true} />
 							</Grid>
 						</Grid>
 
-						<Grid container spacing={4} style={{ marginTop: '8px' }}>
-							<Grid item xs={6}>
-								
-								<>
-									<Typography className='my-1 text-start' sx={{ fontWeight: '500', fontSize: '15px' }} variant="body2" >
-										Customer Technology Owner <span style={{ color: 'red' }}>*</span>
-									</Typography>
-									<Field size='small'
-										name="technology_owner"
-										placeholder="Enter Customer Technology Owner Name"
-										as={TextField}
-										error={errors.technology_owner && touched.technology_owner}
-										helperText={errors.technology_owner && touched.technology_owner ? errors.technology_owner : ''}
-										fullWidth
-										variant="outlined"
-										required
-									/>
-								</>
-								{/* )} */}
-								{/* /> */}
+						<Grid className='m-auto' xs={10} container spacing={6} style={{ marginTop: '8px' }}>
+							<Grid item xs={6} className='text-start'>
+								<CustomField name='technology_owner' label="Customer Technology Owner"
+									placeholder="Enter Customer Technology Owner" required={true} />
 							</Grid>
-							<Grid item xs={6}>
+							<Grid item xs={6} className='text-start'>
 
-								<>
-									<Typography className='my-1 text-start' sx={{ fontWeight: '500', fontSize: '15px' }} variant="body2" >
-										Customer Technology Owner Email ID <span style={{ color: 'red' }}>*</span>
-									</Typography>
+								<CustomField name='technology_owner_email' label="Customer Technology Owner Email ID"
+									placeholder="Enter Customer Technology Owner Email ID" required={true} />
 
-									<Field size='small'
-										name="technology_owner_email"
-										placeholder="Enter Email Id"
-										as={TextField}
-										error={errors.technology_owner_email && touched.technology_owner_email}
-										helperText={errors.technology_owner_email && touched.technology_owner_email ? errors.technology_owner_email : ''}
-										fullWidth
-										variant="outlined"
-										required
-									/>
-								</>
 							</Grid>
 						</Grid>
 						<div style={{ height: '100px' }}>
@@ -194,7 +122,7 @@ function CustomerDetailsStep(props: any) {
 
 
 						<Stack>
-							<Button sx={{textTransform:'none'}}
+							<Button sx={{ textTransform: 'none' }}
 								className="px-4 m-auto py-2 bg-dark"
 								variant="contained"
 								color="primary"

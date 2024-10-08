@@ -11,6 +11,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ApiService from '@/Services/ApiServices';
 import TagDialog from '@/common/TagDialog';
 import CommonDialog from '@/oldcomponents/common-dialoge';
+import { COLORS } from '@/Utils/constants';
 
 type Tag = {
     tagKey: string;
@@ -34,13 +35,12 @@ function TaggingStep(props: any) {
 
     React.useEffect(() => {
         if (userData) {
-            setTags(userData.tags.tagList);
+            setTags(userData?.tags?.tagList);
         }
         if (data) {
             const fetchConnection = async () => {
                 try {
                     const result = await ApiService('8011', 'get', `/customer/${data}`);
-                    console.log(result);
                     setCustomerData(result);
                     if (result.tags) {
                         setTags(result.tags.tagList);
@@ -54,12 +54,10 @@ function TaggingStep(props: any) {
     }, [data, userData]);
 
     const handleSubmit = (values: any, { setSubmitting }: any) => {
-        console.log('Form values:', values);
         const newTag: Tag = { tagKey: values.tagKey, tagValue: values.tagValue };
         setTags([...tags, newTag]);
         setSubmitting(false);
         setIsOpen(false);
-        console.log('Form tags:', tags);
     };
 
     const handleTagDelete = (i: number) => {
@@ -75,11 +73,10 @@ function TaggingStep(props: any) {
             customerData.tags = { tagList: tags };
             try {
                 const result = await ApiService('8011', 'put', `/customer/${props.data}`, customerData);
-                console.log(result);
                 if (result) {
                     setOpen(true);
                     const redirectTimer = setTimeout(() => {
-                        navigate('/Admin Console/Manage Customer');
+                        navigate('/AllCustomers');
                     }, 5000);
                     return () => clearTimeout(redirectTimer);
                 }
@@ -95,67 +92,70 @@ function TaggingStep(props: any) {
 
     return (
         <>
-            <div className='text-start pt-4 mb-10'>
-                <br></br>
-                <h5 className='pt-10 mb-10' style={{ fontWeight: '600' }}>Add Tags</h5>
-                <p style={{ fontSize: '16px', color: 'grey' }}>List of tags given below will be added automatically for all the delivery products configured for the customer.
-                </p>
-            </div>
+            <div className="w-10/12 m-auto">
+                <div className='text-start pt-4 '>
+                    <br></br>
+                    <h5 className='pt-2 mb-2' style={{ fontWeight: '600' }}>Add Tags</h5>
+                    <div style={{ fontSize: '16px', color: 'grey' }}>
+                        List of tags given below will be added automatically for all the delivery products configured for the customer.
+                    </div>
+                </div>
 
-            <div className='text-start pt-10 mb-10'>
-                {tags.map((tag, index) => (
-                    <Chip
-                        key={index}
-                        label={`${tag.tagKey} >> ${tag.tagValue}`}
-                        variant="outlined"
-                        style={{ fontSize: '12px', borderRadius: '5px', background: '#eeeeee', marginLeft: `${index === 0 ? '' : '16px'}` }}
-                        onDelete={() => handleTagDelete(index)}
-                    />
-                ))}
-            </div>
-            <TagDialog
+                <div className='text-start pt-10 mb-2'>
+                    {tags?.map((tag, index) => (
+                        <Chip
+                            key={index}
+                            label={`${tag.tagKey} >> ${tag.tagValue}`}
+                            variant="outlined"
+                            style={{ fontSize: '12px', borderRadius: '5px', background: '#eeeeee', marginLeft: `${index === 0 ? '' : '16px'}` }}
+                            onDelete={() => handleTagDelete(index)}
+                        />
+                    ))}
+                </div>
+                <TagDialog
                     isOpen={isOpen}
                     closeDialog={() => setIsOpen(false)}
                     tags={tags}
                     setTags={setTags}
                 />
-           
 
-            <div className='text-start text-success'>
-                <Button onClick={() => setIsOpen(true)}
-                    className="group inline-flex items-center mt-2 -ml-4 py-2 px-4 rounded cursor-pointer">
-                    <AddCircleIcon  style={{color:'green'}}/>
-                    <span className={`ml-8 font-large group-hover:underline `} style={{ color: 'green', fontWeight: '600' }}>Add a Tag</span>
-                </Button>
-            </div>
-<br></br>
-            <Stack direction={'row'} justifyContent={'space-between'} mt={5}>
-                <Button className="bg-secondary text-white"
-                    onClick={onBack}
-                    variant="contained"
-                    sx={{textTransform:'none'}}
+
+                <div className='text-start text-success'>
+                    <Button onClick={() => setIsOpen(true)}
+                        className="">
+                        <AddCircleIcon style={{ color: COLORS.green }} />
+                        <span className={`ml-2 font-large group-hover:underline `} style={{ color: COLORS.green, fontWeight: '600' }}>Add a Tag</span>
+                    </Button>
+                </div>
+                <br></br>
+                <Stack direction={'row'} justifyContent={'space-between'} mt={5}>
+                    <Button className="bg-secondary text-white"
+                        onClick={onBack}
+                        variant="contained"
+                        sx={{ textTransform: 'none' }}
                     >
-                    Back
-                </Button>
+                        Back
+                    </Button>
 
-                <Button className="bg-dark text-white"
-                    variant="contained"
-                    onClick={handleClickOpen}
-                    sx={{textTransform:'none'}}
-                    size="large">
-                    {userData ? 'Update Customer' : 'Create Customer'}
-                </Button>
+                    <Button className="bg-dark text-white"
+                        variant="contained"
+                        onClick={handleClickOpen}
+                        sx={{ textTransform: 'none' }}
+                        size="large">
+                        {userData ? 'Update Customer' : 'Create Customer'}
+                    </Button>
 
-                {showDialog && (
-                    <CommonDialog
-                        open={open}
-                        onClose={handleClose}
-                        title={userData?"Customer updated successfully":"Customer added successfully"}
-                        description="You'll be automatically redirected to homepage shortly."
-                        imageUrl="/assets/success.svg"
-                    />
-                )}
-            </Stack>
+                    {showDialog && (
+                        <CommonDialog
+                            open={open}
+                            onClose={handleClose}
+                            title={userData ? "Customer updated successfully" : "Customer added successfully"}
+                            description="You'll be automatically redirected to homepage shortly."
+                            imageUrl="/assets/success.svg"
+                        />
+                    )}
+                </Stack>
+            </div>
         </>
     );
 }

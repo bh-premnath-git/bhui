@@ -323,7 +323,7 @@ export function FlexibleTable({
         <TableBodyComponent data={paginatedData} columns={columns} actionFn={actionFn} playRow={playRow} playRowFn={playRowFn}
         />
       </Table>
-      <div className="flex justify-between items-center mt-4">
+      {data.length>10&&(<div className="flex justify-between items-center mt-4">
         <div className="flex items-center space-x-2">
           <Button
             className="bg-gray-900 text-white hover:bg-gray-800"
@@ -360,12 +360,12 @@ export function FlexibleTable({
           <SelectContent>
             {itemsPerPageOptions.map((num) => (
               <SelectItem key={num} value={num.toString()}>
-                {num} per page
+                {num} per page 
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </div>)}
     </div>
   );
 }

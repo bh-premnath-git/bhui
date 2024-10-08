@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react"
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,20 +18,40 @@ export interface IntervalModalRef {
 
 interface IntervalModalProps {
   onSave: (interval: string) => void;
+  onStateChange: (state: IntervalState) => void;
+}
+
+interface IntervalState {
+  selectedInterval: string;
+  repeatEvery: string;
+  repeatAt: string;
+  selectedDays: string[];
+  selectedMonth: string;
+  selectedDate: string;
 }
 
 export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModalProps>(
-  ({ onSave }, ref) => {
+  ({ onSave, onStateChange }, ref) => {
   const [open, setOpen] = useState(false)
-  const [selectedInterval, setSelectedInterval] = useState("Monthly")
-  const [repeatEvery, setRepeatEvery] = useState("1")
-  const [repeatAt, setRepeatAt] = useState("12:00")
-  const [selectedDays, setSelectedDays] = useState<string[]>(["Sun"])
-  const [selectedMonth, setSelectedMonth] = useState("September")
-  const [selectedDate, setSelectedDate] = useState("5")
+  const [state, setState] = useState<IntervalState>({
+    selectedInterval: "Monthly",
+    repeatEvery: "1",
+    repeatAt: "12:00",
+    selectedDays: ["Sun"],
+    selectedMonth: "September",
+    selectedDate: "5"
+  })
+
+  useEffect(() => {
+    onStateChange(state);
+  }, [state, onStateChange]);
+
+  const updateState = (newState: Partial<IntervalState>) => {
+    setState(prevState => ({ ...prevState, ...newState }));
+  };
 
   const handleSave = () => {
-    // Implement save logic here
+    onSave(JSON.stringify(state));
     setOpen(false)
   }
 
@@ -40,14 +60,14 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
   }));
 
   const renderIntervalContent = () => {
-    switch (selectedInterval) {
+    switch (state.selectedInterval) {
       case "Minutes":
         return (
           <div className="flex items-center gap-2">
             <Input
               type="number"
-              value={repeatEvery}
-              onChange={(e) => setRepeatEvery(e.target.value)}
+              value={state.repeatEvery}
+              onChange={(e) => updateState({ repeatEvery: e.target.value })}
               className="w-20"
             />
             <span>Minutes</span>
@@ -60,8 +80,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <span className="mb-2">Hours</span>
               <Input
                 type="number"
-                value={repeatEvery}
-                onChange={(e) => setRepeatEvery(e.target.value)}
+                value={state.repeatEvery}
+                onChange={(e) => updateState({ repeatEvery: e.target.value })}
                 className="w-20"
               />
             </div>
@@ -69,8 +89,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <span className="mb-2">Time(UTC)</span>
               <Input
                 type="time"
-                value={repeatAt}
-                onChange={(e) => setRepeatAt(e.target.value)}
+                value={state.repeatAt}
+                onChange={(e) => updateState({ repeatAt: e.target.value })}
                 className="w-32"
               />
             </div>
@@ -82,8 +102,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
             <span>Repeat At</span>
             <Input
               type="time"
-              value={repeatAt}
-              onChange={(e) => setRepeatAt(e.target.value)}
+              value={state.repeatAt}
+              onChange={(e) => updateState({ repeatAt: e.target.value })}
               className="w-32"
             />
           </div>
@@ -96,13 +116,13 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
                 <div key={day} className="flex items-center">
                   <Checkbox
                     id={day}
-                    checked={selectedDays.includes(day)}
+                    checked={state.selectedDays.includes(day)}
                     onCheckedChange={(checked) => {
-                      setSelectedDays(
-                        checked
-                          ? [...selectedDays, day]
-                          : selectedDays.filter((d) => d !== day)
-                      )
+                      updateState({
+                        selectedDays: checked
+                          ? [...state.selectedDays, day]
+                          : state.selectedDays.filter((d) => d !== day)
+                      })
                     }}
                   />
                   <label htmlFor={day} className="ml-1 text-sm">
@@ -115,8 +135,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <span>Repeat At</span>
               <Input
                 type="time"
-                value={repeatAt}
-                onChange={(e) => setRepeatAt(e.target.value)}
+                value={state.repeatAt}
+                onChange={(e) => updateState({ repeatAt: e.target.value })}
                 className="w-32"
               />
             </div>
@@ -127,7 +147,10 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
           <div className="flex gap-4">
             <div className="flex flex-col">
               <span className="mb-2">Repeat On</span>
-              <Select value={selectedDate} onValueChange={setSelectedDate}>
+              <Select 
+                value={state.selectedDate} 
+                onValueChange={(value) => updateState({ selectedDate: value })}
+              >
                 <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
@@ -144,8 +167,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <span className="mb-2">Repeat At</span>
               <Input
                 type="time"
-                value={repeatAt}
-                onChange={(e) => setRepeatAt(e.target.value)}
+                value={state.repeatAt}
+                onChange={(e) => updateState({ repeatAt: e.target.value })}
                 className="w-32"
               />
             </div>
@@ -156,7 +179,10 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <span>Repeat</span>
-              <Select value={repeatEvery} onValueChange={setRepeatEvery}>
+              <Select 
+                value={state.repeatEvery} 
+                onValueChange={(value) => updateState({ repeatEvery: value })}
+              >
                 <SelectTrigger className="w-24">
                   <SelectValue placeholder="Every" />
                 </SelectTrigger>
@@ -168,7 +194,10 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <Select 
+                value={state.selectedMonth} 
+                onValueChange={(value) => updateState({ selectedMonth: value })}
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -180,7 +209,10 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={selectedDate} onValueChange={setSelectedDate}>
+              <Select 
+                value={state.selectedDate} 
+                onValueChange={(value) => updateState({ selectedDate: value })}
+              >
                 <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
@@ -197,8 +229,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               <span>Repeat At</span>
               <Input
                 type="time"
-                value={repeatAt}
-                onChange={(e) => setRepeatAt(e.target.value)}
+                value={state.repeatAt}
+                onChange={(e) => updateState({ repeatAt: e.target.value })}
                 className="w-32"
               />
             </div>
@@ -221,8 +253,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               {intervals.map((interval) => (
                 <Button
                   key={interval}
-                  variant={selectedInterval === interval ? "sky" : "outline"}
-                  onClick={() => setSelectedInterval(interval)}
+                  variant={state.selectedInterval === interval ? "sky" : "outline"}
+                  onClick={() => updateState({ selectedInterval: interval })}
                   className="flex-1 px-2 py-1 text-sm"
                 >
                   {interval}

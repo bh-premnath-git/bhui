@@ -3,12 +3,9 @@ import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
-import { getGitProject } from '@/redux/ProjectSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
-import { getUserDataList } from "@/redux/UserSlice";
-import { Stack } from "@mui/material";
 import { getCustomerList } from "@/redux/CustomerSlice";
 
 // Define types in a separate file for better organization
@@ -95,7 +92,6 @@ function CustomerTable({
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     useLayoutEffect(() => {
-        console.log(customerList)
         dispatch(getCustomerList());
     }, [dispatch]);
 

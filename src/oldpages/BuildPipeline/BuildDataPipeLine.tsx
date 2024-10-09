@@ -188,6 +188,7 @@ export default function BuildDataPipeLine() {
                                     style={{ margin: '10px' }}
                                     title={item.title}
                                     dataSet={item.dataSet}
+                                    expandIcon={item.expandIcon}
                                 // lead={item.lead}
                                 // line={item.line}
                                 />

@@ -6,20 +6,36 @@ import { debounce } from 'lodash';
 import NewSourcePopUp from '../oldpages/BuildPipeline/components/popups/NewSourcePopUp';
 import { useDispatch, useSelector } from 'react-redux';
 import { getSource } from '../redux/BuildPipeLineSlice';
-import { RootState } from '../redux/store';
+import { RootState } from '@/store/store';
 
-const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, dataSet }) => {
+const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSet, expandIcon }: any) => {
     const [showText, setShowText] = useState(false);
+    const [hover, setHover] = useState(false);
     const [selected, setSelected] = React.useState(false);
     const dispatch = useDispatch();
     const { dataSource } = useSelector((state: RootState) => state.buildPipeLineApi);
+    const [select, setSelect] = useState(null);
+
     const handleClick = () => {
         setShowText(!showText);
+        setSelect(null);
     };
-    const handleOpenClick = () => {
-        setShowText(false);
-        setShowText(true)
-    };
+    async function handlePop(text: any) {
+        await handleClick();
+        setSelect(text)
+        setShowText(!showText);
+        if (text === 'Filter') {
+            addNode('/assets/buildPipeline/8.png', title, 'Filter');
+        } else if (text === 'Join') {
+            addNode('/assets/buildPipeline/9.png', title, 'Join');
+        } else if (text === 'Router') {
+            addNode('/assets/buildPipeline/10.png', title, 'Router');
+        } else if (text === 'Transform') {
+            addNode('/assets/buildPipeline/11.png', title, 'Transform');
+        } else if (text === 'Ship') {
+            addNode('/assets/buildPipeline/12.png', title, 'Ship');
+        }
+    }
     const closePopup = () => {
         setSelected(false);
     }
@@ -37,9 +53,24 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
     const debouncedSearchProject = debounce((value) => {
         // props.search(value);
     }, 1000);
-    function handleNode(lead, title, index) {
+    function handleNode(lead: any, title: any, index: any) {
         addNode(lead, title, index);
         handleClick();
+    }
+    function makeCard(tem: any, index: any) {
+        const randomImage = getRandomImage()
+        return (
+            < div
+                onClick={() => handleNode(randomImage.img, text, tem.data_src_name, tem)}
+                className="bg-box d-flex p-2 rounded align-items-center my-2"
+                key={index}
+            >
+                <img src={randomImage.img} alt="" width={40} className='mx-2' />
+                <img src={randomImage.line} alt="" className='mx-2' width={8} />
+                <div className='fw-bold m-0'>{tem?.data_src_name} </div>
+            </div >
+        )
+
     }
     useEffect(() => {
         if (text == 'Source') {
@@ -64,16 +95,20 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
 
     return (
         <>
-            <div style={{ marginBottom: '10px' }}>
-                <button
-                    onClick={handleOpenClick}
-                    className={className}
-                    style={{ display: 'flex', alignItems: 'center', padding: '10px', fontSize: '16px', ...style }}
-                >
-                    {Icon}
-                    {(showText && text != '') && (<span className='mx-2'>{text}</span>)}
-                </button>
-                {showText && (
+            <div style={{ marginBottom: '10px', transition: 'margin-bottom 0.3s ease-in-out' }} >
+                <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+                    <button
+                        onClick={() => handlePop(text)}
+                        className={className}
+                        style={{
+                            display: 'flex', alignItems: 'center', padding: '10px', fontSize: '16px', ...style, transition: 'padding 0.3s ease-in-out'
+                        }}
+                    >
+
+                        {hover ? (<div className='w-22 h-4'>{expandIcon}</div>) : (<>{icon}</>)}
+                    </button>
+                </div>
+                {(select == 'Source' || select == 'Target') && (
                     <div className='rounded w-25 shadow-sm'
                         style={{
                             marginTop: '10px',
@@ -92,7 +127,7 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
                                 <IoMdClose />
                             </div>
                         </div>
-                        <TextField className='my-1'
+                        {dataSource?.length > 0 && (<TextField className='my-1'
                             value={searchValue}
                             onChange={searchProject}
                             id="left-search"
@@ -107,18 +142,10 @@ const ExpandableButton = ({ icon: Icon, text, className, style, title, addNode, 
                                     </InputAdornment>
                                 ),
                             }}
-                        />
+                        />)}
                         <div style={{ height: '380px', overflowY: "scroll", scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                            {dataSource?.map((tem, index) => (
-                                <div
-                                    onClick={() => handleNode(randomImage.img, text, index)}
-                                    className="bg-box d-flex p-2 rounded align-items-center my-2"
-                                    key={index}
-                                >
-                                    <img src={randomImage.img} alt="" width={40} className='mx-2' />
-                                    <img src={randomImage.line} alt="" className='mx-2' width={8} />
-                                    <div className='fw-bold m-0'>{tem?.data_src_name} </div>
-                                </div>
+                            {dataSource?.map((tem: any, index: any) => (
+                                makeCard(tem, index)
                             ))}
                         </div>
                         {text == 'Source' && (<div className='m-auto text-center mff' >

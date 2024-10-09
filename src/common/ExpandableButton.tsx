@@ -7,6 +7,8 @@ import NewSourcePopUp from '../oldpages/BuildPipeline/components/popups/NewSourc
 import { useDispatch, useSelector } from 'react-redux';
 import { getSource } from '../redux/BuildPipeLineSlice';
 import { RootState } from '@/store/store';
+import TransformationPanel from '@/oldpages/BuildPipeline/TransformationPanel';
+import { transformList } from '@/oldpages/BuildPipeline/staticData';
 
 const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSet, expandIcon }: any) => {
     const [showText, setShowText] = useState(false);
@@ -25,15 +27,15 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
         setSelect(text)
         setShowText(!showText);
         if (text === 'Filter') {
-            addNode('/assets/buildPipeline/8.png', title, 'Filter');
+            addNode('/assets/buildPipeline/display/filter.svg', title, 'Filter');
         } else if (text === 'Join') {
-            addNode('/assets/buildPipeline/9.png', title, 'Join');
+            addNode('/assets/buildPipeline/display/join.svg', title, 'Join');
         } else if (text === 'Router') {
-            addNode('/assets/buildPipeline/10.png', title, 'Router');
+            addNode('/assets/buildPipeline/display/route.svg', title, 'Router');
         } else if (text === 'Transform') {
-            addNode('/assets/buildPipeline/11.png', title, 'Transform');
+            addNode('/assets/buildPipeline/display/transform.svg', title, 'Transform');
         } else if (text === 'Ship') {
-            addNode('/assets/buildPipeline/12.png', title, 'Ship');
+            addNode('/assets/buildPipeline/display/ship.svg', title, 'Ship');
         }
     }
     const closePopup = () => {
@@ -152,6 +154,18 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
                             <button onClick={openPopUp} type="button" className="btn btn-dark p-2">Configure A New Source <span className='h5'> +</span></button>
                         </div>)}
                     </div>
+                )}
+                {(select == '') && (
+                    <TransformationPanel
+                        dataSource={dataSource}
+                        searchValue={searchValue}
+                        searchProject={searchProject}
+                        handleClick={handleClick}
+                        transformList={transformList}
+                        handleNode={handleNode}
+                        text={text}
+                        openPopUp={openPopUp}
+                    />
                 )}
             </div>
             <NewSourcePopUp isOpen={selected} onClose={closePopup} />

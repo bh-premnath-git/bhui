@@ -13,6 +13,7 @@ export interface CustomNodeData {
     isShow?: boolean;
     onDelete?: () => void;
     onClone?: (nodeData: CustomNodeData) => void;
+    dataList?:any
 }
 
 export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnectable }: any) => {
@@ -46,7 +47,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                 type="target"
                 position={Position.Left}
                 isConnectable={isConnectable}
-                style={{ opacity: 0.1, width: '5px', height: '5px', left: '0px', top: '35%', transform: 'translateY(-50%)' }} // Invisible but expanded hit area
+                style={{ opacity: 0.05, width: '5px', height: '5px', left: '5px', top: '35%', transform: 'translateY(-50%)' }} // Invisible but expanded hit area
                 // style={{ visibility: 'hidden' }}
             />
             {/* Display image */}
@@ -57,7 +58,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                 position={Position.Right}
                 id="a"
                 isConnectable={isConnectable}
-                style={{ opacity: 0.1, width: '5px', height: '5px', right: '0px', top: '35%', transform: 'translateY(-50%)' }} // Invisible but expanded hit area
+                style={{ opacity: 0.05, width: '5px', height: '5px', right: '5px', top: '35%', transform: 'translateY(-50%)' }} // Invisible but expanded hit area
 
                 // style={{ visibility: 'hidden' }}
             />

@@ -6,7 +6,6 @@ import { buildData } from './staticData';
 import TransformPopUp from "./components/popups/TransformPopUp";
 import Footer from "./components/Footer";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
 import OrderPopUp from "./components/popups/orderPopUp";
 import { CustomNodeData, ImageNode } from "./ImageNode";
 import FilterPopUp from "./components/popups/FilterPopUp";
@@ -18,6 +17,7 @@ import { getConfig, getSource, setIsHover, setIsRun } from "../../redux/BuildPip
 import CustomEdge from "./customEdge";
 import BuildPipePopup from "./components/popups/BuildPipePopup";
 import ControlPanel from "./ControlPanel";
+import { RootState } from "@/store/store";
 
 type CustomNode = Node<CustomNodeData>;
 
@@ -249,17 +249,15 @@ export default function BuildDataPipeLine() {
                 <Tooltip title="" placement="top">
                     <IconButton
                         style={{
-                            border: '1px solid gray',
                             borderRadius: '50%',
-                            backgroundColor: 'blue',
                             color: 'white',
-                            width: '50px',
-                            height: '50px',
+                            width: '80px',
+                            height: '80px',
                             boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
                         }}
                         onClick={handleOverlayOpen}
                     >
-                        <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" width={60} />
+                        <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" width={80} />
                     </IconButton>
                 </Tooltip>
             </div>

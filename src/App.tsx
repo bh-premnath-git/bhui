@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
+import { createTheme, ThemeProvider } from '@mui/material';
 
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
@@ -52,6 +53,7 @@ const AllUsers = lazy(() => import('@/pages/allUsers'));
 const AddUser = lazy(() => import('@/pages/addUser'));
 const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
+const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -161,7 +163,7 @@ function App() {
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
-    { path: '/Designer/Build Data Pipe Line', element: <BuildDataPipeLines /> },
+    { path: '/Designer/BuildDataPipeLine', element: <BuildDataPipeLines /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },
@@ -192,22 +194,47 @@ function App() {
     { path: '/AddUser', element: <AddUser /> },
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
+    { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
   ];
 
+
+  const theme = createTheme({
+    typography: {
+      fontFamily: 'Inter ',
+    },
+    components: {
+     
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            textTransform: 'none',
+          },
+        }
+      },
+
+    
+    }
+
+  });
+
   return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-              {routeList.map((route, index) => (
-                <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-              ))}
-            </Route>
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </Provider>
+    <ThemeProvider theme={theme}>
+
+      <Provider store={store}>
+        <BrowserRouter>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                {routeList.map((route, index) => (
+                  <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                ))}
+              </Route>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </Provider>
+    </ThemeProvider>
   );
 }
 

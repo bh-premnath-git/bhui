@@ -11,7 +11,7 @@ export const menuList = [
         path: "/designers",
         subPaths: [
            /*  { label: "Onboard Data", path: "/designer/onboard-data" }, */
-            { label: "Build Data Pipelines", path: "/designer/build-data-pipe-line" },
+            { label: "Build Data Pipelines", path: "/AllBuildDataPipeLine" },
            /*  { label: "Code Data Pipelines", path: "/designer/code-data-pipelines" }, */
             { label: "Manage Flow", path: "/designer/manage-flow" },
            /*  { label: "Publish Data", path: "/designer/publish-data" } */

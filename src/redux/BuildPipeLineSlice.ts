@@ -10,7 +10,7 @@ export interface ApiState {
   selectedOption: string;
   isRun: boolean;
   dynamicConData: any;
-  pipelineList:Array<object>;
+  pipelineList:any;
   nestedFields: any;
 }
 

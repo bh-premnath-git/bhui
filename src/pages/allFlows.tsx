@@ -1,11 +1,11 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
-import { listFlows, getFlowProjectList, getEnvironmentList } from '@/redux/FlowSlice';
+import { listFlows, getFlowProjectList, getEnvironmentList, createFlow } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
@@ -65,7 +65,8 @@ const columns: ColumnConfig[] = [
     type: 'text',
   },
 ];
-const EmptyComponent: React.FC<{ onAddFlow: () => void }> = ({ onAddFlow }) => {
+
+const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddFlow }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full">
       <FileQuestion size={64} className="text-gray-400 mb-4" />
@@ -78,61 +79,109 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = ({ onAddFlow }) => {
       </button>
     </div>
   );
-};
+});
+
 const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
-  useLayoutEffect(() => {
-    dispatch(listFlows());
-    dispatch(getFlowProjectList({}));
-    dispatch(getEnvironmentList());
-  }, [dispatch]);
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreatingFlow, setIsCreatingFlow] = useState(false);
+  const [localFlows, setLocalFlows] = useState<Flow[]>([]);
+
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi
   );
-  const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      await Promise.all([
+        dispatch(listFlows()),
+        dispatch(getFlowProjectList({})),
+        dispatch(getEnvironmentList())
+      ]);
+    };
+    fetchData();
+  }, [dispatch]);
+
+  useEffect(() => {
+    setLocalFlows(flows);
+  }, [flows]);
+
+  const funcCreateFlow = useCallback(() => {
+    setIsModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setIsCreatingFlow(false);
+  }, []);
+
+  const handleCreateFlow = useCallback(async (payload: any) => {
+    setIsCreatingFlow(true);
+    try {
+      const result = await dispatch(createFlow(payload));
+      if (createFlow.fulfilled.match(result)) {
+        // Optimistic update
+        setLocalFlows(prevFlows => [...prevFlows, result.payload]);
+        closeModal();
+        // Navigate after a short delay to allow for the UI update
+        setTimeout(() => {
+          navigate('/designer/flow-playground');
+        }, 100);
+      } else {
+        // Handle error
+        console.error("Failed to create flow");
+        closeModal();
+      }
+    } catch (err) {
+      console.error("Error creating flow:", err);
+      closeModal();
+    } finally {
+      setIsCreatingFlow(false);
+    }
+  }, [dispatch, navigate, closeModal]);
+
+  const playground = useCallback((data: any) => {
+    navigate("/designer/flow-playground");
+  }, [navigate]);
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorDisplay message={error} />;
-  }
-  const funcCreateFlow = () => {
-    setIsModalOpen(()=>(true));
-  }
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
-  const playground = (data: any) => {
-    navigate("/designer/flow-playground")
-
+    return (
+      <div className="container mx-auto p-4">
+        <ErrorDisplay message={error} />
+      </div>
+    );
   }
 
-  if (flows.length === 0) {
-    return <><EmptyComponent onAddFlow={funcCreateFlow} />
-    <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <CreateFlowForm onClose={closeModal} />
-      </Modal>
-    </>;
-  }
   return (
     <div className="container mx-auto p-4">
-      <FlexibleTable
-        data={flows}
-        columns={columns}
-        itemsPerPageOptions={[5, 10, 20]}
-        defaultItemsPerPage={10}
-        tableName="Create New Flow"
-        createNewFn={funcCreateFlow}
-        playRow={true}
-        playRowFn={playground}
-      />
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <CreateFlowForm onClose={closeModal} />
-      </Modal>
+      {localFlows.length === 0 ? (
+        <EmptyComponent onAddFlow={funcCreateFlow} />
+      ) : (
+        <FlexibleTable
+          data={localFlows}
+          columns={columns}
+          itemsPerPageOptions={[5, 10, 20]}
+          defaultItemsPerPage={10}
+          tableName="Create New Flow"
+          createNewFn={funcCreateFlow}
+          playRow={true}
+          playRowFn={playground}
+        />
+      )}
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={closeModal}>
+          <CreateFlowForm onClose={closeModal} onCreateFlow={handleCreateFlow} isLoading={isCreatingFlow} />
+        </Modal>
+      )}
     </div>
   );
 };

@@ -168,8 +168,8 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
       flow_class: Number(formData.selectedClass),
       job: 'on_job_start',
       schedule_interval: {
-        schedule_type: 'minutes',
-        time: {},
+        schedule_type: formData?.scheduleInterval?.schedule_type || 'minutes',
+        time: formData?.scheduleInterval?.time || {},
       },
     };
 
@@ -177,7 +177,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
   };
 
   const handleIntervalStateChange = (state: IntervalState) => {
-    console.log("Interval Modal State:", state);
     setIntervalData(state);
   };
 

@@ -5,7 +5,7 @@ import { FlexibleTable } from "@/components/Tabel";
 import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
-import { listFlows, getFlowProjectList, getEnvironmentList, createFlow } from '@/redux/FlowSlice';
+import { listFlows, getFlowProjectList, getEnvironmentList, createFlow, setSelectedFlowFromList } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
@@ -142,6 +142,7 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
+    dispatch(setSelectedFlowFromList(data));
     navigate("/designer/flow-playground");
   }, [navigate]);
 

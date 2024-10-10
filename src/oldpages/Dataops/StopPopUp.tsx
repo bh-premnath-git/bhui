@@ -10,7 +10,7 @@ import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 
 interface StopPopUpProps {
     open2: boolean;
@@ -21,7 +21,7 @@ interface StopPopUpProps {
 const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => {
     console.log(jobDetail);
     const [reason, setReason] = useState('');
-    const handleChange = (event) => {
+    const handleChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
         setReason(event.target.value);
     };
     const handleClose2 = () => {
@@ -79,7 +79,7 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
             console.error('Error fetching Status', error);
         }
     }
-    const updateEvent2 = async (pipeline_status) => {
+    const updateEvent2 = async (pipeline_status: string) => {
         console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,

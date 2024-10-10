@@ -3,7 +3,7 @@ import AlertTableHead from './AlertTableHead';
 import AlertTableDtl from './AlertTableBody';
 import { Stack } from '@mui/material';
 import { useEffect, useState } from 'react';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { removeDuplicates } from '../../Utils/removeDuplicates';
 
 function Alerts() {
@@ -17,7 +17,7 @@ function Alerts() {
 		fetchData();
 	}, []);
 
-	const fetchJobDetails = async (params) => {
+	const fetchJobDetails = async (params: {}) => {
 		try {
 			setIsLoading(true);
 			const result = await ApiService('8004', 'get', '/alert/search/alerts',null,params);

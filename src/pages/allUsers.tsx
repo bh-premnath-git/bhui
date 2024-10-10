@@ -12,7 +12,7 @@ import { Stack } from "@mui/material";
 import { formatDate, formatedDate } from "@/Utils/dateFormatter";
 import { useDispatch } from "react-redux";
 import { COLORS } from "@/Utils/constants";
-import ApiService from "@/Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 
 // Define types in a separate file for better organization
 interface userData {
@@ -109,7 +109,7 @@ function UserDetailTable({
         }
     }
 
-    if (userList.length === 0) {
+    if (userList?.length === 0) {
         return <EmptyComponent />;
     }
 
@@ -137,7 +137,7 @@ const AllUsers: React.FC = () => {
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(getCodesDtl());
-    }, [dispatch, codesDtl.length == 0]);
+    }, [dispatch, codesDtl?.length == 0]);
     const columns: ColumnConfig[] = [
         {
             key: 'bh_user_first_name',

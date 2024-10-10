@@ -20,7 +20,7 @@ import * as yup from "yup";
 import { green } from "@mui/material/colors";
 import { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import ApiService from "../../../Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 import axios from "axios";
 
 /**

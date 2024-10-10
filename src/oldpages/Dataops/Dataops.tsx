@@ -22,7 +22,7 @@ import SkipPopUp from './SkipPopUp';
 import RestartPopUp from './RestartPopUp';
 import StopPopUp from './StopPopUp';
 import { useEffect } from 'react';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import MyChartComponent from './ChartComponent';
 import { Button } from 'antd';
 import { formatDate } from '../../Utils/dateFormatter';
@@ -143,8 +143,8 @@ function Dataops() {
 		'pipeline_status': null,
 		'zone_name': null
 	})
-	const updateSelectedValue = (field, value) => {
-		setSelectedValue((prevState) => ({
+	const updateSelectedValue = (field: string, value: string) => {
+		setSelectedValue((prevState: any) => ({
 			...prevState,
 			[field]: value,
 		}));
@@ -224,7 +224,7 @@ function Dataops() {
 	const [selectedRowData, setSelectedRowData] = useState<any>(1);
 	console.log(selectedRowData)
 
-	const handleRowClick = (rowData) => {
+	const handleRowClick = (rowData: any) => {
 		setSelectedRowData(rowData);
 	};
 	const [page, setPage] = React.useState(0);
@@ -238,7 +238,7 @@ function Dataops() {
 		const uniqueSet = new Set();
 		const uniqueValues: any = [];
 
-		data.forEach(item => {
+		data.forEach((item: { [x: string]: any; }) => {
 			const value = item[key]?.toLowerCase();
 			if (value && !uniqueSet.has(value)) {
 				uniqueSet.add(value);
@@ -249,7 +249,7 @@ function Dataops() {
 		return uniqueValues;
 	};
 
-	const handleDateChange = (dates, dateStrings) => {
+	const handleDateChange = (_dates: any, dateStrings: string[]) => {
 		updateSelectedValue('job_start_time', dateStrings[0]);
 		updateSelectedValue('job_end_time', dateStrings[1]);
 	};
@@ -285,7 +285,7 @@ function Dataops() {
 								Select Job Type
 							</MenuItem>
 
-							{getUniqueValues(selectedSearchList, 'pipeline_type').map((job: any, index) =>
+							{getUniqueValues(selectedSearchList, 'pipeline_type').map((job: any, index: React.Key | null | undefined) =>
 								<MenuItem className='myFont' key={index} value={job}>{job}</MenuItem>
 							)}
 						</Select>
@@ -314,7 +314,7 @@ function Dataops() {
 								Select Pipeline
 							</MenuItem>
 
-							{getUniqueValues(selectedSearchList, 'pipeline_name').map((job: any, index) =>
+							{getUniqueValues(selectedSearchList, 'pipeline_name').map((job: any, index: React.Key | null | undefined) =>
 								<MenuItem className='myFont' key={index} value={job}>{job}</MenuItem>
 							)}
 						</Select>
@@ -384,7 +384,7 @@ function Dataops() {
 								Select Status
 							</MenuItem>
 
-							{getUniqueValues(selectedSearchList, 'pipeline_status').map((job: any, index) =>
+							{getUniqueValues(selectedSearchList, 'pipeline_status').map((job: any, index: React.Key | null | undefined) =>
 								<MenuItem className='myFont' key={index} value={job}>{job}</MenuItem>
 							)}
 
@@ -415,7 +415,7 @@ function Dataops() {
 								Select Zone
 							</MenuItem>
 
-							{getUniqueValues(selectedSearchList, 'zone_name').map((job: any, index) =>
+							{getUniqueValues(selectedSearchList, 'zone_name').map((job: any, index: React.Key | null | undefined) =>
 								<MenuItem className='myFont' key={index} value={job}>{job}</MenuItem>
 							)}
 						</Select>

@@ -23,11 +23,11 @@ import {
   DialogContentText,
   Tooltip,
 } from "@mui/material";
-import { useEffect, useState } from 'react';
+import { SetStateAction, useEffect, useState } from 'react';
 import ProjectExplorer from "./ProjectExplore";
 import Home1 from "./home";
 import { Editor } from "@monaco-editor/react";
-import ApiService from "../../Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { Field, Form, Formik } from "formik";
 import * as Yup from 'yup';
@@ -42,7 +42,7 @@ interface TabType {
 const validationSchema = Yup.object({
   name: Yup.string().required('Name is required'),
 });
-const CustomTooltip = ({ title, children }) => (
+const CustomTooltip = ({ children }:any) => (
   <Tooltip
     title={
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -96,11 +96,11 @@ function Explorer() {
   const handleClose = () => {
     setIsOpen(false);
   };
-  const handleChangePage = (event, newPage) => {
+  const handleChangePage = (event: any, newPage: SetStateAction<number>) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event) => {
+  const handleChangeRowsPerPage = (event: { target: { value: string | number; }; }) => {
     setRowsPerPage(+event.target.value);
     setPage(0);
   };
@@ -108,7 +108,7 @@ function Explorer() {
     setShowAnotherPage(true);
   };
 
-  const handleCombinedClick = (query) => {
+  const handleCombinedClick = (query: any) => {
     handleAddQuery(query);
     handleButtonClick();
   };
@@ -127,7 +127,7 @@ function Explorer() {
     );
   };
 
-  const handleEditorDidMount = (editor, monaco) => {
+  const handleEditorDidMount = (_editor: any, monaco: any) => {
     console.log("Editor mounted!");
   };
 
@@ -217,10 +217,10 @@ function Explorer() {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
-  const handleRowClick = (row) => {
+  const handleRowClick = (_row: any) => {
     setOpen(true);
   };
-  const handleAddQuery = (query) => {
+  const handleAddQuery = (query: any) => {
     const newTabIndex = tabs.length;
     setIndex(newTabIndex);
     setTabs([
@@ -514,7 +514,7 @@ function Explorer() {
   );
 }
 
-function TabPanel(props) {
+function TabPanel(props: { [x: string]: any; children: any; value: any; index: any; }) {
   const { children, value, index, ...other } = props;
   return (
     <div

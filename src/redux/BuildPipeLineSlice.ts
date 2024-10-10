@@ -1,4 +1,4 @@
-import ApiService from "@/Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {

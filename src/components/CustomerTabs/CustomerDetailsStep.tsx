@@ -11,7 +11,7 @@ import {
 import * as yup from 'yup';
 import { Formik, Form, Field } from 'formik';
 import { useLocation } from 'react-router';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import CustomField from '@/common/CustomField';
 
 

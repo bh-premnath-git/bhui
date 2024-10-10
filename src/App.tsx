@@ -63,7 +63,7 @@ const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
     <Header isAuthenticated={isAuthenticated} logout={logout} />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-4 ml-16">
+      <main className="flex-1 overflow-auto p-2 ml-16">
         <Outlet />
       </main>
     </div>
@@ -139,7 +139,7 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('authenticated');
     kc.logout({
-      redirectUri: 'http://localhost:5000/landing',
+      redirectUri: 'http://54.157.234.126:5000/landing',
     });
   }
 

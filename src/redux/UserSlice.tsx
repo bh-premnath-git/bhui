@@ -1,5 +1,5 @@
-import ApiService from "@/Services/ApiServices";
-import LocalStorageService from "@/Services/local-storage-service";
+import {ApiService} from '@/services/apiServices';
+import {LocalStorageService} from "@/services/localStorageServices";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {

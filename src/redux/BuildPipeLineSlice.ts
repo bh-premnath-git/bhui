@@ -77,7 +77,7 @@ export const insertPipeline: any = createAsyncThunk(
   async (body: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'post', '/pipelines', body);
+      const response = await ApiService('8011', 'post', '/pipeline', body);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -89,7 +89,7 @@ export const getAllPipeline: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/pipelines/list/', null, params);
+      const response = await ApiService('8011', 'get', '/pipeline/list/', null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

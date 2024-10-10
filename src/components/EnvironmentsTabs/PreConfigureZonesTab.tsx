@@ -1,6 +1,6 @@
 import React from 'react';
 import { InfoIcon } from 'lucide-react';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 
 type ZoneDetail = { name: string; url: string };
 

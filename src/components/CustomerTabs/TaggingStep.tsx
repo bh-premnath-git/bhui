@@ -8,7 +8,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as yup from 'yup';
 import { useLocation } from 'react-router';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import TagDialog from '@/common/TagDialog';
 import CommonDialog from '@/oldcomponents/common-dialoge';
 import { COLORS } from '@/Utils/constants';

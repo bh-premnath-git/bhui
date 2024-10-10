@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
 
 // Types

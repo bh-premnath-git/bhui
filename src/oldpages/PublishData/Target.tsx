@@ -8,7 +8,7 @@ import DeliveryOptionsStep from './DeliveryOptionsStep';
 import TaggingStep from './TaggingStep';
 import DeliveryScheduleStep from './DeliveryScheduleStep';
 import PublishAlertProfileStep from './PublishAlertProfile';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import SwombLoading from '../Portal/SwombLoading';
 import SuccessfulDialogueBox from './SuccessfulDialoguebox';
 import './Step.css';

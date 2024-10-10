@@ -4,7 +4,7 @@ import { TextField, Button, Grid, Typography, FormControlLabel, Radio, RadioGrou
 import * as Yup from 'yup';
 import Autocomplete from '@mui/material/Autocomplete';
 import Checkbox from '@mui/material/Checkbox';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';

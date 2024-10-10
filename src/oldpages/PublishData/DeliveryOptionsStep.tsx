@@ -13,7 +13,7 @@ import {
   Button,
 } from '@mui/material';
 import { green } from '@mui/material/colors';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { useNavigate } from 'react-router-dom';
 
 const DeliveryOptionsStep = ({ handlePrivious, handleNext, publishId }) => {

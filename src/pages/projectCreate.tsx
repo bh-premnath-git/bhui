@@ -13,7 +13,7 @@ import { PlusCircle, X } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { Spinner } from '@/components/ui/spinner';
 

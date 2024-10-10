@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Field, Form, Formik } from 'formik';
 import * as yup from 'yup';
 import { green } from '@mui/material/colors';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 
 const validationSchema = yup.object().shape({
     minute: yup.number().integer().min(0).max(59),

@@ -8,7 +8,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { color } from 'framer-motion';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';

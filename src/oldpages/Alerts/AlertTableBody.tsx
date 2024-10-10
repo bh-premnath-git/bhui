@@ -20,7 +20,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useEffect } from 'react';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { formatDate } from '../../Utils/dateFormatter';
 
 interface Column {
@@ -94,14 +94,14 @@ const validationSchemaLink = Yup.object({
     label: Yup.string().required('User Name is required'),
 });
 
-export default function AlertTableDtl({ jobDetailList }) {
+export default function AlertTableDtl({ jobDetailList }: any) {
     const [anchorEl, setAnchorEl] = useState(null);
     const [openAddLink, setOpenAddLink] = useState(false);
 
     const [jobDetail, setJobDetail] = useState();
     const [codesDtl, setCodesDtl]: any = useState(localStorage.getItem('codesDtl'));
 
-    const handleOpen = (event) => {
+    const handleOpen = (event: { currentTarget: React.SetStateAction<null>; }) => {
         setAnchorEl(event.currentTarget);
     };
 
@@ -147,7 +147,7 @@ export default function AlertTableDtl({ jobDetailList }) {
         setRowsPerPage(+event.target.value);
         setPage(0);
     };
-    const linkSubmit = (values, { setSubmitting }) => {
+    const linkSubmit = (values: any, { setSubmitting }: any) => {
         console.log('Form values:', values);
         setSubmitting(false);
         setOpenAddLink(false);

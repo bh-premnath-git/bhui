@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { Typography } from 'antd';
 import CloseIcon from '@mui/icons-material/Close';
 import { AiOutlineCheckCircle } from "react-icons/ai";
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 
 
 

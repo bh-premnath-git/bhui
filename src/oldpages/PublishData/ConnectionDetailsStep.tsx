@@ -13,7 +13,8 @@ import {
   Button
 } from '@mui/material';
 import { green } from '@mui/material/colors';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
+
 
 const validationSchema = Yup.object({
   zone_cd: Yup.string().required('Please select a zone'),

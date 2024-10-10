@@ -5,7 +5,7 @@ import { Stack, Typography, FormHelperText, Button } from '@mui/material';
 import CustomTextField from '../../oldcomponents/custom-textField'; // Adjust the import path accordingly
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 

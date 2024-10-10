@@ -10,7 +10,7 @@ import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 
 interface SkipPopUpProps {
     open: boolean;
@@ -30,7 +30,7 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
         onClose();
 
     };
-    const handleChange = (e) => {
+    const handleChange = (e: { target: { value: React.SetStateAction<string>; }; }) => {
         setReason(e.target.value);
     };
 
@@ -88,7 +88,7 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
         }
     }
     console.log(jobDetail)
-    const updateEvent = async (pipeline_status) => {
+    const updateEvent = async (pipeline_status: string) => {
         console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,

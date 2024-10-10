@@ -12,7 +12,7 @@ import { Stack } from "@mui/material";
 import { formatDate, formatedDate } from "@/Utils/dateFormatter";
 import { useDispatch } from "react-redux";
 import { COLORS } from "@/Utils/constants";
-import ApiService from "@/Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 
 // Define types in a separate file for better organization
 interface userData {

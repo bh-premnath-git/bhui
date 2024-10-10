@@ -156,20 +156,14 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
   options,
 }) => (
   <div>
-    <label
-      htmlFor={`${label.toLowerCase()}-select`}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      {label}
-    </label>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[120px]">
+      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[130px]">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {option}
+            {option === "All" ? `All/${label}` : `(${option})`}
           </SelectItem>
         ))}
       </SelectContent>

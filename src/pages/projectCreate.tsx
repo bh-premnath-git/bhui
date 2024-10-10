@@ -9,13 +9,16 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { PlusCircle, X } from 'lucide-react';
+import { PlusCircle, X, Loader2, Check } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { Spinner } from '@/components/ui/spinner';
+import { encrypt_string } from '@/services/encryption';
+import { motion, AnimatePresence } from "framer-motion"
+
 
 interface GithubProvider {
   id: string;
@@ -34,6 +37,7 @@ interface ProjectFormValues {
   tags: {
     tagList: { tagKey: string; tagValue: string }[];
   } | null;
+  init_vector?: string;
 }
 
 const validationSchema = Yup.object().shape({
@@ -63,8 +67,8 @@ export default function ProjectCreationComponent() {
   const [isTokenValid, setIsTokenValid] = useState<'valid' | 'inValid'>(
     isEmpty(editProjectData) ? 'inValid' : 'valid'
   );
+  const [isTokenLoading, setIsTokenLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
 
   const [initialValue, setInitialValue] = useState<ProjectFormValues>({
     bh_project_id: null,
@@ -136,19 +140,29 @@ export default function ProjectCreationComponent() {
   }, [searchProjectList, debouncedProjectName]);
 
   const handleVerification = async (values: ProjectFormValues) => {
+    setIsTokenLoading(() => true)
     try {
-      const result = await ApiService('8011', 'post', 'bh_project/validate-token/', {
-        token: values.bh_github_token_url,
+      const { encryptedString, initVector } = encrypt_string(values.bh_github_token_url);
+      const body = {
+        bh_github_token_url: encryptedString,
         bh_github_provider: values.bh_github_provider,
-      });
+        bh_github_username: values.bh_github_username,
+        bh_github_url: values.bh_github_url,
+        init_vector: initVector,
+      }
+
+      const result = await ApiService('8011', 'post', 'bh_project/validate-token/', body);
       if (result.status >= 200 && result.status < 300) {
+        setIsTokenLoading(() => false)
         setIsTokenValid('valid');
         showToast('Token Validated Successfully', { color: '#4caf50' });
       } else {
+        setIsTokenLoading(() => false)
         setIsTokenValid('inValid');
         showToast('Invalid Token, please check your token', { color: '#FF0000' });
       }
     } catch (error) {
+      setIsTokenLoading(() => false)
       setIsTokenValid('inValid');
       showToast('Error validating token', { color: '#FF0000' });
     }
@@ -156,6 +170,10 @@ export default function ProjectCreationComponent() {
 
   const handleSubmitForm = async (values: ProjectFormValues) => {
     values.tags = { tagList: tags };
+
+    const { encryptedString, initVector } = encrypt_string(values.bh_github_token_url);
+    values.bh_github_token_url = encryptedString;
+    values.init_vector = initVector;
     setIsLoading(true);
     try {
       let result;
@@ -166,12 +184,12 @@ export default function ProjectCreationComponent() {
         // Update existing project
         result = await dispatch(updateProject(values));
       }
-      
+
 
       if (result.payload) {
         const action = isEmpty(editProjectData) ? 'created' : 'updated';
         showToast(`Project ${action} successfully`, { color: '#4caf50' });
-        
+
         // Add a small delay before navigation
         setTimeout(() => {
           navigate('/all-projects');
@@ -179,8 +197,8 @@ export default function ProjectCreationComponent() {
       }
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
-    }finally {
-      setProjectExistsModalOpen(()=> false);
+    } finally {
+      setProjectExistsModalOpen(() => false);
       setIsLoading(false);
     }
   };
@@ -312,17 +330,17 @@ export default function ProjectCreationComponent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className='space-y-2'>
                   <Label htmlFor="bh_github_url">Github Repository URL</Label>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-2/3' />
+                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-full' />
                     )}
                   </Field>
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
                 </div>
-                <div>
+                <div className='space-y-2'>
                   <Label htmlFor="bh_github_token_url">Github Token</Label>
                   <Field name="bh_github_token_url">
                     {({ field }: any) => (
@@ -335,7 +353,7 @@ export default function ProjectCreationComponent() {
                           setIsTokenValid('inValid');
                           field.onChange(e);
                         }}
-                        className='w-2/3'
+                        className='w-full'
                       />
                     )}
                   </Field>
@@ -345,16 +363,58 @@ export default function ProjectCreationComponent() {
                     className="text-red-500"
                   />
                 </div>
-              </div>
+                <div className="flex items-end">
+                  <motion.div
+                    className="relative"
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      type="button"
+                      disabled={isTokenLoading}
+                      className="align-bottom relative px-2 py-1 text-sm font-medium text-white bg-gray-800 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-300 ease-in-out w-[240px] h-[35px]"
 
-              <div className="flex justify-end w-50">
-                <button
-                  type="button"
-                  className="text-[#70e5e8] hover:underline hover:underline-offset-4 cursor-pointer bg-transparent border-none p-0 font-semibold transition-all duration-200"
-                  onClick={() => handleVerification(values)}
-                >
-                  Validate Github Credentials
-                </button>
+                      onClick={() => handleVerification(values)}
+                    >
+                      <span className="relative z-10">
+                        {isTokenLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin inline-block" />
+                            Validating...
+                          </>
+                        ) : (
+                          'Validate Github Credentials'
+                        )}
+                      </span>
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 opacity-0"
+                        animate={{
+                          opacity: isTokenLoading ? 0.2 : 0,
+                        }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </Button>
+                    <AnimatePresence>
+                      {!isTokenLoading && isTokenValid !== null && (
+                        <motion.span
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className={`absolute -top-3 -right-3 flex items-center justify-center w-5 h-5 text-sm font-bold rounded-full ${isTokenValid === 'valid' ? 'bg-green-500' : 'bg-red-500'
+                            } shadow-md z-20`}
+                        >
+                          {isTokenValid === 'valid' ? (
+                            <Check className="w-3 h-3 text-white" />
+                          ) : (
+                            <X className="w-3 h-3 text-white" />
+                          )}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
               </div>
 
               <div>

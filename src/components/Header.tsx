@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,9 +40,8 @@ export function Header(props: HeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 bg-white border border-1 border-b-gray-200 ">
+    <header className="flex items-center justify-between px-3 py-1 bg-white border border-1 border-b-gray-200 ">
       <div className="flex items-center">
-        <div className="pr-4">
           <img
             src={logo}
             className="h-8 w-8 cursor-pointer"
@@ -51,30 +50,26 @@ export function Header(props: HeaderProps) {
             height={32}
             onClick={() => navigate("/dashboard")}
           />
-        </div>
-        <div className="pl-4">
+          <div className="mx-4 h-8 w-px bg-gray-200" />
+      </div>
+        <div className="flex-grow">
           {renderHeaderContent(renderingHeadContent(pathname))}
         </div>
-      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="flex items-center space-x-3 bg-transparent hover:bg-gray-100 p-2 rounded-lg transition-colors">
-            <img
-              src="https://assets.imgix.net/examples/pione.jpg"
-              sizes="(min-width: 1024px) 40vw, 90vw"
-              className="rounded-full"
-              width={24}
-              height={24}
-              alt="User avatar"
-            />
+          <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://assets.imgix.net/examples/pione.jpg" alt="John Doe" />
+              <AvatarFallback>JD</AvatarFallback>
+            </Avatar>
             <div className="flex flex-col items-start">
-              <span className="text-sm text-gray-500 font-medium">John Doe</span>
+              <span className="text-sm font-medium text-gray-700">John Doe</span>
               <span className="text-xs text-gray-500">Admin</span>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-500" />
-          </Button>
+          </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>Profile</DropdownMenuItem>

@@ -130,6 +130,9 @@ function renderingHeadContent(content: string) {
   if (content === "/AddCustomers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
   }
+  if (content === "/AllBuildDataPipeLine") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
+  }
   if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent />
   }

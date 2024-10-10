@@ -97,7 +97,7 @@ const AddUser = () => {
     };
 
     const createKeyCloakUser = async (value: any) => {
-        fetch('http://localhost:8005/create-user', {
+        fetch('http://54.157.234.126:8005/create-user', {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',

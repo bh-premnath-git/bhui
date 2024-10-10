@@ -116,7 +116,7 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold"> Data Catalog</span>;
   }
   if (content === "/DataCatalog/schema") {
-    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0].data_src_lyt_name} &gt; Schema</span>;
+    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0]?.data_src_lyt_name} &gt; Schema</span>;
   }
   if (content === "/AllUsers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console </span>&gt; Manage Data Platform User</span>;

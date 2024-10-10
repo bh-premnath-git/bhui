@@ -58,28 +58,28 @@ const columns: ColumnConfig[] = [
     ),
   },
   {
-    key: 'bh_project_id',
+    key: 'bh_project_name',
     header: 'Project',
     sortable: true,
     filterable: true,
     type: 'text',
   },
   {
-    key: 'bh_owner',
+    key: 'owner',
     header: 'Owner',
     sortable: true,
     filterable: true,
     type: 'text',
-    render: (value: string | null) => value || 'Jhon',
+    // render: (value: string | null) => value || 'Jhon',
 
   },
   {
-    key: 'total_consumers',
+    key: 'total_customer',
     header: 'Total Consumers',
     sortable: true,
     filterable: true,
     type: 'text',
-    render: (value: string | null) => value || '12',
+    // render: (value: string | null) => value || '12',
 
   },
   {
@@ -88,7 +88,7 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: false,
     type: 'text',
-    render: (value: string | null) => value || '125',
+    // render: (value: string | null) => value || '125',
 
   },
   {

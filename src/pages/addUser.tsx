@@ -98,57 +98,64 @@ const AddUser = () => {
 
     const createKeyCloakUser = async (value: any) => {
         fetch('http://localhost:8005/create-user', {
-			method: 'POST',
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				user: {
-					username: `${value?.bh_user_first_name}`,
-					email: value?.user_email_id,
-					password: 'Bighammer@123',
-					first_name: `${value?.bh_user_first_name}`,
-					last_name: `${value?.bh_user_last_name}`,
-					enabled: true,
-					email_verified: true,
-					credentials: [
-						{
-							type: 'password',
-							value: 'password',
-							temporary: false
-						}
-					]
-				},
-				token_data: {
-					server_url: 'http://keycloak:8080',
-					username: 'admin',
-					password: 'password',
-					grant_type: 'password',
-					realm_name: 'master',
-					client_id: 'admin-cli'
-				}
-			})
-		})
-			.then(response => {
-				if (!response.ok) {
-					throw new Error('Network response was not ok');
-				}
-				return response.json();
-			})
-			.then(data => {
-				add(value)
-				notification.success({
-					message: 'User creation successful',
-					duration: 3, // Duration in seconds
-					placement: 'bottomRight', // Position of the snack bar
-				});
-			})
-			.catch(error => {
-			});
-
-        // Create KeyCloak user logic here
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user: {
+                    username: `${value?.bh_user_first_name}`,
+                    email: value?.user_email_id,
+                    password: 'Bighammer@123',
+                    first_name: `${value?.bh_user_first_name}`,
+                    last_name: `${value?.bh_user_last_name}`,
+                    enabled: true,
+                    email_verified: true,
+                    credentials: [
+                        {
+                            type: 'password',
+                            value: 'password',
+                            temporary: false
+                        }
+                    ]
+                },
+                token_data: {
+                    server_url: 'http://keycloak:8080',
+                    username: 'admin',
+                    password: 'password',
+                    grant_type: 'password',
+                    realm_name: 'master',
+                    client_id: 'admin-cli'
+                }
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then((err) => {
+                    throw new Error(err.detail || 'An error occurred');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            add(value);
+            notification.success({
+                message: 'User creation successful',
+                duration: 3, // Duration in seconds
+                placement: 'bottomRight', // Position of the notification
+            });
+        })
+        .catch(error => {
+            notification.error({
+                message: 'User creation failed',
+                description: error.message, // Show the error message
+                duration: 5, // Duration in seconds
+                placement: 'bottomRight', // Position of the notification
+            });
+        });
     };
+    
     async function add(value:any) {
 		const url = '/bh_user'; // Adjust the endpoint URL as needed
 		const result = await ApiService('8011', 'post', url, value);
@@ -303,7 +310,7 @@ const AddUser = () => {
                                                                 form.setFieldValue(`project_details.${index}.projectRole`, value)
                                                             }
                                                             renderOption={(props, option: any, { selected }) => (
-                                                                <li {...props}>
+                                                                <li {...props} key={option.dtl_desc}>
                                                                     <Checkbox checked={selected} />
                                                                     {option.dtl_desc}
                                                                 </li>

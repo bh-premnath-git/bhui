@@ -7,6 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getCustomerList } from "@/redux/CustomerSlice";
+import { COLORS } from "@/Utils/constants";
 
 // Define types in a separate file for better organization
 interface customer {
@@ -47,23 +48,29 @@ const columns: ColumnConfig[] = [
         sortable: true,
         filterable: true,
         type: 'text',
-        
+
 
     },
     {
-        key: 'status_cd',
+        key: 'status',
         header: 'Status',
         type: 'number',
         sortable: false,
+        render: (value) => {
+            return (
+                <div style={{ color: value == 'active' ? COLORS.green : COLORS.red }} className="font-bold">
+                    {value}
+                </div>
+            )
+        }
     },
     {
-        key: 'total_extracts_configured',
+        key: 'total_extracts_config',
         header: 'Total Extracts Configured',
         type: 'number',
         sortable: false,
-        render: (value: string | null) => value || '12',
     },
-    
+
 
 ];
 
@@ -115,7 +122,7 @@ function CustomerTable({
     }
 
     const changeStatus = async (rowData: any) => {
-      
+
     }
 
 

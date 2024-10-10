@@ -163,7 +163,7 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {option === "All" ? `All/${label}` : `(${option})`}
+            {option === "All" ? `${label}/All` : `(${option})`}
           </SelectItem>
         ))}
       </SelectContent>

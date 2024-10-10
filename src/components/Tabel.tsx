@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils"
 interface ColumnConfig {
   key: string;
   header: string;
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, row: any) => React.ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   type?: "text" | "number" | "date" | "image" | "badge";
@@ -46,17 +46,19 @@ interface TableProps {
   itemsPerPageOptions?: number[];
   defaultItemsPerPage?: number;
   tableName?: string;
+  isSearch?:boolean;
   createNewFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
+  background?: string
 }
 
 type SortConfig = {
   key: string;
   direction: "asc" | "desc" | null;
 };
-
+const tableNameCheckList = ["Create New Flow", "Create New Project", "Create New Environment"]
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
   sortConfig: SortConfig;
@@ -74,7 +76,7 @@ const CustomTableHeader: React.FC<{
   };
 
   return (
-    <TableHeader className={cn("bg-gray-200 text-black font-bold",className)}>
+    <TableHeader className={cn("bg-gray-200 text-black font-bold", className)}>
       <TableRow>
         {columns.map((column) => (
           <TableHead
@@ -100,8 +102,8 @@ const TableBodyComponent: React.FC<{
 }> = React.memo(({ data, columns, actionFn, playRow, playRowFn }) => (
   <TableBody>
     {data.map((row, index) => (
-      <TableRow 
-      key={index}
+      <TableRow
+        key={index}
         onClick={
           playRow && playRowFn
             ? () => playRowFn(row)
@@ -112,7 +114,7 @@ const TableBodyComponent: React.FC<{
         {columns.map((column) => (
           <TableCell key={column.key} className="text-justify">
             {column.render
-              ? column.render(row[column.key])
+              ? column.render(row[column.key], row)
               : column.type === "image"
                 ? (
                   <Avatar className="h-8 w-8">
@@ -167,10 +169,12 @@ export function FlexibleTable({
   itemsPerPageOptions = [5, 15, 25],
   defaultItemsPerPage = 5,
   tableName = "",
+  isSearch=true,
   createNewFn,
   actionFn,
   playRow = false,
   playRowFn,
+  background = 'gray',
 }: TableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
@@ -257,54 +261,61 @@ export function FlexibleTable({
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        {columns.filter((col) => col.filterable).map((column) => (
-          <DropdownMenu key={column.key}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
-                {filters[column.key] || "All"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => handleFilter(column.key, "All")}
-              >
-                All
-              </DropdownMenuItem>
-              {Array.from(
-                new Set(
-                  data
-                    .map((item) => item[column.key])
-                    .filter((value) => value !== undefined)
-                )
-              ).map((value) => (
+        <div className="flex space-x-4">
+          {columns.filter((col) => col.filterable).map((column) => (
+            <DropdownMenu key={column.key}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
+                  {filters[column.key] || "All"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
                 <DropdownMenuItem
-                  key={value}
-                  onClick={() => handleFilter(column.key, value)}
+                  onClick={() => handleFilter(column.key, "All")}
                 >
-                  {value}
+                  All
                 </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ))}
+                {Array.from(
+                  new Set(
+                    data
+                      .map((item) => item[column.key])
+                      .filter((value) => value !== undefined)
+                  )
+                ).map((value) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => handleFilter(column.key, value)}
+                  >
+                    {value}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
+        </div>
         <div className="flex space-x-2">
-          <Input
+          {isSearch&&(<Input
             placeholder="Search"
             className="w-44"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Button variant="default" className="bg-gray-900 text-white hover:bg-gray-800" onClick={() => {
-            functionCreation();
-          }}>
-            New {tableName} <PlusCircle className="ml-2 h-4 w-4" />
-          </Button>
+          />)}
+          {tableName!=''&&(<Button
+            variant="default"
+            className={`${tableNameCheckList.includes(tableName)
+                ? "bg-gray-900 text-white hover:bg-gray-800"
+                : `${background} hover:${background} text-white`
+              }`}
+            onClick={functionCreation}
+          >
+            {tableName} <PlusCircle className="ml-2 h-4 w-4" />
+          </Button>)}
         </div>
       </div>
       <Table>
         <CustomTableHeader
-        className="text-black"
+          className="text-black"
           columns={columns}
           sortConfig={sortConfig}
           requestSort={requestSort}
@@ -312,7 +323,7 @@ export function FlexibleTable({
         <TableBodyComponent data={paginatedData} columns={columns} actionFn={actionFn} playRow={playRow} playRowFn={playRowFn}
         />
       </Table>
-      <div className="flex justify-between items-center mt-4">
+      {data.length>10&&(<div className="flex justify-between items-center mt-4">
         <div className="flex items-center space-x-2">
           <Button
             className="bg-gray-900 text-white hover:bg-gray-800"
@@ -349,12 +360,12 @@ export function FlexibleTable({
           <SelectContent>
             {itemsPerPageOptions.map((num) => (
               <SelectItem key={num} value={num.toString()}>
-                {num} per page
+                {num} per page 
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </div>)}
     </div>
   );
 }

@@ -6,8 +6,8 @@ import { Header } from '@/components/Header';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
+import { createTheme, ThemeProvider } from '@mui/material';
 
-// Lazy-loaded components
 const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
@@ -20,19 +20,12 @@ const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/Onbo
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
 const BuildDataPipeLines = lazy(() => import('./oldpages/BuildPipeline/home/BuildDataPipeLine'));
-const Userlanding = lazy(() => import('./oldpages/Admin-Console/Admin-Console'));
 const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
 const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
-const Users = lazy(() => import('./oldpages/Admin-Console/Users/Users'));
-const User = lazy(() => import('./oldpages/Admin-Console/Users/Component/User'));
-const Customers = lazy(() => import('./oldpages/Admin-Console/Customer/Customers'));
-const Customer = lazy(() => import('./oldpages/Admin-Console/Customer/component/Customer'));
-const Projects = lazy(() => import('./oldpages/Admin-Console/Project/Environments'));
-const Environment = lazy(() => import('./oldpages/Admin-Console/Project/Component/Environment'));
 const PublishData = lazy(() => import('./oldpages/PublishData/PublishData'));
 const Target = lazy(() => import('./oldpages/PublishData/Target'));
 const RunquaryDetails = lazy(() => import('./oldpages/PublishData/RunquaryDetails'));
@@ -54,7 +47,13 @@ const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
 const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
-
+const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
+const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
+const AllUsers = lazy(() => import('@/pages/allUsers'));
+const AddUser = lazy(() => import('@/pages/addUser'));
+const AllCustomers = lazy(() => import('@/pages/allCustomers'));
+const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
+const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -65,7 +64,7 @@ const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
     <Header isAuthenticated={isAuthenticated} logout={logout} />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-4 ml-16">
+      <main className="flex-1 overflow-auto p-2 ml-16">
         <Outlet />
       </main>
     </div>
@@ -164,7 +163,7 @@ function App() {
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
-    { path: '/Designer/Build Data Pipe Line', element: <BuildDataPipeLines /> },
+    { path: '/Designer/BuildDataPipeLine', element: <BuildDataPipeLines /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },
@@ -175,19 +174,12 @@ function App() {
     { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
     { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
-    { path: '/Admin Console', element: <Userlanding /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
     { path: '/Alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
-    { path: '/Admin Console/Manage Data Platform Users', element: <Users /> },
-    { path: '/Admin Console/Manage Data Platform Users/Add User', element: <User /> },
-    { path: '/Admin Console/Manage Customer', element: <Customers /> },
-    { path: '/Admin Console/Manage Customer/Add Customer', element: <Customer handleBreadStep={handleBreadStep} /> },
-    { path: '/All Environment', element: <Projects /> },
-    { path: '/Admin-Console/Environment/New', element: <Environment handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Publish Data', element: <PublishData /> },
     { path: '/Designer/targetsteps', element: <Target handleBreadStep={handleBreadStep} /> },
     { path: '/publisher/runquarydetails', element: <RunquaryDetails /> },
@@ -196,22 +188,53 @@ function App() {
     { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
     { path: '/DataOps Hub/Explorer', element: <Explorer /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
+    { path: '/DataCatalog', element: <DataCatalog /> },
+    { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
+    { path: '/AllUsers', element: <AllUsers /> },
+    { path: '/AddUser', element: <AddUser /> },
+    { path: '/AllCustomers', element: <AllCustomers /> },
+    { path: '/AddCustomers', element: <AddCustomers /> },
+    { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
   ];
 
+
+  const theme = createTheme({
+    typography: {
+      fontFamily: 'Inter ',
+    },
+    components: {
+     
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            textTransform: 'none',
+          },
+        }
+      },
+
+    
+    }
+
+  });
+
   return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-              {routeList.map((route, index) => (
-                <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-              ))}
-            </Route>
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </Provider>
+    <ThemeProvider theme={theme}>
+
+      <Provider store={store}>
+        <BrowserRouter>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                {routeList.map((route, index) => (
+                  <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                ))}
+              </Route>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </Provider>
+    </ThemeProvider>
   );
 }
 

@@ -13,8 +13,9 @@ import { PlusCircle, X } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
-import ApiService from '@/Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
+import { Spinner } from '@/components/ui/spinner';
 
 interface GithubProvider {
   id: string;
@@ -62,6 +63,8 @@ export default function ProjectCreationComponent() {
   const [isTokenValid, setIsTokenValid] = useState<'valid' | 'inValid'>(
     isEmpty(editProjectData) ? 'inValid' : 'valid'
   );
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const [initialValue, setInitialValue] = useState<ProjectFormValues>({
     bh_project_id: null,
@@ -69,7 +72,7 @@ export default function ProjectCreationComponent() {
     bh_github_provider: '',
     bh_github_username: '',
     bh_github_email: '',
-    bh_default_branch: 'Main',
+    bh_default_branch: '',
     bh_github_url: '',
     bh_github_token_url: '',
     tags: { tagList: [] },
@@ -153,24 +156,32 @@ export default function ProjectCreationComponent() {
 
   const handleSubmitForm = async (values: ProjectFormValues) => {
     values.tags = { tagList: tags };
+    setIsLoading(true);
     try {
+      let result;
       if (isEmpty(editProjectData)) {
         // Create a new project
-        const result = await dispatch(createProject(values));
-        if (result.payload) {
-          showToast('Project created successfully', { color: '#4caf50' });
-          navigate('/admin-console');
-        }
+        result = await dispatch(createProject(values));
       } else {
         // Update existing project
-        const response = await dispatch(updateProject(values));
-        if (response.payload) {
-          showToast('Project updated successfully', { color: '#4caf50' });
-          navigate('/admin-console');
-        }
+        result = await dispatch(updateProject(values));
+      }
+      
+
+      if (result.payload) {
+        const action = isEmpty(editProjectData) ? 'created' : 'updated';
+        showToast(`Project ${action} successfully`, { color: '#4caf50' });
+        
+        // Add a small delay before navigation
+        setTimeout(() => {
+          navigate('/all-projects');
+        }, 1000); // 1 second delay
       }
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
+    }finally {
+      setProjectExistsModalOpen(()=> false);
+      setIsLoading(false);
     }
   };
 
@@ -188,7 +199,7 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
+    <div className="max-w-6xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
       <Formik
         initialValues={initialValue}
         validationSchema={validationSchema}
@@ -295,18 +306,18 @@ export default function ProjectCreationComponent() {
                   <Label htmlFor="bh_default_branch">Default Branch</Label>
                   <Field name="bh_default_branch">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_default_branch" placeholder="Main" />
+                      <Input {...field} id="bh_default_branch" placeholder="<main>" />
                     )}
                   </Field>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="bh_github_url">Github Repository URL</Label>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." />
+                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-2/3' />
                     )}
                   </Field>
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
@@ -324,6 +335,7 @@ export default function ProjectCreationComponent() {
                           setIsTokenValid('inValid');
                           field.onChange(e);
                         }}
+                        className='w-2/3'
                       />
                     )}
                   </Field>
@@ -335,7 +347,7 @@ export default function ProjectCreationComponent() {
                 </div>
               </div>
 
-              <div className="flex justify-center">
+              <div className="flex justify-end w-50">
                 <button
                   type="button"
                   className="text-[#70e5e8] hover:underline hover:underline-offset-4 cursor-pointer bg-transparent border-none p-0 font-semibold transition-all duration-200"
@@ -346,7 +358,7 @@ export default function ProjectCreationComponent() {
               </div>
 
               <div>
-                <Label>Add Tags</Label>
+                <Label className='font-medium'>Add Tags</Label>
                 <p className="text-sm text-gray-500 mb-2">
                   Add one or more tags to easily identify compute instances created by
                   BigHammer.ai in your AWS account (e.g., Key: Product, Value: BigHammer.ai)
@@ -369,43 +381,43 @@ export default function ProjectCreationComponent() {
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      variant="transparent"
+                      variant="ghost"
                       className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       ADD TAG
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-[385px]">
                     <DialogHeader>
-                      <DialogTitle>Add New Tag</DialogTitle>
+                      <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="tagKey" className="text-right">
+                    <div className="mt-6 space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <Label htmlFor="tagKey" className="text-sm font-medium">
                           Key
                         </Label>
                         <Input
                           id="tagKey"
                           value={tagKey}
                           onChange={(e) => setTagKey(e.target.value)}
-                          className="col-span-3"
+                          className="w-full"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="tagValue" className="text-right">
+                      <div className="flex flex-col space-y-2">
+                        <Label htmlFor="tagValue" className="text-sm font-medium">
                           Value
                         </Label>
                         <Input
                           id="tagValue"
                           value={tagValue}
                           onChange={(e) => setTagValue(e.target.value)}
-                          className="col-span-3"
+                          className="w-full"
                         />
                       </div>
                     </div>
-                    <DialogFooter>
-                      <Button onClick={addTag} className="w-full">
+                    <DialogFooter className="mt-6">
+                      <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
                         Add Tag
                       </Button>
                     </DialogFooter>
@@ -417,9 +429,12 @@ export default function ProjectCreationComponent() {
             <div className="flex justify-center mt-6">
               <Button
                 type="submit"
-                className="w-1/3 bg-gray-900 text-white hover:bg-gray-800"
+                className="w-1/6 bg-gray-900 text-white hover:bg-gray-800"
                 disabled={isTokenValid === 'inValid' || !isValid}
               >
+                {
+                  isLoading ? <Spinner /> : null
+                }
                 {isEmpty(editProjectData) ? 'Create Project' : 'Update Project'}
               </Button>
             </div>
@@ -433,11 +448,16 @@ export default function ProjectCreationComponent() {
             <DialogHeader>
               <DialogTitle>Project Already Exists</DialogTitle>
             </DialogHeader>
-            <p className="text-gray-700">
-              A project with this name already exists. Please choose a different name.
-            </p>
+            <div className="flex flex-col items-center justify-center gap-2 py-2">
+              <p className="text-gray-700">
+                A project with this name already exists.
+              </p>
+              <p className="text-gray-700">
+                Please choose a different name.
+              </p>
+            </div>
             <DialogFooter>
-              <Button onClick={() => setProjectExistsModalOpen(false)}>Close</Button>
+              <Button className='text-white bg-black' onClick={() => setProjectExistsModalOpen(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

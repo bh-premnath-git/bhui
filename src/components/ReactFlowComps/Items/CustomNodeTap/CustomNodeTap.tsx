@@ -49,7 +49,6 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         initialValues,
         validationSchema,
         onSubmit: (values) => {
-            console.log(values);
         },
     });
 

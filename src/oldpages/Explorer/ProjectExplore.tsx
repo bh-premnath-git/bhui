@@ -3,9 +3,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import { motion } from 'framer-motion';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import './ExploreProject.css';
-import { useEffect, useState } from "react";
+import { JSXElementConstructor, Key, MouseEvent, ReactElement, ReactNode, ReactPortal, SetStateAction, useEffect, useState } from "react";
 import { CiMenuKebab } from "react-icons/ci";
-import ApiService from "../../Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { MdOutlineQueryBuilder } from "react-icons/md";
 import { FaSearch } from "react-icons/fa";
@@ -13,7 +13,7 @@ import { IoMdArrowDropright } from "react-icons/io";
 
 
 
-export default function ProjectExplorer({ onClick, savedQuery }) {
+export default function ProjectExplorer({ onClick, savedQuery }:any) {
     console.log(savedQuery)
     const [anchorEl, setAnchorEl] = useState(null);
     const [openAddLink, setOpenAddLink] = useState(false);
@@ -29,15 +29,15 @@ export default function ProjectExplorer({ onClick, savedQuery }) {
     const openLinkDialog = () => {
         setOpenAddLink(true)
     };
-    const handleClick = (event) => {
+    const handleClick = (event: MouseEvent<HTMLSpanElement, MouseEvent>) => {
 
         setAnchorEl(event.currentTarget);
     };
-    const handleData = (query) => {
+    const handleData = (query: SetStateAction<undefined>) => {
         console.log(query)
         setData(query)
     }
-    const handleOptionSelect = (option) => {
+    const handleOptionSelect = (option: string) => {
         // Perform actions based on the selected option here
         console.log(`Selected option: ${option}`);
         handleClose(); // Close the popover after an option is selected
@@ -144,13 +144,14 @@ export default function ProjectExplorer({ onClick, savedQuery }) {
                             </Typography>
                         ) : (
                             <ul className="mx-2">
-                                {savedQuery?.map((item, index) => (
+                                {savedQuery?.map((item: { query: SetStateAction<undefined>; display_name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }, index: Key | null | undefined) => (
                                     <li key={index} className="text-dark m-1 mff"
                                         onClick={() => {
                                             handleData(item?.query)
                                             singleClick()
                                         }}>
-                                        <IoMdArrowDropright className={index%2==0?'fs-2 text-success':"fs-2 text-secondary"} /> {item?.display_name}
+                                        <IoMdArrowDropright className={(index != null && (Number(index) % 2 === 0 ? 'fs-2 text-success' : 'fs-2 text-secondary')) || 'fs-2 text-secondary'} />
+                                        {item?.display_name}
                                     </li>
                                 ))}
                             </ul>
@@ -167,7 +168,7 @@ export default function ProjectExplorer({ onClick, savedQuery }) {
             <Stack>
                 {dataSetList?.length > 0 && (
                     <ul className="tree mmf">
-                        {dataSetList?.map((item) => (
+                        {dataSetList?.map((item:any) => (
                             <li className="parent" key={item?.bh_project_id}>
                                 <details open className="details">
                                     <summary><span className="label"></span>{item?.bh_project_name}</summary>
@@ -176,7 +177,7 @@ export default function ProjectExplorer({ onClick, savedQuery }) {
                                             className="label"></span>
                                             <span className=""></span>{findValue(item?.lake_zone_cd)}
                                             <ul className="nested-list">
-                                                {item?.data_set_list?.map(data => (<li key={data?.data_src_id} className="nested-item mff"> <span
+                                                {item?.data_set_list?.map((data:any) => (<li key={data?.data_src_id} className="nested-item mff"> <span
                                                     className="label"></span>
                                                     {data?.data_src_name} <span className="float-end"
                                                         onClick={(event) => { handleClick(event); handleData(data?.data_src_name) }}><CiMenuKebab />

@@ -2,6 +2,7 @@ import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import CustomField from './CustomField';
 
 interface Tag {
     tagKey: string;
@@ -33,7 +34,7 @@ const TagDialog: React.FC<TagDialogProps> = ({ isOpen, closeDialog, tags, setTag
 
     return (
         <Dialog open={isOpen} onClose={closeDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
-            <DialogTitle mx={2} px={5}>Add Tags</DialogTitle>
+            <DialogTitle >Add Tags</DialogTitle>
             <DialogContent sx={{ width: '350px' }}>
                 <Formik
                     initialValues={initialValues}
@@ -42,36 +43,14 @@ const TagDialog: React.FC<TagDialogProps> = ({ isOpen, closeDialog, tags, setTag
                 >
                     {({ isSubmitting, isValid }) => (
                         <Form>
-                            <Field
-                                fullWidth
-                                size="small"
-                                name="tagKey"
-                                label="Tag Key"
-                                as={TextField}
-                                margin="dense"
-                                helperText={<ErrorMessage name="tagKey" />}
-                                error
-                            />
-                            <Field
-                                fullWidth
-                                size="small"
-                                name="tagValue"
-                                label="Tag Value"
-                                as={TextField}
-                                margin="dense"
-                                helperText={<ErrorMessage name="tagValue" />}
-                                error
-                            />
+                            <CustomField name='tagKey' label="Tag Key"/>
+                            <CustomField name='tagValue' label="Tag Value"/>
                             <DialogActions sx={{ justifyContent: 'space-between', mt: 2 }}>
-                                <Button onClick={closeDialog} variant="contained" sx={{ textTransform: 'none' }}>Close</Button>
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    sx={{ textTransform: 'none' }}
-                                    disabled={isSubmitting || !isValid}
-                                >
-                                    Ok
-                                </Button>
+                                <Button onClick={closeDialog} variant="contained" sx={{ textTransform: 'none', backgroundColor: 'gray' }} >Close</Button>
+                              
+                                <button type="submit" disabled={isSubmitting || !isValid} className="bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-sm">
+                                    Add
+                                </button>
                             </DialogActions>
                         </Form>
                     )}

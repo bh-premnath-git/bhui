@@ -1,69 +1,20 @@
 import Button from '@mui/material/Button';
-import Input from '@mui/material/Input';
-import { Grid, IconButton, Paper, Stack } from '@mui/material/';
+import { Grid, IconButton} from '@mui/material/';
 import Typography from '@mui/material/Typography';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { ChangeEvent, useState } from 'react';
-// import { selectProjectsSearchText, setProjectsSearchText } from '../store/projectsSlice';
 import { InputAdornment, TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { debounce } from 'lodash';
-import { styled, alpha } from '@mui/material/styles';
-import InputBase from '@mui/material/InputBase';
 import * as React from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import CatalogsBody from './CatalogsBody';
+import CatalogsBody from '../../../pages/dataCatalog/catalogsBody';
 import Lineage from './Lineage/Lineage';
 import Properties from './properties/Properties';
 import ValidationDtl from './validation/validationbody';
 import DocumentEditor from './DocumentEditor';
 
-
-/**
- * The projects header.
- */
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'inherit',
-    '& .MuiInputBase-input': {
-        padding: theme.spacing(1, 1, 1, 0),
-        // vertical padding + font size from searchIcon
-        paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-        transition: theme.transitions.create('width'),
-        width: '100%',
-        [theme.breakpoints.up('md')]: {
-            width: '20ch',
-        },
-    },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-    padding: theme.spacing(0, 2),
-    height: '100%',
-    position: 'absolute',
-    pointerEvents: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-}));
-
-const Search = styled('div')(({ theme }) => ({
-    position: 'relative',
-    borderRadius: theme.shape.borderRadius,
-    backgroundColor: alpha(theme.palette.common.white, 0.15),
-    '&:hover': {
-        backgroundColor: alpha(theme.palette.common.white, 0.25),
-    },
-    marginRight: theme.spacing(2),
-    marginLeft: 0,
-    width: '100%',
-    [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(3),
-        width: 'auto',
-    },
-}));
 
 interface TabPanelProps {
     children?: React.ReactNode;

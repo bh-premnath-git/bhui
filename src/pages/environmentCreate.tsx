@@ -1,4 +1,4 @@
-import React, { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,12 +7,27 @@ import { ConfigureLakeTab } from '@/components/EnvironmentsTabs/ConfigureLakeTab
 import { PreConfigureZonesTab } from '@/components/EnvironmentsTabs/PreConfigureZonesTab';
 import { ConfigureLifecycleTab } from '@/components/EnvironmentsTabs/ConfigureLifecycleTab';
 import { useNavigate } from 'react-router-dom';
+import { createEnvironment } from '@/redux/EnvironmentSlice';
+import { useAppDispatch } from '@/redux/hooks';
+import { Spinner } from "@/components/ui/spinner";
+import useToast from '@/oldcomponents/teast-service';
 
 // Types
 type Tag = { key: string; value: string };
-type Platform = { id: string; name: string; logo: string };
 type ZoneDetail = { name: string; url: string };
 type LifecycleConfig = { [key: string]: string };
+type EnvironmentTabState = {
+  environmentName: string;
+  environment: string;
+  projectId: string;
+  location: string;
+  accessKey: string;
+  secretAccessKey: string;
+  airflowUrl: string;
+  airflowDagBucket: string;
+  privateKeyFile: File | null;
+  verification: boolean;
+};
 
 // Constants
 const TABS = [
@@ -22,29 +37,6 @@ const TABS = [
   "configure-lifecycle",
 ] as const;
 type TabType = (typeof TABS)[number];
-
-const PLATFORMS: Platform[] = [
-  {
-    id: "google-cloud",
-    name: "Google Cloud",
-    logo: "/src/assets/environments/google.svg?height=40&width=40",
-  },
-  {
-    id: "aws",
-    name: "Amazon Web Services",
-    logo: "/src/assets/environments/aws.svg?height=40&width=40",
-  },
-  {
-    id: "azure",
-    name: "Microsoft Azure",
-    logo: "/src/assets/environments/azure.svg?height=40&width=40",
-  },
-  {
-    id: "bighammer",
-    name: "BigHammer.ai",
-    logo: "/src/assets/environments/bighammer.svg?height=40&width=40",
-  },
-];
 
 const INITIAL_ZONE_DETAILS: ZoneDetail[] = [
   { name: "Bronze Zone", url: "S3://Mylake.R.Vyz12.Abc.Com" },
@@ -63,6 +55,7 @@ type State = {
   businessUrl: string;
   lakeName: string;
   lakeDescription: string;
+  environmentTab: EnvironmentTabState;
   standardZoneConfig: LifecycleConfig;
   archiveZoneConfig: LifecycleConfig;
 };
@@ -76,21 +69,34 @@ type Action =
   | { type: 'SET_LAKE_NAME'; payload: string }
   | { type: 'SET_LAKE_DESCRIPTION'; payload: string }
   | { type: 'SET_STANDARD_ZONE_CONFIG'; payload: LifecycleConfig }
-  | { type: 'SET_ARCHIVE_ZONE_CONFIG'; payload: LifecycleConfig };
+  | { type: 'SET_ARCHIVE_ZONE_CONFIG'; payload: LifecycleConfig }
+  | { type: 'SET_ENVIRONMENT_TAB'; payload: Partial<EnvironmentTabState> }
+  | { type: 'SET_VERIFICATION'; payload: boolean };
+
 
 const initialState: State = {
   activeTab: TABS[0],
   tags: [
-    { key: "Department", value: "Tech" },
-    { key: "Region", value: "USA" },
   ],
-  selectedPlatform: "google-cloud",
+  selectedPlatform: "aws",
   zoneDetails: INITIAL_ZONE_DETAILS,
   businessUrl: "",
   lakeName: "",
   lakeDescription: "",
   standardZoneConfig: {},
   archiveZoneConfig: {},
+  environmentTab: {
+    environmentName: "",
+    environment: "",
+    projectId: "",
+    location: "",
+    accessKey: "",
+    secretAccessKey: "",
+    airflowUrl: "",
+    airflowDagBucket: "",
+    privateKeyFile: null,
+    verification: false
+  },
 };
 
 function reducer(state: State, action: Action): State {
@@ -113,6 +119,14 @@ function reducer(state: State, action: Action): State {
       return { ...state, standardZoneConfig: action.payload };
     case 'SET_ARCHIVE_ZONE_CONFIG':
       return { ...state, archiveZoneConfig: action.payload };
+    case 'SET_ENVIRONMENT_TAB':
+      return {
+        ...state,
+        environmentTab: { ...state.environmentTab, ...action.payload }
+      };
+    case 'SET_VERIFICATION':
+      return { ...state, environmentTab: { ...state.environmentTab, verification: action.payload } };
+
     default:
       return state;
   }
@@ -120,6 +134,9 @@ function reducer(state: State, action: Action): State {
 
 export default function EnvironmentConsoleComponent(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const dispatchApi = useAppDispatch();
+  const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
@@ -128,12 +145,35 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     }
   };
 
-  const handleNext = (): void => {
+  const handleNext = async(): Promise<void> => {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex < TABS.length - 1) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: TABS[currentIndex + 1] });
     } else {
-      console.log('Creating Environment with state:', state);
+      const values = {
+        bh_env_name: state.environmentTab.environmentName,
+        bh_env_provider: parseInt(state.environmentTab.environment),
+        cloud_provider_cd: state.selectedPlatform === "aws" ? 101 : 102,
+        cloud_region_cd: parseInt(state.environmentTab.location),
+        status_cd: "active",
+        project_id: state.environmentTab.projectId,
+        file: state.environmentTab.privateKeyFile,
+        access_key: state.environmentTab.accessKey,
+        secret_access_key: state.environmentTab.secretAccessKey
+      }
+      setIsLoading(()=>true);
+      dispatchApi(createEnvironment(values))
+        .then((response: any) => {
+          if (response.type === "environment/create/fulfilled")
+            navigate('/all-environment');
+        })
+        .catch((error: any) => {
+          console.error(error)
+          navigate('/all-environment');
+        }).finally(() => {
+          setIsLoading(()=>false);
+        });
+
     }
   };
 
@@ -143,8 +183,16 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     }
   };
 
+  const handleEnvironmentTabChange = (changes: Partial<EnvironmentTabState>) => {
+    dispatch({ type: 'SET_ENVIRONMENT_TAB', payload: changes });
+  };
+
+  const handleChangeVerification = (data: boolean) => {
+    dispatch({ type: 'SET_VERIFICATION', payload: data });
+  }
+
   return (
-    <div className="container mx-auto p-4 space-y-4">
+    <div className="container mx-auto p-2 space-y-4">
       <Tabs value={state.activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex-1 flex justify-center">
@@ -167,20 +215,30 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
 
         <Card className="w-full mt-4">
           <CardContent className="p-6">
-            <div className="max-w-[800px] mx-auto">
+            <div className="max-w-[850px] mx-auto">
               <TabsContent value="environment">
                 <EnvironmentTab
                   selectedPlatform={state.selectedPlatform}
                   setSelectedPlatform={(platform) => dispatch({ type: 'SET_SELECTED_PLATFORM', payload: platform })}
                   tags={state.tags}
                   setTags={(newTags) => {
-                    // Check if newTags is a function, if so, call it with the current state.tags
                     if (typeof newTags === 'function') {
                       dispatch({ type: 'SET_TAGS', payload: newTags(state.tags) });
                     } else {
                       dispatch({ type: 'SET_TAGS', payload: newTags });
                     }
                   }}
+                  onChange={handleEnvironmentTabChange}
+                  environmentName={state.environmentTab.environmentName}
+                  environment={state.environmentTab.environment}
+                  projectId={state.environmentTab.projectId}
+                  location={state.environmentTab.location}
+                  accessKey={state.environmentTab.accessKey}
+                  secretAccessKey={state.environmentTab.secretAccessKey}
+                  airflowUrl={state.environmentTab.airflowUrl}
+                  airflowDagBucket={state.environmentTab.airflowDagBucket}
+                  privateKeyFile={state.environmentTab.privateKeyFile}
+                  chamgeVerification={handleChangeVerification}
                 />
               </TabsContent>
               <TabsContent value="configure-lake">
@@ -196,7 +254,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               <TabsContent value="preconfigure-zones">
                 <PreConfigureZonesTab
                   zoneDetails={state.zoneDetails}
-                  handleUrlChange={(index, newUrl) => {
+                  handleUrlsChange={(index, newUrl) => {
                     const newZoneDetails = [...state.zoneDetails];
                     newZoneDetails[index].url = newUrl;
                     dispatch({ type: 'SET_ZONE_DETAILS', payload: newZoneDetails });
@@ -234,8 +292,10 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button variant="outline" onClick={handleBack} disabled={state.activeTab === TABS[0]}>
           Back
         </Button>
-        <Button className="bg-gray-800 text-white hover:bg-gray-700" onClick={handleNext}>
-          {state.activeTab === TABS[TABS.length - 1] ? "Create Environment" : "Next"}
+        <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext}>
+          {state.activeTab === TABS[TABS.length - 1] ? <>{
+                  isLoading ? <Spinner /> : null
+                }{"Create Environment"}</> : "Next"}
         </Button>
       </div>
     </div>

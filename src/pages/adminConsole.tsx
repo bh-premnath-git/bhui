@@ -84,7 +84,7 @@ const adminList: AdminItem[] = [
     title: "Manage Data Platform Users",
     desc: "Select this option to manage internal users of the platform.",
     buttonText: 'Manage Users',
-    link: '/admin-console/manage-users'
+    link: '/AllUsers'
   },
   {
     id: 2,
@@ -92,7 +92,7 @@ const adminList: AdminItem[] = [
     title: "Manage Customer",
     desc: "Select this option to manage consumers",
     buttonText: 'Manage Customer',
-    link: '/admin-console/manage-customer'
+    link: '/AllCustomers'
   },
   {
     id: 3,

@@ -23,7 +23,7 @@
 
 .customNode {
   border-radius: 0.375rem;
-  padding: 0.5rem;
+  padding: 0.25rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
@@ -49,7 +49,7 @@
 }
 
 .nodeContent {
-  width: 90px;
+  width: 70px;
   font-size: 0.55rem;
   position: absolute;
   top: 110%;

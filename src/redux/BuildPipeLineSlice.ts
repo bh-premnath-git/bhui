@@ -1,4 +1,4 @@
-import ApiService from "@/Services/ApiServices";
+import {ApiService} from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
@@ -10,7 +10,7 @@ export interface ApiState {
   selectedOption: string;
   isRun: boolean;
   dynamicConData: any;
-  pipelineList:Array<object>;
+  pipelineList:any;
   nestedFields: any;
 }
 

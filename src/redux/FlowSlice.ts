@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import ApiService from "../Services/ApiServices";
+import {ApiService} from "@/services/apiServices";
 
 export interface FlowProject {
   [key: string]: any;

@@ -9,7 +9,7 @@ import { useRef, useState } from 'react';
 import TablePagination from '@mui/material/TablePagination';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-import ApiService from '../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import TextWithIcon from '../../oldcomponents/text-counter';
 
 

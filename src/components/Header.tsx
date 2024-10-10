@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logo from "/assets/logo/fixLogo.svg";
 import { CustomToolbarComponent } from "./CustomToolbar";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -38,9 +40,8 @@ export function Header(props: HeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-400 border-solid">
+    <header className="flex items-center justify-between px-3 py-1 bg-white border border-1 border-b-gray-200 ">
       <div className="flex items-center">
-        <div className="pr-4">
           <img
             src={logo}
             className="h-8 w-8 cursor-pointer"
@@ -49,30 +50,26 @@ export function Header(props: HeaderProps) {
             height={32}
             onClick={() => navigate("/dashboard")}
           />
-        </div>
-        <div className="pl-4">
+          <div className="mx-4 h-8 w-px bg-gray-200" />
+      </div>
+        <div className="flex-grow">
           {renderHeaderContent(renderingHeadContent(pathname))}
         </div>
-      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="flex items-center space-x-3 bg-transparent hover:bg-gray-100 p-2 rounded-lg transition-colors">
-            <img
-              src="https://assets.imgix.net/examples/pione.jpg"
-              sizes="(min-width: 1024px) 40vw, 90vw"
-              className="rounded-full"
-              width={24}
-              height={24}
-              alt="User avatar"
-            />
+          <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://assets.imgix.net/examples/pione.jpg" alt="John Doe" />
+              <AvatarFallback>JD</AvatarFallback>
+            </Avatar>
             <div className="flex flex-col items-start">
-              <span className="text-sm text-gray-500 font-medium">John Doe</span>
+              <span className="text-sm font-medium text-gray-700">John Doe</span>
               <span className="text-xs text-gray-500">Admin</span>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-500" />
-          </Button>
+          </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>Profile</DropdownMenuItem>
@@ -86,6 +83,8 @@ export function Header(props: HeaderProps) {
 }
 
 function renderingHeadContent(content: string) {
+  const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
+
   // console.log(content);
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold">Dashboard</span>;
@@ -94,21 +93,39 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold">Admin Console</span>;
   }
   if (content === "/all-projects") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Projects</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects</span>;
   }
   if (content === "/all-projects/new") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Projects &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects &gt; New</span>;
   }
   if (content === "/all-environment") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Environments</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments</span>;
   }
   if (content === "/all-environment/new") {
-    return <span className="w-2/5 font-bold">Admin Console &gt; Environments &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments &gt; New</span>;
   }
   if (content === "/designer/manage-flow") {
-    return <span className="w-2/5 font-bold">Designer &gt; Manage Flow</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Designer</span> &gt; Manage Flow</span>;
   }
-  if(content === "/designer/flow-playground"){
+  if (content === "/DataCatalog") {
+    return <span className="w-2/5 font-bold"> Data Catalog</span>;
+  }
+  if (content === "/DataCatalog/schema") {
+    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0].data_src_lyt_name} &gt; Schema</span>;
+  }
+  if (content === "/AllUsers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console </span>&gt; Manage Data Platform User</span>;
+  }
+  if (content === "/AddUser") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User </span>&gt; Add User</span>;
+  }
+  if (content === "/AllCustomers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; </span> Manage Customer </span>;
+  }
+  if (content === "/AddCustomers") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
+  }
+  if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent />
   }
   return "";

@@ -156,20 +156,14 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
   options,
 }) => (
   <div>
-    <label
-      htmlFor={`${label.toLowerCase()}-select`}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      {label}
-    </label>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[120px]">
+      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[130px]">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {option}
+            {option === "All" ? `${label}/All` : `(${option})`}
           </SelectItem>
         ))}
       </SelectContent>
@@ -365,15 +359,15 @@ export default function DashboardComponent() {
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 10 }}
+              tick={{ fill: "#888", fontSize: 11 }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 10 }}
+              tick={{ fill: "#888", fontSize: 11 }}
               domain={["dataMin - 5", "dataMax + 5"]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             {projects.map((proj, index) => (
               <Line
                 key={`${proj}-${index}`}
@@ -398,12 +392,12 @@ export default function DashboardComponent() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             {projects.map((proj, index) => (
               <Area
                 key={`${proj}-${index}`}
@@ -459,7 +453,7 @@ export default function DashboardComponent() {
               fill="#fff"
               filter="url(#shadow)"
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
@@ -505,7 +499,7 @@ export default function DashboardComponent() {
               fill="#fff"
               filter="url(#shadow)"
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
@@ -521,18 +515,18 @@ export default function DashboardComponent() {
             <XAxis
               dataKey="name"
               type="category"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               type="number"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               domain={[0, 100]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -547,19 +541,19 @@ export default function DashboardComponent() {
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               dataKey="name"
               type="category"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={100}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -573,12 +567,12 @@ export default function DashboardComponent() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
             <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
@@ -593,17 +587,17 @@ export default function DashboardComponent() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               domain={[minValue, maxValue]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 10 }}/>
+            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
             {projects.map((proj, index) => (
               <Line
                 key={`${proj}-${index}`}

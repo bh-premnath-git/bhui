@@ -3,8 +3,8 @@ import { styled } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import { PieChart } from '@mui/x-charts/PieChart';
-import { useEffect, useState } from 'react';
-import ApiService from '../../Services/ApiServices';
+import { JSXElementConstructor, ReactElement, ReactNode, useEffect, useState } from 'react';
+import {ApiService} from '@/services/apiServices';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -70,7 +70,7 @@ function AlertHeader() {
         }
     };
 
-    const renderPieChartWithLabels = (title, data) => (
+    const renderPieChartWithLabels = (title: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined, data: any[]) => (
         <Stack direction="row" alignItems="center" spacing={1}> {/* Reduced spacing */}
             <Stack sx={{ width: 90, height: 160 }}> {/* Adjusted height */}
                 <Typography variant="h6" sx={{ mb: 0.2 }}> {/* Reduced margin below text */}

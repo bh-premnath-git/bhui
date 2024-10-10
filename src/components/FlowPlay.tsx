@@ -144,7 +144,6 @@ const createNodeComponent = (
 
     // Prepare for future double-click functionality
     const onDoubleClick = useCallback(() => {
-      console.log(`Node ${props.id} double-clicked`);
       // Future implementation here
     }, [props.id]);
 

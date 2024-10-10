@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import ApiService from "../Services/ApiServices";
-import Environment from "../oldpages/Admin-Console/Project/Component/Environment";
+import {ApiService} from "@/services/apiServices";
 
 export interface Environment {
   id: string;
@@ -25,11 +24,11 @@ interface CreateEnvironmentData {
   bh_env_provider: number;
   cloud_provider_cd: number;
   cloud_region_cd: number;
-  status_cd: number;
+  status_cd: string;
   project_id: string;
   location?: string;
   tags?: string;
-  file?: File;
+  file?: File | null;
   secret_access_key?: string;
   airflow_url?: string;
   airflow_bucket_name?: string;
@@ -52,20 +51,18 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
     try {
       let data: any;
       let headers = {};
-
-      if (environmentData.file) {
+      const filteredData = Object.fromEntries(
+        Object.entries(environmentData).filter(([_, value]) => value != null && value !== "")
+      );
         data = new FormData();
-        Object.entries(environmentData).forEach(([key, value]) => {
+        Object.entries(filteredData).forEach(([key, value]) => {
           if (value !== undefined) {
             data.append(key, value);
           }
         });
-      } else {
-        data = environmentData;
-        headers = { 'Content-Type': 'application/json' };
-      }
+      
 
-      const response = await ApiService('8011', 'post', '/bh_project/project_environment/', data, null, headers);
+      const response = await ApiService('8011', 'post', '/env/environment/', data, null, headers);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

@@ -16,7 +16,7 @@ import WidgetsOutlinedIcon from '@mui/icons-material/WidgetsOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import SwombLoading from '../../Portal/SwombLoading';
 import OptionHeader from './OptionHeader';
-import ApiService from '../../../Services/ApiServices';
+import {ApiService} from '@/services/apiServices';
 import { jwtDecode } from 'jwt-decode';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';

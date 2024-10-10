@@ -9,8 +9,6 @@ import ReactFlow, {
   useReactFlow,
   EdgeChange,
   NodeChange,
-  BackgroundVariant,
-  Background,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { ZoomIn, ZoomOut, Minimize } from 'lucide-react';
@@ -285,7 +283,6 @@ const FlowPlayground: React.FC = () => {
         fitView
       >
         <CustomControls />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     ),
     [nodes, edges, wrappedOnNodesChange, wrappedOnEdgesChange, onConnect, onNodeDragStop]

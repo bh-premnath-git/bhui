@@ -1,13 +1,9 @@
-import { FaRegFile } from "react-icons/fa";
-import { TiFlowSwitch } from "react-icons/ti";
-import { MdOutlinePodcasts } from "react-icons/md";
-import { MdOutlinePerson } from "react-icons/md";
 
 export const menuList = [
     {
         label: "Data Catalog",
         icon: <img src="/assets/menu/catalog.png" alt="data-catalog" width={20} height={20} />,
-        path: "/data-catalog"
+        path: "/DataCatalog"
     },
     {
         label: "Designer",
@@ -15,7 +11,7 @@ export const menuList = [
         path: "/designers",
         subPaths: [
            /*  { label: "Onboard Data", path: "/designer/onboard-data" }, */
-            { label: "Build Data Pipelines", path: "/designer/build-data-pipe-line" },
+            { label: "Build Data Pipelines", path: "/AllBuildDataPipeLine" },
            /*  { label: "Code Data Pipelines", path: "/designer/code-data-pipelines" }, */
             { label: "Manage Flow", path: "/designer/manage-flow" },
            /*  { label: "Publish Data", path: "/designer/publish-data" } */
@@ -26,7 +22,7 @@ export const menuList = [
         // icon: <MdOutlinePodcasts className='h4' />,
         icon: <img src="/assets/menu/dataops.png" alt="DataOps"  width={20} height={20} />,
 
-        path: "/dataops-hub/dashboard",
+        path: "/dashboard",
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },

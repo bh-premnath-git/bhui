@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import styles from './CreateFlowForm.module.css';
-import { useAppDispatch, useAppSelector } from '../../redux/hooks';
-import { createFlow, setSelectedFlowFromList } from '../../redux/FlowSlice';
+import { useAppSelector } from '@/redux/hooks';
 import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalModal";
+import { Spinner } from "@/components/ui/spinner";
 
 // Types
 interface Project {
@@ -19,7 +18,9 @@ interface Environment {
 }
 
 interface CreateFlowFormProps {
-  onClose?: () => void;
+  onClose: () => void;
+  onCreateFlow: (payload: CreateFlowPayload) => void;
+  isLoading: boolean;
 }
 
 interface CreateFlowPayload {
@@ -34,6 +35,15 @@ interface CreateFlowPayload {
     schedule_type: string;
     time: Record<string, any>;
   };
+}
+
+interface IntervalState {
+  selectedInterval: string;
+  repeatEvery: string;
+  repeatAt: string;
+  selectedDays: string[];
+  selectedMonth: string;
+  selectedDate: string;
 }
 
 // Subcomponents
@@ -100,7 +110,7 @@ const CheckboxField: React.FC<{
 );
 
 // Main component
-const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
+const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, isLoading }) => {
   const [formData, setFormData] = useState({
     selectedProject: '',
     selectedBranch: '',
@@ -108,9 +118,12 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
     selectedClass: '',
     name: '',
     notes: '',
-    scheduleInterval: '',
+    scheduleInterval: {
+      schedule_type: 'minutes',
+      time: {},},
     recipientEmail: '',
   });
+  const [intervalData, setIntervalData] = useState<IntervalState | null>(null);
   const [branches, setBranches] = useState<string[]>([]);
   const [alerts, setAlerts] = useState({
     onJobStart: true,
@@ -118,17 +131,13 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
     onJobSuccess: false,
   });
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalStatus, setModalStatus] = useState('');
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
-  
+
   const updateBranches = useCallback(() => {
     if (formData.selectedProject) {
-      const project = data.find((p: Project) => p.ProjectId === formData.selectedProject);
+      const project = data.find((p: Project) => (p.ProjectId).toString() === formData.selectedProject);
       setBranches(project?.BranchNames || []);
       setFormData(prev => ({ ...prev, selectedBranch: '' }));
     } else {
@@ -159,38 +168,21 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
       flow_class: Number(formData.selectedClass),
       job: 'on_job_start',
       schedule_interval: {
-        schedule_type: 'minutes',
-        time: {},
+        schedule_type: formData?.scheduleInterval?.schedule_type || 'minutes',
+        time: formData?.scheduleInterval?.time || {},
       },
     };
 
-    try {
-      setIsModalOpen(true);
-      setModalStatus('loading');
+    onCreateFlow(payload);
+  };
 
-      const result = await dispatch(createFlow(payload));
+  const handleIntervalStateChange = (state: IntervalState) => {
+    setIntervalData(state);
+  };
 
-      if (createFlow.fulfilled.match(result)) {
-        dispatch(setSelectedFlowFromList(result.payload));
-        setModalStatus('success');
-        setTimeout(() => {
-          navigate('/designer/flow-playground');
-          setIsModalOpen(false);
-        }, 4000);
-      } else {
-        setModalStatus('error');
-        setTimeout(() => {
-          navigate('/designer/manage-flow');
-          setIsModalOpen(false);
-        }, 3000);
-      }
-    } catch (err) {
-      setModalStatus('error');
-      setTimeout(() => {
-        navigate('/designer/manage-flow');
-        setIsModalOpen(false);
-      }, 3000);
-    }
+  const handleIntervalSave = (interval: any) => {
+    console.log("Saved Interval:", interval);
+    setFormData(prev => ({ ...prev, scheduleInterval: interval }));
   };
 
   const openIntervalModal = () => {
@@ -255,7 +247,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
                 name="scheduleInterval"
                 type="text"
                 placeholder="Schedule Interval"
-                value={formData.scheduleInterval}
+                value={formData.scheduleInterval["schedule_type"]}
                 readOnly
               />
               <Clock className={styles.clockIcon} size={18} />
@@ -296,20 +288,20 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
             onChange={(value) => handleInputChange('recipientEmail', value)}
           />
           <div className={styles.checkboxGroup}>
-            <CheckboxField 
-              label="On Job Start" 
-              checked={alerts.onJobStart} 
-              onChange={(value) => handleAlertChange('onJobStart', value)} 
+            <CheckboxField
+              label="On Job Start"
+              checked={alerts.onJobStart}
+              onChange={(value) => handleAlertChange('onJobStart', value)}
             />
-            <CheckboxField 
-              label="On Job Failure" 
-              checked={alerts.onJobFailure} 
-              onChange={(value) => handleAlertChange('onJobFailure', value)} 
+            <CheckboxField
+              label="On Job Failure"
+              checked={alerts.onJobFailure}
+              onChange={(value) => handleAlertChange('onJobFailure', value)}
             />
-            <CheckboxField 
-              label="On Job Success" 
-              checked={alerts.onJobSuccess} 
-              onChange={(value) => handleAlertChange('onJobSuccess', value)} 
+            <CheckboxField
+              label="On Job Success"
+              checked={alerts.onJobSuccess}
+              onChange={(value) => handleAlertChange('onJobSuccess', value)}
             />
           </div>
         </div>
@@ -317,14 +309,15 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose }) => {
           <button type="button" className={styles.closeButton} onClick={onClose}>
             Close
           </button>
-          <button type="submit" className={styles.createButton}>
-            Create Flow
+          <button className={`bg-gray-900 text-white hover:bg-gray-800 ${styles.createButton}`} type="submit" disabled={isLoading}>
+            {isLoading ? <Spinner /> : "Create Flow"}
           </button>
         </div>
       </form>
-      <IntervalModalComponent 
+      <IntervalModalComponent
         ref={intervalModalRef}
-        onSave={(interval) => handleInputChange('scheduleInterval', interval)}
+        onSave={handleIntervalSave}
+        onStateChange={handleIntervalStateChange}
       />
     </div>
   );

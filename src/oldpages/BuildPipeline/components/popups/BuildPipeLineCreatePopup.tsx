@@ -6,10 +6,10 @@ import * as Yup from 'yup';
 import CustomField from '../../../../common/CustomField';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../../redux/store';
 import { getGitProject } from '../../../../redux/ProjectSlice';
 import { insertPipeline } from '../../../../redux/BuildPipeLineSlice';
 import { toast, ToastContainer, ToastPosition } from 'react-toastify';
+import { RootState } from '@/store/store';
 
 const style = {
     position: 'absolute' as 'absolute',
@@ -68,13 +68,11 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                     onSubmit={async (values, { setSubmitting }) => {
                         let body: any = values;
                         body.tag = {};
-                        // setTimeout(() => {
-                        console.log(body)
                         var result = await dispatch(insertPipeline(body))
                         console.log(result);
                         if (result && result?.payload) {
+                            navigate('/Designer/Build-Data-Pipe-Line');
                             handleClose();
-                            navigate('/Designer/Build-Data-Pipe-Line')
                         } else {
                             toast.success("Success Notification !", {
                                 position: 'top-center' as ToastPosition,
@@ -88,9 +86,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                 },
                             });
                         }
-                        // alert(JSON.stringify(values, null, 2));
                         setSubmitting(false);
-                        // }, 400);
                     }}
                 >
                     {({ isSubmitting }) => (
@@ -98,7 +94,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                             <Stack direction={'row'} spacing={2}>
 
                                 <Stack className='w-100'>
-                                    <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Project</Stack>
                                     <CustomField
                                         name="bh_project_id"
                                         label="Project"
@@ -110,7 +105,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                     />
                                 </Stack>
                                 <Stack className='w-100'>
-                                    <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Branch</Stack>
                                     <CustomField
                                         name="git_branch"
                                         label="Branch"
@@ -121,7 +115,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
 
                                 </Stack>
                                 <Stack className='w-100'>
-                                    <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Name</Stack>
                                     <CustomField
                                         name="pipeline_name"
                                         label="Name"
@@ -132,17 +125,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                 </Stack>
 
                             </Stack>
-                            {/* <Link
-                                component="button"
-                                variant="body2"
-                                onClick={() => {
-                                    console.info("I'm a button.");
-                                }}
-                                sx={{ mt: 2, display: 'inline-flex', alignItems: 'center' }}
-                            >
-                                Add Notes
-                                <ExpandMoreIcon sx={{ ml: 1, color: '#71cce1' }} />
-                            </Link> */}
+                          
                             <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={'center'}>
                                 <Button className='w-25'
                                     variant="outlined"

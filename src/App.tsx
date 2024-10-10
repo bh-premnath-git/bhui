@@ -15,11 +15,10 @@ const Home = lazy(() => import('./oldpages/Home'));
 const Catalog = lazy(() => import('./oldpages/Catalog/Catalog'));
 const Catalogs = lazy(() => import('./oldpages/Catalog/components/Catalogs'));
 const Designer = lazy(() => import('./oldpages/Designer/Designer'));
-const Designers = lazy(() => import('./oldpages/Designers/Designers'));
+const Designers = lazy(() => import('./oldpages/Designers/Designers')); 
 const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
-const BuildDataPipeLines = lazy(() => import('./oldpages/BuildPipeline/home/BuildDataPipeLine'));
 const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
@@ -163,7 +162,6 @@ function App() {
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
-    { path: '/Designer/BuildDataPipeLine', element: <BuildDataPipeLines /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },

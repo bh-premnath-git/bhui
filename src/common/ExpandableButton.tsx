@@ -55,8 +55,8 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
     const debouncedSearchProject = debounce((value) => {
         // props.search(value);
     }, 1000);
-    function handleNode(lead: any, title: any, index: any) {
-        addNode(lead, title, index);
+    function handleNode(lead: any, title: any, index: any,tem:any) {
+        addNode(lead, title, index,tem);
         handleClick();
     }
     function makeCard(tem: any, index: any) {

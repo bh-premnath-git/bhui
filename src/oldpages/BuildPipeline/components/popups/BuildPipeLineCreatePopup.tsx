@@ -71,8 +71,9 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                         var result = await dispatch(insertPipeline(body))
                         console.log(result);
                         if (result && result?.payload) {
-                            navigate('/Designer/Build-Data-Pipe-Line');
-                            handleClose();
+                            await handleClose();
+
+                            await navigate('/Designer/Build-Data-Pipe-Line');
                         } else {
                             toast.success("Success Notification !", {
                                 position: 'top-center' as ToastPosition,

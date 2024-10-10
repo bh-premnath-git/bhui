@@ -6,6 +6,8 @@ import { snowflakeData } from "./Mock/snowFlack";
 import { useDispatch, useSelector } from "react-redux";
 import { setNestedField } from "../../redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
+import CustomField from "@/common/CustomField";
+import { Label } from "@/components/ui/label";
 
 
 const DynamicForm = () => {
@@ -41,7 +43,8 @@ const DynamicForm = () => {
     const renderField = (fieldKey: string, field: any, layout:any) => {
         return (
             <Grid item xs={layout} key={field.title}>
-                <TextField
+                <Label className="text-black">{field.title}</Label>
+                <TextField className="shadow-sm rounded"
                     fullWidth
                     id={field.title}
                     name={fieldKey}

@@ -16,8 +16,8 @@ const ApiService = async (
   params: any = null,
   additionalHeaders: Record<string, string> = {}
 ) => {
-  //http://54.157.234.126:5000
-  const DOMAIN = "http://54.157.234.126";
+ // const DOMAIN = "http://54.157.234.126";
+  const DOMAIN = "http://localhost";
   const BASE_URL = `${DOMAIN}:${PORT_NUMBER}/api/v1`;
 
   try {

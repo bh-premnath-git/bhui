@@ -139,7 +139,8 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('authenticated');
     kc.logout({
-      redirectUri: 'http://54.157.234.126:5000/landing',
+     // redirectUri: 'http://54.157.234.126:5000/landing',
+      redirectUri: 'http://localhost:5000/landing',
     });
   }
 

@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "proxy": "http://54.157.234.126:8088",
+  "proxy": "http://localhost:8088",
+  "__commented_proxy": "http://54.157.234.126:8088",
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build",

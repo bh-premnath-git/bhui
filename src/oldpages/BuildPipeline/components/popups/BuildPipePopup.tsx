@@ -54,22 +54,20 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
                     <IconButton
                         style={{
                             margin: "10px",
-                            border: '1px solid gray',
                             borderRadius: '50%',
-                            backgroundColor: 'blue',
                             color: 'white',
-                            width: '20px',
-                            height: '20px',
+                            width: '50px',
+                            height: '50px',
                             boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
                         }}
                     >
                         <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" width={50} />
                     </IconButton>
                 </Tooltip>
-                <Stack direction={'row'} sx={{ mt: 2 }} >
-                    <img src="/assets/whiteTry.png" alt="triangle" width={15} height={10} />
+                <Stack className='relative' direction={'row'} sx={{ mt: 2 }} >
+                    <img className='absolute' style={{left:'-13px'}} src="/assets/whiteTry.png" alt="triangle" width={15} height={10} />
 
-                    <Box position="relative" width="100%">
+                    <Box  width="100%">
                         <TextField
                             placeholder={isFocused ? '' : "Ask me anything"}
                             value={inputValue}

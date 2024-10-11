@@ -42,7 +42,7 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string; [key: string]: any };
+  payload?: { name: string;[key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
@@ -88,7 +88,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-              projectData.length
+            projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -367,7 +367,7 @@ export default function DashboardComponent() {
               tick={{ fill: "#888", fontSize: 11 }}
               domain={["dataMin - 5", "dataMax + 5"]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
               <Line
                 key={`${proj}-${index}`}
@@ -381,7 +381,8 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" height={16} />
+            <Legend verticalAlign="bottom" iconType="square"
+              height={16} />
           </LineChart>
         </ChartCard>
 
@@ -397,7 +398,7 @@ export default function DashboardComponent() {
               tickLine={false}
             />
             <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
               <Area
                 key={`${proj}-${index}`}
@@ -408,22 +409,13 @@ export default function DashboardComponent() {
                 fill={COLORS[index % COLORS.length]}
               />
             ))}
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend verticalAlign="bottom" iconType="square" height={26} />
           </AreaChart>
         </ChartCard>
 
         <ChartCard title="Ingestion Status">
           <PieChart className="relative -top-[35px]">
-            <defs>
-              <filter id="shadow">
-                <feDropShadow
-                  dx="0"
-                  dy="0"
-                  stdDeviation="3"
-                  floodOpacity="0.5"
-                />
-              </filter>
-            </defs>
+
             <Pie
               data={chartData.ingestion}
               dataKey="value"
@@ -442,34 +434,13 @@ export default function DashboardComponent() {
                 />
               ))}
             </Pie>
-            <Pie
-              data={[{ name: "shadow", value: 100 }]}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={56}
-              outerRadius={58}
-              fill="#fff"
-              filter="url(#shadow)"
-            />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
 
         <ChartCard title="Publish Status">
           <PieChart className="relative -top-[35px]">
-            <defs>
-              <filter id="shadow">
-                <feDropShadow
-                  dx="0"
-                  dy="0"
-                  stdDeviation="3"
-                  floodOpacity="0.5"
-                />
-              </filter>
-            </defs>
             <Pie
               data={chartData.publish}
               dataKey="value"
@@ -488,18 +459,7 @@ export default function DashboardComponent() {
                 />
               ))}
             </Pie>
-            <Pie
-              data={[{ name: "shadow", value: 100 }]}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={56}
-              outerRadius={58}
-              fill="#fff"
-              filter="url(#shadow)"
-            />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Legend verticalAlign="bottom" height={16} />
           </PieChart>
         </ChartCard>
@@ -526,7 +486,7 @@ export default function DashboardComponent() {
               tickLine={false}
               domain={[0, 100]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -553,7 +513,7 @@ export default function DashboardComponent() {
               tickLine={false}
               width={100}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Legend verticalAlign="bottom" height={26} />
@@ -572,7 +532,7 @@ export default function DashboardComponent() {
               tickLine={false}
             />
             <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
             <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
@@ -597,7 +557,7 @@ export default function DashboardComponent() {
               tickLine={false}
               domain={[minValue, maxValue]}
             />
-            <Tooltip cursor={{ stroke: 'red', strokeWidth: 2 }} itemStyle={{ fontSize: 11 }}/>
+            <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
               <Line
                 key={`${proj}-${index}`}
@@ -611,7 +571,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend verticalAlign="bottom" iconType="square" height={26} />
           </LineChart>
         </ChartCard>
       </div>

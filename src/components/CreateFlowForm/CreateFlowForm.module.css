@@ -46,6 +46,10 @@
   font-size: 14px;
 }
 
+.branchInput{
+  width: 60px;
+}
+
 .scheduleInput {
   position: relative;
 }

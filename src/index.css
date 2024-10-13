@@ -34,6 +34,7 @@ body {
 .recharts-legend-item-text{
   font-size: .672rem;
   padding-left: .24rem;
+  color: #000;
 }
 
 @layer base {

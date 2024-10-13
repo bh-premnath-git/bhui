@@ -382,7 +382,7 @@ export default function DashboardComponent() {
               />
             ))}
             <Legend verticalAlign="bottom" iconType="square"
-              height={16} />
+              height={16} wrapperStyle={{ color: "#000" }}/>
           </LineChart>
         </ChartCard>
 

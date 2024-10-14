@@ -111,7 +111,7 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold"> Data Catalog</span>;
   }
   if (content === "/DataCatalog/schema") {
-    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0].data_src_lyt_name} &gt; Schema</span>;
+    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0]?.data_src_lyt_name} &gt; Schema</span>;
   }
   if (content === "/AllUsers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console </span>&gt; Manage Data Platform User</span>;
@@ -125,7 +125,13 @@ function renderingHeadContent(content: string) {
   if (content === "/AddCustomers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
   }
+  if (content === "/AllBuildDataPipeLine") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
+  }
   if (content === "/designer/flow-playground") {
+    return <CustomToolbarComponent />
+  }
+  if (content === "/Designer/Build-Data-Pipe-Line") {
     return <CustomToolbarComponent />
   }
   return "";

@@ -6,6 +6,7 @@ const ChartComponent = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+     // const response = await fetch('http://54.157.234.126:8000/superset-chart/1');
       const response = await fetch('http://localhost:8000/superset-chart/1');
       const result = await response.json();
       console.log(result)

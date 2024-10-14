@@ -97,6 +97,7 @@ const AddUser = () => {
     };
 
     const createKeyCloakUser = async (value: any) => {
+        //fetch('http://54.157.234.126:8005/create-user', {
         fetch('http://localhost:8005/create-user', {
 			method: 'POST',
 			headers: {
@@ -149,6 +150,7 @@ const AddUser = () => {
 
         // Create KeyCloak user logic here
     };
+    
     async function add(value:any) {
 		const url = '/bh_user'; // Adjust the endpoint URL as needed
 		const result = await ApiService('8011', 'post', url, value);
@@ -303,7 +305,7 @@ const AddUser = () => {
                                                                 form.setFieldValue(`project_details.${index}.projectRole`, value)
                                                             }
                                                             renderOption={(props, option: any, { selected }) => (
-                                                                <li {...props}>
+                                                                <li {...props} key={option.dtl_desc}>
                                                                     <Checkbox checked={selected} />
                                                                     {option.dtl_desc}
                                                                 </li>

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "proxy": "http://localhost:8088",
+  "__commented_proxy": "http://54.157.234.126:8088",
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build",
@@ -55,6 +56,7 @@
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.3",
     "class-variance-authority": "^0.7.0",
+    "crypto-js": "^4.2.0",
     "date-fn": "^0.0.2",
     "dayjs": "^1.11.11",
     "echarts-for-react": "^3.0.2",
@@ -86,6 +88,7 @@
   "devDependencies": {
     "@types/antd": "^1.0.0",
     "@types/chart.js": "^2.9.41",
+    "@types/crypto-js": "^4.2.2",
     "@types/lodash": "^4.17.5",
     "@types/material-ui": "^0.21.17",
     "@types/parse-json": "^4.0.2",

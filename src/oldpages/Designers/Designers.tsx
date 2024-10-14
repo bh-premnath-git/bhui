@@ -88,7 +88,7 @@ const adminList: AdminItem[] = [
     title: "Build Data Pipeline",
     desc: "Select this option to transform and enrich data via UI driven approach. You will have an option to combine multiple datasets and create enriched data sets",
     buttonText: 'Build Pipeline',
-    link: '/Designer/Build Data PipeLine'
+    link: '/AllBuildDataPipeLine'
   },
   {
     id: 3,

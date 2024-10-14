@@ -37,24 +37,23 @@ export default function AddFilterPopUp({ openFilter, handleFilterClose }:any) {
                 >
                     {({ isSubmitting }) => (
                         <Form>
-                            <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Condition</Stack>
                             <CustomField
                                 name="condition"
+                                label='Condition'
                                 controlName="select"
                                 options={conditionList}
                                 valueKey={'id'} labelKey='conditionName'
                             />
 
-                            <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Column</Stack>
                             <CustomField
                                 name="column"
+                                label='Column'
                                 controlName="select"
                                 valueKey={'id'} labelKey='columnName'
                                 options={columnList}
                             />
 
-                            <Stack sx={{ fontWeight: 500, fontSize: 14, mt: 1 }}>Value</Stack>
-                            <CustomField name='value' />
+                            <CustomField name='value' label='Value' />
                             <Stack sx={{ my: 2, fontWeight: 600, fontSize: 14 }} color={COLORS.green} direction={'row'} spacing={2} alignItems={'center'}><IoAddCircle className='mx-2' size={18} /> ADD FILTTER</Stack>
 
                             <Stack direction={'row'} justifyContent={'space-between'}>

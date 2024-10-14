@@ -31,19 +31,19 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
     if (!isPopupVisible) return null;
     return (
         <div style={{ padding: "20px" }}>
-            <Stack direction={'row'} justifyContent={'right'}>
+            <Stack direction={'row'} justifyContent={'right'} alignContent={'center'} alignItems={'center'}>
                 <IconButton
                     sx={{
                         backgroundColor: 'black',
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '0',
+                        width: '35px',
+                        height: '35px',
+                        borderRadius: '4px',
                         '&:hover': {
                             backgroundColor: 'black',
                         },
                     }}
                 >
-                    <AiOutlineArrowsAlt style={{ color: 'white' }} />
+                    <AiOutlineArrowsAlt style={{ color: 'white',fontSize:30}} />
                 </IconButton>
                 <IconButton onClick={closePopup} >
                     <CloseIcon />
@@ -51,24 +51,13 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
             </Stack>
             <Stack direction={'row'} spacing={2} sx={{ my: 2 }} alignContent={'center'} alignItems={'center'}>
                 <Tooltip title="" placement="top">
-                    <IconButton
-                        style={{
-                            margin: "10px",
-                            borderRadius: '50%',
-                            color: 'white',
-                            width: '50px',
-                            height: '50px',
-                            boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
-                        }}
-                    >
                         <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" width={50} />
-                    </IconButton>
                 </Tooltip>
                 <Stack className='relative' direction={'row'} sx={{ mt: 2 }} >
                     <img className='absolute' style={{left:'-13px'}} src="/assets/whiteTry.png" alt="triangle" width={15} height={10} />
 
                     <Box  width="100%">
-                        <TextField
+                        <TextField size='small'
                             placeholder={isFocused ? '' : "Ask me anything"}
                             value={inputValue}
                             onFocus={handleTextFieldFocus}
@@ -90,7 +79,7 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
                                 },
                             }}
                         />
-                        <Box
+                        {/* <Box
                             sx={{
                                 position: 'absolute',
                                 bottom: '2px',
@@ -100,7 +89,7 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
                             }}
                         >
                             <AiOutlineArrowsAlt style={{ fontSize: 18, color: 'black' }} />
-                        </Box>
+                        </Box> */}
                     </Box>
                 </Stack>
             </Stack>
@@ -109,16 +98,16 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
                 sx={{
                     float: 'right',
                     backgroundColor: 'black',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '0',
+                    width: '35px',
+                    height: '35px',
+                    borderRadius: '4px',
                     '&:hover': {
                         backgroundColor: 'black',
                     },
                 }}
                 onClick={handleSendClick}
             >
-                <SendIcon sx={{ color: 'white' }} />
+                <SendIcon sx={{ color: 'white',fontSize:'18px'}} />
             </IconButton>
             {suggestions.map((suggestion, index) => (
                 <div key={index} style={{ marginTop: "50px" }}>
@@ -128,9 +117,11 @@ function BuildPipePopup({ closePopup }: { closePopup: () => void }) {    const [
 
                     <Box mt={4} ml={5}>
                         <Stack direction={'row'}>
-                            <img src="/assets/Triangle.png" alt="triangle" width={10} height={10} />
+                        {/* <img  style={{left:'-13px'}} src="/assets/whiteTry.png" alt="triangle" width={15} height={10} /> */}
+
+                            <img className='absolute' style={{left:'51px'}} src="/assets/Triangle.png" alt="triangle" width={10} height={10} />
                             <Box position="relative" width="100%">
-                                <TextField
+                                <TextField className='rounded'
                                     placeholder="Please join customers and order datasets then filter them and retrieve the top 10 based on total order"
                                     fullWidth
                                     multiline

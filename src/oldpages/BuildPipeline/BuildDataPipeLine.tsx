@@ -105,7 +105,7 @@ export default function BuildDataPipeLine() {
                 onClone: () => cloneNode(newNode),
                 dataList: dataList
             },
-            position: { x: 0 + (nodes?.length * 110), y: -150 },
+            position: { x: 0 + (nodes?.length * 100), y: -150 },
         };
 
         setNodes((nds): any => [...nds, newNode]);
@@ -177,26 +177,22 @@ export default function BuildDataPipeLine() {
                 <Codepage />
             ) : (
                 <>
-                    <div className='d-flex justify-content-center myFont'>
+                    <div className='d-flex justify-content-center mt-8'>
                         {data.map(item => (
                             <div key={item.id}>
                                 <ExpandableButton
                                     addNode={addNode}
                                     icon={item.icon}
                                     text={item?.text}
-                                    className={item.className}
-                                    style={{ margin: '10px' }}
                                     title={item.title}
                                     dataSet={item.dataSet}
                                     expandIcon={item.expandIcon}
-                                // lead={item.lead}
-                                // line={item.line}
                                 />
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ height: 'calc(100% - 60px)' }}>
+                    <div style={{ height: 'calc(100% - 100px)' }}>
                         <ReactFlow
                             nodes={nodes}
                             edges={edges}
@@ -242,7 +238,7 @@ export default function BuildDataPipeLine() {
             />} />
             <div style={{
                 position: 'fixed',
-                top: '120px', // Adjust as needed to be above the footer
+                top: '75px', // Adjust as needed to be above the footer
                 right: '1%',
                 zIndex: 1
             }}>

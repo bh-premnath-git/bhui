@@ -55,8 +55,8 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
     const debouncedSearchProject = debounce((value) => {
         // props.search(value);
     }, 1000);
-    function handleNode(lead: any, title: any, index: any,tem:any) {
-        addNode(lead, title, index,tem);
+    function handleNode(lead: any, title: any, index: any, tem: any) {
+        addNode(lead, title, index, tem);
         handleClick();
     }
     function makeCard(tem: any, index: any) {
@@ -93,43 +93,64 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
         const randomIndex = Math.floor(Math.random() * imgList.length);
         return imgList[randomIndex];
     };
-    const randomImage = getRandomImage();
 
     return (
         <>
-            <div style={{ marginBottom: '10px', transition: 'margin-bottom 0.3s ease-in-out' }} >
-                <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-                    <button
-                        onClick={() => handlePop(text)}
-                        className={className}
-                        style={{
-                            display: 'flex', alignItems: 'center', padding: '10px', fontSize: '16px', ...style, transition: 'padding 0.3s ease-in-out'
-                        }}
-                    >
-
-                        {hover ? (<div className='w-22 h-4'>{expandIcon}</div>) : (<>{icon}</>)}
-                    </button>
-                </div>
-                {(select == 'Source' || select == 'Target') && (
-                    <div className='rounded w-25 shadow-sm'
-                        style={{
-                            marginTop: '10px',
-                            padding: '10px',
-                            border: '1px solid #f2f2f2',
-                            backgroundColor: '#fff',
-                            position: 'absolute',
-                            zIndex: 1000
-                        }}
-                    >
-                        <div className="d-flex justify-content-between h6 fw-bold">
-                            <div>
-                                Add {text}
-                            </div>
-                            <div onClick={handleClick}>
-                                <IoMdClose />
+        <div style={{ marginBottom: '10px', transition: 'margin-bottom 0.3s ease-in-out' }}>
+            <div
+                onMouseEnter={() => setHover(true)}
+                onMouseLeave={() => setHover(false)}
+            >
+                <button
+                    onClick={() => handlePop(text)}
+                    className='mx-2 rounded-sm text-white flex items-center transition-all duration-500 ease-in-out'
+                    style={{
+                        backgroundColor: expandIcon,
+                        padding: hover ? '1px 5px' : '1px',  // Padding change on hover for a smoother effect
+                        transition: 'background-color 0.3s ease-in-out, padding 0.3s ease-in-out'
+                    }}
+                >
+                    {hover ? (
+                        <div className='flex items-center transition-all duration-500 ease-in-out'>
+                            {icon} 
+                            <div className='ml-2 opacity-100 transition-opacity duration-500 ease-in-out'>
+                                {text}
                             </div>
                         </div>
-                        {dataSource?.length > 0 && (<TextField className='my-1'
+                    ) : (
+                        <div className='flex items-center transition-all duration-300 ease-in-out'>
+                            {icon}
+                            {/* Text opacity set to 0 so it fades in/out smoothly */}
+                            {/* <div className='ml-2 opacity-0 transition-opacity duration-300 ease-in-out'>
+                                {text}
+                            </div> */}
+                        </div>
+                    )}
+                </button>
+            </div>
+    
+            {(select === 'Source' || select === 'Target') && (
+                <div className='rounded w-25 shadow-sm'
+                    style={{
+                        marginTop: '10px',
+                        padding: '10px',
+                        border: '1px solid #f2f2f2',
+                        backgroundColor: '#fff',
+                        position: 'absolute',
+                        zIndex: 1000
+                    }}
+                >
+                    <div className="d-flex justify-content-between h6 fw-bold">
+                        <div>
+                            Add {text}
+                        </div>
+                        <div onClick={handleClick}>
+                            <IoMdClose />
+                        </div>
+                    </div>
+                    {dataSource?.length > 0 && (
+                        <TextField
+                            className='my-1'
                             value={searchValue}
                             onChange={searchProject}
                             id="left-search"
@@ -144,32 +165,39 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
                                     </InputAdornment>
                                 ),
                             }}
-                        />)}
-                        <div style={{ height: '380px', overflowY: "scroll", scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                            {dataSource?.map((tem: any, index: any) => (
-                                makeCard(tem, index)
-                            ))}
-                        </div>
-                        {text == 'Source' && (<div className='m-auto text-center mff' >
-                            <button onClick={openPopUp} type="button" className="btn btn-dark p-2">Configure A New Source <span className='h5'> +</span></button>
-                        </div>)}
+                        />
+                    )}
+                    <div style={{ height: '380px', overflowY: "scroll", scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        {dataSource?.map((tem: any, index: any) => (
+                            makeCard(tem, index)
+                        ))}
                     </div>
-                )}
-                {(select == '') && (
-                    <TransformationPanel
-                        dataSource={dataSource}
-                        searchValue={searchValue}
-                        searchProject={searchProject}
-                        handleClick={handleClick}
-                        transformList={transformList}
-                        handleNode={handleNode}
-                        text={text}
-                        openPopUp={openPopUp}
-                    />
-                )}
-            </div>
-            <NewSourcePopUp isOpen={selected} onClose={closePopup} />
-        </>
+                    {text === 'Source' && (
+                        <div className='m-auto text-center mff'>
+                            <button onClick={openPopUp} type="button" className="btn btn-dark p-2">
+                                Configure A New Source <span className='h5'> +</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+    
+            {select === '' && (
+                <TransformationPanel
+                    dataSource={dataSource}
+                    searchValue={searchValue}
+                    searchProject={searchProject}
+                    handleClick={handleClick}
+                    transformList={transformList}
+                    handleNode={handleNode}
+                    text={text}
+                    openPopUp={openPopUp}
+                />
+            )}
+        </div>
+        <NewSourcePopUp isOpen={selected} onClose={closePopup} />
+    </>
+    
 
     );
 };

@@ -3,8 +3,8 @@ import { useSelector } from "react-redux";
 export const buildData = [
     {
         id: 1,
-        icon: <img src="/assets/buildPipeline/6.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/21.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/6.svg" alt="" width={35} height={35} />,
+        expandIcon:'#f7a01f',
         text: 'Source',
         className: 'text-white ',
         title: 'Source',
@@ -31,8 +31,8 @@ export const buildData = [
     },
     {
         id: 2,
-        icon: <img src="/assets/buildPipeline/7.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/22.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/7.svg" alt="" width={35} height={35} />,
+        expandIcon: '#07a260',
         text: 'Target', title: 'Target', dataSet: [
             {
                 id: 1,
@@ -56,8 +56,8 @@ export const buildData = [
     },
     {
         id: 3,
-        icon: <img src="/assets/buildPipeline/8.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/26.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/8.svg" alt="" width={35} height={35} />,
+        expandIcon:'#f5bc2a',
         text: 'Filter', title: 'Filter', dataSet: [
             {
                 id: 1,
@@ -81,8 +81,8 @@ export const buildData = [
     },
     {
         id: 4,
-        icon: <img src="/assets/buildPipeline/9.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/23.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/9.svg" alt="" width={35} height={35} />,
+        expandIcon: '#ff7396',
         text: 'Join',title: 'Join', dataSet: [
             {
                 id: 1,
@@ -106,8 +106,8 @@ export const buildData = [
     },
     {
         id: 5,
-        icon: <img src="/assets/buildPipeline/10.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/24.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/10.svg" alt="" width={35} height={35} />,
+        expandIcon: '#804fbf',
         text: 'Router', title: 'Router', dataSet: [
             {
                 id: 1,
@@ -131,8 +131,8 @@ export const buildData = [
     },
     {
         id: 6,
-        icon: <img src="/assets/buildPipeline/11.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/25.svg" alt="" width={100} height={100} />,
+        icon: <img src="/assets/buildPipeline/11.svg" alt="" width={35} height={35} />,
+        expandIcon: '#06babd',
         text: 'Transform', title: 'Transform', dataSet: [
             {
                 id: 1,
@@ -156,8 +156,8 @@ export const buildData = [
     },
     {
         id: 7,
-        icon: <img src="/assets/buildPipeline/12.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/27.svg" alt="" width={90} height={40} />,
+        icon: <img src="/assets/buildPipeline/12.svg" alt="" width={35} height={35} />,
+        expandIcon:'#c049c0',
         text: 'Ship', title: 'Ship', dataSet: [
             {
                 id: 1,
@@ -181,8 +181,8 @@ export const buildData = [
     },
     {
         id: 8,
-        icon: <img src="/assets/buildPipeline/add.svg" alt="" width={40} height={40} />,
-        expandIcon: <img src="/assets/buildPipeline/add.svg" alt="" width={40} height={40} />,
+        icon: <img src="/assets/buildPipeline/add.svg" alt="" width={35} height={35} />,
+        expandIcon: <img src="/assets/buildPipeline/add.svg" alt="" width={35} height={35} />,
         text: '', title: 'Transformation', dataSet: [
             {
                 id: 1,

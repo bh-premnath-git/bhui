@@ -9,14 +9,18 @@ import { listFlows, getFlowProjectList, getEnvironmentList, createFlow, setSelec
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
-
+import { formatedDate } from "@/Utils/dateFormatter";
 interface Flow {
   id: number;
+  schedule_intervals: {
+    schedule_type: string;
+  };
   Name: string;
-  Environment: number;
-  Project: number;
+  Environment: string;
+  bh_project_name: string;
+  CreatedBy: string;
+  LastUpdatedOn: string | null;
   LastExecutedOn: string | null;
-  git_branch: string;
   // Add other fields as needed
 }
 
@@ -32,37 +36,54 @@ type ColumnConfig = {
 const columns: ColumnConfig[] = [
   {
     key: 'Name',
-    header: 'Flow Name',
+    header: 'Name',
     sortable: true,
     filterable: true,
     type: 'text',
   },
   {
+    key: 'schedule_intervals',
+    header: 'Schedule',
+    sortable: true,
+    filterable: true,
+    type: 'text',
+    render: (row: any) => row.schedule_type ?? "",
+  },
+  {
     key: 'Environment',
-    header: 'Environment ID',
+    header: 'Environment',
     sortable: true,
     filterable: true,
     type: 'number',
   },
   {
-    key: 'Project',
-    header: 'Project ID',
+    key: 'bh_project_name',
+    header: 'Project',
+    sortable: true,
+    filterable: true,
+    type: 'text',
+  },
+  {
+    key: 'CreatedBy',
+    header: 'Created By',
     sortable: false,
-    type: 'number',
+    type: 'text',
+  },
+  {
+    key: 'LastUpdatedOn',
+    header: 'Last Updated',
+    sortable: true,
+    filterable: true,
+    type: 'date',
+    render: (value: string | null) => formatedDate(value) || 'Never',
   },
   {
     key: 'LastExecutedOn',
     header: 'Last Executed',
-    sortable: false,
+    sortable: true,
+    filterable: true,
     type: 'date',
-    render: (value: string | null) => value || 'Never',
-  },
-  {
-    key: 'git_branch',
-    header: 'Git Branch',
-    sortable: false,
-    filterable: false,
-    type: 'text',
+    render: (value: string | null) => formatedDate(value) || 'Never',
   },
 ];
 
@@ -161,7 +182,8 @@ const AllFlows: React.FC = () => {
       </div>
     );
   }
-
+  console.log("Flows:", localFlows);
+  
   return (
     <div className="container mx-auto p-4">
       {localFlows.length === 0 ? (

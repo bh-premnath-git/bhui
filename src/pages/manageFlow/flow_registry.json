@@ -404,7 +404,7 @@
                         },
                         {
                             "property_name": "Request Parameters",
-                            "property_key": "request_parameters",
+                            "property_key": "request_params",
                             "ui_type": "json",
                             "order": 3,
                             "mandatory": false,
@@ -428,7 +428,7 @@
                         },
                         {
                             "property_name": "Request Timeout (seconds)",
-                            "property_key": "request_timeout",
+                            "property_key": "timeout",
                             "ui_type": "number",
                             "order": 6,
                             "mandatory": false,

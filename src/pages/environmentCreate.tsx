@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { createEnvironment } from '@/redux/EnvironmentSlice';
 import { useAppDispatch } from '@/redux/hooks';
 import { Spinner } from "@/components/ui/spinner";
+import { encrypt_string } from '@/services/encryption';
 import useToast from '@/oldcomponents/teast-service';
 
 // Types
@@ -150,6 +151,8 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     if (currentIndex < TABS.length - 1) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: TABS[currentIndex + 1] });
     } else {
+      const { encryptedString, initVector } = encrypt_string(state.environmentTab.secretAccessKey);
+      const { encryptedString: encryptedString1 } = encrypt_string(state.environmentTab.accessKey, initVector);
       const values = {
         bh_env_name: state.environmentTab.environmentName,
         bh_env_provider: parseInt(state.environmentTab.environment),
@@ -158,8 +161,9 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         status_cd: "active",
         project_id: state.environmentTab.projectId,
         file: state.environmentTab.privateKeyFile,
-        access_key: state.environmentTab.accessKey,
-        secret_access_key: state.environmentTab.secretAccessKey
+        access_key: encryptedString1,
+        secret_access_key: encryptedString,
+        init_vector: initVector,
       }
       setIsLoading(()=>true);
       dispatchApi(createEnvironment(values))

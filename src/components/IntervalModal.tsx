@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-const intervals = ["Minutes", "Hourly", "Daily", "Weekly", "Monthly", "Yearly"]
+const intervals = ["minutes", "hourly", "daily", "weekly", "monthly", "yearly"]
 const months = [
   "January", "February", "March", "April", "May", "June", 
   "July", "August", "September", "October", "November", "December"

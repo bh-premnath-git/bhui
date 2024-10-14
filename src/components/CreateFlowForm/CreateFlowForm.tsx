@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock } from 'lucide-react';
-import styles from './CreateFlowForm.module.css';
-import { useAppSelector } from '@/redux/hooks';
+import React, { useState, useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalModal";
 import { Spinner } from "@/components/ui/spinner";
+import { useAppSelector } from '@/redux/hooks';
+import { omitSpaceSymbolNumeric } from '@/Utils/stringOmission';
 
 // Types
 interface Project {
@@ -25,6 +32,7 @@ interface CreateFlowFormProps {
 
 interface CreateFlowPayload {
   flow_name: string;
+  flow_key: string;
   git_branch: string;
   bh_project_id: number;
   metadata_flow: string;
@@ -35,154 +43,59 @@ interface CreateFlowPayload {
     schedule_type: string;
     time: Record<string, any>;
   };
+  recipent_emails: string;
 }
 
-interface IntervalState {
-  selectedInterval: string;
-  repeatEvery: string;
-  repeatAt: string;
-  selectedDays: string[];
-  selectedMonth: string;
-  selectedDate: string;
+interface FormValues {
+  selectedProject: string;
+  selectedBranch: string;
+  name: string;
+  selectedEnvironment: string;
+  selectedClass: string;
+  recipientEmail: string;
+  notes: string;
+  onJobStart: boolean;
+  onJobFailure: boolean;
+  onJobSuccess: boolean;
 }
 
-// Subcomponents
-const SelectField: React.FC<{
-  name: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-  style?: React.CSSProperties;
-}> = ({ name, label, value, onChange, options, disabled, style }) => (
-  <div style={style} className={styles.field}>
-    <label>{label}</label>
-    <select
-      name={name}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-    >
-      <option value="">Select {label}</option>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+// Validation schema
+const validationSchema = Yup.object().shape({
+  selectedProject: Yup.string().required('Project is required'),
+  selectedBranch: Yup.string().required('Branch is required'),
+  name: Yup.string().required('Name is required'),
+  selectedEnvironment: Yup.string().required('Environment is required'),
+  selectedClass: Yup.string().required('Class is required'),
+  recipientEmail: Yup.string().email('Invalid email').required('Recipient email is required'),
+});
 
-const InputField: React.FC<{
-  name: string;
-  label: string;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ name, label, type, placeholder, value, onChange }) => (
-  <div className={styles.field}>
-    <label>{label}</label>
-    <input
-      name={name}
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-const CheckboxField: React.FC<{
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}> = ({ label, checked, onChange }) => (
-  <label className={checked ? styles.checked : ''}>
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    {label}
-  </label>
-);
-
-// Main component
 const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, isLoading }) => {
-  const [formData, setFormData] = useState({
-    selectedProject: '',
-    selectedBranch: '',
-    selectedEnvironment: '',
-    selectedClass: '',
-    name: '',
-    notes: '',
-    scheduleInterval: {
-      schedule_type: 'minutes',
-      time: {},},
-    recipientEmail: '',
+  const [showNotes, setShowNotes] = useState(false);
+  const [scheduleInterval, setScheduleInterval] = useState<CreateFlowPayload['schedule_interval']>({
+    schedule_type: 'minutes',
+    time: {
+      selectedInterval: "minutes",
+      repeatEvery: "1",
+      repeatAt: "12:00",
+      selectedDays: ["Sun"],
+      selectedMonth: "September",
+      selectedDate: "5"
+    },
   });
-  const [intervalData, setIntervalData] = useState<IntervalState | null>(null);
-  const [branches, setBranches] = useState<string[]>([]);
-  const [alerts, setAlerts] = useState({
-    onJobStart: true,
-    onJobFailure: false,
-    onJobSuccess: false,
-  });
-  const [isNotesOpen, setIsNotesOpen] = useState(false);
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
 
-  const updateBranches = useCallback(() => {
-    if (formData.selectedProject) {
-      const project = data.find((p: Project) => (p.ProjectId).toString() === formData.selectedProject);
-      setBranches(project?.BranchNames || []);
-      setFormData(prev => ({ ...prev, selectedBranch: '' }));
-    } else {
-      setBranches([]);
-    }
-  }, [formData.selectedProject, data]);
-
-  useEffect(() => {
-    updateBranches();
-  }, [updateBranches]);
-
-  const handleInputChange = (name: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleIntervalSave = (interval: string) => {
+    const parsedInterval = JSON.parse(interval);
+    setScheduleInterval({
+      schedule_type: parsedInterval.selectedInterval,
+      time: parsedInterval,
+    });
   };
 
-  const handleAlertChange = (name: string, value: boolean) => {
-    setAlerts(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCreateFlow = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const payload: CreateFlowPayload = {
-      flow_name: formData.name,
-      git_branch: formData.selectedBranch || 'Main',
-      bh_project_id: Number(formData.selectedProject),
-      metadata_flow: '',
-      bh_env_provider: Number(formData.selectedEnvironment),
-      flow_class: Number(formData.selectedClass),
-      job: 'on_job_start',
-      schedule_interval: {
-        schedule_type: formData?.scheduleInterval?.schedule_type || 'minutes',
-        time: formData?.scheduleInterval?.time || {},
-      },
-    };
-
-    onCreateFlow(payload);
-  };
-
-  const handleIntervalStateChange = (state: IntervalState) => {
-    setIntervalData(state);
-  };
-
-  const handleIntervalSave = (interval: any) => {
-    console.log("Saved Interval:", interval);
-    setFormData(prev => ({ ...prev, scheduleInterval: interval }));
+  const handleIntervalStateChange = (state: any) => {
+    //    console.log(state);
   };
 
   const openIntervalModal = () => {
@@ -191,129 +104,245 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
     }
   };
 
+  const initialValues: FormValues = {
+    selectedProject: '',
+    selectedBranch: '',
+    name: '',
+    selectedEnvironment: '',
+    selectedClass: '',
+    recipientEmail: '',
+    notes: '',
+    onJobStart: true,
+    onJobFailure: false,
+    onJobSuccess: false,
+  };
+
   return (
-    <div className={styles.modal}>
-      <h2 className={styles.title}>Create Flow</h2>
-      <form className={styles.form} onSubmit={handleCreateFlow}>
-        <div className={styles.row}>
-          <SelectField
-            name="selectedProject"
-            label="Project*"
-            value={formData.selectedProject}
-            onChange={(value) => handleInputChange('selectedProject', value)}
-            options={data.map((p: Project) => ({ value: p.ProjectId, label: p.Name }))}
-          />
-          <SelectField
-            name="selectedBranch"
-            label="Branch*"
-            value={formData.selectedBranch}
-            onChange={(value) => handleInputChange('selectedBranch', value)}
-            options={branches.map(b => ({ value: b, label: b }))}
-            disabled={!formData.selectedProject}
-          />
-          <InputField
-            name="name"
-            label="Name*"
-            type="text"
-            placeholder="Enter Name"
-            value={formData.name}
-            onChange={(value) => handleInputChange('name', value)}
-          />
-        </div>
-        <div className={styles.row}>
-          <SelectField
-            name="selectedEnvironment"
-            label="Environment Name*"
-            style={{ width: '40px' }}
-            value={formData.selectedEnvironment}
-            onChange={(value) => handleInputChange('selectedEnvironment', value)}
-            options={envData.map((e: Environment) => ({ value: e.id, label: e.envName }))}
-          />
-          <SelectField
-            name="selectedClass"
-            label="Class*"
-            value={formData.selectedClass}
-            onChange={(value) => handleInputChange('selectedClass', value)}
-            options={[
-              { value: '1', label: 'Small' },
-              { value: '2', label: 'Medium' },
-              { value: '3', label: 'Large' },
-            ]}
-          />
-          <div className={styles.field}>
-            <label>Schedule</label>
-            <div className={styles.scheduleInput} onClick={openIntervalModal}>
-              <input
-                name="scheduleInterval"
-                type="text"
-                placeholder="Schedule Interval"
-                value={formData.scheduleInterval["schedule_type"]}
-                readOnly
-              />
-              <Clock className={styles.clockIcon} size={18} />
+    <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+      <h2 className="text-l font-medium mb-6">Create Flow</h2>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={(values, { setSubmitting }) => {
+          const payload: CreateFlowPayload = {
+            flow_name: values.name,
+            flow_key: omitSpaceSymbolNumeric(values.name),
+            git_branch: values.selectedBranch,
+            bh_project_id: Number(values.selectedProject),
+            metadata_flow: values.notes,
+            bh_env_provider: Number(values.selectedEnvironment),
+            flow_class: Number(values.selectedClass),
+            job: 'on_job_start',
+            schedule_interval: scheduleInterval,
+            recipent_emails: values.recipientEmail,
+          };
+          onCreateFlow(payload);
+          setSubmitting(false);
+        }}
+      >
+        {({ values, setFieldValue }) => (
+          <Form className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="selectedProject">Project*</Label>
+                <Field name="selectedProject">
+                  {({ field, form }: any) =>
+                  (
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={(value) => {
+                        form.setFieldValue('selectedProject', Number(value));
+                      }}
+                    >
+                      <SelectTrigger id="selectedProject">
+                        <SelectValue placeholder="Select Project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {data.map((project: Project) => (
+                          <SelectItem key={project.ProjectId} value={project.ProjectId}>
+                            {project.Name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                  }
+                </Field>
+                <ErrorMessage name="selectedProject" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="selectedBranch">Branch*</Label>
+                <Field name="selectedBranch">
+                  {({ field }: any) => (
+                    <Input
+                      id="selectedBranch"
+                      placeholder="Enter Branch"
+                      {...field}
+                    />
+                  )}
+                </Field>
+                <ErrorMessage name="selectedBranch" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="name">Name*</Label>
+                <Field name="name">
+                  {({ field }: any) => (
+                    <Input
+                      id="name"
+                      placeholder="Enter Name"
+                      {...field}
+                    />
+                  )}
+                </Field>
+                <ErrorMessage name="name" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
             </div>
-          </div>
-        </div>
-        <div className={styles.addNotes}>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setIsNotesOpen(!isNotesOpen);
-            }}
-            className={styles.addNotesLink}
-          >
-            Add Notes
-            <span className={`${styles.arrowIcon} ${isNotesOpen ? styles.open : ''}`}>▼</span>
-          </a>
-          <div className={`${styles.notesWrapper} ${isNotesOpen ? styles.open : ''}`}>
-            <textarea
-              name="notes"
-              className={styles.notesTextarea}
-              placeholder="Add your notes here"
-              rows={4}
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-            />
-          </div>
-        </div>
-        <div className={styles.alertSettings}>
-          <h3>Select Alert Settings</h3>
-          <InputField
-            name="recipientEmail"
-            label="Recipient Email ID *"
-            type="email"
-            placeholder="Enter Recipient Email ID"
-            value={formData.recipientEmail}
-            onChange={(value) => handleInputChange('recipientEmail', value)}
-          />
-          <div className={styles.checkboxGroup}>
-            <CheckboxField
-              label="On Job Start"
-              checked={alerts.onJobStart}
-              onChange={(value) => handleAlertChange('onJobStart', value)}
-            />
-            <CheckboxField
-              label="On Job Failure"
-              checked={alerts.onJobFailure}
-              onChange={(value) => handleAlertChange('onJobFailure', value)}
-            />
-            <CheckboxField
-              label="On Job Success"
-              checked={alerts.onJobSuccess}
-              onChange={(value) => handleAlertChange('onJobSuccess', value)}
-            />
-          </div>
-        </div>
-        <div className={styles.buttons}>
-          <button type="button" className={styles.closeButton} onClick={onClose}>
-            Close
-          </button>
-          <button className={`bg-gray-900 text-white hover:bg-gray-800 ${styles.createButton}`} type="submit" disabled={isLoading}>
-            {isLoading ? <Spinner /> : "Create Flow"}
-          </button>
-        </div>
-      </form>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="selectedEnvironment">Environment Name*</Label>
+                <Field name="selectedEnvironment">
+                  {({ field, form }: any) => (
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={(value) => form.setFieldValue('selectedEnvironment', Number(value))}
+                    >
+                      <SelectTrigger id="selectedEnvironment">
+                        <SelectValue placeholder="Select Environment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {envData.map((env: Environment) => (
+                          <SelectItem key={env.id} value={env.id}>
+                            {env.envName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </Field>
+                <ErrorMessage name="selectedEnvironment" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="selectedClass">Class*</Label>
+                <Field name="selectedClass">
+                  {({ field, form }: any) => (
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={(value) => form.setFieldValue('selectedClass', value)}
+                    >
+                      <SelectTrigger id="selectedClass">
+                        <SelectValue placeholder="Select Class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Small</SelectItem>
+                        <SelectItem value="2">Medium</SelectItem>
+                        <SelectItem value="3">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </Field>
+                <ErrorMessage name="selectedClass" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="schedule">Schedule</Label>
+                <div className="relative">
+                  <Input
+                    id="schedule"
+                    placeholder="Schedule Interval"
+                    value={scheduleInterval.schedule_type}
+                    readOnly
+                    onClick={openIntervalModal}
+                  />
+                  <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer" size={20} onClick={openIntervalModal} />
+                </div>
+              </div>
+            </div>
+            <div>
+              <button
+                type="button"
+                className="text-blue-600 flex items-center"
+                onClick={() => setShowNotes(!showNotes)}
+              >
+                Add Notes {showNotes ? <ChevronUp className="ml-1" size={16} /> : <ChevronDown className="ml-1" size={16} />}
+              </button>
+              {showNotes && (
+                <Field name="notes">
+                  {({ field }: any) => (
+                    <textarea
+                      className="mt-2 w-full p-2 border rounded-md"
+                      placeholder="Enter notes here..."
+                      rows={3}
+                      {...field}
+                    />
+                  )}
+                </Field>
+              )}
+            </div>
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-2">Select Alert Settings</h3>
+              <div>
+                <Label htmlFor="recipientEmail">Recipient Email ID *</Label>
+                <Field name="recipientEmail">
+                  {({ field }: any) => (
+                    <Input
+                      id="recipientEmail"
+                      placeholder="Enter Recipient Email ID"
+                      {...field}
+                    />
+                  )}
+                </Field>
+                <ErrorMessage name="recipientEmail" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              <div className="mt-4 flex space-x-6">
+                <div className="flex items-center space-x-2">
+                  <Field name="onJobStart" type="checkbox">
+                    {({ field }: any) => (
+                      <Checkbox
+                        id="onJobStart"
+                        checked={field.value}
+                        onCheckedChange={(checked) => setFieldValue('onJobStart', checked)}
+                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      />
+                    )}
+                  </Field>
+                  <label htmlFor="onJobStart">On Job Start</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Field name="onJobFailure" type="checkbox">
+                    {({ field }: any) => (
+                      <Checkbox
+                        id="onJobFailure"
+                        checked={field.value}
+                        onCheckedChange={(checked) => setFieldValue('onJobFailure', checked)}
+                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      />
+                    )}
+                  </Field>
+                  <label htmlFor="onJobFailure">On Job Failure</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Field name="onJobSuccess" type="checkbox">
+                    {({ field }: any) => (
+                      <Checkbox
+                        id="onJobSuccess"
+                        checked={field.value}
+                        onCheckedChange={(checked) => setFieldValue('onJobSuccess', checked)}
+                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      />
+                    )}
+                  </Field>
+                  <label htmlFor="onJobSuccess">On Job Success</label>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center space-x-4 mt-6">
+              <Button variant="outline" type="button" onClick={onClose}>Close</Button>
+              <Button className='bg-black text-white hover:bg-gray-800' type="submit" disabled={isLoading}>
+                {isLoading ? <Spinner /> : "Create Flow"}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
       <IntervalModalComponent
         ref={intervalModalRef}
         onSave={handleIntervalSave}

@@ -31,7 +31,11 @@ import {
     const handleChange = (event: any, newValue: any) => {
       setValue(newValue);
     };
-  
+    function capitalizeFLetter(string:string) {
+        return string[0].toUpperCase() +
+        string.slice(1);
+        
+    }
     // Update form state when a form is submitted or changed
     const updateFormState = (index: any, newFormData: any) => {
       setFormStates((prev) => {
@@ -89,7 +93,7 @@ console.log(formStates)
               }}
             >
               {form_data.module.map((item, index) => (
-                <Tab label={item.name} key={index} />
+                <Tab label={capitalizeFLetter(item.name)} key={index} />
               ))}
             </Tabs>
           </Stack>

@@ -28,7 +28,6 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                 sx={{
                     "& .MuiDialog-paper": {
                         minWidth: "60%",
-                        height: "60%",
                     },
                 }}
             >
@@ -62,37 +61,37 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                                 <FieldArray
                                     name="fields"
                                     render={(arrayHelpers) => (
-                                        <Stack>
+                                        <Stack className="m-auto">
                                             {values.fields.map((field, index) => (
-                                                <Stack direction={"row"} spacing={2} key={index}>
+                                                <Stack direction={"row"} spacing={2} justifyContent={'space-between'} key={index}>
                                                     <Stack className="w-72">
-                                                       
+
                                                         <CustomField name={`fields[${index}].operation`} controlName="select" options={[
                                                             { "id": 1, "name": "Add Column", "status": true },
                                                             { "id": 2, "name": "Rename Column", "status": true },
                                                             { "id": 3, "name": "Drop Column", "status": true }
-                                                        ]} labelKey="name" valueKey="id" label="Operation" onChange={()=>{
+                                                        ]} labelKey="name" valueKey="id" label="Operation" onChange={() => {
                                                             console.log(field)
-                                                        }}/>
-                                                        
+                                                        }} />
+
                                                     </Stack>
 
-                                                   
-                                                    <Stack className="w-72">
-                                                       
-                                                       <CustomField name={`fields[${index}].column`} controlName="select" options={[
-                                                           { "id": 1, "name": "Employee", "status": true },
-                                                           { "id": 2, "name": "Age", "status": true },
-                                                           { "id": 3, "name": "DOB", "status": true },
-                                                           { "id": 4, "name": "Address", "status": true }
-                                                       ]} labelKey="name" valueKey="id" label="Column" />
-                                                       
-                                                   </Stack>
 
-                                                    {field.operation!='3'&&(<Stack>
-                                                        <CustomField name={`fields[${index}].action`} label={field.operation=='1'?'Expression':field.operation=='2'?'New name':'Action'}
-                                                        placeholder={field.operation=='1'?'Enter expression':field.operation=='2'?'Enter new column name':''}/>
-                                                        
+                                                    <Stack className="w-72">
+
+                                                        <CustomField name={`fields[${index}].column`} controlName="select" options={[
+                                                            { "id": 1, "name": "Employee", "status": true },
+                                                            { "id": 2, "name": "Age", "status": true },
+                                                            { "id": 3, "name": "DOB", "status": true },
+                                                            { "id": 4, "name": "Address", "status": true }
+                                                        ]} labelKey="name" valueKey="id" label="Column" />
+
+                                                    </Stack>
+
+                                                    {field.operation != '3' && (<Stack>
+                                                        <CustomField name={`fields[${index}].action`} label={field.operation == '1' ? 'Expression' : field.operation == '2' ? 'New name' : 'Action'}
+                                                            placeholder={field.operation == '1' ? 'Enter expression' : field.operation == '2' ? 'Enter new column name' : ''} />
+
                                                     </Stack>)}
 
                                                     <Stack
@@ -135,46 +134,26 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                                 />
                             </DialogContent>
 
-                            <DialogActions
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    marginBottom: "25px",
-                                }}
+                            <Stack
+                                direction="row"
+                                spacing={2}
+                                justifyContent="center"
+                                alignItems="self-end"
+                                className="mb-6"
                             >
-                                <Stack direction={"row"} spacing={2}>
-                                    <Button
-                                        onClick={onClose}
-                                        sx={{
-                                            color: "black",
-                                            border: "1px solid black",
-                                            width: "190px",
-                                            textTransform: "none",
-                                            "&:hover": {
-                                                backgroundColor: "transparent",
-                                                border: "1px solid black",
-                                            },
-                                        }}
-                                    >
-                                        Close
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        sx={{
-                                            color: "white",
-                                            backgroundColor: "black",
-                                            width: "190px",
-                                            textTransform: "none",
-                                            "&:hover": {
-                                                backgroundColor: "black",
-                                            },
-                                            height: "43px",
-                                        }}
-                                    >
-                                        Save
-                                    </Button>
-                                </Stack>
-                            </DialogActions>
+                                <button
+                                    type="button"
+                                    className="mt-12 w-24 bg-white text-black border p-1 rounded-md"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="mt-12 w-24 bg-gray-800 text-white p-1 rounded-md hover:bg-gray-900"
+                                >
+                                    Save
+                                </button>
+                            </Stack>
                         </Form>
                     )}
                 </Formik>

@@ -49,12 +49,12 @@ const JoinForm = ({ form, formData, setFormData, joinList }: any) => {
                                             {form.fields.map((field: any, idx: any) => (
                                                 <div key={idx} className="flex-grow ml-4">
                                                     {field.type === "select" ? (
-                                                        <div className="w-full">
+                                                        <div className="w-96">
                                                             <CustomField options={joinList} name={`conditions.${index}.${field.name}`} controlName="select" label={field.label} labelKey="dtl_desc" valueKey="codes_hdr_id" />
 
                                                         </div>
                                                     ) : (
-                                                        <div className="w-full">
+                                                        <div className="w-96">
 
                                                             <CustomField
                                                                 name={`conditions.${index}.${field.name}`}

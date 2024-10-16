@@ -8,7 +8,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as yup from 'yup';
 import { useLocation } from 'react-router';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import TagDialog from '../../../common/TagDialog';
+import TagDialog from '../../common/TagDialog';
 type Tag = {
     tagKey: string;
     tagValue: string;

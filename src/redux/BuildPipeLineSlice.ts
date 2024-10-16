@@ -12,6 +12,7 @@ export interface ApiState {
   dynamicConData: any;
   pipelineList:any;
   nestedFields: any;
+  joinList:any;
 }
 
 const initialState: ApiState = {
@@ -24,7 +25,8 @@ const initialState: ApiState = {
   isRun: false,
   dynamicConData: null,
   nestedFields: null,
-  pipelineList:[]
+  pipelineList:[],
+  joinList:[],
 };
 
 interface ApiResponse {
@@ -96,6 +98,18 @@ export const getAllPipeline: any = createAsyncThunk(
     }
   }
 );
+export const getJoinType: any = createAsyncThunk(
+  'build-pipline/getJoinType',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/codes_hdr/14`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 
 const buildPipeLineSlice = createSlice({
   name: "api/buildDataPipeline",
@@ -113,7 +127,7 @@ const buildPipeLineSlice = createSlice({
     setNestedField: (state, action) => {
       state.nestedFields = action.payload;
     },
-
+    
   },
   extraReducers: (builder) => {
     builder
@@ -219,6 +233,25 @@ const buildPipeLineSlice = createSlice({
       )
       .addCase(
         getAllPipeline.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(getJoinType.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getJoinType.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.joinList = action.payload;
+        }
+      )
+      .addCase(
+        getJoinType.rejected,
         (state, action: PayloadAction<string>) => {
           state.loading = false;
           state.error = action.payload;

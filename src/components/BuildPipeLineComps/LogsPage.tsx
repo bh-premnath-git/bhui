@@ -5,7 +5,7 @@ import { Stack } from '@mui/system';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Link } from 'react-router-dom';
 
-export default function LogsPage({ drawerHeight }) {
+export default function LogsPage({ drawerHeight }:any) {
 
     return (
         <>

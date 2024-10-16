@@ -73,6 +73,24 @@ const generateData = (): DataItem[] => {
   );
 };
 
+const CustomLegend: React.FC<any> = (props) => {
+  const { payload } = props;
+
+  return (
+    <ul className="flex flex-wrap justify-center gap-2 text-xs">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center">
+          <span
+            className="inline-block w-2 h-2 mr-1"
+            style={{ backgroundColor: entry.color }}
+          ></span>
+          <span className="text-black">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const computeAverageMetrics = (
   data: DataItem[],
   metric: keyof Pick<DataItem, "latency" | "cost" | "freshness">
@@ -381,8 +399,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square"
-              height={16} wrapperStyle={{ color: "#000" }}/>
+            <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
 
@@ -409,7 +426,7 @@ export default function DashboardComponent() {
                 fill={COLORS[index % COLORS.length]}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square" height={26} />
+            <Legend content={<CustomLegend />} />
           </AreaChart>
         </ChartCard>
 
@@ -435,7 +452,7 @@ export default function DashboardComponent() {
               ))}
             </Pie>
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Legend verticalAlign="bottom" height={16} />
+            <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
 
@@ -460,7 +477,7 @@ export default function DashboardComponent() {
               ))}
             </Pie>
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Legend verticalAlign="bottom" height={16} />
+            <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
       </div>
@@ -489,7 +506,7 @@ export default function DashboardComponent() {
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -516,7 +533,7 @@ export default function DashboardComponent() {
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -536,7 +553,7 @@ export default function DashboardComponent() {
             <Bar dataKey="failed" stackId="a" fill="#ff0000" />
             <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
             <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -571,7 +588,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square" height={26} />
+            <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
       </div>

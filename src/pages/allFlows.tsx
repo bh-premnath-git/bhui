@@ -143,6 +143,7 @@ const AllFlows: React.FC = () => {
       const result = await dispatch(createFlow(payload));
       if (createFlow.fulfilled.match(result)) {
         // Optimistic update
+        dispatch(setSelectedFlowFromList(result.payload));
         setLocalFlows(prevFlows => [...prevFlows, result.payload]);
         closeModal();
         // Navigate after a short delay to allow for the UI update
@@ -182,7 +183,6 @@ const AllFlows: React.FC = () => {
       </div>
     );
   }
-  console.log("Flows:", localFlows);
   
   return (
     <div className="container mx-auto p-4">

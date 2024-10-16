@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -19,6 +19,9 @@ import Toolbar from '@/components/ReactFlowComps/Items/Toolbar/Toolbar';
 import styles from '@/pages/manageFlow/FlowPlayground.module.css';
 import { NodeType } from '@/pages/manageFlow/types';
 import DataPreviewModal from '@/components/ReactFlowComps/DataPreviewModal/DataPreviewModal';
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { LocalStorageService } from '@/services/localStorageServices';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -90,10 +93,54 @@ const CustomControls = () => {
 const FlowPlayground: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { selectedFlowFromList } = useSelector(
+    (state: RootState) => state.flowApi
+  );
 
-  const logCurrentState = useCallback(() => {
-    console.log('Current Nodes:', nodes);
-    console.log('Current Edges:', edges);
+  useEffect(() => {
+    if (selectedFlowFromList && selectedFlowFromList.flow_id) {
+      const storedFlowData = LocalStorageService.getItem(selectedFlowFromList.flow_id);
+      
+      if (storedFlowData) {
+        try {
+          const parsedFlowData = storedFlowData;
+          if (parsedFlowData.nodes && parsedFlowData.edges) {
+            // Ensure every node has onDelete and onClone
+            const updatedNodes = parsedFlowData.nodes.map((node: Node) => ({
+              ...node,
+              data: {
+                ...node.data,
+                onDelete: onDeleteNode,  // Add this if missing
+                onClone: onCloneNode,    // Add this if missing
+              },
+            }));
+            setNodes(updatedNodes);
+            setEdges(parsedFlowData.edges);
+            console.log('Flow data loaded from local storage');
+          }
+        } catch (error) {
+          console.error('Error parsing stored flow data:', error);
+        }
+      } else {
+        // If no stored data, reset to empty arrays
+        setNodes([]);
+        setEdges([]);
+      }
+    }
+  }, [selectedFlowFromList, setNodes, setEdges]);
+
+  const logCurrentState = useCallback(async() => {
+    if (selectedFlowFromList && selectedFlowFromList.flow_id) {
+      const flowData = {
+        nodes: nodes,
+        edges: edges
+      };
+      
+      LocalStorageService.setItem(selectedFlowFromList.flow_id, flowData);
+      console.log('Flow data saved to local storage');
+    } else {
+      console.error('No flow_id available to save the flow data');
+    }
   }, [nodes, edges]);
 
   const onConnect = useCallback(

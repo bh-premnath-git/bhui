@@ -9,9 +9,8 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalModal";
 import { Spinner } from "@/components/ui/spinner";
-import { useAppSelector, useAppDispatch } from '@/redux/hooks';
+import { useAppSelector } from '@/redux/hooks';
 import { omitSpaceSymbolNumeric } from '@/Utils/stringOmission';
-import { setSelectedFlowFromList } from '@/redux/FlowSlice';
 // Types
 interface Project {
   ProjectId: string;
@@ -70,7 +69,6 @@ const validationSchema = Yup.object().shape({
 });
 
 const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, isLoading }) => {
-  const dispatch = useAppDispatch();
   const [showNotes, setShowNotes] = useState(false);
   const [scheduleInterval, setScheduleInterval] = useState<CreateFlowPayload['schedule_interval']>({
     schedule_type: 'minutes',
@@ -124,7 +122,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={async(values, { setSubmitting }) => {
+        onSubmit={(values, { setSubmitting }) => {
           const payload: CreateFlowPayload = {
             flow_name: values.name,
             flow_key: omitSpaceSymbolNumeric(values.name),
@@ -138,7 +136,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
             recipent_emails: values.recipientEmail,
           };
           onCreateFlow(payload);
-          await dispatch(setSelectedFlowFromList(payload));
           setSubmitting(false);
         }}
       >

@@ -12,7 +12,7 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
+                            "property_name": "End-Point",
                             "property_key": "end_point",
                             "ui_type": "text",
                             "order": 1,
@@ -24,7 +24,8 @@
                             "property_key": "connection_name",
                             "ui_type": "drop_down",
                             "order": 2,
-                            "dependency": "/connections/http_sensor/",
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/http_connections/",
                             "mandatory": true,
                             "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
                         },
@@ -76,44 +77,62 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
+                            "property_name": "S3 Path(s)",
+                            "property_key": "s3_paths",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name1",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/s3_connections/",
+                            "mandatory": true,
+                            "help_text": "List of S3 Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Bucket Name - leave this blank if using full s3 path",
+                            "property_key": "bucket_name",
                             "ui_type": "text",
-                            "order": 1,
+                            "order": 3,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
+                            "property_name": "Sensor Timeout in seconds",
+                            "property_key": "sensor_timeout",
+                            "ui_type": "number",
+                            "order": 4,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
+                            "property_name": "Verify SSL Certificate",
+                            "property_key": "verify_ssl",
+                            "ui_type": "checkbox",
+                            "order": 5,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
+                            "property_name": "Wildcard Match",
+                            "property_key": "wildcard_match",
+                            "ui_type": "checkbox",
+                            "order": 6,
                             "mandatory": false,
                             "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Validate Response",
+                            "property_key": "validate_response1",
+                            "ui_type": "json",
+                            "order": 7,
+                            "mandatory": false,
+                            "help_text": "Assetion for validating HTTP Response"
                         }
                     ]
                 },
@@ -245,61 +264,48 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
+                            "property_name": "SFTP Connection",
+                            "property_key": "sftp_connection",
+                            "ui_type": "drop_down",
                             "order": 1,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/http_connections/",
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "Connection Name",
-                            "property_key": "connection_name",
-                            "ui_type": "drop_down",
+                            "property_name": "SFTP Path",
+                            "property_key": "sftp_path",
+                            "ui_type": "text",
                             "order": 2,
-                            "dependency": "/connections/http_sensor/",
-                            "mandatory": true,
+                            "mandatory": false,
                             "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
                         },
                         {
-                            "property_name": "Request Parameters",
-                            "property_key": "request_parameters",
-                            "ui_type": "json",
+                            "property_name": "AWS Connection",
+                            "property_key": "aws_connection",
+                            "ui_type": "drop_down",
                             "order": 3,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/http_connections/",
                             "mandatory": false,
-                            "help_text": "Request parameters for the HTTP Request"
+                            "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "Request Headers",
-                            "property_key": "request_headers",
-                            "ui_type": "json",
+                            "property_name": "Bucket Name",
+                            "property_key": "bucket_name1",
+                            "ui_type": "text",
                             "order": 4,
                             "mandatory": false,
-                            "help_text": "HTTP Header request parameters"
+                            "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "Poll interval (seconds)",
-                            "property_key": "poll_interval",
-                            "ui_type": "number",
+                            "property_name": "S3 File Name",
+                            "property_key": "s3_filename1",
+                            "ui_type": "text",
                             "order": 5,
                             "mandatory": false,
-                            "help_text": "Poll interval in seconds"
-                        },
-                        {
-                            "property_name": "Request Timeout (seconds)",
-                            "property_key": "request_timeout",
-                            "ui_type": "number",
-                            "order": 6,
-                            "mandatory": false,
-                            "help_text": "Request timeout in seconds"
-                        },
-                        {
-                            "property_name": "Validate Response",
-                            "property_key": "validate_response",
-                            "ui_type": "json",
-                            "order": 7,
-                            "mandatory": false,
-                            "help_text": "Assetion for validating HTTP Response"
+                            "help_text": "End point of the API"
                         }
                     ]
                 },

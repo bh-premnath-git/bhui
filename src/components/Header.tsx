@@ -21,7 +21,6 @@ interface HeaderProps {
 }
 
 export function Header(props: HeaderProps) {
-
   const location = useLocation();
   const navigate = useNavigate();
   const { pathname } = location;
@@ -42,19 +41,19 @@ export function Header(props: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-3 py-1 bg-white border border-1 border-b-gray-200 ">
       <div className="flex items-center">
-          <img
-            src={logo}
-            className="h-8 w-8 cursor-pointer"
-            sizes="(min-width: 904px) 32vw, 64vw"
-            width={32}
-            height={32}
-            onClick={() => navigate("/dashboard")}
-          />
-          <div className="mx-4 h-8 w-px bg-gray-200" />
+        <img
+          src={logo}
+          className="h-8 w-8 cursor-pointer"
+          sizes="(min-width: 904px) 32vw, 64vw"
+          width={32}
+          height={32}
+          onClick={() => navigate("/dashboard")}
+        />
+        <div className="mx-4 h-8 w-px bg-gray-200" />
       </div>
-        <div className="flex-grow">
-          {renderHeaderContent(renderingHeadContent(pathname))}
-        </div>
+      <div className="flex-grow">
+        {renderHeaderContent(renderingHeadContent(pathname))}
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">
@@ -84,7 +83,9 @@ export function Header(props: HeaderProps) {
 
 function renderingHeadContent(content: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
-
+  const { selectedFlowFromList } = useSelector(
+    (state: RootState) => state.flowApi
+  );
   // console.log(content);
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold">Dashboard</span>;
@@ -129,7 +130,7 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
   }
   if (content === "/designer/flow-playground") {
-    return <CustomToolbarComponent />
+    return <CustomToolbarComponent selectedData={selectedFlowFromList} />
   }
   if (content === "/Designer/Build-Data-Pipe-Line") {
     return <CustomToolbarComponent />

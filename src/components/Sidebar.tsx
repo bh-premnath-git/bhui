@@ -28,7 +28,7 @@ export function Sidebar() {
   return (
     <aside
       className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
-        isExpanded ? 'w-64' : 'w-16'
+        isExpanded ? 'w-60' : 'w-16'
       }`}
       onMouseEnter={() => {
         if (!shouldCollapse) {

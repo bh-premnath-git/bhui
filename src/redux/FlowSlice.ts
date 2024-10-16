@@ -76,12 +76,6 @@ export const listFlows = createAsyncThunk<
         return ({
           id: item["flow_id"],
           Name: item["flow_name"],
-          Schedule: "",
-          Environment: item["bh_env_provider"],
-          Project: item["bh_project_id"],
-          CreatedBy: item["created_by"] ?? "NA",
-          LastUpdatedOn: item["last_updated"],
-          LastExecutedOn: item["last_executed"],
           ...item
         })
       })
@@ -128,7 +122,7 @@ export const getEnvironmentList = createAsyncThunk<
   'flow/environmentList',
   async (_, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/env/environment/list/');
+      const response = await ApiService('8011', 'get', '/environment/environment/list/');
       const transformed = response.map((item: any) => (
         {
           id: item["bh_env_provider"],

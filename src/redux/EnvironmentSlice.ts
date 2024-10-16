@@ -61,8 +61,7 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
           }
         });
       
-
-      const response = await ApiService('8011', 'post', '/env/environment/', data, null, headers);
+      const response = await ApiService('8011', 'post', '/environment/environment', data, null, headers);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -74,7 +73,7 @@ export const listEnvironments = createAsyncThunk<Environment[], void, { rejectVa
   'environment/list',
   async (_, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/env/environment/list/', null, null);
+      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, null);
       const transformed = response.map((item: any) => {
         return ({
           Environment_Name: item["bh_env_name"],

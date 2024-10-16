@@ -11,7 +11,6 @@ import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalM
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from '@/redux/hooks';
 import { omitSpaceSymbolNumeric } from '@/Utils/stringOmission';
-
 // Types
 interface Project {
   ProjectId: string;

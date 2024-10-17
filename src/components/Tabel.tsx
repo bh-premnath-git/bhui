@@ -109,10 +109,12 @@ const TableBodyComponent: React.FC<{
             ? () => playRowFn(row)
             : undefined
         }
-        className={playRow ? "cursor-pointer border-none" : "border-none"}
+        className={playRow ? "cursor-pointer" : ""}
       >
         {columns.map((column) => (
-          <TableCell key={column.key} className="text-justify">
+          <TableCell key={column.key} className={cn(
+            column.type === "number" ? "text-center": "text-justify"
+          )}>
             {column.render
               ? column.render(row[column.key], row)
               : column.type === "image"
@@ -129,7 +131,7 @@ const TableBodyComponent: React.FC<{
                 : column.type === "badge" && column.badgeConfig
                   ? (
                     <Badge
-                      className={`${column.badgeConfig.colorMap[row[column.key]]} text-white`}
+                      className={`${column.badgeConfig.colorMap[row[column.key]]} text-white p-1`}
                     >
                       {row[column.key]}
                     </Badge>

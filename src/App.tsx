@@ -63,7 +63,7 @@ const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
     <Header isAuthenticated={isAuthenticated} logout={logout} />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto overflow-y-hidden	 p-2 ml-16">
+      <main className="flex-1 overflow-auto overflow-x-hidden	 p-2 ml-16">
         <Outlet />
       </main>
     </div>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
 
@@ -331,10 +331,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             />
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Credentials</h3>
-            <div className="w-full flex justify-between items-start space-x-4">
-              <div className="space-y-2 w-1/2">
+          <div className="w-full space-y-4">
+            <h3 className="text-base font-medium">Credentials</h3>
+            <div className="grid grid-cols-6 gap-2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="projectId">Project ID*</Label>
                 <Field
                   as={Input}
@@ -349,7 +349,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 />
                 <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
               </div>
-              <div className="space-y-2 w-1/2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="location">Location*</Label>
                 <Select
                   onValueChange={(value) => {
@@ -369,12 +369,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 </Select>
                 <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
               </div>
-            </div>
-
-            {values.selectedPlatform === 'aws' && (
+              <div className="col-span-2"></div>
+              {values.selectedPlatform === 'aws' && (
               <>
-                <div className="w-full flex justify-between items-start space-x-4">
-                  <div className="space-y-2 w-1/2">
+                  <div className="col-span-2 space-y-2">
                     <Label htmlFor="accessKey">Access Key</Label>
                     <Field
                       as={Input}
@@ -389,7 +387,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                  <div className="space-y-2 w-1/2">
+                  <div className="col-span-3 space-y-2">
                     <Label htmlFor="secretAccessKey">Secret Access Key</Label>
                     <Field
                       as={Input}
@@ -405,19 +403,18 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                </div>
                 <div className="w-1/4-plus flex justify-center mt-2">
-                  <ValidationComponent onValidate={()=> handleValidate(values)} />
+                  <ValidationComponent onValidate={() => handleValidate(values)} />
                 </div>
               </>
             )}
-
+            </div>
             {values.selectedPlatform === 'google-cloud' && (
               <div className="w-full">
                 <div className="space-y-2">
                   <Label htmlFor="privateKeyFile">Private Key*</Label>
                   <div className="w-1/2">
-                  <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
+                    <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
                   </div>
                   <ErrorMessage name="privateKeyFile" component="div" className="text-red-500 text-sm" />
                 </div>

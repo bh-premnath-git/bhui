@@ -15,11 +15,11 @@ import { IoSearchCircleOutline } from "react-icons/io5";
 import { FaAngleDown } from "react-icons/fa";
 import { MdKeyboardArrowUp } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { getConfig, getDynamicCon, setNestedField } from "../../../../redux/BuildPipeLineSlice";
-import { RootState } from "../../../../redux/store";
-import DynamicForm from "../../DynamicForm";
+import { getConfig, getDynamicCon, setNestedField } from "../../redux/BuildPipeLineSlice";
+import DynamicForm from "./DynamicForm";
+import { RootState } from "@/store/store";
 
-export default function NewSourcePopUp({ isOpen, onClose }) {
+export default function NewSourcePopUp({ isOpen, onClose }:any) {
     const [isShowAll, setIsShowAll] = useState(false);
     const { dataConfig, dynamicConData } = useSelector((state: RootState) => state.buildPipeLineApi);
     // const { dynamicConData } = useSelector((state: RootState) => state.buildPipeLineApi);
@@ -31,7 +31,7 @@ export default function NewSourcePopUp({ isOpen, onClose }) {
     function handleDrop() {
         setIsShowAll(!isShowAll);
     }
-    function handleConfig(item) {
+    function handleConfig(item:any) {
         dispatch(setNestedField(null));
 
         console.log(item);
@@ -95,7 +95,7 @@ export default function NewSourcePopUp({ isOpen, onClose }) {
                                 </Stack>
                             </Stack>
                             <Grid container spacing={2} sx={{ mt: 2 }}>
-                                {dataConfig.slice(0, !isShowAll ? 4 : 24).map((item, index) => (
+                                {dataConfig.slice(0, !isShowAll ? 4 : 24).map((item:any, index:any) => (
                                     <Grid item xs={3} key={index} onClick={() => handleConfig(item)}>
                                         <Stack
                                             className="border rounded p-2"

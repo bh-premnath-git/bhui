@@ -26,7 +26,7 @@ export default function Footer({ com }: any) {
 
     const expandDrawer = () => {
         setIsFullScreen(prevState => !prevState);
-        setDrawerHeight(prevState => (prevState === '60%' ? '99%' : '60%'));
+        setDrawerHeight((prevState:any) => (prevState === '60%' ? '99%' : '60%'));
 
     };
     const handleClick = () => {

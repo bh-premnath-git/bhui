@@ -7,12 +7,11 @@ import ClearIcon from "@mui/icons-material/Clear";
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import React, { useState } from "react";
 import SearchIcon from '@mui/icons-material/Search';
-import SchemaTable from "../SchemaTable";
-import OnboardTaggingStep from "../OnboardTagigStep";
-import PreviewTable from "../PreviewTable";
+import SchemaTable from "./SchemaTable";
+import OnboardTaggingStep from "./OnboardTaggingStep";
+import PreviewTable from "./PreviewTable";
 
-export default function OrderPopUp({ isOpen, onClose, nodeData }) {
-    console.log(nodeData)
+export default function OrderPopUp({ isOpen, onClose}:any) {
     const [selected, setSelected] = React.useState(0);
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
 
@@ -28,7 +27,7 @@ export default function OrderPopUp({ isOpen, onClose, nodeData }) {
     const id = open ? 'simple-popover' : undefined;
 
 
-    const handleClick = (index) => {
+    const handleClick = (index:any) => {
         setSelected(index);
         switch (index) {
             case 0:

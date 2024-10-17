@@ -1,0 +1,60 @@
+{
+    "purpose": "Join form data",
+    "module": [
+      {
+        "name": "condition",
+        "fields": [
+          {
+            "name": "join_condition",
+            "label": "Join Condition",
+            "placeholder": "Enter join condition",
+            "validation": "required",
+            "type":"text"
+          },
+          {
+            "name": "join_type",
+            "label": "Join Type",
+            "placeholder": "Enter join type",
+            "validation": "required",
+            "type":"select"
+
+          }
+        ]
+      },
+      {
+        "name": "column",
+        "fields": [
+          {
+            "name": "target_column",
+            "label": "Target Column",
+            "placeholder": "Enter target column",
+            "validation": "required"
+          },
+          {
+            "name": "expression",
+            "label": "Expression",
+            "placeholder": "Enter expression",
+            "validation": "required"
+          }
+        ]
+      },
+      {
+        "name": "hint",
+        "fields": [
+          {
+            "name": "source",
+            "label": "Source Name",
+            "placeholder": "Enter source",
+            "validation": "required"
+          },
+          {
+            "name": "hint",
+            "label": "Hint",
+            "placeholder": "Enter hint",
+            "validation": "required"
+          }
+        ]
+      }
+    ]
+  }
+  

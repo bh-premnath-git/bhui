@@ -8,7 +8,7 @@ import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
 
-const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
+// const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
 const Home = lazy(() => import('./oldpages/Home'));
@@ -18,7 +18,7 @@ const Designer = lazy(() => import('./oldpages/Designer/Designer'));
 const Designers = lazy(() => import('./oldpages/Designers/Designers')); 
 const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
-const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
+// const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
 const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
 const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
 const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
@@ -53,6 +53,7 @@ const AddUser = lazy(() => import('@/pages/addUser'));
 const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
+const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -162,7 +163,7 @@ function App() {
     { path: "/designer/manage-flow", element: <AllFlows /> },
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
-    { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
+    // { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },
@@ -172,7 +173,7 @@ function App() {
     { path: '/Designers', element: <Designers /> },
     { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
-    { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
+    // { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
@@ -194,6 +195,7 @@ function App() {
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
     { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
+    { path: '/BuildPlayGround', element: <BuildPlayGround /> },
   ];
 
 

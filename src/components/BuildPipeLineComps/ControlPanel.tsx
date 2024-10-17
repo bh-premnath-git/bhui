@@ -2,7 +2,7 @@ import React from "react";
 import { Tooltip, IconButton, Snackbar, Alert } from "@mui/material";
 import { CiPlay1, CiPause1 } from "react-icons/ci";
 import CloseIcon from "@mui/icons-material/Close";
-import PlayPopUp from "./components/popups/PlayPopUp"; // Adjust this import path accordingly
+import PlayPopUp from "./PlayPopUp"; 
 
 interface ControlPanelProps {
     isButtonClicked: boolean;

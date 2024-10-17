@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import Checkbox from '@mui/material/Checkbox';
 import { MdAccessTime } from 'react-icons/md';
-import TimeSetPopUp from './TimeSet';
+import TimeSetPopUp from '../../oldpages/BuildPipeline/components/TimeSet';
 import { Formik, Form, Field } from 'formik';
 import { TextField } from '@mui/material';
 

@@ -13,7 +13,7 @@ const TransformationPanel = ({
   handleNode,
   text,
   openPopUp,
-}) => {
+}:any) => {
   return (
     <div
       className="rounded w-25 shadow-sm"
@@ -58,7 +58,7 @@ const TransformationPanel = ({
           msOverflowStyle: 'none',
         }}
       >
-        {transformList?.map((item, index) => (
+        {transformList?.map((item:any, index:any) => (
           <div
             onClick={() => handleNode(item.lead, item.title, 0)}
             className="bg-box d-flex p-2 rounded align-items-center my-2"

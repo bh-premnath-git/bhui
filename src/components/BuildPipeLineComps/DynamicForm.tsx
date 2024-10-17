@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { TextField, Button, Typography, Grid, FormControlLabel, Radio } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { snowflakeData } from "./Mock/snowFlack";
 import { useDispatch, useSelector } from "react-redux";
 import { setNestedField } from "../../redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
@@ -13,7 +12,7 @@ import { Label } from "@/components/ui/label";
 const DynamicForm = () => {
 
     // const [authData, setAuthData] = useState<any>(null);
-    const { dynamicConData, nestedFields } = useSelector((state: RootState) => state.buildPipeLineApi);
+    const { dynamicConData, nestedFields }:any = useSelector((state: RootState) => state.buildPipeLineApi);
     const apiResponse = dynamicConData;
     const dispatch = useDispatch();
     useEffect(() => {

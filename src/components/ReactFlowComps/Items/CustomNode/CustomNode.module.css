@@ -104,13 +104,14 @@
 
 .toolbarContent {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.025rem;
   flex-direction: row;
   align-items: center;
 }
 
 .toolbarIcon {
-  margin: 0 5px;
+  margin: 0 2px;
+  width: 12px;
   cursor: pointer;
   color: black;
 }

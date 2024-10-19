@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { PlusCircle, X, Loader2, Check } from 'lucide-react';
+import { PlusCircle, X } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
@@ -17,8 +17,7 @@ import { ApiService } from '@/services/apiServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';
-import { motion, AnimatePresence } from "framer-motion"
-
+import ValidationComponent from '@/components/validation-component';
 
 interface GithubProvider {
   id: string;
@@ -156,15 +155,18 @@ export default function ProjectCreationComponent() {
         setIsTokenLoading(() => false)
         setIsTokenValid('valid');
         showToast('Token Validated Successfully', { color: '#4caf50' });
+        return true
       } else {
         setIsTokenLoading(() => false)
         setIsTokenValid('inValid');
         showToast('Invalid Token, please check your token', { color: '#FF0000' });
+        return false
       }
     } catch (error) {
       setIsTokenLoading(() => false)
       setIsTokenValid('inValid');
       showToast('Error validating token', { color: '#FF0000' });
+      return false
     }
   };
 
@@ -364,7 +366,7 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div className="flex items-end">
-                  <motion.div
+                  {/* <motion.div
                     className="relative"
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
@@ -385,7 +387,7 @@ export default function ProjectCreationComponent() {
                             Validating...
                           </>
                         ) : (
-                          'Validate Github Credentials'
+                          'Validate'
                         )}
                       </span>
                       <motion.div
@@ -413,7 +415,8 @@ export default function ProjectCreationComponent() {
                         </motion.span>
                       )}
                     </AnimatePresence>
-                  </motion.div>
+                  </motion.div> */}
+                  <ValidationComponent onValidate={() => handleVerification(values)} />
                 </div>
               </div>
 

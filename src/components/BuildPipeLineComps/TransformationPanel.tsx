@@ -11,8 +11,6 @@ const TransformationPanel = ({
   handleClick,
   transformList,
   handleNode,
-  text,
-  openPopUp,
 }:any) => {
   return (
     <div
@@ -52,7 +50,7 @@ const TransformationPanel = ({
       )}
       <div
         style={{
-          height: '380px',
+          height: '410px',
           overflowY: 'scroll',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -60,7 +58,7 @@ const TransformationPanel = ({
       >
         {transformList?.map((item:any, index:any) => (
           <div
-            onClick={() => handleNode(item.lead, item.title, 0)}
+            onClick={() => handleNode(item.lead, item.title,item.title )}
             className="bg-box d-flex p-2 rounded align-items-center my-2"
             key={index}
           >
@@ -70,17 +68,7 @@ const TransformationPanel = ({
           </div>
         ))}
       </div>
-      {text === 'Source' && (
-        <div className="m-auto text-center mff">
-          <button
-            onClick={openPopUp}
-            type="button"
-            className="btn btn-dark p-2"
-          >
-            Configure A New Source <span className="h5">+</span>
-          </button>
-        </div>
-      )}
+    
     </div>
   );
 };

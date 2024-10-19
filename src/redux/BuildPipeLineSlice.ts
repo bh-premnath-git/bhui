@@ -13,6 +13,7 @@ export interface ApiState {
   pipelineList:any;
   nestedFields: any;
   joinList:any;
+  orderByList:any;
 }
 
 const initialState: ApiState = {
@@ -27,6 +28,7 @@ const initialState: ApiState = {
   nestedFields: null,
   pipelineList:[],
   joinList:[],
+  orderByList:[]
 };
 
 interface ApiResponse {
@@ -102,7 +104,7 @@ export const getJoinType: any = createAsyncThunk(
   'build-pipline/getJoinType',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/codes_hdr/14`, null, params);
+      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -110,6 +112,17 @@ export const getJoinType: any = createAsyncThunk(
   }
 );
 
+export const getOrderBy: any = createAsyncThunk(
+  'build-pipline/getOrderBy',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const buildPipeLineSlice = createSlice({
   name: "api/buildDataPipeline",
@@ -257,6 +270,26 @@ const buildPipeLineSlice = createSlice({
           state.error = action.payload;
         }
       )
+
+      .addCase(getOrderBy.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getOrderBy.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.orderByList = action.payload;
+        }
+      )
+      .addCase(
+        getOrderBy.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
   },
 });
 

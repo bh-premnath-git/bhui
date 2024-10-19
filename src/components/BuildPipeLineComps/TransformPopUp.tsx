@@ -123,7 +123,7 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                                                             <IconButton
                                                                 onClick={() => arrayHelpers.remove(index)}
                                                             >
-                                                                <GoTrash size={20} color="red" />
+                                                                🗑️
                                                             </IconButton>
                                                         </Stack>
                                                     )}

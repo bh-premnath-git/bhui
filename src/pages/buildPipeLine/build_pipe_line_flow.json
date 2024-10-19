@@ -64,61 +64,61 @@
      "transformList": [
         {
             "id": 1,
-            "lead": "/assets/buildPipeline/sort.png",
+            "lead": "/assets/buildPipeline/sort.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Sort"
         },
         {
             "id": 2,
-            "lead": "/assets/buildPipeline/aggrigate.png",
+            "lead": "/assets/buildPipeline/aggrigate.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Aggregate"
         },
         {
             "id": 3,
-            "lead": "/assets/buildPipeline/lookup.png",
+            "lead": "/assets/buildPipeline/lookup.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Lookup"
         },
         {
             "id": 4,
-            "lead": "/assets/buildPipeline/dq.png",
+            "lead": "/assets/buildPipeline/dq.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "DQ Check"
         },
         {
             "id": 5,
-            "lead": "/assets/buildPipeline/dedupe.png",
+            "lead": "/assets/buildPipeline/dedupe.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Dedupe"
         },
         {
             "id": 6,
-            "lead": "/assets/buildPipeline/repartician.png",
+            "lead": "/assets/buildPipeline/repartician.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Repartition "
         },
         {
             "id": 7,
-            "lead": "/assets/buildPipeline/sql.png",
+            "lead": "/assets/buildPipeline/sql.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "SQL Transformation"
         },
         {
             "id": 8,
-            "lead": "/assets/buildPipeline/union.png",
+            "lead": "/assets/buildPipeline/union.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Union"
         },
         {
             "id": 9,
-            "lead": "/assets/buildPipeline/limit.png",
+            "lead": "/assets/buildPipeline/limit.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Limit"
         },
         {
             "id": 10,
-            "lead": "/assets/buildPipeline/change-detection.png",
+            "lead": "/assets/buildPipeline/change-detection.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Change Detection"
         }

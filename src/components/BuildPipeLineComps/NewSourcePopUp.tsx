@@ -105,7 +105,7 @@ export default function NewSourcePopUp({ isOpen, onClose }:any) {
                                         >
                                             <img src={`/assets/buildPipeline/${item.connection_name}.png`} width={50} alt="" />
                                             <Typography className="myHeadFont" fontWeight="bold">
-                                                {item.connection_name}
+                                                {item.connection_display_name??item.connection_name}
                                             </Typography>
                                         </Stack>
                                     </Grid>

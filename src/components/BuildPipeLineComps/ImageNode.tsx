@@ -23,9 +23,9 @@ export interface CustomNodeData {
 export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnectable }: any) => {
     const dispatch = useDispatch();
     const [display, setDisplay] = useState(data.display)
-    async function handlePop(data: any) {
+    function handlePop(data: any) {
         console.log(data)
-        await dispatch(setSelectedOption(data));
+        dispatch(setSelectedOption({ display: data.display, label: data.label }));
         dispatch(setIsHover(true));
     }
 
@@ -95,10 +95,10 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                         alignItems: 'center',
                     }}
                 >
-                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/copy.png" alt="Copy" width={10} height={10} onClick={handleClone} />
-                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/trash.png" alt="Delete" width={10} height={10} onClick={handleDelete} />
-                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/info-circle.png" alt="Info" width={10} height={10} />
-                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/edit-2.png" alt="Edit" width={10} height={10} onClick={() => data.isEdit = true} />
+                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/copy.svg" alt="Copy" width={10} height={10} onClick={handleClone} />
+                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/trash.svg" alt="Delete" width={10} height={10} onClick={handleDelete} />
+                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/info-circle.svg" alt="Info" width={10} height={10} />
+                    <img style={{ margin: '1px' }} src="/assets/buildPipeline/edit-2.svg" alt="Edit" width={10} height={10} onClick={() => data.isEdit = true} />
                 </div>
             )}
             {/* Display node data */}
@@ -122,7 +122,8 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                         color: '#333',
                         textOverflow: 'ellipsis',
                         overflow: 'hidden',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        textAlign:'center'
                     }}>
                         {data.display}
                     </div>

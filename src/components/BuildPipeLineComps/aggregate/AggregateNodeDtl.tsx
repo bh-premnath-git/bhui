@@ -10,17 +10,20 @@ import {
 import React, { useEffect, useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
-import JoinForm from "./JoinForm";
 import form_data from "@/pages/buildPipeLine/join_form_data.json";
 import { useDispatch, useSelector } from "react-redux";
 import { getJoinType } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
+import { AggForm } from "./AggForm";
+import { GroupByForm } from "./GroupByForm";
+import { PivotForm } from "./PivotForm";
 
-export default function JoinNodeDtl({ isOpen, onClose, handleDelete }: any) {
+
+export default function AggregateNodeDtl({ isOpen, onClose, handleDelete }: any) {
     const dispatch = useDispatch();
     const [value, setValue] = useState(0);
-    const { joinList,selectedOption }:any = useSelector((state: RootState) => state.buildPipeLineApi);
-console.log(selectedOption)
+    const { joinList, selectedOption }: any = useSelector((state: RootState) => state.buildPipeLineApi);
+    console.log(selectedOption)
     // State to store form data for each tab
     const [formStates, setFormStates] = useState(
         form_data.module.map((data) => ({
@@ -46,19 +49,20 @@ console.log(selectedOption)
     };
 
     useEffect(() => {
-        dispatch(getJoinType({value:14}));
+        dispatch(getJoinType({ value: 14 }));
     }, [dispatch]);
 
     useEffect(() => {
         console.log(joinList);
         console.log(formStates);
-    }, [joinList,selectedOption]);
+    }, [joinList, selectedOption]);
 
     return (
         <Dialog
             open={isOpen}
             onClose={onClose}
-            maxWidth={'lg'}
+            maxWidth={'xl'}
+           
         >
             <DialogTitle>
                 <h5>{selectedOption?.display}</h5>
@@ -70,7 +74,7 @@ console.log(selectedOption)
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent>
+            <DialogContent sx={{width:'80vh'}}>
                 <Stack direction="row">
                     <Tabs
                         value={value}
@@ -93,22 +97,25 @@ console.log(selectedOption)
                             }
                         }}
                     >
-                        {form_data.module.map((item, index) => (
+                        {/* {form_data.module.map((item, index) => (
                             <Tab label={capitalizeFLetter(item.name)} key={index} />
-                        ))}
+                        ))} */}
+                        <Tab label={'Aggrigate'} key={0} />
+                        <Tab label={'Group By'} key={1} />
+                        <Tab label={'Pivot'} key={2} />
+
                     </Tabs>
                 </Stack>
 
-                {form_data.module.map((item, index) => (
-                    <CustomTabPanel value={value} index={index} key={index}>
-                        <JoinForm
-                            form={item}
-                            formData={formStates[index]}
-                            setFormData={(newFormData: any) => updateFormState(index, newFormData)}
-                            joinList={joinList?.codes_dtl}
-                        />
+                    <CustomTabPanel value={value} index={0} >
+                        <AggForm />
                     </CustomTabPanel>
-                ))}
+                    <CustomTabPanel value={value} index={1} >
+                        <GroupByForm />
+                    </CustomTabPanel>
+                    <CustomTabPanel value={value} index={2} >
+                        <PivotForm />
+                    </CustomTabPanel>
             </DialogContent>
         </Dialog>
     );

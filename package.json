@@ -71,7 +71,7 @@
     "react-apexcharts": "^1.4.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
-    "react-dropzone": "^14.2.3",
+    "react-dropzone": "^14.2.9",
     "react-error-boundary": "^4.0.13",
     "react-flow-renderer": "^10.3.17",
     "react-hook-form": "^7.52.0",

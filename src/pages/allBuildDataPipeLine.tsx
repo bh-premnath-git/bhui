@@ -9,8 +9,8 @@ import { FileQuestion } from "lucide-react";
 import { getCustomerList } from "@/redux/CustomerSlice";
 import { getAllPipeline } from "@/redux/BuildPipeLineSlice";
 import { formatedDate } from "@/Utils/dateFormatter";
-import BuildPipeLineCreatePopup from "@/oldpages/BuildPipeline/components/popups/BuildPipeLineCreatePopup";
 import { getGitProject } from "@/redux/ProjectSlice";
+import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
 
 // Define types in a separate file for better organization
 interface pipelineData {

@@ -17,6 +17,9 @@ import Footer from "@/components/BuildPipeLineComps/Footer";
 import ControlPanel from "@/components/BuildPipeLineComps/ControlPanel";
 import BuildPipePopup from "@/components/BuildPipeLineComps/BuildPipePopup";
 import JoinNodeDtl from "@/components/BuildPipeLineComps/join/JoinNodeDtl";
+import SortForm from "@/components/BuildPipeLineComps/SortForm";
+import DeDupeForm from "@/components/BuildPipeLineComps/DeDupeForm";
+import AggregateNodeDtl from "@/components/BuildPipeLineComps/aggregate/AggregateNodeDtl";
 
 export default function BuildPlayGround() {
     const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
@@ -69,20 +72,31 @@ export default function BuildPlayGround() {
                 <Codepage />
             ) : (
                 <>
-                   <BuildPipeLineFlow />
+                    <BuildPipeLineFlow />
                     {selectedOption?.label?.toLowerCase().trim() === "transform" &&
                         <TransformPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
                     {selectedOption?.label?.toLowerCase().trim() === "join" &&
                         <JoinNodeDtl isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
-
-                    {selectedOption?.label?.toLowerCase().trim() === "filter" &&
-                        <FilterPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
+                    {selectedOption?.label?.toLowerCase().trim() === "aggregate" &&
+                        <AggregateNodeDtl isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
+                    }
+                    {(selectedOption?.label?.toLowerCase().trim() === "filter" 
+                    || selectedOption?.label?.toLowerCase().trim() === "sql transformation"
+                    || selectedOption?.label?.toLowerCase().trim() === "limit") &&
+                        <FilterPopUp isOpen={isHover} onClose={closePopup}  />
                     }
                     {selectedOption?.label?.toLowerCase().trim() === "source" &&
                         <OrderPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
+                    {selectedOption?.label?.toLowerCase().trim() === "sort" &&
+                        <SortForm isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
+                    }
+                    {selectedOption?.label?.toLowerCase().trim() === "dedupe" &&
+                        <DeDupeForm isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
+                    }
+
                 </>
             )}
             <Footer com={<ControlPanel

@@ -132,7 +132,7 @@ function renderingHeadContent(content: string) {
   if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent selectedData={selectedFlowFromList} />
   }
-  if (content === "/Designer/Build-Data-Pipe-Line") {
+  if (content === "/BuildPlayGround") {
     return <CustomToolbarComponent />
   }
   return "";

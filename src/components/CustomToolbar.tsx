@@ -132,10 +132,10 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
   const { selectedData } = props;
   const navigate = useNavigate();
   useEffect(() => {
-    if (selectedData && selectedData.flow_name) {
-      setFlowType(() => selectedData.flow_name);
+    if (selectedData && selectedData?.flow_name) {
+      setFlowType(() => selectedData?.flow_name);
     }
-  }, [selectedData.flow_name]);
+  }, [selectedData?.flow_name]);
   return (
     <div className="bg-[#F4F4F4] w-[100%]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-1 space-y-1 sm:space-y-0">

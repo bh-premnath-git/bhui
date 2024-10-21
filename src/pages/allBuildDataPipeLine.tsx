@@ -109,7 +109,7 @@ const EmptyComponent: React.FC = () => {
             >
                 Add Pipeline
             </button>
-            {open&&(<BuildPipeLineCreatePopup handleClose={handleClose} open={open} />)}
+            {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open} />)}
 
         </div>
     );
@@ -124,9 +124,8 @@ function BuildDataPipeLineTable({
     const dispatch = useAppDispatch();
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
     useLayoutEffect(() => {
-        dispatch(getAllPipeline({offset:0,limit:1000,order_desc:true,order_by:'pipeline_id'}));
+        dispatch(getAllPipeline({ offset: 0, limit: 1000, order_desc: true, order_by: 'pipeline_id' }));
         dispatch(getGitProject());
     }, [dispatch]);
 
@@ -146,7 +145,7 @@ function BuildDataPipeLineTable({
     }
 
     const editFn = (rowData: any) => {
-        navigate("/AddCustomers", { state: { rowData } });
+        navigate(`/BuildPlayGround/${rowData?.pipeline_id}`);
     }
 
     const changeStatus = async (rowData: any) => {
@@ -170,7 +169,7 @@ function BuildDataPipeLineTable({
                 createNewFn={createNewFn}
                 actionFn={actionFn}
             />
-           {open&&( <BuildPipeLineCreatePopup handleClose={()=>setOpen(false)} open={open} />)}
+            {open && (<BuildPipeLineCreatePopup handleClose={() => setOpen(false)} open={open} />)}
 
         </div>
     );

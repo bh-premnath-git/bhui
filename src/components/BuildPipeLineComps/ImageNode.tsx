@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { setIsHover, setSelectedOption } from "../../redux/BuildPipeLineSlice";
 
 export interface CustomNodeData {
-    image?: {
+    image: {
         url: string;
         alt: string;
     };
@@ -15,8 +15,9 @@ export interface CustomNodeData {
     onDelete?: () => void;
     onClone?: (nodeData: CustomNodeData) => void;
     onEdit?: (nodeData: CustomNodeData) => void;
-    dataList?: any
+    dataList?: any;
 }
+
 
 export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnectable }: any) => {
     const dispatch = useDispatch();

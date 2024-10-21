@@ -20,6 +20,7 @@ import JoinNodeDtl from "@/components/BuildPipeLineComps/join/JoinNodeDtl";
 import SortForm from "@/components/BuildPipeLineComps/SortForm";
 import DeDupeForm from "@/components/BuildPipeLineComps/DeDupeForm";
 import AggregateNodeDtl from "@/components/BuildPipeLineComps/aggregate/AggregateNodeDtl";
+import { useParams } from "react-router-dom";
 
 export default function BuildPlayGround() {
     const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
@@ -33,6 +34,8 @@ export default function BuildPlayGround() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    const { id } = useParams();
+    const pipeline = { pipeline_id: id };
     useEffect(() => {
         dispatch(getConfig({ connection_type: 'source' }));
         dispatch(getSource({ offset: 0, limit: 10, order_desc: false }));
@@ -72,7 +75,7 @@ export default function BuildPlayGround() {
                 <Codepage />
             ) : (
                 <>
-                    <BuildPipeLineFlow />
+                    <BuildPipeLineFlow pipeline={pipeline} />
                     {selectedOption?.label?.toLowerCase().trim() === "transform" &&
                         <TransformPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
@@ -82,10 +85,10 @@ export default function BuildPlayGround() {
                     {selectedOption?.label?.toLowerCase().trim() === "aggregate" &&
                         <AggregateNodeDtl isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
-                    {(selectedOption?.label?.toLowerCase().trim() === "filter" 
-                    || selectedOption?.label?.toLowerCase().trim() === "sql transformation"
-                    || selectedOption?.label?.toLowerCase().trim() === "limit") &&
-                        <FilterPopUp isOpen={isHover} onClose={closePopup}  />
+                    {(selectedOption?.label?.toLowerCase().trim() === "filter"
+                        || selectedOption?.label?.toLowerCase().trim() === "sql transformation"
+                        || selectedOption?.label?.toLowerCase().trim() === "limit") &&
+                        <FilterPopUp isOpen={isHover} onClose={closePopup} />
                     }
                     {selectedOption?.label?.toLowerCase().trim() === "source" &&
                         <OrderPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />

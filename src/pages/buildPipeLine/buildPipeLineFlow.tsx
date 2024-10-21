@@ -4,6 +4,11 @@ import ExpandableButton from '@/common/ExpandableButton';
 import buildFlow from "@/pages/buildPipeLine/build_pipe_line_flow.json";
 import { CustomNodeData, ImageNode } from '@/components/BuildPipeLineComps/ImageNode';
 import CustomEdge from '@/components/BuildPipeLineComps/customEdge';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { LocalStorageService } from '@/services/localStorageServices';
+import { isEmpty } from '@/Utils/isObjectEmpty';
+import { useNavigate } from 'react-router-dom';
 
 type CustomNode = Node<CustomNodeData>;
 
@@ -18,15 +23,46 @@ const nodeTypes: any = {
 const edgeTypes = {
     custom: CustomEdge,
 };
-
-export default function BuildPipeLineFlow() {
+interface editPipeLine {
+    pipeline?: any
+}
+export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
     const [nodes, setNodes, onNodesChange] = useNodesState<CustomNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
     const [nodeIdCounter, setNodeIdCounter] = useState<number>(5);
-
+    const { createPipeLineDtl } = useSelector((state: RootState) => state.buildPipeLineApi);
+    const [pipeLineList, setPipeLineList] = useState(LocalStorageService.getItem('pipeLineList') || []);
+    const navigate = useNavigate();
     useEffect(() => {
-        setNodes([]);
-    }, [setEdges, setNodes]);
+        console.log(createPipeLineDtl)
+        console.log(pipeline)
+        console.log(pipeLineList)
+        if (pipeline?.pipeline_id) {
+            const existPipeLine = pipeLineList.find((pipeLine: any) => pipeLine.pipeline_id == pipeline.pipeline_id);
+            if (existPipeLine) {
+                setNodes(existPipeLine?.nodes);
+                setEdges(existPipeLine?.edges);
+            }
+        } else {
+            if (!isEmpty(createPipeLineDtl)) {
+                const idExist = pipeLineList.find((pipeLine: any) => pipeLine.pipeline_id === createPipeLineDtl.pipeline_id);
+                if (!idExist) {
+                    const newPipeLineList = [...pipeLineList, { pipeline_id: createPipeLineDtl.pipeline_id }];
+                    setPipeLineList(newPipeLineList); // Update state with the new array
+                    LocalStorageService.setItem('pipeLineList', newPipeLineList)
+                    // console.log(newPipeLineList); // Log the new array
+                } else {
+                    console.log(idExist)
+                }
+            }
+        }
+
+    }, [createPipeLineDtl]);
+
+    // useEffect(() => {
+    //     setNodes([]);
+    //     setEdges([])
+    // }, [setEdges, setNodes]);
 
     const addNode = (lead: string, title: string, name: string, dataList?: any) => {
         const newNodeId = `${nodeIdCounter}`;
@@ -48,7 +84,7 @@ export default function BuildPipeLineFlow() {
                 onClone: () => cloneNode(newNode),
                 onEdit: () => editNode(newNode),
                 dataList: dataList,
-            },
+            } as CustomNodeData,  // Explicit cast here
             position: { x: 0 + nodes.length * 100, y: -150 },
         };
 
@@ -68,7 +104,7 @@ export default function BuildPipeLineFlow() {
                 data: {
                     ...dataNode.data,
                     isEdit: false,
-                },
+                } as CustomNodeData,  // Explicit cast here
                 position: { x: Math.random() * 200, y: -150 },
             };
 
@@ -112,6 +148,15 @@ export default function BuildPipeLineFlow() {
     const deleteEdge = (edgeId: string) => {
         setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     };
+    const onSave = async () => {
+        let i = pipeLineList?.findIndex((pipeLine: any) => pipeLine.pipeline_id === createPipeLineDtl.pipeline_id);
+        console.log(i)
+        pipeLineList[i].nodes = nodes;
+        pipeLineList[i].edges = edges;
+        setPipeLineList(pipeLineList);
+        LocalStorageService.setItem('pipeLineList', pipeLineList);
+        navigate('/AllBuildDataPipeLine')
+    };
 
     const onNodeClick = (event: React.MouseEvent, node: CustomNode) => {
         const updatedNode = { ...node, data: { ...node.data, isShow: true } };
@@ -124,19 +169,25 @@ export default function BuildPipeLineFlow() {
 
     return (
         <>
-            <div className='d-flex justify-content-center mt-8'>
-                {buildFlow.module.map((item: any) => (
-                    <div key={item.id}>
-                        <ExpandableButton
-                            addNode={addNode}
-                            icon={item.icon}
-                            text={item?.text}
-                            title={item.title}
-                            dataSet={item.dataSet}
-                            expandIcon={item.expandIcon}
-                        />
-                    </div>
-                ))}
+            <div className="flex justify-content-center ">
+                <div className='d-flex justify-content-center mt-8'>
+                    {buildFlow.module.map((item: any) => (
+                        <div key={item.id}>
+                            <ExpandableButton
+                                addNode={addNode}
+                                icon={item.icon}
+                                text={item?.text}
+                                title={item.title}
+                                dataSet={item.dataSet}
+                                expandIcon={item.expandIcon}
+                            />
+                        </div>
+                    ))}
+                </div>
+                <div className='mt-8 ml-48'>
+                    <button onClick={onSave} className='bg-black text-white px-4 py-1 rounded-sm'>Save</button>
+
+                </div>
             </div>
 
             <div style={{ height: 'calc(100% - 100px)' }}>

@@ -14,6 +14,7 @@ export interface ApiState {
   nestedFields: any;
   joinList:any;
   orderByList:any;
+  createPipeLineDtl:any;
 }
 
 const initialState: ApiState = {
@@ -28,7 +29,8 @@ const initialState: ApiState = {
   nestedFields: null,
   pipelineList:[],
   joinList:[],
-  orderByList:[]
+  orderByList:[],
+  createPipeLineDtl:{}
 };
 
 interface ApiResponse {
@@ -216,7 +218,7 @@ const buildPipeLineSlice = createSlice({
         insertPipeline.fulfilled,
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
-          // state.dynamicConData = action.payload;
+          state.createPipeLineDtl = action.payload;
           // if (state.searchProjectList?.length === 0) {
           //   state.searchProjectList = action.payload;
           // }

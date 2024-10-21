@@ -1,8 +1,4 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import ImageList from '@mui/material/ImageList';
-import ImageListItem from '@mui/material/ImageListItem';
-import ImageListItemBar from '@mui/material/ImageListItemBar';
 import { styled } from '@mui/material/styles';
 import { left } from '@popperjs/core';
 import { Card, CardContent, Divider, Grid, IconButton, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography, tableCellClasses } from '@mui/material';
@@ -22,13 +18,14 @@ import SkipPopUp from './SkipPopUp';
 import RestartPopUp from './RestartPopUp';
 import StopPopUp from './StopPopUp';
 import { useEffect } from 'react';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import MyChartComponent from './ChartComponent';
 import { Button } from 'antd';
 import { formatDate } from '../../Utils/dateFormatter';
 import moment from 'moment';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { Label } from '@/components/ui/label';
 const { RangePicker } = DatePicker;
 
 interface Column {
@@ -70,13 +67,6 @@ const columns: readonly Column[] = [
 		align: 'left',
 		// format: (value: number) => value.toFixed(2),
 	},
-	// {
-	// 	id: 'records',
-	// 	label: 'Total records',
-	// 	minWidth: 170,
-	// 	align: 'left',
-	// 	// format: (value: number) => value.toFixed(2),
-	// },
 	{
 		id: 'owner',
 		label: 'Owner',
@@ -262,8 +252,8 @@ function Dataops() {
 				<Stack direction="row" mt={2} spacing={2}>
 
 					<Stack>
-						<Typography sx={{ py: 1, fontWeight: 'bold' }} className='text-start'>Job Type</Typography>
-						<Select sx={{ minWidth: "190px" }}
+						<Label>Job Type</Label>
+						<Select sx={{ minWidth: "190px" }} size='small'
 							placeholder='Select Job Type'
 							id="dropdown1"
 							displayEmpty
@@ -291,8 +281,8 @@ function Dataops() {
 						</Select>
 					</Stack>
 					<Stack>
-						<Typography sx={{ py: 1, fontWeight: 'bold' }} className='text-start'>Pipeline</Typography>
-						<Select sx={{ minWidth: "190px" }} className='myFont'
+						<Label>Pipeline</Label>
+						<Select sx={{ minWidth: "190px" }} size='small'
 							placeholder='Select Pipeline'
 							displayEmpty
 							id="dropdown2"
@@ -320,35 +310,13 @@ function Dataops() {
 						</Select>
 					</Stack>
 
-					{/* <Stack>
-						<Typography fontWeight={'bold'} className='text-start' fontSize={16} my={1}>Start Date</Typography>
-						<TextField sx={{ minWidth: "190px" }} className='myFont'
-							type="date"
-							id="job_start_time"
-							name="job_start_time"
-							value={selectedvalue.job_start_time}
-							onChange={(event) => updateSelectedValue('job_start_time', event.target.value)}
-						/>
-					</Stack>
-					<Stack>
-						<Typography fontWeight={'bold'} className='text-start' fontSize={16} my={1}>End Date</Typography>
-						<TextField sx={{ minWidth: "190px" }} className='myFont'
-							type="date"
-							id="job_end_time"
-							name="job_end_time"
-							value={selectedvalue.job_end_time}
-							onChange={(event) => updateSelectedValue('job_end_time', event.target.value)}
 
-						/>
-					</Stack> */}
 
 					<Stack spacing={2}>
 						<Stack>
-							<Typography fontWeight={'bold'} className='text-start' fontSize={16} my={1}>
-							Start {'&'} End Date
-							</Typography>
+							<Label>Start {'&'} End Date</Label>
 							<RangePicker size='large'
-								style={{ minWidth: "100px",maxWidth:'310px' ,borderRadius:'3px'}}
+								style={{ minWidth: "100px", maxWidth: '310px', borderRadius: '3px' }}
 								className='myFont border-1'
 								value={[
 									selectedvalue.job_start_time ? dayjs(selectedvalue.job_start_time) : null,
@@ -361,8 +329,8 @@ function Dataops() {
 					</Stack>
 
 					<Stack>
-						<Typography sx={{ py: 1, fontWeight: 'bold' }} className='text-start'>Status</Typography>
-						<Select sx={{ minWidth: "190px" }} className='myFont'
+						<Label>Status</Label>
+						<Select sx={{ minWidth: "190px" }} size='small'
 							id="dropdown5"
 							displayEmpty
 							placeholder='Select Status'
@@ -392,8 +360,8 @@ function Dataops() {
 						</Select>
 					</Stack>
 					<Stack>
-						<Typography sx={{ py: 1, fontWeight: 'bold' }} className='text-start'>Target zone</Typography>
-						<Select sx={{ minWidth: "190px" }} className='myFont'
+						<Label>Target zone</Label>
+						<Select sx={{ minWidth: "190px" }} size='small'
 							id="dropdown6"
 							displayEmpty
 							placeholder='Select Zone'
@@ -424,7 +392,7 @@ function Dataops() {
 
 				</Stack>
 				<Stack>
-					<Stack sx={{ py: 2, mt: 3 }}></Stack>
+					<Stack sx={{ py: 2, }}></Stack>
 					<Button style={{ padding: '18px', fontWeight: 'bold', backgroundColor: 'black', color: 'white' }} onClick={() => handleSearch()}>
 						Search
 					</Button>

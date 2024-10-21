@@ -15,7 +15,7 @@ const Home = lazy(() => import('./oldpages/Home'));
 const Catalog = lazy(() => import('./oldpages/Catalog/Catalog'));
 const Catalogs = lazy(() => import('./oldpages/Catalog/components/Catalogs'));
 const Designer = lazy(() => import('./oldpages/Designer/Designer'));
-const Designers = lazy(() => import('./oldpages/Designers/Designers')); 
+const Designers = lazy(() => import('./oldpages/Designers/Designers'));
 const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 // const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
@@ -140,7 +140,7 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('authenticated');
     kc.logout({
-     // redirectUri: 'http://54.157.234.126:5000/landing',
+      // redirectUri: 'http://54.157.234.126:5000/landing',
       redirectUri: 'http://localhost:5000/landing',
     });
   }
@@ -195,7 +195,9 @@ function App() {
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
     { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
+    { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
+    { path: '/dataops-hub/ops-hub', element: <Dataops /> },
   ];
 
 
@@ -204,7 +206,7 @@ function App() {
       fontFamily: 'Inter ',
     },
     components: {
-     
+
       MuiButton: {
         styleOverrides: {
           root: {
@@ -213,8 +215,15 @@ function App() {
           },
         }
       },
+      MuiTypography: {
+        styleOverrides: {
+          root: {
 
-    
+            fontFamily: 'Inter',
+          }
+        }
+      }
+
     }
 
   });

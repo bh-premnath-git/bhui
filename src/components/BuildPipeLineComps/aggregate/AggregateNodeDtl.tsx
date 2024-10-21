@@ -10,7 +10,6 @@ import {
 import React, { useEffect, useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
-import form_data from "@/pages/buildPipeLine/join_form_data.json";
 import { useDispatch, useSelector } from "react-redux";
 import { getJoinType } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
@@ -22,41 +21,19 @@ import { PivotForm } from "./PivotForm";
 export default function AggregateNodeDtl({ isOpen, onClose, handleDelete }: any) {
     const dispatch = useDispatch();
     const [value, setValue] = useState(0);
-    const { joinList, selectedOption }: any = useSelector((state: RootState) => state.buildPipeLineApi);
-    console.log(selectedOption)
-    // State to store form data for each tab
-    const [formStates, setFormStates] = useState(
-        form_data.module.map((data) => ({
-            conditions: [{ [data.fields[0].name]: '', [data.fields[1].name]: '' }]
-        })) // Initialize form states with empty values
-    );
-
+    const { selectedOption }: any = useSelector((state: RootState) => state.buildPipeLineApi);
     const handleChange = (event: any, newValue: any) => {
         setValue(newValue);
     };
 
-    function capitalizeFLetter(string: string) {
-        return string[0].toUpperCase() + string.slice(1);
-    }
+   
 
-    // Update form state when a form is submitted or changed
-    const updateFormState = (index: any, newFormData: any) => {
-        setFormStates((prev) => {
-            const updatedFormStates = [...prev];
-            updatedFormStates[index] = newFormData;
-            return updatedFormStates;
-        });
-    };
-
+   
     useEffect(() => {
         dispatch(getJoinType({ value: 14 }));
     }, [dispatch]);
 
-    useEffect(() => {
-        console.log(joinList);
-        console.log(formStates);
-    }, [joinList, selectedOption]);
-
+   
     return (
         <Dialog
             open={isOpen}
@@ -65,7 +42,7 @@ export default function AggregateNodeDtl({ isOpen, onClose, handleDelete }: any)
            
         >
             <DialogTitle>
-                <h5>{selectedOption?.display}</h5>
+                <h5>{selectedOption?.display??selectedOption?.label}</h5>
                 <IconButton
                     aria-label="close"
                     onClick={onClose}
@@ -100,7 +77,7 @@ export default function AggregateNodeDtl({ isOpen, onClose, handleDelete }: any)
                         {/* {form_data.module.map((item, index) => (
                             <Tab label={capitalizeFLetter(item.name)} key={index} />
                         ))} */}
-                        <Tab label={'Aggrigate'} key={0} />
+                        <Tab label={'Aggregate'} key={0} />
                         <Tab label={'Group By'} key={1} />
                         <Tab label={'Pivot'} key={2} />
 

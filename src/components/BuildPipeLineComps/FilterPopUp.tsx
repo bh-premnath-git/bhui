@@ -35,7 +35,7 @@ export default function FilterPopUp({ isOpen, onClose }: FilterPopUpProps) {
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box component="h5">{selectedOption?.label}</Box>
+          <Box component="h5">{selectedOption?.display??selectedOption?.label}</Box>
           <Box display="flex" alignItems="center">
             <IconButton onClick={onClose} sx={{ ml: 2 }}>
               <CloseIcon />

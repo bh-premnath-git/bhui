@@ -6,8 +6,8 @@ import * as Yup from "yup";
 const validationSchema = Yup.object().shape({
     aggrigate: Yup.array().of(
         Yup.object().shape({
-            target_column: Yup.string().required('Required'),
-            expression: Yup.string().required('Required'),
+            target_column: Yup.string().required('Column name required'),
+            expression: Yup.string().required('Exptession required'),
         })
     ),
 
@@ -21,12 +21,12 @@ export const AggForm = () => {
     return (
         <>
 
-            <div className="flex space-between">
-                <div className="w-96">
-                    <Label>Expression</Label>
+            <div className="grid grid-cols-2 gap-2">
+                <div className="">
+                    <Label>Target column</Label>
                 </div>
                 <div className="w-96">
-                    <Label>Target column</Label>
+                    <Label>Expression</Label>
                 </div>
             </div>
             <Formik
@@ -44,23 +44,28 @@ export const AggForm = () => {
                                 {({ remove, push }) => (
                                     <>
                                         {values.aggrigate.map((_, index) => (
-                                            <div key={index} className="flex gap-2 mb-2">
-                                                <CustomField
-                                                    name={`aggrigate.${index}.target_column`}
-                                                    placeholder="target_column"
-                                                />
-                                                <CustomField
-                                                    name={`aggrigate.${index}.expression`}
-                                                    placeholder="expression"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="text-red-500"
-                                                    onClick={() => remove(index)}
-                                                >
-                                                    🗑️
-                                                </button>
+                                            <div className="grid grid-cols-2 gap-2" key={index}>
+                                                <div>
+                                                    <CustomField
+                                                        name={`aggrigate.${index}.target_column`}
+                                                        placeholder="Column name"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <CustomField
+                                                        name={`aggrigate.${index}.expression`}
+                                                        placeholder="Expression"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="text-red-500"
+                                                        onClick={() => remove(index)}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </div>
+
                                         ))}
                                         <button
                                             type="button"

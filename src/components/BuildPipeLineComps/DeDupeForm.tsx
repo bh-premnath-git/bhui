@@ -209,8 +209,8 @@ export default function DeDupeForm({ isOpen, onClose, handleDelete }: any) {
             maxWidth={'lg'}
         >
             <DialogTitle>
-                <h5>{selectedOption?.display}</h5>
-                <IconButton
+            <h5>{selectedOption?.display ?? selectedOption?.label}</h5>
+            <IconButton
                     aria-label="close"
                     onClick={onClose}
                     sx={{ position: "absolute", right: 8, top: 8, color: "black" }}

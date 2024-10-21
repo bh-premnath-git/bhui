@@ -10,6 +10,7 @@ type CustomNode = Node<CustomNodeData>;
 const connectionLineStyle = { stroke: "gray" };
 const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
+const proOptions = { hideAttribution: true };
 
 const nodeTypes: any = {
     imageNode: ImageNode,
@@ -55,7 +56,6 @@ export default function BuildPipeLineFlow() {
     };
 
     const handleDelete = (nodeId: string) => {
-        alert()
         setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     };
 
@@ -154,6 +154,8 @@ export default function BuildPipeLineFlow() {
                     defaultViewport={defaultViewport}
                     fitView
                     onNodeClick={onNodeClick}
+                    proOptions={proOptions}
+
                 >
                     <Controls />
                 </ReactFlow>

@@ -1,25 +1,19 @@
 import {
-    Box,
-    Button,
     Dialog,
-    DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
-    MenuItem,
-    OutlinedInput,
-    Select,
     Stack,
-    TextField,
-    Typography,
 } from "@mui/material";
-import { FieldArray, Formik, Form, Field } from "formik";
+import { FieldArray, Formik, Form } from "formik";
 import CloseIcon from "@mui/icons-material/Close";
-import { IoAddCircleOutline } from "react-icons/io5";
-import { GoTrash } from "react-icons/go";
 import CustomField from "@/common/CustomField";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 export default function TransformPopUp({ isOpen, onClose }: any) {
+    const { selectedOption }: any = useSelector((state: RootState) => state.buildPipeLineApi);
+
     return (
         <div>
             <Dialog
@@ -32,7 +26,7 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                 }}
             >
                 <DialogTitle>
-                    <h6>Transform1</h6>
+                    <h5>{selectedOption?.display ?? selectedOption?.label}</h5>
                     <IconButton
                         aria-label="close"
                         onClick={onClose}
@@ -61,75 +55,55 @@ export default function TransformPopUp({ isOpen, onClose }: any) {
                                 <FieldArray
                                     name="fields"
                                     render={(arrayHelpers) => (
-                                        <Stack className="m-auto">
-                                            {values.fields.map((field, index) => (
-                                                <Stack direction={"row"} spacing={2} justifyContent={'space-between'} key={index}>
-                                                    <Stack className="w-72">
+                                        <>
+                                            <Stack className="m-auto">
+                                                {values.fields.map((field, index) => (
+                                                    <div className="grid grid-cols-3 gap-3" key={index}>
+                                                        <div>
+                                                            <CustomField name={`fields[${index}].operation`} controlName="select" options={[
+                                                                { "id": 1, "name": "Add Column", "status": true },
+                                                                { "id": 2, "name": "Rename Column", "status": true },
+                                                                { "id": 3, "name": "Drop Column", "status": true }
+                                                            ]} labelKey="name" valueKey="id" label="Operation" onChange={() => {
+                                                                console.log(field)
+                                                            }} />
+                                                        </div>
+                                                        <div>
+                                                            <CustomField name={`fields[${index}].column`} controlName="select" options={[
+                                                                { "id": 1, "name": "Employee", "status": true },
+                                                                { "id": 2, "name": "Age", "status": true },
+                                                                { "id": 3, "name": "DOB", "status": true },
+                                                                { "id": 4, "name": "Address", "status": true }
+                                                            ]} labelKey="name" valueKey="id" label="Column" />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {field.operation != '3' && (<Stack>
+                                                                <CustomField name={`fields[${index}].action`} label={field.operation == '1' ? 'Expression' : field.operation == '2' ? 'New name' : 'Action'}
+                                                                    placeholder={field.operation == '1' ? 'Enter expression' : field.operation == '2' ? 'Enter new column name' : ''} />
 
-                                                        <CustomField name={`fields[${index}].operation`} controlName="select" options={[
-                                                            { "id": 1, "name": "Add Column", "status": true },
-                                                            { "id": 2, "name": "Rename Column", "status": true },
-                                                            { "id": 3, "name": "Drop Column", "status": true }
-                                                        ]} labelKey="name" valueKey="id" label="Operation" onChange={() => {
-                                                            console.log(field)
-                                                        }} />
+                                                            </Stack>)}
+                                                            {/* {index > 0 && ( */}
+                                                                <IconButton className="mt-3" onClick={() => arrayHelpers.remove(index)}>
+                                                                    🗑️
+                                                                </IconButton>
+                                                        </div>
+                                                    </div>
 
-                                                    </Stack>
+                                                ))}
+                                            </Stack>
 
-
-                                                    <Stack className="w-72">
-
-                                                        <CustomField name={`fields[${index}].column`} controlName="select" options={[
-                                                            { "id": 1, "name": "Employee", "status": true },
-                                                            { "id": 2, "name": "Age", "status": true },
-                                                            { "id": 3, "name": "DOB", "status": true },
-                                                            { "id": 4, "name": "Address", "status": true }
-                                                        ]} labelKey="name" valueKey="id" label="Column" />
-
-                                                    </Stack>
-
-                                                    {field.operation != '3' && (<Stack>
-                                                        <CustomField name={`fields[${index}].action`} label={field.operation == '1' ? 'Expression' : field.operation == '2' ? 'New name' : 'Action'}
-                                                            placeholder={field.operation == '1' ? 'Enter expression' : field.operation == '2' ? 'Enter new column name' : ''} />
-
-                                                    </Stack>)}
-
-                                                    <Stack
-                                                        direction="row"
-                                                        alignItems="center"
-                                                        justifyContent="center"
-                                                        sx={{ height: "100px", mt: 2 }}
-                                                    >
-                                                        <IconButton
-                                                            onClick={() =>
-                                                                arrayHelpers.push({
-                                                                    operation: "",
-                                                                    column: "",
-                                                                    action: "",
-                                                                })
-                                                            }
-                                                        >
-                                                            <IoAddCircleOutline size={25} color="green" />
-                                                        </IconButton>
-                                                    </Stack>
-
-                                                    {index > 0 && (
-                                                        <Stack
-                                                            direction="row"
-                                                            alignItems="center"
-                                                            justifyContent="center"
-                                                            sx={{ height: "100px", mt: 2 }}
-                                                        >
-                                                            <IconButton
-                                                                onClick={() => arrayHelpers.remove(index)}
-                                                            >
-                                                                🗑️
-                                                            </IconButton>
-                                                        </Stack>
-                                                    )}
-                                                </Stack>
-                                            ))}
-                                        </Stack>
+                                            <button
+                                                type="button"
+                                                className="mt-2   text-green-600 flex rounded"
+                                                onClick={() => arrayHelpers.push({ operation: "", column: "", action: "" })}                                        >
+                                                <img
+                                                    src="/assets/plus-circle.svg"
+                                                    className="mr-2"
+                                                    alt="plus"
+                                                />
+                                                Add Column
+                                            </button>
+                                        </>
                                     )}
                                 />
                             </DialogContent>

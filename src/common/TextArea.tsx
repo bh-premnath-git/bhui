@@ -40,16 +40,16 @@ const Textarea: React.FC<TextareaProps> = ({ field, form, placeholder }) => {
         className="left-0 top-0 bottom-0 h-64 w-10 p-2 text-right bg-gray-50 text-green-600 border-r border-gray-300 overflow-hidden select-none"
       >
         {lineNumbers.map((line) => (
-          <div key={line} className="h-5 leading-5">
+          <div key={line} className="h-5 leading-6 mt-1">
             {line}
           </div>
         ))}
       </div>
 
       {/* Text Area */}
-      <textarea
+      <textarea style={{marginTop:'4px'}}
         ref={textAreaRef}
-        className="w-full h-64 p-2 pl-14 bg-white resize-none focus:outline-none"
+        className="w-full h-64 p-2 pl-8 bg-white resize-none focus:outline-none"
         {...field} // Spread Formik field props
         placeholder={placeholder}
         onChange={handleInputChange} // Use the custom handler

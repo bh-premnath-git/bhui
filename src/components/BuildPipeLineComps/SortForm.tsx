@@ -31,12 +31,12 @@ const validationSchema = Yup.object().shape({
 const OrderSortForm = ({ options }: any) => {
     return (
         <>
-            <div className="flex items-center">
-                <div className="flex-grow w-1/2">
-                    <Label>Order Columns</Label>
+            <div className="grid grid-cols-2 gap-2">
+                <div >
+                    <Label>Column name</Label>
                 </div>
-                <div className="flex-grow w-1/2">
-                    <Label>Sort</Label>
+                <div>
+                    <Label>Sort order</Label>
                 </div>
             </div>
             <Formik
@@ -59,16 +59,13 @@ const OrderSortForm = ({ options }: any) => {
                             {({ remove, push }) => (
                                 <div>
                                     {values.columns.map((column, index) => (
-                                        <div key={index} className="flex items-center mb-2">
-                                            <div className="flex-grow w-96">
+                                        <div className="grid grid-cols-2 gap-2" key={index}>
+                                            <div>
                                                 <CustomField placeholder="Enter order column" name={`columns.${index}.order_columns`} />
                                             </div>
 
-                                            <div className="flex-grow ml-4 w-96">
+                                            <div className="flex gap-2">
                                                 <CustomField name={`columns.${index}.sort`} controlName="select" options={options} labelKey="dtl_desc" valueKey="id" />
-                                            </div>
-
-                                            <div className="ml-4">
                                                 <button
                                                     type="button"
                                                     className="text-red-600 hover:text-red-800"
@@ -77,6 +74,7 @@ const OrderSortForm = ({ options }: any) => {
                                                     🗑️
                                                 </button>
                                             </div>
+
                                         </div>
                                     ))}
 
@@ -143,8 +141,8 @@ export default function SortForm({ isOpen, onClose, handleDelete }: any) {
             onClose={onClose}
             maxWidth={'lg'}        >
             <DialogTitle>
-                <h5>{selectedOption?.display}</h5>
-                <IconButton
+            <h5>{selectedOption?.display ?? selectedOption?.label}</h5>
+            <IconButton
                     aria-label="close"
                     onClick={onClose}
                     sx={{ position: "absolute", right: 8, top: 8, color: "black" }}

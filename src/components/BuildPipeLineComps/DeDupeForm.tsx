@@ -12,7 +12,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
 import form_data from "@/pages/buildPipeLine/join_form_data.json";
 import { useDispatch, useSelector } from "react-redux";
-import { getJoinType, getOrderBy } from "@/redux/BuildPipeLineSlice";
+import { getCodesValue, getOrderBy } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
 import { Formik, FieldArray, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -198,7 +198,7 @@ export default function DeDupeForm({ isOpen, onClose, handleDelete }: any) {
     const { joinList, selectedOption, orderByList }: any = useSelector((state: RootState) => state.buildPipeLineApi);
 
     useEffect(() => {
-        dispatch(getJoinType({ value: 32 }));
+        dispatch(getCodesValue({ value: 32 }));
         dispatch(getOrderBy({ value: 31 }));
     }, [dispatch]);
 

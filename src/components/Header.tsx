@@ -14,6 +14,7 @@ import logo from "/assets/logo/fixLogo.svg";
 import { CustomToolbarComponent } from "./CustomToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { jwtDecode } from "jwt-decode";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -24,6 +25,8 @@ export function Header(props: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { pathname } = location;
+  const token: any = sessionStorage?.getItem("token");
+  const decoded: any =token? jwtDecode(token):null;
 
   const renderHeaderContent = (renderContent: (() => React.ReactNode) | React.ReactNode | string) => {
     if (typeof renderContent === 'function') {
@@ -62,8 +65,8 @@ export function Header(props: HeaderProps) {
               <AvatarFallback>JD</AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-gray-700">John Doe</span>
-              <span className="text-xs text-gray-500">Admin</span>
+              <span className="text-sm font-medium text-gray-700">{decoded?.email}</span>
+              <span className="text-xs text-gray-500">{decoded?.name}</span>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </div>

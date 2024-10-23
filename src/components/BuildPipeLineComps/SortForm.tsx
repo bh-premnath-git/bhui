@@ -12,7 +12,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
 import form_data from "@/pages/buildPipeLine/join_form_data.json";
 import { useDispatch, useSelector } from "react-redux";
-import { getJoinType } from "@/redux/BuildPipeLineSlice";
+import { getCodesValue } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
 import { Formik, FieldArray, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -127,7 +127,7 @@ export default function SortForm({ isOpen, onClose, handleDelete }: any) {
 
 
     useEffect(() => {
-        dispatch(getJoinType({ value: 31 }));
+        dispatch(getCodesValue({ value: 31 }));
     }, [dispatch]);
 
     useEffect(() => {

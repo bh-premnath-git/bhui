@@ -11,7 +11,7 @@ import React, { useEffect, useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
 import { useDispatch, useSelector } from "react-redux";
-import { getJoinType } from "@/redux/BuildPipeLineSlice";
+import { getCodesValue } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
 import { AggForm } from "./AggForm";
 import { GroupByForm } from "./GroupByForm";
@@ -30,7 +30,7 @@ export default function AggregateNodeDtl({ isOpen, onClose, handleDelete }: any)
 
    
     useEffect(() => {
-        dispatch(getJoinType({ value: 14 }));
+        dispatch(getCodesValue({ value: 14 }));
     }, [dispatch]);
 
    

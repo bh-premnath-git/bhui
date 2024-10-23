@@ -102,8 +102,8 @@ export const getAllPipeline: any = createAsyncThunk(
     }
   }
 );
-export const getJoinType: any = createAsyncThunk(
-  'build-pipline/getJoinType',
+export const getCodesValue: any = createAsyncThunk(
+  'build-pipline/getCodesValue',
   async (params: any, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
@@ -254,19 +254,19 @@ const buildPipeLineSlice = createSlice({
         }
       )
 
-      .addCase(getJoinType.pending, (state) => {
+      .addCase(getCodesValue.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        getJoinType.fulfilled,
+        getCodesValue.fulfilled,
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.joinList = action.payload;
         }
       )
       .addCase(
-        getJoinType.rejected,
+        getCodesValue.rejected,
         (state, action: PayloadAction<string>) => {
           state.loading = false;
           state.error = action.payload;

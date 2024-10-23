@@ -70,7 +70,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                 type="target"
                 position={Position.Left}
                 isConnectable={isConnectable}
-                style={{ opacity: 0.05, width: '5px', height: '5px', left: '5px', top: '35%', transform: 'translateY(-50%)' }} 
+                style={{ opacity: 0.05, width: '5px', height: '5px', left: '8px', top: '33%', transform: 'translateY(-50%)' }} 
             />
             
             {/* Display image */}
@@ -82,7 +82,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                 position={Position.Right}
                 id="a"
                 isConnectable={isConnectable}
-                style={{ opacity: 0.05, width: '5px', height: '5px', right: '5px', top: '35%', transform: 'translateY(-50%)' }} 
+                style={{ opacity: 0.05, width: '5px', height: '5px', right: '8px', top: '33%', transform: 'translateY(-50%)' }} 
             />
 
 {data.isShow && (

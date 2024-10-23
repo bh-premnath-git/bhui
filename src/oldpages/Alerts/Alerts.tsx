@@ -56,7 +56,7 @@ function Alerts() {
 	return (
 		<>
 			<Stack >
-				<Stack >
+				<Stack className='mx-8 mt-8' >
 
 					<AlertHeader />
 					<AlertTableHead filterOption={filterOption} status={statusList} fetchJobDetails={fetchJobDetails}/>

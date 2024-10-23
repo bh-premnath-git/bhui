@@ -29,9 +29,9 @@ const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, target
             {/* Draw the path */}
             <path
                 id={id}
-                className="react-flow__edge-path"
+                className="react-flow__edge-path "
                 d={edgePath}
-                style={{ stroke: '#000', strokeWidth: 2 }}
+                style={{ stroke: '#000', strokeWidth: 1,padding:2 }}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
                 onClick={handleDeleteEdge}
@@ -41,15 +41,15 @@ const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, target
             <foreignObject
                 width={40}
                 height={30}
-                x={labelX - 20}  // Centering the icon horizontally
+                x={labelX }  // Centering the icon horizontally
                 y={labelY - 15}  // Centering the icon vertically
                 className="overflow-visible pointer-events-none"  // Keep pointer events for underlying line
             >
                 {/* Scissor Icon on Hover */}
                 {hovered && (
                     <div
-                        className="flex justify-center items-center cursor-pointer pointer-events-all absolute top-1 left-3.75"
-                        style={{ width: '1.25rem', height: '1.25rem' }}
+                        className="flex justify-center items-center cursor-pointer pointer-events-all absolute top-1.5 left-3.75"
+                        style={{ width: '0.6rem', height: '1.25rem' }}
                     >
                         <FaCut size={12} className='text-red-500' />
                     </div>

@@ -218,11 +218,28 @@ function App() {
       MuiTypography: {
         styleOverrides: {
           root: {
-
             fontFamily: 'Inter',
           }
         }
-      }
+      },
+      MuiSelect: { // For Select component font
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            fontSize:'15px',
+            fontWeight:'normal'
+          },
+        },
+      },
+      MuiMenuItem: { // For each menu item font
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            fontSize:'15px'
+
+          },
+        },
+      },
 
     }
 

@@ -13,7 +13,7 @@ import { CustomTabPanel } from "@/pages/dataCatalog/catalogSchema";
 import JoinForm from "./JoinForm";
 import form_data from "@/pages/buildPipeLine/join_form_data.json";
 import { useDispatch, useSelector } from "react-redux";
-import { getJoinType } from "@/redux/BuildPipeLineSlice";
+import { getCodesValue } from "@/redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
 
 export default function JoinNodeDtl({ isOpen, onClose, handleDelete }: any) {
@@ -46,7 +46,7 @@ console.log(selectedOption)
     };
 
     useEffect(() => {
-        dispatch(getJoinType({value:14}));
+        dispatch(getCodesValue({value:14}));
     }, [dispatch]);
 
     useEffect(() => {

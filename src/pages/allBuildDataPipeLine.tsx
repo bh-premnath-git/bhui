@@ -52,15 +52,15 @@ const columns: ColumnConfig[] = [
         sortable: false,
         filterable: true,
 
+
     },
     {
-        key: 'bh_project_name',
+        key: 'bh_project',
         header: 'BH Project',
         sortable: true,
         filterable: true,
         type: 'text',
-
-
+        render: (value) => <div>{value?.bh_project_name}</div>
     },
     {
         key: 'git_branch',
@@ -75,6 +75,7 @@ const columns: ColumnConfig[] = [
         header: 'Last Updated By',
         type: 'number',
         sortable: false,
+        render: (value) => <div>{value?.user_name}</div>
     },
     {
         key: 'created_at',

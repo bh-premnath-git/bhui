@@ -16,7 +16,7 @@ const style = {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 600,
+    width: 800,
     bgcolor: 'background.paper',
     // border: '2px solid #000',
     boxShadow: 2,
@@ -33,28 +33,30 @@ const validationSchema = Yup.object().shape({
     bh_project_id: Yup.string().required('Project is required'),
     git_branch: Yup.string().required('Branch is required'),
     pipeline_name: Yup.string().required('Name is required'),
+    pipeline_key: Yup.string().required('Key is required'),
     notes: Yup.string().notRequired(),
 });
 
-const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ handleClose, open }:any) => {
+const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ handleClose, open }: any) => {
     const { gitProjectList } = useSelector((state: RootState) => state.projectApi);
     const [showNotes, setShowNotes] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-if(isLoading){
-return(
-    <>
-    loading ...
-    </>
-)
-}
+    if (isLoading) {
+        return (
+            <>
+                loading ...
+            </>
+        )
+    }
     return (
         <Modal
             open={open}
-            onClose={()=>handleClose(null)}
+            onClose={() => handleClose(null)}
             aria-labelledby="modal-title"
             aria-describedby="modal-description"
+        
         >
             <Box sx={style}>
                 <div className='text-center'>Please fill in the details below to build a new pipeline</div>
@@ -64,24 +66,25 @@ return(
                         bh_project_id: '',
                         git_branch: '',
                         pipeline_name: '',
-                        notes: ''
+                        pipeline_key: '',
+                        notes: '',
                     }}
                     validationSchema={validationSchema}
 
                     onSubmit={async (values, { setSubmitting }) => {
                         let body: any = values;
-                        body.tag = {};
+                        body.tags = {};
                         setIsLoading(true)
-                        await handleClose(result); 
+                        await handleClose(result);
 
                         var result = await dispatch(insertPipeline(body));
-                        await handleClose(result); 
+                        await handleClose(result);
 
-                        
+
                         setSubmitting(false);
                         if (result && result?.payload) {
                             setIsLoading(false)
-                           await  navigate('/BuildPlayGround');
+                            await navigate('/BuildPlayGround');
                         } else {
                             toast.success("Success Notification !", {
                                 position: 'top-center' as ToastPosition,
@@ -127,6 +130,15 @@ return(
                                         label="Name"
                                         controlName="input"
                                         placeholder="Enter name"
+                                        size="small"
+                                    />
+                                </Stack>
+                                <Stack className='w-100'>
+                                    <CustomField
+                                        name="pipeline_key"
+                                        label="Pipeline key"
+                                        controlName="input"
+                                        placeholder="Enter key"
                                         size="small"
                                     />
                                 </Stack>

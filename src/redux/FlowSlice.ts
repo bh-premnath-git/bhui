@@ -1,5 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import {ApiService} from "@/services/apiServices";
+import { jwtDecode } from "jwt-decode";
+
+const token: any = sessionStorage?.getItem("token");
+const decoded: any =token? jwtDecode(token):null;
 
 export interface FlowProject {
   [key: string]: any;
@@ -96,22 +100,7 @@ export const createFlow = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'post', '/flow/create/', params);
-      if (shouldCreateDeployment(response, params)) {
-        const deploymentParams: DeploymentParams = {
-          flow_id: response.flow_id,
-          bh_env_id: params.bh_env_provider,
-          flow_version: "string",
-          flow_properties: {},
-          flow_lock_status: true,
-          flow_locked_by: 0,
-          flow_json: "string",
-          flow_wip_json: "string"
-        };
-
-        const reponse1 =await thunkAPI.dispatch(createDeployment(deploymentParams));
-        return reponse1;
-      }
-      return thunkAPI.rejectWithValue("deployment unsuccessful");
+      return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -133,7 +122,8 @@ export const listFlows = createAsyncThunk<
         return ({
           id: item["flow_id"],
           Name: item["flow_name"],
-          ...item
+          ...item,
+          CreatedBy: decoded?.name ?? ""
         })
       })
       return transformed;

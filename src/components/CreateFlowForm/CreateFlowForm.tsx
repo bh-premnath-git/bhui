@@ -35,7 +35,7 @@ interface CreateFlowPayload {
   git_branch: string;
   bh_project_id: number;
   metadata_flow: string;
-  bh_env_provider: number;
+  bh_env_id: number;
   flow_class: number;
   job: string;
   schedule_interval: {
@@ -128,7 +128,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
             git_branch: values.selectedBranch,
             bh_project_id: Number(values.selectedProject),
             metadata_flow: values.notes,
-            bh_env_provider: Number(values.selectedEnvironment),
+            bh_env_id: Number(values.selectedEnvironment),
             flow_class: Number(values.selectedClass),
             job: 'on_job_start',
             schedule_interval: scheduleInterval,

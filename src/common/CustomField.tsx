@@ -15,7 +15,8 @@ interface FormFieldProps {
     valueKey?: string; // Key to access the value in options
     labelKey?: string; // Key to access the label in options
     onChange?: (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => void;
-    required?: boolean; // Flag for required fields
+    required?: boolean; 
+    className?:any;
 }
 
 const CustomField: React.FC<FormFieldProps> = ({
@@ -29,12 +30,13 @@ const CustomField: React.FC<FormFieldProps> = ({
     options = [],
     valueKey = 'value',
     labelKey = 'label',
+    className,
     onChange,
     required = false // Default to false if not passed
 }) => {
     return (
         <FormControl fullWidth variant="outlined" margin="normal" sx={{ mt: 1 }}>
-            <Field name={name}>
+            <Field name={name} className={className}>
                 {({ field, form }: { field: any; form: any }) => {
                     const handleChange = (event: React.ChangeEvent<{ name?: string; value: unknown }>) => {
                         form.setFieldValue(name, event.target.value); // Formik's onChange handler

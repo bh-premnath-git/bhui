@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 const DynamicForm = () => {
 
     // const [authData, setAuthData] = useState<any>(null);
-    const { dynamicConData, nestedFields }:any = useSelector((state: RootState) => state.buildPipeLineApi);
+    const { dynamicConData, nestedFields }: any = useSelector((state: RootState) => state.buildPipeLineApi);
     const apiResponse = dynamicConData;
     const dispatch = useDispatch();
     useEffect(() => {
@@ -39,7 +39,7 @@ const DynamicForm = () => {
     });
 
     // Function to render standard fields
-    const renderField = (fieldKey: string, field: any, layout:any) => {
+    const renderField = (fieldKey: string, field: any, layout: any) => {
         return (
             <Grid item xs={layout} key={field.title}>
                 <Label className="text-black">{field.title}</Label>
@@ -54,7 +54,7 @@ const DynamicForm = () => {
                     value={formik.values[fieldKey]}
                     onChange={formik.handleChange}
                     error={formik.touched[fieldKey] && Boolean(formik.errors[fieldKey])}
-                    // helperText={formik.touched[fieldKey] && formik.errors[fieldKey]}
+                // helperText={formik.touched[fieldKey] && formik.errors[fieldKey]}
                 />
             </Grid>
         );
@@ -108,7 +108,7 @@ const DynamicForm = () => {
     };
 
     // Recursive function to render all fields dynamically
-    const renderFields = (fields: any, layout:any) => {
+    const renderFields = (fields: any, layout: any) => {
         return Object.keys(fields).map((fieldKey) => {
             const field = fields[fieldKey];
             if (field.type !== "object") {

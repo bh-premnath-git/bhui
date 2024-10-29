@@ -132,6 +132,12 @@ function renderingHeadContent(content: string) {
   if (content === "/AllBuildDataPipeLine") {
     return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
   }
+  if (content === "/dataops-hub/ops-hub") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Ops Hub</span>;
+  }
+  if (content === "/alerts") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Alert Hub</span>;
+  }
   if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent selectedData={selectedFlowFromList} />
   }

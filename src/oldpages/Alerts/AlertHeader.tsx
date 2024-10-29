@@ -72,7 +72,7 @@ function AlertHeader() {
 
     const renderPieChartWithLabels = (title: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined, data: any[]) => (
         <Stack direction="row" alignItems="center" spacing={1}> {/* Reduced spacing */}
-            <Stack sx={{ width: 90, height: 160 }}> {/* Adjusted height */}
+            <Stack sx={{ width: 100, height: 160 }}> {/* Adjusted height */}
                 <Typography variant="h6" sx={{ mb: 0.2 }}> {/* Reduced margin below text */}
                     {title}
                 </Typography>
@@ -109,7 +109,7 @@ function AlertHeader() {
                 <Grid item xs={12}>
                     <Item sx={{ borderRadius: '1px' }} elevation={0} className='shadow-sm'>
                         <Stack direction={"row"} justifyContent={"space-between"} alignItems={'center'}>
-                            <Typography px={3} sx={{ fontSize: "30px" }}>
+                            <Typography  sx={{ fontSize: "30px" }}>
                                 Alert Summary
                             </Typography>
                             <div style={{ position: 'absolute', top: 20, right: 100 }}>

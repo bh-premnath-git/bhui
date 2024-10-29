@@ -15,6 +15,7 @@ import { CustomToolbarComponent } from "./CustomToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
+import { useAppSelector } from '@/redux/hooks';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -86,6 +87,8 @@ export function Header(props: HeaderProps) {
 
 function renderingHeadContent(content: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
+  const { editProjectData } = useSelector((state: RootState) => state.projectApi);
+  const { editEnvironmentData } = useSelector((state: RootState) => state.environmentApi);
   const { selectedFlowFromList } = useSelector(
     (state: RootState) => state.flowApi
   );
@@ -100,13 +103,19 @@ function renderingHeadContent(content: string) {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects</span>;
   }
   if (content === "/all-projects/new") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Projects &gt; </span> New</span>;
+  }
+  if (content.includes("/projects/")) {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Projects &gt;</span> {editProjectData.bh_project_name}</span>;
   }
   if (content === "/all-environment") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments</span>;
   }
   if (content === "/all-environment/new") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments &gt; New</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Environments &gt; </span> New</span>;
+  }
+  if (content.includes("/environments/")) {
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Environment &gt;</span> {editEnvironmentData.bh_env_name}</span>;
   }
   if (content === "/designer/manage-flow") {
     return <span className="w-2/5 font-bold"><span className="font-light">Designer</span> &gt; Manage Flow</span>;

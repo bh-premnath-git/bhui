@@ -84,7 +84,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
-
   const handleIntervalSave = (interval: string) => {
     const parsedInterval = JSON.parse(interval);
     setScheduleInterval({
@@ -157,7 +156,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
                         <SelectValue placeholder="Select Project" />
                       </SelectTrigger>
                       <SelectContent>
-                        {data.map((project: Project) => (
+                        {data.map((project: any) => (
                           <SelectItem key={project.ProjectId} value={project.ProjectId}>
                             {project.Name}
                           </SelectItem>

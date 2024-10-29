@@ -43,6 +43,48 @@ interface CreateFlowParams {
   };
 }
 
+interface DeploymentParams {
+  flow_id: number,
+  bh_env_id: number,
+  flow_version: string,
+  flow_properties: any,
+  flow_lock_status: boolean,
+  flow_locked_by: number,
+  flow_json: string,
+  flow_wip_json: string
+}
+
+// Create deployment thunk
+const createDeployment = createAsyncThunk<
+  any,
+  DeploymentParams,
+  {
+    rejectValue: string;
+  }
+>(
+  'flow/deployment/create',
+  async (params, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011',
+        'post',
+        '/flow/flow-deployement/create',
+        params
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+const shouldCreateDeployment = (flowResponse: any, flowParams: CreateFlowParams): boolean => {
+  return (
+    flowResponse.flow_id > 0 && 
+    flowParams.bh_env_provider > 0
+  );
+};
+
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
@@ -54,7 +96,22 @@ export const createFlow = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'post', '/flow/create/', params);
-      return response;
+      if (shouldCreateDeployment(response, params)) {
+        const deploymentParams: DeploymentParams = {
+          flow_id: response.flow_id,
+          bh_env_id: params.bh_env_provider,
+          flow_version: "string",
+          flow_properties: {},
+          flow_lock_status: true,
+          flow_locked_by: 0,
+          flow_json: "string",
+          flow_wip_json: "string"
+        };
+
+        const reponse1 =await thunkAPI.dispatch(createDeployment(deploymentParams));
+        return reponse1;
+      }
+      return thunkAPI.rejectWithValue("deployment unsuccessful");
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -125,7 +182,7 @@ export const getEnvironmentList = createAsyncThunk<
       const response = await ApiService('8011', 'get', '/environment/environment/list/');
       const transformed = response.map((item: any) => (
         {
-          id: item["bh_env_provider"],
+          id: item["bh_env_id"],
           envName: item["bh_env_name"],
         }
 
@@ -159,6 +216,18 @@ const flowSlice = createSlice({
       .addCase(createFlow.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred';
+      })
+      // createdeployment
+      .addCase(createDeployment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createDeployment.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(createDeployment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Deployment failed';
       })
       // listFlows
       .addCase(listFlows.pending, (state) => {

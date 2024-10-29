@@ -139,7 +139,8 @@ const FlowPlayground: React.FC = () => {
 
   const onConnect = useCallback((params: Connection) =>
     setEdges((eds) => {
-      const newEdges = addEdge(params, eds);
+      const newEdge = { ...params, type: 'custom' };
+      const newEdges = addEdge(newEdge, eds);
       setTimeout(logCurrentState, 0);
       return newEdges;
     })
@@ -150,7 +151,7 @@ const FlowPlayground: React.FC = () => {
     const newNode: Node = {
       id: `${nodeType.type}-${Date.now()}`,
       type: 'custom',
-      position: { x: 0 + nodes.length * 100, y: -150 },
+      position: { x: 100 + nodes.length * 100, y: 150 },
       data: {
         label: nodeType.label,
         type: nodeType.type,
@@ -170,7 +171,7 @@ const FlowPlayground: React.FC = () => {
     onNodesChange(changes);
     setTimeout(logCurrentState, 300);
   }, [onNodesChange, logCurrentState]);
-
+  
   const wrappedOnEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
     setTimeout(logCurrentState, 300);
@@ -217,6 +218,7 @@ const FlowPlayground: React.FC = () => {
               id: `e${sourceHandle.nodeId}-${targetHandle.nodeId}`,
               source: sourceHandle.nodeId,
               target: targetHandle.nodeId,
+              type: 'custom', // Add this line
               animated: true,
               style: { stroke: '#888' },
             }];
@@ -248,6 +250,7 @@ const FlowPlayground: React.FC = () => {
       <ReactFlow
         nodes={nodesWithUpdatedPositions}
         edges={edges}
+        defaultEdgeOptions={{ type: 'custom' }}
         proOptions={proOptions}
         onNodesChange={wrappedOnNodesChange}
         onEdgesChange={wrappedOnEdgesChange}
@@ -258,7 +261,6 @@ const FlowPlayground: React.FC = () => {
         snapToGrid={true}
         snapGrid={snapGrid}
         defaultViewport={defaultViewport}
-        fitView
       >
         <CustomControls />
       </ReactFlow>

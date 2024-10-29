@@ -13,10 +13,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import { AnyNode } from 'postcss';
 import { RestartAltOutlined, SkipNextOutlined, StopCircleOutlined } from '@mui/icons-material';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import ShowingLogs from './ShowingLogs';
-import SkipPopUp from './SkipPopUp';
-import RestartPopUp from './RestartPopUp';
-import StopPopUp from './StopPopUp';
+import ShowingLogs from '../../components/Dataops/ShowingLogs';
+import SkipPopUp from '../../components/Dataops/SkipPopUp';
+import RestartPopUp from '../../components/Dataops/RestartPopUp';
+import StopPopUp from '../../components/Dataops/StopPopUp';
 import { useEffect } from 'react';
 import { ApiService } from '@/services/apiServices';
 import MyChartComponent from './ChartComponent';
@@ -247,7 +247,7 @@ function Dataops() {
 
 	return (
 
-		<Stack sx={{ my: 2 }}>
+		<Stack sx={{ my: 2 }} className='container'>
 			<Stack direction="row" justifyContent={'space-between'}>
 				<Stack direction="row" mt={2} spacing={2}>
 
@@ -446,7 +446,7 @@ function Dataops() {
 									</TableCell>
 									<TableCell className='myFont' sx={{ borderBottom: '1px solid #f2f3f5' }}>
 										{row?.pipeline_status == "Failed" ? (<Stack direction={'row'}>
-											<Stack direction={'row'} onClick={() => handleClickOpen(row)} sx={{ color: '#448EE4', px: 2 }}>
+											<Stack direction={'row'} onClick={() => handleClickOpen(row)} sx={{ color: '#448EE4'}}>
 												<SkipNextOutlined />
 												<Typography variant="body1">Skip</Typography>
 											</Stack>
@@ -456,13 +456,14 @@ function Dataops() {
 												<RestartAltOutlined />
 												<Typography variant="body1">Restart</Typography>
 											</Stack>
-											<RestartPopUp open1={open1} jobDetail={jobDetail} onClose1={handleClose1} />
 										</Stack>) : row?.pipeline_status == "In Progress" ? (
 											<>
 												<Stack direction={'row'} onClick={() => handleClickOpen2(row)} sx={{ color: '#448EE4' }}>
 													<StopCircleOutlined />
 													<Typography variant="body1" sx={{ p: '4px' }}>Stop</Typography>
 												</Stack>
+											<RestartPopUp open1={open1} jobDetail={jobDetail} onClose1={handleClose1} />
+
 												<StopPopUp open2={open2} jobDetail={jobDetail} onClose2={handleClose2} />
 											</>
 										) : (<></>)}

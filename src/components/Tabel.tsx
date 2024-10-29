@@ -47,6 +47,7 @@ interface TableProps {
   defaultItemsPerPage?: number;
   tableName?: string;
   isSearch?:boolean;
+  isAction?:boolean;
   createNewFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
@@ -64,7 +65,8 @@ const CustomTableHeader: React.FC<{
   sortConfig: SortConfig;
   requestSort: (key: string) => void;
   className?: string;
-}> = React.memo(({ columns, sortConfig, requestSort, className }) => {
+  isAction?:boolean;
+}> = React.memo(({ columns, sortConfig, requestSort, className,isAction }) => {
   const getSortIcon = (key: string) => {
     if (sortConfig.key === key) {
       if (sortConfig.direction === "asc")
@@ -87,7 +89,7 @@ const CustomTableHeader: React.FC<{
             {column.header} {column.sortable && getSortIcon(column.key)}
           </TableHead>
         ))}
-        <TableHead>Action</TableHead>
+        {isAction&&(<TableHead>Action</TableHead>)}
       </TableRow>
     </TableHeader>
   );
@@ -99,9 +101,10 @@ const TableBodyComponent: React.FC<{
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
-}> = React.memo(({ data, columns, actionFn, playRow, playRowFn }) => (
+  isAction?:boolean;
+}> = React.memo(({ data, columns, actionFn, playRow, playRowFn,isAction }) => (
   <TableBody>
-    {data.map((row, index) => (
+    {data?.map((row, index) => (
       <TableRow
         key={index}
         onClick={
@@ -139,7 +142,7 @@ const TableBodyComponent: React.FC<{
                   : row[column.key]}
           </TableCell>
         ))}
-        <TableCell>
+        {isAction&&(<TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -159,7 +162,7 @@ const TableBodyComponent: React.FC<{
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </TableCell>
+        </TableCell>)}
       </TableRow>
     ))}
   </TableBody>
@@ -172,6 +175,7 @@ export function FlexibleTable({
   defaultItemsPerPage = 5,
   tableName = "",
   isSearch=true,
+  isAction=true,
   createNewFn,
   actionFn,
   playRow = false,
@@ -188,8 +192,7 @@ export function FlexibleTable({
   const [currentPage, setCurrentPage] = useState(1);
 
   const sortedAndFilteredData = useMemo(() => {
-    return data
-      .filter((item) =>
+    return data?.filter((item) =>
         Object.entries(filters).every(
           ([key, value]) =>
             value === "All" || item[key]?.toString() === value
@@ -227,13 +230,13 @@ export function FlexibleTable({
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedAndFilteredData.slice(
+    return sortedAndFilteredData?.slice(
       startIndex,
       startIndex + itemsPerPage
     );
   }, [sortedAndFilteredData, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(sortedAndFilteredData.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedAndFilteredData?.length / itemsPerPage);
 
   const requestSort = (key: string) => {
     setSortConfig((prevConfig) => ({
@@ -321,11 +324,12 @@ export function FlexibleTable({
           columns={columns}
           sortConfig={sortConfig}
           requestSort={requestSort}
+          isAction={isAction}
         />
-        <TableBodyComponent data={paginatedData} columns={columns} actionFn={actionFn} playRow={playRow} playRowFn={playRowFn}
+        <TableBodyComponent data={paginatedData} columns={columns} actionFn={actionFn} playRow={playRow} playRowFn={playRowFn} isAction={isAction}
         />
       </Table>
-      {data.length>10&&(<div className="flex justify-between items-center mt-4">
+      {data?.length>10&&(<div className="flex justify-between items-center mt-4">
         <div className="flex items-center space-x-2">
           <Button
             className="bg-gray-900 text-white hover:bg-gray-800"

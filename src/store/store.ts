@@ -7,6 +7,7 @@ import Environment from '@/redux/EnvironmentSlice';
 import CatalogSlice from '@/redux/CatalogSlice';
 import UserSlice from '@/redux/UserSlice';
 import CustomerSlice from '@/redux/CustomerSlice';
+import DataOpsSlice from '@/redux/DataOpsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     catalogApi:CatalogSlice,
     userApi:UserSlice,
     customerApi:CustomerSlice,
+    dataopsApi:DataOpsSlice,
   },
 });
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react';
-const MyChartComponent = ({ selectedRowData }) => {
+const MyChartComponent = ({ selectedRowData }:any) => {
 // Define the option object outside the component
 const getChartOption = () => {
   if (!selectedRowData) {

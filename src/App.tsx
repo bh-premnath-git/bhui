@@ -8,6 +8,7 @@ import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { elements } from 'chart.js';
+import AllDataOps from './pages/allDataOps';
 
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
@@ -20,9 +21,9 @@ const Designers = lazy(() => import('./oldpages/Designers/Designers'));
 const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 // const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
-const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
-const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
-const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
+const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
+const Dataops = lazy(() => import('@/pages/allDataOps'));
+const ShowingLogs = lazy(() => import('./components/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
 const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
@@ -203,6 +204,8 @@ function App() {
     { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
+    { path: '/AllDataOps', element: <AllDataOps /> },
+
   ];
 
 

@@ -108,7 +108,6 @@ const AllFlows: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingFlow, setIsCreatingFlow] = useState(false);
   const [localFlows, setLocalFlows] = useState<Flow[]>([]);
-
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi
   );
@@ -147,9 +146,6 @@ const AllFlows: React.FC = () => {
         setLocalFlows(prevFlows => [...prevFlows, result.payload]);
         closeModal();
         // Navigate after a short delay to allow for the UI update
-        setTimeout(() => {
-          navigate('/designer/flow-playground');
-        }, 100);
       } else {
         // Handle error
         console.error("Failed to create flow");
@@ -160,6 +156,11 @@ const AllFlows: React.FC = () => {
       closeModal();
     } finally {
       setIsCreatingFlow(false);
+      setTimeout(() => {
+        if (!error) {
+          navigate('/designer/flow-playground');
+        }
+      }, 2000);
     }
   }, [dispatch, navigate, closeModal]);
 
@@ -183,7 +184,7 @@ const AllFlows: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto p-4">
       {localFlows.length === 0 ? (

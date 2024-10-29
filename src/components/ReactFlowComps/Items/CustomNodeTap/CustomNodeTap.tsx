@@ -6,6 +6,8 @@ import styles from '@/components/ReactFlowComps/Items/CustomNodeTap/CustomNodeTa
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
+import { NodeTransformer } from '@/pages/manageFlow/flowTransformer';
+
 
 interface ModalContentProps {
     nodeData: any;
@@ -72,7 +74,8 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         initialValues,
         validationSchema,
         onSubmit: async (values) => {
-            console.log("Form Data Submitted: ", values);
+            const transformedData = NodeTransformer.transform(nodeConfig, values);
+            console.log("Transformed Data:", transformedData);
             LocalStorageService.setItem(`form-${selectedFlowFromList.flow_id}`, values);
 
             if (onClose)

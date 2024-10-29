@@ -137,35 +137,83 @@
                     ]
                 },
                 {
-                    "node_name": "EMR Cluster Sensor",
+                    "node_name": "EMR Pipeline Sensor",
                     "order": 3,
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
+                            "property_name": "EMR Fabric",
+                            "property_key": "emr_fabric",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
+                            "property_name": "AWS Connection ID",
+                            "property_key": "aws_connection_id",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Step ID",
+                            "property_key": "step_id",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "EMR Custer ID Override",
+                            "property_key": "emr-cluster-id-override",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Sensor Timeout In Seconds",
+                            "property_key": "sensor-timeout-in-seconds",
+                            "ui_type": "number",
+                            "order": 5,
+                            "mandatory": false,
+                            "help_text": "Poll interval in seconds"
                         }
                     ]
                 },
                 {
-                    "node_name": "EMR Pipeline Sensor",
+                    "node_name": "EMR Cluster Sensor",
                     "order": 4,
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
+                            "property_name": "EMR Cluster ID",
+                            "property_key": "emr_cluster_id",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "AWS Connection ID",
+                            "property_key": "aws_connection_id",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Target States",
+                            "property_key": "target_states",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Failed States",
                             "property_key": "end_point",
                             "ui_type": "text",
                             "order": 1,
@@ -173,12 +221,12 @@
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
+                            "property_name": "Sensor Timeout In Seconds",
+                            "property_key": "sensor-timeout-in-seconds",
+                            "ui_type": "number",
+                            "order": 5,
                             "mandatory": false,
-                            "help_text": "End point of the API"
+                            "help_text": "Poll interval in seconds"
                         }
                     ]
                 },
@@ -188,19 +236,35 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
+                            "property_name": "SFTP Connection",
+                            "property_key": "sftp_connection",
                             "ui_type": "text",
+                            "order": 1,
+                            "mandatory": true,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "Poke Interval In Seconds",
+                            "property_key": "poke_intrerval_in_seconds",
+                            "ui_type": "number",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
+                            "property_name": "Sensor Timeout (Seconds)",
+                            "property_key": "sensor_timeout_seconds",
+                            "ui_type": "number",
                             "order": 1,
                             "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "SFTP Path(s)",
+                            "property_key": "sftp_paths",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": true,
                             "help_text": "End point of the API"
                         }
                     ]

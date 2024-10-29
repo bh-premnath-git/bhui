@@ -10,7 +10,8 @@ import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
+import { Label } from '../ui/label';
 
 interface SkipPopUpProps {
     open: boolean;
@@ -23,8 +24,6 @@ interface SkipPopUpProps {
 const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
     console.log(jobDetail)
     const [reason, setReason] = useState('');
-    const [response, setResponse] = useState(null);
-    const [error, setError] = useState(null);
 
     const handleClose = () => {
         onClose();
@@ -122,40 +121,35 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
     }
     return (
         <Dialog open={open} onClose={handleClose} sx={{ borderRadius: 0 }}>
-            <DialogTitle>Skip Job</DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    <Stack>
-                        <Typography>
-                            Are you sure you want to skip the job? if yes,
-                        </Typography>
-                        <Typography>
-                            Please provide a reason below.
-                        </Typography>
-                        <Box
-                            sx={{
-                                py: 2,
-                                display: 'grid',
-                                gap: 2,
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                            }}
-                        >
-                            <TextareaAutosize
-                                aria-label="empty textarea"
-                                placeholder="Type your Reason Here"
-                                style={{ width: '100%', border: '1px solid lightgrey' }}
-                                minRows={5}
-                                onChange={handleChange}
-                            />
-                        </Box>
+            <Label className='mx-4 my-2 text-md font-bold'>Skip Job</Label>
+            <DialogContentText className='p-2 m-3'>
+                <Stack>
+                <Label>Are you sure you want to skip the job? if yes, Please provide a reason below.</Label>
 
-                    </Stack>
-                </DialogContentText>
-            </DialogContent>
+                  
+                    <Box
+                        sx={{
+                            py: 2,
+                            display: 'grid',
+                            gap: 2,
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <TextareaAutosize
+                            aria-label="empty textarea"
+                            placeholder="Type your Reason Here"
+                            style={{ width: '100%', border: '1px solid lightgrey' }}
+                            minRows={5}
+                            onChange={handleChange}
+                        />
+                    </Box>
+
+                </Stack>
+            </DialogContentText>
             <DialogActions sx={{ margin: 'auto' }}>
                 <Stack direction={'row'} spacing={2}>
-                    <Button onClick={handleClose} sx={{ border: '1px solid black' }}>Close</Button>
+                    <Button onClick={handleClose} sx={{ border: '1px solid black',color:'black' }}>Close</Button>
                     <Button sx={{
                         border: '1px solid black', backgroundColor: 'black', color: 'white',
                         '&:hover': {

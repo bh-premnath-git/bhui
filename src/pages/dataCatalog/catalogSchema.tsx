@@ -75,7 +75,7 @@ function CatalogSchema() {
 
 
     return (
-        <Box sx={{ width: '100%' }}>
+        <Box className="container" sx={{ width: '100%' }}>
             <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
                 <Stack>
                     <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered

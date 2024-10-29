@@ -10,27 +10,29 @@ import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
+import { Label } from '../ui/label';
 
-interface StopPopUpProps {
-    open2: boolean;
+interface RestartPopUpProps {
+    open: boolean;
     jobDetail: any;
-    onClose2: () => void;
+    onClose: () => void;
 }
 
-const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => {
+const RestartPopUp: React.FC<RestartPopUpProps> = ({ open, onClose, jobDetail }) => {
     console.log(jobDetail);
     const [reason, setReason] = useState('');
-    const handleChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
-        setReason(event.target.value);
+    const handleChange = (e: { target: { value: React.SetStateAction<string>; }; }) => {
+        setReason(e.target.value);
     };
-    const handleClose2 = () => {
-        onClose2();
+    const handleClose1 = () => {
+        onClose();
     };
 
     const [ToastComponent, showToast]: any = useToast();
     const handleClick = () => {
-        saveEvent2();
+        saveEvent1();
+
     };
     useEffect(() => {
         if (jobDetail && !jobDetail.job_statistics) {
@@ -43,7 +45,7 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
         }
     }, [jobDetail]);
     const currentDate = new Date().toISOString();
-    const saveEvent2 = async () => {
+    const saveEvent1 = async () => {
         var body = {
             "event_triggered_by": jobDetail?.created_by,
             "user_comments": reason,
@@ -62,15 +64,14 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
             "updated_by": jobDetail?.updated_by
         }
         console.log('Body:', body);
-        console.log(jobDetail)
         try {
             const url = '/event_details';
             const result = await ApiService('8003', 'post', url, body);
             console.log('Response:', result);
             if (result) {
-                showToast('Job has been stopped successfully', { vertical: 'top', horizontal: 'center' });
+                showToast('Restart request has been submitted successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
-                    handleClose2();
+                    handleClose1();
                 }, 3000);
             }
             console.log(result)
@@ -79,7 +80,7 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
             console.error('Error fetching Status', error);
         }
     }
-    const updateEvent2 = async (pipeline_status: string) => {
+    const updateEvent1 = async (pipeline_status: string) => {
         console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,
@@ -101,9 +102,8 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
         };
         console.log(data)
         try {
-            const url = `/job_details/${jobDetail?.job_id}`;
+            const url = `/job_details/${jobDetail.job_id}`;
             const result = await ApiService('8003', 'put', url, data);
-            console.log('Response:', result);
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }
@@ -111,51 +111,46 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
             console.error('Error fetching data:', error);
         }
     }
+
     return (
-        <Dialog open={open2} onClose={handleClose2} sx={{ borderRadius: 0 }}>
-            <DialogTitle>Stop Job</DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    <Stack>
-                        <Typography>
-                            Are you sure you want to stop the job? if yes,
-                        </Typography>
-                        <Typography>
-                            Please provide a reason below.
-                        </Typography>
-                        <Box
-                            sx={{
-                                py: 2,
-                                display: 'grid',
-                                gap: 2,
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                            }}
-                        >
-                            <TextareaAutosize
-                                aria-label="empty textarea"
-                                placeholder="Type your Reason Here"
-                                style={{ width: '100%', border: '1px solid lightgrey' }}
-                                minRows={5}
-                                onChange={handleChange}
-                            />
-                        </Box>
-                    </Stack>
-                </DialogContentText>
-            </DialogContent>
+        <Dialog open={open} onClose={handleClose1} sx={{ borderRadius: 0 }}>
+            <Label className='mx-4 my-2 text-md font-bold'>Restart Job</Label>
+            <DialogContentText className='p-2 m-3'>
+                <Stack>
+                    <Label>Are you sure you want to restart the job? if yes, Please provide a reason below.</Label>
+                    <Box
+                        sx={{
+                            py: 2,
+                            display: 'grid',
+                            gap: 2,
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <TextareaAutosize
+                            aria-label="empty textarea"
+                            placeholder="Type your Reason Here"
+                            style={{ width: '100%', border: '1px solid lightgrey' }}
+                            minRows={5}
+                            onChange={handleChange}
+
+                        />
+                    </Box>
+                </Stack>
+            </DialogContentText>
             <DialogActions sx={{ margin: 'auto' }}>
                 <Stack direction={'row'} spacing={2}>
-                    <Button onClick={handleClose2} sx={{ border: '1px solid black' }}>Close</Button>
+                    <Button onClick={handleClose1} sx={{ border: '1px solid black', color: 'black' }}>Close</Button>
                     <Button sx={{
                         border: '1px solid black', backgroundColor: 'black', color: 'white',
                         '&:hover': {
                             backgroundColor: 'black',
                         },
-                    }} onClick={() => {
+                    }} onClick={(pipeline_status) => {
                         handleClick();
-                        updateEvent2("Stop submit");
+                        updateEvent1("Restart submit");
 
-                    }}>Stop Job</Button>
+                    }}>Restart Job</Button>
                 </Stack>
                 <ToastComponent />
             </DialogActions>
@@ -163,4 +158,4 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open2, onClose2, jobDetail }) => 
     );
 };
 
-export default StopPopUp;
+export default RestartPopUp;

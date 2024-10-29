@@ -49,7 +49,7 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }: any) {
                 <Button sx={{ color: "black", bgcolor: "white", border: "1px solid gray" }} onClick={handleOpenPopup}>
                     <FilterAltIcon />
                 </Button>
-                <Button sx={{ bgcolor: 'black', color: 'white' }} onClick={monitorPageDetails}>
+                <Button className='bg-black' sx={{ background: 'black', color: 'white' }} onClick={monitorPageDetails}>
                     New Monitor
                 </Button>
             </Stack>

@@ -11,27 +11,27 @@ import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
 import {ApiService} from '@/services/apiServices';
+import { Label } from '@/components/ui/label';
 
-interface RestartPopUpProps {
-    open1: boolean;
+interface StopPopUpProps {
+    open: boolean;
     jobDetail: any;
-    onClose1: () => void;
+    onClose: () => void;
 }
 
-const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail }) => {
+const StopPopUp: React.FC<StopPopUpProps> = ({ open, onClose, jobDetail }) => {
     console.log(jobDetail);
     const [reason, setReason] = useState('');
-    const handleChange = (e: { target: { value: React.SetStateAction<string>; }; }) => {
-        setReason(e.target.value);
+    const handleChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
+        setReason(event.target.value);
     };
-    const handleClose1 = () => {
-        onClose1();
+    const handleClose2 = () => {
+        onClose();
     };
 
     const [ToastComponent, showToast]: any = useToast();
     const handleClick = () => {
-        saveEvent1();
-
+        saveEvent2();
     };
     useEffect(() => {
         if (jobDetail && !jobDetail.job_statistics) {
@@ -44,7 +44,7 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
         }
     }, [jobDetail]);
     const currentDate = new Date().toISOString();
-    const saveEvent1 = async () => {
+    const saveEvent2 = async () => {
         var body = {
             "event_triggered_by": jobDetail?.created_by,
             "user_comments": reason,
@@ -63,14 +63,15 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
             "updated_by": jobDetail?.updated_by
         }
         console.log('Body:', body);
+        console.log(jobDetail)
         try {
             const url = '/event_details';
             const result = await ApiService('8003', 'post', url, body);
             console.log('Response:', result);
             if (result) {
-                showToast('Restart request has been submitted successfully', { vertical: 'top', horizontal: 'center' });
+                showToast('Job has been stopped successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
-                    handleClose1();
+                    handleClose2();
                 }, 3000);
             }
             console.log(result)
@@ -79,7 +80,7 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
             console.error('Error fetching Status', error);
         }
     }
-    const updateEvent1 = async (pipeline_status: string) => {
+    const updateEvent2 = async (pipeline_status: string) => {
         console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,
@@ -101,7 +102,7 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
         };
         console.log(data)
         try {
-            const url = `/job_details/${jobDetail.job_id}`;
+            const url = `/job_details/${jobDetail?.job_id}`;
             const result = await ApiService('8003', 'put', url, data);
             console.log('Response:', result);
             if (!result) {
@@ -111,19 +112,13 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
             console.error('Error fetching data:', error);
         }
     }
-
     return (
-        <Dialog open={open1} onClose={handleClose1} sx={{ borderRadius: 0 }}>
-            <DialogTitle>Restart Job</DialogTitle>
-            <DialogContent>
-                <DialogContentText>
+        <Dialog open={open} onClose={handleClose2} sx={{ borderRadius: 4 }}>
+            <Label className='mx-4 my-2 text-md font-bold'>Stop Job</Label>
+                <DialogContentText className='p-2 m-3'>
                     <Stack>
-                        <Typography>
-                            Are you sure you want to restart the job? if yes,
-                        </Typography>
-                        <Typography>
-                            Please provide a reason below.
-                        </Typography>
+                        <Label>Are you sure you want to stop the job? if yes, Please provide a reason below.</Label>
+                        
                         <Box
                             sx={{
                                 py: 2,
@@ -139,25 +134,23 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
                                 style={{ width: '100%', border: '1px solid lightgrey' }}
                                 minRows={5}
                                 onChange={handleChange}
-
                             />
                         </Box>
                     </Stack>
                 </DialogContentText>
-            </DialogContent>
             <DialogActions sx={{ margin: 'auto' }}>
                 <Stack direction={'row'} spacing={2}>
-                    <Button onClick={handleClose1} sx={{ border: '1px solid black' }}>Close</Button>
+                    <Button onClick={handleClose2} sx={{ border: '1px solid black',color:'black' }}>Close</Button>
                     <Button sx={{
                         border: '1px solid black', backgroundColor: 'black', color: 'white',
                         '&:hover': {
                             backgroundColor: 'black',
                         },
-                    }} onClick={(pipeline_status) => {
+                    }} onClick={() => {
                         handleClick();
-                        updateEvent1("Restart submit");
+                        updateEvent2("Stop submit");
 
-                    }}>Restart Job</Button>
+                    }}>Stop Job</Button>
                 </Stack>
                 <ToastComponent />
             </DialogActions>
@@ -165,4 +158,4 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open1, onClose1, jobDetail 
     );
 };
 
-export default RestartPopUp;
+export default StopPopUp;

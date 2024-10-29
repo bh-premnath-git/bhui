@@ -3,7 +3,7 @@ import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
-import { getGitProject } from '@/redux/ProjectSlice';
+import { getGitProject, setEditProjectData } from '@/redux/ProjectSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
@@ -34,9 +34,27 @@ type ColumnConfig = {
   badgeConfig?: {
     colorMap: Record<string, string>;
   };
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, rowData: GitProject) => React.ReactNode;
 };
 
+function GitProjectTable({
+  gitProjectList,
+  loading,
+  error,
+}: GitProjectTableProps) {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  useLayoutEffect(() => {
+    dispatch(getGitProject());
+  }, [dispatch]);
+
+  const handleProjectClick = (project: GitProject) => {
+    dispatch(setEditProjectData(project));
+    navigate("/all-projects/new");
+    // console.log("Project data:", project); 
+  };
+
+  
 // Define column configurations outside the component for better performance
 const columns: ColumnConfig[] = [
   {
@@ -45,6 +63,11 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: 'text',
+    render: (value: string, rowData: GitProject) => (
+      <span onClick={() => handleProjectClick(rowData)} className="cursor-pointer">
+        {value}
+      </span>
+    ),
   },
   {
     key: 'YTD_Cost ($)',
@@ -104,16 +127,7 @@ const EmptyComponent: React.FC = () => {
   );
 };
 
-function GitProjectTable({
-  gitProjectList,
-  loading,
-  error,
-}: GitProjectTableProps) {
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  useLayoutEffect(() => {
-    dispatch(getGitProject());
-  }, [dispatch]);
+
 
   if (loading) {
     return <Spinner size="lg" />;
@@ -124,11 +138,17 @@ function GitProjectTable({
   }
 
   const createNewFn = () => {
+    dispatch(setEditProjectData(null));
     navigate("/all-projects/new");
   };
-  const actionFn = (rowData: any, action: string) => {
-    // console.log("Action:", action, "Row Data:", rowData);    
-  }
+  
+  //edit project
+  const actionFn = (rowData: GitProject, action: string) => {
+    if (action === 'edit') {
+      dispatch(setEditProjectData(rowData));
+      navigate("/all-projects/new");
+    }    
+  };
 
   if (gitProjectList.length === 0) {
     return <EmptyComponent />;

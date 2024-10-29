@@ -262,6 +262,30 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     onChange({ privateKeyFile: file });
   };
 
+  type EnvironmentOptions = {
+    "301": string;
+    "302": string;
+    "303": string;
+  };
+  
+  const environmentOptions: EnvironmentOptions = {
+    "301": "Development",
+    "302": "Staging",
+    "303": "Production"
+  } as const;
+  
+  type LocationOptions = {
+    "1": string;
+    "2": string;
+    "3": string;
+  }
+  
+  const locationOptions: LocationOptions = {
+    "1": "US East",
+    "2": "US West",
+    "3": "EU Central",
+  } as const;
+
   return (
     <Formik
       initialValues={{
@@ -300,19 +324,24 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <div className="space-y-2 w-[45%]">
               <Label htmlFor="environment">Environment*</Label>
               <Select
-                onValueChange={(value) => {
+                defaultValue={values.environment}
+                value={values.environment}
+                onValueChange={(value: keyof EnvironmentOptions) => {
                   setFieldValue('environment', value);
                   onChange({ environment: value });
                 }}
-                value={values.environment}
               >
                 <SelectTrigger className="w-[60%]">
-                  <SelectValue placeholder="Select Environment" />
+                  <SelectValue placeholder="Select Environment" >
+                    {values.environment ? environmentOptions[values.environment as keyof EnvironmentOptions] : "Select Environment"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="301">Development</SelectItem>
-                  <SelectItem value="302">Staging</SelectItem>
-                  <SelectItem value="303">Production</SelectItem>
+                  {(Object.entries(environmentOptions) as [keyof EnvironmentOptions, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <ErrorMessage name="environment" component="div" className="text-red-500 text-sm" />
@@ -352,19 +381,24 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="location">Location*</Label>
                 <Select
-                  onValueChange={(value) => {
+                  defaultValue={values.location}
+                  value = {values.location}
+                  onValueChange={(value: keyof LocationOptions) => {
                     setFieldValue('location', value);
                     onChange({ location: value });
                   }}
-                  value={values.location}
                 >
                   <SelectTrigger className="w-[60%]">
-                    <SelectValue placeholder="Select Location" />
+                  <SelectValue placeholder="Select Environment" >
+                      {values.location ? locationOptions[values.location as keyof LocationOptions] : "Select Location"}
+                  </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">US East</SelectItem>
-                    <SelectItem value="2">US West</SelectItem>
-                    <SelectItem value="3">EU Central</SelectItem>
+                  {(Object.entries(locationOptions) as [keyof LocationOptions, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                   </SelectContent>
                 </Select>
                 <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />

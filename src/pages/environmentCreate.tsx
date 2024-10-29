@@ -1,4 +1,4 @@
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,18 +6,20 @@ import { EnvironmentTab } from '@/components/EnvironmentsTabs/EnvironmentTab';
 import { ConfigureLakeTab } from '@/components/EnvironmentsTabs/ConfigureLakeTab';
 import { PreConfigureZonesTab } from '@/components/EnvironmentsTabs/PreConfigureZonesTab';
 import { ConfigureLifecycleTab } from '@/components/EnvironmentsTabs/ConfigureLifecycleTab';
-import { useNavigate } from 'react-router-dom';
-import { createEnvironment } from '@/redux/EnvironmentSlice';
-import { useAppDispatch } from '@/redux/hooks';
+import { useLoaderData, useLocation, useNavigate } from 'react-router-dom';
+import { createEnvironment, editEnvironment, fetchEnvironmentData } from '@/redux/EnvironmentSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { Spinner } from "@/components/ui/spinner";
 import { encrypt_string } from '@/services/encryption';
 import useToast from '@/oldcomponents/teast-service';
+import { NumericDictionary, result } from 'lodash';
 
 // Types
 type Tag = { key: string; value: string };
 type ZoneDetail = { name: string; url: string };
 type LifecycleConfig = { [key: string]: string };
 type EnvironmentTabState = {
+  bh_env_id: number | null;
   environmentName: string;
   environment: string;
   projectId: string;
@@ -87,6 +89,7 @@ const initialState: State = {
   standardZoneConfig: {},
   archiveZoneConfig: {},
   environmentTab: {
+    bh_env_id: null,
     environmentName: "",
     environment: "",
     projectId: "",
@@ -139,6 +142,21 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { editEnvironmentData:editenvdata } = useAppSelector(
+    (state) => state.environmentApi
+  );
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (editenvdata && editenvdata.Environment_Id) {
+      setIsEditing(true);
+      dispatch({ type: 'SET_ENVIRONMENT_TAB', payload: editenvdata });
+    } else {
+      setIsEditing(false);
+    }
+  }, [editenvdata]);
+
+
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex > 0) {
@@ -154,30 +172,52 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
       const { encryptedString, initVector } = encrypt_string(state.environmentTab.secretAccessKey);
       const { encryptedString: encryptedString1 } = encrypt_string(state.environmentTab.accessKey, initVector);
       const values = {
-        bh_env_name: state.environmentTab.environmentName,
-        bh_env_provider: parseInt(state.environmentTab.environment),
+        bh_env_name: state.environmentTab.environmentName || editenvdata?.bh_env_name || '',
+        bh_env_provider: parseInt(state.environmentTab.environment) || editenvdata?.bh_env_provider || null,
         cloud_provider_cd: state.selectedPlatform === "aws" ? 101 : 102,
-        cloud_region_cd: parseInt(state.environmentTab.location),
+        cloud_region_cd: parseInt(state.environmentTab.location) || editenvdata?.cloud_region_cd || null,
         status_cd: "active",
-        project_id: state.environmentTab.projectId,
-        file: state.environmentTab.privateKeyFile,
+        project_id: state.environmentTab.projectId || editenvdata?.project_id || '',
+        file: state.environmentTab.privateKeyFile || editenvdata?.file || null,
         access_key: encryptedString1,
         secret_access_key: encryptedString,
         init_vector: initVector,
+        airflow_url: state.environmentTab.airflowUrl || editenvdata.airflow_url || '',
+        airflow_bucket_name: state.environmentTab.airflowDagBucket || editenvdata.airflow_bucket_name || '',
       }
-      setIsLoading(()=>true);
-      dispatchApi(createEnvironment(values))
-        .then((response: any) => {
-          if (response.type === "environment/create/fulfilled")
-            navigate('/all-environment');
-        })
-        .catch((error: any) => {
-          console.error(error)
-          navigate('/all-environment');
-        }).finally(() => {
-          setIsLoading(()=>false);
-        });
 
+      setIsLoading(() => true);
+
+      if (isEditing && editenvdata?.Environment_Id) {
+        // Edit Environment
+        dispatchApi(editEnvironment({ ...values, id: editenvdata.Environment_Id }))
+          .then((response: any) => {
+            if (response.type === "environment/edit/fulfilled") {
+              navigate('/all-environment');
+            }
+          })
+          .catch((error: any) => {
+            console.error(error);
+          })
+          .finally(() => {
+            setIsLoading(() => false);
+          });
+      } else {
+        // Create Environment
+        dispatchApi(createEnvironment(values))
+          .then((response: any) => {
+            if (response.type === "environment/create/fulfilled") {
+              navigate('/all-environment'); // Navigate after successful creation
+            }
+          })
+          .catch((error: any) => {
+            console.error(error);
+            // Optionally handle error here
+          })
+          .finally(() => {
+            setIsLoading(() => false);
+          });
+      }
     }
   };
 
@@ -220,7 +260,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Card className="w-full mt-4">
           <CardContent className="p-6">
             <div className="max-w-[850px] mx-auto">
-              <TabsContent value="environment">
+            <TabsContent value="environment">
                 <EnvironmentTab
                   selectedPlatform={state.selectedPlatform}
                   setSelectedPlatform={(platform) => dispatch({ type: 'SET_SELECTED_PLATFORM', payload: platform })}
@@ -233,17 +273,18 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                     }
                   }}
                   onChange={handleEnvironmentTabChange}
-                  environmentName={state.environmentTab.environmentName}
-                  environment={state.environmentTab.environment}
-                  projectId={state.environmentTab.projectId}
-                  location={state.environmentTab.location}
-                  accessKey={state.environmentTab.accessKey}
-                  secretAccessKey={state.environmentTab.secretAccessKey}
-                  airflowUrl={state.environmentTab.airflowUrl}
-                  airflowDagBucket={state.environmentTab.airflowDagBucket}
-                  privateKeyFile={state.environmentTab.privateKeyFile}
+                  environmentName={state.environmentTab.environmentName || editenvdata.bh_env_name  || ''}
+                  environment={state.environmentTab.environment || editenvdata.bh_env_provider || ''}
+                  projectId={state.environmentTab.projectId || editenvdata.project_id || ''}
+                  location={state.environmentTab.location || editenvdata.cloud_region_cd || ''}
+                  accessKey={state.environmentTab.accessKey || editenvdata.accessKey || ''}
+                  secretAccessKey={state.environmentTab.secretAccessKey || editenvdata.secret_access_key || ''}
+                  airflowUrl={state.environmentTab.airflowUrl || editenvdata.airflow_url || ''}
+                  airflowDagBucket={state.environmentTab.airflowDagBucket || editenvdata.airflow_bucket_name || ''}
+                  privateKeyFile={state.environmentTab.privateKeyFile || editenvdata.privateKeyFile || ''}
                   chamgeVerification={handleChangeVerification}
-                />
+                />         
+
               </TabsContent>
               <TabsContent value="configure-lake">
                 <ConfigureLakeTab
@@ -299,7 +340,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext}>
           {state.activeTab === TABS[TABS.length - 1] ? <>{
                   isLoading ? <Spinner /> : null
-                }{"Create Environment"}</> : "Next"}
+                }{isEditing ? "Update Environment" : "Create Environment"}</> : "Next"}
         </Button>
       </div>
     </div>

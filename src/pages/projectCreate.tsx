@@ -81,6 +81,8 @@ export default function ProjectCreationComponent() {
     tags: { tagList: [] },
   });
 
+  console.log(initialValue)
+
   useEffect(() => {
     // Fetch GitHub providers
     const fetchData = async () => {

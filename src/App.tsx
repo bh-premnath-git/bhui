@@ -8,7 +8,6 @@ import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { elements } from 'chart.js';
-import AllDataOps from './pages/allDataOps';
 
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
@@ -204,7 +203,7 @@ function App() {
     { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
-    { path: '/AllDataOps', element: <AllDataOps /> },
+    { path: '/AllDataOps', element: <Dataops /> },
 
   ];
 

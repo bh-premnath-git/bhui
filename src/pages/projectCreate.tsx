@@ -51,9 +51,7 @@ const validationSchema = Yup.object().shape({
 export default function ProjectCreationComponent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { editProjectData, searchProjectList } = useAppSelector(
-    (state) => state.projectApi
-  );
+  const { searchProjectList } = useAppSelector((state) => state.projectApi);
   const [tags, setTags] = useState<{ tagKey: string; tagValue: string }[]>([]);
   const [githubProviderList, setGithubProviderList] = useState<GithubProvider[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -63,13 +61,11 @@ export default function ProjectCreationComponent() {
   const [ToastComponent, showToast] = useToast();
   const [debouncedProjectName, setDebouncedProjectName] = useState('');
   const [projectExistsModalOpen, setProjectExistsModalOpen] = useState(false);
-  const [isTokenValid, setIsTokenValid] = useState<'valid' | 'inValid'>(
-    isEmpty(editProjectData) ? 'inValid' : 'valid'
-  );
+  const [isTokenValid, setIsTokenValid] = useState<'valid' | 'inValid'>('inValid');
   const [isTokenLoading, setIsTokenLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [initialValue, setInitialValue] = useState<ProjectFormValues>({
+  const initialValue: ProjectFormValues = {
     bh_project_id: null,
     bh_project_name: '',
     bh_github_provider: '',
@@ -79,9 +75,8 @@ export default function ProjectCreationComponent() {
     bh_github_url: '',
     bh_github_token_url: '',
     tags: { tagList: [] },
-  });
+  };
 
-  console.log(initialValue)
 
   useEffect(() => {
     // Fetch GitHub providers
@@ -96,15 +91,7 @@ export default function ProjectCreationComponent() {
 
     fetchData();
 
-    if (!isEmpty(editProjectData)) {
-      setInitialValue({
-        ...editProjectData,
-        bh_github_token_url: '',
-        tags: { tagList: editProjectData?.tags?.tagList || [] },
-      });
-      setTags(editProjectData?.tags?.tagList || []);
-    }
-  }, [editProjectData]);
+  }, []);
 
   const debouncedSearchProject = useCallback(
     debounce((projectName: string) => {
@@ -180,21 +167,9 @@ export default function ProjectCreationComponent() {
     values.init_vector = initVector;
     setIsLoading(true);
     try {
-      let result;
-      if (isEmpty(editProjectData)) {
-        // Create a new project
-        result = await dispatch(createProject(values));
-      } else {
-        // Update existing project
-        result = await dispatch(updateProject(values));
-      }
-
-
+      const result = await dispatch(createProject(values));
       if (result.payload) {
-        const action = isEmpty(editProjectData) ? 'created' : 'updated';
-        showToast(`Project ${action} successfully`, { color: '#4caf50' });
-
-        // Add a small delay before navigation
+        showToast('Project created successfully', { color: '#4caf50' });
         setTimeout(() => {
           navigate('/all-projects');
         }, 1000); // 1 second delay
@@ -202,7 +177,7 @@ export default function ProjectCreationComponent() {
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
     } finally {
-      setProjectExistsModalOpen(() => false);
+      setProjectExistsModalOpen(false);
       setIsLoading(false);
     }
   };
@@ -263,26 +238,32 @@ export default function ProjectCreationComponent() {
                   <Label htmlFor="bh_github_provider">Github Provider</Label>
                   <Field name="bh_github_provider">
                     {({ field }: any) => {
+                      const initialProviderId = initialValue.bh_github_provider?.toString();
+                      const providerName = githubProviderList.find(
+                        (provider) => provider.id.toString() === initialProviderId.toString()
+                      )?.dtl_desc || '';
+                      
                       return (
                         <Select
-                          value={field.value || 'select-provider'}
+                          value={field.value || initialProviderId || 'select-provider'}
                           onValueChange={(value: string) => {
-                            setFieldValue('bh_github_provider', value === 'select-provider' ? '' : value);
-                            setSelectedProvider(value === 'select-provider' ? '' : value);
+                            const selectedProviderId = value === 'select-provider' ? '' : value;
+                            setFieldValue('bh_github_provider', selectedProviderId);
+                            setSelectedProvider(selectedProviderId);
                           }}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue className="whitespace-nowrap overflow-hidden text-ellipsis">
-                              {field.value
+                              {field.value && githubProviderList.find((item) => item.id.toString() === field.value)
                                 ? githubProviderList.find((item) => item.id.toString() === field.value)?.dtl_desc
-                                : 'Select Provider'}
+                                : providerName || 'Select Provider'}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="select-provider" disabled>
                               Select Provider
                             </SelectItem>
-                            {githubProviderList.map((provider) => (
+                            {githubProviderList.map(provider => (
                               <SelectItem key={provider.id} value={provider.id.toString()}>
                                 {provider.dtl_desc}
                               </SelectItem>
@@ -500,7 +481,7 @@ export default function ProjectCreationComponent() {
                 {
                   isLoading ? <Spinner /> : null
                 }
-                {isEmpty(editProjectData) ? 'Create Project' : 'Update Project'}
+                { 'Create Project' }
               </Button>
             </div>
           </Form>

@@ -47,7 +47,7 @@ const AllEnvironments: React.FC = () => {
 
   const handleProjectClick = (env: Environment) => {
     dispatch(setEditEnvironmentData(env));
-      navigate("/all-environment/new");
+      navigate(`/environments/${env.bh_env_id}`);
   };
 
 // Define the columns configuration
@@ -136,7 +136,7 @@ const EmptyComponent: React.FC = () => {
   const actionFn = (rowData: Environment, action: string) => {
     if (action === 'edit') {
       dispatch(setEditEnvironmentData(rowData));
-      navigate("/all-environment/new");
+      navigate(`/environments/${rowData.bh_env_id}`);
     }
   };
 

@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run SAST & SCA scan with Trivy
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           security-checks: 'vuln,secret'
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run DAST scan with Trivy
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'config'
           format: 'table'
@@ -104,7 +104,7 @@ jobs:
         run: docker pull $REPOSITORY/$IMAGE_NAME:$DEFAULT_IMAGE_TAG
 
       - name: Run container scan with Trivy
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'image'
           image-ref: '${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_IMAGE_TAG }}'

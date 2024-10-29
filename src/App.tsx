@@ -7,7 +7,7 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
-import AllDataOps from './pages/allDataOps';
+import { elements } from 'chart.js';
 
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
@@ -41,8 +41,10 @@ const Login = lazy(() => import('@/pages/login'));
 const AdminConsole = lazy(() => import('@/pages/adminConsole'));
 const AllProjects = lazy(() => import('@/pages/allProjects'));
 const ProjectCreate = lazy(() => import('@/pages/projectCreate'));
+const ProjectEdit = lazy(() => import('@/pages/projectEdit'));
 const AllEnvironments = lazy(() => import('@/pages/allEnvironments'));
 const EnvironmentCreate = lazy(() => import('@/pages/environmentCreate'));
+const EnvironmentEdit = lazy(() => import('@/pages/environmentEdit'));
 const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
@@ -159,8 +161,10 @@ function App() {
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
     { path: "/all-projects", element: <AllProjects /> },
     { path: "/all-projects/new", element: <ProjectCreate /> },
+    { path: "/projects/:id", element: <ProjectEdit/>},
     { path: "/all-environment", element: <AllEnvironments /> },
     { path: "/all-environment/new", element: <EnvironmentCreate /> },
+    { path: "/environments/:id", element: <EnvironmentEdit /> },
     { path: "/designer/manage-flow", element: <AllFlows /> },
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
@@ -199,7 +203,7 @@ function App() {
     { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
-    { path: '/AllDataOps', element: <AllDataOps /> },
+    { path: '/AllDataOps', element: <Dataops /> },
 
   ];
 

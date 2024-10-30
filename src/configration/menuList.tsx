@@ -23,6 +23,7 @@ export const menuList = [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },
             { label: "Alerts", path: "/alerts" },
+            { label: "Bundle", path: "/bundle" },
         ]
     },
     {

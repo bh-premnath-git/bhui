@@ -7,8 +7,7 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
-import { elements } from 'chart.js';
-
+import { databaseSyncService } from '@/services/databaseSync';
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
@@ -81,6 +80,13 @@ function App() {
   const [step, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
+  databaseSyncService.initialize(50000);
+
+  useEffect(() => {
+    return () => {
+      databaseSyncService.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const initializeKeycloak = async () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronLeft, Cloud, Edit, Link, Clock, Settings } from 'lucide-react'
-
+import { ChevronLeft, CloudCog, Edit, Link, Clock, Settings } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface CustomToolbarProps {
+  selectedData?: any | null;
 }
 
 const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
@@ -121,20 +125,28 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   )
 }
 
-export function CustomToolbarComponent() {
+export function CustomToolbarComponent(props: CustomToolbarProps) {
   const [isVisual, setIsVisual] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [flowType, setFlowType] = useState("Flow_type 1")
-
+  const { selectedData } = props;
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (selectedData && selectedData?.flow_name) {
+      setFlowType(() => selectedData?.flow_name);
+    }
+  }, [selectedData?.flow_name]);
   return (
-    <div className="bg-background w-[200%]">
+    <div className="bg-[#F4F4F4] w-[100%]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-1 space-y-1 sm:space-y-0">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Button variant="ghost" size="icon" aria-label="Go back">
+          <Button
+                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+           variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate("designer/manage-flow")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" aria-label="Cloud options">
-            <Cloud className="h-4 w-4" />
+            <CloudCog className="h-5 w-5" />
           </Button>
           <div className="relative flex-grow sm:w-40">
             <Input
@@ -170,4 +182,4 @@ export function CustomToolbarComponent() {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   )
-}1
+} 1

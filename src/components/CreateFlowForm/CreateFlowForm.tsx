@@ -11,7 +11,6 @@ import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalM
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from '@/redux/hooks';
 import { omitSpaceSymbolNumeric } from '@/Utils/stringOmission';
-
 // Types
 interface Project {
   ProjectId: string;
@@ -36,7 +35,7 @@ interface CreateFlowPayload {
   git_branch: string;
   bh_project_id: number;
   metadata_flow: string;
-  bh_env_provider: number;
+  bh_env_id: number;
   flow_class: number;
   job: string;
   schedule_interval: {
@@ -85,7 +84,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
-
   const handleIntervalSave = (interval: string) => {
     const parsedInterval = JSON.parse(interval);
     setScheduleInterval({
@@ -130,7 +128,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
             git_branch: values.selectedBranch,
             bh_project_id: Number(values.selectedProject),
             metadata_flow: values.notes,
-            bh_env_provider: Number(values.selectedEnvironment),
+            bh_env_id: Number(values.selectedEnvironment),
             flow_class: Number(values.selectedClass),
             job: 'on_job_start',
             schedule_interval: scheduleInterval,
@@ -158,7 +156,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
                         <SelectValue placeholder="Select Project" />
                       </SelectTrigger>
                       <SelectContent>
-                        {data.map((project: Project) => (
+                        {data.map((project: any) => (
                           <SelectItem key={project.ProjectId} value={project.ProjectId}>
                             {project.Name}
                           </SelectItem>

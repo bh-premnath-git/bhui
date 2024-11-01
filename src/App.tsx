@@ -7,21 +7,22 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
-
-const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
+import { databaseSyncService } from '@/services/databaseSync';
+// const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
 const Home = lazy(() => import('./oldpages/Home'));
 const Catalog = lazy(() => import('./oldpages/Catalog/Catalog'));
 const Catalogs = lazy(() => import('./oldpages/Catalog/components/Catalogs'));
 const Designer = lazy(() => import('./oldpages/Designer/Designer'));
-const Designers = lazy(() => import('./oldpages/Designers/Designers')); 
+const Designers = lazy(() => import('./oldpages/Designers/Designers'));
 const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
-const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
-const DataOpsHub = lazy(() => import('./oldpages/DataOpsHub/DataOpsHub'));
-const Dataops = lazy(() => import('./oldpages/Dataops/Dataops'));
-const ShowingLogs = lazy(() => import('./oldpages/Dataops/ShowingLogs'));
+// const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
+const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
+const BundleRelease = lazy(() => import('@/pages/bundleRelease'));
+const Dataops = lazy(() => import('@/pages/allDataOps'));
+const ShowingLogs = lazy(() => import('./components/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
 const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
 const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
@@ -40,8 +41,10 @@ const Login = lazy(() => import('@/pages/login'));
 const AdminConsole = lazy(() => import('@/pages/adminConsole'));
 const AllProjects = lazy(() => import('@/pages/allProjects'));
 const ProjectCreate = lazy(() => import('@/pages/projectCreate'));
+const ProjectEdit = lazy(() => import('@/pages/projectEdit'));
 const AllEnvironments = lazy(() => import('@/pages/allEnvironments'));
 const EnvironmentCreate = lazy(() => import('@/pages/environmentCreate'));
+const EnvironmentEdit = lazy(() => import('@/pages/environmentEdit'));
 const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
@@ -53,6 +56,9 @@ const AddUser = lazy(() => import('@/pages/addUser'));
 const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
+const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
+const CreateBundle = lazy(() => import('@/pages/createBundle'));
+const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
 interface LayoutProps {
   isAuthenticated: boolean;
   logout: () => void;
@@ -63,7 +69,7 @@ const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
     <Header isAuthenticated={isAuthenticated} logout={logout} />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto overflow-y-hidden	 p-2 ml-16">
+      <main className="flex-1 overflow-auto overflow-x-hidden	 p-2 ml-16">
         <Outlet />
       </main>
     </div>
@@ -74,6 +80,13 @@ function App() {
   const [step, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
+  databaseSyncService.initialize(50000);
+
+  useEffect(() => {
+    return () => {
+      databaseSyncService.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const initializeKeycloak = async () => {
@@ -139,8 +152,8 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('authenticated');
     kc.logout({
-     // redirectUri: 'http://54.157.234.126:5000/landing',
-      redirectUri: 'http://localhost:5000/landing',
+      // redirectUri: 'http://54.157.234.126:5000/landing',
+      redirectUri: 'http://localhost:5000/dashboard',
     });
   }
 
@@ -157,12 +170,14 @@ function App() {
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
     { path: "/all-projects", element: <AllProjects /> },
     { path: "/all-projects/new", element: <ProjectCreate /> },
+    { path: "/projects/:id", element: <ProjectEdit/>},
     { path: "/all-environment", element: <AllEnvironments /> },
     { path: "/all-environment/new", element: <EnvironmentCreate /> },
+    { path: "/environments/:id", element: <EnvironmentEdit /> },
     { path: "/designer/manage-flow", element: <AllFlows /> },
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
-    { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
+    // { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
     { path: '/Landing', element: <Landing /> },
     { path: '/Home', element: <DashBoard /> },
     { path: '/Data-Config', element: <Home /> },
@@ -172,7 +187,7 @@ function App() {
     { path: '/Designers', element: <Designers /> },
     { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
     { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
-    { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
+    // { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
@@ -194,6 +209,13 @@ function App() {
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
     { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
+    { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
+    { path: '/BuildPlayGround', element: <BuildPlayGround /> },
+    { path: '/dataops-hub/ops-hub', element: <Dataops /> },
+    { path: '/AllDataOps', element: <Dataops /> },
+    { path: '/bundle', element: <BundleRelease /> },
+    { path: '/CreateBundle', element: <CreateBundle /> },
+    { path: '/ReleaseBundle', element: <ReleaseBundle /> },
   ];
 
 
@@ -202,7 +224,7 @@ function App() {
       fontFamily: 'Inter ',
     },
     components: {
-     
+
       MuiButton: {
         styleOverrides: {
           root: {
@@ -211,8 +233,32 @@ function App() {
           },
         }
       },
+      MuiTypography: {
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+          }
+        }
+      },
+      MuiSelect: { // For Select component font
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            fontSize:'15px',
+            fontWeight:'normal'
+          },
+        },
+      },
+      MuiMenuItem: { // For each menu item font
+        styleOverrides: {
+          root: {
+            fontFamily: 'Inter',
+            fontSize:'15px'
 
-    
+          },
+        },
+      },
+
     }
 
   });

@@ -9,8 +9,8 @@ import { FileQuestion } from "lucide-react";
 import { getCustomerList } from "@/redux/CustomerSlice";
 import { getAllPipeline } from "@/redux/BuildPipeLineSlice";
 import { formatedDate } from "@/Utils/dateFormatter";
-import BuildPipeLineCreatePopup from "@/oldpages/BuildPipeline/components/popups/BuildPipeLineCreatePopup";
 import { getGitProject } from "@/redux/ProjectSlice";
+import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
 
 // Define types in a separate file for better organization
 interface pipelineData {
@@ -44,15 +44,7 @@ type ColumnConfig = {
 
 // Define column configurations outside the component for better performance
 const columns: ColumnConfig[] = [
-    {
-        key: 'bh_project_id',
-        header: 'BH Project',
-        sortable: true,
-        filterable: true,
-        type: 'text',
 
-
-    },
     {
         key: 'pipeline_name',
         header: 'Pipeline Name',
@@ -60,6 +52,15 @@ const columns: ColumnConfig[] = [
         sortable: false,
         filterable: true,
 
+
+    },
+    {
+        key: 'bh_project',
+        header: 'BH Project',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        render: (value) => <div>{value?.bh_project_name}</div>
     },
     {
         key: 'git_branch',
@@ -74,6 +75,7 @@ const columns: ColumnConfig[] = [
         header: 'Last Updated By',
         type: 'number',
         sortable: false,
+        render: (value) => <div>{value?.user_name}</div>
     },
     {
         key: 'created_at',
@@ -103,12 +105,12 @@ const EmptyComponent: React.FC = () => {
             <FileQuestion size={64} className="text-gray-400 mb-4" />
             <h2 className="text-2xl font-semibold text-gray-700 mb-2">PipeLine Not Available</h2>
             <button
-                onClick={()=>handleOpen()}
+                onClick={() => handleOpen()}
                 className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
             >
                 Add Pipeline
             </button>
-            <BuildPipeLineCreatePopup handleClose={handleClose} open={open} />
+            {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open} />)}
 
         </div>
     );
@@ -123,9 +125,8 @@ function BuildDataPipeLineTable({
     const dispatch = useAppDispatch();
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
     useLayoutEffect(() => {
-        dispatch(getAllPipeline());
+        dispatch(getAllPipeline({ offset: 0, limit: 1000, order_desc: true, order_by: 'pipeline_id' }));
         dispatch(getGitProject());
     }, [dispatch]);
 
@@ -145,7 +146,7 @@ function BuildDataPipeLineTable({
     }
 
     const editFn = (rowData: any) => {
-        navigate("/AddCustomers", { state: { rowData } });
+        navigate(`/BuildPlayGround/${rowData?.pipeline_id}`);
     }
 
     const changeStatus = async (rowData: any) => {
@@ -169,7 +170,7 @@ function BuildDataPipeLineTable({
                 createNewFn={createNewFn}
                 actionFn={actionFn}
             />
-            <BuildPipeLineCreatePopup handleClose={handleClose} open={open} />
+            {open && (<BuildPipeLineCreatePopup handleClose={() => setOpen(false)} open={open} />)}
 
         </div>
     );

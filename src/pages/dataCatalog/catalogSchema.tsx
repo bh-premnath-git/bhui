@@ -27,7 +27,7 @@ interface TabPanelProps {
     value: number;
 }
 
-function CustomTabPanel(props: TabPanelProps) {
+export function CustomTabPanel(props: TabPanelProps) {
     const { children, value, index, ...other } = props;
 
     return (
@@ -39,7 +39,7 @@ function CustomTabPanel(props: TabPanelProps) {
             {...other}
         >
             {value === index && (
-                <Box sx={{ p: 3 }}>
+                <Box >
                     <Typography>{children}</Typography>
                 </Box>
             )}
@@ -47,7 +47,7 @@ function CustomTabPanel(props: TabPanelProps) {
     );
 }
 
-function a11yProps(index: number) {
+export function a11yProps(index: number) {
     return {
         id: `simple-tab-${index}`,
         'aria-controls': `simple-tabpanel-${index}`,
@@ -75,7 +75,7 @@ function CatalogSchema() {
 
 
     return (
-        <Box sx={{ width: '100%' }}>
+        <Box className="container" sx={{ width: '100%' }}>
             <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
                 <Stack>
                     <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered

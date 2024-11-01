@@ -3,13 +3,14 @@ import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import { useNavigate } from "react-router-dom";
-import { listEnvironments } from '@/redux/EnvironmentSlice';
+import { listEnvironments, setEditEnvironmentData } from '@/redux/EnvironmentSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 
 // Define the Environment interface based on your data structure
 interface Environment {
+  bh_env_id: number;
   Environment_Name: string;
   Cloud_Provider: string;
   Created_On: string;
@@ -31,8 +32,23 @@ type ColumnConfig = {
   badgeConfig?: {
     colorMap: Record<string, string>;
   };
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, rowData: Environment) => React.ReactNode;
 };
+
+const AllEnvironments: React.FC = () => {
+  const dispatch = useAppDispatch();
+  useLayoutEffect(() => {
+    dispatch(listEnvironments());
+  }, [dispatch]);
+  const { environmentList, loading, error } = useAppSelector(
+    (state: RootState) => state.environmentApi
+  );
+  const navigate = useNavigate();
+
+  const handleProjectClick = (env: Environment) => {
+    dispatch(setEditEnvironmentData(env));
+      navigate(`/environments/${env.bh_env_id}`);
+  };
 
 // Define the columns configuration
 const columns: ColumnConfig[] = [
@@ -42,6 +58,11 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: 'text',
+    render: (value: string, rowData: Environment) => (
+      <span onClick={() => handleProjectClick(rowData)} className="cursor-pointer">
+        {value}
+      </span>
+    ),
   },
   {
     key: 'Cloud_Provider',
@@ -95,15 +116,7 @@ const EmptyComponent: React.FC = () => {
     </div>
   );
 };
-const AllEnvironments: React.FC = () => {
-  const dispatch = useAppDispatch();
-  useLayoutEffect(() => {
-    dispatch(listEnvironments());
-  }, [dispatch]);
-  const { environmentList, loading, error } = useAppSelector(
-    (state: RootState) => state.environmentApi
-  );
-  const navigate = useNavigate();
+
 
   if (loading) {
     return <Spinner size="lg" />;
@@ -115,9 +128,18 @@ const AllEnvironments: React.FC = () => {
   }
   ///all-environment/new
   const createNewFn = () => {
-
+    dispatch(setEditEnvironmentData({}));
     navigate("/all-environment/new");
   };
+
+  //edit action
+  const actionFn = (rowData: Environment, action: string) => {
+    if (action === 'edit') {
+      dispatch(setEditEnvironmentData(rowData));
+      navigate(`/environments/${rowData.bh_env_id}`);
+    }
+  };
+
   if (environmentList.length === 0) {
     return <EmptyComponent />;
   }
@@ -130,6 +152,7 @@ const AllEnvironments: React.FC = () => {
         defaultItemsPerPage={10}
         tableName="Create New Environment"
         createNewFn={createNewFn}
+        actionFn={actionFn}
       />
     </div>
   );

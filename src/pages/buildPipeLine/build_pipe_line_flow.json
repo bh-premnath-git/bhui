@@ -1,0 +1,126 @@
+{
+    "purpose": "Flow Configuration - All the nodes in flow screen is driven by this json file",
+    "module": [
+        {
+            "id": 1,
+            "icon": "/assets/buildPipeline/6.svg",
+            "expandIcon": "#f7a01f",
+            "text": "Source",
+            "className": "text-white",
+            "title": "Source"
+        },
+        {
+            "id": 2,
+            "icon": "/assets/buildPipeline/7.svg",
+            "expandIcon": "#07a260",
+            "text": "Target",
+            "title": "Target"
+        },
+        {
+            "id": 3,
+            "icon": "/assets/buildPipeline/8.svg",
+            "expandIcon": "#f5bc2a",
+            "text": "Filter",
+            "title": "Filter"
+        },
+        {
+            "id": 4,
+            "icon": "/assets/buildPipeline/9.svg",
+            "expandIcon": "#ff7396",
+            "text": "Join",
+            "title": "Join"
+        },
+        {
+            "id": 5,
+            "icon": "/assets/buildPipeline/10.svg",
+            "expandIcon": "#804fbf",
+            "text": "Router",
+            "title": "Router"
+        },
+        {
+            "id": 6,
+            "icon": "/assets/buildPipeline/11.svg",
+            "expandIcon": "#06babd",
+            "text": "Transform",
+            "title": "Transform"
+        },
+        {
+            "id": 7,
+            "icon": "/assets/buildPipeline/12.svg",
+            "expandIcon": "#c049c0",
+            "text": "Ship",
+            "title": "Ship"
+        },
+        {
+            "id": 8,
+            "icon": "/assets/buildPipeline/add.svg",
+            "expandIcon": "/assets/buildPipeline/add.svg",
+            "text": "",
+            "title": "Transformation"
+           
+        }
+       
+    ],
+     "transformList": [
+        {
+            "id": 1,
+            "lead": "/assets/buildPipeline/sort.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Sort"
+        },
+        {
+            "id": 2,
+            "lead": "/assets/buildPipeline/aggrigate.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Aggregate"
+        },
+        {
+            "id": 3,
+            "lead": "/assets/buildPipeline/lookup.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Lookup"
+        },
+        {
+            "id": 4,
+            "lead": "/assets/buildPipeline/dq.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "DQ Check"
+        },
+        {
+            "id": 5,
+            "lead": "/assets/buildPipeline/dedupe.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Dedupe"
+        },
+        {
+            "id": 6,
+            "lead": "/assets/buildPipeline/repartician.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Repartition "
+        },
+        {
+            "id": 7,
+            "lead": "/assets/buildPipeline/sql.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "SQL Transformation"
+        },
+        {
+            "id": 8,
+            "lead": "/assets/buildPipeline/union.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Union"
+        },
+        {
+            "id": 9,
+            "lead": "/assets/buildPipeline/limit.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Limit"
+        },
+        {
+            "id": 10,
+            "lead": "/assets/buildPipeline/change-detection.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Change Detection"
+        }
+    ]
+}

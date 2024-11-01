@@ -1,8 +1,13 @@
-import React from 'react';
-import { useFormik } from 'formik';
+import React, { useEffect, useState } from 'react';
+import { useFormik, FormikErrors } from 'formik';
 import * as Yup from 'yup';
 import { X } from 'lucide-react';
 import styles from '@/components/ReactFlowComps/Items/CustomNodeTap/CustomNodeTap.module.css';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { LocalStorageService } from '@/services/localStorageServices';
+import { NodeTransformer } from '@/pages/manageFlow/flowTransformer';
+
 
 interface ModalContentProps {
     nodeData: any;
@@ -10,24 +15,24 @@ interface ModalContentProps {
     connections?: any[];
 }
 
+const getErrorMessage = (fieldName: string, errors: FormikErrors<any>): string => {
+    const error = errors[fieldName];
+    return typeof error === 'string' ? error : '';
+};
+
 const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connections = [] }) => {
     const nodeConfig = nodeData.selectedNode;
+    const [dropDownOptions, setDropDownOptions] = useState<string[]>([
+        "http_connection_1",
+        "http_connection_2",
+        "http_connection_3",
+        "http_connection_4",
+        "http_connection_5"
+    ]);
 
-    if (!nodeConfig || !nodeConfig.properties) {
-        return (
-            <div className={styles.modalContainer}>
-                <div className={styles.modalHeader}>
-                    <h2>No Configuration Found</h2>
-                    <button className={styles.closeIcon} onClick={onClose}>
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className={styles.formContainer}>
-                    <p>Configuration for this node is not available.</p>
-                </div>
-            </div>
-        );
-    }
+    const { selectedFlowFromList } = useSelector(
+        (state: RootState) => state.flowApi
+    );
 
     const initialValues = nodeConfig.properties.reduce((acc: any, prop: any) => {
         acc[prop.property_key] = prop.default_value || '';
@@ -35,10 +40,30 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
     }, {});
 
     const validationSchemaFields = nodeConfig.properties.reduce((acc: any, prop: any) => {
-        let validator = Yup.string();
+        let validator;
+        switch (prop.ui_type) {
+            case 'number':
+                validator = Yup.number().typeError('Must be a number');
+                break;
+            case 'json':
+                validator = Yup.string().test('is-json', 'Invalid JSON', (value) => {
+                    if (!value) return true;
+                    try {
+                        JSON.parse(value);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                validator = Yup.string();
+        }
+
         if (prop.mandatory) {
             validator = validator.required(`${prop.property_name} is required`);
         }
+
         acc[prop.property_key] = validator;
         return acc;
     }, {});
@@ -48,9 +73,26 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
     const formik = useFormik({
         initialValues,
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
+            const transformedData = NodeTransformer.transform(nodeConfig, values);
+            console.log("Transformed Data:", transformedData);
+            LocalStorageService.setItem(`form-${selectedFlowFromList.flow_id}`, values);
+
+            if (onClose)
+                onClose();
         },
     });
+
+    useEffect(() => {
+        // Load saved values from localStorage
+        const savedValues = LocalStorageService.getItem(`form-${selectedFlowFromList.flow_id}`);
+        if (savedValues) {
+            // Update formik values with saved values
+            Object.keys(savedValues).forEach(key => {
+                formik.setFieldValue(key, savedValues[key]);
+            });
+        }
+    }, [selectedFlowFromList.flow_id]);
 
     const renderField = (prop: any) => {
         const commonProps = {
@@ -61,10 +103,52 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
             value: formik.values[prop.property_key],
         };
 
+        let field;
+        switch (prop.ui_type) {
+            case 'text':
+                field = <input type="text" {...commonProps} />;
+                break;
+            case 'drop_down':
+                field = (
+                    <select {...commonProps}>
+                        <option value="">Select an option</option>
+                        {dropDownOptions?.map((option: any) => (
+                            <option key={option} value={option}>
+                                {option}
+                            </option>
+                        ))}
+                    </select>
+                );
+                break;
+            case 'json':
+                field = <input {...commonProps} type="text" />;
+                break;
+            case 'number':
+                field = <input type="number" {...commonProps} />;
+                break;
+            case 'checkbox':
+                field = (
+                    <input
+                        type="checkbox"
+                        {...commonProps}
+                        checked={formik.values[prop.property_key]}
+                        onChange={(e) => formik.setFieldValue(prop.property_key, e.target.checked)}
+                    />
+                );
+                break;
+            default:
+                field = <input type="text" {...commonProps} />;
+        }
+
         return (
             <div className={styles.formField} key={prop.property_key}>
                 <label htmlFor={prop.property_key}>{prop.property_name}</label>
-                <input type="text" {...commonProps} />
+                {field}
+                {formik.touched[prop.property_key] && formik.errors[prop.property_key] && (
+                    <div className={styles.errorMessage}>
+                        {getErrorMessage(prop.property_key, formik.errors)}
+                    </div>
+                )}
             </div>
         );
     };

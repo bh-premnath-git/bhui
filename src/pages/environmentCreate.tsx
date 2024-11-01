@@ -14,7 +14,9 @@ import { encrypt_string } from '@/services/encryption';
 import useToast from '@/oldcomponents/teast-service';
 
 // Types
-type Tag = { key: string; value: string };
+type Tag = {
+  tagList: { key: string; value: string }[];
+} | null;
 type ZoneDetail = { name: string; url: string };
 type LifecycleConfig = { [key: string]: string };
 type EnvironmentTabState = {
@@ -77,8 +79,7 @@ type Action =
 
 const initialState: State = {
   activeTab: TABS[0],
-  tags: [
-  ],
+  tags: [],
   selectedPlatform: "aws",
   zoneDetails: INITIAL_ZONE_DETAILS,
   businessUrl: "",
@@ -105,7 +106,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
     case 'SET_TAGS':
-      return { ...state, tags: action.payload };
+      return { ...state, tags: action.payload as Tag[] };
     case 'SET_SELECTED_PLATFORM':
       return { ...state, selectedPlatform: action.payload };
     case 'SET_ZONE_DETAILS':
@@ -137,7 +138,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
   const dispatchApi = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
-
+  const [ToastComponent, showToast] = useToast();
   const navigate = useNavigate();
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
@@ -153,26 +154,35 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     } else {
       const { encryptedString, initVector } = encrypt_string(state.environmentTab.secretAccessKey);
       const { encryptedString: encryptedString1 } = encrypt_string(state.environmentTab.accessKey, initVector);
+      const formattedTags = state.tags  .filter(tag => tag && tag.tagList)   .flatMap(tag => tag?.tagList);
       const values = {
-        bh_env_name: state.environmentTab.environmentName,
-        bh_env_provider: parseInt(state.environmentTab.environment),
-        cloud_provider_cd: state.selectedPlatform === "aws" ? 101 : 102,
-        cloud_region_cd: parseInt(state.environmentTab.location),
-        status_cd: "active",
-        project_id: state.environmentTab.projectId,
-        file: state.environmentTab.privateKeyFile,
-        access_key: encryptedString1,
-        secret_access_key: encryptedString,
-        init_vector: initVector,
-      }
+      bh_env_name: state.environmentTab.environmentName,
+      bh_env_provider: parseInt(state.environmentTab.environment),
+      cloud_provider_cd: state.selectedPlatform === "aws" ? 101 : 102,
+      cloud_region_cd: parseInt(state.environmentTab.location),
+      status_cd: "active",
+      project_id: state.environmentTab.projectId,
+      file: state.environmentTab.privateKeyFile,
+      access_key: encryptedString1,
+      secret_access_key: encryptedString,
+      init_vector: initVector,
+      airflow_url: state.environmentTab.airflowUrl,
+      airflowDagBucket: state.environmentTab.airflowDagBucket,
+      tags: JSON.stringify({
+        tagList:formattedTags}),
+    };
       setIsLoading(()=>true);
       dispatchApi(createEnvironment(values))
         .then((response: any) => {
           if (response.type === "environment/create/fulfilled")
-            navigate('/all-environment');
+            showToast('Environment created successfully', { color: '#4caf50' });
+            setTimeout(() => {
+              navigate('/all-environment');
+            }, 1000);
         })
         .catch((error: any) => {
           console.error(error)
+          showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
           navigate('/all-environment');
         }).finally(() => {
           setIsLoading(()=>false);
@@ -221,7 +231,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
           <CardContent className="p-6">
             <div className="max-w-[850px] mx-auto">
               <TabsContent value="environment">
-                <EnvironmentTab
+                <EnvironmentTab 
                   selectedPlatform={state.selectedPlatform}
                   setSelectedPlatform={(platform) => dispatch({ type: 'SET_SELECTED_PLATFORM', payload: platform })}
                   tags={state.tags}
@@ -296,12 +306,13 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button variant="outline" onClick={handleBack} disabled={state.activeTab === TABS[0]}>
           Back
         </Button>
-        <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext}>
+        <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext} disabled={!state.environmentTab.verification}>
           {state.activeTab === TABS[TABS.length - 1] ? <>{
                   isLoading ? <Spinner /> : null
                 }{"Create Environment"}</> : "Next"}
         </Button>
       </div>
+      <ToastComponent />
     </div>
   );
 }

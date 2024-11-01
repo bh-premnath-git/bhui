@@ -40,43 +40,51 @@ const NodeContent: React.FC<{
   isEditing,
   onFinishEditing,
 }) => {
-    const selectedLabel = selectedNode.node_name;
-    const displayLabel = editedContent || selectedLabel;
+  const selectedLabel = selectedNode?.node_name || 'No Node Selected';  // Check for undefined
+  const displayLabel = editedContent || selectedLabel;
 
-    const spanRef = useRef<HTMLSpanElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
 
-    useEffect(() => {
-      if (isEditing && spanRef.current) {
-        spanRef.current.focus();
-        const range = document.createRange();
-        range.selectNodeContents(spanRef.current);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-    }, [isEditing]);
+  useEffect(() => {
+    if (isEditing && spanRef.current) {
+      spanRef.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(spanRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
 
-    const handleBlur = (e: React.FocusEvent<HTMLSpanElement>) => {
-      const newContent = e.currentTarget.textContent || '';
-      onContentChange(newContent);
-      onFinishEditing();
-    };
-
-    return (
-      <div className={styles.label} style={{ backgroundColor: color }}>
-        <img src={icon} alt={label} width="24" height="24" />
-        <span
-          ref={spanRef}
-          contentEditable={isEditing}
-          suppressContentEditableWarning
-          onBlur={handleBlur}
-          className={`${styles.nodeContent} ${isEditing ? styles.editingContent : ''}`}
-        >
-          {displayLabel}
-        </span>
-      </div>
-    );
+  const handleBlur = (e: React.FocusEvent<HTMLSpanElement>) => {
+    const newContent = e.currentTarget.textContent || '';
+    onContentChange(newContent);
+    onFinishEditing();
   };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();  // Prevent line breaks on Enter key
+      handleBlur(e as any);  // Call blur when Enter is pressed
+    }
+  };
+
+  return (
+    <div className={styles.label} style={{ backgroundColor: color }}>
+      <img src={icon} alt={label} width="24" height="24" />
+      <span
+        ref={spanRef}
+        contentEditable={isEditing}
+        suppressContentEditableWarning
+        onBlur={handleBlur}
+        onKeyDown={handleKeyPress}
+        className={`${styles.nodeContent} ${isEditing ? styles.editingContent : ''}`}
+      >
+        {displayLabel}
+      </span>
+    </div>
+  );
+};
 
 const NodeHandles: React.FC<{ backgroundColor: string }> = ({ backgroundColor }) => (
   <>
@@ -141,7 +149,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current !== null) {
@@ -151,7 +159,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = window.setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setIsHovered(false);
     }, 200);
   };
@@ -161,7 +169,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   };
 
   const handleDelete = () => {
-    data.onDelete(id);
+    if (typeof data.onDelete === 'function') {
+      data.onDelete(id);
+    } else {
+      console.error('onDelete is not a function');
+    }
   };
 
   const handleEdit = () => {
@@ -169,7 +181,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   };
 
   const handleClone = () => {
-    data.onClone(id);
+    if (typeof data.onClone === 'function') {
+      data.onClone(id);
+    } else {
+      console.error('onClone is not a function');
+    }
   };
 
   const handleContentChange = (newContent: string) => {
@@ -188,7 +204,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
     };
   }, []);
 
-  const displayLabel = editedContent || data.selectedNode.node_name;
+  const displayLabel = editedContent || (data.selectedNode?.node_name || 'No Node Selected');
 
   return (
     <>
@@ -202,8 +218,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
         {isHovered && (
           <NodeToolbar
             isVisible={true}
-            position={data.toolbarPosition}
-            align={data.toolbarAlign}
+            position={data.toolbarPosition || Position.Top}
+            align={data.toolbarAlign || 'center'}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >

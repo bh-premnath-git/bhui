@@ -19,7 +19,10 @@ export const formatDate = (dateString: string): string => {
 };
 
 
-export const formatedDate = (dateString: string): string => { // time to date dd/mm/yyyy
+export const formatedDate = (dateString: string | null): string => { // time to date dd/mm/yyyy
+    if (!dateString) {
+        return '';
+    }
     const date = new Date(dateString);
     const pad = (n: number) => (n < 10 ? `0${n}` : n);
 

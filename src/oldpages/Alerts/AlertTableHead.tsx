@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { DatePicker } from 'antd';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CloseIcon from '@mui/icons-material/Close';
+import { Label } from '@/components/ui/label';
 
 const validationSchema = Yup.object({
     project_name: Yup.string(),
@@ -16,7 +17,7 @@ const validationSchema = Yup.object({
     alert_status: Yup.string(),
 });
 
-function AlertTableHead({ filterOption, status, fetchJobDetails }) {
+function AlertTableHead({ filterOption, status, fetchJobDetails }: any) {
     const [showPopup, setShowPopup] = useState(false);
     const [selectedFilters, setSelectedFilters] = useState({});
     const projectList = filterOption?.projectData;
@@ -31,7 +32,7 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
         setShowPopup(false);
     };
 
-    const handleSaveFilters = (values) => {
+    const handleSaveFilters = (values: any) => {
         const filteredValues = Object.fromEntries(Object.entries(values).filter(([key, value]) => value !== ''));
         setSelectedFilters(filteredValues);
         fetchJobDetails(filteredValues);
@@ -48,7 +49,7 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
                 <Button sx={{ color: "black", bgcolor: "white", border: "1px solid gray" }} onClick={handleOpenPopup}>
                     <FilterAltIcon />
                 </Button>
-                <Button sx={{ bgcolor: 'black', color: 'white' }} onClick={monitorPageDetails}>
+                <Button className='bg-black' sx={{ background: 'black', color: 'white' }} onClick={monitorPageDetails}>
                     New Monitor
                 </Button>
             </Stack>
@@ -56,7 +57,8 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
             {/* Popup Dialog for Filters */}
             <Dialog open={showPopup} onClose={handleClosePopup} >
                 <Stack direction={'row'} justifyContent={'space-between'} alignItems="center">
-                    <DialogTitle>Filters</DialogTitle>
+                    <Label className='mx-4 text-lg'>Filters</Label>
+
                     <IconButton onClick={handleClosePopup} aria-label="close">
                         <CloseIcon />
                     </IconButton>
@@ -74,11 +76,11 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
                     >
                         {({ values, setFieldValue }) => (
                             <Form>
-                                <Stack direction="column" spacing={2} my={2}>
+                                <Stack direction="column" spacing={2} >
                                     <Stack direction={'row'} spacing={2}>
                                         <Stack direction="column" spacing={1}>
-                                            <Typography sx={{ fontSize: "16px" }}>Project</Typography>
-                                            <Autocomplete
+                                            <Label>Project</Label>
+                                            <Autocomplete size='small'
                                                 options={projectList || []}
                                                 getOptionLabel={(option: any) => option.project_name}
                                                 onChange={(event, newValue) => setFieldValue('project_name', newValue ? newValue.project_name : '')}
@@ -92,8 +94,8 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
                                             />
                                         </Stack>
                                         <Stack direction="column" spacing={1}>
-                                            <Typography sx={{ fontSize: "16px" }}>Pipeline</Typography>
-                                            <Autocomplete
+                                            <Label>Pipeline</Label>
+                                            <Autocomplete size='small'
                                                 options={pipeLineList || []}
                                                 getOptionLabel={(option: any) => option.source_name}
                                                 onChange={(event, newValue) => setFieldValue('source_id', newValue ? newValue.source_id : '')}
@@ -110,8 +112,8 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
 
                                     <Stack direction={'row'} spacing={2}>
                                         <Stack direction="column" spacing={1}>
-                                            <Typography sx={{ fontSize: "16px" }}>Tag</Typography>
-                                            <Autocomplete
+                                            <Label>Tag</Label>
+                                            <Autocomplete size='small'
                                                 options={status || []}
                                                 getOptionLabel={(option: any) => option.dtl_desc}
                                                 onChange={(event, newValue) => setFieldValue('alert_monitor_tags', newValue ? newValue.id : '')}
@@ -125,9 +127,9 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
                                             />
                                         </Stack>
                                         <Stack direction="column" spacing={1}>
-                                            <Typography sx={{ fontSize: "16px" }}>Start Time</Typography>
-                                            <DatePicker
-                                                style={{ width: 250, height: 50 }}
+                                            <Label>Start Time</Label>
+                                            <DatePicker size='small' className='border'
+                                                style={{ width: 250, height: 38 }}
                                                 format="DD/MM/YYYY"
                                                 getPopupContainer={(trigger) => trigger.parentElement || document.body} // Ensure it renders in the correct container
                                                 onChange={(date, dateString) => {
@@ -138,8 +140,8 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }) {
                                     </Stack>
 
                                     <Stack direction="column" spacing={1}>
-                                        <Typography sx={{ fontSize: "16px" }}>Status</Typography>
-                                        <Autocomplete
+                                        <Label>Status</Label>
+                                        <Autocomplete size='small'
                                             options={status || []}
                                             getOptionLabel={(option: any) => option.dtl_desc}
                                             onChange={(event, newValue) => setFieldValue('alert_status', newValue ? newValue.id : '')}

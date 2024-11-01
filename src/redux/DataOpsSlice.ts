@@ -1,0 +1,78 @@
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { ApiService } from "@/services/apiServices";
+
+export interface ApiState {
+  getDataOpsList: any;
+  filterData: any;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: ApiState = {
+  loading: false,
+  error: null,
+  getDataOpsList: [],
+  filterData: [],
+};
+
+interface ApiResponse {
+  bh_project_id: number;
+  name: string;
+}
+
+export const getDataOps: any = createAsyncThunk(
+  'dataops_hub/dataops',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8003', 'get', '/job_details/list/', null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+const DataOpsSlice = createSlice({
+  name: "api/dataops",
+  initialState,
+  reducers: {
+    setFilterData: (state, action) => {
+      console.log(action.payload); // Log the entire payload for debugging
+    
+      if (action.payload?.dataOpsList && action.payload?.value) {
+        console.log(action.payload.dataOpsList)
+        const filteredData=action.payload.dataOpsList.filter((item: any) =>
+          item.pipeline_name.toLowerCase().includes(action.payload.value.toLowerCase())
+        )    
+        console.log(filteredData); // Log the filtered results for debugging
+        state.getDataOpsList = filteredData;
+      } else {
+        console.warn('Invalid payload structure:', action.payload);
+      }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(getDataOps.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getDataOps.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.getDataOpsList = action.payload;
+        }
+      )
+      .addCase(
+        getDataOps.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      );
+  },
+});
+
+export default DataOpsSlice.reducer;
+export const { setFilterData } = DataOpsSlice.actions;

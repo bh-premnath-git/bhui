@@ -3,12 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import SearchIcon from '@mui/icons-material/Search';
 import { debounce } from 'lodash';
-import NewSourcePopUp from '../oldpages/BuildPipeline/components/popups/NewSourcePopUp';
+import NewSourcePopUp from '../components/BuildPipeLineComps/NewSourcePopUp';
 import { useDispatch, useSelector } from 'react-redux';
 import { getSource } from '../redux/BuildPipeLineSlice';
 import { RootState } from '@/store/store';
-import TransformationPanel from '@/oldpages/BuildPipeline/TransformationPanel';
-import { transformList } from '@/oldpages/BuildPipeline/staticData';
+import TransformationPanel from '@/components/BuildPipeLineComps/TransformationPanel';
+import transformList from '@/pages/buildPipeLine/build_pipe_line_flow.json';
 
 const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSet, expandIcon }: any) => {
     const [showText, setShowText] = useState(false);
@@ -112,18 +112,15 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
                 >
                     {hover ? (
                         <div className='flex items-center transition-all duration-500 ease-in-out'>
-                            {icon} 
+                            <img src={icon} alt="" width={32}/>
                             <div className='ml-2 opacity-100 transition-opacity duration-500 ease-in-out'>
                                 {text}
                             </div>
                         </div>
                     ) : (
                         <div className='flex items-center transition-all duration-300 ease-in-out'>
-                            {icon}
-                            {/* Text opacity set to 0 so it fades in/out smoothly */}
-                            {/* <div className='ml-2 opacity-0 transition-opacity duration-300 ease-in-out'>
-                                {text}
-                            </div> */}
+                            <img src={icon} alt="" width={32}/>
+                            
                         </div>
                     )}
                 </button>
@@ -188,7 +185,7 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
                     searchValue={searchValue}
                     searchProject={searchProject}
                     handleClick={handleClick}
-                    transformList={transformList}
+                    transformList={transformList.transformList}
                     handleNode={handleNode}
                     text={text}
                     openPopUp={openPopUp}

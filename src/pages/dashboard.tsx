@@ -32,7 +32,7 @@ type DataItem = {
   latency: number;
   cost: number;
   freshness: number;
-  status: "In Progress" | "Completed" | "Failed";
+  status: "In Progress" | "Completed" | "Failed" | "Did Not Arrive" | "Not Published";
   date: Date;
 };
 
@@ -42,14 +42,14 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string;[key: string]: any };
+  payload?: { name: string; [key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
   isShow?: boolean;
 }
 
-const COLORS = ["#00C49F", "#FFBB28", "#FF8042", "#FF0000"];
+const COLORS = ["#00C49F", "#FFBB28", "#018042", "#FF6B6B", "#8884d8", "#663399"];
 const months = ["Jan", "Feb", "Mar", "Apr", "May"];
 const projects = ["Project1", "Project2", "Project3", "Project4"];
 const pipelines = ["Pipeline1", "Pipeline2", "Pipeline3", "Pipeline4"];
@@ -64,12 +64,30 @@ const generateData = (): DataItem[] => {
         latency: Math.floor(Math.random() * 40) + 10,
         cost: Math.floor(Math.random() * 1000) + 500,
         freshness: Math.floor(Math.random() * 20) + 80,
-        status: ["In Progress", "Completed", "Failed"][
-          Math.floor(Math.random() * 3)
+        status: ["In Progress", "Completed", "Failed", "Did Not Arrive", "Not Published"][
+          Math.floor(Math.random() * 5)
         ] as DataItem["status"],
         date: new Date(2023, monthIndex, 1),
       }))
     )
+  );
+};
+
+const CustomLegend: React.FC<any> = (props) => {
+  const { payload } = props;
+
+  return (
+    <ul className="flex flex-wrap justify-center gap-2 text-xs">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center">
+          <span
+            className="inline-block w-2 h-2 mr-1"
+            style={{ backgroundColor: entry.color }}
+          ></span>
+          <span className="text-black">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
   );
 };
 
@@ -88,7 +106,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-            projectData.length
+              projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -171,7 +189,7 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
   </div>
 );
 
-export default function DashboardComponent() {
+export default function Component() {
   const [filters, setFilters] = useState({
     project: "All" as FilterOption,
     pipeline: "All" as FilterOption,
@@ -279,25 +297,33 @@ export default function DashboardComponent() {
         const delayed = filteredData.filter(
           (item) => item.status === "In Progress"
         ).length;
+        const didNotArrive = filteredData.filter(
+          (item) => item.status === "Did Not Arrive"
+        ).length;
         return [
           { name: "Completed On Time", value: completedOnTime },
           { name: "Completed With Delay", value: delayed },
           { name: "Failed", value: failed },
+          { name: "Did Not Arrive", value: didNotArrive },
         ];
       })(),
       publish: (() => {
         const publishedOnTime = filteredData.filter(
           (item) => item.status === "Completed"
         ).length;
-        const notPublished = filteredData.filter(
+        const publishedWithDelay = filteredData.filter(
+          (item) => item.status === "In Progress"
+        ).length;
+        const failed = filteredData.filter(
           (item) => item.status === "Failed"
         ).length;
-        const delayed = filteredData.filter(
-          (item) => item.status === "In Progress"
+        const notPublished = filteredData.filter(
+          (item) => item.status === "Not Published"
         ).length;
         return [
           { name: "Published On Time", value: publishedOnTime },
-          { name: "Published With Delay", value: delayed },
+          { name: "Published With Delay", value: publishedWithDelay },
+          { name: "Failed", value: failed },
           { name: "Not Published", value: notPublished },
         ];
       })(),
@@ -309,16 +335,19 @@ export default function DashboardComponent() {
     const freshnessValues = chartData.freshness.flatMap((item) =>
       Object.values(item).filter((value) => typeof value === "number")
     );
-
     return Math.min(...freshnessValues) - 10;
   }, [chartData]);
+
   const maxValue = useMemo(() => {
     const freshnessValues = chartData.freshness.flatMap((item) =>
       Object.values(item).filter((value) => typeof value === "number")
     );
-
     return Math.max(...freshnessValues) + 10;
   }, [chartData]);
+
+  if (!allData.length) {
+    return <div className="p-4">No data available. Please check your data source.</div>;
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -339,7 +368,7 @@ export default function DashboardComponent() {
           label="Status"
           value={filters.status}
           onChange={(value) => handleFilterChange("status", value)}
-          options={["All", "In Progress", "Completed", "Failed"]}
+          options={["All", "In Progress", "Completed", "Failed", "Not Published"]}
         />
         <FilterSelect
           label="Duration"
@@ -381,8 +410,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square"
-              height={16} wrapperStyle={{ color: "#000" }}/>
+            <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
 
@@ -409,21 +437,20 @@ export default function DashboardComponent() {
                 fill={COLORS[index % COLORS.length]}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square" height={26} />
+            <Legend content={<CustomLegend />} />
           </AreaChart>
         </ChartCard>
 
         <ChartCard title="Ingestion Status">
-          <PieChart className="relative -top-[35px]">
-
+          <PieChart>
             <Pie
               data={chartData.ingestion}
               dataKey="value"
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={58}
-              outerRadius={80}
+              innerRadius={55}
+              outerRadius={90}
               paddingAngle={2}
             >
               {chartData.ingestion.map((_entry, index) => (
@@ -435,32 +462,32 @@ export default function DashboardComponent() {
               ))}
             </Pie>
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Legend verticalAlign="bottom" height={16} />
+            <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
 
         <ChartCard title="Publish Status">
-          <PieChart className="relative -top-[35px]">
+          <PieChart>
             <Pie
               data={chartData.publish}
               dataKey="value"
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={58}
-              outerRadius={80}
+              innerRadius={55}
+              outerRadius={90}
               paddingAngle={2}
             >
               {chartData.publish.map((_entry, index) => (
                 <Cell
-                  key={`${_entry}-${index}`}
+                  key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
                   stroke="none"
                 />
               ))}
             </Pie>
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Legend verticalAlign="bottom" height={16} />
+            <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
       </div>
@@ -488,8 +515,8 @@ export default function DashboardComponent() {
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
-            <Bar dataKey="failed" stackId="a" fill="#ff0000" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -515,8 +542,8 @@ export default function DashboardComponent() {
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             <Bar dataKey="success" stackId="a" fill="#82ca9d" />
-            <Bar dataKey="failed" stackId="a" fill="#ff0000" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -533,10 +560,10 @@ export default function DashboardComponent() {
             />
             <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="failed" stackId="a" fill="#ff0000" />
+            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
             <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
             <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
-            <Legend verticalAlign="bottom" height={26} />
+            <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
 
@@ -571,7 +598,7 @@ export default function DashboardComponent() {
                 }}
               />
             ))}
-            <Legend verticalAlign="bottom" iconType="square" height={26} />
+            <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
       </div>

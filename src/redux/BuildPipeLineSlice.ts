@@ -12,6 +12,9 @@ export interface ApiState {
   dynamicConData: any;
   pipelineList:any;
   nestedFields: any;
+  joinList:any;
+  orderByList:any;
+  createPipeLineDtl:any;
 }
 
 const initialState: ApiState = {
@@ -24,7 +27,10 @@ const initialState: ApiState = {
   isRun: false,
   dynamicConData: null,
   nestedFields: null,
-  pipelineList:[]
+  pipelineList:[],
+  joinList:[],
+  orderByList:[],
+  createPipeLineDtl:{}
 };
 
 interface ApiResponse {
@@ -96,6 +102,29 @@ export const getAllPipeline: any = createAsyncThunk(
     }
   }
 );
+export const getCodesValue: any = createAsyncThunk(
+  'build-pipline/getCodesValue',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const getOrderBy: any = createAsyncThunk(
+  'build-pipline/getOrderBy',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const buildPipeLineSlice = createSlice({
   name: "api/buildDataPipeline",
@@ -113,7 +142,7 @@ const buildPipeLineSlice = createSlice({
     setNestedField: (state, action) => {
       state.nestedFields = action.payload;
     },
-
+    
   },
   extraReducers: (builder) => {
     builder
@@ -189,7 +218,7 @@ const buildPipeLineSlice = createSlice({
         insertPipeline.fulfilled,
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
-          // state.dynamicConData = action.payload;
+          state.createPipeLineDtl = action.payload;
           // if (state.searchProjectList?.length === 0) {
           //   state.searchProjectList = action.payload;
           // }
@@ -224,6 +253,45 @@ const buildPipeLineSlice = createSlice({
           state.error = action.payload;
         }
       )
+
+      .addCase(getCodesValue.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getCodesValue.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.joinList = action.payload;
+        }
+      )
+      .addCase(
+        getCodesValue.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(getOrderBy.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getOrderBy.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.orderByList = action.payload;
+        }
+      )
+      .addCase(
+        getOrderBy.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
   },
 });
 

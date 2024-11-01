@@ -5,14 +5,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
-
+import ValidationComponent from '@/components/validation-component';
+import { Badge } from "@/components/ui/badge"
 // Types
-type Tag = { key: string; value: string };
+type Tag = {
+  tagList: { key: string; value: string }[];
+} | null;
 type Platform = { id: string; name: string; logo: string; cloud_provider: number };
 
 interface EnvironmentTabProps {
@@ -32,6 +35,7 @@ interface EnvironmentTabProps {
   privateKeyFile: File | null;
   chamgeVerification: (verified: boolean) => void;
 }
+
 
 interface FormValues {
   environmentName: string;
@@ -130,7 +134,7 @@ const TagInput: React.FC<{
 
   const addTag = () => {
     if (tagKey && tagValue) {
-      setTags([...tags, { key: tagKey, value: tagValue }]);
+      setTags([...tags,  { tagList: [{ key: tagKey, value: tagValue }] }]);
       setTagKey("");
       setTagValue("");
       setIsModalOpen(false);
@@ -139,69 +143,70 @@ const TagInput: React.FC<{
 
   return (
     <div className="space-y-2">
-      <Label>Add Tags</Label>
       <p className="text-sm text-gray-600">
         Add one or more tags to easily identify compute instances created by bighammer.ai in your cloud account
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
         {tags.map((tag, index) => (
-          <div key={index} className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm">
-            <span>
-              {tag.key} &gt;&gt; {tag.value}
-            </span>
-            <button
-              onClick={() => removeTag(index)}
-              className="ml-2 text-gray-500 hover:text-gray-700"
-              aria-label={`Remove tag ${tag.key}`}
-            >
-              <X size={14} />
-            </button>
-          </div>
+          tag !== null &&
+          tag.tagList.map((item, itemIndex) => (
+            <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
+              {`${item.key} >> ${item.value}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 h-4 w-4 p-0"
+                onClick={() => removeTag(index)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))
         ))}
       </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            ADD TAG
+              ADD TAG
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Tag</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tagKey" className="text-right">
-                Key
-              </Label>
-              <Input
-                id="tagKey"
-                value={tagKey}
-                onChange={(e) => setTagKey(e.target.value)}
-                className="col-span-3"
-              />
+          <DialogContent className="sm:max-w-[385px]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
+            </DialogHeader>
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="tagKey" className="text-sm font-medium">
+                  Key
+                </Label>
+                <Input
+                  id="tagKey"
+                  value={tagKey}
+                  onChange={(e) => setTagKey(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="tagValue" className="text-sm font-medium">
+                  Value
+                </Label>
+                <Input
+                  id="tagValue"
+                  value={tagValue}
+                  onChange={(e) => setTagValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tagValue" className="text-right">
-                Value
-              </Label>
-              <Input
-                id="tagValue"
-                value={tagValue}
-                onChange={(e) => setTagValue(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <Button onClick={addTag} className="w-1/3">
+          <DialogFooter className="mt-6">
+            <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
               Add Tag
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -237,13 +242,19 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       if (result.status) {
         setIsTestConnection(true);
         showToast('Successfully able to connect', { color: '#00b060' });
+        chamgeVerification(true);
+        return true;
       } else {
         setIsTestConnection(false);
         showToast('Failed to connect', { color: '#FF0000' });
+        chamgeVerification(false);
+        return false;
       }
     } catch (error) {
       setIsTestConnection(false);
       showToast('Failed to connect', { color: '#FF0000' });
+      chamgeVerification(false);
+      return false;
     }
   };
 
@@ -258,6 +269,30 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   const handleFileUpload = (file: File) => {
     onChange({ privateKeyFile: file });
   };
+
+  type EnvironmentOptions = {
+    "301": string;
+    "302": string;
+    "303": string;
+  };
+  
+  const environmentOptions: EnvironmentOptions = {
+    "301": "Development",
+    "302": "Staging",
+    "303": "Production"
+  } as const;
+  
+  type LocationOptions = {
+    "1": string;
+    "2": string;
+    "3": string;
+  }
+  
+  const locationOptions: LocationOptions = {
+    "1": "US East",
+    "2": "US West",
+    "3": "EU Central",
+  } as const;
 
   return (
     <Formik
@@ -297,19 +332,24 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <div className="space-y-2 w-[45%]">
               <Label htmlFor="environment">Environment*</Label>
               <Select
-                onValueChange={(value) => {
+                defaultValue={values.environment}
+                value={values.environment}
+                onValueChange={(value: keyof EnvironmentOptions) => {
                   setFieldValue('environment', value);
                   onChange({ environment: value });
                 }}
-                value={values.environment}
               >
                 <SelectTrigger className="w-[60%]">
-                  <SelectValue placeholder="Select Environment" />
+                  <SelectValue placeholder="Select Environment" >
+                    {values.environment ? environmentOptions[values.environment as keyof EnvironmentOptions] : "Select Environment"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="301">Development</SelectItem>
-                  <SelectItem value="302">Staging</SelectItem>
-                  <SelectItem value="303">Production</SelectItem>
+                  {(Object.entries(environmentOptions) as [keyof EnvironmentOptions, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <ErrorMessage name="environment" component="div" className="text-red-500 text-sm" />
@@ -328,10 +368,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             />
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Credentials</h3>
-            <div className="w-full flex justify-between items-start space-x-4">
-              <div className="space-y-2 w-1/2">
+          <div className="w-full space-y-4">
+            <h3 className="text-base font-medium">Credentials</h3>
+            <div className="grid grid-cols-6 gap-2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="projectId">Project ID*</Label>
                 <Field
                   as={Input}
@@ -346,32 +386,35 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 />
                 <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
               </div>
-              <div className="space-y-2 w-1/2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="location">Location*</Label>
                 <Select
-                  onValueChange={(value) => {
+                  defaultValue={values.location}
+                  value = {values.location}
+                  onValueChange={(value: keyof LocationOptions) => {
                     setFieldValue('location', value);
                     onChange({ location: value });
                   }}
-                  value={values.location}
                 >
                   <SelectTrigger className="w-[60%]">
-                    <SelectValue placeholder="Select Location" />
+                  <SelectValue placeholder="Select Environment" >
+                      {values.location ? locationOptions[values.location as keyof LocationOptions] : "Select Location"}
+                  </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">US East</SelectItem>
-                    <SelectItem value="2">US West</SelectItem>
-                    <SelectItem value="3">EU Central</SelectItem>
+                  {(Object.entries(locationOptions) as [keyof LocationOptions, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                   </SelectContent>
                 </Select>
                 <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
               </div>
-            </div>
-
-            {values.selectedPlatform === 'aws' && (
+              <div className="col-span-2"></div>
+              {values.selectedPlatform === 'aws' && (
               <>
-                <div className="w-full flex justify-between items-start space-x-4">
-                  <div className="space-y-2 w-1/2">
+                  <div className="col-span-2 space-y-2">
                     <Label htmlFor="accessKey">Access Key</Label>
                     <Field
                       as={Input}
@@ -386,7 +429,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                  <div className="space-y-2 w-1/2">
+                  <div className="col-span-3 space-y-2">
                     <Label htmlFor="secretAccessKey">Secret Access Key</Label>
                     <Field
                       as={Input}
@@ -402,25 +445,18 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                </div>
                 <div className="w-1/4-plus flex justify-center mt-2">
-                  <button
-                    onClick={() => handleValidate(values)}
-                    type="button"
-                    className="text-custom-color hover:text-blue-800 cursor-pointer hover:underline hover:underline-offset-4 transition-all duration-200"
-                  >
-                    Validate
-                  </button>
+                  <ValidationComponent onValidate={() => handleValidate(values)} />
                 </div>
               </>
             )}
-
+            </div>
             {values.selectedPlatform === 'google-cloud' && (
               <div className="w-full">
                 <div className="space-y-2">
                   <Label htmlFor="privateKeyFile">Private Key*</Label>
                   <div className="w-1/2">
-                  <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
+                    <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
                   </div>
                   <ErrorMessage name="privateKeyFile" component="div" className="text-red-500 text-sm" />
                 </div>

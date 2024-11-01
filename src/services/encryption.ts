@@ -1,8 +1,9 @@
 import * as CryptoJS from 'crypto-js';
+const DECRYPTION_KEY = import.meta.env.VITE_DECRYPTION_KEY;
 
 // Configuration placeholder
 const Config = {
-    DECRYPTION_KEY: 'passwordpasswordpasswordpassword' // Replace with your actual key
+    DECRYPTION_KEY:`${DECRYPTION_KEY}`  // Replace with your actual key
 };
 
 class AESEncryptionError extends Error {

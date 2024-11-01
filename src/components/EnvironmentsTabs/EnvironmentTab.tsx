@@ -5,15 +5,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
 import { ApiService } from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
-
+import { Badge } from "@/components/ui/badge"
 // Types
-type Tag = { key: string; value: string };
+type Tag = {
+  tagList: { key: string; value: string }[];
+} | null;
 type Platform = { id: string; name: string; logo: string; cloud_provider: number };
 
 interface EnvironmentTabProps {
@@ -33,6 +35,7 @@ interface EnvironmentTabProps {
   privateKeyFile: File | null;
   chamgeVerification: (verified: boolean) => void;
 }
+
 
 interface FormValues {
   environmentName: string;
@@ -131,7 +134,7 @@ const TagInput: React.FC<{
 
   const addTag = () => {
     if (tagKey && tagValue) {
-      setTags([...tags, { key: tagKey, value: tagValue }]);
+      setTags([...tags,  { tagList: [{ key: tagKey, value: tagValue }] }]);
       setTagKey("");
       setTagValue("");
       setIsModalOpen(false);
@@ -145,63 +148,65 @@ const TagInput: React.FC<{
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
         {tags.map((tag, index) => (
-          <div key={index} className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm">
-            <span>
-              {tag.key} &gt;&gt; {tag.value}
-            </span>
-            <button
-              onClick={() => removeTag(index)}
-              className="ml-2 text-gray-500 hover:text-gray-700"
-              aria-label={`Remove tag ${tag.key}`}
-            >
-              <X size={14} />
-            </button>
-          </div>
+          tag !== null &&
+          tag.tagList.map((item, itemIndex) => (
+            <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
+              {`${item.key} >> ${item.value}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 h-4 w-4 p-0"
+                onClick={() => removeTag(index)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))
         ))}
       </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            ADD TAG
+              ADD TAG
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Tag</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tagKey" className="text-right">
-                Key
-              </Label>
-              <Input
-                id="tagKey"
-                value={tagKey}
-                onChange={(e) => setTagKey(e.target.value)}
-                className="col-span-3"
-              />
+          <DialogContent className="sm:max-w-[385px]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
+            </DialogHeader>
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="tagKey" className="text-sm font-medium">
+                  Key
+                </Label>
+                <Input
+                  id="tagKey"
+                  value={tagKey}
+                  onChange={(e) => setTagKey(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="tagValue" className="text-sm font-medium">
+                  Value
+                </Label>
+                <Input
+                  id="tagValue"
+                  value={tagValue}
+                  onChange={(e) => setTagValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tagValue" className="text-right">
-                Value
-              </Label>
-              <Input
-                id="tagValue"
-                value={tagValue}
-                onChange={(e) => setTagValue(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <Button onClick={addTag} className="w-1/3">
+          <DialogFooter className="mt-6">
+            <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
               Add Tag
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -237,15 +242,18 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       if (result.status) {
         setIsTestConnection(true);
         showToast('Successfully able to connect', { color: '#00b060' });
+        chamgeVerification(true);
         return true;
       } else {
         setIsTestConnection(false);
         showToast('Failed to connect', { color: '#FF0000' });
+        chamgeVerification(false);
         return false;
       }
     } catch (error) {
       setIsTestConnection(false);
       showToast('Failed to connect', { color: '#FF0000' });
+      chamgeVerification(false);
       return false;
     }
   };

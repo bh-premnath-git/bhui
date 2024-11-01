@@ -90,8 +90,8 @@
 }
 
 .handle {
-  width: 8px;
-  height: 8px;
+  width: 0.2px;
+  height: 0.1px;
   background-color: #718096;
 }
 

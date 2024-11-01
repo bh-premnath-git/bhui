@@ -26,6 +26,8 @@ import { LocalStorageService } from '@/services/localStorageServices';
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { custom: CustomEdge };
 const proOptions = { hideAttribution: true };
+const defaultViewport = { x: -100, y: 0, zoom: 1.5 };
+const snapGrid: [number, number] = [20, 20];
 
 const CustomControls = () => {
   const { zoomIn, zoomOut, setViewport } = useReactFlow();
@@ -55,9 +57,8 @@ const CustomControls = () => {
         >
           <span className={styles.dataPreviewText}>Data Preview</span>
           <span
-            className={`${styles.dataPreviewSymbol} ${
-              isDataPreviewOpen ? styles.inverted : ''
-            }`}
+            className={`${styles.dataPreviewSymbol} ${isDataPreviewOpen ? styles.inverted : ''
+              }`}
           >
             ^
           </span>
@@ -136,20 +137,21 @@ const FlowPlayground: React.FC = () => {
     }
   }, [nodes, edges, selectedFlowFromList]);
 
-  const onConnect = useCallback((params: Connection) => 
+  const onConnect = useCallback((params: Connection) =>
     setEdges((eds) => {
-      const newEdges = addEdge(params, eds);
+      const newEdge = { ...params, type: 'custom' };
+      const newEdges = addEdge(newEdge, eds);
       setTimeout(logCurrentState, 0);
       return newEdges;
     })
-  , [setEdges, logCurrentState]);
+    , [setEdges, logCurrentState]);
 
   const onAddNode = useCallback((nodeType: NodeType, selectedNodeName: string) => {
     const selectedNode = nodeType.nodes.find((node) => node.node_name === selectedNodeName);
     const newNode: Node = {
       id: `${nodeType.type}-${Date.now()}`,
       type: 'custom',
-      position: { x: 0, y: 0 },
+      position: { x: 100 + nodes.length * 100, y: 150 },
       data: {
         label: nodeType.label,
         type: nodeType.type,
@@ -169,17 +171,17 @@ const FlowPlayground: React.FC = () => {
     onNodesChange(changes);
     setTimeout(logCurrentState, 300);
   }, [onNodesChange, logCurrentState]);
-
+  
   const wrappedOnEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
     setTimeout(logCurrentState, 300);
   }, [onEdgesChange, logCurrentState]);
 
   const checkNodeProximityAndConnect = useCallback(() => {
-    const HANDLE_WIDTH = 16;
-    const HANDLE_HEIGHT = 44;
-    const NODE_WIDTH = 150;
-    const NODE_HEIGHT = 80;
+    const HANDLE_WIDTH = 10;
+    const HANDLE_HEIGHT = 24;
+    const NODE_WIDTH = 100;
+    const NODE_HEIGHT = 130;
     const HANDLE_OFFSET_X = 8;
 
     const handles = nodes.flatMap((node) => [
@@ -216,6 +218,7 @@ const FlowPlayground: React.FC = () => {
               id: `e${sourceHandle.nodeId}-${targetHandle.nodeId}`,
               source: sourceHandle.nodeId,
               target: targetHandle.nodeId,
+              type: 'custom', // Add this line
               animated: true,
               style: { stroke: '#888' },
             }];
@@ -234,7 +237,7 @@ const FlowPlayground: React.FC = () => {
     const getNewNodePosition = () => {
       if (!reactFlowWrapper.current) return { x: 0, y: 0 };
       const rect = reactFlowWrapper.current.getBoundingClientRect();
-      return { x: rect.width / 2 - 75, y: rect.height / 2 - 40 };
+      return { x: rect.width, y: rect.height / 2 - 30 };
     };
 
     const nodesWithUpdatedPositions = nodes.map((node) =>
@@ -247,6 +250,7 @@ const FlowPlayground: React.FC = () => {
       <ReactFlow
         nodes={nodesWithUpdatedPositions}
         edges={edges}
+        defaultEdgeOptions={{ type: 'custom' }}
         proOptions={proOptions}
         onNodesChange={wrappedOnNodesChange}
         onEdgesChange={wrappedOnEdgesChange}
@@ -254,7 +258,9 @@ const FlowPlayground: React.FC = () => {
         onNodeDragStop={checkNodeProximityAndConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView
+        snapToGrid={true}
+        snapGrid={snapGrid}
+        defaultViewport={defaultViewport}
       >
         <CustomControls />
       </ReactFlow>

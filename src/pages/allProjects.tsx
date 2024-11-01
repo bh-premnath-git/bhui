@@ -10,6 +10,7 @@ import { FileQuestion } from "lucide-react";
 
 // Define types in a separate file for better organization
 interface GitProject {
+  bh_project_id: number;
   projectName: string;
   ytdCost: number;
   currentMonthCost: number;
@@ -50,8 +51,7 @@ function GitProjectTable({
 
   const handleProjectClick = (project: GitProject) => {
     dispatch(setEditProjectData(project));
-    navigate("/all-projects/new");
-    // console.log("Project data:", project); 
+    navigate(`/projects/${project.bh_project_id}`);
   };
 
   
@@ -107,7 +107,6 @@ const columns: ColumnConfig[] = [
       },
     },
   },
-
 ];
 
 const EmptyComponent: React.FC = () => {
@@ -138,7 +137,7 @@ const EmptyComponent: React.FC = () => {
   }
 
   const createNewFn = () => {
-    dispatch(setEditProjectData(null));
+    dispatch(setEditProjectData({}));
     navigate("/all-projects/new");
   };
   
@@ -146,8 +145,8 @@ const EmptyComponent: React.FC = () => {
   const actionFn = (rowData: GitProject, action: string) => {
     if (action === 'edit') {
       dispatch(setEditProjectData(rowData));
-      navigate("/all-projects/new");
-    }    
+      navigate(`/projects/${rowData.bh_project_id}`);
+    }
   };
 
   if (gitProjectList.length === 0) {

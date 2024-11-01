@@ -9,6 +9,7 @@ import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { useNavigate } from 'react-router-dom';
+import "reactflow/dist/style.css";
 
 type CustomNode = Node<CustomNodeData>;
 

@@ -90,7 +90,7 @@
                             "ui_type": "drop_down",
                             "order": 2,
                             "dependency": "/environment/connections/",
-                            "dependencycont": "/s3_connections/",
+                            "dependencycont": "/aws_connections/",
                             "mandatory": true,
                             "help_text": "List of S3 Connections are configured in Connections tab of the environment"
                         },
@@ -137,117 +137,35 @@
                     ]
                 },
                 {
-                    "node_name": "EMR Pipeline Sensor",
-                    "order": 3,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "EMR Fabric",
-                            "property_key": "emr_fabric",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "AWS Connection ID",
-                            "property_key": "aws_connection_id",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Step ID",
-                            "property_key": "step_id",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "EMR Custer ID Override",
-                            "property_key": "emr-cluster-id-override",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Sensor Timeout In Seconds",
-                            "property_key": "sensor-timeout-in-seconds",
-                            "ui_type": "number",
-                            "order": 5,
-                            "mandatory": false,
-                            "help_text": "Poll interval in seconds"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "EMR Cluster Sensor",
-                    "order": 4,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "EMR Cluster ID",
-                            "property_key": "emr_cluster_id",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "AWS Connection ID",
-                            "property_key": "aws_connection_id",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Target States",
-                            "property_key": "target_states",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Failed States",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Sensor Timeout In Seconds",
-                            "property_key": "sensor-timeout-in-seconds",
-                            "ui_type": "number",
-                            "order": 5,
-                            "mandatory": false,
-                            "help_text": "Poll interval in seconds"
-                        }
-                    ]
-                },
-                {
                     "node_name": "SFTP Sensor",
                     "order": 5,
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "SFTP Connection",
-                            "property_key": "sftp_connection",
-                            "ui_type": "text",
-                            "order": 1,
+                            "property_name": "Connection Name",
+                            "property_key": "connection_name2",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/sftp_connections/",
                             "mandatory": true,
-                            "help_text": "End point of the API"
+                            "help_text": "List of S3 Connections are configured in Connections tab of the environment"
                         },
                         {
                             "property_name": "Poke Interval In Seconds",
                             "property_key": "poke_intrerval_in_seconds",
                             "ui_type": "number",
                             "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "",
+                            "property_key": "use_matching_regex",
+                            "ui_type": "radio",
+                            "option1": "use complete file path",
+                            "option2": "use patern matching",
+                            "order": 2,
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
@@ -265,52 +183,6 @@
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": true,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "Dataproc Cluster Sensor",
-                    "order": 6,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "Dataproc Pipeline Sensor",
-                    "order": 6,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
                             "help_text": "End point of the API"
                         }
                     ]
@@ -333,7 +205,7 @@
                             "ui_type": "drop_down",
                             "order": 1,
                             "dependency": "/environment/connections/",
-                            "dependencycont": "/http_connections/",
+                            "dependencycont": "/sftp_connections/",
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
@@ -351,7 +223,7 @@
                             "ui_type": "drop_down",
                             "order": 3,
                             "dependency": "/environment/connections/",
-                            "dependencycont": "/http_connections/",
+                            "dependencycont": "/aws_connections/",
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
@@ -372,76 +244,6 @@
                             "help_text": "End point of the API"
                         }
                     ]
-                },
-                {
-                    "node_name": "SFTPtoSnowflake",
-                    "order": 2,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "TableauExtract",
-                    "order": 3,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
                 }
             ]
         },
@@ -450,70 +252,6 @@
             "color": "#0FBAEF",
             "icon": "/src/assets/flow/Pipeline.svg",
             "nodes": [
-                {
-                    "node_name": "Databricks Pipeline",
-                    "order": 1,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Connection Name",
-                            "property_key": "connection_name",
-                            "ui_type": "drop_down",
-                            "order": 2,
-                            "dependency": "/connections/http_sensor/",
-                            "mandatory": true,
-                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
-                        },
-                        {
-                            "property_name": "Request Parameters",
-                            "property_key": "request_params",
-                            "ui_type": "json",
-                            "order": 3,
-                            "mandatory": false,
-                            "help_text": "Request parameters for the HTTP Request"
-                        },
-                        {
-                            "property_name": "Request Headers",
-                            "property_key": "request_headers",
-                            "ui_type": "json",
-                            "order": 4,
-                            "mandatory": false,
-                            "help_text": "HTTP Header request parameters"
-                        },
-                        {
-                            "property_name": "Poll interval (seconds)",
-                            "property_key": "poll_interval",
-                            "ui_type": "number",
-                            "order": 5,
-                            "mandatory": false,
-                            "help_text": "Poll interval in seconds"
-                        },
-                        {
-                            "property_name": "Request Timeout (seconds)",
-                            "property_key": "timeout",
-                            "ui_type": "number",
-                            "order": 6,
-                            "mandatory": false,
-                            "help_text": "Request timeout in seconds"
-                        },
-                        {
-                            "property_name": "Validate Response",
-                            "property_key": "validate_response",
-                            "ui_type": "json",
-                            "order": 7,
-                            "mandatory": false,
-                            "help_text": "Assetion for validating HTTP Response"
-                        }
-                    ]
-                },
                 {
                     "node_name": "EMR Pipeline",
                     "order": 2,
@@ -567,7 +305,27 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "End Point",
+                            "property_name": "aws conn id",
+                            "property_key": "connection_name4",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/aws_connections/",
+                            "mandatory": true,
+                            "help_text": "List of S3 Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "EMR conn id",
+                            "property_key": "connection_name5",
+                            "ui_type": "drop_down",
+                            "order": 2,
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/aws_connections/",
+                            "mandatory": true,
+                            "help_text": "List of S3 Connections are configured in Connections tab of the environment"
+                        },
+                        {
+                            "property_name": "Region name",
                             "property_key": "end_point",
                             "ui_type": "text",
                             "order": 1,
@@ -575,78 +333,9 @@
                             "help_text": "End point of the API"
                         },
                         {
-                            "property_name": "End Point",
+                            "property_name": "job flow overide",
                             "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "Dataproc Pipeline",
-                    "order": 4,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "SnowflakeSQL",
-                    "order": 5,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "Model",
-                    "order": 6,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
+                            "ui_type": "textbox",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
@@ -753,29 +442,6 @@
                             "mandatory": false,
                             "help_text": "End point of the API"
                         },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "Trigger DAG",
-                    "order": 3,
-                    "layout": "2-column",
-                    "properties": [
                         {
                             "property_name": "End Point",
                             "property_key": "end_point",
@@ -933,155 +599,6 @@
                             "mandatory": false,
                             "help_text": "End point of the API"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "module_name": "Subgraph",
-            "color": "#F3C603",
-            "icon": "/src/assets/flow/SubFlow.svg",
-            "nodes": [
-                {
-                    "node_name": "Taskgroup",
-                    "order": 1,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "Connection Name",
-                            "property_key": "connection_name",
-                            "ui_type": "drop_down",
-                            "order": 2,
-                            "dependency": "/connections/http_sensor/",
-                            "mandatory": true,
-                            "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
-                        },
-                        {
-                            "property_name": "Request Parameters",
-                            "property_key": "request_parameters",
-                            "ui_type": "json",
-                            "order": 3,
-                            "mandatory": false,
-                            "help_text": "Request parameters for the HTTP Request"
-                        },
-                        {
-                            "property_name": "Request Headers",
-                            "property_key": "request_headers",
-                            "ui_type": "json",
-                            "order": 4,
-                            "mandatory": false,
-                            "help_text": "HTTP Header request parameters"
-                        },
-                        {
-                            "property_name": "Poll interval (seconds)",
-                            "property_key": "poll_interval",
-                            "ui_type": "number",
-                            "order": 5,
-                            "mandatory": false,
-                            "help_text": "Poll interval in seconds"
-                        },
-                        {
-                            "property_name": "Request Timeout (seconds)",
-                            "property_key": "request_timeout",
-                            "ui_type": "number",
-                            "order": 6,
-                            "mandatory": false,
-                            "help_text": "Request timeout in seconds"
-                        },
-                        {
-                            "property_name": "Validate Response",
-                            "property_key": "validate_response",
-                            "ui_type": "json",
-                            "order": 7,
-                            "mandatory": false,
-                            "help_text": "Assetion for validating HTTP Response"
-                        }
-                    ]
-                },
-                {
-                    "node_name": "ForEachLoop",
-                    "order": 2,
-                    "layout": "2-column",
-                    "properties": [
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        },
-                        {
-                            "property_name": "End Point",
-                            "property_key": "end_point",
-                            "ui_type": "text",
-                            "order": 1,
-                            "mandatory": false,
-                            "help_text": "End point of the API"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "module_name": "Alerts",
-            "color": "#F7A01F",
-            "icon": "/src/assets/flow/Alert.svg",
-            "nodes": [
-                {
-                    "node_name": "DQ Alert",
-                    "order": 1,
-                    "layout": "2-column",
-                    "properties": [
-                        {}
-                    ]
-                },
-                {
-                    "node_name": "Cost Alert",
-                    "order": 1,
-                    "layout": "2-column",
-                    "properties": [
-                        {}
-                    ]
-                },
-                {
-                    "node_name": "File not arrival Alert",
-                    "order": 1,
-                    "layout": "2-column",
-                    "properties": [
-                        {}
                     ]
                 }
             ]

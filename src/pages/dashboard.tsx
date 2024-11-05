@@ -42,14 +42,14 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string; [key: string]: any };
+  payload?: { name: string;[key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
   isShow?: boolean;
 }
 
-const COLORS = ["#00C49F", "#FFBB28", "#018042", "#FF6B6B", "#8884d8", "#663399"];
+const COLORS = ["#00C49F", "#FFBB28", "#018042", "#FF6B6B", "#8884d8", "#FE9999"];
 const months = ["Jan", "Feb", "Mar", "Apr", "May"];
 const projects = ["Project1", "Project2", "Project3", "Project4"];
 const pipelines = ["Pipeline1", "Pipeline2", "Pipeline3", "Pipeline4"];
@@ -106,7 +106,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-              projectData.length
+            projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -421,16 +421,16 @@ export default function Component() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
               <Area
                 key={`${proj}-${index}`}
-                type="linear"
+                type="monotone"
                 dataKey={proj}
                 stackId="1"
                 stroke={COLORS[index % COLORS.length]}

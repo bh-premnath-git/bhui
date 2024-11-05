@@ -7,7 +7,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { NodeTransformer } from '@/pages/manageFlow/flowTransformer';
-
+import { databaseSyncService } from '@/services/databaseSync';
+import { ApiService } from '@/services/apiServices';
 
 interface ModalContentProps {
     nodeData: any;
@@ -22,17 +23,32 @@ const getErrorMessage = (fieldName: string, errors: FormikErrors<any>): string =
 
 const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connections = [] }) => {
     const nodeConfig = nodeData.selectedNode;
-    const [dropDownOptions, setDropDownOptions] = useState<string[]>([
-        "http_connection_1",
-        "http_connection_2",
-        "http_connection_3",
-        "http_connection_4",
-        "http_connection_5"
-    ]);
+    const [dropDownOptions, setDropDownOptions] = useState<{ [key: string]: string[] }>({});
+
 
     const { selectedFlowFromList } = useSelector(
         (state: RootState) => state.flowApi
     );
+
+    useEffect(() => {
+        const fetchConnections = async () => {
+            const dropdownProps = nodeConfig.properties.filter(
+                (prop: any) => prop.ui_type === 'drop_down' && prop.dependency && prop.dependencycont
+            );
+            const options: { [key: string]: string[] } = {};
+            for (const prop of dropdownProps) {
+                const result = await ApiService(
+                    '8011',
+                    'get',
+                    `${prop.dependency}${selectedFlowFromList.flow_deployment[0].bh_env_id}${prop.dependencycont}`,
+                    null
+                );
+                options[prop.property_key] = result;
+            }
+            setDropDownOptions(options);
+        };
+        fetchConnections();
+    }, [nodeConfig, selectedFlowFromList]);
 
     const initialValues = nodeConfig.properties.reduce((acc: any, prop: any) => {
         acc[prop.property_key] = prop.default_value || '';
@@ -75,9 +91,8 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         validationSchema,
         onSubmit: async (values) => {
             const transformedData = NodeTransformer.transform(nodeConfig, values);
-            console.log("Transformed Data:", transformedData);
             LocalStorageService.setItem(`form-${selectedFlowFromList.flow_id}`, values);
-
+            databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, { flow_wip_json: JSON.stringify(transformedData) });
             if (onClose)
                 onClose();
         },
@@ -91,6 +106,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
             Object.keys(savedValues).forEach(key => {
                 formik.setFieldValue(key, savedValues[key]);
             });
+
         }
     }, [selectedFlowFromList.flow_id]);
 
@@ -109,10 +125,10 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 field = <input type="text" {...commonProps} />;
                 break;
             case 'drop_down':
-                field = (
+                 field = (
                     <select {...commonProps}>
                         <option value="">Select an option</option>
-                        {dropDownOptions?.map((option: any) => (
+                        {dropDownOptions[prop.property_key]?.map((option: any) => (
                             <option key={option} value={option}>
                                 {option}
                             </option>
@@ -136,6 +152,26 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                     />
                 );
                 break;
+                case 'radio':
+            field = (
+                <div>
+                    {Object.keys(prop)
+                        .filter((key) => key.startsWith('option'))
+                        .map((optionKey) => (
+                            <label key={optionKey}>
+                                <input
+                                    type="radio"
+                                    name={prop.property_key}
+                                    value={prop[optionKey]}
+                                    checked={formik.values[prop.property_key] === prop[optionKey]}
+                                    onChange={formik.handleChange}
+                                />
+                                {prop[optionKey]}
+                            </label>
+                        ))}
+                </div>
+            );
+            break;
             default:
                 field = <input type="text" {...commonProps} />;
         }

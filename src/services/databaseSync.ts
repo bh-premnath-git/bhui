@@ -1,109 +1,156 @@
 import { ApiService } from "@/services/apiServices";
-import { LocalStorageService } from '@/services/localStorageServices';
 
 interface PendingSync {
-  key: string;
-  value: any;
-  timestamp: number;
-  operation: 'set' | 'remove';
+    key: string;
+    value: any;
+    timestamp: number;
+    operation: 'set' | 'remove';
 }
 
 class DatabaseSyncService {
-  private static instance: DatabaseSyncService;
-  private syncInterval: NodeJS.Timeout | null = null;
-  private pendingSyncs: Map<string, PendingSync> = new Map();
-  private isInitialized: boolean = false;
+    private static instance: DatabaseSyncService;
+    private syncInterval: NodeJS.Timeout | null = null;
+    private pendingSyncs: Map<string, PendingSync> = new Map();
+    private isInitialized: boolean = false;
 
-  private constructor() {
-  }
-
-  static getInstance(): DatabaseSyncService {
-    if (!DatabaseSyncService.instance) {
-      DatabaseSyncService.instance = new DatabaseSyncService();
+    private constructor() {
     }
-    return DatabaseSyncService.instance;
-  }
 
-  initialize(intervalMs: number = 30000) {
-    if (this.isInitialized) return;
+    static getInstance(): DatabaseSyncService {
+        if (!DatabaseSyncService.instance) {
+            DatabaseSyncService.instance = new DatabaseSyncService();
+        }
+        return DatabaseSyncService.instance;
+    }
 
-    window.addEventListener('storage', this.handleStorageChange);
+    initialize(intervalMs: number = 30000) {
+        if (this.isInitialized) return;
 
-    this.syncInterval = setInterval(() => {
-      this.syncWithDatabase();
-    }, intervalMs);
+        window.addEventListener('storage', this.handleStorageChange);
 
-    this.isInitialized = true;
-  }
+        this.syncInterval = setInterval(() => {
+            this.syncWithDatabase();
+        }, intervalMs);
 
-  private handleStorageChange = (event: StorageEvent) => {
-    if (!event.key) return;
+        this.isInitialized = true;
+    }
 
-    const pendingSync: PendingSync = {
-      key: event.key,
-      value: event.newValue ? JSON.parse(event.newValue) : null,
-      timestamp: Date.now(),
-      operation: event.newValue ? 'set' : 'remove'
+    private handleStorageChange = (event: StorageEvent) => {
+        if (!event.key) return;
+
+        const pendingSync: PendingSync = {
+            key: event.key,
+            value: event.newValue ? JSON.parse(event.newValue) : null,
+            timestamp: Date.now(),
+            operation: event.newValue ? 'set' : 'remove'
+        };
+
+        this.pendingSyncs.set(event.key, pendingSync);
     };
 
-    this.pendingSyncs.set(event.key, pendingSync);
-  };
-
-  private async syncWithDatabase() {
-    if (this.pendingSyncs.size === 0) return;
-
-    const syncsToProcess = Array.from(this.pendingSyncs.values());
-    
-    try {
-      const response = await ApiService(
-        '8011',
-        'post',
-        '/storage/batch-sync',
-        syncsToProcess
-      );
-
-      if (response.success) {
-        syncsToProcess.forEach(sync => {
-          this.pendingSyncs.delete(sync.key);
-        });
-        console.log(`Synced ${syncsToProcess.length} items with database`);
-      }
-    } catch (error) {
-      console.error('Database sync failed:', error);
+    private getDeploymentIdFromKey(key: string): number | null {
+        try {
+            return parseInt(key);
+        } catch (error) {
+            console.error('Failed to parse deployment ID from key:', key);
+            return null;
+        }
     }
-  }
 
-  async forceSyncNow(): Promise<void> {
-    await this.syncWithDatabase();
-  }
+    private async syncWithDatabase() {
+        if (this.pendingSyncs.size === 0) return;
 
-  isPendingSync(key: string): boolean {
-    return this.pendingSyncs.has(key);
-  }
+        // Get the first pending sync
+        const [key, sync] = Array.from(this.pendingSyncs.entries())[0];
+        const deploymentId = this.getDeploymentIdFromKey(sync.key);
 
-  getPendingSyncCount(): number {
-    return this.pendingSyncs.size;
-  }
+        if (!deploymentId) return;
 
-  queueForSync(key: string) {
-    const value = LocalStorageService.getItem(key);
-    if (value !== null) {
-      this.pendingSyncs.set(key, {
-        key,
-        value,
-        timestamp: Date.now(),
-        operation: 'set'
-      });
+        try {
+
+            // /api/v1/flow/flow-deployement/{flow_deployment_id}
+            const resp = await ApiService(
+                '8011',
+                'get',
+                `/flow/flow-deployement/${deploymentId}`,
+            )
+            const syncData = ({ ...resp, ...sync.value });
+            if(syncData){
+            const response = await ApiService(
+                '8011',
+                'put',
+                `/flow/flow-deployement/${deploymentId}`,
+                syncData
+            );
+
+            if (response.success) {
+                this.pendingSyncs.delete(key);
+                console.log(`Synced item with deployment ${deploymentId}`);
+            }
+        }else{
+            this.pendingSyncs.delete(key);
+        }
+        } catch (error) {
+            console.error('Database sync failed:', error);
+        }
     }
-  }
 
-  destroy() {
-    if (this.syncInterval) {
-      clearInterval(this.syncInterval);
+    async forceSyncNow(deploymentId: number): Promise<void> {
+        // Find the sync for this deployment ID
+        const sync = Array.from(this.pendingSyncs.values())
+            .find(sync => this.getDeploymentIdFromKey(sync.key) === deploymentId);
+
+        if (!sync) return;
+
+        try {
+            const syncData = {
+                [sync.key]: sync.value
+            };
+
+            const response = await ApiService(
+                '8011',
+                'put',
+                `/api/v1/flow/flow-deployement/${deploymentId}`,
+                syncData
+            );
+
+            if (response.success) {
+                this.pendingSyncs.delete(sync.key);
+                console.log(`Force synced item with deployment ${deploymentId}`);
+            }
+        } catch (error) {
+            console.error('Force sync failed:', error);
+            throw error;
+        }
     }
-    window.removeEventListener('storage', this.handleStorageChange);
-    this.isInitialized = false;
-  }
+
+    isPendingSync(key: string): boolean {
+        return this.pendingSyncs.has(key);
+    }
+
+    getPendingSyncCount(): number {
+        return this.pendingSyncs.size;
+    }
+
+    queueForSync(key: string, value: any) {
+        const deploymentId = this.getDeploymentIdFromKey(key);
+        if (value !== null && deploymentId) {
+            this.pendingSyncs.set(key, {
+                key,
+                value,
+                timestamp: Date.now(),
+                operation: 'set'
+            });
+        }
+    }
+
+    destroy() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        window.removeEventListener('storage', this.handleStorageChange);
+        this.isInitialized = false;
+    }
 }
 
 export const databaseSyncService = DatabaseSyncService.getInstance();

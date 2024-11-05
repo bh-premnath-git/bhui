@@ -1,3 +1,4 @@
+/* Modal Container */
 .modalContainer {
   background-color: #fff;
   border-radius: 8px;
@@ -9,12 +10,15 @@
   flex-direction: column;
 }
 
+/* Modal Header */
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #eee;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 .modalHeader h2 {
@@ -35,13 +39,15 @@
   opacity: 0.7;
 }
 
+/* Tabs */
 .tabContainer {
   display: flex;
   padding: 0 20px;
   margin-top: -1px;
 }
 
-.tab, .activeTab {
+.tab,
+.activeTab {
   padding: 10px 20px;
   border: none;
   background: none;
@@ -62,6 +68,7 @@
   color: #000;
 }
 
+/* Form Styles */
 .form {
   padding: 10px;
   display: flex;
@@ -74,22 +81,24 @@
   gap: 10px;
 }
 
+/* Form Field Base Styles */
 .formField {
   margin-bottom: 5px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Default to column layout */
 }
 
+/* Label Styles */
 .formField label {
-  display: block;
-  margin-bottom: 5px;
   font-weight: normal;
   color: #000;
+  margin-bottom: 5px;
 }
 
+/* Input and Select Styles */
 .formField input,
-.formField select {
-  width: 100%;
+.formField select,
+.formField textarea {
   padding: 4px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -99,48 +108,39 @@
   line-height: 1.5;
 }
 
+/* Focus Styles */
 .formField input:focus,
-.formField select:focus {
+.formField select:focus,
+.formField textarea:focus {
   outline: none;
   border-color: #000;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-.formField select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000000' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 30px;
+/* Full-width Inputs and Selects */
+.formField input[type="text"],
+.formField input[type="number"],
+.formField select,
+.formField textarea {
+  width: 100%;
 }
 
-/* Checkbox specific styles */
-.formField:has(input[type="checkbox"]) {
-  flex-direction: row;
-  align-items: center;
+/* Error Message */
+.errorMessage {
+  color: red;
+  font-size: 0.8em;
+  margin-top: 0.2em;
 }
 
-.formField:has(input[type="checkbox"]) label {
-  width: 65%;
-  margin-bottom: 0;
-  margin-right: 10px;
-  order: 1;
-}
-
-.formField input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  order: 2;
-}
-
+/* Button Container */
 .buttonContainer {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-.closeButton, .saveButton {
+.closeButton,
+.saveButton {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -154,13 +154,64 @@
   color: #333;
 }
 
+.closeButton:hover {
+  background-color: #e0e0e0;
+}
+
 .saveButton {
   background-color: #000;
   color: #fff;
 }
 
-.errorMessage {
-  color: red;
-  font-size: 0.8em;
+.saveButton:hover {
+  background-color: #333;
+}
+
+/* ------------------------------------- */
+/* Checkbox Specific Styles using :has() */
+/* ------------------------------------- */
+
+/* Adjust .formField containing a checkbox */
+.formField:has(input[type="checkbox"]) {
+  flex-direction: row;    /* Arrange items horizontally */
+  align-items: center;    /* Center vertically */
+}
+
+/* Adjust the order and spacing */
+.formField:has(input[type="checkbox"]) label {
+  order: 2; /* Label after input */
+  margin-bottom: 0;
+  margin-left: 5px; /* Space between checkbox and label */
+}
+
+/* Adjust the input (checkbox) */
+.formField:has(input[type="checkbox"]) input[type="checkbox"] {
+  order: 1; /* Input before label */
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+/* Error Message */
+.formField:has(input[type="checkbox"]) .errorMessage {
+  width: 100%;
   margin-top: 0.2em;
+  order: 3;
+}
+
+/* Radio Button Styles */
+.formField:has(input[type="radio"]) {
+  flex-direction: column; /* Arrange items vertically */
+}
+
+/* Style each label containing the radio input */
+.formField:has(input[type="radio"]) label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px; /* Space between radio options */
+}
+
+/* Adjust the spacing between the radio button and its label text */
+.formField:has(input[type="radio"]) input[type="radio"] {
+  margin-right: 5px;
 }

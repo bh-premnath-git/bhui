@@ -136,12 +136,6 @@ const FlowPlayground: React.FC = () => {
     }
   }, [selectedFlowFromList, onDeleteNode, onCloneNode, setNodes, setEdges]);
 
-  useEffect(() => {
-    if (selectedFlowFromList?.flow_id) {
-    const storedFlowData = LocalStorageService.getItem(selectedFlowFromList?.flow_id);
-    databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, {flow_json: JSON.stringify(storedFlowData)});
-    }
-  }, [selectedFlowFromList]);
 
   const logCurrentState = useCallback(() => {
     if (selectedFlowFromList?.flow_id) {

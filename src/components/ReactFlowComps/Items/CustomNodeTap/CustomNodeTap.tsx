@@ -50,6 +50,16 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         fetchConnections();
     }, [nodeConfig, selectedFlowFromList]);
 
+
+    useEffect(() => {
+        return () => {
+            if (selectedFlowFromList?.flow_id) {
+                const storedFlowData = LocalStorageService.getItem(selectedFlowFromList?.flow_id);
+                databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, { flow_json: JSON.stringify(storedFlowData) });
+            }
+        }
+    }, [selectedFlowFromList]);
+
     const initialValues = nodeConfig.properties.reduce((acc: any, prop: any) => {
         acc[prop.property_key] = prop.default_value || '';
         return acc;
@@ -125,7 +135,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 field = <input type="text" {...commonProps} />;
                 break;
             case 'drop_down':
-                 field = (
+                field = (
                     <select {...commonProps}>
                         <option value="">Select an option</option>
                         {dropDownOptions[prop.property_key]?.map((option: any) => (
@@ -152,32 +162,71 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                     />
                 );
                 break;
-                case 'radio':
-            field = (
-                <div>
-                    {Object.keys(prop)
-                        .filter((key) => key.startsWith('option'))
-                        .map((optionKey) => (
-                            <label key={optionKey}>
-                                <input
-                                    type="radio"
-                                    name={prop.property_key}
-                                    value={prop[optionKey]}
-                                    checked={formik.values[prop.property_key] === prop[optionKey]}
-                                    onChange={formik.handleChange}
-                                />
-                                {prop[optionKey]}
-                            </label>
-                        ))}
-                </div>
-            );
-            break;
+            case 'radio':
+                field = (
+                    <div>
+                        {Object.keys(prop)
+                            .filter((key) => key.startsWith('option'))
+                            .map((optionKey) => (
+                                <label key={optionKey}>
+                                    <input
+                                        type="radio"
+                                        name={prop.property_key}
+                                        value={prop[optionKey]}
+                                        checked={formik.values[prop.property_key] === prop[optionKey]}
+                                        onChange={formik.handleChange}
+                                    />
+                                    {prop[optionKey]}
+                                </label>
+                            ))}
+                    </div>
+                );
+                break;
+            case 'table':
+                field = (
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                {Object.keys(prop)
+                                    .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
+                                    .map((headerKey) => (
+                                        <th key={headerKey}>{prop[headerKey]}</th>
+                                    ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                {Object.keys(prop)
+                                    .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
+                                    .map((headerKey) => {
+                                        const colTypeKey = `${headerKey}Type`;
+                                        const inputType = prop[colTypeKey];
+                                        return (
+                                            <td key={headerKey}>
+                                                {inputType === 'text' ? (
+                                                    <input type="text" />
+                                                ) : inputType === 'checkbox' ? (
+                                                    <input type="checkbox" />
+                                                ) : null}
+                                            </td>
+                                        );
+                                    })}
+                            </tr>
+                        </tbody>
+                    </table>
+                );
+                break;
+            case 'textbox':
+                field = (
+                    <textarea {...commonProps} rows={4} />
+                );
+                break;
             default:
-                field = <input type="text" {...commonProps} />;
+                field = <></>;
         }
 
         return (
-            <div className={styles.formField} key={prop.property_key}>
+            <div className={`${styles.formField} ${prop.ui_type === 'table' ? styles.tableField : ''} ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`} key={prop.property_key}>
                 <label htmlFor={prop.property_key}>{prop.property_name}</label>
                 {field}
                 {formik.touched[prop.property_key] && formik.errors[prop.property_key] && (

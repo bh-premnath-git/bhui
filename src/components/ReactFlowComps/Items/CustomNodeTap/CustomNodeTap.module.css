@@ -215,3 +215,96 @@
 .formField:has(input[type="radio"]) input[type="radio"] {
   margin-right: 5px;
 }
+/* Table field spans across two columns */
+.formField.tableField {
+  grid-column: span 2; /* Makes the table take up both columns */
+}
+/* Table Container */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+/* Table Header */
+.table th {
+  font-weight: 600;
+  padding: 10px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Table Cells */
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+/* Input and Checkbox Styling */
+.table td input[type="text"],
+.table td input[type="number"],
+.table td input[type="checkbox"] {
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  width: 100%; /* Ensures full width for text and number inputs */
+  box-sizing: border-box;
+}
+
+.table td input[type="checkbox"] {
+  width: auto; /* Keeps checkbox size */
+  height: auto;
+  margin: 0;
+}
+
+/* Table Hover Effect */
+.table tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Header Hover Effect */
+.table th:hover {
+  background-color: #eaeaea;
+}
+
+/* Table Row Striping */
+.table tr:nth-child(even) {
+  background-color: #f8f8f8;
+}
+
+/* Focus State for Inputs */
+.table td input:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Textarea field spans across two columns */
+.formField.textareaField {
+  grid-column: span 2; /* Makes the textarea take up both columns */
+}
+
+/* Textarea Styling */
+.formField textarea {
+  width: 100%; /* Full width */
+  padding: 8px; /* Consistent padding */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #000;
+  font-size: 1rem;
+  line-height: 1.5;
+  box-sizing: border-box; /* Include padding in width */
+  resize: vertical; /* Allow vertical resizing */
+}
+
+/* Focus Styles for Textarea */
+.formField textarea:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}

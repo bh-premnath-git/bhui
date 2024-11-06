@@ -42,14 +42,28 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string;[key: string]: any };
+  payload?: { name: string; [key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
   isShow?: boolean;
 }
 
-const COLORS = ["#00C49F", "#FFBB28", "#018042", "#FF6B6B", "#8884d8", "#FE9999"];
+// Define theme colors using CSS variables
+const COLORS = [
+  'hsl(var(--chart-1))',  // Success/Positive
+  'hsl(var(--chart-2))',  // Failure/Negative
+  'hsl(var(--chart-3))',  // Warning/In Progress
+  'hsl(var(--chart-4))',  // Additional
+  'hsl(var(--chart-5))'   // Additional
+];
+
+// Create semi-transparent versions for area charts
+const COLORS_WITH_OPACITY = COLORS.map(color => ({
+  stroke: color,
+  fill: color
+}));
+
 const months = ["Jan", "Feb", "Mar", "Apr", "May"];
 const projects = ["Project1", "Project2", "Project3", "Project4"];
 const pipelines = ["Pipeline1", "Pipeline2", "Pipeline3", "Pipeline4"];
@@ -84,7 +98,7 @@ const CustomLegend: React.FC<any> = (props) => {
             className="inline-block w-2 h-2 mr-1"
             style={{ backgroundColor: entry.color }}
           ></span>
-          <span className="text-black">{entry.value}</span>
+          <span className="text-foreground">{entry.value}</span>
         </li>
       ))}
     </ul>
@@ -106,7 +120,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-            projectData.length
+              projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -130,7 +144,7 @@ const CustomizedDot: React.FC<CustomizedDotProps> = (props) => {
 };
 
 const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
-  <div role="alert" className="text-red-500">
+  <div role="alert" className="text-destructive">
     <p>Something went wrong:</p>
     <pre>{error.message}</pre>
   </div>
@@ -149,11 +163,7 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
     <CardContent>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <ResponsiveContainer width="100%" height={230} aria-label={title}>
-          {React.isValidElement(children) ? (
-            children
-          ) : (
-            <div>No data available</div>
-          )}
+          {React.isValidElement(children) ? children : <div>No data available</div>}
         </ResponsiveContainer>
       </ErrorBoundary>
     </CardContent>
@@ -388,12 +398,12 @@ export default function Component() {
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#888", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               domain={["dataMin - 5", "dataMax + 5"]}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
@@ -408,6 +418,7 @@ export default function Component() {
                   const { key, ...rest } = props;
                   return <CustomizedDot {...rest} isShow={true} />;
                 }}
+              
               />
             ))}
             <Legend content={<CustomLegend />} />
@@ -425,7 +436,11 @@ export default function Component() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis 
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+              axisLine={false} 
+              tickLine={false} 
+            />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
               <Area
@@ -433,8 +448,10 @@ export default function Component() {
                 type="monotone"
                 dataKey={proj}
                 stackId="1"
-                stroke={COLORS[index % COLORS.length]}
-                fill={COLORS[index % COLORS.length]}
+                stroke={COLORS_WITH_OPACITY[index % COLORS.length].stroke}
+                fill={COLORS_WITH_OPACITY[index % COLORS.length].fill}
+                fillOpacity={1} 
+                strokeWidth={2}
               />
             ))}
             <Legend content={<CustomLegend />} />
@@ -502,20 +519,20 @@ export default function Component() {
             <XAxis
               dataKey="name"
               type="category"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               type="number"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
               domain={[0, 100]}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="success" stackId="a" fill="#82ca9d" />
-            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
+            <Bar dataKey="success" stackId="a" fill={COLORS[0]} />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -528,21 +545,21 @@ export default function Component() {
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               dataKey="name"
               type="category"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
               width={100}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="success" stackId="a" fill="#82ca9d" />
-            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
+            <Bar dataKey="success" stackId="a" fill={COLORS[0]} />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -554,15 +571,19 @@ export default function Component() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis 
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} 
+              axisLine={false} 
+              tickLine={false} 
+            />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="failed" stackId="a" fill="#FF6B6B" />
-            <Bar dataKey="inProgress" stackId="a" fill="#ffc658" />
-            <Bar dataKey="completed" stackId="a" fill="#82ca9d" />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
+            <Bar dataKey="inProgress" stackId="a" fill={COLORS[2]} />
+            <Bar dataKey="completed" stackId="a" fill={COLORS[0]} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -574,12 +595,12 @@ export default function Component() {
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
               domain={[minValue, maxValue]}

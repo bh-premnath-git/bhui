@@ -72,6 +72,7 @@ const NodeContent: React.FC<{
   return (
     <div className={styles.label} style={{ backgroundColor: color }}>
       <img src={icon} alt={label} width="24" height="24" />
+      <span className={styles.nodelabel}>{label}</span>
       <span
         ref={spanRef}
         contentEditable={isEditing}
@@ -150,7 +151,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   const [editedContent, setEditedContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   const handleMouseEnter = () => {
     if (timeoutRef.current !== null) {
       clearTimeout(timeoutRef.current);

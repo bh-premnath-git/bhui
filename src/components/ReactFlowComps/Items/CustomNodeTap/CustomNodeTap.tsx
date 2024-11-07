@@ -2,18 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { useFormik, FormikErrors } from 'formik';
 import * as Yup from 'yup';
 import { X } from 'lucide-react';
-import styles from '@/components/ReactFlowComps/Items/CustomNodeTap/CustomNodeTap.module.css';
+import styles from './CustomNodeTap.module.css';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { NodeTransformer } from '@/pages/manageFlow/flowTransformer';
 import { databaseSyncService } from '@/services/databaseSync';
 import { ApiService } from '@/services/apiServices';
+import MonacoEditor from '@monaco-editor/react';
 
 interface ModalContentProps {
     nodeData: any;
     onClose?: () => void;
     connections?: any[];
+}
+
+interface TableRow {
+    [key: string]: any;
 }
 
 const getErrorMessage = (fieldName: string, errors: FormikErrors<any>): string => {
@@ -25,10 +30,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
     const nodeConfig = nodeData.selectedNode;
     const [dropDownOptions, setDropDownOptions] = useState<{ [key: string]: string[] }>({});
 
-
-    const { selectedFlowFromList } = useSelector(
-        (state: RootState) => state.flowApi
-    );
+    const { selectedFlowFromList } = useSelector((state: RootState) => state.flowApi);
 
     useEffect(() => {
         const fetchConnections = async () => {
@@ -50,18 +52,23 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         fetchConnections();
     }, [nodeConfig, selectedFlowFromList]);
 
-
     useEffect(() => {
         return () => {
             if (selectedFlowFromList?.flow_id) {
                 const storedFlowData = LocalStorageService.getItem(selectedFlowFromList?.flow_id);
-                databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, { flow_json: JSON.stringify(storedFlowData) });
+                databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, {
+                    flow_json: JSON.stringify(storedFlowData),
+                });
             }
-        }
+        };
     }, [selectedFlowFromList]);
 
     const initialValues = nodeConfig.properties.reduce((acc: any, prop: any) => {
-        acc[prop.property_key] = prop.default_value || '';
+        if (prop.ui_type === 'table') {
+            acc[prop.property_key] = prop.default_value || [];
+        } else {
+            acc[prop.property_key] = prop.default_value || '';
+        }
         return acc;
     }, {});
 
@@ -81,6 +88,9 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                         return false;
                     }
                 });
+                break;
+            case 'table':
+                validator = Yup.array();
                 break;
             default:
                 validator = Yup.string();
@@ -102,9 +112,10 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         onSubmit: async (values) => {
             const transformedData = NodeTransformer.transform(nodeConfig, values);
             LocalStorageService.setItem(`form-${selectedFlowFromList.flow_id}`, values);
-            databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, { flow_wip_json: JSON.stringify(transformedData) });
-            if (onClose)
-                onClose();
+            databaseSyncService.queueForSync(selectedFlowFromList.flow_deployment[0].flow_deployment_id, {
+                flow_wip_json: JSON.stringify(transformedData),
+            });
+            if (onClose) onClose();
         },
     });
 
@@ -113,11 +124,9 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         const savedValues = LocalStorageService.getItem(`form-${selectedFlowFromList.flow_id}`);
         if (savedValues) {
             // Update formik values with saved values
-            Object.keys(savedValues).forEach(key => {
-                formik.setFieldValue(key, savedValues[key]);
-            });
-
+            formik.setValues(savedValues);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedFlowFromList.flow_id]);
 
     const renderField = (prop: any) => {
@@ -156,7 +165,8 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 field = (
                     <input
                         type="checkbox"
-                        {...commonProps}
+                        id={prop.property_key}
+                        name={prop.property_key}
                         checked={formik.values[prop.property_key]}
                         onChange={(e) => formik.setFieldValue(prop.property_key, e.target.checked)}
                     />
@@ -184,41 +194,99 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 break;
             case 'table':
                 field = (
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                {Object.keys(prop)
+                    <div>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    {Object.keys(prop)
+                                        .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
+                                        .map((headerKey) => (
+                                            <th key={headerKey}>{prop[headerKey]}</th>
+                                        ))}
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {formik.values[prop.property_key].map((row: TableRow, rowIndex: number) => (
+                                    <tr key={rowIndex}>
+                                        {Object.keys(prop)
+                                            .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
+                                            .map((headerKey) => {
+                                                const colTypeKey = `${headerKey}Type`;
+                                                const inputType = prop[colTypeKey];
+                                                return (
+                                                    <td key={headerKey}>
+                                                        {inputType === 'text' ? (
+                                                            <input
+                                                                type="text"
+                                                                value={row[headerKey] || ''}
+                                                                onChange={(e) => {
+                                                                    const newRows = [...formik.values[prop.property_key]];
+                                                                    newRows[rowIndex][headerKey] = e.target.value;
+                                                                    formik.setFieldValue(prop.property_key, newRows);
+                                                                }}
+                                                            />
+                                                        ) : inputType === 'checkbox' ? (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={row[headerKey] || false}
+                                                                onChange={(e) => {
+                                                                    const newRows = [...formik.values[prop.property_key]];
+                                                                    newRows[rowIndex][headerKey] = e.target.checked;
+                                                                    formik.setFieldValue(prop.property_key, newRows);
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                    </td>
+                                                );
+                                            })}
+                                        <td>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newRows = [...formik.values[prop.property_key]];
+                                                    newRows.splice(rowIndex, 1);
+                                                    formik.setFieldValue(prop.property_key, newRows);
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const newRow: TableRow = {};
+                                Object.keys(prop)
                                     .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
-                                    .map((headerKey) => (
-                                        <th key={headerKey}>{prop[headerKey]}</th>
-                                    ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                {Object.keys(prop)
-                                    .filter((key) => key.startsWith('headerCol') && !key.includes('Type'))
-                                    .map((headerKey) => {
-                                        const colTypeKey = `${headerKey}Type`;
-                                        const inputType = prop[colTypeKey];
-                                        return (
-                                            <td key={headerKey}>
-                                                {inputType === 'text' ? (
-                                                    <input type="text" />
-                                                ) : inputType === 'checkbox' ? (
-                                                    <input type="checkbox" />
-                                                ) : null}
-                                            </td>
-                                        );
-                                    })}
-                            </tr>
-                        </tbody>
-                    </table>
+                                    .forEach((headerKey) => {
+                                        newRow[headerKey] = '';
+                                    });
+                                const newRows = [...formik.values[prop.property_key], newRow];
+                                formik.setFieldValue(prop.property_key, newRows);
+                            }}
+                        >
+                            Add Row
+                        </button>
+                    </div>
                 );
                 break;
             case 'textbox':
                 field = (
-                    <textarea {...commonProps} rows={4} />
+                    <MonacoEditor
+                        {...commonProps}
+                        height="150px"
+                        language={prop.language}
+                        value={formik.values[prop.property_key]}
+                        onChange={(value) => formik.setFieldValue(prop.property_key, value)}
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                        }}
+                    />
                 );
                 break;
             default:
@@ -226,7 +294,12 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         }
 
         return (
-            <div className={`${styles.formField} ${prop.ui_type === 'table' ? styles.tableField : ''} ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`} key={prop.property_key}>
+            <div
+                className={`${styles.formField} ${
+                    prop.ui_type === 'table' ? styles.tableField : ''
+                } ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`}
+                key={prop.property_key}
+            >
                 <label htmlFor={prop.property_key}>{prop.property_name}</label>
                 {field}
                 {formik.touched[prop.property_key] && formik.errors[prop.property_key] && (
@@ -255,8 +328,12 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                     {nodeConfig.properties.map((prop: any) => renderField(prop))}
                 </div>
                 <div className={styles.buttonContainer}>
-                    <button type="button" className={styles.closeButton} onClick={onClose}>Close</button>
-                    <button type="submit" className={styles.saveButton}>Save</button>
+                    <button type="button" className={styles.closeButton} onClick={onClose}>
+                        Close
+                    </button>
+                    <button type="submit" className={styles.saveButton}>
+                        Save
+                    </button>
                 </div>
             </form>
         </div>

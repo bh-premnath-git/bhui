@@ -23,7 +23,7 @@
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 1.02rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
@@ -70,7 +70,7 @@
 
 /* Form Styles */
 .form {
-  padding: 10px;
+  padding: 10px 20px;
   display: flex;
   flex-direction: column;
 }
@@ -78,14 +78,14 @@
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 20px;
 }
 
 /* Form Field Base Styles */
 .formField {
-  margin-bottom: 5px;
+  margin-bottom: 15px;
   display: flex;
-  flex-direction: column; /* Default to column layout */
+  flex-direction: column;
 }
 
 /* Label Styles */
@@ -99,7 +99,7 @@
 .formField input,
 .formField select,
 .formField textarea {
-  padding: 4px;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #fff;
@@ -167,144 +167,93 @@
   background-color: #333;
 }
 
-/* ------------------------------------- */
-/* Checkbox Specific Styles using :has() */
-/* ------------------------------------- */
-
-/* Adjust .formField containing a checkbox */
-.formField:has(input[type="checkbox"]) {
-  flex-direction: row;    /* Arrange items horizontally */
-  align-items: center;    /* Center vertically */
-}
-
-/* Adjust the order and spacing */
-.formField:has(input[type="checkbox"]) label {
-  order: 2; /* Label after input */
-  margin-bottom: 0;
-  margin-left: 5px; /* Space between checkbox and label */
-}
-
-/* Adjust the input (checkbox) */
-.formField:has(input[type="checkbox"]) input[type="checkbox"] {
-  order: 1; /* Input before label */
+/* Checkbox Specific Styles */
+.formField input[type="checkbox"] {
   width: auto;
-  height: auto;
-  margin: 0;
+  margin-right: 5px;
 }
 
-/* Error Message */
-.formField:has(input[type="checkbox"]) .errorMessage {
-  width: 100%;
-  margin-top: 0.2em;
-  order: 3;
+.formField.checkboxField {
+  flex-direction: row;
+  align-items: center;
+}
+
+.formField.checkboxField label {
+  margin-bottom: 0;
 }
 
 /* Radio Button Styles */
-.formField:has(input[type="radio"]) {
-  flex-direction: column; /* Arrange items vertically */
-}
-
-/* Style each label containing the radio input */
-.formField:has(input[type="radio"]) label {
+.formField.radioField label {
   display: flex;
   align-items: center;
-  margin-bottom: 5px; /* Space between radio options */
+  margin-bottom: 5px;
 }
 
-/* Adjust the spacing between the radio button and its label text */
-.formField:has(input[type="radio"]) input[type="radio"] {
+.formField.radioField input[type="radio"] {
   margin-right: 5px;
 }
-/* Table field spans across two columns */
-.formField.tableField {
-  grid-column: span 2; /* Makes the table take up both columns */
+
+/* Table Field */
+.tableField {
+  grid-column: span 2;
 }
-/* Table Container */
+
+/* Table Styles */
 .table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1rem;
 }
 
-/* Table Header */
-.table th {
-  font-weight: 600;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
-  font-size: 0.9rem;
-  color: #333;
-}
-
-/* Table Cells */
+.table th,
 .table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eee;
-  font-size: 0.9rem;
+  border: 1px solid #ddd;
+  padding: 8px;
 }
 
-/* Input and Checkbox Styling */
+.table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+  text-align: left;
+}
+
 .table td input[type="text"],
-.table td input[type="number"],
-.table td input[type="checkbox"] {
+.table td input[type="number"] {
+  width: 100%;
   padding: 4px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  width: 100%; /* Ensures full width for text and number inputs */
   box-sizing: border-box;
 }
 
 .table td input[type="checkbox"] {
-  width: auto; /* Keeps checkbox size */
-  height: auto;
   margin: 0;
 }
 
-/* Table Hover Effect */
-.table tr:hover {
+.table tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
-/* Header Hover Effect */
-.table th:hover {
-  background-color: #eaeaea;
+.table tr:hover {
+  background-color: #f1f1f1;
 }
 
-/* Table Row Striping */
-.table tr:nth-child(even) {
-  background-color: #f8f8f8;
+.table button {
+  padding: 5px 10px;
+  margin: 0 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
-/* Focus State for Inputs */
-.table td input:focus {
-  outline: none;
-  border-color: #000;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+/* Textarea Field */
+.textareaField {
+  grid-column: span 2;
 }
 
-/* Textarea field spans across two columns */
-.formField.textareaField {
-  grid-column: span 2; /* Makes the textarea take up both columns */
+.textareaField textarea {
+  height: 150px;
 }
 
-/* Textarea Styling */
-.formField textarea {
-  width: 100%; /* Full width */
-  padding: 8px; /* Consistent padding */
+/* Monaco Editor Override */
+.monaco-editor {
   border: 1px solid #ccc;
   border-radius: 4px;
-  background-color: #fff;
-  color: #000;
-  font-size: 1rem;
-  line-height: 1.5;
-  box-sizing: border-box; /* Include padding in width */
-  resize: vertical; /* Allow vertical resizing */
-}
-
-/* Focus Styles for Textarea */
-.formField textarea:focus {
-  outline: none;
-  border-color: #000;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }

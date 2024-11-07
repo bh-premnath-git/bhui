@@ -355,6 +355,7 @@
                             "property_name": "job flow overide",
                             "property_key": "end_point",
                             "ui_type": "textbox",
+                            "language": "plaintext",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
@@ -418,6 +419,7 @@
                             "property_name": "Email Content",
                             "property_key": "content_email",
                             "ui_type": "textbox",
+                            "language": "plaintext",
                             "order": 6,
                             "mandatory": true,
                             "help_text": "Request timeout in seconds"
@@ -450,6 +452,7 @@
                             "property_name": "Slack message",
                             "property_key": "slack_message",
                             "ui_type": "textbox",
+                            "language": "plaintext",
                             "order": 6,
                             "mandatory": true,
                             "help_text": "Request timeout in seconds"
@@ -472,6 +475,7 @@
                             "property_name": "Bash Command",
                             "property_key": "bash_command",
                             "ui_type": "textbox",
+                            "language": "shell",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
@@ -487,6 +491,7 @@
                             "property_name": "Branch",
                             "property_key": "Branch",
                             "ui_type": "textbox",
+                            "language": "plaintext",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"
@@ -499,8 +504,32 @@
                     "layout": "2-column",
                     "properties": [
                         {
-                            "property_name": "",
-                            "property_key": "python_script1",
+                            "property_name": "op args (list)",
+                            "property_key": "op_args",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "op kwargs (dict)",
+                            "property_key": "op_kwargs",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "templates dict (dict)",
+                            "property_key": "templates_dict",
+                            "ui_type": "text",
+                            "order": 1,
+                            "mandatory": false,
+                            "help_text": "End point of the API"
+                        },
+                        {
+                            "property_name": "templates exts (list)",
+                            "property_key": "templates_exts",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
@@ -508,8 +537,9 @@
                         },
                         {
                             "property_name": "",
-                            "property_key": "python_script2",
-                            "ui_type": "text",
+                            "property_key": "python_callable",
+                            "ui_type": "textbox",
+                            "language": "python",
                             "order": 1,
                             "mandatory": false,
                             "help_text": "End point of the API"

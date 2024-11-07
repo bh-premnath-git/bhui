@@ -111,17 +111,24 @@
 
 .toolbarIcon {
   margin: 0 2px;
-  width: 12px;
+  width: 16px;
   cursor: pointer;
   color: black;
 }
-
+.nodelabel{
+  width: 90px;
+  font-size: 0.55rem;
+  position: absolute;
+  top: 100%;
+  left: -70%;
+  text-align: center;
+}
 .nodeContent {
   width: 90px;
   font-size: 0.55rem;
   position: absolute;
-  top: 110%;
-  left: -50%;
+  top: 130%;
+  left: -70%;
   text-align: center;
 }
 

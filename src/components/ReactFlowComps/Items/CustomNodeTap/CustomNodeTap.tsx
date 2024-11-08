@@ -29,7 +29,6 @@ const getErrorMessage = (fieldName: string, errors: FormikErrors<any>): string =
 const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connections = [] }) => {
     const nodeConfig = nodeData.selectedNode;
     const [dropDownOptions, setDropDownOptions] = useState<{ [key: string]: string[] }>({});
-
     const { selectedFlowFromList } = useSelector((state: RootState) => state.flowApi);
 
     useEffect(() => {
@@ -119,6 +118,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
         },
     });
 
+
     useEffect(() => {
         // Load saved values from localStorage
         const savedValues = LocalStorageService.getItem(`form-${selectedFlowFromList.flow_id}`);
@@ -163,6 +163,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 break;
             case 'checkbox':
                 field = (
+                    <div className={styles.checkboxField}>
                     <input
                         type="checkbox"
                         id={prop.property_key}
@@ -170,15 +171,17 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                         checked={formik.values[prop.property_key]}
                         onChange={(e) => formik.setFieldValue(prop.property_key, e.target.checked)}
                     />
+                    <label htmlFor={prop.property_key}>{prop.property_name}</label>
+                </div>
                 );
                 break;
             case 'radio':
                 field = (
-                    <div>
+                    <div className={styles.radioField}>
                         {Object.keys(prop)
                             .filter((key) => key.startsWith('option'))
                             .map((optionKey) => (
-                                <label key={optionKey}>
+                                <label key={optionKey} className={styles.radioOption}>
                                     <input
                                         type="radio"
                                         name={prop.property_key}
@@ -242,7 +245,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                                             })}
                                         <td>
                                             <button
-                                                type="button"
+                                                type="button" className={styles.deleteButton}
                                                 onClick={() => {
                                                     const newRows = [...formik.values[prop.property_key]];
                                                     newRows.splice(rowIndex, 1);
@@ -258,6 +261,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                         </table>
                         <button
                             type="button"
+                            className={styles.addRowButton}
                             onClick={() => {
                                 const newRow: TableRow = {};
                                 Object.keys(prop)
@@ -276,17 +280,23 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 break;
             case 'textbox':
                 field = (
-                    <MonacoEditor
-                        {...commonProps}
-                        height="150px"
-                        language={prop.language}
-                        value={formik.values[prop.property_key]}
-                        onChange={(value) => formik.setFieldValue(prop.property_key, value)}
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                        }}
-                    />
+                    <div className={styles.monaco_editor}>
+                        <MonacoEditor
+                            {...commonProps}
+                            height="150px"
+                            language={prop.language}
+                            value={formik.values[prop.property_key]}
+                            onChange={(value) => formik.setFieldValue(prop.property_key, value)}
+                            options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                                renderWhitespace: "boundary",
+                                renderLineHighlight: "all",
+                                autoClosingBrackets: "always",
+                                quickSuggestions: true,
+                            }}
+                        />
+                    </div>
                 );
                 break;
             default:
@@ -300,7 +310,9 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
                 } ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`}
                 key={prop.property_key}
             >
-                <label htmlFor={prop.property_key}>{prop.property_name}</label>
+                {prop.ui_type !== 'checkbox' && (
+                    <label htmlFor={prop.property_key}>{prop.property_name}</label>
+                )}
                 {field}
                 {formik.touched[prop.property_key] && formik.errors[prop.property_key] && (
                     <div className={styles.errorMessage}>

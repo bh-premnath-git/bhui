@@ -345,7 +345,7 @@
                         },
                         {
                             "property_name": "Region name",
-                            "property_key": "end_point",
+                            "property_key": "region_name",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
@@ -353,7 +353,7 @@
                         },
                         {
                             "property_name": "job flow overide",
-                            "property_key": "end_point",
+                            "property_key": "job_flow_overide",
                             "ui_type": "textbox",
                             "language": "plaintext",
                             "order": 1,
@@ -387,7 +387,8 @@
                             "property_key": "connection_name",
                             "ui_type": "drop_down",
                             "order": 2,
-                            "dependency": "/connections/http_sensor/",
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/email_connections/",
                             "mandatory": true,
                             "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
                         },
@@ -433,7 +434,7 @@
                     "properties": [
                         {
                             "property_name": "Slack Channel Point",
-                            "property_key": "end_point",
+                            "property_key": "slack_channel_point",
                             "ui_type": "text",
                             "order": 1,
                             "mandatory": false,
@@ -444,7 +445,8 @@
                             "property_key": "connection_name",
                             "ui_type": "drop_down",
                             "order": 2,
-                            "dependency": "/connections/http_sensor/",
+                            "dependency": "/environment/connections/",
+                            "dependencycont": "/slack_connections/",
                             "mandatory": true,
                             "help_text": "List of HTTP Connections are configured in Connections tab of the environment"
                         },

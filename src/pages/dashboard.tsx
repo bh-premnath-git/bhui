@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,8 @@ import {
   Legend,
 } from "recharts";
 import { ErrorBoundary } from "react-error-boundary";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type DataItem = {
   name: string;
@@ -42,20 +44,20 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string; [key: string]: any };
+  payload?: { name: string;[key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
   isShow?: boolean;
+  key?: string;
 }
 
 // Define theme colors using CSS variables
 const COLORS = [
-  'hsl(var(--chart-1))',  // Success/Positive
-  'hsl(var(--chart-2))',  // Failure/Negative
-  'hsl(var(--chart-3))',  // Warning/In Progress
-  'hsl(var(--chart-4))',  // Additional
-  'hsl(var(--chart-5))'   // Additional
+  'hsl(var(--chart-1))',  
+  'hsl(var(--chart-2))',  
+  'hsl(var(--chart-3))',  
+  'hsl(var(--chart-5))', 
 ];
 
 // Create semi-transparent versions for area charts
@@ -120,7 +122,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-              projectData.length
+            projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -199,6 +201,18 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
   </div>
 );
 
+const setCookie = (name: string, value: string, days: number) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+};
+
+const getCookie = (name: string) => {
+  return document.cookie.split('; ').reduce((r, v) => {
+    const parts = v.split('=');
+    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+  }, '');
+};
+
 export default function Component() {
   const [filters, setFilters] = useState({
     project: "All" as FilterOption,
@@ -207,8 +221,19 @@ export default function Component() {
     duration: "All" as FilterOption,
   });
 
+  useEffect(() => {
+    const savedFilters = getCookie('dashboardFilters');
+    if (savedFilters) {
+      setFilters(JSON.parse(savedFilters));
+    }
+  }, []);
+
   const handleFilterChange = useCallback((key: string, value: FilterOption) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const newFilters = { ...prev, [key]: value };
+      setCookie('dashboardFilters', JSON.stringify(newFilters), 30); // Save for 30 days
+      return newFilters;
+    });
   }, []);
 
   const allData = useMemo(() => generateData(), []);
@@ -355,6 +380,17 @@ export default function Component() {
     return Math.max(...freshnessValues) + 10;
   }, [chartData]);
 
+  const resetFilters = useCallback(() => {
+    const defaultFilters = {
+      project: "All",
+      pipeline: "All",
+      status: "All",
+      duration: "All",
+    };
+    setFilters(defaultFilters);
+    setCookie('dashboardFilters', JSON.stringify(defaultFilters), 30);
+  }, []);
+
   if (!allData.length) {
     return <div className="p-4">No data available. Please check your data source.</div>;
   }
@@ -386,6 +422,14 @@ export default function Component() {
           onChange={(value) => handleFilterChange("duration", value)}
           options={["All", "Today", "This Week", "This Month"]}
         />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={resetFilters}
+          aria-label="Reset filters"
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -414,11 +458,12 @@ export default function Component() {
                 dataKey={proj}
                 stroke={COLORS[index % COLORS.length]}
                 strokeWidth={2}
+                fillOpacity={1}
                 dot={(props) => {
                   const { key, ...rest } = props;
-                  return <CustomizedDot {...rest} isShow={true} />;
+                  const dotKey = `dot-${proj}-${props.index}`;
+                  return <CustomizedDot key={dotKey} {...rest} isShow={true} />;
                 }}
-              
               />
             ))}
             <Legend content={<CustomLegend />} />
@@ -436,10 +481,10 @@ export default function Component() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis 
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
-              axisLine={false} 
-              tickLine={false} 
+            <YAxis
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
             {projects.map((proj, index) => (
@@ -450,7 +495,7 @@ export default function Component() {
                 stackId="1"
                 stroke={COLORS_WITH_OPACITY[index % COLORS.length].stroke}
                 fill={COLORS_WITH_OPACITY[index % COLORS.length].fill}
-                fillOpacity={1} 
+                fillOpacity={1}
                 strokeWidth={2}
               />
             ))}
@@ -466,6 +511,7 @@ export default function Component() {
               nameKey="name"
               cx="50%"
               cy="50%"
+              fillOpacity={1}
               innerRadius={55}
               outerRadius={90}
               paddingAngle={2}
@@ -491,6 +537,7 @@ export default function Component() {
               nameKey="name"
               cx="50%"
               cy="50%"
+              fillOpacity={1}
               innerRadius={55}
               outerRadius={90}
               paddingAngle={2}
@@ -531,8 +578,8 @@ export default function Component() {
               domain={[0, 100]}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="success" stackId="a" fill={COLORS[0]} />
-            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
+            <Bar dataKey="success" stackId="a" fill={COLORS[0]} fillOpacity={1} />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} fillOpacity={1} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -558,8 +605,8 @@ export default function Component() {
               width={100}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="success" stackId="a" fill={COLORS[0]} />
-            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
+            <Bar dataKey="success" stackId="a" fill={COLORS[0]} fillOpacity={1} />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} fillOpacity={1} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -575,15 +622,15 @@ export default function Component() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis 
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} 
-              axisLine={false} 
-              tickLine={false} 
+            <YAxis
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip cursor={{ strokeWidth: 2 }} itemStyle={{ fontSize: 11 }} />
-            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} />
-            <Bar dataKey="inProgress" stackId="a" fill={COLORS[2]} />
-            <Bar dataKey="completed" stackId="a" fill={COLORS[0]} />
+            <Bar dataKey="failed" stackId="a" fill={COLORS[1]} fillOpacity={1} />
+            <Bar dataKey="inProgress" stackId="a" fill={COLORS[2]} fillOpacity={1} />
+            <Bar dataKey="completed" stackId="a" fill={COLORS[0]} fillOpacity={1} />
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
@@ -613,9 +660,11 @@ export default function Component() {
                 dataKey={proj}
                 stroke={COLORS[index % COLORS.length]}
                 strokeWidth={2}
+                fillOpacity={1} 
                 dot={(props) => {
                   const { key, ...rest } = props;
-                  return <CustomizedDot {...rest} isShow={false} />;
+                  const dotKey = `dot-${proj}-${props.index}`;
+                  return <CustomizedDot key={dotKey} {...rest} isShow={false} />;
                 }}
               />
             ))}

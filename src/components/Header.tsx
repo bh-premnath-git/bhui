@@ -94,7 +94,7 @@ function renderingHeadContent(content: string) {
   );
   // console.log(content);
   if (content === "/dashboard") {
-    return <span className="w-2/5 font-bold"><span className="font-light">DevOPS</span> &gt; Dashboard</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
   }
   if (content === "/admin-console") {
     return <span className="w-2/5 font-bold">Admin Console</span>;

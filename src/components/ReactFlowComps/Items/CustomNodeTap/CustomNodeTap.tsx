@@ -164,15 +164,15 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
             case 'checkbox':
                 field = (
                     <div className={styles.checkboxField}>
-                    <input
-                        type="checkbox"
-                        id={prop.property_key}
-                        name={prop.property_key}
-                        checked={formik.values[prop.property_key]}
-                        onChange={(e) => formik.setFieldValue(prop.property_key, e.target.checked)}
-                    />
-                    <label htmlFor={prop.property_key}>{prop.property_name}</label>
-                </div>
+                        <input
+                            type="checkbox"
+                            id={prop.property_key}
+                            name={prop.property_key}
+                            checked={formik.values[prop.property_key]}
+                            onChange={(e) => formik.setFieldValue(prop.property_key, e.target.checked)}
+                        />
+                        <label htmlFor={prop.property_key}>{prop.property_name}</label>
+                    </div>
                 );
                 break;
             case 'radio':
@@ -305,9 +305,8 @@ const ModalContent: React.FC<ModalContentProps> = ({ nodeData, onClose, connecti
 
         return (
             <div
-                className={`${styles.formField} ${
-                    prop.ui_type === 'table' ? styles.tableField : ''
-                } ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`}
+                className={`${styles.formField} ${prop.ui_type === 'table' ? styles.tableField : ''
+                    } ${prop.ui_type === 'textbox' ? styles.textareaField : ''}`}
                 key={prop.property_key}
             >
                 {prop.ui_type !== 'checkbox' && (

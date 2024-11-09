@@ -19,7 +19,6 @@ const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/Onbo
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 // const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
 const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
-const BundleRelease = lazy(() => import('@/pages/bundleRelease'));
 const Dataops = lazy(() => import('@/pages/allDataOps'));
 const ShowingLogs = lazy(() => import('./components/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
@@ -56,6 +55,7 @@ const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
+const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
 interface LayoutProps {
@@ -206,8 +206,8 @@ function App() {
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
     { path: '/AllDataOps', element: <Dataops /> },
-    { path: '/bundle', element: <BundleRelease /> },
-    { path: '/CreateBundle', element: <CreateBundle /> },
+    { path: '/AllReleaseBundle', element: <AllReleaseBundle /> },
+    { path: '/bundle', element: <CreateBundle /> },
     { path: '/ReleaseBundle', element: <ReleaseBundle /> },
   ];
 

@@ -136,10 +136,9 @@ const FlowPlayground: React.FC = () => {
     }
   }, [selectedFlowFromList, onDeleteNode, onCloneNode, setNodes, setEdges]);
 
-
   const logCurrentState = useCallback(() => {
     if (selectedFlowFromList?.flow_id) {
-      LocalStorageService.setItem(selectedFlowFromList.flow_id, { nodes, edges });
+      LocalStorageService.setItem(selectedFlowFromList?.flow_id, { nodes, edges });
     } else {
       console.error('No flow_id available to save the flow data');
     }

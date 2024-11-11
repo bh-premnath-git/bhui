@@ -10,6 +10,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
+
 FROM node:lts-alpine
 
 WORKDIR /usr/src/app

@@ -85,7 +85,7 @@ export function Header(props: HeaderProps) {
   );
 }
 
-function renderingHeadContent(content: string) {
+export function renderingHeadContent(content: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
   const { editProjectData } = useSelector((state: RootState) => state.projectApi);
   const { editEnvironmentData } = useSelector((state: RootState) => state.environmentApi);

@@ -25,9 +25,9 @@ import ScheduleStep from "./ScheduleStep";
 import AlertProfileStep from "./Alertprofile";
 
 
-type FormType = {
-  sourceName: string;
-};
+interface FormType {
+  sourceName?: string;  // Making it required to match the schema
+}
 
 const schema = yup.object().shape({
   sourceName: yup.string().required("sourceName is required"),

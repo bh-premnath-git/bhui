@@ -16,7 +16,6 @@ ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm run build
 
 # Production stage
-
 FROM node:lts-alpine
 
 WORKDIR /usr/src/app

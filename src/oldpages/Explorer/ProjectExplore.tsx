@@ -29,7 +29,7 @@ export default function ProjectExplorer({ onClick, savedQuery }:any) {
     const openLinkDialog = () => {
         setOpenAddLink(true)
     };
-    const handleClick = (event: MouseEvent<HTMLSpanElement, MouseEvent>) => {
+    const handleClick = (event: MouseEvent<HTMLSpanElement>)  => {
 
         setAnchorEl(event.currentTarget);
     };

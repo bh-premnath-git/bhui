@@ -1,3 +1,4 @@
+/* Modal Container */
 .modalContainer {
   background-color: #fff;
   border-radius: 8px;
@@ -9,17 +10,20 @@
   flex-direction: column;
 }
 
+/* Modal Header */
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #eee;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 1.02rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
@@ -35,35 +39,42 @@
   opacity: 0.7;
 }
 
+/* Tabs */
 .tabContainer {
   display: flex;
-  padding: 0 20px;
+  padding: 0 30px;
   margin-top: -1px;
+  margin-bottom: 25px;
 }
 
-.tab, .activeTab {
+.tab,
+.activeTab {
   padding: 10px 20px;
+  margin-bottom: -1px;
   border: none;
   background: none;
   cursor: pointer;
   font-size: 1rem;
-  color: #333;
+  color: #000;
   transition: all 0.3s ease;
   border-bottom: 2px solid transparent;
+  border-radius: 2px;
 }
 
 .tab:hover {
-  color: #000;
+  color: #2e2e2e;
 }
 
 .activeTab {
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid #cbcbcb;
   font-weight: 600;
   color: #000;
+  background-color: #f1f1f1;
 }
 
+/* Form Styles */
 .form {
-  padding: 10px;
+  padding: 10px 20px;
   display: flex;
   flex-direction: column;
 }
@@ -71,76 +82,72 @@
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 30px;
+  column-gap: 40px;
 }
 
+/* Form Field Base Styles */
 .formField {
-  margin-bottom: 5px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
-}
-
-.formField label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: normal;
-  color: #000;
-}
-
-.formField input,
-.formField select {
   width: 100%;
-  padding: 4px;
+}
+
+/* Label Styles */
+.formField label {
+  font-weight: normal;
+  color: #2e2e2e;
+  margin-bottom: 5px;
+  font-size: 0.90rem;
+}
+
+/* Input and Select Styles */
+.formField input,
+.formField select,
+.formField textarea {
+  padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #fff;
-  color: #000;
+  color: #2e2e2e;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1;
 }
 
+/* Focus Styles */
 .formField input:focus,
-.formField select:focus {
+.formField select:focus,
+.formField textarea:focus {
   outline: none;
-  border-color: #000;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  border-color: #2e2e2e;
+  box-shadow: 0 0 0 3px rgba(112, 112, 112, 0.1);
 }
 
-.formField select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000000' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 30px;
+/* Full-width Inputs and Selects */
+.formField input[type="text"],
+.formField input[type="number"],
+.formField select,
+.formField textarea {
+  width: 100%;
 }
 
-/* Checkbox specific styles */
-.formField:has(input[type="checkbox"]) {
-  flex-direction: row;
-  align-items: center;
+/* Error Message */
+.errorMessage {
+  color: rgba(173, 7, 7, 0.822);
+  font-size: 0.8em;
+  margin-top: 0.2em;
 }
 
-.formField:has(input[type="checkbox"]) label {
-  width: 65%;
-  margin-bottom: 0;
-  margin-right: 10px;
-  order: 1;
-}
-
-.formField input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  order: 2;
-}
-
+/* Button Container */
 .buttonContainer {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-.closeButton, .saveButton {
+.closeButton,
+.saveButton {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -154,13 +161,128 @@
   color: #333;
 }
 
+.closeButton:hover {
+  background-color: #e0e0e0;
+}
+
 .saveButton {
   background-color: #000;
   color: #fff;
 }
 
-.errorMessage {
-  color: red;
-  font-size: 0.8em;
-  margin-top: 0.2em;
+.saveButton:hover {
+  background-color: #333;
+}
+
+/* Checkbox Specific Styles */
+.formField input[type="checkbox"] {
+  width: auto;
+  margin-right: 7px;
+  accent-color: #bababa;
+}
+
+.formField.checkboxField {
+  flex-direction: row;
+  align-items: center;
+}
+
+.formField.checkboxField label {
+  margin-bottom: 0;
+}
+
+/* Radio Button Styles */
+.radioField {
+  display: flex;
+  flex-direction: column;
+}
+
+.radioOption {
+  margin-bottom: 10px;
+}
+.radioOption input[type="radio"] {
+  margin-right: 10px;
+}
+
+.radioOption label {
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Table Field */
+.tableField {
+  grid-column: span 2;
+}
+
+/* Table Styles */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.table th,
+.table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.table td input[type="text"],
+.table td input[type="number"] {
+  width: 100%;
+  padding: 4px;
+  border: none;
+  border-color: none;
+}
+
+.table td input:focus{
+  outline: none;
+  border-color: none;
+  box-shadow: none;
+}
+
+.table td input[type="checkbox"] {
+  margin: 0;
+}
+
+/* .table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.table tr :hover {
+  background-color: #f1f1f1;
+} */
+
+.table button {
+  padding: 5px 10px;
+  margin: 0 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.deleteButton:hover{
+  color: darkred;
+}
+.addRowButton:hover{
+  color: darkgreen;
+}
+
+/* Textarea Field */
+.textareaField {
+  grid-column: span 2;
+}
+
+.textareaField textarea {
+  height: 150px;
+}
+
+/* Monaco Editor Override */
+.monaco_editor {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 5px;
 }

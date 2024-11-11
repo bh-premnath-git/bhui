@@ -4,18 +4,25 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 export default function Component() {
   const [flows, setFlows] = useState([1])
+  const navigate = useNavigate()
+
 
   const addFlow = () => {
     setFlows([...flows, flows.length + 1])
   }
 
+  const handleCreateBundle = ()=>{
+    navigate('/ReleaseBundle')
+  }
+
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <Card className="p-4 border-2 border-gray-300">
-        <h1 className="text-sm font-normal text-gray-900 mb-6">Create Release Bundle</h1>
+        <h1 className="text-base font-medium text-gray-900 mb-6">Create Release Bundle</h1>
         
         <div className="space-y-4">
           <div>
@@ -58,6 +65,7 @@ export default function Component() {
 
           <Button 
             className="w-full mt-6 bg-black text-white hover:bg-gray-800"
+            onClick={handleCreateBundle}
           >
             Create Deployment Bundle
           </Button>

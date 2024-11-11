@@ -14,9 +14,9 @@ export function ErrorDisplay({ message, className }: ErrorDisplayProps) {
       className
     )}>
       <AlertCircle className="w-8 h-8 text-red-500 mr-4 animate-bounce" />
-      <div className="text-red-100 font-semibold">
+      <div className="text-red-700 font-semibold">
         <h3 className="text-lg mb-1">Error Detected</h3>
-        <p className="text-sm opacity-80">{message}</p>
+        <p className="text-base text-black-200">{message}</p>
       </div>
     </div>
   );

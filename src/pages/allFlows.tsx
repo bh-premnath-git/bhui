@@ -133,11 +133,11 @@ const AllFlows: React.FC = () => {
 
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
-    setIsCreatingFlow(false);
+    setIsCreatingFlow(()=>false);
   }, []);
 
   const handleCreateFlow = useCallback(async (payload: any) => {
-    setIsCreatingFlow(true);
+    setIsCreatingFlow(()=>true);
     try {
       const result = await dispatch(createFlow(payload));
       if (createFlow.fulfilled.match(result)) {
@@ -155,12 +155,11 @@ const AllFlows: React.FC = () => {
       console.error("Error creating flow:", err);
       closeModal();
     } finally {
-      setIsCreatingFlow(false);
+      if (!error) {
       setTimeout(() => {
-        if (!error) {
           navigate('/designer/flow-playground');
-        }
-      }, 2000);
+        }, 2000);
+      }
     }
   }, [dispatch, navigate, closeModal]);
 

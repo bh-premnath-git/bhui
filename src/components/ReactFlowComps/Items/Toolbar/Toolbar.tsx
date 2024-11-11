@@ -116,7 +116,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({ node, onClick }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <img src={node.icon} alt={node.label} width="32" height="32" />
+        <img src={node.icon} alt={node.label} width="38" height="38" />
         <span className={styles.itemLabel}>{node.label}</span>
       </div>
       {isOpen && (

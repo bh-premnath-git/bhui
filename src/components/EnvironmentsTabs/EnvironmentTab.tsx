@@ -128,8 +128,17 @@ const TagInput: React.FC<{
   const [tagKey, setTagKey] = useState("");
   const [tagValue, setTagValue] = useState("");
 
-  const removeTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index));
+  const removeTag = (tagIndex: number, itemIndex: number) => {
+    setTags((prevTags) => {
+      return prevTags.map((tag, i) => {
+        if (i === tagIndex && tag && tag.tagList.length > 1) {
+          return {
+            tagList: tag.tagList.filter((_, j) => j !== itemIndex),
+          };
+        }
+        return i === tagIndex ? null : tag; // Remove empty tag objects
+      }).filter(Boolean); // Filter out null entries
+    });
   };
 
   const addTag = () => {
@@ -147,22 +156,22 @@ const TagInput: React.FC<{
         Add one or more tags to easily identify compute instances created by bighammer.ai in your cloud account
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
-        {tags.map((tag, index) => (
-          tag !== null &&
-          tag.tagList.map((item, itemIndex) => (
-            <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
-              {`${item.key} >> ${item.value}`}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-2 h-4 w-4 p-0"
-                onClick={() => removeTag(index)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          ))
-        ))}
+      {tags.map((tag, index) => (
+        tag !== null &&
+        tag.tagList.map((item, itemIndex) => (
+          <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
+            {`${item.key} >> ${item.value}`}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-2 h-4 w-4 p-0"
+              onClick={() => removeTag(index, itemIndex)}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </Badge>
+        ))
+      ))}
       </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>

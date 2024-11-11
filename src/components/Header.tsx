@@ -98,7 +98,7 @@ function renderingHeadContent(content: string) {
   );
   // console.log(content);
   if (content === "/dashboard") {
-    return <span className="w-2/5 font-bold">Dashboard</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
   }
   if (content === "/admin-console") {
     return <span className="w-2/5 font-bold">Admin Console</span>;
@@ -150,6 +150,15 @@ function renderingHeadContent(content: string) {
   }
   if (content === "/alerts") {
     return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Alert Hub</span>;
+  }
+  if (content === "/bundle") {
+    return <span className="w-2/5 font-bold">Manage Releases</span>;
+  }
+  if (content === "/CreateBundle") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Create Bundle</span>;
+  }
+  if (content === "/ReleaseBundle") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Release Bundle</span>;
   }
   if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent selectedData={selectedFlowFromList} />

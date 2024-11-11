@@ -59,7 +59,7 @@ type SortConfig = {
   key: string;
   direction: "asc" | "desc" | null;
 };
-const tableNameCheckList = ["Create New Flow", "Create New Project", "Create New Environment"]
+const tableNameCheckList = ["Create New Flow", "Create New Project", "Create New Environment", "Create New Bundle"]
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
   sortConfig: SortConfig;

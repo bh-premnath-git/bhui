@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
 import { useAppSelector } from '@/redux/hooks';
+import { CustomBuildToolbar } from "./CustomBuildToolbar";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -92,6 +93,9 @@ export function renderingHeadContent(content: string) {
   const { selectedFlowFromList } = useSelector(
     (state: RootState) => state.flowApi
   );
+  const { buildPipeLineDtl } = useSelector(
+    (state: RootState) => state.buildPipeLineApi
+  );
   // console.log(content);
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
@@ -160,7 +164,7 @@ export function renderingHeadContent(content: string) {
     return <CustomToolbarComponent selectedData={selectedFlowFromList} />
   }
   if (content === "/BuildPlayGround") {
-    return <CustomToolbarComponent />
+    return <CustomBuildToolbar buildPipeLineDtl={buildPipeLineDtl} />
   }
   return "";
 }

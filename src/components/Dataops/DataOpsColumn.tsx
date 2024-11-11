@@ -5,6 +5,8 @@ import { useState } from "react";
 import RestartPopUp from "./RestartPopUp";
 import StopPopUp from "./StopPopUp";
 import CostOptimizationForm from "@/components/Dataops/CostOptimizationForm";
+import { IoSearchSharp } from "react-icons/io5";
+import ExploreDrawer from "./ExploreDrawer";
 type ColumnConfig = {
     key: string;
     header: string;
@@ -37,6 +39,26 @@ export const dataopsColumn: ColumnConfig[] = [
         type: 'number',
         sortable: false,
         filterable: false,
+        render: (value: any) => {
+            const [isExpanded, setIsExpanded] = useState(false);
+            const [open, setOpen] = useState(false);
+
+            const toggleDrawer = (newState: boolean) => () => {
+                setOpen(newState);
+            };
+            const handleClick = () => {
+                toggleDrawer(true)
+                setIsExpanded(!isExpanded);
+            };
+            return (
+                <>
+                    <div className="text-black flex items-center" onClick={handleClick}> <IoSearchSharp className="mr-1" /> {value}</div>
+                    <ExploreDrawer isExpanded={isExpanded}
+                        toggleDrawer={toggleDrawer}
+                        handleClick={handleClick} />
+                </>
+            )
+        }
     },
     {
         key: 'pipeline_status',
@@ -123,3 +145,21 @@ export const dataopsColumn: ColumnConfig[] = [
     },
 
 ]
+
+export const logData = [
+    { date: '2023-11-03 14:35:20.000', label: 'EST', description: 'User login successful for user_id: 1024' },
+    { date: '2023-11-03 14:37:12.000', label: 'EST', description: 'File upload initiated by user_id: 1024' },
+    { date: '2023-11-03 14:38:45.000', label: 'EST', description: 'Data processing started for file_id: 456' },
+    { date: '2023-11-03 14:40:23.000', label: 'EST', description: 'Error encountered: Missing values in column 3 for file_id: 456' },
+    { date: '2023-11-03 14:45:19.000', label: 'EST', description: 'Starting scan to move intermediate done files' },
+    { date: '2023-11-03 15:05:11.000', label: 'EST', description: 'System check completed successfully' },
+    { date: '2023-11-03 15:15:40.000', label: 'EST', description: 'User logout detected for user_id: 1024' },
+    { date: '2023-11-03 15:26:53.000', label: 'EST', description: 'Backup completed for database db_id: 789' },
+    { date: '2023-11-03 15:28:30.000', label: 'EST', description: 'New user registration for user_id: 1050' },
+    { date: '2023-11-03 15:40:15.000', label: 'EST', description: 'Data export initiated by user_id: 1033' },
+    { date: '2023-11-03 16:00:05.000', label: 'EST', description: 'Scheduled maintenance started on server 2' },
+    { date: '2023-11-03 16:02:29.000', label: 'EST', description: 'Scheduled maintenance completed on server 2' },
+    { date: '2023-11-03 16:15:10.000', label: 'EST', description: 'Session timeout for user_id: 1018' },
+    { date: '2023-11-03 16:20:08.000', label: 'EST', description: 'Connection reset for db_id: 792 during query execution' },
+    { date: '2023-11-03 16:35:54.000', label: 'EST', description: 'Service restart triggered for email subsystem' },
+];

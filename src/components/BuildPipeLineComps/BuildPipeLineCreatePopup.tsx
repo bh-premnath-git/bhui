@@ -8,8 +8,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast, ToastContainer, ToastPosition } from 'react-toastify';
 import { RootState } from '@/store/store';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { insertPipeline } from '@/redux/BuildPipeLineSlice';
+import { insertPipeline, setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
 import CustomField from '@/common/CustomField';
+import { ApiService } from '@/services/apiServices';
+import useToast from '@/oldcomponents/teast-service';
+import { COLORS } from '@/Utils/constants';
 
 const style = {
     position: 'absolute' as 'absolute',
@@ -27,22 +30,23 @@ const style = {
 interface BuildPipeLineCreatePopupProps {
     handleClose: () => void;
     open: boolean;
+    showToast: any
 }
 
 const validationSchema = Yup.object().shape({
     bh_project_id: Yup.string().required('Project is required'),
     git_branch: Yup.string().required('Branch is required'),
     pipeline_name: Yup.string().required('Name is required'),
-    pipeline_key: Yup.string().required('Key is required'),
     notes: Yup.string().notRequired(),
 });
 
-const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ handleClose, open }: any) => {
+const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ open, showToast }: any) => {
     const { gitProjectList } = useSelector((state: RootState) => state.projectApi);
     const [showNotes, setShowNotes] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
     if (isLoading) {
         return (
             <>
@@ -53,11 +57,11 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
     return (
         <Modal
             open={open}
-            onClose={() => handleClose(null)}
+            // onClose={() => handleClose(null)}
             aria-labelledby="modal-title"
             aria-describedby="modal-description"
-        
         >
+
             <Box sx={style}>
                 <div className='text-center'>Please fill in the details below to build a new pipeline</div>
                 <div className='text-start mt-2 font-bold'>Create Flow</div>
@@ -66,7 +70,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                         bh_project_id: '',
                         git_branch: '',
                         pipeline_name: '',
-                        pipeline_key: '',
                         notes: '',
                     }}
                     validationSchema={validationSchema}
@@ -74,35 +77,40 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                     onSubmit={async (values, { setSubmitting }) => {
                         let body: any = values;
                         body.tags = {};
-                        setIsLoading(true)
-                        await handleClose(result);
-
-                        var result = await dispatch(insertPipeline(body));
-                        await handleClose(result);
-
-
-                        setSubmitting(false);
-                        if (result && result?.payload) {
-                            setIsLoading(false)
-                            await navigate('/BuildPlayGround');
+                        // setIsLoading(true)
+                        const response = await ApiService('8011', 'post', '/pipeline', body);
+                        console.log(response);
+                        if (response?.error) {
+                            showToast(response?.error, { color: COLORS.red });
                         } else {
-                            toast.success("Success Notification !", {
-                                position: 'top-center' as ToastPosition,
-                                progress: undefined,
-                                hideProgressBar: true,
-                                style: {
-                                    marginTop: '50px',
-                                    fontWeight: 'bold',
-                                    fontSize: '14px' // Adjust the margin-top value as needed
-                                },
-                            });
+                            dispatch(setBuildPipeLineDtl(response));
+                            showToast("Pipe Line created successfully", { color: COLORS.green });
+                            navigate('/BuildPlayGround');
                         }
+
+                        // setSubmitting(false);
+                        // if (result && result?.payload) {
+                        // await handleClose(result);
+
+                        //     setIsLoading(false)
+                        //     await navigate('/BuildPlayGround');
+                        // } else {
+                        //     toast.success("Success Notification !", {
+                        //         position: 'top-center' as ToastPosition,
+                        //         progress: undefined,
+                        //         hideProgressBar: true,
+                        //         style: {
+                        //             marginTop: '50px',
+                        //             fontWeight: 'bold',
+                        //             fontSize: '14px' // Adjust the margin-top value as needed
+                        //         },
+                        //     });
+                        // }
                     }}
                 >
                     {({ isSubmitting }) => (
                         <Form>
                             <Stack direction={'row'} spacing={2}>
-
                                 <Stack className='w-100'>
                                     <CustomField
                                         name="bh_project_id"
@@ -133,15 +141,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                         size="small"
                                     />
                                 </Stack>
-                                <Stack className='w-100'>
-                                    <CustomField
-                                        name="pipeline_key"
-                                        label="Pipeline key"
-                                        controlName="input"
-                                        placeholder="Enter key"
-                                        size="small"
-                                    />
-                                </Stack>
+
 
                             </Stack>
                             <div>
@@ -173,7 +173,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ han
                                 <Button className='w-25'
                                     variant="outlined"
                                     sx={{ borderColor: 'black', color: 'black', textTransform: 'none' }}
-                                    onClick={handleClose}
+                                // onClick={handleClose}
                                 >
                                     Close
                                 </Button>

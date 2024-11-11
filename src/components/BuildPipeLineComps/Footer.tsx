@@ -11,6 +11,7 @@ import LogsPage from './LogsPage';
 import { Search } from '@mui/icons-material';
 import { TbFilter } from "react-icons/tb";
 import { IoFilterSharp } from "react-icons/io5";
+import PipelineDrawer from './PipeLineDrawer';
 
 export default function Footer({ com }: any) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -120,120 +121,15 @@ export default function Footer({ com }: any) {
                 >
                     Data Preview
                 </Button>
-                <Drawer
-                    anchor="bottom"
-                    open={isExpanded}
-                    onClose={toggleDrawer(false)}
-                    PaperProps={{
-                        style: {
-                            height: drawerHeight,
-                            transition: 'height 0.3s ease',
-                        },
-                    }}
-                >
-                    <Box
-                        sx={{ width: 'auto', padding: 2 }}
-                        role="presentation"
-                        onClick={toggleDrawer(false)}
-                        onKeyDown={toggleDrawer(false)}
-                    >
-                        <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-                            <Typography sx={{ color: 'black', fontSize: '15px' }} className='myHeadFont'>
-                                Pipeline Name : Test_Pipeline
-                            </Typography>
-
-                            <Stack direction={'row'} alignItems={'center'} spacing={2} >
-                                {selectedTab === 1 && (
-                                    <TextField
-                                        className="my-1 bg-white-1000 border-gray-700"
-                                        id="tab-2-search"
-                                        size="small"
-                                        placeholder="Search By Keywords"
-                                        variant="outlined"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Search />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                )}
-
-                                <button className="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Download
-                                </button>
-                                <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                                    <li><a className="dropdown-item" href="#">CSV</a></li>
-                                    <li><a className="dropdown-item" href="#">Excel</a></li>
-                                    <li><a className="dropdown-item" href="#">Json</a></li>
-                                </ul>
-                                <IconButton
-                                    sx={{ backgroundColor: '#0B5ED7', borderRadius: '3px', '&:hover': { backgroundColor: '#0B5ED7' } }}
-                                    onClick={expandDrawer}
-                                >
-                                    <FaExpandAlt color={'white'} />
-                                </IconButton>
-                            </Stack>
-                        </Stack>
-
-                        {!isFullScreen && (
-                            <>
-                                <Tabs
-                                    value={selectedTab}
-                                    onChange={handleTabChange}
-                                    sx={{
-                                        '& .MuiTabs-indicator': {
-                                            backgroundColor: 'black',
-                                            border: '1px solid black',
-                                            borderLeftRadius: '8px',
-                                        },
-                                        '& .MuiTab-root': {
-                                            color: 'black',
-                                        },
-                                        '& .MuiTab-root.Mui-selected': {
-                                            color: 'black',
-                                        }
-                                    }}
-                                >
-                                    <Tab label="Results" className='myHeadFont' sx={{ textTransform: 'none' }} />
-                                    <Tab label="Logs" className='myHeadFont' sx={{ textTransform: 'none' }} />
-                                </Tabs>
-
-                                <Divider sx={{ width: '12%', color: 'gray' }} />
-                            </>
-                        )}
-                        <Box p={3} sx={{ maxHeight: '100px' }}>
-                            {!isFullScreen && selectedTab === 0 && <ResultTable drawerHeight={drawerHeight} />}
-                            {!isFullScreen && selectedTab === 1 && <LogsPage drawerHeight={drawerHeight} />}
-                            {isFullScreen && (
-                                <Box sx={{ height: '100%' }}>
-                                    {selectedTab === 0 &&
-                                        <>
-                                            <Stack direction={'row'} spacing={3} marginBottom={3}>
-                                                <Stack direction={'row'} spacing={1}>
-                                                    <TbFilter size={20} />
-                                                    <Typography>Filter</Typography>
-                                                </Stack>
-                                                <Stack direction={'row'} spacing={1}>
-                                                    <IoFilterSharp size={20} />
-                                                    <Typography>Sort</Typography>
-                                                </Stack>
-                                            </Stack>
-                                            <ResultTable drawerHeight={drawerHeight} />
-                                        </>}
-                                    {selectedTab === 1 &&
-                                        <>
-                                            <Typography sx={{ fontWeight: 'bold' }}>Showing All Logs</Typography>
-                                            <LogsPage drawerHeight={drawerHeight} />
-                                        </>}
-                                </Box>
-                            )}
-                        </Box>
-                    </Box>
-
-
-                </Drawer>
+             
+                <PipelineDrawer
+                    isExpanded={isExpanded}
+                    toggleDrawer={toggleDrawer}
+                    expandDrawer={expandDrawer}
+                    drawerHeight={drawerHeight}
+                    selectedTab={selectedTab}
+                    handleTabChange={handleTabChange}
+                    isFullScreen={isFullScreen}/>
             </Stack>
 
         </footer>

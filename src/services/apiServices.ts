@@ -73,6 +73,7 @@ const ApiService = async (
         `Error ${method.toUpperCase()}ing data at ${url}:`, 
         error.response.data
       );
+      return {error:error.response.data?.message||error.response.data}
     } else if (error.request) {
       console.error(
         `No response received from ${url}:`, 

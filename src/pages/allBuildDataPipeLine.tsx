@@ -11,6 +11,7 @@ import { getAllPipeline } from "@/redux/BuildPipeLineSlice";
 import { formatedDate } from "@/Utils/dateFormatter";
 import { getGitProject } from "@/redux/ProjectSlice";
 import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
+import useToast from "@/oldcomponents/teast-service";
 
 // Define types in a separate file for better organization
 interface pipelineData {
@@ -100,6 +101,8 @@ const EmptyComponent: React.FC = () => {
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
+	const [ToastComponent, showToast] = useToast();
+
     return (
         <div className="flex flex-col items-center justify-center h-full">
             <FileQuestion size={64} className="text-gray-400 mb-4" />
@@ -110,7 +113,7 @@ const EmptyComponent: React.FC = () => {
             >
                 Add Pipeline
             </button>
-            {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open} />)}
+            {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open}  showToast={showToast}/>)}
 
         </div>
     );
@@ -125,6 +128,8 @@ function BuildDataPipeLineTable({
     const dispatch = useAppDispatch();
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen(true);
+	const [ToastComponent, showToast] = useToast();
+
     useLayoutEffect(() => {
         dispatch(getAllPipeline({ offset: 0, limit: 1000, order_desc: true, order_by: 'pipeline_id' }));
         dispatch(getGitProject());
@@ -160,6 +165,8 @@ function BuildDataPipeLineTable({
 
     return (
         <div className="container mx-auto p-4">
+                <ToastComponent />
+
             <FlexibleTable
                 data={pipelineList}
                 columns={columns}
@@ -170,7 +177,7 @@ function BuildDataPipeLineTable({
                 createNewFn={createNewFn}
                 actionFn={actionFn}
             />
-            {open && (<BuildPipeLineCreatePopup handleClose={() => setOpen(false)} open={open} />)}
+            {open && (<BuildPipeLineCreatePopup handleClose={() => setOpen(false)} open={open} showToast={showToast} />)}
 
         </div>
     );

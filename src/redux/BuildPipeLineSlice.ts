@@ -15,6 +15,7 @@ export interface ApiState {
   joinList:any;
   orderByList:any;
   createPipeLineDtl:any;
+  buildPipeLineDtl:any;
 }
 
 const initialState: ApiState = {
@@ -30,7 +31,8 @@ const initialState: ApiState = {
   pipelineList:[],
   joinList:[],
   orderByList:[],
-  createPipeLineDtl:{}
+  createPipeLineDtl:{},
+  buildPipeLineDtl:{}
 };
 
 interface ApiResponse {
@@ -142,7 +144,9 @@ const buildPipeLineSlice = createSlice({
     setNestedField: (state, action) => {
       state.nestedFields = action.payload;
     },
-    
+    setBuildPipeLineDtl: (state, action) => {
+      state.buildPipeLineDtl = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -296,4 +300,4 @@ const buildPipeLineSlice = createSlice({
 });
 
 export default buildPipeLineSlice.reducer;
-export const { setIsHover, setSelectedOption, setIsRun, setNestedField } = buildPipeLineSlice.actions;
+export const { setIsHover, setSelectedOption, setIsRun, setNestedField,setBuildPipeLineDtl } = buildPipeLineSlice.actions;

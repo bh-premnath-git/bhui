@@ -1,22 +1,23 @@
-FROM node:lts-alpine
-
-RUN mkdir -p /usr/src/app
+# Build stage
+FROM node:lts-alpine as builder
 
 WORKDIR /usr/src/app
 
-COPY package.json .
-
-RUN npm install 
+COPY package*.json ./
+RUN npm install
 
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Install serve to serve the static files
+# Production stage
+FROM node:lts-alpine
+
+WORKDIR /usr/src/app
+
 RUN npm install -g serve
+
+COPY --from=builder /usr/src/app/dist ./dist
 
 EXPOSE 5000
 
-# Serve the built application
 CMD ["serve", "-s", "dist", "-l", "5000"]

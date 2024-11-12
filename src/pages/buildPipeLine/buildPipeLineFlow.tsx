@@ -10,12 +10,13 @@ import { LocalStorageService } from '@/services/localStorageServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { useNavigate } from 'react-router-dom';
 import "reactflow/dist/style.css";
+import styles from '@/pages/buildPipeLine/BuildPipeLine.module.css';
 
 type CustomNode = Node<CustomNodeData>;
 
 const connectionLineStyle = { stroke: "gray" };
 const snapGrid: [number, number] = [15, 15];
-const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
+// const defaultViewport = { x: -100, y: 0, zoom: 0.5 };
 const proOptions = { hideAttribution: true };
 
 const nodeTypes: any = {
@@ -68,7 +69,7 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
     const addNode = (lead: string, title: string, name: string, dataList?: any) => {
         const newNodeId = `${nodeIdCounter}`;
         setNodeIdCounter((prevId) => prevId + 1);
-
+    
         const newNode: CustomNode = {
             id: newNodeId,
             type: "imageNode",
@@ -86,11 +87,13 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                 onEdit: () => editNode(newNode),
                 dataList: dataList,
             } as CustomNodeData,  // Explicit cast here
-            position: { x: 0 + nodes.length * 100, y: -150 },
+            // Starting position at the top left, with vertical spacing based on nodeIdCounter
+            position: { x: 50 + nodeIdCounter * 100, y: 50  },
         };
-
+    
         setNodes((nds): any => [...nds, newNode]);
     };
+    
 
     const handleDelete = (nodeId: string) => {
         setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -100,13 +103,13 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
         setNodeIdCounter((prevId) => {
             const newNodeId = `${prevId}`;
             const newNode: CustomNode = {
-                id: newNodeId,
+                id: newNodeId+1,
                 type: "imageNode",
                 data: {
                     ...dataNode.data,
                     isEdit: false,
                 } as CustomNodeData,  // Explicit cast here
-                position: { x: Math.random() * 200, y: -150 },
+                position: {x: 50 + nodeIdCounter * 120, y:50 },
             };
 
             setNodes((nds): any => [...nds, newNode]);
@@ -191,8 +194,8 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                 </div> */}
             </div>
 
-            <div style={{ height: 'calc(100% - 100px)' }}>
-                <ReactFlow
+            <div style={{ height: 'calc(100% - 100px)',width:'200%' }} >
+                <ReactFlow style={{ left: '-44%',width:'100%' }}
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}
@@ -200,10 +203,10 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                     onConnect={onConnect}
                     nodeTypes={nodeTypes}
                     connectionLineStyle={connectionLineStyle}
-                    snapToGrid={true}
+                    snapToGrid
                     snapGrid={snapGrid}
                     edgeTypes={edgeTypes}
-                    defaultViewport={defaultViewport}
+                    // defaultViewport={defaultViewport}
                     fitView
                     onNodeClick={onNodeClick}
                     proOptions={proOptions}

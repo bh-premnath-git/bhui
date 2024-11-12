@@ -3,6 +3,8 @@ import { EdgeProps, getBezierPath } from 'reactflow';
 import { FaCut } from 'react-icons/fa'; // Scissor icon
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { Stack } from '@mui/material';
+import PipeLinePopUp from './pipeLinePopUp';
 
 const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, data }) => {
     // Get the path for the edge (bezier curve)
@@ -17,12 +19,16 @@ const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, target
 
     const [hovered, setHovered] = useState(false);  // Track hover state
     const { isRun } = useSelector((state: RootState) => state.buildPipeLineApi);
-
+    const [open, setOpen] = React.useState(false);
     const handleDeleteEdge = () => {
         if (data.onDeleteEdge) {
             data.onDeleteEdge(id);  // Call the function to remove the edge
         }
     };
+    const handleClickOpen = () => {
+        setOpen(!open);
+    };
+
 
     return (
         <>
@@ -54,7 +60,19 @@ const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, target
                         <FaCut size={12} className='text-red-500' />
                     </div>
                 )}
+                {isRun&&(<Stack className='text-center' sx={{fontSize:'6px',mx:'auto'}} >{Math.floor((Math.random() * 100) + 1)} row</Stack>)}
+
+<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+
+    {isRun && (
+        <>
+            <img onClick={handleClickOpen} className='' src='/assets/buildPipeline/meter.png' alt='img' width={15} />
+        </>
+    )}
+    </div>
             </foreignObject>
+            <PipeLinePopUp open={open} handleClose={handleClickOpen} />
+
         </>
     );
 };

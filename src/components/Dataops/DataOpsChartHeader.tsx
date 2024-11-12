@@ -12,15 +12,15 @@ export default function DataOpsChartHeader({ selectedRowData }:any) {
     };
     const pieChartData = {
         freshness: [
-            { value: 10, label: 'Jobs successed', color: '#e7e5eb' },
+            { value: 10, label: 'Success', color: '#e7e5eb' },
             { value: selectedRowData?.job_statistics?.records_passed, label: '', color: '#69be70' }
         ],
         volume: [
-            { value: 10, label: 'Jobs Failed', color: '#e7e5eb' },
+            { value: 10, label: 'Failed', color: '#e7e5eb' },
             { value: selectedRowData?.job_statistics?.record_failed, label: '', color: COLORS.red }
         ],
         health: [
-            { value: 10, label: 'Jobs In Progress', color: '#e7e5eb' },
+            { value: 10, label: 'In Progress', color: '#e7e5eb' },
             { value: selectedRowData?.job_statistics?.record_discarded, label: '', color: '#ffa500' }
         ]
     };

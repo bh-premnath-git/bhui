@@ -22,6 +22,7 @@ import { NodeType } from '@/pages/manageFlow/types';
 import DataPreviewModal from '@/components/ReactFlowComps/DataPreviewModal/DataPreviewModal';
 import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
+import { databaseSyncService } from '@/services/databaseSync';
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { custom: CustomEdge };
@@ -106,6 +107,14 @@ const FlowPlayground: React.FC = () => {
     });
   }, [setNodes, onDeleteNode]);
 
+  databaseSyncService.initialize(10000);
+
+  useEffect(() => {
+    return () => {
+      databaseSyncService.destroy();
+    };
+  }, []);
+
   useEffect(() => {
     if (selectedFlowFromList?.flow_id) {
       const storedFlowData = LocalStorageService.getItem(selectedFlowFromList.flow_id);
@@ -117,7 +126,6 @@ const FlowPlayground: React.FC = () => {
             data: { ...node.data, onDelete: onDeleteNode, onClone: onCloneNode },
           })));
           setEdges(storedEdges);
-          console.log('Flow data loaded from local storage');
         } catch (error) {
           console.error('Error parsing stored flow data:', error);
         }
@@ -130,8 +138,7 @@ const FlowPlayground: React.FC = () => {
 
   const logCurrentState = useCallback(() => {
     if (selectedFlowFromList?.flow_id) {
-      LocalStorageService.setItem(selectedFlowFromList.flow_id, { nodes, edges });
-      console.log('Flow data saved to local storage');
+      LocalStorageService.setItem(selectedFlowFromList?.flow_id, { nodes, edges });
     } else {
       console.error('No flow_id available to save the flow data');
     }
@@ -171,7 +178,7 @@ const FlowPlayground: React.FC = () => {
     onNodesChange(changes);
     setTimeout(logCurrentState, 300);
   }, [onNodesChange, logCurrentState]);
-  
+
   const wrappedOnEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
     setTimeout(logCurrentState, 300);

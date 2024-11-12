@@ -61,13 +61,13 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
   // Filter data based on search term and active field-based filters
   const filteredData = useMemo(() => {
     let filtered = dataOpsList.filter(item =>
-      Object.values(item).some((value:any) => 
+      Object.values(item).some((value: any) =>
         value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
 
     if (Object.keys(activeFilters).length > 0) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         Object.entries(activeFilters).every(([key, value]) =>
           item[key]?.toString().toLowerCase().includes(value.toLowerCase())
         )
@@ -100,7 +100,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
   return (
     <div className="container mx-auto px-4">
       {/* Header Section */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" my={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
         <DataOpsChartHeader selectedRowData={selectedRowData} />
         <Stack direction="row" spacing={2} alignItems="center">
           <Input
@@ -111,7 +111,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
           />
           <FaFilter
             onClick={() => setIsFilterOpen(true)}
-            className="border w-9 h-9 p-2 rounded shadow cursor-pointer hover:bg-gray-50"
+            className="border w-9 h-9 p-2 rounded cursor-pointer hover:bg-gray-50"
           />
         </Stack>
       </Stack>
@@ -127,7 +127,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         playRowFn={handleRowSelect}
         isAction={false}
       />
-      
+
       {/* Filter Form */}
       <FilterForm
         open={isFilterOpen}
@@ -144,16 +144,50 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
             <Label className="text-md">
               Job Name: <span className="font-bold">{selectedRowData.pipeline_name}</span>
             </Label>
-
-            <Tabs
-              value={selectedTab}
-              onChange={(_, newValue) => setSelectedTab(newValue)}
-              className="mt-4"
-            >
-              <Tab label={<Label>Properties</Label>} sx={{ textTransform: 'none' }} />
-              <Tab label={<Label>Show Logs</Label>} sx={{ textTransform: 'none' }} />
-            </Tabs>
-
+            <Stack  direction={'row'} spacing={2} justifyContent={'space-between'}>
+              <Tabs
+                value={selectedTab}
+                onChange={(_, newValue) => setSelectedTab(newValue)}
+                className="mt-4"
+                TabIndicatorProps={{
+                  style: {
+                    textTransform: 'none',
+                    backgroundColor: '#000', // Customize the background color of the indicator
+                    height: 5,
+                    width: '30px', // Set the width of the indicator based on the number of tabs
+                    marginLeft: 'calc((100% / 2.5) / 2)',
+                    borderRadius: '10px 10px 0px 0px' // Center the indicator within each tab
+                  },
+                }}
+                TabScrollButtonProps={{
+                  style: {
+                    display: 'none' // Hide scroll buttons if not needed
+                  }
+                }}
+                sx={{
+                  '& .MuiTabs-flexContainer': {
+                    justifyContent: 'center', // Center tabs horizontally
+                  },
+                  '& .MuiTab-root': {
+                    display: 'flex', // Make each tab a flex container
+                    justifyContent: 'center', // Center tab content horizontally
+                  }
+                }}
+              >
+                <Tab label={<Label>Properties</Label>} sx={{
+                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
+                    color: 'black',
+                    fontWeight: 'bold'
+                  }
+                }} />
+                <Tab label={<Label>Show Logs</Label>} sx={{
+                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
+                    color: 'black',
+                    fontWeight: 'bold'
+                  },
+                }} />
+              </Tabs>
+            </Stack>
             <Divider sx={{ width: '12%', mb: 2 }} />
 
             {selectedTab === 0 && (
@@ -176,7 +210,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
               </Grid>
             )}
 
-            {selectedTab === 1 && <ShowingLogs />}
+            {selectedTab === 1 && <ShowingLogs  selectedRowData={selectedRowData} />}
           </CardContent>
         </Card>
       )}

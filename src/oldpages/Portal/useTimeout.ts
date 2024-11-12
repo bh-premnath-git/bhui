@@ -13,10 +13,10 @@ function useTimeout(callback: () => void, delay: number) {
   }, [callback]);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timer: NodeJS.Timeout | undefined;
 
     if (delay !== null && callbackRef.current && typeof callbackRef.current === 'function') {
-      timer = window.setTimeout(callbackRef.current, delay);
+      timer = setTimeout(callbackRef.current, delay);
     }
 
     return () => {

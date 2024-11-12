@@ -7,7 +7,6 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
-import { databaseSyncService } from '@/services/databaseSync';
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Landing = lazy(() => import('./oldpages/Portal/Landing'));
 const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
@@ -20,7 +19,6 @@ const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/Onbo
 const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
 // const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
 const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
-const BundleRelease = lazy(() => import('@/pages/bundleRelease'));
 const Dataops = lazy(() => import('@/pages/allDataOps'));
 const ShowingLogs = lazy(() => import('./components/Dataops/ShowingLogs'));
 const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
@@ -57,6 +55,7 @@ const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
+const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
 interface LayoutProps {
@@ -80,13 +79,7 @@ function App() {
   const [step, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
-  databaseSyncService.initialize(50000);
-
-  useEffect(() => {
-    return () => {
-      databaseSyncService.destroy();
-    };
-  }, []);
+  
 
   useEffect(() => {
     const initializeKeycloak = async () => {
@@ -191,6 +184,7 @@ function App() {
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
+    { path: '/dataops-hub/explorer', element: <Explorer /> },
     { path: '/Alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
@@ -213,8 +207,8 @@ function App() {
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
     { path: '/AllDataOps', element: <Dataops /> },
-    { path: '/bundle', element: <BundleRelease /> },
-    { path: '/CreateBundle', element: <CreateBundle /> },
+    { path: '/AllReleaseBundle', element: <AllReleaseBundle /> },
+    { path: '/bundle', element: <CreateBundle /> },
     { path: '/ReleaseBundle', element: <ReleaseBundle /> },
   ];
 

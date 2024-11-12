@@ -31,7 +31,7 @@ body {
   font-weight: var(--font-weight-regular);
 }
 
-.recharts-legend-item-text{
+.recharts-legend-item-text {
   font-size: .672rem;
   padding-left: .24rem;
   color: #000;
@@ -58,13 +58,14 @@ body {
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 162 89% 38%;
+    --chart-2: 45 100% 58%;
+    --chart-3: 142 97% 25%;
+    --chart-4: 0 100% 71%;
+    --chart-5: 8 95% 58%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -85,62 +86,68 @@ body {
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 162 89% 38%;
+    --chart-2: 45 100% 58%;
+    --chart-3: 142 97% 25%;
+    --chart-4: 0 100% 71%;
+    --chart-5: 8 95% 58%;
   }
 }
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 
-.bg-pink{
+.bg-pink {
   background-color: #FF7396;
 }
 
 
-.bg-porple{
+.bg-porple {
   background-color: #804FBF;
 }
-.bg-rose{
+
+.bg-rose {
   background-color: #C049C0;
 }
-.bg-box{
+
+.bg-box {
   background-color: #F6F7F7;
 }
 
-label{
+label {
   margin-top: 3px !important;
   margin-bottom: 3px !important;
 }
 
-.error{
-color: red !important;
+.error {
+  color: red !important;
 }
-.bg-orange{
+
+.bg-orange {
   background-color: #F7A01F;
 }
-.bg-dark-lin{
-  background-image: linear-gradient(to right, rgb(20, 18, 18) , rgb(126, 126, 125)); 
-} 
+
+.bg-dark-lin {
+  background-image: linear-gradient(to right, rgb(20, 18, 18), rgb(126, 126, 125));
+}
 
 .css-78c6dr-MuiToolbar-root-MuiTablePagination-toolbar {
   align-items: baseline !important;
 }
 
-.fw-bold{
+.fw-bold {
   font-weight: bolder !important;
 }
 
-th{
+th {
   font-size: 15px !important;
   font-weight: bold !important;
   font-family: 'Inter';

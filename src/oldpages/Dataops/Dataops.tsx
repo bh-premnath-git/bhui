@@ -462,9 +462,9 @@ function Dataops() {
 													<StopCircleOutlined />
 													<Typography variant="body1" sx={{ p: '4px' }}>Stop</Typography>
 												</Stack>
-											<RestartPopUp open1={open1} jobDetail={jobDetail} onClose1={handleClose1} />
+											<RestartPopUp open={open1} jobDetail={jobDetail} onClose={handleClose1} />
 
-												<StopPopUp open2={open2} jobDetail={jobDetail} onClose2={handleClose2} />
+												<StopPopUp open={open2} jobDetail={jobDetail} onClose={handleClose2} />
 											</>
 										) : (<></>)}
 									</TableCell>

@@ -144,7 +144,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const [ToastComponent, showToast] = useToast();
   const navigate = useNavigate();
   
-  console.log("Redux state:", state);
   const { editEnvironmentData:editenvdata } = useAppSelector(
     (state) => state.environmentApi
   );
@@ -165,7 +164,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
     dispatch({ type: 'SET_TAGS', payload: defaultTags });
   }
 }, [editenvdata]);
-  console.log("env data",editenvdata)
 
 
   const handleBack = (): void => {
@@ -202,7 +200,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         airflow_bucket_name: state.environmentTab.airflowDagBucket || editenvdata.airflow_bucket_name || '',
         tags: tagsPayload,
       }
-      console.log("value being snet to API:", values)
 
       setIsLoading(() => true);
 
@@ -210,7 +207,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         // Edit Environment
         dispatchApi(editEnvironment({ ...values, id: editenvdata.Environment_Id }))
           .then((response: any) => {
-            console.log("API Response:", response);
             if (response.type === "environment/edit/fulfilled") {
               showToast('Environment updated successfully', { color: '#4caf50' });
               setTimeout(() => {
@@ -242,9 +238,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const handleChangeVerification = (data: boolean) => {
     dispatch({ type: 'SET_VERIFICATION', payload: data });
   }
-  useEffect(() => {
-    console.log("Current tags:", state.tags);
-  }, [state.tags]);
 
   return (
     <div className="container mx-auto p-2 space-y-4">
@@ -279,7 +272,6 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                   setTags={(newTags) => {
                     const updatedTags = typeof newTags === 'function' ? newTags(state.tags) : newTags;
                     dispatch({ type: 'SET_TAGS', payload: updatedTags });
-                    console.log("Setting tags:", updatedTags);
                   }}
                   onChange={handleEnvironmentTabChange}
                   environmentName={state.environmentTab.environmentName || editenvdata.bh_env_name  || ''}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Table, TableBody, TableCell, TableHead, TableRow, TablePagination, IconButton, Menu, MenuItem,
+    Table, TableBody, TableCell, TableHead, TableRow, TablePagination, IconButton, Menu,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import MoreVert from '@mui/icons-material/MoreVert';
@@ -16,24 +16,29 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
     },
 }));
 
+interface Column<T> {
+    key: keyof T;
+    label: string;
+}
+
 interface CustomTableProps<T> {
-    columns: any;
+    columns: Column<T>[];
     data: T[];
     rowsPerPageOptions?: number[];
     menuActions?: (row: T, index: number) => React.ReactNode;
-    className?: any;
+    className?: string;
     headerCellStyle?: React.CSSProperties;
     metaData?: any;
 }
 
-const CustomTable = <T extends unknown>({
+const CustomTable = <T extends Record<string, any>>({
     columns,
     data,
     rowsPerPageOptions = [5, 10, 25],
     menuActions,
     className,
     headerCellStyle,
-    metaData
+    metaData,
 }: CustomTableProps<T>) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(rowsPerPageOptions[0]);
@@ -41,10 +46,9 @@ const CustomTable = <T extends unknown>({
     const [menuIndex, setMenuIndex] = useState<number | null>(null);
 
     const navigate = useNavigate();
-
     const dispatch = useAppDispatch();
 
-    const handleChangePage = (event: unknown, newPage: number) => {
+    const handleChangePage = (_event: unknown, newPage: number) => {
         setPage(newPage);
     };
 
@@ -54,6 +58,7 @@ const CustomTable = <T extends unknown>({
     };
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>, index: number) => {
+        event.stopPropagation(); // Prevent row click event
         setAnchorEl(event.currentTarget);
         setMenuIndex(index);
     };
@@ -63,44 +68,55 @@ const CustomTable = <T extends unknown>({
         setMenuIndex(null);
     };
 
-    const handleRoeClick = async (event: React.MouseEvent, row: any) => {
+    const handleRowClick = async (event: React.MouseEvent, row: T) => {
         event.preventDefault();
         if (metaData) {
-            await dispatch(setSelectedFlowFromList(metaData.find(meta => meta.Name === row.Name)));
+            const selectedMeta = metaData.find((meta: any) => meta.Name === (row as any).Name);
+            dispatch(setSelectedFlowFromList(selectedMeta));
             navigate('/Designer/FlowPlayGround');
         }
-    }
+    };
 
     return (
         <div className={className}>
             <Table>
-                <TableHead sx={{ background: '#f2f3f5' }} >
+                <TableHead sx={{ background: '#f2f3f5' }}>
                     <TableRow>
                         {columns.map((column) => (
                             <TableCell
                                 className='myHeadFont text-left p-2 m-0'
-                                key={column.key as string}
-                                style={headerCellStyle} // Apply headerCellStyle
+                                key={String(column.key)}
+                                style={headerCellStyle}
                             >
                                 {column.label}
-                            </TableCell>))}
-                        {menuActions && (<TableCell className='myHeadFont'>Action</TableCell>)}
+                            </TableCell>
+                        ))}
+                        {menuActions && <TableCell className='myHeadFont'>Action</TableCell>}
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {data
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((row, index) => (
-                            <StyledTableRow style={{ cursor: 'pointer' }} key={index} onClick={(e) => { handleRoeClick(e, row) }}>
+                            <StyledTableRow
+                                style={{ cursor: 'pointer' }}
+                                key={index}
+                                onClick={(e) => handleRowClick(e, row)}
+                            >
                                 {columns.map((column) => (
-                                    <TableCell className='p-2 m-0 text-left' key={column.key as string}>{(row[column.key] as React.ReactNode)}</TableCell>
+                                    <TableCell
+                                        className='p-2 m-0 text-left'
+                                        key={String(column.key)}
+                                    >
+                                        {String(row[column.key])}
+                                    </TableCell>
                                 ))}
-                                {menuActions && (<TableCell className='m-0 p-0'>
-                                    <div style={{ boxShadow: 'none' }}>
+                                {menuActions && (
+                                    <TableCell className='m-0 p-0' onClick={(e) => e.stopPropagation()}>
                                         <IconButton
                                             id={`basic-button-${index}`}
                                             aria-controls={`simple-menu-${index}`}
-                                            aria-haspopup="true"
+                                            aria-haspopup='true'
                                             onClick={(event) => handleClick(event, index)}
                                         >
                                             <MoreVert />
@@ -116,15 +132,14 @@ const CustomTable = <T extends unknown>({
                                         >
                                             {menuActions(row, index)}
                                         </Menu>
-                                    </div>
-                                </TableCell>)}
+                                    </TableCell>
+                                )}
                             </StyledTableRow>
-                        )
-                        )}
+                        ))}
                 </TableBody>
             </Table>
             <TablePagination
-                component="div"
+                component='div'
                 count={data.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
@@ -138,20 +153,23 @@ const CustomTable = <T extends unknown>({
 
 export default CustomTable;
 
-export const generateColumnsFromData = (data: any[], excludeKeys: string[] = []) => {
+export const generateColumnsFromData = <T extends Record<string, any>>(
+    data: T[],
+    excludeKeys: string[] = []
+): Column<T>[] => {
     if (!data || data.length === 0) return [];
 
     const firstItem = data[0];
-    return Object.keys(firstItem)
-        .filter(key => !excludeKeys.includes(key)) // Filter out unwanted columns
-        .map(key => ({
-            label: key
+    return (Object.keys(firstItem) as Array<keyof T>)
+        .filter((key) => !excludeKeys.includes(key as string))
+        .map((key) => ({
+            label: String(key)
                 .replace(/_/g, ' ')
-                .replace(/\b\w/g, char => char.toUpperCase()), // Convert to readable format
+                .replace(/\b\w/g, (char) => char.toUpperCase()),
             key,
         }));
 };
 
-export const isEmpty = (obj) => {
+export const isEmpty = (obj: any) => {
     return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
 };

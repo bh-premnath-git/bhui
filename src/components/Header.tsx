@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
 import { useAppSelector } from '@/redux/hooks';
+import { CustomBuildToolbar } from "./CustomBuildToolbar";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -85,16 +86,19 @@ export function Header(props: HeaderProps) {
   );
 }
 
-function renderingHeadContent(content: string) {
+export function renderingHeadContent(content: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
   const { editProjectData } = useSelector((state: RootState) => state.projectApi);
   const { editEnvironmentData } = useSelector((state: RootState) => state.environmentApi);
   const { selectedFlowFromList } = useSelector(
     (state: RootState) => state.flowApi
   );
+  const { buildPipeLineDtl } = useSelector(
+    (state: RootState) => state.buildPipeLineApi
+  );
   // console.log(content);
   if (content === "/dashboard") {
-    return <span className="w-2/5 font-bold">Dashboard</span>;
+    return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
   }
   if (content === "/admin-console") {
     return <span className="w-2/5 font-bold">Admin Console</span>;
@@ -147,11 +151,20 @@ function renderingHeadContent(content: string) {
   if (content === "/alerts") {
     return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Alert Hub</span>;
   }
+  if (content === "/bundle") {
+    return <span className="w-2/5 font-bold">Manage Releases</span>;
+  }
+  if (content === "/CreateBundle") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Create Bundle</span>;
+  }
+  if (content === "/ReleaseBundle") {
+    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Release Bundle</span>;
+  }
   if (content === "/designer/flow-playground") {
     return <CustomToolbarComponent selectedData={selectedFlowFromList} />
   }
   if (content === "/BuildPlayGround") {
-    return <CustomToolbarComponent />
+    return <CustomBuildToolbar buildPipeLineDtl={buildPipeLineDtl} />
   }
   return "";
 }

@@ -17,7 +17,7 @@ const MyChartComponent = ({ selectedRowData }: any) => {
       },
       legend: {},
       grid: {
-        top: 0,    // Remove top space
+        top: 0,   
         bottom: 0, // Remove bottom space
         left: '3%', // Optional: Adjust left space as needed
         right: '3%', // Optional: Adjust right space as needed

@@ -185,10 +185,10 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                         </div>
                     ))}
                 </div>
-                <div className='mt-8 ml-48'>
+                {/* <div className='mt-8 ml-48'>
                     <button onClick={onSave} className='bg-black text-white px-4 py-1 rounded-sm'>Save</button>
 
-                </div>
+                </div> */}
             </div>
 
             <div style={{ height: 'calc(100% - 100px)' }}>

@@ -6,19 +6,30 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { IoClose } from 'react-icons/io5';
 import { FlexibleTable } from '../Tabel';
+import { Editor } from '@monaco-editor/react';
+import { tap } from 'lodash';
+
 
 function ExportPlayGround() {
     const [tabIndex, setTabIndex] = useState(0);
-    const [tabs, setTabs] = useState([{ id: 0, label: 'Dataset 1', content: '' }]);
+    const [tabs, setTabs] = useState([{ id: 0, label: 'Dataset 1', content: '',isExecute:false }]);
 
     const handleAddTab = () => {
         setTabs((prevTabs) => {
             const newTabId = prevTabs.length;
-            const updatedTabs = [...prevTabs, { id: newTabId, label: `Dataset ${newTabId + 1}`, content: '' }];
-            setTabIndex(newTabId+1); // Set focus to the new tab
+            const updatedTabs = [...prevTabs, { id: newTabId, label: `Dataset ${newTabId + 1}`, content: '' ,isExecute:false }];
+            setTabIndex(newTabId + 1); // Set focus to the new tab
             return updatedTabs;
         });
     };
+
+    const handleRun = () => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === prevTabs[tabIndex].id ? { ...tab, isExecute: true } : tab
+            ))
+    };
+
 
     const handleChangeTab = (event: any, newIndex: number) => {
         setTabIndex(newIndex);
@@ -36,7 +47,7 @@ function ExportPlayGround() {
             if (newTabs.length === 0) {
                 // If all tabs are removed, reset to a default tab
                 setTabIndex(0);
-                return [{ id: 0, label: "Dataset 1", content: "" }];
+                return [{ id: 0, label: "Dataset 1", content: "",isExecute:false }];
             }
             if (index === tabIndex) {
                 // Adjust the selected tab if the current one is removed
@@ -49,48 +60,13 @@ function ExportPlayGround() {
         });
     };
 
-// Column configuration for the FlexibleTable component
-const columns:any = [
-    {
-        header: 'ID',
-        key: 'id',
-        sortable: true, // If the column is sortable
-    },
-    {
-        header: 'Name',
-        key: 'name',
-        sortable: true,
-    },
-    {
-        header: 'Email',
-        key: 'email',
-        sortable: true,
-    },
-    {
-        header: 'Role',
-        key: 'role',
-        sortable: true,
-    },
-    {
-        header: 'Status',
-        key: 'status',
-        sortable: true,
-    },
-];
+    // Column configuration for the FlexibleTable component
 
-// Sample edit and delete handlers
-const handleEdit = (id:any) => {
-    console.log('Edit user with ID:', id);
-};
-
-const handleDelete = (id:any) => {
-    console.log('Delete user with ID:', id);
-};
 
 
     return (
         <div className="h-screen flex flex-col bg-gray-100 ">
-            
+
             <AppBar elevation={0} position="static" className="bg-white">
                 <div className="flex items-center justify-between p-1">
                     <h1 className="text-2xl font-semibold text-gray-800">Explorer</h1>
@@ -169,7 +145,7 @@ const handleDelete = (id:any) => {
                     <Stack>
                         <Input placeholder="Search By keywords" className="w-48" />
                     </Stack>
-                    <Stack>
+                    <Stack onClick={handleRun}>
                         <img src="/assets/explore/Run.svg" alt="run" className="w-8 h-8 mr-2" />
                     </Stack>
                     <Stack>
@@ -178,19 +154,7 @@ const handleDelete = (id:any) => {
                 </Stack>
             </Stack>
             <TabContent tabs={tabs} tabIndex={tabIndex} handleContentChange={handleContentChange} />
-            <Stack className=' rounded-sm'>
-            <FlexibleTable 
-                data={userList}
-                columns={columns}
-                itemsPerPageOptions={[5, 10, 20]}
-                defaultItemsPerPage={10}
-                background="bg-black"
-                isAction={false}
-                isSearch={false}
-                // createNewFn={createNewFn}
-                // actionFn={actionFn}
-            />
-            </Stack>
+
         </div>
     );
 }
@@ -202,16 +166,64 @@ const TabContent = ({ tabs, tabIndex, handleContentChange }: any) => {
         console.log(tabIndex);
         console.log(tabs);
     }, [tabs, tabIndex]);
-
+    const columns: any = [
+        {
+            header: 'ID',
+            key: 'id',
+            sortable: true, // If the column is sortable
+        },
+        {
+            header: 'Name',
+            key: 'name',
+            sortable: true,
+        },
+        {
+            header: 'Email',
+            key: 'email',
+            sortable: true,
+        },
+        {
+            header: 'Role',
+            key: 'role',
+            sortable: true,
+        },
+        {
+            header: 'Status',
+            key: 'status',
+            sortable: true,
+        },
+    ];
     return (
         <>
             {tabs.map((tab: any, index: number) => (
                 <TabPanel key={tab.id} value={tabIndex} index={tabIndex == 0 ? index : index + 1}>
-                    <Textarea
-                        className="bg-white min-h-[240px]"
-                        value={tab.content}
-                        onChange={(e) => handleContentChange(tab.id, e.target.value)}
-                    />
+                    <div className='rounded shadow-sm' style={{
+                        overflow: 'hidden',
+                    }}>
+                        <Editor
+                            options={{
+                                minimap: { enabled: false }, // Hide minimap
+                                scrollBeyondLastLine: false, // Remove extra scrolling space
+                                renderLineHighlight: 'none', // Remove line highlight
+                                lineNumbers: 'on',
+                                overviewRulerBorder: false, // Remove border around minimap
+                                padding: { top: 0, bottom: 0 }, // Adjust padding
+                            }} height="30vh" language="sql" value={tab.content}
+                            onChange={(e: any) => handleContentChange(tab.id, e.target.value)} />
+
+                    </div>
+
+                    {tab.isExecute&&(<Stack className=' rounded-sm'>
+                        <FlexibleTable
+                            data={userList}
+                            columns={columns}
+                            itemsPerPageOptions={[5, 10, 20]}
+                            defaultItemsPerPage={10}
+                            background="bg-black"
+                            isAction={false}
+                            isSearch={false}
+                        />
+                    </Stack>)}
                 </TabPanel>
             ))}
         </>

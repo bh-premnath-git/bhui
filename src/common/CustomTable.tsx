@@ -34,7 +34,7 @@ interface CustomTableProps<T> {
 const CustomTable = <T extends Record<string, any>>({
     columns,
     data,
-    rowsPerPageOptions = [5, 10, 25],
+    rowsPerPageOptions = [10, 25],
     menuActions,
     className,
     headerCellStyle,

@@ -1,4 +1,4 @@
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
@@ -10,12 +10,15 @@ export interface ApiState {
   selectedOption: string;
   isRun: boolean;
   dynamicConData: any;
-  pipelineList:any;
+  pipelineList: any;
   nestedFields: any;
-  joinList:any;
-  orderByList:any;
-  createPipeLineDtl:any;
-  buildPipeLineDtl:any;
+  joinList: any;
+  orderByList: any;
+  createPipeLineDtl: any;
+  buildPipeLineDtl: any;
+  nodesList: any,
+  tranformationCount: any;
+  isDebug: boolean;
 }
 
 const initialState: ApiState = {
@@ -28,11 +31,14 @@ const initialState: ApiState = {
   isRun: false,
   dynamicConData: null,
   nestedFields: null,
-  pipelineList:[],
-  joinList:[],
-  orderByList:[],
-  createPipeLineDtl:{},
-  buildPipeLineDtl:{}
+  pipelineList: [],
+  joinList: [],
+  orderByList: [],
+  createPipeLineDtl: {},
+  buildPipeLineDtl: {},
+  nodesList: [],
+  tranformationCount: {},
+  isDebug: false,
 };
 
 interface ApiResponse {
@@ -128,6 +134,58 @@ export const getOrderBy: any = createAsyncThunk(
   }
 );
 
+
+export const getTransformationCount: any = createAsyncThunk(
+  'build-pipline/getTransformationCount',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/pipeline/debug/get_transformation_count`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+
+export const getTransformationOutput: any = createAsyncThunk(
+  'build-pipline/getTransformationOutput',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/pipeline/debug/get_transformation_output`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+
+export const startPipeLine: any = createAsyncThunk(
+  'build-pipline/startPipeLine',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'post', `/pipeline/debug/start_pipeline`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+
+export const stopPipeLine: any = createAsyncThunk(
+  'build-pipline/stopPipeLine',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'post', `/pipeline/debug/stop_pipeline`, null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const buildPipeLineSlice = createSlice({
   name: "api/buildDataPipeline",
   initialState,
@@ -141,12 +199,20 @@ const buildPipeLineSlice = createSlice({
     setIsRun: (state, action) => {
       state.isRun = action.payload;
     },
+    setIsDebug: (state, action) => {
+      state.isDebug = action.payload;
+    },
     setNestedField: (state, action) => {
       state.nestedFields = action.payload;
     },
     setBuildPipeLineDtl: (state, action) => {
       state.buildPipeLineDtl = action.payload;
     },
+    setBuildPipeLineNodes: (state, action) => {
+      state.nodesList = action.payload;
+    },
+    
+
   },
   extraReducers: (builder) => {
     builder
@@ -296,8 +362,90 @@ const buildPipeLineSlice = createSlice({
         }
       )
 
+      .addCase(getTransformationCount.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getTransformationCount.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.tranformationCount = action.payload;
+        }
+      )
+      .addCase(
+        getTransformationCount.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(getTransformationOutput.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getTransformationOutput.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.orderByList = action.payload;
+        }
+      )
+      .addCase(
+        getTransformationOutput.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(startPipeLine.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        startPipeLine.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.orderByList = action.payload;
+        }
+      )
+      .addCase(
+        startPipeLine.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
+      .addCase(stopPipeLine.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        stopPipeLine.fulfilled,
+        (state, action: PayloadAction<ApiResponse[]>) => {
+          state.loading = false;
+          state.orderByList = action.payload;
+        }
+      )
+      .addCase(
+        stopPipeLine.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.error = action.payload;
+        }
+      )
+
   },
 });
 
 export default buildPipeLineSlice.reducer;
-export const { setIsHover, setSelectedOption, setIsRun, setNestedField,setBuildPipeLineDtl } = buildPipeLineSlice.actions;
+export const { setIsHover,
+   setSelectedOption,
+    setIsRun, 
+    setNestedField, 
+    setBuildPipeLineDtl, 
+    setBuildPipeLineNodes, 
+    setIsDebug } = buildPipeLineSlice.actions;

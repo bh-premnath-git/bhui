@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { Handle, NodeProps, Position } from "reactflow";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setIsHover, setSelectedOption } from "../../redux/BuildPipeLineSlice";
+import { RootState } from "@/store/store";
+import { PiFlagPennantFill } from "react-icons/pi";
+import { BsAppIndicator } from "react-icons/bs";
+import { GoDotFill } from "react-icons/go"; 
+import { LuMilestone } from "react-icons/lu";
 
 export interface CustomNodeData {
     image: {
@@ -14,6 +19,7 @@ export interface CustomNodeData {
     isEdit?: boolean;
     onDelete?: () => void;
     onClone?: (nodeData: CustomNodeData) => void;
+    handleCheck?: (nodeData: CustomNodeData) => void;
     onEdit?: (nodeData: CustomNodeData) => void;
     dataList?: any;
 }
@@ -22,6 +28,7 @@ export interface CustomNodeData {
 export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnectable }: any) => {
     const dispatch = useDispatch();
     const [display, setDisplay] = useState(data.display);
+    const { isDebug,isRun }: any = useSelector((state: RootState) => state.buildPipeLineApi);
 
     function handlePop(data: any) {
         dispatch(setSelectedOption({ display: data.display, label: data.label }));
@@ -41,6 +48,15 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
             data.onClone(data);
         } else {
             alert("Clone function not provided");
+        }
+    }
+    function handleCheck() {
+        if (data.handleCheck) {
+            console.log(data)
+            data.isCheck = !data.isCheck;
+            data.handleCheck(data);
+        } else {
+            alert("Check function not provided");
         }
     }
 
@@ -75,6 +91,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
             
             {/* Display image */}
             {data.image && <img src={data.image.url} alt={data.image.alt} width={40} style={{ maxWidth: '80px', maxHeight: '80px' }} />}
+            {isRun&&(<LuMilestone  className={`absolute right-0 top-0 cursor-pointer ${!data.isCheck?'text-red-500':'text-green-500'}`} size={10} onClick={handleCheck} />)}
             {/* Source Handle */}
             <Handle
                 type="source"
@@ -106,6 +123,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
         <img src="/assets/buildPipeline/trash.svg" alt="Delete" width={10} height={10} onClick={handleDelete} />
         <img src="/assets/buildPipeline/info-circle.svg" alt="Info" width={10} height={10} />
         <img src="/assets/buildPipeline/edit-2.svg" alt="Edit" width={10} height={10} onClick={() => data.isEdit = true} />
+        {/* {isDebug&&(<img src="/assets/buildPipeline/GoMilestone.svg" alt="Edit" width={10} height={10} onClick={() => data.isEdit = true} />)} */}
     </div>
 )}
 
@@ -116,7 +134,7 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                     <div 
                         onClick={() => handlePop(data)} 
                         style={{
-                            marginTop: '8px',
+                            marginTop: '6px',
                             fontSize: '9px',
                             color: '#333',
                             fontWeight: 'bold',
@@ -124,32 +142,34 @@ export const ImageNode: React.FC<NodeProps<CustomNodeData>> = ({ data, isConnect
                             overflow: 'hidden',
                             whiteSpace: 'nowrap',
                             width: '100%',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            fontFamily: 'Inter'
                         }}
                     >
                         {data.label}
                     </div>
                 )}
                 {(data.display && !data.isEdit) && (
-                    <div style={{
-                        fontSize: '8px',
+                    <div className="w-12" style={{
+                        fontSize: '7px',
                         color: '#333',
                         textOverflow: 'ellipsis',
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
                         textAlign:'center',
-                        width: '100%'
+                        fontFamily: 'Inter'
+
                     }}>
                         {data.display}
                     </div>
                 )}
                 {(data.display && data.isEdit) && (
-                    <div className="w-12">
-                        <input
+                    <div className="w-14">
+                        <input 
                             type="text"
                             value={display}
-                            className="w-12 h-4 border rounded-sm px-2 text-xs text-center focus:border-blue-500 focus:outline-none"
-                            style={{ paddingTop: '-2px', paddingBottom: '-10px', margin: 0, fontSize: '7px' }}
+                            className="flex h-4 w-full border border-input bg-transparent px-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ paddingTop: '-2px', paddingBottom: '-10px', margin: 0, fontSize: '7px', fontFamily: 'Inter',borderRadius: '3px' }}
                             onChange={(event: any) => setDisplay(event.target.value)}
                             onBlur={() => handleEdit()}
                             autoFocus

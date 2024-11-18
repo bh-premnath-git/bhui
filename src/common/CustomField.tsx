@@ -15,8 +15,8 @@ interface FormFieldProps {
     valueKey?: string; // Key to access the value in options
     labelKey?: string; // Key to access the label in options
     onChange?: (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => void;
-    required?: boolean; 
-    className?:any;
+    required?: boolean;
+    className?: any;
 }
 
 const CustomField: React.FC<FormFieldProps> = ({
@@ -50,7 +50,10 @@ const CustomField: React.FC<FormFieldProps> = ({
                                     {label} {required && <span style={{ color: 'red' }}>*</span>}
                                 </Label>
                             )}
-                            <Select
+
+                            <InputLabel id={"label"}>{placeholder}</InputLabel>
+
+                            <Select labelId={"label"}
                                 {...field}
                                 size={size}
                                 disabled={disabled}

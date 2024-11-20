@@ -11,8 +11,9 @@ import ReactFlow, {
   NodeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { ZoomIn, ZoomOut, Minimize } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { CiZoomIn, CiZoomOut, CiMinimize1 } from 'react-icons/ci';
+import { IconButton, Button, Stack, Tooltip } from '@mui/material';
 
 import CustomNode from '@/components/ReactFlowComps/Items/CustomNode/CustomNode';
 import CustomEdge from '@/components/ReactFlowComps/Items/CustomEdge/CustomEdge';
@@ -41,34 +42,48 @@ const CustomControls = () => {
 
   return (
     <div className={styles.customControlsPanel}>
-      <div className={styles.controlsContainer}>
-        <button onClick={handleResetView} className={styles.controlButton}>
-          <Minimize size={20} />
-        </button>
-        <button onClick={handleZoomIn} className={styles.controlButton}>
-          <ZoomIn size={20} />
-        </button>
-        <button onClick={handleZoomOut} className={styles.controlButton}>
-          <ZoomOut size={20} />
-        </button>
-        <button
+      <Stack direction="row" spacing={2} className={styles.controlsContainer}>
+        <Tooltip title="Minimize" placement="top">
+          <IconButton onClick={handleResetView} sx={{ border: '1px solid gray', borderRadius: '6px' }}>
+            <CiMinimize1 size={25} />
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Zoom In" placement="top">
+          <IconButton onClick={handleZoomIn} sx={{ border: '1px solid gray', borderRadius: '6px' }}>
+            <CiZoomIn size={25} />
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Zoom In" placement="top">
+          <IconButton onClick={handleZoomOut} sx={{ border: '1px solid gray', borderRadius: '6px' }}>
+            <CiZoomOut size={25} />
+          </IconButton>
+        </Tooltip>
+
+        <Button
           onClick={toggleDataPreview}
-          className={styles.dataPreviewButton}
-          title="Toggle Data Preview"
+          variant="outlined"
+          sx={{ borderColor: 'gray', color: 'black', borderRadius: '6px' }}
+          endIcon={
+            <span
+              className={`${styles.dataPreviewSymbol} ${isDataPreviewOpen ? styles.inverted : ''}`}
+            >
+              ^
+            </span>
+          }
         >
-          <span className={styles.dataPreviewText}>Data Preview</span>
-          <span
-            className={`${styles.dataPreviewSymbol} ${isDataPreviewOpen ? styles.inverted : ''
-              }`}
-          >
-            ^
-          </span>
-        </button>
-      </div>
-      <DataPreviewModal
-        isOpen={isDataPreviewOpen}
-        onClose={() => setIsDataPreviewOpen(false)}
-      />
+          Data Preview
+        </Button>
+      </Stack>
+
+      {/* Data Preview Modal */}
+      {isDataPreviewOpen && (
+        <DataPreviewModal
+          isOpen={isDataPreviewOpen}
+          onClose={() => setIsDataPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 };

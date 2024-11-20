@@ -40,6 +40,21 @@ type ColumnConfig = {
     render?: (value: any, row: any) => React.ReactNode;
 };
 
+function CustomerTable({
+    customerList,
+    loading,
+    error,
+}: CustomerTableProps) {
+    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    useLayoutEffect(() => {
+        dispatch(getCustomerList());
+    }, [dispatch]);
+
+    const viewFn = (rowData: any) => {
+        navigate(`/EditCustomer/${rowData.customer_id}`, { state: { rowData } });
+    }
+
 // Define column configurations outside the component for better performance
 const columns: ColumnConfig[] = [
     {
@@ -48,7 +63,11 @@ const columns: ColumnConfig[] = [
         sortable: true,
         filterable: true,
         type: 'text',
-
+        render: (value, row) => (
+            <span onClick={() => viewFn(row)} className="cursor-pointer">
+                {row?.relation_ship_owner}
+            </span>
+        )
 
     },
     {
@@ -58,7 +77,12 @@ const columns: ColumnConfig[] = [
         sortable: false,
         render: (value) => {
             return (
-                <div style={{ color: value == 'active' ? COLORS.green : COLORS.red }} className="font-bold">
+                <div
+                    style={{
+                        color: value === 'active' ? COLORS.green : COLORS.red
+                    }}
+                    className={`text-center rounded-md border text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80
+                        ${value === 'active' ? 'bg-green-500' : 'bg-red-500'} text-white p-1 w-12 capitalize`}>
                     {value}
                 </div>
             )
@@ -70,8 +94,6 @@ const columns: ColumnConfig[] = [
         type: 'number',
         sortable: false,
     },
-
-
 ];
 
 const EmptyComponent: React.FC = () => {
@@ -91,16 +113,6 @@ const EmptyComponent: React.FC = () => {
     );
 };
 
-function CustomerTable({
-    customerList,
-    loading,
-    error,
-}: CustomerTableProps) {
-    const navigate = useNavigate();
-    const dispatch = useAppDispatch();
-    useLayoutEffect(() => {
-        dispatch(getCustomerList());
-    }, [dispatch]);
 
     if (loading) {
         return <Spinner size="lg" />;
@@ -118,7 +130,7 @@ function CustomerTable({
     }
 
     const editFn = (rowData: any) => {
-        navigate("/AddCustomers", { state: { rowData } });
+        navigate(`/EditCustomer/${rowData.customer_id}`, { state: { rowData } });
     }
 
     const changeStatus = async (rowData: any) => {

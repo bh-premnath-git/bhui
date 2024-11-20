@@ -183,8 +183,8 @@ export default function ProjectCreationComponent() {
         if (result.payload) {
           showToast('Project updated successfully', { color: '#4caf50' });
           setTimeout(() => {
-            navigate('/all-projects');
-          }, 1000);
+            navigate('/admin-console/all-projects');
+          }, 5000);
         }
       } catch (error: any) {
         showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
@@ -229,7 +229,7 @@ export default function ProjectCreationComponent() {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleProjectNameChange(e, setFieldValue)
                       }
-                      disabled={!isEmpty(editProjectData)}
+                      readOnly={!isEmpty(editProjectData)}
                     />
                   )}
                 </Field>
@@ -238,7 +238,7 @@ export default function ProjectCreationComponent() {
               <Button
                 variant="dark"
                 className="mt-1"
-                onClick={() => navigate('/all-projects')}
+                onClick={() => navigate('/admin-console/all-projects')}
               >
                 View All Projects
               </Button>
@@ -360,56 +360,6 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div className="flex items-end">
-                  {/* <motion.div
-                    className="relative"
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      type="button"
-                      disabled={isTokenLoading}
-                      className="align-bottom relative px-2 py-1 text-sm font-medium text-white bg-gray-800 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-300 ease-in-out w-[240px] h-[35px]"
-
-                      onClick={() => handleVerification(values)}
-                    >
-                      <span className="relative z-10">
-                        {isTokenLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin inline-block" />
-                            Validating...
-                          </>
-                        ) : (
-                          'Validate'
-                        )}
-                      </span>
-                      <motion.div
-                        className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 opacity-0"
-                        animate={{
-                          opacity: isTokenLoading ? 0.2 : 0,
-                        }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </Button>
-                    <AnimatePresence>
-                      {!isTokenLoading && isTokenValid !== null && (
-                        <motion.span
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          className={`absolute -top-3 -right-3 flex items-center justify-center w-5 h-5 text-sm font-bold rounded-full ${isTokenValid === 'valid' ? 'bg-green-500' : 'bg-red-500'
-                            } shadow-md z-20`}
-                        >
-                          {isTokenValid === 'valid' ? (
-                            <Check className="w-3 h-3 text-white" />
-                          ) : (
-                            <X className="w-3 h-3 text-white" />
-                          )}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </motion.div> */}
                   <ValidationComponent onValidate={() => handleVerification(values)} />
                 </div>
               </div>

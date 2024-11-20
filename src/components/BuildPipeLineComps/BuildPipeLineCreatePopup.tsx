@@ -24,6 +24,7 @@ const style = {
     // border: '2px solid #000',
     boxShadow: 2,
     p: 4,
+    borderRadius: 1,
 };
 
 
@@ -40,7 +41,7 @@ const validationSchema = Yup.object().shape({
     notes: Yup.string().notRequired(),
 });
 
-const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ open, showToast }: any) => {
+const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ open, showToast, handleClose }: any) => {
     const { gitProjectList } = useSelector((state: RootState) => state.projectApi);
     const [showNotes, setShowNotes] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -57,14 +58,13 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
     return (
         <Modal
             open={open}
-            // onClose={() => handleClose(null)}
+            onClose={() => handleClose(null)}
             aria-labelledby="modal-title"
             aria-describedby="modal-description"
         >
 
             <Box sx={style}>
-                <div className='text-center'>Please fill in the details below to build a new pipeline</div>
-                <div className='text-start mt-2 font-bold'>Create Flow</div>
+                <div className='text-l font-medium mb-6'>Create Pipeline</div>
                 <Formik
                     initialValues={{
                         bh_project_id: '',
@@ -109,7 +109,8 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                     }}
                 >
                     {({ isSubmitting }) => (
-                        <Form>
+
+                        <Form className="space-y-4 gap-4">
                             <Stack direction={'row'} spacing={2}>
                                 <Stack className='w-100'>
                                     <CustomField
@@ -120,7 +121,8 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                                         valueKey="bh_project_id"
                                         labelKey="bh_project_name"
                                         size="small"
-                                    />
+                                        placeholder="Select Project"
+                                    /> 
                                 </Stack>
                                 <Stack className='w-100'>
                                     <CustomField
@@ -170,10 +172,14 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                             </div>
 
                             <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={'center'}>
-                                <Button className='w-25'
+                                <Button className='w-23'
                                     variant="outlined"
-                                    sx={{ borderColor: 'black', color: 'black', textTransform: 'none' }}
-                                // onClick={handleClose}
+                                    sx={{ borderColor: 'black', color: 'black', textTransform: 'none', '&:hover': {
+                                        borderColor: 'black',
+                                        backgroundColor: 'transparent',
+                                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                                        } }}
+                                onClick={handleClose}
                                 >
                                     Close
                                 </Button>

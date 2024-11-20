@@ -101,7 +101,7 @@ export default function AlertTableDtl({ jobDetailList }: any) {
     const [jobDetail, setJobDetail] = useState();
     const [codesDtl, setCodesDtl]: any = useState(localStorage.getItem('codesDtl'));
 
-    const handleOpen = (event: { currentTarget: React.SetStateAction<null>; }) => {
+    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
     };
 

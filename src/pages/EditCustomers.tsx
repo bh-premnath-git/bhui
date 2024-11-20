@@ -23,7 +23,7 @@ const schema = yup.object().shape({
 		.min(5, 'The Consumer Name must be at least 5 characters')
 });
 
-function AddCustomers() {
+function EditCustomer() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const [manageCustomerId, setManageCustomerId] = useState(location.state?.rowData ? location.state?.rowData?.customer_id : null);
@@ -180,4 +180,4 @@ function AddCustomers() {
 	);
 }
 
-export default AddCustomers;
+export default EditCustomer;

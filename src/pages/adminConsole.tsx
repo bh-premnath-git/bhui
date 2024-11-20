@@ -100,7 +100,7 @@ const adminList: AdminItem[] = [
     title: "Manage Projects",
     desc: "Select this option to manage Projects",
     buttonText: 'Manage Project',
-    link: '/all-projects'
+    link: '/admin-console/all-projects'
   },
   {
     id: 4,

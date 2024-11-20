@@ -32,7 +32,6 @@ const CodePipelineTable = lazy(() => import('./oldpages/CodePipeline/CodePipelin
 const CodePipelineData = lazy(() => import('./oldpages/CodePipeline/CodepipelineData'));
 const Explorer = lazy(() => import('./oldpages/Explorer/Explorer'));
 const ManageFlow = lazy(() => import('@/pages/manageFlow/FlowPlayGround'));
-
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const Loading = lazy(() => import('@/pages/loadingPage'));
 const Login = lazy(() => import('@/pages/login'));
@@ -51,8 +50,10 @@ const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
 const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
 const AllUsers = lazy(() => import('@/pages/allUsers'));
 const AddUser = lazy(() => import('@/pages/addUser'));
+const EditUser = lazy(() => import('@/pages/editUser'));
 const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
+const EditCustomer = lazy(() => import('@/pages/EditCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
 const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
@@ -161,7 +162,7 @@ function App() {
     { path: "/admin-console", element: <AdminConsole /> },
     { path: "/admin-console/manage-users", element: <PageNotFound /> },
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
-    { path: "/all-projects", element: <AllProjects /> },
+    { path: "/admin-console/all-projects", element: <AllProjects /> },
     { path: "/all-projects/new", element: <ProjectCreate /> },
     { path: "/projects/:id", element: <ProjectEdit/>},
     { path: "/all-environment", element: <AllEnvironments /> },
@@ -200,8 +201,10 @@ function App() {
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
     { path: '/AllUsers', element: <AllUsers /> },
     { path: '/AddUser', element: <AddUser /> },
+    { path: '/EditUser/:id', element: <EditUser />},
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
+    { path: '/EditCustomer/:id', element: <EditCustomer />},
     { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
     { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },

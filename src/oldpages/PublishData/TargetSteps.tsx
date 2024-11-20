@@ -5,7 +5,7 @@ import { Stack, Typography, FormHelperText, Button } from '@mui/material';
 import CustomTextField from '../../oldcomponents/custom-textField'; // Adjust the import path accordingly
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
@@ -157,7 +157,11 @@ function TargetSteps({ handleNext, publishData, publishId }) {
                   )}
                 />
                 {formik.touched.customer_id && formik.errors.customer_id && (
-                  <FormHelperText error>{formik.errors.customer_id}</FormHelperText>
+                  <FormHelperText>
+                    {typeof formik.errors.customer_id === 'string'
+                      ? formik.errors.customer_id
+                      : 'Invalid project selection'}
+                  </FormHelperText>
                 )}
               </Stack>
               <Stack>
@@ -187,7 +191,11 @@ function TargetSteps({ handleNext, publishData, publishId }) {
                   )}
                 />
                 {formik.touched.connection_id && formik.errors.connection_id && (
-                  <FormHelperText error>{formik.errors.connection_id}</FormHelperText>
+                <FormHelperText>
+                  {typeof formik.errors.connection_id === 'string' 
+                    ? formik.errors.connection_id 
+                    : 'Invalid project selection'}
+                </FormHelperText>
                 )}
               </Stack>
             </Stack>
@@ -233,7 +241,11 @@ function TargetSteps({ handleNext, publishData, publishId }) {
                   )}
                 />
                 {formik.touched.bh_project_id && formik.errors.bh_project_id && (
-                  <FormHelperText error>{formik.errors.bh_project_id}</FormHelperText>
+                    <FormHelperText error>
+                    {typeof formik.errors.bh_project_id === 'string' 
+                      ? formik.errors.bh_project_id 
+                      : 'Invalid project selection'}
+                  </FormHelperText>
                 )}
               </Stack>
             </Stack>

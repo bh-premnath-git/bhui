@@ -127,14 +127,15 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
             </div>
     
             {(select === 'Source' || select === 'Target') && (
-                <div className='rounded w-25 shadow-sm'
+                <div className='rounded w-96 shadow-sm'
                     style={{
                         marginTop: '10px',
                         padding: '10px',
                         border: '1px solid #f2f2f2',
                         backgroundColor: '#fff',
                         position: 'absolute',
-                        zIndex: 1000
+                        zIndex: 1000,
+                        left: '40vh'
                     }}
                 >
                     <div className="d-flex justify-content-between h6 fw-bold">

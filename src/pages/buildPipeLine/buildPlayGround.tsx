@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { IconButton, Tooltip } from "@mui/material";
-import { getConfig, getSource, setIsHover, setIsRun } from "../../redux/BuildPipeLineSlice";
+import { getConfig, getSource, getTransformationCount, setIsDebug, setIsHover, setIsRun, startPipeLine, stopPipeLine } from "../../redux/BuildPipeLineSlice";
 import { RootState } from "@/store/store";
 import BuildPipeLineFlow from "@/pages/buildPipeLine/buildPipeLineFlow";
 import { CustomNodeData } from "@/components/BuildPipeLineComps/ImageNode";
@@ -9,19 +9,21 @@ import Codepage from "@/components/BuildPipeLineComps/CodePage";
 import TransformPopUp from "@/components/BuildPipeLineComps/TransformPopUp";
 import FilterPopUp from "@/components/BuildPipeLineComps/FilterPopUp";
 import OrderPopUp from "@/components/BuildPipeLineComps/OrderPopUp";
-import Footer from "@/components/BuildPipeLineComps/Footer";
-import ControlPanel from "@/components/BuildPipeLineComps/ControlPanel";
 import BuildPipePopup from "@/components/BuildPipeLineComps/BuildPipePopup";
 import JoinNodeDtl from "@/components/BuildPipeLineComps/join/JoinNodeDtl";
 import SortForm from "@/components/BuildPipeLineComps/SortForm";
 import DeDupeForm from "@/components/BuildPipeLineComps/DeDupeForm";
 import AggregateNodeDtl from "@/components/BuildPipeLineComps/aggregate/AggregateNodeDtl";
 import { useParams } from "react-router-dom";
+import schemaValidation from '@/pages/buildPipeLine/json_schema_validators.json';
+import useToast from "@/oldcomponents/teast-service";
+import { COLORS } from "@/Utils/constants";
+import WrappedBuildPipeLineFlow from "@/pages/buildPipeLine/buildPipeLineFlow";
 
 export default function BuildPlayGround() {
     const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
     const [selectedNodeData, setSelectedNodeData] = useState<CustomNodeData | null>(null);
-    const { isHover, selectedOption }: any = useSelector((state: RootState) => state.buildPipeLineApi);
+    const { isHover, selectedOption,isDebug }: any = useSelector((state: RootState) => state.buildPipeLineApi);
     const [isButtonClicked, setIsButtonClicked] = useState(false);
     // const [open, setOpen] = useState(false);
     const [open1, setOpen1] = useState(false);
@@ -32,6 +34,8 @@ export default function BuildPlayGround() {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const { id } = useParams();
     const pipeline = { pipeline_id: id };
+    const [ToastComponent, showToast] = useToast();
+
     useEffect(() => {
         dispatch(getConfig({ connection_type: 'source' }));
         dispatch(getSource({ offset: 0, limit: 10, order_desc: false }));
@@ -39,16 +43,6 @@ export default function BuildPlayGround() {
     }, [dispatch]);
 
 
-
-    const handleClose1 = () => {
-        setOpen1(false);
-    };
-
-    const handleButtonClick = () => {
-        dispatch(setIsRun(true))
-        setIsButtonClicked(true);
-        setIsPopupOpen(true);
-    };
 
     const closePopup = () => {
         setIsPopupOpen(false);
@@ -66,12 +60,13 @@ export default function BuildPlayGround() {
 
 
     return (
-        <div style={{ position: 'relative', height: '100vh' }}>
+        <div style={{ position: 'relative', height: '91.8vh' }}>
             {isToggled ? (
                 <Codepage />
             ) : (
                 <>
-                    <BuildPipeLineFlow pipeline={pipeline} />
+
+                    <WrappedBuildPipeLineFlow pipeline={pipeline} />
                     {selectedOption?.label?.toLowerCase().trim() === "transform" &&
                         <TransformPopUp isOpen={isHover} onClose={closePopup} nodeData={selectedNodeData} />
                     }
@@ -98,7 +93,7 @@ export default function BuildPlayGround() {
 
                 </>
             )}
-            <Footer com={<ControlPanel
+            {/* <Footer com={<ControlPanel
                 isButtonClicked={isButtonClicked}
                 handleButtonClick={handleButtonClick}
                 isPopupOpen={isPopupOpen}
@@ -106,7 +101,7 @@ export default function BuildPlayGround() {
                 open1={open1}
                 handleClose1={handleClose1}
                 handleClose1Icon={handleClose1}
-            />} />
+            />} /> */}
             <div style={{
                 position: 'fixed',
                 top: '75px', // Adjust as needed to be above the footer

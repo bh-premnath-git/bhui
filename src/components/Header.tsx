@@ -15,7 +15,6 @@ import { CustomToolbarComponent } from "./CustomToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
-import { useAppSelector } from '@/redux/hooks';
 import { CustomBuildToolbar } from "./CustomBuildToolbar";
 
 interface HeaderProps {
@@ -86,25 +85,38 @@ export function Header(props: HeaderProps) {
   );
 }
 
+function extractCustomerId(content: string): number | null {
+  const match = content.match(/\/EditCustomer\/(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+
 export function renderingHeadContent(content: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
   const { editProjectData } = useSelector((state: RootState) => state.projectApi);
+  const { userDataList } = useSelector((state: RootState) => state.userApi);
   const { editEnvironmentData } = useSelector((state: RootState) => state.environmentApi);
+  const { customerList } = useSelector((state: RootState) => state.customerApi);
   const { selectedFlowFromList } = useSelector(
     (state: RootState) => state.flowApi
   );
   const { buildPipeLineDtl } = useSelector(
     (state: RootState) => state.buildPipeLineApi
   );
-  // console.log(content);
+  const navigate = useNavigate();
+
+  const navadminconsole = () => {
+    navigate("/admin-console");
+  };
+
   if (content === "/dashboard") {
     return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
   }
   if (content === "/admin-console") {
     return <span className="w-2/5 font-bold">Admin Console</span>;
   }
-  if (content === "/all-projects") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Projects</span>;
+  if (content === "/admin-console/all-projects") {
+    return <span className="w-2/5 font-bold"><span className="font-light cursor-pointer" onClick={navadminconsole}>Admin Console</span> &gt; Projects</span>;
   }
   if (content === "/all-projects/new") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Projects &gt; </span> New</span>;
@@ -136,12 +148,27 @@ export function renderingHeadContent(content: string) {
   if (content === "/AddUser") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User </span>&gt; Add User</span>;
   }
+  if (content.includes("/EditUser/")) {
+    const user = userDataList && userDataList[0];
+  if (user) {
+    const userName = `${user.bh_user_first_name} ${user.bh_user_middle_name} ${user.bh_user_last_name}`.trim();
+    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User &gt;</span> {userName}</span>;
+  }}
   if (content === "/AllCustomers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; </span> Manage Customer </span>;
   }
   if (content === "/AddCustomers") {
     return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
   }
+  if (content.includes("/EditCustomer/")) {
+    const customerId = extractCustomerId(content);
+    if (customerId && customerList?.length > 0) {
+      const currentCustomer = customerList.find(customer => customer.customer_id === customerId);
+      if (currentCustomer) {
+        return (
+          <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer &gt;</span> {currentCustomer.relation_ship_owner}</span>
+        );
+  }}}
   if (content === "/AllBuildDataPipeLine") {
     return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
   }

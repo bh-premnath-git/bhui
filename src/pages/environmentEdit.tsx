@@ -211,7 +211,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               showToast('Environment updated successfully', { color: '#4caf50' });
               setTimeout(() => {
                 navigate('/all-environment');
-              }, 1000);
+              }, 5000);
             }
           })
           .catch((error: any) => {

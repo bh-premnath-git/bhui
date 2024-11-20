@@ -32,7 +32,6 @@ const CodePipelineTable = lazy(() => import('./oldpages/CodePipeline/CodePipelin
 const CodePipelineData = lazy(() => import('./oldpages/CodePipeline/CodepipelineData'));
 const Explorer = lazy(() => import('./oldpages/Explorer/Explorer'));
 const ManageFlow = lazy(() => import('@/pages/manageFlow/FlowPlayGround'));
-
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const Loading = lazy(() => import('@/pages/loadingPage'));
 const Login = lazy(() => import('@/pages/login'));

@@ -23,7 +23,7 @@ export const menuList = [
             { label: "Onboard Data", path: "/designer/onboard-data" },
             { label: "Build Data Pipelines", path: "/designer/build-data-pipe-line" },
             { label: "Code Data Pipelines", path: "/designer/code-data-pipelines" },
-            { label: "Manage Flow", path: "/designer/manage-flow" },
+            { label: "Manage Flow", path: "/designers/manage-flow" },
             { label: "Publish Data", path: "/designer/publish-data" }
         ]
     },
@@ -34,7 +34,7 @@ export const menuList = [
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },
-            { label: "Alerts", path: "/alerts" },
+            { label: "Alerts", path: "/dataops-hub/alters" },
         ]
     },
     {

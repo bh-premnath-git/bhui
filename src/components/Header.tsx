@@ -1,6 +1,6 @@
 import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ export function Header(props: HeaderProps) {
   const navigate = useNavigate();
   const { pathname } = location;
   const token: any = sessionStorage?.getItem("token");
-  const decoded: any =token? jwtDecode(token):null;
+  const decoded: any = token ? jwtDecode(token) : null;
 
   const renderHeaderContent = (renderContent: (() => React.ReactNode) | React.ReactNode | string) => {
     if (typeof renderContent === 'function') {
@@ -85,113 +85,115 @@ export function Header(props: HeaderProps) {
   );
 }
 
-function extractCustomerId(content: string): number | null {
-  const match = content.match(/\/EditCustomer\/(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
-
-
-export function renderingHeadContent(content: string) {
+// Updated function to dynamically generate breadcrumbs with links
+export function renderingHeadContent(pathname: string) {
   const { layoutList }: any = useSelector((state: RootState) => state.catalogApi);
   const { editProjectData } = useSelector((state: RootState) => state.projectApi);
   const { userDataList } = useSelector((state: RootState) => state.userApi);
   const { editEnvironmentData } = useSelector((state: RootState) => state.environmentApi);
   const { customerList } = useSelector((state: RootState) => state.customerApi);
-  const { selectedFlowFromList } = useSelector(
-    (state: RootState) => state.flowApi
-  );
-  const { buildPipeLineDtl } = useSelector(
-    (state: RootState) => state.buildPipeLineApi
-  );
+  const { selectedFlowFromList } = useSelector((state: RootState) => state.flowApi);
+  const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeLineApi);
   const navigate = useNavigate();
 
-  const navadminconsole = () => {
-    navigate("/admin-console");
+  const capitalize = (str: string) => { 
+    return str 
+    .toLowerCase() 
+    .replace(/(?:^|\s|-)\S/g, (c) => c.toUpperCase());
   };
 
-  if (content === "/dashboard") {
-    return <span className="w-2/5 font-bold"><span className="font-light">DataOPS</span> &gt; Dashboard</span>;
+  const getBreadcrumbs = (path: string) => {
+    const segments = path.split("/").filter((segment) => segment);
+    const breadcrumbs: { label: string; href: string }[] = [];
+
+    let pathAcc = ""; 
+
+    segments.forEach((segment, index) => {
+      if (segments[index - 1] === 'environment' && segment.match(/^\d+$/)) {
+        if (editEnvironmentData && editEnvironmentData.bh_env_id === Number(segment)) {
+          segment = editEnvironmentData.bh_env_name || editEnvironmentData.Environment_Name;
+        }
+      }
+
+      if (segments[index - 1] === 'projects' && segment.match(/^\d+$/)) {
+        if (editProjectData && editProjectData.bh_project_id === Number(segment)) {
+          segment = editProjectData.bh_project_name || editProjectData.Project_Name;
+        }
+      }
+
+      if ((segments[index - 1] === 'customer' || segments[index - 1] === 'customers') && segment.match(/^\d+$/)) {
+        const customerData = customerList.find((customer: any) => customer.customer_id === Number(segment));
+        if (customerData) {
+          segment = customerData.relation_ship_owner || customerData.relation_ship_owner_email;
+        }
+      }
+
+      if ((segments[index - 1] === 'user' || segments[index - 1] === 'users') && segment.match(/^\d+$/)) {
+        const userData = userDataList.find((user: any) => user.bh_user_id === Number(segment));
+        if (userData) {
+          const names = [
+            userData.bh_user_first_name, 
+            userData.bh_user_middle_name, 
+            userData.bh_user_last_name
+          ].filter(Boolean);
+          segment = names.join(' ');
+        }
+      }
+
+      pathAcc += `/${segment}`;
+
+      let breadcrumbLabel = segment;
+      if (segment.match(/^\d+$/)) {
+        breadcrumbLabel =  segment;
+      }else { 
+        breadcrumbLabel = capitalize(breadcrumbLabel.replace("-", " "));
+      }
+
+      breadcrumbs.push({
+        label: breadcrumbLabel,
+        href: pathAcc,
+      });
+    });
+
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs(pathname);
+
+  const breadcrumbRender = (
+    <div className="w-2/5 font-bold">
+      {breadcrumbs.length > 0 ? (
+        breadcrumbs.map((breadcrumb, index) => (
+          <span key={index}>
+            {index > 0 && <span className="mx-2 text-gray-500">&gt;</span>}
+            {index < breadcrumbs.length - 1 ? (
+              <Link to={breadcrumb.href} className="text-gray-500 hover:text-gray-900 transition-colors">
+                {breadcrumb.label}
+              </Link>
+            ) : (
+              <span className="text-gray-900 font-bold">{breadcrumb.label}</span> 
+            )}
+          </span>
+        ))
+      ) : (
+        <span>No Breadcrumbs</span>
+      )}
+    </div>
+  );
+  if (pathname === "/designers/flow-playground") {
+    return (
+      <>
+        <CustomToolbarComponent selectedData={selectedFlowFromList} />
+      </>
+    );
   }
-  if (content === "/admin-console") {
-    return <span className="w-2/5 font-bold">Admin Console</span>;
+
+  if (pathname === "/designers/build-playground/" || pathname.includes("/designers/build-playground/")) {
+    return (
+      <>
+        <CustomBuildToolbar buildPipeLineDtl={buildPipeLineDtl} />
+      </>
+    );
   }
-  if (content === "/admin-console/all-projects") {
-    return <span className="w-2/5 font-bold"><span className="font-light cursor-pointer" onClick={navadminconsole}>Admin Console</span> &gt; Projects</span>;
-  }
-  if (content === "/all-projects/new") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Projects &gt; </span> New</span>;
-  }
-  if (content.includes("/projects/")) {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Projects &gt;</span> {editProjectData.bh_project_name}</span>;
-  }
-  if (content === "/all-environment") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console</span> &gt; Environments</span>;
-  }
-  if (content === "/all-environment/new") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Environments &gt; </span> New</span>;
-  }
-  if (content.includes("/environments/")) {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Environment &gt;</span> {editEnvironmentData.bh_env_name}</span>;
-  }
-  if (content === "/designer/manage-flow") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Designer</span> &gt; Manage Flow</span>;
-  }
-  if (content === "/DataCatalog") {
-    return <span className="w-2/5 font-bold"> Data Catalog</span>;
-  }
-  if (content === "/DataCatalog/schema") {
-    return <span className="w-2/5 font-bold">Catalog &gt; {layoutList[0]?.data_src_lyt_name} &gt; Schema</span>;
-  }
-  if (content === "/AllUsers") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console </span>&gt; Manage Data Platform User</span>;
-  }
-  if (content === "/AddUser") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User </span>&gt; Add User</span>;
-  }
-  if (content.includes("/EditUser/")) {
-    const user = userDataList && userDataList[0];
-  if (user) {
-    const userName = `${user.bh_user_first_name} ${user.bh_user_middle_name} ${user.bh_user_last_name}`.trim();
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Data Platform User &gt;</span> {userName}</span>;
-  }}
-  if (content === "/AllCustomers") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; </span> Manage Customer </span>;
-  }
-  if (content === "/AddCustomers") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer </span> &gt; Add Customer</span>;
-  }
-  if (content.includes("/EditCustomer/")) {
-    const customerId = extractCustomerId(content);
-    if (customerId && customerList?.length > 0) {
-      const currentCustomer = customerList.find(customer => customer.customer_id === customerId);
-      if (currentCustomer) {
-        return (
-          <span className="w-2/5 font-bold"><span className="font-light">Admin Console &gt; Manage Customer &gt;</span> {currentCustomer.relation_ship_owner}</span>
-        );
-  }}}
-  if (content === "/AllBuildDataPipeLine") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Designer </span> &gt; Build Data Pipeline</span>;
-  }
-  if (content === "/dataops-hub/ops-hub") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Ops Hub</span>;
-  }
-  if (content === "/alerts") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Dataops Hub </span> &gt; Alert Hub</span>;
-  }
-  if (content === "/bundle") {
-    return <span className="w-2/5 font-bold">Manage Releases</span>;
-  }
-  if (content === "/CreateBundle") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Create Bundle</span>;
-  }
-  if (content === "/ReleaseBundle") {
-    return <span className="w-2/5 font-bold"><span className="font-light">Manage Releases </span> &gt; Release Bundle</span>;
-  }
-  if (content === "/designer/flow-playground") {
-    return <CustomToolbarComponent selectedData={selectedFlowFromList} />
-  }
-  if (content === "/BuildPlayGround") {
-    return <CustomBuildToolbar buildPipeLineDtl={buildPipeLineDtl} />
-  }
-  return "";
+  return breadcrumbRender
 }

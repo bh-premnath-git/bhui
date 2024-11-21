@@ -50,9 +50,6 @@ const CustomField: React.FC<FormFieldProps> = ({
                                     {label} {required && <span style={{ color: 'red' }}>*</span>}
                                 </Label>
                             )}
-
-                            <InputLabel id={"label"}>{placeholder}</InputLabel>
-
                             <Select labelId={"label"}
                                 {...field}
                                 size={size}

@@ -177,13 +177,13 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
           if (response.type === "environment/create/fulfilled")
             showToast('Environment created successfully', { color: '#4caf50' });
             setTimeout(() => {
-              navigate('/all-environment');
-            }, 5000);
+              navigate('/admin-console/environment');
+            }, 1000);
         })
         .catch((error: any) => {
           console.error(error)
           showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
-          navigate('/all-environment');
+          navigate('/admin-console/environment');
         }).finally(() => {
           setIsLoading(()=>false);
         });
@@ -222,7 +222,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               ))}
             </TabsList>
           </div>
-          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/all-environment')}>
+          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/admin-console/environment')}>
             View All Environments
           </Button>
         </div>

@@ -91,7 +91,7 @@ const AddUser = () => {
                 await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
                 showToast('User update successfully', { color: '#4caf50' });
                 setTimeout(() => {
-                    navigate('/AllUsers');
+                    navigate('/admin-console/users');
                 }, 1000);
             } else {
                 createKeyCloakUser(values);
@@ -182,8 +182,8 @@ const AddUser = () => {
         setOpen(true);
         showToast('User update successfully', { color: '#4caf50' });
         setTimeout(() => {
-            navigate('/AllUsers');
-        }, 5000);
+            navigate('/admin-console/users');
+        }, 1000);
     };
     return (
             <div className="container shadow p-4 rounded w-8/12  m-auto mt-4">
@@ -208,7 +208,7 @@ const AddUser = () => {
                                             },
                                         }}
                                         className="mt-1 align-right"
-                                        onClick={() => navigate('/AllUsers')}
+                                        onClick={() => navigate('/admin-console/users')}
                                     >
                                         View All User
                                     </Button>

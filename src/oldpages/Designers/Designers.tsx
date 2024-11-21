@@ -4,8 +4,8 @@ import { Link as RouterLink } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 
 const StyledCard = styled(Card)(({ theme }) => ({
-  minWidth: 330,
-  minHeight: 410,
+  width: 350,
+  height: 450,
   margin: theme.spacing(1),
   display: 'flex',
   flexDirection: 'column',
@@ -13,8 +13,8 @@ const StyledCard = styled(Card)(({ theme }) => ({
   transition: 'all 0.3s ease-in-out',
   border: `1px solid ${theme.palette.divider}`,
   '&:hover': {
-    transform: 'scale(1.0002)',
-    boxShadow: theme.shadows[8],
+    transform: 'scale(1.02)',
+    boxShadow: theme.shadows[10],
     border: 'none',
   },
 }));
@@ -23,33 +23,40 @@ const IconContainer = styled('div')(({ theme }) => ({
   background: theme.palette.grey[200],
   borderRadius: '50%',
   padding: theme.spacing(1),
-  width: 70,
-  height: 70,
+  width: 90,
+  height: 90,
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   marginTop: theme.spacing(4),
+  '& img': {
+    width: '100%', 
+    height: '100%', 
+    objectFit: 'contain',
+  },
 }));
 
 const Title = styled(Typography)(({ theme }) => ({
-  width: 160,
-  height: 70,
+  width: '100%',
   margin: 'auto',
   padding: theme.spacing(0.5),
   fontWeight: 'bold',
   textAlign: 'center',
+  fontSize: '1.5rem'
 }));
 
 const Description = styled(Typography)(({ theme }) => ({
-  width: 230,
+  width: '90%',
   textAlign: 'center',
-  margin: theme.spacing(2, 0),
+  margin: theme.spacing(2, 'auto'),
+  fontSize: '1rem',
 }));
 
 const StyledRouterLink = styled(RouterLink)(({ theme }) => ({
-  padding: theme.spacing(1.5),
+  padding: theme.spacing(1.8),
   borderRadius: theme.shape.borderRadius,
   transition: 'all 0.3s ease',
+  fontSize: '1rem',
   textDecoration: 'underline',
   textUnderlineOffset: '4px',
   '&:hover': {
@@ -88,7 +95,7 @@ const adminList: AdminItem[] = [
     title: "Build Data Pipeline",
     desc: "Select this option to transform and enrich data via UI driven approach. You will have an option to combine multiple datasets and create enriched data sets",
     buttonText: 'Build Pipeline',
-    link: '/AllBuildDataPipeLine'
+    link: '/designers/build-datapipeline/'
   },
   {
     id: 3,
@@ -96,7 +103,7 @@ const adminList: AdminItem[] = [
     title: "Manage Flow",
     desc: "Flows are Pipeline running in Airflow. Flows are scheduled to run using cron expression",
     buttonText: 'Manage Flow',
-    link: '/Designer/Manage Flow'
+    link: '/designers/manage-flow'
   },
 ];
 

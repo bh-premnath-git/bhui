@@ -125,7 +125,7 @@ const AddUser = () => {
         try {            
             if (userData) {
                 await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
-                navigate(`/AllUsers`);
+                navigate(`/admin-console/users`);
             } else {
                 createKeyCloakUser(values);
             }
@@ -216,8 +216,8 @@ const AddUser = () => {
         setOpen(true);
         showToast('User created successfully', { color: '#4caf50' });
         setTimeout(() => {
-            navigate('/AllUsers');
-        }, 5000);
+            navigate('/admin-console/users');
+        }, 1000);
     };
     
     return (
@@ -244,7 +244,7 @@ const AddUser = () => {
                                             },
                                         }}
                                         className="mt-1 align-right"
-                                        onClick={() => navigate('/AllUsers')}
+                                        onClick={() => navigate('/admin-console/users')}
                                     >
                                         View All User
                                     </Button>

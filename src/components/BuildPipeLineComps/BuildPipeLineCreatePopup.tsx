@@ -85,7 +85,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                         } else {
                             dispatch(setBuildPipeLineDtl(response));
                             showToast("Pipe Line created successfully", { color: COLORS.green });
-                            navigate('/BuildPlayGround');
+                            navigate('/designers/build-playground/');
                         }
 
                         // setSubmitting(false);
@@ -93,7 +93,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                         // await handleClose(result);
 
                         //     setIsLoading(false)
-                        //     await navigate('/BuildPlayGround');
+                        //     await navigate('/designers/build-playground/');
                         // } else {
                         //     toast.success("Success Notification !", {
                         //         position: 'top-center' as ToastPosition,

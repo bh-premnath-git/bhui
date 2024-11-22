@@ -80,8 +80,7 @@ function Explorer() {
   const [open, setOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showExportButton, setShowExportButton] = useState(false);
-
-
+  
   const handleClickOpen = () => {
     setIsOpen(true);
   };
@@ -89,9 +88,9 @@ function Explorer() {
     setValue(0);
     getSavedQuery();
   }, []);
-
+  
   // useEffect(() => {
-
+    
   // }, [savedQuery])
   const handleClose = () => {
     setIsOpen(false);
@@ -99,7 +98,7 @@ function Explorer() {
   const handleChangePage = (event: any, newPage: SetStateAction<number>) => {
     setPage(newPage);
   };
-
+  
   const handleChangeRowsPerPage = (event: { target: { value: string | number; }; }) => {
     setRowsPerPage(+event.target.value);
     setPage(0);
@@ -107,29 +106,30 @@ function Explorer() {
   const handleButtonClick = () => {
     setShowAnotherPage(true);
   };
-
+  
   const handleCombinedClick = (query: any) => {
     handleAddQuery(query);
     handleButtonClick();
   };
-
+  
   const [showTable, setShowTable] = useState(false);
-
+  
   const handleRunTabClick = () => {
     setShowTable(true);
   };
-
+  
   const handleEditorChange = (index: number, value: string | undefined) => {
     setTabs((prevTabs) =>
       prevTabs.map((tab, i) =>
         i === index ? { ...tab, query: value || '' } : tab
-      )
-    );
-  };
+  )
+);
+};
 
-  const handleEditorDidMount = (_editor: any, monaco: any) => {
-    console.log("Editor mounted!");
-  };
+const handleEditorDidMount = (_editor: any, monaco: any) => {
+  console.log("Editor mounted!");
+};
+
 
   const handleClick = async () => {
     console.log(value);
@@ -272,7 +272,7 @@ function Explorer() {
       return newTabs;
     });
   };
-
+  
   return (
     <>
       <Stack>
@@ -300,6 +300,7 @@ function Explorer() {
                       },
                     }}
                   >
+                    debugger
                     {tabs.map((tab, index) => (
                       <Tab
                         key={index}

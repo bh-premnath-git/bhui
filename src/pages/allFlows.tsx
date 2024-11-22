@@ -8,8 +8,12 @@ import { useNavigate } from "react-router-dom";
 import { listFlows, getFlowProjectList, getEnvironmentList, createFlow, setSelectedFlowFromList } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
-import { FileQuestion } from "lucide-react";
 import { formatedDate } from "@/Utils/dateFormatter";
+import { FolderPlus, Workflow } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+
 interface Flow {
   id: number;
   schedule_intervals: {
@@ -89,16 +93,48 @@ const columns: ColumnConfig[] = [
 
 const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddFlow }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <FileQuestion size={64} className="text-gray-400 mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-700 mb-2">No Flow Available</h2>
-      <button
-        onClick={onAddFlow}
-        className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
-      >
-        Add Flow
-      </button>
-    </div>
+    <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+            <div className="relative p-8 sm:p-12">
+                <div className="max-w-2xl mx-auto text-center">
+                {/* Decorative elements */}
+                <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+                
+                {/* Icon container with glow effect */}
+                <div className="relative inline-flex mb-8">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+                    <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+                    <Workflow className="w-12 h-12 text-gradient" />
+                    </div>
+                </div>
+
+                {/* Welcome text */}
+                <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    Welcome to Your Flow creation!
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                  Ready to streamline your processes? Kickstart your new flow.
+                </p>
+
+                {/* Action button with hover effect */}
+                <Button
+                    size="lg"
+                    onClick={onAddFlow}
+                    className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
+                >
+                    <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
+                    <FolderPlus className="mr-2 h-5 w-5" />
+                    <span className="relative">Create New Flow</span>
+                </Button>
+
+                {/* Additional guidance */}
+                <p className="mt-6 text-sm text-muted-foreground">
+                  Click the button above to begin setting up your flow
+                </p>
+            </div>
+        </div>
+    </Card>
   );
 });
 
@@ -157,7 +193,7 @@ const AllFlows: React.FC = () => {
     } finally {
       if (!error) {
       setTimeout(() => {
-          navigate('/designer/flow-playground');
+          navigate('/designers/flow-playground');
         }, 2000);
       }
     }
@@ -165,7 +201,7 @@ const AllFlows: React.FC = () => {
 
   const playground = useCallback((data: any) => {
     dispatch(setSelectedFlowFromList(data));
-    navigate("/designer/flow-playground");
+    navigate("/designers/flow-playground");
   }, [navigate]);
 
   if (loading) {

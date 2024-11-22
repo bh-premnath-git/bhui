@@ -97,19 +97,17 @@ function debounce<Func extends (...args: any[]) => void>(
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
+  const savedFlow = LocalStorageService.getItem('flow');
   const [nodes, setNodes] = useState<Node<CustomNodeData>[]>(() => {
-    const savedFlow = LocalStorageService.getItem('flow');
-    return savedFlow ? JSON.parse(savedFlow).nodes : [];
+    return savedFlow ? savedFlow.nodes : [];
   });
 
   const [edges, setEdges] = useState<Edge[]>(() => {
-    const savedFlow = LocalStorageService.getItem('flow');
-    return savedFlow ? JSON.parse(savedFlow).edges : [];
+    return savedFlow ? savedFlow.edges : [];
   });
 
   const [nodeFormData, setNodeFormData] = useState<NodeFormData[]>(() => {
-    const savedFlow = LocalStorageService.getItem('flow');
-    return savedFlow ? JSON.parse(savedFlow).nodeFormData : [];
+    return savedFlow ? savedFlow.nodeFormData : [];
   });
 
   const [selectedNode, setSelectedNode] = useState<Node<CustomNodeData> | null>(null);
@@ -282,7 +280,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         edges,
         nodeFormData
       };
-      LocalStorageService.setItem('flow', JSON.stringify(flowData));
+      LocalStorageService.setItem('flow', flowData);
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving flow:", error);

@@ -10,8 +10,8 @@ export const menuList = [
         icon: <img src="/assets/menu/designer.png" alt="Designer"  width={20} height={20} />,
         path: "/designers",
         subPaths: [
-            { label: "Build Data Pipelines", path: "/AllBuildDataPipeLine" },
-            { label: "Manage Flow", path: "/designer/manage-flow" },
+            { label: "Build Data Pipelines", path: "/designers/build-datapipeline/" },
+            { label: "Manage Flow", path: "/designers/manage-flow" },
         ]
     },
     {
@@ -22,8 +22,8 @@ export const menuList = [
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },
-            { label: "Alerts", path: "/alerts" },
-            { label: "Manage Releases", path: "/AllReleaseBundle" },
+            { label: "Alerts", path: "/dataops-hub/alerts" },
+            { label: "Manage Releases", path: "/dataops-hub/release-bundle" },
         ]
     },
     {

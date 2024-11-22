@@ -12,6 +12,9 @@ import { formatedDate } from "@/Utils/dateFormatter";
 import { getGitProject } from "@/redux/ProjectSlice";
 import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
 import useToast from "@/oldcomponents/teast-service";
+import { FolderPlus, Workflow } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Define types in a separate file for better organization
 interface pipelineData {
@@ -104,18 +107,49 @@ const EmptyComponent: React.FC = () => {
 	const [ToastComponent, showToast] = useToast();
 
     return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <FileQuestion size={64} className="text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-700 mb-2">PipeLine Not Available</h2>
-            <button
-                onClick={() => handleOpen()}
-                className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
-            >
-                Add Pipeline
-            </button>
-            {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open}  showToast={showToast}/>)}
+        <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+            <div className="relative p-8 sm:p-12">
+                <div className="max-w-2xl mx-auto text-center">
+                {/* Decorative elements */}
+                <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+                
+                {/* Icon container with glow effect */}
+                <div className="relative inline-flex mb-8">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+                    <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+                    <Workflow className="w-12 h-12 text-gradient" />
+                    </div>
+                </div>
 
+                {/* Welcome text */}
+                <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    Welcome to Your Data Pipeline Creation!
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                    Ready to transform your data into actionable insights? Kickstart your new data pipeline.
+                </p>
+
+                {/* Action button with hover effect */}
+                <Button
+                    size="lg"
+                    onClick={() => handleOpen()}
+                    className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
+                >
+                    <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
+                    <FolderPlus className="mr-2 h-5 w-5" />
+                    <span className="relative">Create New Pipeline</span>
+                </Button>
+                {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open}  showToast={showToast}/>)}
+
+                {/* Additional guidance */}
+                <p className="mt-6 text-sm text-muted-foreground">
+                    Click the button above to begin setting up your data pipeline
+                </p>
+            </div>
         </div>
+    </Card>
     );
 };
 
@@ -151,7 +185,7 @@ function BuildDataPipeLineTable({
     }
 
     const editFn = (rowData: any) => {
-        navigate(`/BuildPlayGround/${rowData?.pipeline_id}`);
+        navigate(`/designers/build-playground/${rowData?.pipeline_id}`);
     }
 
     const changeStatus = async (rowData: any) => {

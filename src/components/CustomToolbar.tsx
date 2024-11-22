@@ -142,7 +142,7 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Button
                 className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-           variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate("designer/manage-flow")}>
+           variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate("designers/manage-flow")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" aria-label="Cloud options">

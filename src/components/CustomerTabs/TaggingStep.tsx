@@ -66,9 +66,9 @@ function TaggingStep(props: any) {
                     }
                     const toastTimer = setTimeout(() => {
                         showToast('');
-                    }, 5000);
+                    }, 1000);
                     const redirectTimer = setTimeout(() => {
-                        navigate('/AllCustomers');
+                        navigate('/admin-console/customers');
                     }, 1000);
                     return () => {clearTimeout(toastTimer); clearTimeout(redirectTimer);};
                 }

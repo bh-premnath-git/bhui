@@ -170,8 +170,8 @@ export default function ProjectCreationComponent() {
       if (result.payload) {
         showToast('Project created successfully', { color: '#4caf50' });
         setTimeout(() => {
-          navigate('/admin-console/all-projects');
-        }, 5000); // 1 second delay
+          navigate('/admin-console/projects');
+        }, 1000); // 1 second delay
       }
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
@@ -225,7 +225,7 @@ export default function ProjectCreationComponent() {
               <Button
                 variant="dark"
                 className="mt-1"
-                onClick={() => navigate('/admin-console/all-projects')}
+                onClick={() => navigate('/admin-console/projects')}
               >
                 View All Projects
               </Button>

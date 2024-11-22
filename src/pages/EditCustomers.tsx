@@ -121,7 +121,7 @@ function EditCustomer() {
 						},
 					}}
 					className="mt-1"
-					onClick={() => navigate('/AllCustomers')}
+					onClick={() => navigate('/admin-console/customers')}
 					>
 					View All Customers
 					</Button>

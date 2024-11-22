@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ChevronLeft, CloudCog, Edit, Link, Clock, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useFlow } from '@/contexts/FlowContext'
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -129,6 +130,7 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
   const [isVisual, setIsVisual] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [flowType, setFlowType] = useState("Flow_type 1")
+  const {autoSave, toggleAutoSave} = useFlow();
   const { selectedData } = props;
   const navigate = useNavigate();
   useEffect(() => {

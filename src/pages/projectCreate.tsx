@@ -223,7 +223,7 @@ export default function ProjectCreationComponent() {
                 <ErrorMessage name="bh_project_name" component="div" className="text-red-500" />
               </div>
               <Button
-                variant="dark"
+                variant="ghost"
                 className="mt-1"
                 onClick={() => navigate('/admin-console/projects')}
               >

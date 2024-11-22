@@ -26,7 +26,7 @@ export function OperatorList({
   );
 
   return (
-    <Card className="w-[400px] p-4 mt-2">
+    <Card className="w-[320px] p-2 mt-2">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold">{module.label}</h2>
         <button
@@ -39,16 +39,16 @@ export function OperatorList({
       </div>
 
       <div className="relative mb-4">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-2.5 top-2.5 h-2 w-2 text-muted-foreground" />
         <Input
           placeholder="Search By Operator Type"
-          className="pl-8"
+          className="pl-12"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
-      <ScrollArea className="h-[300px] pr-4">
+      <ScrollArea className="h-[250px] pr-4">
         <div className="space-y-2">
           {filteredOperators.map((operator) => (
             <div

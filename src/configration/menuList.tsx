@@ -22,7 +22,7 @@ export const menuList = [
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Alerts", path: "/alerts" },
-            { label: "Manage Releases", path: "/AllReleaseBundle" },
+            { label: "Manage Releases", path: "/dataops-hub/release-bundle" },
         ]
     },
     {

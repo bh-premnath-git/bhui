@@ -1,11 +1,17 @@
 import React from 'react';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import Stack from '@mui/material/Stack';
-import { Formik, Form, Field } from 'formik';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import { Formik, Form } from 'formik';
 import useToast from '@/oldcomponents/teast-service';
 import CustomField from '@/common/CustomField';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 interface CostOptimizationFormProps {
     open: boolean;
@@ -15,16 +21,32 @@ interface CostOptimizationFormProps {
 
 const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClose }) => {
     const [ToastComponent, showToast]: any = useToast();
+
     return (
-        <Dialog open={open} onClose={onClose} sx={{ borderRadius: 4 }} maxWidth={'md'}>
-            <CostOptimization onClose={onClose}/>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            sx={{ borderRadius: 4 }}
+            maxWidth="md"
+            fullWidth
+        >
+            <DialogTitle className="flex justify-between items-center bg-gray-100">
+                <span className="text-lg font-semibold text-black">Cost Optimization for Daily Job</span>
+                <IconButton onClick={onClose} aria-label="close">
+                    <CloseIcon className="text-black" />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <CostOptimization onClose={onClose} showToast={showToast} />
+            </DialogContent>
+            {ToastComponent}
         </Dialog>
     );
 };
 
 export default CostOptimizationForm;
 
-const CostOptimization = ({onClose}:any) => {
+const CostOptimization = ({ onClose, showToast }: any) => {
     const initialValues = {
         cpuUtilization: '~20%',
         iops: '~10%',
@@ -45,97 +67,143 @@ const CostOptimization = ({onClose}:any) => {
         memoryOverride: ''
     };
 
+    const handleSubmit = (values: any) => {
+        console.log(values);
+        showToast({ message: 'Cost optimization settings saved!', type: 'success' });
+        onClose();
+    };
+
     return (
-        <div className="max-w-92 mx-auto p-6 bg-white rounded-lg shadow-lg border border-gray-200">
-            <div className="flex justify-between items-center mb-8">
-                <h4 className="text-lg font-semibold text-gray-800">Cost Optimization for Daily Job</h4>
-                <button className="text-gray-500 hover:text-gray-700" onClick={onClose}>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <Formik initialValues={initialValues} onSubmit={(values) => console.log(values)}>
-                <Form className="space-y-4"> {/* Reduced spacing */}
+        <Formik initialValues={initialValues} onSubmit={handleSubmit}>
+            {({ isSubmitting }) => (
+                <Form className="space-y-6">
                     {/* Metrics Section */}
-                    <div>
-                        <div className="grid grid-cols-3  rounded-md "> {/* Reduced padding and gap */}
-                            <div className="font-medium p-2 text-gray-600 bg-gray-100">Metrics</div>
-                            <div className="font-medium p-2 text-gray-600 bg-gray-100">Recommended</div>
-                            <div className="font-medium p-2 text-gray-600 bg-gray-100">Actual</div>
-                            <div className='p-2'>CPU Utilization</div>
-                            <div className='p-2'>&gt;80%</div>
-                            <CustomField name="cpuUtilization" className="border rounded px-1 w-full" disabled /> {/* Smaller padding */}
-                            <div className='p-2'>IOPS</div>
-                            <div className='p-2'>&gt;50%</div>
-                            <CustomField name="iops" className="border rounded px-1 w-full" disabled />
-                            <div className='p-2'>Disk Usage</div>
-                            <div className='p-2'>&gt;50%</div>
-                            <CustomField name="diskUsage" className="border rounded px-1 w-full" disabled />
-                        </div>
-                    </div>
+                    <Accordion defaultExpanded>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="metrics-content"
+                            id="metrics-header"
+                        >
+                            <Typography className="text-md font-semibold text-black">Metrics</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="font-medium text-gray-600">Metric</div>
+                                <div className="font-medium text-gray-600">Recommended</div>
+                                <div className="font-medium text-gray-600">Actual</div>
 
-                    <div className='rounded shadow-sm'>
-                        <h5 className="text-md font-semibold text-gray-700  p-2 rounded-md bg-gray-100">Cost of Run</h5>
-                        <div className="grid grid-cols-2 gap-2 p-2  rounded-md"> {/* Reduced padding and gap */}
-                            <div>Current</div>
-                            <CustomField name="currentCost" disabled />
-                            <div>Proposed</div>
-                            <CustomField name="proposedCost" disabled />
-                        </div>
-                    </div>
+                                <div className="text-black">CPU Utilization</div>
+                                <div className="text-black">&gt;80%</div>
+                                <CustomField name="cpuUtilization" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+
+                                <div className="text-black">IOPS</div>
+                                <div className="text-black">&gt;50%</div>
+                                <CustomField name="iops" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+
+                                <div className="text-black">Disk Usage</div>
+                                <div className="text-black">&gt;50%</div>
+                                <CustomField name="diskUsage" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                            </div>
+                        </AccordionDetails>
+                    </Accordion>
+
+                    {/* Cost of Run Section */}
+                    <Accordion>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="cost-of-run-content"
+                            id="cost-of-run-header"
+                        >
+                            <Typography className="text-md font-semibold text-black">Cost of Run</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="text-black">Current</div>
+                                <CustomField name="currentCost" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+
+                                <div className="text-black">Proposed</div>
+                                <CustomField name="proposedCost" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                            </div>
+                        </AccordionDetails>
+                    </Accordion>
 
                     {/* Machine Configuration Section */}
-                    <div className='rounded shadow-sm'>
-                        <h5 className="text-md font-semibold text-gray-700  p-2 rounded-md bg-gray-100">Machine Configuration</h5>
-                        <div className="grid grid-cols-4 gap-2 p-2  rounded-md"> {/* Reduced padding and gap */}
-                            <div className="font-medium text-gray-600">Type</div>
-                            <div className="font-medium text-gray-600">Current</div>
-                            <div className="font-medium text-gray-600">Proposed</div>
-                            <div className="font-medium text-gray-600">Override</div>
-                            <div>Master</div>
-                            <CustomField name="masterCurrent" disabled />
-                            <CustomField name="masterProposed" disabled />
-                            <CustomField name="masterOverride" />
-                            <div>Worker</div>
-                            <CustomField name="workerCurrent" disabled />
-                            <CustomField name="workerProposed" disabled />
-                            <CustomField name="workerOverride" />
-                        </div>
-                    </div>
+                    <Accordion>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="machine-config-content"
+                            id="machine-config-header"
+                        >
+                            <Typography className="text-md font-semibold text-black">Machine Configuration</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <div className="grid grid-cols-4 gap-4">
+                                <div className="font-medium text-gray-600">Type</div>
+                                <div className="font-medium text-gray-600">Current</div>
+                                <div className="font-medium text-gray-600">Proposed</div>
+                                <div className="font-medium text-gray-600">Override</div>
+
+                                <div className="text-black">Master</div>
+                                <CustomField name="masterCurrent" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="masterProposed" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="masterOverride" className="border border-gray-300 rounded px-3 py-2 bg-white text-black" />
+
+                                <div className="text-black">Worker</div>
+                                <CustomField name="workerCurrent" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="workerProposed" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="workerOverride" className="border border-gray-300 rounded px-3 py-2 bg-white text-black" />
+                            </div>
+                        </AccordionDetails>
+                    </Accordion>
 
                     {/* Spark Tuning Section */}
-                    <div className='rounded shadow-sm'>
-                        <h5 className="text-md font-semibold text-gray-700 bg-gray-100 p-2 rounded-md">Spark Tuning</h5>
-                        <div className="grid grid-cols-4 gap-2 p-2 rounded-md"> {/* Reduced padding and gap */}
-                            <div className="font-medium text-gray-600">Parameter</div>
-                            <div className="font-medium text-gray-600">Current</div>
-                            <div className="font-medium text-gray-600">Proposed</div>
-                            <div className="font-medium text-gray-600">Override</div>
-                            <div>Executors</div>
-                            <CustomField name="executorsCurrent" disabled />
-                            <CustomField name="executorsProposed" disabled />
-                            <CustomField name="executorsOverride" />
-                            <div>Memory</div>
-                            <CustomField name="memoryCurrent" disabled />
-                            <CustomField name="memoryProposed" disabled />
-                            <CustomField name="memoryOverride" />
-                        </div>
-                    </div>
+                    <Accordion>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="spark-tuning-content"
+                            id="spark-tuning-header"
+                        >
+                            <Typography className="text-md font-semibold text-black">Spark Tuning</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <div className="grid grid-cols-4 gap-4">
+                                <div className="font-medium text-gray-600">Parameter</div>
+                                <div className="font-medium text-gray-600">Current</div>
+                                <div className="font-medium text-gray-600">Proposed</div>
+                                <div className="font-medium text-gray-600">Override</div>
+
+                                <div className="text-black">Executors</div>
+                                <CustomField name="executorsCurrent" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="executorsProposed" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="executorsOverride" className="border border-gray-300 rounded px-3 py-2 bg-white text-black" />
+
+                                <div className="text-black">Memory</div>
+                                <CustomField name="memoryCurrent" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="memoryProposed" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
+                                <CustomField name="memoryOverride" className="border border-gray-300 rounded px-3 py-2 bg-white text-black" />
+                            </div>
+                        </AccordionDetails>
+                    </Accordion>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end space-x-2"> {/* Reduced space between buttons */}
-                        <button onClick={onClose} type="button" className="px-3 py-2 border rounded-md text-gray-600 hover:bg-gray-100">
+                    <div className="flex justify-end space-x-4 mt-6">
+                        <button
+                            onClick={onClose}
+                            type="button"
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 transition"
+                        >
                             Reject
                         </button>
-                        <button onClick={onClose} type="submit" className="px-3 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+                        >
                             Accept
                         </button>
                     </div>
                 </Form>
-            </Formik>
-
-        </div>
+            )}
+        </Formik>
     );
 };

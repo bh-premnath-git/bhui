@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import Checkbox from '@mui/material/Checkbox';
 import { MdAccessTime } from 'react-icons/md';
-import TimeSetPopUp from '../../oldpages/BuildPipeline/components/TimeSet';
+// import TimeSetPopUp from '../../oldpages/BuildPipeline/components/TimeSet';
 import { Formik, Form, Field } from 'formik';
 import { TextField } from '@mui/material';
 
@@ -23,7 +23,7 @@ const style = {
 
 
 
-function SchedulePipeline({ handleClose, open }) {
+function SchedulePipeline({ handleClose, open }:any) {
     const [time, setTime] = React.useState(false);
     const handleTimeToggle = () => {
         setTime(false);
@@ -213,7 +213,7 @@ function SchedulePipeline({ handleClose, open }) {
                     </Formik>
                 </Box>
             </Modal>
-            {time && <TimeSetPopUp handleCloseTime={handleTimeToggle} openTime={time} />}
+            {/* {time && <TimeSetPopUp handleCloseTime={handleTimeToggle} openTime={time} />} */}
         </div>
     );
 }

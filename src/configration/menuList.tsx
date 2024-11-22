@@ -8,7 +8,7 @@ export const menuList = [
     {
         label: "Designer",
         icon: <img src="/assets/menu/designer.png" alt="Designer"  width={20} height={20} />,
-        path: "/designers",
+        path: "/Designer",
         subPaths: [
             { label: "Build Data Pipelines", path: "/AllBuildDataPipeLine" },
             { label: "Manage Flow", path: "/designer/manage-flow" },
@@ -21,7 +21,6 @@ export const menuList = [
         path: "/dashboard",
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
-            { label: "Explorer", path: "/dataops-hub/explorer" },
             { label: "Alerts", path: "/alerts" },
             { label: "Manage Releases", path: "/AllReleaseBundle" },
         ]

@@ -8,29 +8,15 @@ import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
 // const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
-const Landing = lazy(() => import('./oldpages/Portal/Landing'));
-const DashBoard = lazy(() => import('./oldpages/Dashboard/Dashboard'));
-const Home = lazy(() => import('./oldpages/Home'));
-const Catalog = lazy(() => import('./oldpages/Catalog/Catalog'));
-const Catalogs = lazy(() => import('./oldpages/Catalog/components/Catalogs'));
-const Designer = lazy(() => import('./oldpages/Designer/Designer'));
-const Designers = lazy(() => import('./oldpages/Designers/Designers'));
-const OnboardLanding = lazy(() => import('./oldpages/OnBoardData/Components/OnboardLanding'));
-const OnboardAllData = lazy(() => import('./oldpages/OnBoardData/OnboardAllData'));
-// const CodePipelineLanding = lazy(() => import('./oldpages/BuildPipeline/CodePipelineLanding'));
+const Catalog = lazy(() => import('./pages/catalog'));
+const Catalogs = lazy(() => import('./components/Catalog/Catalogs'));
+const Designer = lazy(() => import('./pages/designer'));
 const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
 const Dataops = lazy(() => import('@/pages/allDataOps'));
 const ShowingLogs = lazy(() => import('./components/Dataops/ShowingLogs'));
-const Alerts = lazy(() => import('./oldpages/Alerts/Alerts'));
-const MonitorPage = lazy(() => import('./oldpages/Alerts/MonitorPage'));
-const Configure = lazy(() => import('./oldpages/Alerts/Configure'));
-const PublishData = lazy(() => import('./oldpages/PublishData/PublishData'));
-const Target = lazy(() => import('./oldpages/PublishData/Target'));
-const RunquaryDetails = lazy(() => import('./oldpages/PublishData/RunquaryDetails'));
-const PublishDataTable = lazy(() => import('./oldpages/PublishData/PublishDataTable'));
-const CodePipelineTable = lazy(() => import('./oldpages/CodePipeline/CodePipelineTable'));
-const CodePipelineData = lazy(() => import('./oldpages/CodePipeline/CodepipelineData'));
-const Explorer = lazy(() => import('./oldpages/Explorer/Explorer'));
+const Alerts = lazy(() => import('@/pages/alerts'));
+const MonitorPage = lazy(() => import('./components/Alert/MonitorPage'));
+const Configure = lazy(() => import('./components/Alert/Configure'));
 const ManageFlow = lazy(() => import('@/pages/manageFlow/FlowPlayGround'));
 
 const Dashboard = lazy(() => import('@/pages/dashboard'));
@@ -170,31 +156,16 @@ function App() {
     { path: "/designer/manage-flow", element: <AllFlows /> },
     { path: '/designer/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
-    // { path: '/Designer/Build-Data-Pipe-Line', element: <BuildDataPipeLine /> },
-    { path: '/Landing', element: <Landing /> },
-    { path: '/Home', element: <DashBoard /> },
-    { path: '/Data-Config', element: <Home /> },
     { path: '/data-catalog', element: <Catalog /> },
     { path: '/Catalog/Catalogs', element: <Catalogs /> },
     { path: '/Designer', element: <Designer /> },
-    { path: '/Designers', element: <Designers /> },
-    { path: '/Designer/Onboard-Data', element: <OnboardLanding handleBreadStep={handleBreadStep} /> },
-    { path: '/Designer/Onboard Data', element: <OnboardAllData /> },
     // { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
-    { path: '/dataops-hub/explorer', element: <Explorer /> },
     { path: '/Alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
-    { path: '/Designer/Publish Data', element: <PublishData /> },
-    { path: '/Designer/targetsteps', element: <Target handleBreadStep={handleBreadStep} /> },
-    { path: '/publisher/runquarydetails', element: <RunquaryDetails /> },
-    { path: '/publisher/publishdatatable', element: <PublishDataTable /> },
-    { path: '/Designer/Code Data Pipelines', element: <CodePipelineTable /> },
-    { path: '/Designer/Codepipeline1', element: <CodePipelineData /> },
-    { path: '/DataOps Hub/Explorer', element: <Explorer /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
     { path: '/DataCatalog', element: <DataCatalog /> },
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },

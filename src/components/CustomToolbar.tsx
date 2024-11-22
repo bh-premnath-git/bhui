@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { useFlow } from '@/contexts/FlowContext'
 interface SettingsModalProps {
   isOpen: boolean;
+  selectedData?: any | null;
   onClose: () => void;
 }
 
@@ -18,9 +19,10 @@ interface CustomToolbarProps {
   selectedData?: any | null;
 }
 
-const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
+const SettingsModal = ({ isOpen, onClose, selectedData }: SettingsModalProps) => {
   const [notes, setNotes] = useState("")
   const [showNotes, setShowNotes] = useState(false)
+  console.log(">>>", selectedData);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -131,7 +133,7 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [flowType, setFlowType] = useState("Flow_type 1")
   const { autoSave, isSaved, isSaving, toggleAutoSave } = useFlow();
-  
+
   const { selectedData } = props;
   const navigate = useNavigate();
   useEffect(() => {
@@ -146,21 +148,21 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
           <Button
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate("designers/manage-flow")}>
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-6 w-4" />
           </Button>
           <Button variant="ghost" size="icon" aria-label="Cloud options" className="h-19 w-19"
             onClick={toggleAutoSave}>
-             {isSaving ? (
-                    <CloudCog className="h-5 w-5 text-primary animate-pulse" />
-                  ) : autoSave ? (
-                    isSaved ? (
-                      <Cloud className="h-5 w-5 text-primary" />
-                    ) : (
-                      <CloudCog className="h-5 w-5 text-primary" />
-                    )
-                  ) : (
-                    <CloudOff className="h-5 w-5 text-muted-foreground" />
-                  )}
+            {isSaving ? (
+              <CloudCog className="h-8 w-8 text-secondary animate-pulse" />
+            ) : autoSave ? (
+              isSaved ? (
+                <Cloud className="h-8 w-8 text-secondary" />
+              ) : (
+                <CloudCog className="h-8 w-8 text-secondary" />
+              )
+            ) : (
+              <CloudOff className="h-8 w-8 text-muted-foreground" />
+            )}
           </Button>
           <div className="relative flex-grow sm:w-40">
             <Input
@@ -193,7 +195,7 @@ export function CustomToolbarComponent(props: CustomToolbarProps) {
           <span className="text-sm font-medium">Code</span>
         </div>
       </div>
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsModal isOpen={isSettingsOpen} selectedData={selectedData} onClose={() => setIsSettingsOpen(false)} />
     </div>
   )
 } 1

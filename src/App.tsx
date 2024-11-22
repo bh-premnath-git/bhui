@@ -52,26 +52,24 @@ interface LayoutProps {
   logout: () => void;
 }
 
-const Layout = ({ isAuthenticated, logout }: LayoutProps) =>{ 
+const Layout = ({ isAuthenticated, logout }: LayoutProps) => {
   return (
-  <div className="flex flex-col h-screen">
-    <Header isAuthenticated={isAuthenticated} logout={logout} />
-    <div className="flex flex-1 overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 overflow-auto overflow-x-hidden	p-1 ml-8">
-        <Outlet />
-      </main>
+    <div className="flex flex-col h-screen">
+      <Header isAuthenticated={isAuthenticated} logout={logout} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto overflow-x-hidden	p-1 ml-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
-  </div>
-)};
+  )
+};
 
 function App() {
-  const [step, setStep] = useState<any>();
+  const [_, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
-
-  
-  
 
   useEffect(() => {
     const initializeKeycloak = async () => {
@@ -155,7 +153,7 @@ function App() {
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
     { path: "/admin-console/projects", element: <AllProjects /> },
     { path: "/admin-console/projects/new", element: <ProjectCreate /> },
-    { path: "/admin-console/projects/:id", element: <ProjectEdit/>},
+    { path: "/admin-console/projects/:id", element: <ProjectEdit /> },
     { path: "/admin-console/environment", element: <AllEnvironments /> },
     { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
     { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
@@ -178,10 +176,10 @@ function App() {
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
     { path: '/admin-console/users', element: <AllUsers /> },
     { path: '/admin-console/users/new', element: <AddUser /> },
-    { path: '/admin-console/users/:id', element: <EditUser />},
+    { path: '/admin-console/users/:id', element: <EditUser /> },
     { path: '/admin-console/customers', element: <AllCustomers /> },
     { path: '/admin-console/customers/new', element: <AddCustomers /> },
-    { path: '/admin-console/customers/:id', element: <EditCustomer />},
+    { path: '/admin-console/customers/:id', element: <EditCustomer /> },
     { path: '/designers/build-datapipeline/', element: <AllBuildDataPipeLine /> },
     { path: '/designers/build-playground/:id', element: <BuildPlayGround /> },
     { path: '/designers/build-playground/', element: <BuildPlayGround /> },

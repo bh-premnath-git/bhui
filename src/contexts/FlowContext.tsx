@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Node, Edge, ReactFlowInstance } from "reactflow";
 import { LocalStorageService } from "@/services/localStorageServices";
+
 // Interface Definitions
 interface ModuleInfo {
   color: string;
@@ -41,6 +42,7 @@ interface EditingNode {
 }
 
 interface FlowContextType {
+  selectedFlowId: string | null;
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
   isPlaying: boolean;
@@ -81,6 +83,7 @@ interface FlowContextType {
     data: CustomNodeData;
   }) => void;
   updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
+  setSelectedFlowId: (flowId: string) => void;
 }
 
 function debounce<Func extends (...args: any[]) => void>(
@@ -97,19 +100,21 @@ function debounce<Func extends (...args: any[]) => void>(
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
-  const savedFlow = LocalStorageService.getItem('flow');
-  const [nodes, setNodes] = useState<Node<CustomNodeData>[]>(() => {
-    return savedFlow ? savedFlow.nodes : [];
-  });
+  const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(null);
 
-  const [edges, setEdges] = useState<Edge[]>(() => {
-    return savedFlow ? savedFlow.edges : [];
-  });
+  const loadFlow = useCallback((flowId: string) => {
+    const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
+    setNodes(savedFlow ? savedFlow.nodes : []);
+    setEdges(savedFlow ? savedFlow.edges : []);
+    setNodeFormData(savedFlow ? savedFlow.nodeFormData : []);
+    setSelectedNode(null);
+    setIsSaved(true);
+    setIsSaving(false);
+  }, []);
 
-  const [nodeFormData, setNodeFormData] = useState<NodeFormData[]>(() => {
-    return savedFlow ? savedFlow.nodeFormData : [];
-  });
-
+  const [nodes, setNodes] = useState<Node<CustomNodeData>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [nodeFormData, setNodeFormData] = useState<NodeFormData[]>([]);
   const [selectedNode, setSelectedNode] = useState<Node<CustomNodeData> | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -120,9 +125,21 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [editingNode, setEditingNode] = useState<EditingNode | null>(null);
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
 
-  if (isPlaying) {
-    console.log(nodeFormData.map((formData) => (formData.formData)));
-  }
+  // Effect to load flow when selectedFlowId changes
+  useEffect(() => {
+    if (selectedFlowId) {
+      loadFlow(selectedFlowId);
+    } else {
+      // If no flow is selected, reset the state
+      setNodes([]);
+      setEdges([]);
+      setNodeFormData([]);
+      setSelectedNode(null);
+      setIsSaved(true);
+      setIsSaving(false);
+    }
+  }, [selectedFlowId, loadFlow]);
+
   const togglePlayback = useCallback(() => {
     setIsPlaying((prev) => !prev);
   }, []);
@@ -198,15 +215,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       prevNodes.map((node) =>
         node.id === nodeId
           ? {
-            ...node,
-            data: {
-              ...node.data,
-              meta: {
-                ...node.data.meta,
-                type: newLabel,
+              ...node,
+              data: {
+                ...node.data,
+                meta: {
+                  ...node.data.meta,
+                  type: newLabel,
+                },
               },
-            },
-          }
+            }
           : node
       )
     );
@@ -276,15 +293,20 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveFlow = useCallback(async () => {
+    if (!selectedFlowId) {
+      console.warn("No flow selected. Cannot save.");
+      return;
+    }
     setIsSaving(true);
     try {
       const flowData = {
         nodes,
         edges,
-        nodeFormData
+        nodeFormData,
       };
+      // Simulate async operation
       await new Promise((resolve) => setTimeout(resolve, 0));
-      LocalStorageService.setItem('flow', flowData);
+      LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving flow:", error);
@@ -292,7 +314,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsSaving(false);
     }
-  }, [nodes, edges, nodeFormData]);
+  }, [nodes, edges, nodeFormData, selectedFlowId]);
 
   const addNode = useCallback(
     (data: {
@@ -318,15 +340,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         prevNodes.map((node) =>
           node.id === nodeId
             ? {
-              ...node,
-              data: {
-                ...node.data,
-                meta: {
-                  ...node.data.meta,
-                  ...newMeta,
+                ...node,
+                data: {
+                  ...node.data,
+                  meta: {
+                    ...node.data.meta,
+                    ...newMeta,
+                  },
                 },
-              },
-            }
+              }
             : node
         )
       );
@@ -334,20 +356,28 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const setSelectedFlowId = useCallback(
+    (flowId: string) => {
+      setSelectedFlowIdState(flowId);
+    },
+    []
+  );
+
   const debouncedSave = useCallback(
     debounce(() => {
-      if (autoSave) {
+      if (autoSave && selectedFlowId) {
         saveFlow();
       }
     }, 1000),
-    [autoSave, saveFlow]
+    [autoSave, saveFlow, selectedFlowId]
   );
 
   useEffect(() => {
     debouncedSave();
   }, [nodes, edges, nodeFormData, debouncedSave]);
 
-  const value = {
+  const value: FlowContextType = {
+    selectedFlowId,
     nodes,
     edges,
     setNodes,
@@ -383,6 +413,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     saveFlow,
     addNode,
     updateNodeMeta,
+    setSelectedFlowId,
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

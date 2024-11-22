@@ -12,6 +12,7 @@ import { formatedDate } from "@/Utils/dateFormatter";
 import { FolderPlus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useFlow } from "@/contexts/FlowContext";
 
 
 interface Flow {
@@ -141,6 +142,7 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddF
 const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const {setSelectedFlowId} = useFlow()
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingFlow, setIsCreatingFlow] = useState(false);
   const [localFlows, setLocalFlows] = useState<Flow[]>([]);
@@ -200,6 +202,7 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
+    setSelectedFlowId(data.flow_id)
     dispatch(setSelectedFlowFromList(data));
     navigate("/designers/flow-playground");
   }, [navigate]);

@@ -53,6 +53,13 @@
         },
         {
             "id": 8,
+            "icon": "/assets/buildPipeline/28.svg",
+            "expandIcon": "#32D1A4",
+            "text": "Schama Transformation",
+            "title": "Schama Transformation"
+        },
+        {
+            "id": 9,
             "icon": "/assets/buildPipeline/add.svg",
             "expandIcon": "/assets/buildPipeline/add.svg",
             "text": "",

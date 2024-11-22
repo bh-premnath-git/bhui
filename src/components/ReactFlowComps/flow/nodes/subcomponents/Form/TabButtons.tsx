@@ -9,13 +9,13 @@ interface TabButtonsProps {
 export const TabButtons: React.FC<TabButtonsProps> = React.memo(({ activeTab, onTabChange }) => (
   <div className="flex gap-2">
     <Button
-      variant={activeTab === 'property' ? 'default' : 'secondary'}
+      variant={activeTab === 'property' ? 'outline' : 'secondary'}
       onClick={() => onTabChange('property')}
     >
       Property
     </Button>
     <Button
-      variant={activeTab === 'settings' ? 'default' : 'secondary'}
+      variant={activeTab === 'settings' ? 'outline' : 'secondary'}
       onClick={() => onTabChange('settings')}
     >
       Settings

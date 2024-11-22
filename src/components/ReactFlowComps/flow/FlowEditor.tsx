@@ -85,11 +85,11 @@ export function FlowEditor() {
   );
 
   const checkNodeProximityAndConnect = useCallback(() => {
-    const HANDLE_WIDTH = 10;
-    const HANDLE_HEIGHT = 24;
-    const NODE_WIDTH = 100;
-    const NODE_HEIGHT = 130;
-    const HANDLE_OFFSET_X = 8;
+    const HANDLE_WIDTH = 12;
+    const HANDLE_HEIGHT = 32;
+    const NODE_WIDTH = 56;
+    const NODE_HEIGHT = 56;
+    const HANDLE_OFFSET_X = 0;
 
     const handles = nodes.flatMap((node) => [
       {

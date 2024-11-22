@@ -21,15 +21,15 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
     }
 
     const groupedProperties = useGroupedProperties(selectedNode);
-    
+
     // Memoize form data lookup
-    const currentFormData = useMemo(() => 
+    const currentFormData = useMemo(() =>
         nodeFormData.find(item => item.nodeId === selectedNode.id)?.formData || {},
         [nodeFormData, selectedNode.id]
     );
 
     // Memoize depends on calculation
-    const dependsOn = useMemo(() => 
+    const dependsOn = useMemo(() =>
         prevNodeFn(selectedNode.id)?.map(node => node.data.meta.type) ?? [],
         [prevNodeFn, selectedNode.id]
     );
@@ -56,9 +56,9 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
 
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            <TabButtons 
-                activeTab={activeTab} 
-                onTabChange={handleTabChange} 
+            <TabButtons
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
             />
 
             <ScrollArea className="h-[400px]">
@@ -73,13 +73,15 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
             </ScrollArea>
 
             <div className="flex justify-center gap-4 pt-4">
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="ghost"
                     onClick={closeTap}
                 >
                     Close
                 </Button>
-                <Button onClick={handleSave}>
+                <Button
+                    variant="outline"
+                    onClick={handleSave}>
                     Save
                 </Button>
             </div>

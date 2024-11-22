@@ -231,17 +231,20 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateNodeFormData = useCallback(
-    (nodeId: string, formData: Record<string, any>) => {
+    (nodeId: string, newFormData: Record<string, any>) => {
       setNodeFormData((prevData) => {
         const existingIndex = prevData.findIndex(
           (item) => item.nodeId === nodeId
         );
         if (existingIndex !== -1) {
           const newData = [...prevData];
-          newData[existingIndex] = { nodeId, formData };
+          newData[existingIndex] = {
+            nodeId,
+            formData: { ...newFormData },
+          };
           return newData;
         }
-        return [...prevData, { nodeId, formData }];
+        return [...prevData, { nodeId, formData: { ...newFormData } }];
       });
     },
     []
@@ -280,6 +283,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         edges,
         nodeFormData
       };
+      await new Promise((resolve) => setTimeout(resolve, 0));
       LocalStorageService.setItem('flow', flowData);
       setIsSaved(true);
     } catch (error) {
@@ -330,12 +334,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const debouncedSave = useCallback(
+    debounce(() => {
+      if (autoSave) {
+        saveFlow();
+      }
+    }, 1000),
+    [autoSave, saveFlow]
+  );
+
   useEffect(() => {
-    if (autoSave) {
-      const debouncedSave = debounce(saveFlow, 1000);
-      debouncedSave();
-    }
-  }, [nodes, edges, nodeFormData, autoSave, saveFlow]);
+    debouncedSave();
+  }, [nodes, edges, nodeFormData, debouncedSave]);
 
   const value = {
     nodes,

@@ -88,5 +88,4 @@ const ApiService = async (
     throw error;
   }
 };
-
 export { ApiService };

@@ -7,10 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { IntervalModalComponent, IntervalModalRef } from "@/components/IntervalModal";
+import { IntervalModalComponent, IntervalModalRef, IntervalState } from "@/components/IntervalModal";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from '@/redux/hooks';
 import { omitSpaceSymbolNumeric } from '@/Utils/stringOmission';
+
 // Types
 interface Project {
   ProjectId: string;
@@ -40,7 +41,7 @@ interface CreateFlowPayload {
   job: string;
   schedule_interval: {
     schedule_type: string;
-    time: Record<string, any>;
+    time: IntervalState;
   };
   recipent_emails: string;
 }
@@ -77,23 +78,51 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
       repeatEvery: "1",
       repeatAt: "12:00",
       selectedDays: ["Sun"],
-      selectedMonth: "September",
-      selectedDate: "5"
+      selectedMonth: "January",
+      selectedDate: "1"
     },
   });
 
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const { flowProjectList: data, environments: envData } = useAppSelector((state) => state.flowApi);
+
+  const formatScheduleDisplay = (schedule: typeof scheduleInterval) => {
+    const { schedule_type, time } = schedule;
+    const parts = [schedule_type];
+    
+    if (time.repeatEvery !== "1") {
+      parts.push(`Every ${time.repeatEvery}`);
+    }
+    
+    if (time.repeatAt) {
+      parts.push(`at ${time.repeatAt}`);
+    }
+    
+    if (schedule_type === 'weekly' && time.selectedDays.length > 0) {
+      parts.push(`on ${time.selectedDays.join(', ')}`);
+    }
+    
+    if (schedule_type === 'monthly' || schedule_type === 'yearly') {
+      parts.push(`on ${time.selectedDate}`);
+    }
+    
+    if (schedule_type === 'yearly') {
+      parts.push(time.selectedMonth);
+    }
+    
+    return parts.join(' ');
+  };
+
   const handleIntervalSave = (interval: string) => {
     const parsedInterval = JSON.parse(interval);
     setScheduleInterval({
-      schedule_type: parsedInterval.selectedInterval,
+      schedule_type: parsedInterval.selectedInterval.toLowerCase(),
       time: parsedInterval,
     });
   };
 
-  const handleIntervalStateChange = (state: any) => {
-    //    console.log(state);
+  const handleIntervalStateChange = (state: IntervalState) => {
+    // Optional: Handle intermediate state changes if needed
   };
 
   const openIntervalModal = () => {
@@ -144,8 +173,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
               <div>
                 <Label htmlFor="selectedProject">Project*</Label>
                 <Field name="selectedProject">
-                  {({ field, form }: any) =>
-                  (
+                  {({ field, form }: any) => (
                     <Select
                       value={field.value || undefined}
                       onValueChange={(value) => {
@@ -163,8 +191,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
                         ))}
                       </SelectContent>
                     </Select>
-                  )
-                  }
+                  )}
                 </Field>
                 <ErrorMessage name="selectedProject" component="div" className="text-red-500 text-sm mt-1" />
               </div>
@@ -246,11 +273,16 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
                   <Input
                     id="schedule"
                     placeholder="Schedule Interval"
-                    value={scheduleInterval.schedule_type}
+                    value={formatScheduleDisplay(scheduleInterval)}
                     readOnly
                     onClick={openIntervalModal}
+                    className="cursor-pointer"
                   />
-                  <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer" size={20} onClick={openIntervalModal} />
+                  <Clock
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                    size={20}
+                    onClick={openIntervalModal}
+                  />
                 </div>
               </div>
             </div>
@@ -333,8 +365,10 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
               </div>
             </div>
             <div className="flex justify-center space-x-4 mt-6">
-              <Button variant="outline" type="button" onClick={onClose}>Close</Button>
-              <Button className='bg-black text-white hover:bg-gray-800' type="submit" disabled={isLoading}>
+              <Button variant="outline" type="button" onClick={onClose}>
+                Close
+              </Button>
+              <Button className="bg-black text-white hover:bg-gray-800" type="submit" disabled={isLoading}>
                 {isLoading ? <Spinner /> : "Create Flow"}
               </Button>
             </div>
@@ -345,6 +379,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
         ref={intervalModalRef}
         onSave={handleIntervalSave}
         onStateChange={handleIntervalStateChange}
+        initialState={scheduleInterval.time}
       />
     </div>
   );

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 
 export default function Component() {
   const [loadingText, setLoadingText] = useState('Loading')
-
   useEffect(() => {
     const interval = setInterval(() => {
       setLoadingText((prev) => (prev.length < 10 ? prev + '.' : 'Loading'))

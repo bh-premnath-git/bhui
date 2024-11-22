@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
+import { FlowProvider } from '@/contexts/FlowContext';
+
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
@@ -80,7 +82,7 @@ function App() {
   const [step, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
-  
+
 
   useEffect(() => {
     const initializeKeycloak = async () => {
@@ -164,7 +166,7 @@ function App() {
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
     { path: "/admin-console/all-projects", element: <AllProjects /> },
     { path: "/all-projects/new", element: <ProjectCreate /> },
-    { path: "/projects/:id", element: <ProjectEdit/>},
+    { path: "/projects/:id", element: <ProjectEdit /> },
     { path: "/all-environment", element: <AllEnvironments /> },
     { path: "/all-environment/new", element: <EnvironmentCreate /> },
     { path: "/environments/:id", element: <EnvironmentEdit /> },
@@ -201,10 +203,10 @@ function App() {
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
     { path: '/AllUsers', element: <AllUsers /> },
     { path: '/AddUser', element: <AddUser /> },
-    { path: '/EditUser/:id', element: <EditUser />},
+    { path: '/EditUser/:id', element: <EditUser /> },
     { path: '/AllCustomers', element: <AllCustomers /> },
     { path: '/AddCustomers', element: <AddCustomers /> },
-    { path: '/EditCustomer/:id', element: <EditCustomer />},
+    { path: '/EditCustomer/:id', element: <EditCustomer /> },
     { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
     { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
     { path: '/BuildPlayGround', element: <BuildPlayGround /> },
@@ -241,8 +243,8 @@ function App() {
         styleOverrides: {
           root: {
             fontFamily: 'Inter',
-            fontSize:'15px',
-            fontWeight:'normal'
+            fontSize: '15px',
+            fontWeight: 'normal'
           },
         },
       },
@@ -250,7 +252,7 @@ function App() {
         styleOverrides: {
           root: {
             fontFamily: 'Inter',
-            fontSize:'15px'
+            fontSize: '15px'
 
           },
         },
@@ -262,20 +264,21 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-
-      <Provider store={store}>
-        <BrowserRouter>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                {routeList.map((route, index) => (
-                  <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                ))}
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </Provider>
+      <FlowProvider>
+        <Provider store={store}>
+          <BrowserRouter>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                  {routeList.map((route, index) => (
+                    <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                  ))}
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </Provider>
+      </FlowProvider>
     </ThemeProvider>
   );
 }

@@ -47,7 +47,7 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: 'text',
-    render: (row: any) => row.schedule_type ?? "",
+    render: (row: any) => row?.schedule_type ?? "",
   },
   {
     key: 'Environment',

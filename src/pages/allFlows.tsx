@@ -214,14 +214,14 @@ const AllFlows: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container  p-0">
         <ErrorDisplay message={error} />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container  p-0">
       {localFlows.length === 0 ? (
         <EmptyComponent onAddFlow={funcCreateFlow} />
       ) : (

@@ -210,7 +210,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
             if (response.type === "environment/edit/fulfilled") {
               showToast('Environment updated successfully', { color: '#4caf50' });
               setTimeout(() => {
-                navigate('/all-environment');
+                navigate('/admin-console/environment');
               }, 1000);
             }
           })
@@ -256,7 +256,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               ))}
             </TabsList>
           </div>
-          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/all-environment')}>
+          <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/admin-console/environment')}>
             View All Environments
           </Button>
         </div>

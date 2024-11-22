@@ -186,7 +186,7 @@ function BuildPipeLineFlow({ pipeline }: editPipeLine) {
         // pipeLineList[i].edges = edges;
         // setPipeLineList(pipeLineList);
         // LocalStorageService.setItem('pipeLineList', pipeLineList);
-        // navigate('/AllBuildDataPipeLine')
+        // navigate('/designers/build-datapipeline/')
     };
 
     const onNodeClick = (event: React.MouseEvent, node: CustomNode) => {

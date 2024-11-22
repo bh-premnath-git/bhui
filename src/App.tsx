@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
+import { FlowProvider } from '@/contexts/FlowContext';
+
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
@@ -18,7 +20,6 @@ const Alerts = lazy(() => import('@/pages/alerts'));
 const MonitorPage = lazy(() => import('./components/Alert/MonitorPage'));
 const Configure = lazy(() => import('./components/Alert/Configure'));
 const ManageFlow = lazy(() => import('@/pages/manageFlow/FlowPlayGround'));
-
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const Loading = lazy(() => import('@/pages/loadingPage'));
 const Login = lazy(() => import('@/pages/login'));
@@ -37,8 +38,10 @@ const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
 const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
 const AllUsers = lazy(() => import('@/pages/allUsers'));
 const AddUser = lazy(() => import('@/pages/addUser'));
+const EditUser = lazy(() => import('@/pages/editUser'));
 const AllCustomers = lazy(() => import('@/pages/allCustomers'));
 const AddCustomers = lazy(() => import('@/pages/AddCustomers'));
+const EditCustomer = lazy(() => import('@/pages/EditCustomers'));
 const AllBuildDataPipeLine = lazy(() => import('@/pages/allBuildDataPipeLine'));
 const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround'));
 const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
@@ -49,7 +52,8 @@ interface LayoutProps {
   logout: () => void;
 }
 
-const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
+const Layout = ({ isAuthenticated, logout }: LayoutProps) =>{ 
+  return (
   <div className="flex flex-col h-screen">
     <Header isAuthenticated={isAuthenticated} logout={logout} />
     <div className="flex flex-1 overflow-hidden">
@@ -59,12 +63,14 @@ const Layout = ({ isAuthenticated, logout }: LayoutProps) => (
       </main>
     </div>
   </div>
-);
+)};
 
 function App() {
   const [step, setStep] = useState<any>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const keycloakInitialized = useRef(false);
+
+  
   
 
   useEffect(() => {
@@ -147,14 +153,14 @@ function App() {
     { path: "/admin-console", element: <AdminConsole /> },
     { path: "/admin-console/manage-users", element: <PageNotFound /> },
     { path: "/admin-console/manage-customer", element: <PageNotFound /> },
-    { path: "/all-projects", element: <AllProjects /> },
-    { path: "/all-projects/new", element: <ProjectCreate /> },
-    { path: "/projects/:id", element: <ProjectEdit/>},
-    { path: "/all-environment", element: <AllEnvironments /> },
-    { path: "/all-environment/new", element: <EnvironmentCreate /> },
-    { path: "/environments/:id", element: <EnvironmentEdit /> },
-    { path: "/designer/manage-flow", element: <AllFlows /> },
-    { path: '/designer/flow-playground', element: <ManageFlow /> },
+    { path: "/admin-console/projects", element: <AllProjects /> },
+    { path: "/admin-console/projects/new", element: <ProjectCreate /> },
+    { path: "/admin-console/projects/:id", element: <ProjectEdit/>},
+    { path: "/admin-console/environment", element: <AllEnvironments /> },
+    { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
+    { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
+    { path: "/designers/manage-flow", element: <AllFlows /> },
+    { path: '/designers/flow-playground', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/data-catalog', element: <Catalog /> },
     { path: '/Catalog/Catalogs', element: <Catalogs /> },
@@ -164,22 +170,25 @@ function App() {
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
     { path: '/Alerts', element: <Alerts /> },
+    { path: '/dataops-hub/alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
     { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
     { path: '/DataCatalog', element: <DataCatalog /> },
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
-    { path: '/AllUsers', element: <AllUsers /> },
-    { path: '/AddUser', element: <AddUser /> },
-    { path: '/AllCustomers', element: <AllCustomers /> },
-    { path: '/AddCustomers', element: <AddCustomers /> },
-    { path: '/AllBuildDataPipeLine', element: <AllBuildDataPipeLine /> },
-    { path: '/BuildPlayGround/:id', element: <BuildPlayGround /> },
-    { path: '/BuildPlayGround', element: <BuildPlayGround /> },
+    { path: '/admin-console/users', element: <AllUsers /> },
+    { path: '/admin-console/users/new', element: <AddUser /> },
+    { path: '/admin-console/users/:id', element: <EditUser />},
+    { path: '/admin-console/customers', element: <AllCustomers /> },
+    { path: '/admin-console/customers/new', element: <AddCustomers /> },
+    { path: '/admin-console/customers/:id', element: <EditCustomer />},
+    { path: '/designers/build-datapipeline/', element: <AllBuildDataPipeLine /> },
+    { path: '/designers/build-playground/:id', element: <BuildPlayGround /> },
+    { path: '/designers/build-playground/', element: <BuildPlayGround /> },
     { path: '/dataops-hub/ops-hub', element: <Dataops /> },
     { path: '/AllDataOps', element: <Dataops /> },
-    { path: '/AllReleaseBundle', element: <AllReleaseBundle /> },
-    { path: '/bundle', element: <CreateBundle /> },
+    { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
+    { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
     { path: '/ReleaseBundle', element: <ReleaseBundle /> },
   ];
 
@@ -209,8 +218,8 @@ function App() {
         styleOverrides: {
           root: {
             fontFamily: 'Inter',
-            fontSize:'15px',
-            fontWeight:'normal'
+            fontSize: '15px',
+            fontWeight: 'normal'
           },
         },
       },
@@ -218,7 +227,7 @@ function App() {
         styleOverrides: {
           root: {
             fontFamily: 'Inter',
-            fontSize:'15px'
+            fontSize: '15px'
 
           },
         },
@@ -230,20 +239,21 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-
-      <Provider store={store}>
-        <BrowserRouter>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                {routeList.map((route, index) => (
-                  <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                ))}
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </Provider>
+      <FlowProvider>
+        <Provider store={store}>
+          <BrowserRouter>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                  {routeList.map((route, index) => (
+                    <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                  ))}
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </Provider>
+      </FlowProvider>
     </ThemeProvider>
   );
 }

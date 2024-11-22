@@ -203,7 +203,7 @@ function ConnectionStep(props: any) {
 											</Stack>
 											{dynamicFields[index] && renderDynamicFields(dynamicFields[index], index)}
 											<div className='text-cyan-400 ' style={{ textAlign: 'center', padding: '8px', margin: '8px', fontSize: '14px' }}>
-												<button type="button" className='underline' onClick={() => handleClick(values, index)}>Test Connection</button>
+												<Button sx={{ textTransform: 'none' }} variant="contained" type="button" className='bg-dark text-white' onClick={() => handleClick(values, index)}>Test Connection</Button>
 											</div>
 											<div>
 												<ToastComponent />

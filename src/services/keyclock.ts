@@ -1,10 +1,9 @@
 import Keycloak, { KeycloakConfig } from 'keycloak-js';
 
 const initOptions: KeycloakConfig = {
- // url: 'http://54.157.234.126:8080/',
-  url: 'http://localhost:8080/',
-  realm: 'bighammer-realm',
-  clientId: 'bighammer-ui',
+  url: import.meta.env.VITE_KEYCLOAK_URL,
+  realm: import.meta.env.VITE_KEYCLOAK_REALM,
+  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
 };
 
 // Create a singleton Keycloak instance

@@ -136,7 +136,7 @@ const TableBodyComponent: React.FC<{
                     <Badge
                       className={`${column.badgeConfig.colorMap[row[column.key]]} text-white p-1`}
                     >
-                      {row[column.key]}
+                      {row[column.key] && row[column.key].toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
                     </Badge>
                   )
                   : row[column.key]}

@@ -1,8 +1,22 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { Cpu, Home, RotateCcw } from "lucide-react"
 
 export default function NotFound() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname === "/dataops-hub/" || location.pathname === "/dataops-hub") {
+      navigate("/dashboard");
+    }
+  }, [location.pathname, navigate]);
+
+  if (location.pathname === "/dataops-hub/"  || location.pathname === "/dataops-hub") {
+    return null
+  }
+
   return (
     <div className="min-h-full flex flex-col items-center justify-center bg-gradient-to-r from-black to-gray-900 text-white p-4">
       <div className="text-center space-y-8">

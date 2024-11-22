@@ -5,9 +5,11 @@ import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
-import { FileQuestion } from "lucide-react";
 import { getCustomerList } from "@/redux/CustomerSlice";
 import { COLORS } from "@/Utils/constants";
+import { FolderPlus, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Define types in a separate file for better organization
 interface customer {
@@ -40,57 +42,6 @@ type ColumnConfig = {
     render?: (value: any, row: any) => React.ReactNode;
 };
 
-// Define column configurations outside the component for better performance
-const columns: ColumnConfig[] = [
-    {
-        key: 'relation_ship_owner',
-        header: 'Customer Name',
-        sortable: true,
-        filterable: true,
-        type: 'text',
-
-
-    },
-    {
-        key: 'status',
-        header: 'Status',
-        type: 'number',
-        sortable: false,
-        render: (value) => {
-            return (
-                <div style={{ color: value == 'active' ? COLORS.green : COLORS.red }} className="font-bold">
-                    {value}
-                </div>
-            )
-        }
-    },
-    {
-        key: 'total_extracts_config',
-        header: 'Total Extracts Configured',
-        type: 'number',
-        sortable: false,
-    },
-
-
-];
-
-const EmptyComponent: React.FC = () => {
-    const navigate = useNavigate();
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <FileQuestion size={64} className="text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-700 mb-2">User Not Available</h2>
-            <button
-                onClick={() => navigate("/AddCustomers")}
-                className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
-            >
-                Add Customers
-            </button>
-        </div>
-    );
-};
-
 function CustomerTable({
     customerList,
     loading,
@@ -102,6 +53,101 @@ function CustomerTable({
         dispatch(getCustomerList());
     }, [dispatch]);
 
+    const viewFn = (rowData: any) => {
+        navigate(`/admin-console/customers/${rowData.customer_id}`, { state: { rowData } });
+    }
+
+// Define column configurations outside the component for better performance
+const columns: ColumnConfig[] = [
+    {
+        key: 'relation_ship_owner',
+        header: 'Customer Name',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        render: (value, row) => (
+            <span onClick={() => viewFn(row)} className="cursor-pointer">
+                {row?.relation_ship_owner}
+            </span>
+        )
+
+    },
+    {
+        key: 'status',
+        header: 'Status',
+        type: 'number',
+        sortable: false,
+        render: (value) => {
+            return (
+                <div
+                    style={{
+                        color: value === 'active' ? COLORS.green : COLORS.red
+                    }}
+                    className={`text-center rounded-md border text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80
+                        ${value === 'active' ? 'bg-green-500' : 'bg-red-500'} text-white p-1 w-12 capitalize`}>
+                    {value}
+                </div>
+            )
+        }
+    },
+    {
+        key: 'total_extracts_config',
+        header: 'Total Extracts Configured',
+        type: 'number',
+        sortable: false,
+    },
+];
+
+const EmptyComponent: React.FC = () => {
+    const navigate = useNavigate();
+
+    return (
+        <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+            <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+                <div className="relative p-8 sm:p-12">
+                    <div className="max-w-2xl mx-auto text-center">
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+                    
+                    {/* Icon container with glow effect */}
+                    <div className="relative inline-flex mb-8">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+                        <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+                        <Sparkles className="w-12 h-12 text-gradient" />
+                        </div>
+                    </div>
+
+                    {/* Welcome text */}
+                    <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        Welcome to Your Customer!
+                    </h2>
+                    <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                        Stay organized and keep track of your customer relationships efficiently. Use the tools below to manage your customer base
+                    </p>
+
+                    {/* Action button with hover effect */}
+                    <Button
+                        size="lg"
+                        onClick={() => navigate("/admin-console/customers/new")}
+                        className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
+                    >
+                        <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
+                        <FolderPlus className="mr-2 h-5 w-5" />
+                        <span className="relative">Create Customer</span>
+                    </Button>
+
+                    {/* Additional guidance */}
+                    <p className="mt-6 text-sm text-muted-foreground">
+                        Click the button above to begin managing your customer data.
+                    </p>
+                </div>
+            </div>
+        </Card>
+    );
+};
+
+
     if (loading) {
         return <Spinner size="lg" />;
     }
@@ -111,14 +157,14 @@ function CustomerTable({
     }
 
     const createNewFn = () => {
-        navigate("/AddCustomers");
+        navigate("/admin-console/customers/new");
     };
     const actionFn = (rowData: any, action: string) => {
         action == 'edit' ? editFn(rowData) : changeStatus(rowData)
     }
 
     const editFn = (rowData: any) => {
-        navigate("/AddCustomers", { state: { rowData } });
+        navigate(`/admin-console/customers/${rowData.customer_id}`, { state: { rowData } });
     }
 
     const changeStatus = async (rowData: any) => {

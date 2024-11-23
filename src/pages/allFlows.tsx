@@ -195,7 +195,8 @@ const AllFlows: React.FC = () => {
     } finally {
       if (!error) {
       setTimeout(() => {
-          navigate('/designers/flow-playground');
+        debugger
+          navigate('/designers/manage-flow');
         }, 2000);
       }
     }
@@ -204,7 +205,7 @@ const AllFlows: React.FC = () => {
   const playground = useCallback((data: any) => {
     setSelectedFlowId(data.flow_id)
     dispatch(setSelectedFlowFromList(data));
-    navigate("/designers/flow-playground");
+    navigate("/designers/manage-flow/" + data.flow_id);
   }, [navigate]);
 
   if (loading) {

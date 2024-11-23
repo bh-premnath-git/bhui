@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { Node, Edge, ReactFlowInstance } from "reactflow";
 import { LocalStorageService } from "@/services/localStorageServices";
@@ -86,15 +87,25 @@ interface FlowContextType {
   setSelectedFlowId: (flowId: string) => void;
 }
 
-function debounce<Func extends (...args: any[]) => void>(
+function useDebouncedCallback<Func extends (...args: any[]) => void>(
   func: Func,
   delay: number
-): (...args: Parameters<Func>) => void {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<Func>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
+): Func {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedFunc = useCallback(
+    ((...args: any[]) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        func(...args);
+      }, delay);
+    }) as Func,
+    [func, delay]
+  );
+
+  return debouncedFunc;
 }
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
@@ -363,18 +374,16 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const debouncedSave = useCallback(
-    debounce(() => {
-      if (autoSave && selectedFlowId) {
-        saveFlow();
-      }
-    }, 1000),
-    [autoSave, saveFlow, selectedFlowId]
-  );
+  const debouncedSave = useDebouncedCallback(() => {
+    if (autoSave && selectedFlowId) {
+      saveFlow();
+    }
+  }, 1000);
+
 
   useEffect(() => {
     debouncedSave();
-  }, [nodes, edges, nodeFormData, debouncedSave]);
+  }, [nodes, edges, debouncedSave]);
 
   const value: FlowContextType = {
     selectedFlowId,

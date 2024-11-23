@@ -1,19 +1,18 @@
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { motion } from 'framer-motion';
-import { SyntheticEvent, useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import _ from 'lodash';
-import { Controller, FormProvider, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import * as React from 'react';
-import { Box, FormControl, FormControlLabel, Radio, RadioGroup, Step, StepButton, StepContent, StepLabel, Stepper } from '@mui/material';
+import { Box, Grid, Step, StepButton, Stepper } from '@mui/material';
 import CustomerDetailsStep from '@/components/CustomerTabs/CustomerDetailsStep';
 import ConnectionStep from '@/components/CustomerTabs/ConnectionStep';
 import AlertProfileStep from '@/components/CustomerTabs/AlertProfileStep';
 import TaggingStep from '@/components/CustomerTabs/TaggingStep';
 import { COLORS } from '@/Utils/constants';
+
 /**
  * Form Validation Schema
  */
@@ -26,6 +25,7 @@ const schema = yup.object().shape({
 
 function AddCustomers() {
 	const location = useLocation();
+	const navigate = useNavigate();
 	const [manageCustomerId, setManageCustomerId] = useState(location.state?.rowData ? location.state?.rowData?.customer_id : null);
 	const [noCustomer, setNoCustomer] = useState(false);
 	const steps = [
@@ -89,11 +89,9 @@ function AddCustomers() {
 	};
 
 	const handleNext = (formData: any) => {
-		console.log(formData)
 		if (formData.customer_id) {
 			setManageCustomerId(formData.customer_id)
 		}
-		console.log(formData.customer_id)
 
 		// alert(1)
 		setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -112,8 +110,24 @@ function AddCustomers() {
 
 	return (
 		<>
-			<div className="shadow p-4 rounded">
+			<div className="container shadow p-4 rounded w-10/12  m-auto mt-4">
+				<Grid item xs={12} container justifyContent="flex-end">
+					<Button
+					sx={{
+						backgroundColor: 'black',
+						color: 'white',
+						'&:hover': {
+						backgroundColor: 'black',
+						},
+					}}
+					className="mt-1"
+					onClick={() => navigate('/admin-console/customers')}
+					>
+					View All Customers
+					</Button>
+				</Grid>
 				<br></br>
+				
 				<Box sx={{ width: '75%', m: 'auto', paddingTop: '30px' }}>
 					<Stepper activeStep={activeStep} alternativeLabel>
 						{steps.map((label, index) => (
@@ -162,7 +176,6 @@ function AddCustomers() {
 					</div>
 				</Box>
 			</div>
-
 		</>
 	);
 }

@@ -36,7 +36,7 @@ const rows = [
     createData('order_id1234', '1/04/2024', '1,000,000,000', 'Lorem Ipsum Is Simply Dummy Text Of The Printing'),
 ];
 
-export default function ResultTable({drawerHeight}) {
+export default function ResultTable({drawerHeight}:any) {
     return (
         <TableContainer component={Paper} elevation={0}>
             <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">

@@ -55,15 +55,15 @@ describe('renderingHeadContent', () => {
       expected: 'Admin Console > Environments'
     },
     {
-      path: '/all-environment/new',
+      path: '/admin-console/environment/new',
       expected: 'Admin Console > Environments > New'
     },
     {
-      path: '/environments/123',
+      path: '/admin-console/environment/123',
       expected: 'Admin Console > Environment > TestEnv'
     },
     {
-      path: '/designer/manage-flow',
+      path: '/designers/manage-flow',
       expected: 'Designer > Manage Flow'
     },
     {
@@ -75,23 +75,23 @@ describe('renderingHeadContent', () => {
       expected: 'Catalog > TestLayout > Schema'
     },
     {
-      path: '/AllUsers',
+      path: '/admin-console/users',
       expected: 'Admin Console > Manage Data Platform User'
     },
     {
-      path: '/AddUser',
+      path: '/admin-console/users/new',
       expected: 'Admin Console > Manage Data Platform User > Add User'
     },
     {
-      path: '/AllCustomers',
+      path: '/admin-console/customers',
       expected: 'Admin Console > Manage Customer'
     },
     {
-      path: '/AddCustomers',
+      path: '/admin-console/customers/new',
       expected: 'Admin Console > Manage Customer > Add Customer'
     },
     {
-      path: '/AllBuildDataPipeLine',
+      path: '/designers/build-datapipeline/',
       expected: 'Designer > Build Data Pipeline'
     },
     {
@@ -99,11 +99,11 @@ describe('renderingHeadContent', () => {
       expected: 'Dataops Hub > Ops Hub'
     },
     {
-      path: '/alerts',
+      path: '/dataops-hub/alerts',
       expected: 'Dataops Hub > Alert Hub'
     },
     {
-      path: '/bundle',
+      path: '/dataops-hub/release-bundle/new',
       expected: 'Manage Releases'
     },
     {
@@ -135,12 +135,12 @@ describe('renderingHeadContent', () => {
 
   // Special cases for components
   it('renders flow playground with CustomToolbarComponent', () => {
-    const element = render(<>{renderingHeadContent('/designer/flow-playground')}</>);
+    const element = render(<>{renderingHeadContent('/designers/flow-playground')}</>);
     expect(element.container.textContent).toBe('Custom Toolbar');
   });
 
   it('renders build playground with CustomToolbarComponent', () => {
-    const element = render(<>{renderingHeadContent('/BuildPlayGround')}</>);
+    const element = render(<>{renderingHeadContent('/designers/build-playground/')}</>);
     expect(element.container.textContent).toBe('Custom Toolbar');
   });
 });

@@ -9,7 +9,7 @@ const names = [
 ];
 const years = ['2001', '2002', '2003', '2004', '2005', '2006'];
 
-const shuffle = (array) => {
+const shuffle = (array:any) => {
   let currentIndex = array.length;
   let randomIndex = 0;
   while (currentIndex > 0) {

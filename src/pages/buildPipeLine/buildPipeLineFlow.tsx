@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import ReactFlow, { addEdge, Connection, Controls, Edge, Node, useEdgesState, useNodesState } from 'reactflow';
+import ReactFlow, { addEdge, Connection, Controls, Edge, Node, ReactFlowProvider, useEdgesState, useNodesState, useReactFlow } from 'reactflow';
 import ExpandableButton from '@/common/ExpandableButton';
 import buildFlow from "@/pages/buildPipeLine/build_pipe_line_flow.json";
 import { CustomNodeData, ImageNode } from '@/components/BuildPipeLineComps/ImageNode';
 import CustomEdge from '@/components/BuildPipeLineComps/customEdge';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { useNavigate } from 'react-router-dom';
 import "reactflow/dist/style.css";
 import styles from '@/pages/buildPipeLine/BuildPipeLine.module.css';
+import { getTransformationCount, setBuildPipeLineNodes } from '@/redux/BuildPipeLineSlice';
+import Footer from '@/components/BuildPipeLineComps/Footer';
+import useToast from '@/oldcomponents/teast-service';
+import { Divider } from '@mui/material';
 
 type CustomNode = Node<CustomNodeData>;
 
@@ -28,13 +32,19 @@ const edgeTypes = {
 interface editPipeLine {
     pipeline?: any
 }
-export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
+function BuildPipeLineFlow({ pipeline }: editPipeLine) {
     const [nodes, setNodes, onNodesChange] = useNodesState<CustomNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
+
     const [nodeIdCounter, setNodeIdCounter] = useState<number>(5);
     const { createPipeLineDtl } = useSelector((state: RootState) => state.buildPipeLineApi);
     const [pipeLineList, setPipeLineList] = useState(LocalStorageService.getItem('pipeLineList') || []);
+    const { fitView, zoomIn, zoomOut, setViewport } = useReactFlow();
+
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const [ToastComponent, showToast] = useToast();
+
     useEffect(() => {
         console.log(createPipeLineDtl)
         console.log(pipeline)
@@ -61,15 +71,18 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
 
     }, [createPipeLineDtl]);
 
-    // useEffect(() => {
-    //     setNodes([]);
-    //     setEdges([])
-    // }, [setEdges, setNodes]);
+    useEffect(() => {
+        // setNodes([]);
+        // setEdges([])
+        // console.log(nodes)
+        dispatch(setBuildPipeLineNodes(JSON.stringify(nodes)));
+
+    }, [nodes]);
 
     const addNode = (lead: string, title: string, name: string, dataList?: any) => {
         const newNodeId = `${nodeIdCounter}`;
         setNodeIdCounter((prevId) => prevId + 1);
-    
+
         const newNode: CustomNode = {
             id: newNodeId,
             type: "imageNode",
@@ -82,34 +95,45 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                 display: `${name}`,
                 isShow: false,
                 isEdit: false,
+                isCheck: false,
                 onDelete: () => handleDelete(newNodeId),
                 onClone: () => cloneNode(newNode),
+                handleCheck: () => handleCheck(newNode),
                 onEdit: () => editNode(newNode),
                 dataList: dataList,
             } as CustomNodeData,  // Explicit cast here
             // Starting position at the top left, with vertical spacing based on nodeIdCounter
-            position: { x: 50 + nodeIdCounter * 100, y: 50  },
+            position: { x: 50 + nodeIdCounter * 100, y: 50 },
         };
-    
+
         setNodes((nds): any => [...nds, newNode]);
     };
-    
+
 
     const handleDelete = (nodeId: string) => {
         setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    };
+    const handleCheck = (node: CustomNode) => {
+       
+        console.log(node)
+
+        const updatedNode = { ...node, data: { ...node.data, isCheck: true } };
+        setNodes((nds): any => nds.map((n) => (n.id === node.id ? updatedNode : n)));
+       
+
     };
 
     const cloneNode = (dataNode: CustomNode) => {
         setNodeIdCounter((prevId) => {
             const newNodeId = `${prevId}`;
             const newNode: CustomNode = {
-                id: newNodeId+1,
+                id: newNodeId + 1,
                 type: "imageNode",
                 data: {
                     ...dataNode.data,
                     isEdit: false,
                 } as CustomNodeData,  // Explicit cast here
-                position: {x: 50 + nodeIdCounter * 120, y:50 },
+                position: { x: 50 + nodeIdCounter * 120, y: 50 },
             };
 
             setNodes((nds): any => [...nds, newNode]);
@@ -130,6 +154,7 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
             }
             return nds;
         });
+
     };
 
     const onConnect = useCallback(
@@ -140,7 +165,7 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                         ...params,
                         type: 'custom',
                         style: { stroke: 'gray', width: '1px', color: 'gray' },
-                        data: { onDeleteEdge: deleteEdge }, // Pass delete function to edge data
+                        data: { onDeleteEdge: deleteEdge, params: params }, // Pass delete function to edge data
                     },
                     eds
                 )
@@ -152,14 +177,16 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
     const deleteEdge = (edgeId: string) => {
         setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     };
+
     const onSave = async () => {
-        let i = pipeLineList?.findIndex((pipeLine: any) => pipeLine.pipeline_id === createPipeLineDtl.pipeline_id);
-        console.log(i)
-        pipeLineList[i].nodes = nodes;
-        pipeLineList[i].edges = edges;
-        setPipeLineList(pipeLineList);
-        LocalStorageService.setItem('pipeLineList', pipeLineList);
-        navigate('/AllBuildDataPipeLine')
+        console.log(nodes)
+        // let i = pipeLineList?.findIndex((pipeLine: any) => pipeLine.pipeline_id === createPipeLineDtl.pipeline_id);
+        // console.log(i)
+        // pipeLineList[i].nodes = nodes;
+        // pipeLineList[i].edges = edges;
+        // setPipeLineList(pipeLineList);
+        // LocalStorageService.setItem('pipeLineList', pipeLineList);
+        // navigate('/designers/build-datapipeline/')
     };
 
     const onNodeClick = (event: React.MouseEvent, node: CustomNode) => {
@@ -170,7 +197,21 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
             setNodes((nds): any => nds.map((n) => (n.id === node.id ? revertedNode : n)));
         }, 3000);
     };
+   
+    // Zoom in function
+    const handleZoomIn = useCallback(() => {
+        zoomIn();
+    }, [zoomIn]);
 
+    // Zoom out function
+    const handleZoomOut = useCallback(() => {
+        zoomOut();
+    }, [zoomOut]);
+
+    // Fit view function to reset zoom level and position
+    const handleFitView = useCallback(() => {
+        fitView({ padding: 7 });
+    }, [fitView]);
     return (
         <>
             <div className="flex justify-content-center ">
@@ -188,14 +229,16 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                         </div>
                     ))}
                 </div>
+                <ToastComponent />
+
                 {/* <div className='mt-8 ml-48'>
                     <button onClick={onSave} className='bg-black text-white px-4 py-1 rounded-sm'>Save</button>
 
                 </div> */}
             </div>
 
-            <div style={{ height: 'calc(100% - 100px)',width:'200%' }} >
-                <ReactFlow style={{ left: '-44%',width:'100%' }}
+            <div style={{ height: '80vh', width: '200%' }} >
+                <ReactFlow style={{ left: '-44%', width: '100%' }}
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}
@@ -214,7 +257,26 @@ export default function BuildPipeLineFlow({ pipeline }: editPipeLine) {
                 >
                     <Controls />
                 </ReactFlow>
+                <Divider sx={{ borderColor: '#ccc', marginTop: '-0.5%' }} className='shadow' />
+
+                <div style={{ position: 'absolute', bottom: 1, right: 10, zIndex: 10 }}>
+                    <Footer
+                        handleZoomIn={handleZoomIn}
+                        handleZoomOut={handleZoomOut}
+                        handleFitView={handleFitView}
+                        showToast={showToast}
+                    />
+                </div>
             </div>
         </>
+    );
+}
+
+
+export default function WrappedBuildPipeLineFlow(props: editPipeLine) {
+    return (
+        <ReactFlowProvider>
+            <BuildPipeLineFlow {...props} />
+        </ReactFlowProvider>
     );
 }

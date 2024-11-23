@@ -1,0 +1,80 @@
+{
+    "purpose": "Flow Configuration - All the nodes in flow screen is driven by this json file",
+    "module": {
+        "$schema": "https://json-schema.org/draft-07/schema#",
+        "name": "sample",
+        "description": "Sample pipeline",
+        "version": "1.0",
+        "parameters": [],
+        "mode": "DEBUG",
+        "sources": [
+          {
+            "name": "input_data",
+            "type": "File",
+            "file_path": "examples/input.csv",
+            "file_type": "CSV",
+            "read_options": {
+              "header": true
+            }
+          }
+        ],
+        "targets": [
+          {
+            "name": "output_data",
+            "type": "File",
+            "connection": {
+              "type": "File",
+              "file_path": "examples/output.csv"
+            },
+            "load_mode": "overwrite"
+          }
+        ],
+        "transformations": [
+          {
+            "name": "read_input_data",
+            "dependent_on": [],
+            "transformation": "Reader",
+            "file_path": "examples/input.csv",
+            "file_type": "CSV",
+            "read_options": {
+              "header": true
+            }
+          },
+          {
+            "name": "schema_transformation",
+            "dependent_on": ["read_input_data"],
+            "transformation": "SchemaTransformation",
+            "derived_fields": [
+              {
+                "name": "full_name_new",
+                "expression": "concat(`full_name`, ' ', 'hello')"
+              },
+              {
+                "name": "full_address",
+                "expression": "concat(`address`, ' ', `city`, ' ', `state`, ' ', `zip`)"
+              },
+              {
+                "name": "is_not_adult",
+                "expression": "case when `is_adult` = 'Yes' then 'No' else 'Yes' end"
+              },
+              {
+                "name": "full_name",
+                "expression": "concat(`name`, ' ', `city`)"
+              },
+              {
+                "name": "is_adult",
+                "expression": "case when `age` >= 18 then 'Yes' else 'No' end"
+              }
+            ]
+          },
+          {
+            "name": "filter_transformation",
+            "dependent_on": [
+              "schema_transformation"
+            ],
+            "transformation": "Filter",
+            "condition": "age >= 18"
+          }
+        ]
+    }
+}

@@ -1,27 +1,17 @@
-import { Controller, useFormContext } from 'react-hook-form';
-import { TextField, Button, Stack, Typography, Chip, Grid, Dialog, IconButton, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
+import { Button, Stack, Chip } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import * as React from 'react';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as yup from 'yup';
 import { useLocation } from 'react-router';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {ApiService} from '@/services/apiServices';
 import TagDialog from '@/common/TagDialog';
-import CommonDialog from '@/oldcomponents/common-dialoge';
 import { COLORS } from '@/Utils/constants';
+import useToast from '@/oldcomponents/teast-service';
 
 type Tag = {
     tagKey: string;
     tagValue: string;
 };
-
-const validationSchema = yup.object({
-    tagKey: yup.string().required('Tag Key is required'),
-    tagValue: yup.string().required('Tag Value is required'),
-});
 
 function TaggingStep(props: any) {
     const { onNext, data, onBack } = props;
@@ -29,9 +19,10 @@ function TaggingStep(props: any) {
     const [isOpen, setIsOpen] = React.useState(false);
     const [tags, setTags] = React.useState<Tag[]>([]);
     const [open, setOpen] = React.useState(false);
-    const [showDialog, setShowDialog] = React.useState(true);
+    // const [showDialog, setShowDialog] = React.useState(true);
     const location = useLocation();
     const userData = location.state;
+    const [ToastComponent, showToast] = useToast();
 
     React.useEffect(() => {
         if (userData) {
@@ -53,13 +44,6 @@ function TaggingStep(props: any) {
         }
     }, [data, userData]);
 
-    const handleSubmit = (values: any, { setSubmitting }: any) => {
-        const newTag: Tag = { tagKey: values.tagKey, tagValue: values.tagValue };
-        setTags([...tags, newTag]);
-        setSubmitting(false);
-        setIsOpen(false);
-    };
-
     const handleTagDelete = (i: number) => {
         const updatedTags = [...tags];
         updatedTags.splice(i, 1);
@@ -75,19 +59,24 @@ function TaggingStep(props: any) {
                 const result = await ApiService('8011', 'put', `/customer/${props.data}`, customerData);
                 if (result) {
                     setOpen(true);
+                    if (userData){
+                        showToast('Customer Updated successfully', { color: '#4caf50' });
+                    } else{
+                        showToast('Customer created successfully', { color: '#4caf50' });
+                    }
+                    const toastTimer = setTimeout(() => {
+                        showToast('');
+                    }, 1000);
                     const redirectTimer = setTimeout(() => {
-                        navigate('/AllCustomers');
-                    }, 5000);
-                    return () => clearTimeout(redirectTimer);
+                        navigate('/admin-console/customers');
+                    }, 1000);
+                    return () => {clearTimeout(toastTimer); clearTimeout(redirectTimer);};
                 }
             } catch (error) {
+                showToast('Failed to create user. Please try again.', { color: '#f44336' });
                 console.error('Error fetching Status', error);
             }
         }
-    };
-
-    const handleClose = () => {
-        setOpen(false);
     };
 
     return (
@@ -144,17 +133,8 @@ function TaggingStep(props: any) {
                         size="large">
                         {userData ? 'Update Customer' : 'Create Customer'}
                     </Button>
-
-                    {showDialog && (
-                        <CommonDialog
-                            open={open}
-                            onClose={handleClose}
-                            title={userData ? "Customer updated successfully" : "Customer added successfully"}
-                            description="You'll be automatically redirected to homepage shortly."
-                            imageUrl="/assets/success.svg"
-                        />
-                    )}
                 </Stack>
+                <ToastComponent />
             </div>
         </>
     );

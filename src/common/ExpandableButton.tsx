@@ -103,7 +103,7 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
             >
                 <button
                     onClick={() => handlePop(text)}
-                    className='mx-2 rounded-sm text-white flex items-center transition-all duration-500 ease-in-out'
+                    className='mx-2 rounded-lg text-white flex items-center transition-all duration-500 ease-in-out'
                     style={{
                         backgroundColor: expandIcon,
                         padding: hover ? '1px 5px' : '1px',  // Padding change on hover for a smoother effect
@@ -111,7 +111,7 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
                     }}
                 >
                     {hover ? (
-                        <div className='flex items-center transition-all duration-500 ease-in-out'>
+                        <div className='flex rounded-lg items-center transition-all duration-500 ease-in-out'>
                             <img src={icon} alt="" width={32}/>
                             <div className='ml-2 opacity-100 transition-opacity duration-500 ease-in-out'>
                                 {text}
@@ -127,14 +127,15 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
             </div>
     
             {(select === 'Source' || select === 'Target') && (
-                <div className='rounded w-25 shadow-sm'
+                <div className='rounded w-96 shadow-sm'
                     style={{
                         marginTop: '10px',
                         padding: '10px',
                         border: '1px solid #f2f2f2',
                         backgroundColor: '#fff',
                         position: 'absolute',
-                        zIndex: 1000
+                        zIndex: 1000,
+                        left: '40vh'
                     }}
                 >
                     <div className="d-flex justify-content-between h6 fw-bold">

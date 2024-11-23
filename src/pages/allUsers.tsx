@@ -3,16 +3,16 @@ import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
-import { getGitProject } from '@/redux/ProjectSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
-import { FileQuestion } from "lucide-react";
-import { getCodesDtl, getUserDataList, setCodesData } from "@/redux/UserSlice";
+import { getCodesDtl, getUserDataList } from "@/redux/UserSlice";
 import { Stack } from "@mui/material";
-import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/Utils/dateFormatter";
 import { useDispatch } from "react-redux";
-import { COLORS } from "@/Utils/constants";
 import {ApiService} from '@/services/apiServices';
+import { FolderPlus, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Define types in a separate file for better organization
 interface userData {
@@ -27,11 +27,6 @@ interface userData {
     created_at: any;
     updated_at: any
 }
-interface codesData {
-    id: number;
-    dtl_desc: string;
-}
-
 
 interface UserDetailTableProps {
     columns: ColumnConfig[]
@@ -49,23 +44,56 @@ type ColumnConfig = {
     badgeConfig?: {
         colorMap: Record<string, string>;
     };
-    render?: (value: any, row: any) => React.ReactNode;
+    render?: (value: any, row: userData) => React.ReactNode;
 };
+
 
 const EmptyComponent: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <FileQuestion size={64} className="text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-700 mb-2">User Not Available</h2>
-            <button
-                onClick={() => navigate("/AddUser")}
-                className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+        <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+        <div className="relative p-8 sm:p-12">
+            <div className="max-w-2xl mx-auto text-center">
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+            
+            {/* Icon container with glow effect */}
+            <div className="relative inline-flex mb-8">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+                <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+                <Sparkles className="w-12 h-12 text-gradient" />
+                </div>
+            </div>
+
+            {/* Welcome text */}
+            <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Welcome to Your New User!
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                Start your journey by assigning a project to a new user.
+            </p>
+
+            {/* Action button with hover effect */}
+            <Button
+                size="lg"
+                onClick={() => navigate("/admin-console/users/new")}
+                className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
             >
-                Add User
-            </button>
+                <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
+                <FolderPlus className="mr-2 h-5 w-5" />
+                <span className="relative">Create user</span>
+            </Button>
+
+            {/* Additional guidance */}
+            <p className="mt-6 text-sm text-muted-foreground">
+                Click the button above to start assign the project for user
+            </p>
+            </div>
         </div>
+        </Card>
     );
 };
 
@@ -90,19 +118,19 @@ function UserDetailTable({
     }
 
     const createNewFn = () => {
-        navigate("/AddUser");
+        navigate("/admin-console/users/new");
     };
     const actionFn = (rowData: any, action: string) => {
         action == 'edit' ? editFn(rowData) : changeStatus(rowData)
     }
 
     const editFn = (rowData: any) => {
-        navigate("/AddUser", { state: { rowData } });
+        navigate(`/admin-console/users/${rowData.bh_user_id}`, { state: { rowData } });
     }
 
     const changeStatus = async (rowData: any) => {
         let data: any = { ...rowData }
-        data.user_status_cd == 601 ? data.user_status_cd = 602 : data.user_status_cd = 601;
+        data.user_status_cd == 701 ? data.user_status_cd = 702 : data.user_status_cd = 701;
         let result = await ApiService('8011', 'put', `/bh_user/${data.bh_user_id}`, data);
         if (result) {
             dispatch(getUserDataList());
@@ -135,9 +163,16 @@ const AllUsers: React.FC = () => {
     );
     const error = apiError ? { message: apiError } : null;
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     useEffect(() => {
         dispatch(getCodesDtl());
     }, [dispatch, codesDtl?.length == 0]);
+
+    const viewFn = (rowData: any) => {
+        navigate(`/admin-console/users/${rowData.bh_user_id}`, { state: { rowData } });
+    };
+
+    
     const columns: ColumnConfig[] = [
         {
             key: 'bh_user_first_name',
@@ -145,14 +180,11 @@ const AllUsers: React.FC = () => {
             sortable: true,
             filterable: true,
             type: 'text',
-            render: (value, row) => {
-                return (
-                    <>
-                        {row?.bh_user_first_name}  {row?.bh_user_middle_name}  {row?.bh_user_last_name}
-                    </>
-                )
-            }
-
+            render: (value, row) => (
+                <span onClick={() => viewFn(row)} className="cursor-pointer">
+                    {row?.bh_user_first_name} {row?.bh_user_middle_name} {row?.bh_user_last_name}
+                </span>
+            )
         },
         {
             key: 'user_email_id',
@@ -163,55 +195,58 @@ const AllUsers: React.FC = () => {
         {
             key: 'project_details',
             header: 'Project Details',
-            type: 'number',
+            type: 'text',
             sortable: false,
             render: (value, row) => {
                 return (
                     <>
-                        {row?.project_details?.map((item: any, index: number) => (
-                            <div key={index}>
-                                <Stack direction={'row'}>
-                                    <span >
-                                        <b>project{index + 1}  </b></span>:   <span className="mx-2">
-                                        {item.project?.label}
-                                    </span>
-                                </Stack>
-                                <Stack direction={'row'}>
-                                    <span className="font-bold p-1">
-                                        Role :
-                                    </span>
-                                    {item.projectRole?.map((role: any, j: number) => (
-                                        <Stack key={j} direction={'row'} spacing={1}>
-                                            <Stack className="p-1 rounded-sm mx-1" direction={'row'} sx={{ backgroundColor: `${role?.dtl_desc == 'Admin' || role?.dtl_desc == 'Super Admin' ? '#feecc6' : '#d4f5e7'}` }}>
-                                                {role?.dtl_desc}
-                                            </Stack>
-                                        </Stack>
-                                    ))}
-
-                                </Stack>
+                        {Array.isArray(row?.project_details) && row.project_details.map((item: any, index: number) => (
+                            <div key={index} className="mb-4">
+                                {Array.isArray(item.project) && item.project.map((project: any, projIndex: number) => (
+                                    <div key={projIndex} className="mb-2">
+                                        <b>Project {projIndex + 1}:</b> {project.label}
+                                    </div>
+                                ))}
+        
+                                {Array.isArray(item.projectRole) && item.projectRole.map((role: any, roleIndex: number) => (
+                                    <Stack key={roleIndex} direction="row" alignItems="center" spacing={1}>
+                                        <span className="font-bold p-1">Role:</span>
+                                        <span className="p-1 rounded-sm mx-1" style={{
+                                            backgroundColor: role.dtl_desc === 'Super Admin' ? '#feecc6' : '#d4f5e7'
+                                        }}>
+                                            {role.dtl_desc}
+                                        </span>
+                                    </Stack>
+                                ))}
                             </div>
-
                         ))}
                     </>
-                )
+                );
             }
-
         },
         {
             key: 'user_status_cd',
             header: 'Status',
-            type: 'number',
+            type: 'text',
             sortable: false,
-            render: (value) => (
-                <>
-                    <div style={{ color: value == 601 ? COLORS.green : COLORS.gray }}>
-                        {codesDtl.find((item: any) => item.id == value).dtl_desc}
+            render: (value) => {
+                const statusMap = {
+                    701: 'Active',
+                    702: 'Inactive'
+                };
+                const statusColor = statusMap[value] === 'Active'
+                return (
+                    <div 
+                        className="text-center rounded-md border text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80 bg-green-500 text-white p-1 w-12"
+                        style={{ 
+                            backgroundColor: statusMap[value] === 'Active' ? '#00D55B' : '#ffcdd2'
+                        }}
+                    >
+                        {statusMap[value]}
                     </div>
-                </>
-            )
-
-
-        },
+                );
+            }
+        },     
         {
             key: 'created_at',
             header: 'Created On',

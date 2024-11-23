@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Formik, Field, Form, FieldArray, ErrorMessage } from 'formik';
-import { TextField, Button, Grid, Typography, FormControlLabel, Radio, RadioGroup } from '@mui/material';
+import { TextField, Button, Grid } from '@mui/material';
 import * as Yup from 'yup';
 import Autocomplete from '@mui/material/Autocomplete';
-import Checkbox from '@mui/material/Checkbox';
 import { ApiService } from '@/services/apiServices';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';
-import { COLORS } from '@/Utils/constants';
-import { IoAddCircle } from 'react-icons/io5';
-import { notification } from 'antd';
-import CommonDialog from '@/oldcomponents/common-dialoge';
+import useToast from '@/oldcomponents/teast-service';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { debounce } from 'lodash';
+
+interface ErrorResponse {
+    detail: string;
+}
 
 const schema = Yup.object().shape({
     bh_user_first_name: Yup.string().required('First Name is required'),
@@ -21,8 +24,8 @@ const schema = Yup.object().shape({
     user_admin_status_cd: Yup.string().required('Please select admin status'),
     project_details: Yup.array().of(
         Yup.object().shape({
-            project: Yup.object().required('Project is required'),
-            projectRole: Yup.array().of(Yup.object().required('Role is required')),
+            project: Yup.array().of(Yup.object().required('Project is required')),
+            projectRole: Yup.array().of(Yup.object().required('Role is required'))
         })
     )
 });
@@ -31,38 +34,76 @@ const AddUser = () => {
     const [roles, setRoles] = useState([]);
     const [projects, setProjects] = useState([]);
     const [statusOptions, setStatusOptions] = useState([]);
-    const [adminUsers, setAdminUsers] = useState([]);
-    const [selectedOption, setSelectedOption] = useState('Enable');
     const [open, setOpen] = useState(false);
-    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
     const [initialValue, setInitialValue] = useState({
         bh_user_first_name: '',
         bh_user_middle_name: '',
         bh_user_last_name: '',
         user_email_id: '',
-        user_status_cd: '601',
+        user_status_cd: '701',
         user_admin_status_cd: '2102',
-        project_details: [{ project: null, projectRole: [] }]
+        project_details: [{ project: [], projectRole: [] }]
     });
-
+    const [ToastComponent, showToast] = useToast();
+    const [userExistModelOpen, setuserExistModelOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useAppDispatch();
+    const { userDataList } = useAppSelector((state) => state.userApi);
+    const [debouncedUserName, setDebouncedUserName] = useState('');
     const userData = location.state?.rowData;
+
+    const debouncedSearchUser = useCallback(
+        debounce((firstName: string) => {
+            if (firstName.length >= 3) {
+                dispatch(userDataList(firstName));
+            }
+            setDebouncedUserName(firstName);
+        }, 500),
+        [dispatch]
+    );
+
+    const handleFirstName = (
+        e: React.ChangeEvent<HTMLInputElement>, 
+        setFieldValue: (field: string, value: string) => void
+    ) => {
+        const firstName = e.target.value;
+        setFieldValue('bh_user_first_name', firstName);
+
+        if (firstName.length >= 3) {
+            setuserExistModelOpen(false); 
+            debouncedSearchUser(firstName);
+        } else {
+            setDebouncedUserName('');
+            setuserExistModelOpen(false);
+        }
+    };
+    
+    useEffect(() => {
+        if (debouncedUserName && userDataList.length > 0) {
+            const userExists = userDataList.some(
+                (user: any) =>
+                    user.bh_user_first_name?.toLowerCase() === debouncedUserName.toLowerCase()
+            );
+            if (userExists) {
+                setuserExistModelOpen(true);
+            }
+        }
+    }, [userDataList, debouncedUserName]);
 
     useEffect(() => {
 
         const fetchData = async () => {
             try {
-                const [rolesRes, projectsRes, statusRes, adminUsersRes] = await Promise.all([
+                const [rolesRes, projectsRes, statusRes] = await Promise.all([
                     ApiService('8011', 'get', '/codes_hdr/1'),
                     ApiService('8011', 'get', '/bh_project/search'),
-                    ApiService('8011', 'get', '/codes_hdr/7'),
+                    ApiService('8011', 'get', '/codes_hdr/8'),
                     ApiService('8011', 'get', '/codes_hdr/22')
                 ]);
 
                 setRoles(rolesRes.codes_dtl);
                 setStatusOptions(statusRes.codes_dtl);
-                setAdminUsers(adminUsersRes.codes_dtl);
 
                 const tempProjects = projectsRes.map((proj: any) => ({
                     value: proj.bh_project_id,
@@ -80,12 +121,11 @@ const AddUser = () => {
     }, [userData]);
 
 
-
     const addUser = async (values: any, { setSubmitting }: any) => {
-        try {
+        try {            
             if (userData) {
                 await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
-                navigate(`/AllUsers`);
+                navigate(`/admin-console/users`);
             } else {
                 createKeyCloakUser(values);
             }
@@ -133,58 +173,82 @@ const AddUser = () => {
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    response.json().then((errorData: ErrorResponse) => {
+                        let errorMessage = 'An error occurred while creating the user';
+                        
+                        if (errorData?.detail) {
+                            if (errorData.detail.includes('User exists with same email')) {
+                                errorMessage = 'User exists with same email';
+                            } else if (errorData.detail.includes('User with this username already exists')) {
+                                errorMessage = 'User with this username already exists';
+                            }
+                        }
+                    });
+                    return;
                 }
                 return response.json();
             })
             .then(data => {
                 add(value)
-                notification.success({
-                    message: 'User creation successful',
-                    duration: 3, // Duration in seconds
-                    placement: 'bottomRight', // Position of the snack bar
-                });
             })
             .catch(error => {
             });
 
-        // Create KeyCloak user logic here
     };
 
     async function add(value: any) {
         const url = '/bh_user'; // Adjust the endpoint URL as needed
-        const result = await ApiService('8011', 'post', url, value);
-
-        if (result) {
-            handleNext1();
+        try {
+            const result = await ApiService('8011', 'post', url, value);
+    
+            if (result) {
+                handleNext1();
+            } else {
+                showToast('Failed to create user. Please try again.', { color: '#f44336' });
+            }
+        } catch (error: any) {
+            console.error('Error adding user:', error);
+            showToast(error.message || 'An unexpected error occurred.', { color: '#f44336' });
         }
     }
+    
     const handleNext1 = () => {
-        toggleSuccessDialog();
         setOpen(true);
+        showToast('User created successfully', { color: '#4caf50' });
         setTimeout(() => {
-            navigate("/AllUsers");
-        }, 4000);
+            navigate('/admin-console/users');
+        }, 1000);
     };
-    const toggleSuccessDialog = () => {
-        setShowSuccessDialog(!showSuccessDialog);
-    };
+    
     return (
-        <div className="mt-32">
-            <div className="container shadow p-4 rounded w-8/12  m-auto ">
+            <>
+            <div className="container shadow p-4 rounded w-8/12  m-auto mt-4">
                 <Formik
                     initialValues={initialValue}
                     validationSchema={schema}
                     onSubmit={addUser}
                     enableReinitialize
                 >
-                    {({ values, isSubmitting, isValid, dirty }) => (
+                    {({ values, isSubmitting, isValid, dirty, setFieldValue }) => (
                         <Form className='w-full m-auto'>
 
-                            <div className="text-center">
-                                <Label className='font-normal text-md '> Fill in the details below to add a new user.</Label>
-
-                            </div>
+                            <Grid container justifyContent="flex-end">
+                                    <Button
+                                        sx={{
+                                            backgroundColor: 'black',
+                                            color: 'white',
+                                            alignItems: 'right',
+                                            marginRight:'10px',
+                                            '&:hover': {
+                                            backgroundColor: 'black',
+                                            },
+                                        }}
+                                        className="mt-1 align-right"
+                                        onClick={() => navigate('/admin-console/users')}
+                                    >
+                                        View All User
+                                    </Button>
+                             </Grid>
                             <Grid container spacing={2} className='m-1'>
                                 <Grid item xs={2.5}>
                                     <CustomField
@@ -192,6 +256,9 @@ const AddUser = () => {
                                         label="First Name"
                                         placeholder='Enter First name'
                                         required={true}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                                        handleFirstName(e, setFieldValue)
+                                    }
                                     />
                                 </Grid>
                                 <Grid item xs={2.5}>
@@ -221,134 +288,115 @@ const AddUser = () => {
 
                             </Grid>
 
-
-
-                            <Grid container spacing={2} className='m-1'>
-                                <Grid item xs={6}>
-                                    <Label className='font-normal'>Status <span style={{ color: 'red' }}>*</span></Label>
-                                    <Field name="user_status_cd">
-                                        {({ field }: any) => (
-                                            <RadioGroup {...field} row>
-                                                {statusOptions.map((option: any) => (
-                                                    <FormControlLabel
-                                                        key={option.id}
-                                                        value={option.id}
-                                                        control={<Radio sx={{
-                                                            '&.Mui-checked': { color: COLORS.green, },
-                                                        }} />}
-                                                        label={option.dtl_desc}
-                                                        onChange={() => setSelectedOption(option.dtl_desc)}
-                                                    />
-                                                ))}
-                                            </RadioGroup>
-                                        )}
-                                    </Field>
-                                </Grid>
-
-                                <Grid item xs={6}>
-                                    <Label className='font-normal'>Admin User <span style={{ color: 'red' }}>*</span></Label>
-                                    <Field name="user_admin_status_cd">
-                                        {({ field }: any) => (
-                                            <RadioGroup {...field} row>
-                                                {adminUsers.map((option: any) => (
-                                                    <FormControlLabel
-                                                        key={option.id}
-                                                        value={option.id}
-                                                        control={<Radio sx={{
-                                                            '&.Mui-checked': { color: COLORS.green, },
-                                                        }} />} label={option.dtl_desc}
-                                                    />
-                                                ))}
-                                            </RadioGroup>
-                                        )}
-                                    </Field>
-                                </Grid>
-                            </Grid>
-
                             <FieldArray name="project_details">
                                 {({ push }) => (
                                     <>
-                                        {values?.project_details?.map((project: any, index: number) => (
-                                            <Grid container spacing={2} key={index} className='m-1'>
-                                                <Grid item xs={5}>
-                                                    <Label className='font-normal'>Project {index + 1} <span style={{ color: 'red' }}>*</span></Label>
-
-                                                    <Field
-                                                        name={`project_details.${index}.project`}
-                                                        render={({ field, form }: any) => (
-                                                            <Autocomplete size='small' className='shadow-sm rounded'
-                                                                {...field}
-                                                                options={projects}
-                                                                getOptionLabel={(option: any) => option.label}
-                                                                onChange={(event, value) =>
-                                                                    form.setFieldValue(`project_details.${index}.project`, value)
-                                                                }
-                                                                renderInput={(params) => (
-                                                                    <TextField {...params} placeholder="Select Project" variant="outlined" />
-                                                                )}
-                                                            />
-                                                        )}
+                                    {values?.project_details?.map((project: any, index: number) => (
+                                        <Grid container spacing={2} key={index} className='m-1'>
+                                            <Grid item xs={5}>
+                                                <Label className='font-normal'>Project <span style={{ color: 'red' }}>*</span></Label>
+                                                <Field
+                                                name={`project_details.${index}.project`}
+                                                render={({ field, form }: any) => (
+                                                    <Autocomplete
+                                                    size='small'
+                                                    className='shadow-sm rounded'
+                                                    multiple
+                                                    {...field}
+                                                    options={projects.filter((option) => 
+                                                        !field.value.some((selected) => selected.label === option.label)
+                                                    )}
+                                                    getOptionLabel={(option: any) => option.label}
+                                                    value={field.value || []}
+                                                    onChange={(event, value) =>
+                                                        form.setFieldValue(`project_details.${index}.project`, value)
+                                                    }
+                                                    renderOption={(props, option: any, { selected }) => (
+                                                        <li {...props} key={option.label}>
+                                                        {option.label}
+                                                        </li>
+                                                    )}
+                                                    renderInput={(params) => (
+                                                        <TextField {...params} placeholder="Select Project" variant="outlined" />
+                                                    )}
                                                     />
-                                                    <ErrorMessage name={`project_details.${index}.project`} component="div" />
-                                                </Grid>
-                                                <Grid item xs={5}>
-                                                    <Label className='font-normal'>Project Role <span style={{ color: 'red' }}>*</span></Label>
-
-                                                    <Field
-                                                        name={`project_details.${index}.projectRole`}
-                                                        render={({ field, form }: any) => (
-                                                            <Autocomplete size='small' className='shadow-sm rounded'
-                                                                {...field}
-                                                                multiple
-                                                                options={roles}
-                                                                getOptionLabel={(option: any) => option.dtl_desc}
-                                                                onChange={(event, value) =>
-                                                                    form.setFieldValue(`project_details.${index}.projectRole`, value)
-                                                                }
-                                                                renderOption={(props, option: any, { selected }) => (
-                                                                    <li {...props} key={option.dtl_desc}>
-                                                                        <Checkbox checked={selected} />
-                                                                        {option.dtl_desc}
-                                                                    </li>
-                                                                )}
-                                                                renderInput={(params) => (
-                                                                    <TextField {...params} placeholder="Select Role" variant="outlined" />
-                                                                )}
-                                                            />
-                                                        )}
-                                                    />
-                                                    <ErrorMessage name={`project_details.${index}.projectRole`} component="div" />
-                                                </Grid>
+                                                )}
+                                                />
+                                                <ErrorMessage name={`project_details.${index}.project`} component="div" />
                                             </Grid>
-                                        ))}
-                                        <Button className='mx-3 my-2 font-bold' sx={{ textTransform: 'none', color: COLORS.green }} onClick={() => push({ project: null, projectRole: [] })}>
-                                            <img src="/assets/plus-circle.svg" alt="add" /> <span className="mx-1 font-bold">Add Project</span>
-                                        </Button>
+                                            <Grid item xs={5}>
+                                                <Label className="font-normal">
+                                                Role <span style={{ color: 'red' }}>*</span>
+                                                </Label>
+                                                <Field
+                                                name={`project_details.${index}.projectRole`}
+                                                render={({ field, form }: any) => (
+                                                    <Autocomplete
+                                                    multiple
+                                                    size="small"
+                                                    className="shadow-sm rounded"
+                                                    {...field}
+                                                    options={roles.filter((option) => 
+                                                        !field.value.some((selected) => selected.dtl_desc === option.dtl_desc)
+                                                    )}
+                                                    getOptionLabel={(option: any) => option.dtl_desc || ""}
+                                                    value={field.value || []}
+                                                    onChange={(event, value) => 
+                                                        form.setFieldValue(`project_details.${index}.projectRole`, value)
+                                                    }
+                                                    renderOption={(props, option: any, { selected }) => (
+                                                        <li {...props} key={option.dtl_desc}>
+                                                            {option.dtl_desc}
+                                                        </li>
+                                                    )}
+                                                    renderInput={(params) => (
+                                                        <TextField {...params} placeholder="Select Roles" variant="outlined" />
+                                                    )}
+                                                    />
+                                                )}
+                                                />
+                                                <ErrorMessage name={`project_details.${index}.projectRole`} component="div" />
+                                            </Grid>
+                                        </Grid>
+                                    ))}
                                     </>
                                 )}
                             </FieldArray>
 
                             <div className='text-center mt-6'>
                                 <Button type="submit" variant="contained" sx={{ textTransform: 'none' }} className='bg-black text-white px-5 my-3' disabled={isSubmitting || !(isValid && dirty)}>
-                                    {userData ? 'Update User' : 'Add User'}
+                                    Add User
                                 </Button>
                             </div>
-                            {showSuccessDialog && (
-                                <CommonDialog
-                                    open={open}
-                                    onClose={() => setOpen(false)}
-                                    title=""
-                                    description="User Added Successfully"
-                                    imageUrl="/assets/success.svg"
-                                    additionalContent="You'll be automatically redirected to homepage shortly"
-                                />
-
-                            )}
                         </Form>
                     )}
                 </Formik>
+                {userExistModelOpen && (
+                    <Dialog open={userExistModelOpen} onOpenChange={setuserExistModelOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>User Already Exists</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex flex-col items-center justify-center gap-2 py-2">
+                                <p className="text-gray-700">
+                                    A user with this first name already exists.
+                                </p>
+                                <p className="text-gray-700">Please choose a different first name.</p>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    className='text-white bg-black'
+                                    onClick={() => setuserExistModelOpen(false)}
+                                >
+                                    Close
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+                <ToastComponent />
             </div>
-        </div>
+        </>
     );
 };
 

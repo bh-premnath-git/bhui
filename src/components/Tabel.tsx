@@ -136,7 +136,7 @@ const TableBodyComponent: React.FC<{
                     <Badge
                       className={`${column.badgeConfig.colorMap[row[column.key]]} text-white p-1`}
                     >
-                      {row[column.key]}
+                      {row[column.key] && row[column.key].toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
                     </Badge>
                   )
                   : row[column.key]}
@@ -264,14 +264,14 @@ export function FlexibleTable({
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-1">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-4">
+        <div className="flex space-x-2">
           {columns.filter((col) => col.filterable).map((column) => (
             <DropdownMenu key={column.key}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
-                  <Filter className="mr-2 h-4 w-4" /> {column.header} /{" "}
+                  <Filter className="mr-2 h-2 w-2" /> {column.header} /{" "}
                   {filters[column.key] || "All"}
                 </Button>
               </DropdownMenuTrigger>

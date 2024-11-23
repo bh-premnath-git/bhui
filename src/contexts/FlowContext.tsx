@@ -57,6 +57,7 @@ interface FlowContextType {
   temporaryEdgeId: string | null;
   setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+  deleteEdgeBySourceTarget: (source: string, target: string) => void;
   togglePlayback: () => void;
   updateNodeDimensions: (nodeId: string, dimensions: { width: number; height: number }) => void;
   reactFlowInstance: ReactFlowInstance | null;
@@ -193,6 +194,17 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       reactFlowInstance.fitView({ duration: 500 });
     }
   }, [reactFlowInstance]);
+
+  const deleteEdgeBySourceTarget = useCallback(
+    (source: string, target: string) => {
+      setEdges((prevEdges) =>
+        prevEdges.filter(
+          (edge) => !(edge.source === source && edge.target === target)
+        )
+      );
+    },
+    []
+  );
 
   const deleteNode = useCallback((nodeId: string) => {
     setNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
@@ -345,6 +357,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  
+
   const updateNodeMeta = useCallback(
     (nodeId: string, newMeta: Partial<MetaData>) => {
       setNodes((prevNodes) =>
@@ -400,6 +414,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     toggleDataPreview,
     zoomIn,
     zoomOut,
+    deleteEdgeBySourceTarget,
     fitView,
     cloneNode,
     deleteNode,

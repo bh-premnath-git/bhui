@@ -33,40 +33,44 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
         <NodeToolbar
           isVisible={isHovered as boolean}
           position={Position.Top}
-          className="p-1 rounded-md bg-transparent"
+          className="p-0 rounded-md bg-transparent"
         >
-          <div className="flex space-x-1">
+          <div className="flex">
             <Button
               variant="ghost"
               size="icon"
               title="Clone"
+              className="gap-1 w-4 h-4"
               onClick={() => cloneNode(id)}
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-2 w-2" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               title="Delete"
+              className="gap-1 w-4 h-4"
               onClick={() => deleteNode(id)}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-2 w-2" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               title="Info"
+              className="gap-1 w-4 h-4"
               onClick={handleInfoClick}
             >
-              <Info className="h-4 w-4" />
+              <Info className="h-2 w-2" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               title="Rename"
+              className="gap-1 w-4 h-4"
               onClick={onStartEdit}
             >
-              <PenLine className="h-4 w-4" />
+              <PenLine className="h-2 w-2" />
             </Button>
           </div>
         </NodeToolbar>

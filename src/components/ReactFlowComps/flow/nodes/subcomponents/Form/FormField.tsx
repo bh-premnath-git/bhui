@@ -29,7 +29,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
     } = property.ui_properties;
 
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
-    const { options, isLoading } = useDropdownOptions(endpoint);
+    const { options, isLoading } = useDropdownOptions(endpoint, "24");
 
     const renderField = () => {
       switch (ui_type) {

@@ -16,7 +16,7 @@
                 "ui_properties": {
                   "module_name": "Sensor",
                   "color": "#07A260",
-                  "icon": "/src/assets/flow/Sensor.svg"
+                  "icon": "/assets/flow/Sensor.svg"
                 }
               },
               "task_id": {
@@ -279,7 +279,7 @@
                 "ui_properties": {
                   "module_name": "Sensor",
                   "color": "#07A260",
-                  "icon": "/src/assets/flow/Sensor.svg"
+                  "icon": "/assets/flow/Sensor.svg"
                 }
               },
               "task_id": {
@@ -508,7 +508,7 @@
                 "ui_properties": {
                   "module_name": "Custom",
                   "color": "#2B64D4",
-                  "icon": "/src/assets/flow/Other.svg"
+                  "icon": "/assets/flow/Other.svg"
                 }
               },
               "task_id": {
@@ -651,7 +651,7 @@
                 "ui_properties": {
                   "module_name": "Alert",
                   "color": "#C049C0",
-                  "icon": "/src/assets/flow/Notify.svg"
+                  "icon": "/assets/flow/Notify.svg"
                 }
               },
               "task_id": {
@@ -842,7 +842,7 @@
                 "ui_properties": {
                   "module_name": "Sensor",
                   "color": "#07A260",
-                  "icon": "/src/assets/flow/Sensor.svg"
+                  "icon": "/assets/flow/Sensor.svg"
                 }
               },
               "task_id": {
@@ -1034,7 +1034,7 @@
                 "ui_properties": {
                   "module_name": "Transfer",
                   "color": "#8237E3",
-                  "icon": "/src/assets/flow/Transfer.svg"
+                  "icon": "/assets/flow/Transfer.svg"
                 }
               },
               "task_id": {

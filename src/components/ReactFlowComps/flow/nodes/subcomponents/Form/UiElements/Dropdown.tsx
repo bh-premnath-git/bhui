@@ -24,8 +24,7 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
     mandatory,
     error
 }) => {
-    const {  isLoading } = useDropdownOptions(endpoint);
-    const options = ['Option 1', 'Option 2', 'Option 3'];
+    const { options, isLoading } = useDropdownOptions(endpoint);
     const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         console.log('Dropdown changed:', property_key, e.target.value);
         debugger

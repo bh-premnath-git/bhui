@@ -22,7 +22,6 @@ interface CustomToolbarProps {
 const SettingsModal = ({ isOpen, onClose, selectedData }: SettingsModalProps) => {
   const [notes, setNotes] = useState("")
   const [showNotes, setShowNotes] = useState(false)
-  console.log(">>>", selectedData);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

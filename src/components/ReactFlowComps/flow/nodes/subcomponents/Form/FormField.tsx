@@ -16,7 +16,7 @@ interface FormFieldProps {
 }
 
 export const FormField: React.FC<FormFieldProps> = React.memo(
-  ({ property, value, dependsOn, onChange }) => {
+  ({ property, value, onChange }) => {
     const {
       property_name,
       property_key,
@@ -113,23 +113,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               placeholder={property_name}
               mandatory={mandatory}
               type="number"
-            />
-          );
-        case "auto":
-          const autoValue = Array.isArray(dependsOn) && dependsOn.length > 0
-            ? dependsOn.join(', ')
-            : 'Null';
-
-          return (
-            <InputField
-              id={property_key}
-              label={property_name}
-              value={autoValue}
-              onChange={(e) => onChange(property_key, e.target.value)}
-              placeholder={property_name}
-              mandatory={false}
-              error={undefined}
-              type="text"
             />
           );
         case "textbox":

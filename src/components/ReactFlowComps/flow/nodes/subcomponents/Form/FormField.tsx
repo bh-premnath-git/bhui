@@ -7,6 +7,7 @@ import { EnumDropdown } from "./UiElements/EnumDropdown";
 import { CheckboxField } from "./UiElements/CheckboxField";
 import { MultiWordInput } from "./UiElements/MultiWordInput";
 import { CodeEditor } from "./UiElements/MonocoEditor";
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
 interface FormFieldProps {
   property: Property;
@@ -28,6 +29,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
     } = property.ui_properties;
 
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
+    const { options, isLoading } = useDropdownOptions(endpoint);
 
     const renderField = () => {
       switch (ui_type) {
@@ -84,7 +86,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               label={property_name}
               property_key={property_key}
               property_name={property_name}
-              endpoint={endpoint}
+              options={options}
+              isLoading={isLoading}
               value={value}
               onChange={onChange}
               mandatory={mandatory}

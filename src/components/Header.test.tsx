@@ -135,7 +135,7 @@ describe('renderingHeadContent', () => {
 
   // Special cases for components
   it('renders flow playground with CustomToolbarComponent', () => {
-    const element = render(<>{renderingHeadContent('/designers/flow-playground')}</>);
+    const element = render(<>{renderingHeadContent('/designers/manage-flow/:id')}</>);
     expect(element.container.textContent).toBe('Custom Toolbar');
   });
 

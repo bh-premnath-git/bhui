@@ -9,7 +9,6 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { createTheme, ThemeProvider } from '@mui/material';
-// const BuildDataPipeLine = lazy(() => import('./oldpages/BuildPipeline/BuildDataPipeLine'));
 const Catalog = lazy(() => import('./pages/catalog'));
 const Catalogs = lazy(() => import('./components/Catalog/Catalogs'));
 const Designer = lazy(() => import('./pages/designer'));
@@ -33,7 +32,6 @@ const EnvironmentEdit = lazy(() => import('@/pages/environmentEdit'));
 const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
-const FlowPlayGround = lazy(() => import('@/components/FlowPlay'));
 const DataCatalog = lazy(() => import('@/pages/dataCatalog/dataCatalog'));
 const CatalogsSchema = lazy(() => import('@/pages/dataCatalog/catalogSchema'));
 const AllUsers = lazy(() => import('@/pages/allUsers'));
@@ -121,7 +119,7 @@ function App() {
         })
         .catch(() => {
           console.error('Failed to refresh the token, or the session has expired');
-          logout(); // Optionally, log out if the token cannot be refreshed
+          logout();
         });
     };
   };
@@ -158,12 +156,11 @@ function App() {
     { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
     { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
     { path: "/designers/manage-flow", element: <AllFlows /> },
-    { path: '/designers/flow-playground', element: <ManageFlow /> },
+    { path: '/designers/manage-flow/:id', element: <ManageFlow /> },
     { path: "*", element: <PageNotFound /> },
     { path: '/data-catalog', element: <Catalog /> },
     { path: '/Catalog/Catalogs', element: <Catalogs /> },
-    { path: '/Designer', element: <Designer /> },
-    // { path: '/Designer/Build Data PipeLine', element: <CodePipelineLanding /> },
+    { path: '/designers', element: <Designer /> },
     { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
     { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
     { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
@@ -171,7 +168,6 @@ function App() {
     { path: '/dataops-hub/alerts', element: <Alerts /> },
     { path: '/Alerts/New Monitor', element: <MonitorPage /> },
     { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
-    { path: '/Designer/Manage Flow', element: <FlowPlayGround /> },
     { path: '/DataCatalog', element: <DataCatalog /> },
     { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
     { path: '/admin-console/users', element: <AllUsers /> },
@@ -212,7 +208,7 @@ function App() {
           }
         }
       },
-      MuiSelect: { // For Select component font
+      MuiSelect: { 
         styleOverrides: {
           root: {
             fontFamily: 'Inter',
@@ -221,7 +217,7 @@ function App() {
           },
         },
       },
-      MuiMenuItem: { // For each menu item font
+      MuiMenuItem: {
         styleOverrides: {
           root: {
             fontFamily: 'Inter',

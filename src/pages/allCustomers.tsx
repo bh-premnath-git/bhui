@@ -120,7 +120,7 @@ const EmptyComponent: React.FC = () => {
 
                     {/* Welcome text */}
                     <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        Welcome to Your Customer!
+                        Welcome to Customer Management!
                     </h2>
                     <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
                         Stay organized and keep track of your customer relationships efficiently. Use the tools below to manage your customer base
@@ -136,11 +136,6 @@ const EmptyComponent: React.FC = () => {
                         <FolderPlus className="mr-2 h-5 w-5" />
                         <span className="relative">Create Customer</span>
                     </Button>
-
-                    {/* Additional guidance */}
-                    <p className="mt-6 text-sm text-muted-foreground">
-                        Click the button above to begin managing your customer data.
-                    </p>
                 </div>
             </div>
         </Card>

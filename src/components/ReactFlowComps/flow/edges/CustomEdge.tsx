@@ -41,7 +41,7 @@ export const CustomEdge = memo(({
         id={id}
         style={{
           ...style,
-          strokeWidth: 2,
+          strokeWidth: 3,
           stroke: 'rgb(148 163 184)',
         }}
         className="react-flow__edge-path transition-all duration-300 hover:stroke-primary hover:stroke-[3]"

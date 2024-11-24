@@ -31,8 +31,6 @@ export function FlowEditor() {
     setReactFlowInstance,
   } = useFlow();
 
-  const { getNodes, getEdges } = useReactFlow();
-
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
@@ -145,10 +143,7 @@ export function FlowEditor() {
 
   const isValidConnection = useCallback(
     (connection) => {
-      // we are using getNodes and getEdges helpers here
-      // to make sure we create isValidConnection function only once
-      const nodes = getNodes();
-      const edges = getEdges();
+      
       const target = nodes.find((node) => node.id === connection.target);
       const hasCycle = (node, visited = new Set()) => {
         if (visited.has(node.id)) return false;
@@ -164,7 +159,7 @@ export function FlowEditor() {
       if (target.id === connection.source) return false;
       return !hasCycle(target);
     },
-    [getNodes, getEdges],
+    [nodes, edges],
   );
 
   return (

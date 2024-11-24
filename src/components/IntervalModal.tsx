@@ -254,7 +254,7 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
               {intervals.map((interval) => (
                 <Button
                   key={interval}
-                  variant={state.selectedInterval.toLowerCase() === interval.toLowerCase() ? "default" : "outline"}
+                  variant={state.selectedInterval.toLowerCase() === interval.toLowerCase() ? "outline" : "ghost"}
                   onClick={() => updateState({ selectedInterval: interval })}
                   className="flex-1 px-2 py-1 text-sm"
                 >
@@ -268,10 +268,8 @@ export const IntervalModalComponent = forwardRef<IntervalModalRef, IntervalModal
           </ScrollArea>
           <DialogFooter className="sm:justify-center">
             <div className="flex justify-center space-x-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Close
-              </Button>
-              <Button onClick={handleSave}>Save</Button>
+              
+              <Button variant="outline" onClick={handleSave}>Save</Button>
             </div>
           </DialogFooter>
         </DialogContent>

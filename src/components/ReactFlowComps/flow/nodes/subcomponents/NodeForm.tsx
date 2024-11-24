@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGroupedProperties } from "@/hooks/useGroupedProperties";
 import { useFlow } from "@/contexts/FlowContext";
-import { TabButtons } from "./Form/TabButtons";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { FormFields } from "./Form/FormFields";
 
 interface NodeFormProps {
@@ -56,29 +61,39 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
 
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            <TabButtons
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+            {/* Replace TabButtons with Tabs */}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="property">Property</TabsTrigger>
+                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
 
-            <ScrollArea className="h-[400px]">
-                <div className="pr-4">
-                    <FormFields
-                        properties={groupedProperties[activeTab]}
-                        formValues={currentFormData}
-                        onInputChange={handleInputChange}
-                        dependsOn={dependsOn}
-                    />
-                </div>
-            </ScrollArea>
+                {/* Property Tab Content */}
+                <TabsContent value="property" className="space-y-4">
+                    <ScrollArea className="h-[400px] pr-4">
+                        <FormFields
+                            properties={groupedProperties['property']}
+                            formValues={currentFormData}
+                            onInputChange={handleInputChange}
+                            dependsOn={dependsOn}
+                        />
+                    </ScrollArea>
+                </TabsContent>
+
+                {/* Settings Tab Content */}
+                <TabsContent value="settings" className="space-y-4">
+                    <ScrollArea className="h-[400px] pr-4">
+                        <FormFields
+                            properties={groupedProperties['settings']}
+                            formValues={currentFormData}
+                            onInputChange={handleInputChange}
+                            dependsOn={dependsOn}
+                        />
+                    </ScrollArea>
+                </TabsContent>
+            </Tabs>
 
             <div className="flex justify-center gap-4 pt-4">
-                <Button
-                    variant="ghost"
-                    onClick={closeTap}
-                >
-                    Close
-                </Button>
                 <Button
                     variant="outline"
                     onClick={handleSave}>

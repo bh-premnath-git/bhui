@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
 interface DropdownFieldProps {
     id: string;
     property_key: string;
     property_name: string;
     mandatory: boolean;
-    endpoint: string;
+    options: string[];
+    isLoading?: boolean;
     value: string;
     onChange: (key: string, value: string) => void;
     label?: string;
@@ -17,18 +17,19 @@ interface DropdownFieldProps {
 export const DropdownField: React.FC<DropdownFieldProps> = ({
     property_key,
     property_name,
-    endpoint,
+    options,
+    isLoading,
     value,
     onChange,
     label,
     mandatory,
     error
 }) => {
-    const { options, isLoading } = useDropdownOptions(endpoint);
-
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+        console.log('Dropdown changed:', property_key, e.target.value);
+        debugger
         onChange(property_key, e.target.value);
-    };
+    }, [onChange, property_key]);
 
     return (
         <div className="p-2  border-gray-200  hover:border-stale-500 transition-colors">

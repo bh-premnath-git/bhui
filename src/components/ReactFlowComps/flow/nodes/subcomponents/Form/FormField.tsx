@@ -7,6 +7,9 @@ import { EnumDropdown } from "./UiElements/EnumDropdown";
 import { CheckboxField } from "./UiElements/CheckboxField";
 import { MultiWordInput } from "./UiElements/MultiWordInput";
 import { CodeEditor } from "./UiElements/MonocoEditor";
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface FormFieldProps {
   property: Property;
@@ -16,7 +19,7 @@ interface FormFieldProps {
 }
 
 export const FormField: React.FC<FormFieldProps> = React.memo(
-  ({ property, value, dependsOn, onChange }) => {
+  ({ property, value, onChange }) => {
     const {
       property_name,
       property_key,
@@ -26,8 +29,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       endpoint,
       language,
     } = property.ui_properties;
+    const { selectedFlowFromList } = useSelector(
+      (state: RootState) => state.flowApi
+    );
 
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
+    const { options, isLoading } = useDropdownOptions(
+      endpoint, 
+      selectedFlowFromList?.flow_deployment[0]?.bh_env_id ?? "0"
+    );
 
     const renderField = () => {
       switch (ui_type) {
@@ -84,7 +94,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               label={property_name}
               property_key={property_key}
               property_name={property_name}
-              endpoint={endpoint ?? ""}
+              options={options}
+              isLoading={isLoading}
               value={value}
               onChange={onChange}
               mandatory={mandatory}
@@ -113,23 +124,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               placeholder={property_name}
               mandatory={mandatory}
               type="number"
-            />
-          );
-        case "auto":
-          const autoValue = Array.isArray(dependsOn) && dependsOn.length > 0
-            ? dependsOn.join(', ')
-            : 'Null';
-
-          return (
-            <InputField
-              id={property_key}
-              label={property_name}
-              value={autoValue}
-              onChange={(e) => onChange(property_key, e.target.value)}
-              placeholder={property_name}
-              mandatory={false}
-              error={undefined}
-              type="text"
             />
           );
         case "textbox":

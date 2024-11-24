@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { Node, Edge, ReactFlowInstance } from "reactflow";
 import { LocalStorageService } from "@/services/localStorageServices";
@@ -56,6 +57,7 @@ interface FlowContextType {
   temporaryEdgeId: string | null;
   setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+  deleteEdgeBySourceTarget: (source: string, target: string) => void;
   togglePlayback: () => void;
   updateNodeDimensions: (nodeId: string, dimensions: { width: number; height: number }) => void;
   reactFlowInstance: ReactFlowInstance | null;
@@ -86,15 +88,25 @@ interface FlowContextType {
   setSelectedFlowId: (flowId: string) => void;
 }
 
-function debounce<Func extends (...args: any[]) => void>(
+function useDebouncedCallback<Func extends (...args: any[]) => void>(
   func: Func,
   delay: number
-): (...args: Parameters<Func>) => void {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<Func>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
+): Func {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedFunc = useCallback(
+    ((...args: any[]) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        func(...args);
+      }, delay);
+    }) as Func,
+    [func, delay]
+  );
+
+  return debouncedFunc;
 }
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
@@ -182,6 +194,17 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       reactFlowInstance.fitView({ duration: 500 });
     }
   }, [reactFlowInstance]);
+
+  const deleteEdgeBySourceTarget = useCallback(
+    (source: string, target: string) => {
+      setEdges((prevEdges) =>
+        prevEdges.filter(
+          (edge) => !(edge.source === source && edge.target === target)
+        )
+      );
+    },
+    []
+  );
 
   const deleteNode = useCallback((nodeId: string) => {
     setNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
@@ -334,6 +357,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  
+
   const updateNodeMeta = useCallback(
     (nodeId: string, newMeta: Partial<MetaData>) => {
       setNodes((prevNodes) =>
@@ -363,18 +388,16 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const debouncedSave = useCallback(
-    debounce(() => {
-      if (autoSave && selectedFlowId) {
-        saveFlow();
-      }
-    }, 1000),
-    [autoSave, saveFlow, selectedFlowId]
-  );
+  const debouncedSave = useDebouncedCallback(() => {
+    if (autoSave && selectedFlowId) {
+      saveFlow();
+    }
+  }, 1000);
+
 
   useEffect(() => {
     debouncedSave();
-  }, [nodes, edges, nodeFormData, debouncedSave]);
+  }, [nodes, edges, debouncedSave]);
 
   const value: FlowContextType = {
     selectedFlowId,
@@ -391,6 +414,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     toggleDataPreview,
     zoomIn,
     zoomOut,
+    deleteEdgeBySourceTarget,
     fitView,
     cloneNode,
     deleteNode,

@@ -10,7 +10,7 @@ export const useGroupedProperties = (selectedNode: any) => {
     };
 
     Object.entries(properties).forEach(([key, value]: [string, any]) => {
-      if (key !== 'type' && key !== 'task_id') {
+      if (key !== 'type' && key !== 'task_id' && key !== 'depends_on') {
         const group = value.ui_properties?.group_key;
         if (group === "property" || group === "settings") {
           grouped[group].push({

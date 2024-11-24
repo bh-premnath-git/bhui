@@ -9,7 +9,7 @@ import ReactFlow, {
   EdgeChange,
   MarkerType,
   applyNodeChanges,
-  applyEdgeChanges,
+  applyEdgeChanges, useReactFlow, getOutgoers
 } from 'reactflow';
 import { useFlow } from '@/contexts/FlowContext';
 import { ToolbarNodes } from '@/components/ReactFlowComps/flow/toolbar/ToolbarNodes';
@@ -23,14 +23,15 @@ const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
 
 export function FlowEditor() {
-  const { 
-    nodes, 
-    edges, 
-    setNodes, 
+  const {
+    nodes,
+    edges,
+    setNodes,
     setEdges,
     setReactFlowInstance,
   } = useFlow();
-  
+
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   const onConnect = useCallback(
@@ -48,7 +49,7 @@ export function FlowEditor() {
       };
       setEdges((eds) => {
         const newEdges = addEdge(edge, eds);
-       
+
         return newEdges;
       });
     },
@@ -59,7 +60,7 @@ export function FlowEditor() {
     (changes: EdgeChange[]) => {
       setEdges((eds) => {
         const newEdges = applyEdgeChanges(changes, eds);
-       
+
         return newEdges;
       });
     },
@@ -70,7 +71,7 @@ export function FlowEditor() {
     (changes: NodeChange[]) => {
       setNodes((nds) => {
         const newNodes = applyNodeChanges(changes, nds);
-       
+
         return newNodes;
       });
     },
@@ -140,6 +141,27 @@ export function FlowEditor() {
     }
   }, [nodes, edges, setEdges]);
 
+  const isValidConnection = useCallback(
+    (connection) => {
+      
+      const target = nodes.find((node) => node.id === connection.target);
+      const hasCycle = (node, visited = new Set()) => {
+        if (visited.has(node.id)) return false;
+
+        visited.add(node.id);
+
+        for (const outgoer of getOutgoers(node, nodes, edges)) {
+          if (outgoer.id === connection.source) return true;
+          if (hasCycle(outgoer, visited)) return true;
+        }
+      };
+
+      if (target.id === connection.source) return false;
+      return !hasCycle(target);
+    },
+    [nodes, edges],
+  );
+
   return (
     <div className="w-full h-full bg-background relative">
       <ReactFlowProvider>
@@ -155,6 +177,7 @@ export function FlowEditor() {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             proOptions={proOptions}
+            isValidConnection={isValidConnection}
             className="bg-background"
             defaultEdgeOptions={{
               type: 'custom',

@@ -1,6 +1,7 @@
 import { useFlow } from '@/contexts/FlowContext';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { EdgeProps, getSmoothStepPath } from 'reactflow';
+import { Trash2 } from 'lucide-react';
 
 export const CustomEdge = memo(({
   id,
@@ -15,6 +16,7 @@ export const CustomEdge = memo(({
   style = {},
   markerEnd,
 }: EdgeProps) => {
+  const [isHovered, setIsHovered] = useState(false);
   const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -31,7 +33,10 @@ export const CustomEdge = memo(({
   };
 
   return (
-    <>
+    <g 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <path
         id={id}
         style={{
@@ -43,28 +48,31 @@ export const CustomEdge = memo(({
         d={edgePath}
         markerEnd={markerEnd}
       />
-      <foreignObject
-        x={(sourceX + targetX) / 2}
-        y={(sourceY + targetY) / 2}
-        width={20}
-        height={20}
-        requiredExtensions="http://www.w3.org/1999/xhtml"
-      >
-        <button
-          onClick={handleDelete}
-          style={{
-            background: 'red',
-            border: 'none',
-            borderRadius: '50%',
-            width: '20px',
-            height: '20px',
-            cursor: 'pointer',
-          }}
-          title="Delete Edge"
+      {isHovered && (
+        <foreignObject
+          width={24}
+          height={24}
+          x={(sourceX + targetX) / 2 - 12}
+          y={(sourceY + targetY) / 2 - 12}
+          requiredExtensions="http://www.w3.org/1999/xhtml"
+          style={{ pointerEvents: 'all' }}
         >
-          &times;
-        </button>
-      </foreignObject>
-    </>
+          <div
+            className="w-full h-full flex items-center justify-center rounded-full bg-white border-2 border-red-500 hover:bg-red-50 transition-colors duration-200"
+            style={{ cursor: 'pointer' }}
+          >
+            <button
+              onClick={handleDelete}
+              className="flex items-center justify-center w-full h-full p-1"
+              title="Delete Edge"
+            >
+              <Trash2 size={14} className="text-red-500" />
+            </button>
+          </div>
+        </foreignObject>
+      )}
+    </g>
   );
 });
+
+CustomEdge.displayName = 'CustomEdge';

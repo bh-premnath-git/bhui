@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import {ApiService} from "@/services/apiServices";
+import { ApiService } from "@/services/apiServices";
 import { jwtDecode } from "jwt-decode";
 
 const token: any = sessionStorage?.getItem("token");
-const decoded: any =token? jwtDecode(token):null;
+const decoded: any = token ? jwtDecode(token) : null;
 
 export interface FlowProject {
   [key: string]: any;
@@ -35,6 +35,7 @@ interface CreateFlowParams {
   bh_project_id: number;
   json_config: Record<string, any>;
   bh_env_provider: number;
+  bh_env_id: number;
   flow_class: number;
   recipent_emails: string;
   notes: string;
@@ -50,12 +51,7 @@ interface CreateFlowParams {
 interface DeploymentParams {
   flow_id: number,
   bh_env_id: number,
-  flow_version: string,
-  flow_properties: any,
-  flow_lock_status: boolean,
-  flow_locked_by: number,
-  flow_json: string,
-  flow_wip_json: string
+  cron_expression: any
 }
 
 // Create deployment thunk
@@ -82,10 +78,10 @@ const createDeployment = createAsyncThunk<
   }
 );
 
-const shouldCreateDeployment = (flowResponse: any, flowParams: CreateFlowParams): boolean => {
+const shouldCreateDeployment = (flowParams: any): boolean => {
   return (
-    flowResponse.flow_id > 0 && 
-    flowParams.bh_env_provider > 0
+    flowParams.flow_id > 0 &&
+    flowParams.bh_env_id > 0
   );
 };
 
@@ -100,10 +96,20 @@ export const createFlow = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'post', '/flow/create/', params);
-      debugger
+      const deploymentParams = { flow_id: response.flow_id, bh_env_id: params.bh_env_id, cron_expression: params.schedule_interval }
+      if (shouldCreateDeployment(deploymentParams)) {
+        const deploymentResult = await thunkAPI.dispatch(createDeployment(deploymentParams));
+        
+        if (createDeployment.rejected.match(deploymentResult)) {
+          throw new Error(`Flow created but deployment failed: ${deploymentResult.payload}`);
+        }
+      }
+
       return response;
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
+      const isDeploymentError = error.message?.includes('deployment failed');
+      const flowError = isDeploymentError ? undefined : error.message;
+      return thunkAPI.rejectWithValue(flowError);
     }
   }
 );

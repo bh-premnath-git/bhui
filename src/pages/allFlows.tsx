@@ -195,7 +195,6 @@ const AllFlows: React.FC = () => {
     } finally {
       if (!error) {
       setTimeout(() => {
-        debugger
           navigate('/designers/manage-flow');
         }, 2000);
       }

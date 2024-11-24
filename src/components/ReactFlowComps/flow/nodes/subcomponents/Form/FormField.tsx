@@ -8,6 +8,8 @@ import { CheckboxField } from "./UiElements/CheckboxField";
 import { MultiWordInput } from "./UiElements/MultiWordInput";
 import { CodeEditor } from "./UiElements/MonocoEditor";
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface FormFieldProps {
   property: Property;
@@ -27,9 +29,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       endpoint,
       language,
     } = property.ui_properties;
+    const { selectedFlowFromList } = useSelector(
+      (state: RootState) => state.flowApi
+    );
 
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
-    const { options, isLoading } = useDropdownOptions(endpoint, "24");
+    const { options, isLoading } = useDropdownOptions(
+      endpoint, 
+      selectedFlowFromList?.flow_deployment[0]?.bh_env_id ?? "0"
+    );
 
     const renderField = () => {
       switch (ui_type) {

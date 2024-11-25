@@ -54,13 +54,13 @@ const PLATFORMS: Platform[] = [
   {
     id: "aws",
     name: "Amazon Web Services",
-    logo: "/src/assets/environments/aws.svg?height=40&width=40",
+    logo: "/assets/environments/aws.svg?height=40&width=40",
     cloud_provider: 101,
   },
   {
     id: "google-cloud",
     name: "Google Cloud",
-    logo: "/src/assets/environments/google.svg?height=40&width=40",
+    logo: "/assets/environments/google.svg?height=40&width=40",
     cloud_provider: 102,
   },
 ];

@@ -80,7 +80,7 @@ export default function CatalogsBody(props: any) {
     return (
         <>
 
-            <Stack direction={'row'} spacing={1}>
+            <Stack direction={'row'} spacing={1} sx={{ height: '100%' }}>
                 <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '4px', border: '1px solid lightgrey' }} elevation={0}>
                     <Stack sx={{ p: '16px' }}>
                         <Stack direction={'row'} justifyContent={'space-between'} >

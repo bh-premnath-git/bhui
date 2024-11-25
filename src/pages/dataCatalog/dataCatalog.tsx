@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
@@ -9,13 +9,15 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getDataSourceLayout, getdataSourceList, setSelectedDataSource } from "@/redux/CatalogSlice";
 import { formatDate, formatedDate } from "@/Utils/dateFormatter";
-import { Paper, Typography, Box, LinearProgress, Tooltip } from "@mui/material";
+import { Paper, Typography, Box, LinearProgress, Tooltip, Drawer, IconButton } from "@mui/material";
 import { 
   Database, 
   Users, 
   FileSpreadsheet, 
-  Clock 
+  Clock
 } from "lucide-react";
+import CloseIcon from '@mui/icons-material/Close';
+import CatalogSchema from "./catalogSchema";
 
 // Define types in a separate file for better organization
 interface CatalogInter {
@@ -251,6 +253,9 @@ function DataCatalogTable({
 }: DataCatalogTableProps) {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<any>(null);
+
   useLayoutEffect(() => {
     dispatch(getGitProject());
     dispatch(getdataSourceList());
@@ -267,24 +272,19 @@ function DataCatalogTable({
   const createNewFn = () => {
     // navigate("/all-projects/new");
   };
+
   const playRowFn = async (rowData: any) => {
-    await dispatch(getDataSourceLayout({ data_src_id: rowData.data_src_id }))
-
-    // alert(JSON.stringify(rowData))
-    dispatch(setSelectedDataSource(rowData))
-    navigate('/DataCatalog/schema')
-  }
-
-
-  if (catalogList.length === 0) {
-    return <EmptyComponent />;
-  }
+    await dispatch(getDataSourceLayout({ data_src_id: rowData.data_src_id }));
+    dispatch(setSelectedDataSource(rowData));
+    setSelectedSource(rowData);
+    setIsDrawerOpen(true);
+  };
 
   return (
     <Box sx={{ 
       maxWidth: '100%',
       backgroundColor: 'background.default',
-      p: 3  // Consistent padding for the whole container
+      p: 3
     }}>
       
       <Paper 
@@ -332,6 +332,55 @@ function DataCatalogTable({
           }}
         />
       </Paper>
+
+      <Drawer
+        anchor="right"
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: '50%',
+            minWidth: '600px',
+            maxWidth: '800px',
+            boxSizing: 'border-box',
+            backgroundColor: 'background.paper',
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+          },
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <Box sx={{ height: '100%' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            p: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider'
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {selectedSource?.data_src_name}
+            </Typography>
+            <IconButton 
+              onClick={() => setIsDrawerOpen(false)}
+              sx={{ 
+                '&:hover': { 
+                  backgroundColor: 'action.hover' 
+                } 
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          <Box sx={{ p: 0, height: 'calc(100% - 64px)', overflow: 'auto' }}>
+            <CatalogSchema />
+          </Box>
+        </Box>
+      </Drawer>
     </Box>
   );
 }

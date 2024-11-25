@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { PlusCircle, X } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
+import { createProject, searchProject } from '@/redux/ProjectSlice';
 import { ApiService } from '@/services/apiServices';
 import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';

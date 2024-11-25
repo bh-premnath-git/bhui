@@ -15,9 +15,12 @@ const ApiService = async (
   url: string,
   data: any = null,
   params: any = null,
-  additionalHeaders: Record<string, string> = {}
+  additionalHeaders: Record<string, string> = {},
+  usePrefix: boolean = true,
 ) => {
-  const BASE_URL = `${DOMAIN}:${PORT_NUMBER}${PRIFIX_URL}`;
+  const BASE_URL = usePrefix 
+    ? `${DOMAIN}:${PORT_NUMBER}${PRIFIX_URL}` 
+    : `${DOMAIN}:${PORT_NUMBER}`;
   try {
     let headers: HeadersWithAuthorization = { headers: {} };
     const token = sessionStorage?.getItem("token");

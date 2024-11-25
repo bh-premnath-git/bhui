@@ -13,6 +13,7 @@ import ShowingLogs from "@/components/Dataops/ShowingLogs";
 import MyChartComponent from "@/components/Dataops/ChartComponent";
 import DataOpsChartHeader from "@/components/Dataops/DataOpsChartHeader";
 import FilterForm from '@/components/Dataops/FilterForm';
+import TaskDetails from '@/components/TaskDetails/TaskDetails';
 
 // Material UI imports
 import { Card, CardContent, Divider, Grid, Tab, Tabs, Stack } from "@mui/material";
@@ -50,6 +51,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -89,9 +91,10 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     setIsFilterOpen(false);
   }, []);
 
-  const handleRowSelect = useCallback((row: any) => {
+  const handleRowClick = (row: any) => {
+    setSelectedJobId(row.job_id);
     setSelectedRowData(row);
-  }, []);
+  };
 
   if (loading) return <Spinner size="lg" />;
   if (error) return <ErrorDisplay message={error.message} />;
@@ -124,7 +127,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         defaultItemsPerPage={10}
         isSearch={false}
         playRow={true}
-        playRowFn={handleRowSelect}
+        playRowFn={handleRowClick}
         isAction={false}
       />
 
@@ -136,6 +139,14 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         items={dataOpsList}
         filterableFields={filterableFields}
       />
+
+      {/* Add TaskDetails component */}
+      {selectedJobId && (
+        <TaskDetails 
+          jobId={selectedJobId}
+          onClose={() => setSelectedJobId(null)}
+        />
+      )}
 
       {/* Details Card */}
       {selectedRowData && (

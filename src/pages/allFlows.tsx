@@ -129,10 +129,6 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddF
                     <span className="relative">Create New Flow</span>
                 </Button>
 
-                {/* Additional guidance */}
-                <p className="mt-6 text-sm text-muted-foreground">
-                  Click the button above to begin setting up your flow
-                </p>
             </div>
         </div>
     </Card>

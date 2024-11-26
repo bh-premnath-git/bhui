@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
-import { Tooltip } from '@mui/material';
+import { Tooltip, Typography } from '@mui/material';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -12,6 +12,7 @@ interface NavItem {
     path: string; 
     label: string;
     icon: React.ReactNode;
+    shortcut?: string;
   }[];
 }
 
@@ -37,6 +38,7 @@ export function Sidebar() {
   const [shouldCollapse, setShouldCollapse] = useState(false);
   const { pathname } = useLocation();
   const userRoles = getUserRoles();
+  const navigate = useNavigate();
 
   const allowedItems = Array.from(
     new Set(userRoles?.flatMap((role:any) => roleAccess[role] || []))
@@ -49,6 +51,28 @@ export function Sidebar() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey) { // Command or Ctrl key
+        const allItems = menuList.flatMap(item => 
+          [item, ...(item.subPaths || [])]
+        );
+        
+        const matchingItem = allItems.find(item => 
+          item.shortcut?.toLowerCase().includes(event.key.toLowerCase())
+        );
+
+        if (matchingItem) {
+          event.preventDefault();
+          navigate(matchingItem.path);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   if (!isMounted) {
     return null;
@@ -78,69 +102,88 @@ export function Sidebar() {
               <li key={item.path} className="relative">
                 <Link
                   to={item.path}
-                  className={`flex items-center p-2 rounded-lg text-black transition-colors duration-200 ${
-                    pathname === item.path
-                      ? 'bg-gray-100 text-primary-600 font-medium'
+                  className={`flex items-center justify-between p-2 rounded-lg text-black transition-colors duration-200
+                    ${pathname === item.path
+                      ? 'bg-gray-100 text-primary-600 font-semibold'
                       : 'hover:bg-gray-50'
-                  }`}
-                  aria-current={pathname === item.path ? 'page' : undefined}
-                  onClick={() => {
-                    setIsExpanded(false);
-                    setShouldCollapse(true);
-                  }}
+                    }
+                    ${item.subPaths ? 'font-semibold' : ''}
+                  `}
                 >
-                  <span className="flex items-center min-w-[22px]">{item.icon}</span>
-                  <span
-                    className={`ml-3 whitespace-nowrap transition-all duration-300 ${
-                      isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                    }`}
-                  >
-                    {item.label}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="flex items-center min-w-[22px]">{item.icon}</span>
+                    <span
+                      className={`ml-3 whitespace-nowrap transition-all duration-300 ${
+                        isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                  {isExpanded && item.shortcut && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        bgcolor: 'action.hover',
+                        color: 'text.secondary',
+                        fontSize: '0.6875rem',
+                        fontFamily: 'monospace'
+                      }}
+                    >
+                      {item.shortcut}
+                    </Typography>
+                  )}
                 </Link>
+
                 {item.subPaths && (
-                  <ul
-                    className="mt-1 space-y-1"
-                    role="menu"
-                    aria-label={`${item.label} submenu`}
-                  >
+                  <ul className="mt-1 space-y-1">
                     {item.subPaths.map((subPath) => (
-                      <li key={subPath.path} role="none">
+                      <li key={subPath.path}>
                         <Tooltip 
-                          title={!isExpanded ? subPath.label : ""}
+                          title={!isExpanded ? `${subPath.label} ${subPath.shortcut}` : ""}
                           placement="right"
                           arrow
                         >
                           <Link
                             to={subPath.path}
-                            className={`flex items-center p-2 text-sm transition-colors duration-200
-                              ${!isExpanded ? 'justify-center' : ''}
+                            className={`flex items-center justify-between p-2 text-sm transition-colors duration-200
+                              relative group rounded-lg font-normal
                               ${pathname === subPath.path
-                                ? 'bg-primary-50 text-primary-600 font-medium'
+                                ? 'bg-primary-50 text-primary-600'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               }
-                              relative group rounded-lg
-                              ${isExpanded ? 'before:content-[""] before:absolute before:left-0 before:w-[2px] before:h-full before:bg-gray-200 before:rounded-full' : ''}
                             `}
-                            role="menuitem"
-                            aria-current={pathname === subPath.path ? 'page' : undefined}
-                            onClick={() => {
-                              setIsExpanded(false);
-                              setShouldCollapse(true);
-                            }}
                           >
-                            <span className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''}`}>
-                              {subPath.icon}
-                            </span>
-                            <span 
-                              className={`whitespace-nowrap transition-all duration-300 ml-3
-                                ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
-                              `}
-                            >
-                              {subPath.label}
-                            </span>
-                            {pathname === subPath.path && isExpanded && (
-                              <span className="absolute left-0 w-[2px] h-full bg-primary-600 rounded-full" />
+                            <div className="flex items-center">
+                              <span className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''}`}>
+                                {subPath.icon}
+                              </span>
+                              <span 
+                                className={`whitespace-nowrap transition-all duration-300 ml-3
+                                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
+                                `}
+                              >
+                                {subPath.label}
+                              </span>
+                            </div>
+                            {isExpanded && subPath.shortcut && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  px: 1,
+                                  py: 0.5,
+                                  borderRadius: 1,
+                                  bgcolor: 'action.hover',
+                                  color: 'text.secondary',
+                                  fontSize: '0.6875rem',
+                                  fontFamily: 'monospace'
+                                }}
+                              >
+                                {subPath.shortcut}
+                              </Typography>
                             )}
                           </Link>
                         </Tooltip>

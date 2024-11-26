@@ -1,16 +1,31 @@
-import React, { useEffect } from "react";
-import { FlexibleTable } from "@/components/Tabel";
+import React, { useEffect, useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { getUserDataList } from "@/redux/UserSlice";
-import { Stack } from "@mui/material";
 import { formatedDate } from "@/Utils/dateFormatter";
-import { FolderPlus, Sparkles } from "lucide-react";
+import { UserPlus, Search, MoreHorizontal, Filter, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 // Types
 interface UserData {
@@ -27,60 +42,36 @@ interface UserData {
     updated_at: any;
 }
 
-interface UserDetailTableProps {
-    columns: ColumnConfig[];
-    userList: UserData[];
-    loading: boolean;
-    error: { message: string } | null;
-}
-
-type ColumnConfig = {
-    key: string;
-    header: string;
-    sortable?: boolean;
-    filterable?: boolean;
-    type?: 'text' | 'number' | 'date' | 'badge';
-    badgeConfig?: {
-        colorMap: Record<string, string>;
-    };
-    render?: (value: any, row: UserData) => React.ReactNode;
-};
-
 const EmptyComponent: React.FC = () => {
     const navigate = useNavigate();
 
     return (
         <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
-            <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50" />
             <div className="relative p-8 sm:p-12">
                 <div className="max-w-2xl mx-auto text-center">
-                    {/* Decorative elements */}
-                    <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-                    <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-
                     {/* Icon container with glow effect */}
                     <div className="relative inline-flex mb-8">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
-                        <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
-                            <Sparkles className="w-12 h-12 text-gradient" />
+                        <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
+                        <div className="relative bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
+                            <Users2 className="w-12 h-12 text-blue-500" />
                         </div>
                     </div>
 
-                    <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        Welcome to User Management!
+                    <h2 className="text-3xl font-bold tracking-tight mb-4">
+                        Welcome to User Management
                     </h2>
-                    <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                        Start your journey by assigning a project to a new user.
+                    <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                        Start your journey by creating your first user and assigning projects.
                     </p>
 
                     <Button
                         size="lg"
                         onClick={() => navigate("/admin-console/users/new")}
-                        className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
+                        className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white shadow-lg transition-all duration-200"
                     >
-                        <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
-                        <FolderPlus className="mr-2 h-5 w-5" />
-                        <span className="relative">Create user</span>
+                        <UserPlus className="mr-2 h-5 w-5" />
+                        Create First User
                     </Button>
                 </div>
             </div>
@@ -88,171 +79,243 @@ const EmptyComponent: React.FC = () => {
     );
 };
 
-function UserDetailTable({
-    columns,
-    userList,
-    loading,
-    error,
-}: UserDetailTableProps) {
-    const navigate = useNavigate();
-
-    if (loading) {
-        return <Spinner size="lg" />;
-    }
-
-    if (error) {
-        return <ErrorDisplay message={error.message} />;
-    }
-
-    const createNewFn = () => {
-        navigate("/admin-console/users/new");
-    };
-
-    const actionFn = (rowData: any, action: string) => {
-        action === 'edit' ? editFn(rowData) : changeStatus(rowData);
-    };
-
-    const editFn = (rowData: any) => {
-        navigate(`/admin-console/users/${rowData.id}`, { state: { rowData } });
-    };
-
-    const changeStatus = async (rowData: any) => {
-        let data: any = { ...rowData };
-        data.user_status_cd = data.user_status_cd === 701 ? 702 : 701;
-    };
-
-    if (userList?.length === 0) {
-        return <EmptyComponent />;
-    }
-
-    return (
-        <div className="container mx-auto p-2">
-            <FlexibleTable
-                data={userList}
-                columns={columns}
-                itemsPerPageOptions={[5, 10, 20]}
-                defaultItemsPerPage={10}
-                tableName="Add User"
-                background="bg-black"
-                createNewFn={createNewFn}
-                actionFn={actionFn}
-            />
-        </div>
-    );
-}
-
 const AllUsers: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    const itemsPerPage = 8;
 
     useEffect(() => {
         dispatch(getUserDataList({}));
     }, [dispatch]);
 
-
     const { userDataList, loadingUsers: loading, errorUsers: apiError } = useAppSelector(
         (state: RootState) => state.userApi
     );
-    const error = apiError ? { message: apiError } : null;
 
-    const viewFn = (rowData: any) => {
-        navigate(`/admin-console/users/${rowData.id}`, { state: { rowData } });
-    };
+    // Enhanced filtering
+    const filteredUsers = userDataList?.filter(user => {
+        const matchesSearch = user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = !selectedStatus || user.enabled === (selectedStatus === 'active');
+        return matchesSearch && matchesStatus;
+    }) || [];
 
-    const columns: ColumnConfig[] = [
-        {
-            key: 'username',
-            header: 'Full Name',
-            sortable: true,
-            filterable: true,
-            type: 'text',
-            render: (value, row) => (
-                <span onClick={() => viewFn(row)} className="cursor-pointer">
-                    {row?.username}
-                </span>
-            )
-        },
-        {
-            key: 'email',
-            header: 'Email ID',
-            type: 'text',
-            sortable: true,
-            filterable: true,
-        },
-        {
-            key: 'projects',
-            header: 'Project Details',
-            type: 'text',
-            sortable: false,
-            render: (value, row) => {
-                return (
-                    <>
-                        {Array.isArray(value) && value.map((projectName: string, index: number) => (
-                            <div key={index} className="mb-4">
-                                <div className="mb-2">
-                                    <b>Project {index + 1}:</b> {projectName}
-                                </div>
+    const paginatedUsers = filteredUsers.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
-                                {Array.isArray(row.realm_roles) && row.realm_roles.map((role: any, roleIndex: number) => (
-                                    <Stack key={roleIndex} direction="row" alignItems="center" spacing={1}>
-                                        <span className="font-bold p-1">Role:</span>
-                                        <span className="p-1 rounded-sm mx-1" style={{
-                                            backgroundColor: role === 'admin-user' ? '#feecc6' : '#d4f5e7'
-                                        }}>
-                                            {role}
-                                        </span>
-                                    </Stack>
-                                )
-                                )}
-                            </div>
-                        ))}
-                    </>
-                );
-            }
-        },
-        {
-            key: 'enabled',
-            header: 'Status',
-            type: 'text',
-            sortable: false,
-            render: (value) => {
-                const status = value ? 'Active' : 'Inactive';
-                return (
-                    <div
-                        className="text-center rounded-md border text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80 text-white p-1 w-12"
-                        style={{
-                            backgroundColor: value ? '#00D55B' : '#ffcdd2',
-                            color: value ? 'white' : '#000'
-                        }}
-                    >
-                        {status}
-                    </div>
-                );
-            }
-        },
-        {
-            key: 'created_at',
-            header: 'Created On',
-            type: 'number',
-            sortable: false,
-            render: (value: any) => formatedDate(value)
-        },
-        {
-            key: 'updated_at',
-            header: 'Last Active On',
-            type: 'number',
-            sortable: false,
-            render: (value: any) => formatedDate(value)
-        },
-    ];
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <Spinner className="h-8 w-8" />
+        </div>
+    );
+    if (apiError) return <ErrorDisplay message={apiError} />;
+    if (!userDataList?.length) return <EmptyComponent />;
 
     return (
-        <UserDetailTable
-            userList={userDataList}
-            columns={columns}
-            loading={loading}
-            error={error}
-        />
+        <div className="container mx-auto py-8 px-4 max-w-7xl">
+            {/* Enhanced Header Section */}
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Manage user access and permissions
+                    </p>
+                </div>
+                <Button
+                    onClick={() => navigate("/admin-console/users/new")}
+                    className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white shadow-lg transition-all duration-200"
+                    size="lg"
+                >
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Add New User
+                </Button>
+            </div>
+
+            {/* Updated Search and Filter Section */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <Input
+                            placeholder="    Search by name or email..."
+                            className="pl-9 h-10 bg-gray-50 border-gray-200 w-full"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-2 h-10">
+                                <Filter className="h-4 w-4" />
+                                Filter
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem 
+                                onClick={() => setSelectedStatus(null)}
+                                className="cursor-pointer"
+                            >
+                                All Users
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={() => setSelectedStatus('active')}
+                                className="cursor-pointer"
+                            >
+                                Active Users
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={() => setSelectedStatus('inactive')}
+                                className="cursor-pointer"
+                            >
+                                Inactive Users
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+
+            {/* Enhanced Table Section */}
+            <Card className="overflow-hidden bg-white shadow-md">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold">User</TableHead>
+                            <TableHead className="font-semibold">Email</TableHead>
+                            <TableHead className="font-semibold">Projects & Roles</TableHead>
+                            <TableHead className="font-semibold">Status</TableHead>
+                            <TableHead className="font-semibold">Created</TableHead>
+                            <TableHead className="font-semibold">Last Active</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedUsers.map((user) => (
+                            <TableRow
+                                key={user.id}
+                                className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                            >
+                                <TableCell className="font-medium">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                            {user.username?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold">{user.username}</div>
+                                            <div className="text-sm text-gray-500">
+                                                {user.firstName} {user.lastName}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                    <div className="space-y-2">
+                                        {user.projects?.map((project, idx) => (
+                                            <div key={idx} className="flex flex-wrap gap-2">
+                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                    {project}
+                                                </Badge>
+                                                {user.realm_roles?.map((role, roleIdx) => (
+                                                    <Badge
+                                                        key={roleIdx}
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-xs",
+                                                            role === 'admin-user' 
+                                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                        )}
+                                                    >
+                                                        {role}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            user.enabled
+                                                ? "bg-green-50 text-green-700 border-green-200"
+                                                : "bg-red-50 text-red-700 border-red-200"
+                                        )}
+                                    >
+                                        {user.enabled ? "Active" : "Inactive"}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-gray-500">
+                                    {formatedDate(user.created_at)}
+                                </TableCell>
+                                <TableCell className="text-gray-500">
+                                    {formatedDate(user.updated_at)}
+                                </TableCell>
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() => navigate(`/admin-console/users/${user.id}`, 
+                                                    { state: { rowData: user } }
+                                                )}
+                                            >
+                                                Edit User
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className={user.enabled ? "text-red-600" : "text-green-600"}
+                                            >
+                                                {user.enabled ? "Deactivate" : "Activate"}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+
+                {/* Enhanced Pagination */}
+                <div className="flex items-center justify-between px-4 py-4 border-t">
+                    <p className="text-sm text-gray-500">
+                        Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                        {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of{" "}
+                        {filteredUsers.length} users
+                    </p>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            </Card>
+        </div>
     );
 };
 

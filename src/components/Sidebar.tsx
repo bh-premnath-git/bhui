@@ -54,7 +54,7 @@ export function Sidebar() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey) { // Command or Ctrl key
+      if (event.metaKey || event.altKey) { // Command or Ctrl key
         const allItems = menuList.flatMap(item => 
           [item, ...(item.subPaths || [])]
         );

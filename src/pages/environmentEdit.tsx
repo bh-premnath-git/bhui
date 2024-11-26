@@ -6,13 +6,12 @@ import { EnvironmentTab } from '@/components/EnvironmentsTabs/EnvironmentTab';
 import { ConfigureLakeTab } from '@/components/EnvironmentsTabs/ConfigureLakeTab';
 import { PreConfigureZonesTab } from '@/components/EnvironmentsTabs/PreConfigureZonesTab';
 import { ConfigureLifecycleTab } from '@/components/EnvironmentsTabs/ConfigureLifecycleTab';
-import { useLoaderData, useLocation, useNavigate } from 'react-router-dom';
+import {  useNavigate } from 'react-router-dom';
 import { editEnvironment } from '@/redux/EnvironmentSlice';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { Spinner } from "@/components/ui/spinner";
 import { encrypt_string } from '@/services/encryption';
 import useToast from '@/oldcomponents/teast-service';
-import { NumericDictionary, result } from 'lodash';
 
 // Types
 type Tag = {

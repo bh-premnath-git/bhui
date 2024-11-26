@@ -26,8 +26,6 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
     error
 }) => {
     const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        console.log('Dropdown changed:', property_key, e.target.value);
-        debugger
         onChange(property_key, e.target.value);
     }, [onChange, property_key]);
 

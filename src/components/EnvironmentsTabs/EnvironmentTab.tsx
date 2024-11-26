@@ -12,6 +12,11 @@ import { ApiService } from '@/services/apiServices';
 import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
 import { Badge } from "@/components/ui/badge"
+import RequiredLabel from '@/components/RequiredFieldLabel';
+import { getGitProject } from '@/redux/ProjectSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+
+
 // Types
 type Tag = {
   tagList: { key: string; value: string }[];
@@ -143,7 +148,7 @@ const TagInput: React.FC<{
 
   const addTag = () => {
     if (tagKey && tagValue) {
-      setTags([...tags,  { tagList: [{ key: tagKey, value: tagValue }] }]);
+      setTags([...tags, { tagList: [{ key: tagKey, value: tagValue }] }]);
       setTagKey("");
       setTagValue("");
       setIsModalOpen(false);
@@ -156,22 +161,22 @@ const TagInput: React.FC<{
         Add one or more tags to easily identify compute instances created by bighammer.ai in your cloud account
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
-      {tags.map((tag, index) => (
-        tag !== null &&
-        tag.tagList.map((item, itemIndex) => (
-          <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
-            {`${item.key} >> ${item.value}`}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-2 h-4 w-4 p-0"
-              onClick={() => removeTag(index, itemIndex)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </Badge>
-        ))
-      ))}
+        {tags.map((tag, index) => (
+          tag !== null &&
+          tag.tagList.map((item, itemIndex) => (
+            <Badge key={`${index}-${itemIndex}`} variant="secondary" className="px-2 py-1">
+              {`${item.key} >> ${item.value}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 h-4 w-4 p-0"
+                onClick={() => removeTag(index, itemIndex)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))
+        ))}
       </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
@@ -180,37 +185,37 @@ const TagInput: React.FC<{
             className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-              ADD TAG
+            ADD TAG
           </Button>
         </DialogTrigger>
-          <DialogContent className="sm:max-w-[385px]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
-            </DialogHeader>
-            <div className="mt-6 space-y-4">
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="tagKey" className="text-sm font-medium">
-                  Key
-                </Label>
-                <Input
-                  id="tagKey"
-                  value={tagKey}
-                  onChange={(e) => setTagKey(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="tagValue" className="text-sm font-medium">
-                  Value
-                </Label>
-                <Input
-                  id="tagValue"
-                  value={tagValue}
-                  onChange={(e) => setTagValue(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+        <DialogContent className="sm:max-w-[385px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
+          </DialogHeader>
+          <div className="mt-6 space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="tagKey" className="text-sm font-medium">
+                Key
+              </Label>
+              <Input
+                id="tagKey"
+                value={tagKey}
+                onChange={(e) => setTagKey(e.target.value)}
+                className="w-full"
+              />
             </div>
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="tagValue" className="text-sm font-medium">
+                Value
+              </Label>
+              <Input
+                id="tagValue"
+                value={tagValue}
+                onChange={(e) => setTagValue(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
           <DialogFooter className="mt-6">
             <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
               Add Tag
@@ -284,19 +289,19 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     "302": string;
     "303": string;
   };
-  
+
   const environmentOptions: EnvironmentOptions = {
     "301": "Development",
     "302": "Staging",
     "303": "Production"
   } as const;
-  
+
   type LocationOptions = {
     "1": string;
     "2": string;
     "3": string;
   }
-  
+
   const locationOptions: LocationOptions = {
     "1": "US East",
     "2": "US West",
@@ -324,7 +329,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         <Form className="space-y-6">
           <div className="w-full flex justify-between items-start">
             <div className="space-y-2 w-[45%]">
-              <Label htmlFor="environmentName">Environment Name*</Label>
+              <RequiredLabel>
+                <Label htmlFor="environmentName">Environment Name</Label>
+              </RequiredLabel>
               <Field
                 as={Input}
                 id="environmentName"
@@ -339,7 +346,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               <ErrorMessage name="environmentName" component="div" className="text-red-500 text-sm" />
             </div>
             <div className="space-y-2 w-[45%]">
-              <Label htmlFor="environment">Environment*</Label>
+              <RequiredLabel>
+                <Label htmlFor="environment">Environment</Label>
+              </RequiredLabel>
               <Select
                 defaultValue={values.environment}
                 value={values.environment}
@@ -366,7 +375,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Select Platform*</Label>
+            <RequiredLabel>
+              <Label>Select Platform</Label>
+            </RequiredLabel>
             <PlatformSelector
               selectedPlatform={values.selectedPlatform}
               setFieldValue={(field, value) => {
@@ -381,7 +392,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <h3 className="text-base font-medium">Credentials</h3>
             <div className="grid grid-cols-6 gap-2">
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="projectId">Project ID*</Label>
+                <RequiredLabel>
+                  <Label htmlFor="projectId">Project ID</Label>
+                </RequiredLabel>
                 <Field
                   as={Input}
                   id="projectId"
@@ -396,35 +409,39 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
               </div>
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="location">Location*</Label>
+                <RequiredLabel>
+                  <Label htmlFor="location">Location</Label>
+                </RequiredLabel>
                 <Select
                   defaultValue={values.location}
-                  value = {values.location}
+                  value={values.location}
                   onValueChange={(value: keyof LocationOptions) => {
                     setFieldValue('location', value);
                     onChange({ location: value });
                   }}
                 >
                   <SelectTrigger className="w-[60%]">
-                  <SelectValue placeholder="Select Environment" >
+                    <SelectValue placeholder="Select Environment" >
                       {values.location ? locationOptions[values.location as keyof LocationOptions] : "Select Location"}
-                  </SelectValue>
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                  {(Object.entries(locationOptions) as [keyof LocationOptions, string][]).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                    {(Object.entries(locationOptions) as [keyof LocationOptions, string][]).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
               </div>
               <div className="col-span-2"></div>
               {values.selectedPlatform === 'aws' && (
-              <>
+                <>
                   <div className="col-span-2 space-y-2">
-                    <Label htmlFor="accessKey">Access Key</Label>
+                    <RequiredLabel>
+                      <Label htmlFor="accessKey">Access Key</Label>
+                    </RequiredLabel>
                     <Field
                       as={Input}
                       id="accessKey"
@@ -439,7 +456,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
                   </div>
                   <div className="col-span-3 space-y-2">
-                    <Label htmlFor="secretAccessKey">Secret Access Key</Label>
+                    <RequiredLabel>
+                      <Label htmlFor="secretAccessKey">Secret Access Key</Label>
+                    </RequiredLabel>
                     <Field
                       as={Input}
                       id="secretAccessKey"
@@ -454,16 +473,18 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                <div className="w-1/4-plus flex justify-center mt-2">
-                  <ValidationComponent onValidate={() => handleValidate(values)} />
-                </div>
-              </>
-            )}
+                  <div className="w-1/4-plus flex justify-center mt-2">
+                    <ValidationComponent onValidate={() => handleValidate(values)} error={isTestConnection} errorMsg="Failed to connect" />
+                  </div>
+                </>
+              )}
             </div>
             {values.selectedPlatform === 'google-cloud' && (
               <div className="w-full">
                 <div className="space-y-2">
-                  <Label htmlFor="privateKeyFile">Private Key*</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="privateKeyFile">Private Key</Label>
+                  </RequiredLabel>
                   <div className="w-1/2">
                     <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
                   </div>

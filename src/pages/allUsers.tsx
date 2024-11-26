@@ -21,6 +21,7 @@ interface UserData {
     email: string;
     user_status_cd: number;
     user_admin_status_cd: number;
+    realm_roles: string[];
     project_details: Array<any>[];
     created_at: any;
     updated_at: any;
@@ -152,7 +153,6 @@ const AllUsers: React.FC = () => {
     const { userDataList, loadingUsers: loading, errorUsers: apiError } = useAppSelector(
         (state: RootState) => state.userApi
     );
-    
     const error = apiError ? { message: apiError } : null;
 
     const viewFn = (rowData: any) => {
@@ -180,31 +180,30 @@ const AllUsers: React.FC = () => {
             filterable: true,
         },
         {
-            key: 'project_details',
+            key: 'projects',
             header: 'Project Details',
             type: 'text',
             sortable: false,
             render: (value, row) => {
                 return (
                     <>
-                        {Array.isArray(row?.project_details) && row.project_details.map((item: any, index: number) => (
+                        {Array.isArray(value) && value.map((projectName: string, index: number) => (
                             <div key={index} className="mb-4">
-                                {Array.isArray(item.project) && item.project.map((project: any, projIndex: number) => (
-                                    <div key={projIndex} className="mb-2">
-                                        <b>Project {projIndex + 1}:</b> {project.label}
-                                    </div>
-                                ))}
+                                <div className="mb-2">
+                                    <b>Project {index + 1}:</b> {projectName}
+                                </div>
 
-                                {Array.isArray(item.projectRole) && item.projectRole.map((role: any, roleIndex: number) => (
+                                {Array.isArray(row.realm_roles) && row.realm_roles.map((role: any, roleIndex: number) => (
                                     <Stack key={roleIndex} direction="row" alignItems="center" spacing={1}>
                                         <span className="font-bold p-1">Role:</span>
                                         <span className="p-1 rounded-sm mx-1" style={{
-                                            backgroundColor: role.dtl_desc === 'Super Admin' ? '#feecc6' : '#d4f5e7'
+                                            backgroundColor: role === 'admin-user' ? '#feecc6' : '#d4f5e7'
                                         }}>
-                                            {role.dtl_desc}
+                                            {role}
                                         </span>
                                     </Stack>
-                                ))}
+                                )
+                                )}
                             </div>
                         ))}
                     </>
@@ -246,7 +245,7 @@ const AllUsers: React.FC = () => {
             render: (value: any) => formatedDate(value)
         },
     ];
-    
+
     return (
         <UserDetailTable
             userList={userDataList}

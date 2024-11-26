@@ -17,6 +17,7 @@ import { ApiService } from '@/services/apiServices';
 import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';
 import ValidationComponent from '@/components/validation-component';
+import RequiredLabel from '@/components/RequiredFieldLabel';
 
 interface GithubProvider {
   id: string;
@@ -216,7 +217,9 @@ export default function ProjectCreationComponent() {
           <Form>
             <div className="flex justify-between items-start">
               <div className="space-y-1 w-1/2">
-                <Label htmlFor="bh_project_name">Project Name</Label>
+                <RequiredLabel>
+                  <Label htmlFor="bh_project_name">Project Name</Label>
+                </RequiredLabel>
                 <Field name="bh_project_name">
                   {({ field }: any) => (
                     <Input
@@ -244,7 +247,9 @@ export default function ProjectCreationComponent() {
             <div className="space-y-4 mt-4">
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="bh_github_provider">Github Provider</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_provider">Github Provider</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_provider">
                     {({ field }: any) => {
                       const initialProviderId = initialValue.bh_github_provider?.toString();
@@ -288,7 +293,9 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_username">Github Username</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_username">Github Username</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_username">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_username" placeholder="Github Username" />
@@ -301,7 +308,9 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_email">Github Email</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_email">Github Email</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_email">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_email" placeholder="user@github.com" />
@@ -325,7 +334,9 @@ export default function ProjectCreationComponent() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className='space-y-2'>
-                  <Label htmlFor="bh_github_url">Github Repository URL</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_url">Github Repository URL</Label>
+                  </ RequiredLabel>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-full' />
@@ -334,7 +345,9 @@ export default function ProjectCreationComponent() {
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
                 </div>
                 <div className='space-y-2'>
-                  <Label htmlFor="bh_github_token_url">Github Token</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_token_url">Github Token</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_token_url">
                     {({ field }: any) => (
                       <Input

@@ -123,8 +123,7 @@ export const createProject: any = createAsyncThunk(
       }
       const deploymentResult = await thunkAPI.dispatch(createProjectDeployment(deployPayload));
       if (createProjectDeployment.rejected.match(deploymentResult)) {
-        // Deployment failed; throw an error to indicate partial success
-        throw new Error(`Project created but deployment failed: ${deploymentResult.payload}`);
+        throw new Error(`Project created in catalog but failed in keycloak: ${deploymentResult.payload}`);
       }
       return response;
     } catch (error: any) {

@@ -30,10 +30,6 @@ const schema = Yup.object().shape({
 const AddUser = () => {
     const [roles, setRoles] = useState([]);
     const [projects, setProjects] = useState([]);
-    const [statusOptions, setStatusOptions] = useState([]);
-    const [adminUsers, setAdminUsers] = useState([]);
-    const [selectedOption, setSelectedOption] = useState('Enable');
-    const [open, setOpen] = useState(false);
     const [initialValue, setInitialValue] = useState({
         bh_user_first_name: '',
         bh_user_middle_name: '',
@@ -57,16 +53,12 @@ const AddUser = () => {
 
         const fetchData = async () => {
             try {
-                const [rolesRes, projectsRes, statusRes, adminUsersRes] = await Promise.all([
+                const [rolesRes, projectsRes] = await Promise.all([
                     ApiService('8011', 'get', '/codes_hdr/1'),
-                    ApiService('8011', 'get', '/bh_project/search'),
-                    ApiService('8011', 'get', '/codes_hdr/8'),
-                    ApiService('8011', 'get', '/codes_hdr/22')
+                    ApiService('8011', 'get', '/bh_project/search')
                 ]);
 
                 setRoles(rolesRes.codes_dtl);
-                setStatusOptions(statusRes.codes_dtl);
-                setAdminUsers(adminUsersRes.codes_dtl);
 
                 const tempProjects = projectsRes.map((proj: any) => ({
                     value: proj.bh_project_id,
@@ -179,7 +171,6 @@ const AddUser = () => {
     }
     
     const handleNext1 = () => {
-        setOpen(true);
         showToast('User update successfully', { color: '#4caf50' });
         setTimeout(() => {
             navigate('/admin-console/users');

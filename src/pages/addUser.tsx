@@ -8,10 +8,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';
 import useToast from '@/oldcomponents/teast-service';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { debounce } from 'lodash';
-
+import { createUserDeployment } from '@/redux/UserSlice';
 interface ErrorResponse {
     detail: string;
 }
@@ -24,17 +24,24 @@ const schema = Yup.object().shape({
     user_admin_status_cd: Yup.string().required('Please select admin status'),
     project_details: Yup.array().of(
         Yup.object().shape({
-            project: Yup.array().of(Yup.object().required('Project is required')),
-            projectRole: Yup.array().of(Yup.object().required('Role is required'))
+            project: Yup.array().of(
+                Yup.object().shape({
+                    label: Yup.string().required('Project label is required'),
+                    value: Yup.string().required('Project value is required'),
+                })
+            ).min(1, 'At least one project is required'),
+            projectRole: Yup.array().of(
+                Yup.string().required('Role is required')
+            ).min(1, 'At least one role is required'),
         })
     )
 });
 
+// admin-user, ops-user, designer-user
+
 const AddUser = () => {
-    const [roles, setRoles] = useState([]);
+    const roles = ["admin-user", "ops-user", "designer-user"];
     const [projects, setProjects] = useState([]);
-    const [statusOptions, setStatusOptions] = useState([]);
-    const [open, setOpen] = useState(false);
     const [initialValue, setInitialValue] = useState({
         bh_user_first_name: '',
         bh_user_middle_name: '',
@@ -64,21 +71,21 @@ const AddUser = () => {
     );
 
     const handleFirstName = (
-        e: React.ChangeEvent<HTMLInputElement>, 
+        e: React.ChangeEvent<HTMLInputElement>,
         setFieldValue: (field: string, value: string) => void
     ) => {
         const firstName = e.target.value;
         setFieldValue('bh_user_first_name', firstName);
 
         if (firstName.length >= 3) {
-            setuserExistModelOpen(false); 
+            setuserExistModelOpen(false);
             debouncedSearchUser(firstName);
         } else {
             setDebouncedUserName('');
             setuserExistModelOpen(false);
         }
     };
-    
+
     useEffect(() => {
         if (debouncedUserName && userDataList.length > 0) {
             const userExists = userDataList.some(
@@ -95,22 +102,27 @@ const AddUser = () => {
 
         const fetchData = async () => {
             try {
-                const [rolesRes, projectsRes, statusRes] = await Promise.all([
-                    ApiService('8011', 'get', '/codes_hdr/1'),
-                    ApiService('8011', 'get', '/bh_project/search'),
-                    ApiService('8011', 'get', '/codes_hdr/8'),
-                    ApiService('8011', 'get', '/codes_hdr/22')
+                const [projectsRes] = await Promise.all([
+                    ApiService('8011', 'get', '/bh_project/search')
                 ]);
-
-                setRoles(rolesRes.codes_dtl);
-                setStatusOptions(statusRes.codes_dtl);
-
                 const tempProjects = projectsRes.map((proj: any) => ({
-                    value: proj.bh_project_id,
+                    value: proj.bh_project_id.toString(), // Ensure value is a string if Yup expects string
                     label: proj.bh_project_name
                 }));
                 setProjects(tempProjects);
-                if (userData) setInitialValue(userData);
+                if (userData) {
+                    const formattedUserData = {
+                        ...userData,
+                        project_details: userData.project_details.map((detail: any) => ({
+                            ...detail,
+                            project: detail.project.map((proj: any) => ({
+                                value: proj.value.toString(),
+                                label: proj.label
+                            }))
+                        }))
+                    };
+                    setInitialValue(formattedUserData);
+                }
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -120,135 +132,70 @@ const AddUser = () => {
         fetchData();
     }, [userData]);
 
+    const createKeyCloakUser = async (value: any, { setSubmitting }: any) => {
+        try {
+            const selectedRoles = value.project_details.flatMap((detail: any) => detail.projectRole);
+            const selectedProjects = value.project_details.flatMap((detail: any) => detail.project.map((proj: any) => proj.label));
 
-    const addUser = async (values: any, { setSubmitting }: any) => {
-        try {            
-            if (userData) {
-                await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
-                navigate(`/admin-console/users`);
-            } else {
-                createKeyCloakUser(values);
-            }
+            const userData = {
+                email: value.user_email_id,
+                email_verified: true,
+                enabled: true,
+                first_name: value.bh_user_first_name,
+                last_name: value.bh_user_last_name,
+                realm_roles: selectedRoles,
+                projects: selectedProjects,
+                username: `${value.bh_user_first_name}_${value.bh_user_last_name}`,
+            };
+            dispatch(createUserDeployment(userData));
+
+            // TODO: Add API call to create user
+
+            handleNext1();
         } catch (error) {
-            console.error('Error submitting form:', error);
+            console.error('Error creating user:', error);
+            showToast('Error creating user', { color: 'red' });
         } finally {
             setSubmitting(false);
         }
     };
 
-    const createKeyCloakUser = async (value: any) => {
-        //fetch('http://54.157.234.126:8005/create-user', {
-        fetch('http://localhost:8005/create-user', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user: {
-                    username: `${value?.bh_user_first_name}`,
-                    email: value?.user_email_id,
-                    password: 'Bighammer@123',
-                    first_name: `${value?.bh_user_first_name}`,
-                    last_name: `${value?.bh_user_last_name}`,
-                    enabled: true,
-                    email_verified: true,
-                    credentials: [
-                        {
-                            type: 'password',
-                            value: 'password',
-                            temporary: false
-                        }
-                    ]
-                },
-                token_data: {
-                    server_url: 'http://keycloak:8080',
-                    username: 'admin',
-                    password: 'password',
-                    grant_type: 'password',
-                    realm_name: 'master',
-                    client_id: 'admin-cli'
-                }
-            })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    response.json().then((errorData: ErrorResponse) => {
-                        let errorMessage = 'An error occurred while creating the user';
-                        
-                        if (errorData?.detail) {
-                            if (errorData.detail.includes('User exists with same email')) {
-                                errorMessage = 'User exists with same email';
-                            } else if (errorData.detail.includes('User with this username already exists')) {
-                                errorMessage = 'User with this username already exists';
-                            }
-                        }
-                    });
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                add(value)
-            })
-            .catch(error => {
-            });
-
-    };
-
-    async function add(value: any) {
-        const url = '/bh_user'; // Adjust the endpoint URL as needed
-        try {
-            const result = await ApiService('8011', 'post', url, value);
-    
-            if (result) {
-                handleNext1();
-            } else {
-                showToast('Failed to create user. Please try again.', { color: '#f44336' });
-            }
-        } catch (error: any) {
-            console.error('Error adding user:', error);
-            showToast(error.message || 'An unexpected error occurred.', { color: '#f44336' });
-        }
-    }
-    
     const handleNext1 = () => {
-        setOpen(true);
         showToast('User created successfully', { color: '#4caf50' });
         setTimeout(() => {
             navigate('/admin-console/users');
         }, 1000);
     };
-    
+
     return (
-            <>
+        <>
             <div className="container shadow p-4 rounded w-8/12  m-auto mt-4">
                 <Formik
                     initialValues={initialValue}
                     validationSchema={schema}
-                    onSubmit={addUser}
+                    onSubmit={createKeyCloakUser}
                     enableReinitialize
                 >
                     {({ values, isSubmitting, isValid, dirty, setFieldValue }) => (
                         <Form className='w-full m-auto'>
 
                             <Grid container justifyContent="flex-end">
-                                    <Button
-                                        sx={{
+                                <Button
+                                    sx={{
+                                        backgroundColor: 'black',
+                                        color: 'white',
+                                        alignItems: 'right',
+                                        marginRight: '10px',
+                                        '&:hover': {
                                             backgroundColor: 'black',
-                                            color: 'white',
-                                            alignItems: 'right',
-                                            marginRight:'10px',
-                                            '&:hover': {
-                                            backgroundColor: 'black',
-                                            },
-                                        }}
-                                        className="mt-1 align-right"
-                                        onClick={() => navigate('/admin-console/users')}
-                                    >
-                                        View All User
-                                    </Button>
-                             </Grid>
+                                        },
+                                    }}
+                                    className="mt-1 align-right"
+                                    onClick={() => navigate('/admin-console/users')}
+                                >
+                                    View All User
+                                </Button>
+                            </Grid>
                             <Grid container spacing={2} className='m-1'>
                                 <Grid item xs={2.5}>
                                     <CustomField
@@ -256,9 +203,9 @@ const AddUser = () => {
                                         label="First Name"
                                         placeholder='Enter First name'
                                         required={true}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                                        handleFirstName(e, setFieldValue)
-                                    }
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                            handleFirstName(e, setFieldValue)
+                                        }
                                     />
                                 </Grid>
                                 <Grid item xs={2.5}>
@@ -291,74 +238,78 @@ const AddUser = () => {
                             <FieldArray name="project_details">
                                 {({ push }) => (
                                     <>
-                                    {values?.project_details?.map((project: any, index: number) => (
-                                        <Grid container spacing={2} key={index} className='m-1'>
-                                            <Grid item xs={5}>
-                                                <Label className='font-normal'>Project <span style={{ color: 'red' }}>*</span></Label>
-                                                <Field
-                                                name={`project_details.${index}.project`}
-                                                render={({ field, form }: any) => (
-                                                    <Autocomplete
-                                                    size='small'
-                                                    className='shadow-sm rounded'
-                                                    multiple
-                                                    {...field}
-                                                    options={projects.filter((option) => 
-                                                        !field.value.some((selected) => selected.label === option.label)
-                                                    )}
-                                                    getOptionLabel={(option: any) => option.label}
-                                                    value={field.value || []}
-                                                    onChange={(event, value) =>
-                                                        form.setFieldValue(`project_details.${index}.project`, value)
-                                                    }
-                                                    renderOption={(props, option: any, { selected }) => (
-                                                        <li {...props} key={option.label}>
-                                                        {option.label}
-                                                        </li>
-                                                    )}
-                                                    renderInput={(params) => (
-                                                        <TextField {...params} placeholder="Select Project" variant="outlined" />
-                                                    )}
+                                        {values?.project_details?.map((project: any, index: number) => (
+                                            <Grid container spacing={2} key={index} className='m-1'>
+                                                <Grid item xs={5}>
+                                                    <Label className='font-normal'>Project <span style={{ color: 'red' }}>*</span></Label>
+                                                    <Field
+                                                        name={`project_details.${index}.project`}
+                                                        render={({ field, form }: any) => (
+                                                            <Autocomplete
+                                                                size='small'
+                                                                className='shadow-sm rounded'
+                                                                multiple
+                                                                {...field}
+                                                                options={projects.filter((option) =>
+                                                                    !field.value.some((selected: any) => selected.label === option.label)
+                                                                )}
+                                                                getOptionLabel={(option: any) => option.label}
+                                                                value={field.value || []}
+                                                                onChange={(event, value) =>
+                                                                    form.setFieldValue(`project_details.${index}.project`, value)
+                                                                }
+                                                                isOptionEqualToValue={(option: any, value: any) => option.value === value.value}
+                                                                renderOption={(props, option: any, { selected }) => (
+                                                                    <li {...props} key={option.value}>
+                                                                        {option.label}
+                                                                    </li>
+                                                                )}
+                                                                renderInput={(params) => (
+                                                                    <TextField {...params} placeholder="Select Project" variant="outlined" />
+                                                                )}
+                                                            />
+                                                        )}
                                                     />
-                                                )}
-                                                />
-                                                <ErrorMessage name={`project_details.${index}.project`} component="div" />
-                                            </Grid>
-                                            <Grid item xs={5}>
-                                                <Label className="font-normal">
-                                                Role <span style={{ color: 'red' }}>*</span>
-                                                </Label>
-                                                <Field
-                                                name={`project_details.${index}.projectRole`}
-                                                render={({ field, form }: any) => (
-                                                    <Autocomplete
-                                                    multiple
-                                                    size="small"
-                                                    className="shadow-sm rounded"
-                                                    {...field}
-                                                    options={roles.filter((option) => 
-                                                        !field.value.some((selected) => selected.dtl_desc === option.dtl_desc)
-                                                    )}
-                                                    getOptionLabel={(option: any) => option.dtl_desc || ""}
-                                                    value={field.value || []}
-                                                    onChange={(event, value) => 
-                                                        form.setFieldValue(`project_details.${index}.projectRole`, value)
-                                                    }
-                                                    renderOption={(props, option: any, { selected }) => (
-                                                        <li {...props} key={option.dtl_desc}>
-                                                            {option.dtl_desc}
-                                                        </li>
-                                                    )}
-                                                    renderInput={(params) => (
-                                                        <TextField {...params} placeholder="Select Roles" variant="outlined" />
-                                                    )}
+                                                    <ErrorMessage name={`project_details.${index}.project`} component="div" />
+                                                </Grid>
+                                                <Grid item xs={5}>
+                                                    <Label className="font-normal">
+                                                        Role <span style={{ color: 'red' }}>*</span>
+                                                    </Label>
+                                                    <Field
+                                                        name={`project_details.${index}.projectRole`}
+                                                        render={({ field, form }: any) => (
+                                                            <Autocomplete
+                                                                multiple
+                                                                size="small"
+                                                                className="shadow-sm rounded"
+                                                                {...field}
+                                                                options={roles.filter((option) =>
+                                                                    !field.value.includes(option)
+                                                                )}
+                                                                getOptionLabel={(option: any) => option || ""}
+                                                                value={field.value || []}
+                                                                onChange={(event, value) =>
+                                                                    form.setFieldValue(`project_details.${index}.projectRole`, value)
+                                                                }
+                                                                isOptionEqualToValue={(option, value) => option === value}
+                                                                renderOption={(props, option: any, { selected }) => (
+                                                                    <li {...props} key={option}>
+                                                                        {option}
+                                                                    </li>
+                                                                )}
+                                                                renderInput={(params) => (
+                                                                    <TextField {...params} placeholder="Select Roles" variant="outlined" />
+                                                                )}
+                                                            />
+                                                        )}
                                                     />
-                                                )}
-                                                />
-                                                <ErrorMessage name={`project_details.${index}.projectRole`} component="div" />
+                                                    <ErrorMessage name={`project_details.${index}.projectRole`} component="div" />
+                                                </Grid>
                                             </Grid>
-                                        </Grid>
-                                    ))}
+                                        ))}
+                                        {/* Optionally, add a button to add more project_details */}
+
                                     </>
                                 )}
                             </FieldArray>

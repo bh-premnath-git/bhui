@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { PlusCircle, X } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { createProject, searchProject, updateProject } from '@/redux/ProjectSlice';
+import { searchProject, updateProject } from '@/redux/ProjectSlice';
 import { ApiService } from '@/services/apiServices';
 import { isEmpty } from '@/Utils/isObjectEmpty';
 import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';
 import ValidationComponent from '@/components/validation-component';
+import RequiredLabel from '@/components/RequiredFieldLabel';
 
 interface GithubProvider {
   id: string;
@@ -48,7 +49,7 @@ const validationSchema = Yup.object().shape({
   bh_github_token_url: Yup.string().required('Git Token is required'),
 });
 
-export default function ProjectCreationComponent() {
+export default function ProjectEditComponent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { editProjectData, searchProjectList } = useAppSelector(
@@ -56,7 +57,6 @@ export default function ProjectCreationComponent() {
   );
   const [tags, setTags] = useState<{ tagKey: string; tagValue: string }[]>([]);
   const [githubProviderList, setGithubProviderList] = useState<GithubProvider[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tagKey, setTagKey] = useState('');
   const [tagValue, setTagValue] = useState('');
@@ -66,13 +66,14 @@ export default function ProjectCreationComponent() {
   const [isTokenValid, setIsTokenValid] = useState<'valid' | 'inValid'>(
     isEmpty(editProjectData) ? 'inValid' : 'valid'
   );
-  const [isTokenLoading, setIsTokenLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState(false);
+  const [validationErrorMsg, setValidationErrorMsg] = useState('');
 
   const [initialValue, setInitialValue] = useState<ProjectFormValues>({
     bh_project_id: editProjectData.bh_project_id || null,
     bh_project_name: editProjectData.bh_project_name || '',
-    bh_github_provider:  editProjectData.bh_github_provider || '',
+    bh_github_provider: editProjectData.bh_github_provider || '',
     bh_github_username: editProjectData.bh_github_username || '',
     bh_github_email: editProjectData.bh_github_email || '',
     bh_default_branch: editProjectData.bh_default_branch || '',
@@ -81,9 +82,7 @@ export default function ProjectCreationComponent() {
     tags: { tagList: [] },
   });
 
-
   useEffect(() => {
-    // Fetch GitHub providers
     const fetchData = async () => {
       try {
         const result = await ApiService('8011', 'get', '/codes_hdr/30');
@@ -140,7 +139,19 @@ export default function ProjectCreationComponent() {
   }, [searchProjectList, debouncedProjectName]);
 
   const handleVerification = async (values: ProjectFormValues) => {
-    setIsTokenLoading(() => true)
+    // Reset error states
+    setValidationError(false);
+    setValidationErrorMsg('');
+
+    // Check required fields
+    if (!values.bh_github_provider ||
+      !values.bh_github_token_url ||
+      !values.bh_github_url ||
+      !values.bh_github_username) {
+      setValidationError(true);
+      setValidationErrorMsg('Fill in all required fields');
+      return false;
+    }
     try {
       const { encryptedString, initVector } = encrypt_string(values.bh_github_token_url);
       const body = {
@@ -149,25 +160,26 @@ export default function ProjectCreationComponent() {
         bh_github_username: values.bh_github_username,
         bh_github_url: values.bh_github_url,
         init_vector: initVector,
-      }
+      };
 
       const result = await ApiService('8011', 'post', 'bh_project/validate-token/', body);
       if (result.status >= 200 && result.status < 300) {
-        setIsTokenLoading(() => false)
         setIsTokenValid('valid');
         showToast('Token Validated Successfully', { color: '#4caf50' });
-        return true
+        return true;
       } else {
-        setIsTokenLoading(() => false)
         setIsTokenValid('inValid');
-        showToast('Invalid Token, please check your token', { color: '#FF0000' });
-        return false
+        setValidationError(true);
+        setValidationErrorMsg('Error validating');
+        showToast(result.error, { color: '#FF0000' });
+        return false;
       }
     } catch (error) {
-      setIsTokenLoading(() => false)
       setIsTokenValid('inValid');
+      setValidationError(true);
+      setValidationErrorMsg('Error validating');
       showToast('Error validating token', { color: '#FF0000' });
-      return false
+      return false;
     }
   };
 
@@ -179,19 +191,19 @@ export default function ProjectCreationComponent() {
     values.init_vector = initVector;
     setIsLoading(true);
     try {
-        const result = await dispatch(updateProject(values));
-        if (result.payload) {
-          showToast('Project updated successfully', { color: '#4caf50' });
-          setTimeout(() => {
-            navigate('/admin-console/projects');
-          }, 1000);
-        }
-      } catch (error: any) {
-        showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
-      } finally {
-        setIsLoading(false);
+      const result = await dispatch(updateProject(values));
+      if (result.payload) {
+        showToast('Project updated successfully', { color: '#4caf50' });
+        setTimeout(() => {
+          navigate('/admin-console/projects');
+        }, 1000);
       }
-    };
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Error submitting form', { color: '#FF0000' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addTag = () => {
     if (tagKey && tagValue) {
@@ -218,7 +230,9 @@ export default function ProjectCreationComponent() {
           <Form>
             <div className="flex justify-between items-start">
               <div className="space-y-1 w-1/2">
-                <Label htmlFor="bh_project_name">Project Name</Label>
+                <RequiredLabel>
+                  <Label htmlFor="bh_project_name">Project Name</Label>
+                </RequiredLabel>
                 <Field name="bh_project_name">
                   {({ field }: any) => (
                     <Input
@@ -247,7 +261,9 @@ export default function ProjectCreationComponent() {
             <div className="space-y-4 mt-4">
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="bh_github_provider">Github Provider</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_provider">Github Provider</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_provider">
                     {({ field }: any) => {
                       const initialProviderId = initialValue.bh_github_provider?.toString();
@@ -260,7 +276,6 @@ export default function ProjectCreationComponent() {
                           onValueChange={(value: string) => {
                             const selectedProviderId = value === 'select-provider' ? '' : value;
                             setFieldValue('bh_github_provider', selectedProviderId);
-                            setSelectedProvider(selectedProviderId);
                           }}
                         >
                           <SelectTrigger className="w-full">
@@ -291,7 +306,9 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_username">Github Username</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_username">Github Username</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_username">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_username" placeholder="Github Username" />
@@ -304,7 +321,9 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bh_github_email">Github Email</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_email">Github Email</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_email">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_email" placeholder="user@github.com" />
@@ -328,7 +347,9 @@ export default function ProjectCreationComponent() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className='space-y-2'>
-                  <Label htmlFor="bh_github_url">Github Repository URL</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_url">Github Repository URL</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_url">
                     {({ field }: any) => (
                       <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-full' />
@@ -337,7 +358,9 @@ export default function ProjectCreationComponent() {
                   <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
                 </div>
                 <div className='space-y-2'>
-                  <Label htmlFor="bh_github_token_url">Github Token</Label>
+                  <RequiredLabel>
+                    <Label htmlFor="bh_github_token_url">Github Token</Label>
+                  </RequiredLabel>
                   <Field name="bh_github_token_url">
                     {({ field }: any) => (
                       <Input
@@ -360,7 +383,11 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
                 <div className="flex items-end">
-                  <ValidationComponent onValidate={() => handleVerification(values)} />
+                  <ValidationComponent
+                    onValidate={() => handleVerification(values)}
+                    error={validationError}
+                    errorMsg={validationErrorMsg}
+                  />
                 </div>
               </div>
 
@@ -434,14 +461,14 @@ export default function ProjectCreationComponent() {
             </div>
 
             <div className="flex justify-center mt-6">
-            <Button
-              type="submit"
-              className="w-1/6 bg-gray-900 text-white hover:bg-gray-800"
-              disabled={isTokenValid === 'inValid' || !isValid || !dirty }
-            >
-              {isLoading ? <Spinner /> : null}
-              {'Update Project'}
-            </Button>
+              <Button
+                type="submit"
+                className="w-1/6 bg-gray-900 text-white hover:bg-gray-800"
+                disabled={isTokenValid === 'inValid' || !isValid || !dirty}
+              >
+                {isLoading ? <Spinner /> : null}
+                {'Update Project'}
+              </Button>
             </div>
           </Form>
         )}
@@ -461,9 +488,6 @@ export default function ProjectCreationComponent() {
                 Please choose a different name.
               </p>
             </div>
-            <DialogFooter>
-              <Button className='text-white bg-black' onClick={() => setProjectExistsModalOpen(false)}>Close</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

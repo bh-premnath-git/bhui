@@ -13,8 +13,6 @@ import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
 import { Badge } from "@/components/ui/badge"
 import RequiredLabel from '@/components/RequiredFieldLabel';
-import { getGitProject } from '@/redux/ProjectSlice';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 
 
 // Types
@@ -474,7 +472,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
                   </div>
                   <div className="w-1/4-plus flex justify-center mt-2">
-                    <ValidationComponent onValidate={() => handleValidate(values)} error={isTestConnection} errorMsg="Failed to connect" />
+                    <ValidationComponent onValidate={() => handleValidate(values)} error={false} errorMsg="Failed to connect" />
                   </div>
                 </>
               )}

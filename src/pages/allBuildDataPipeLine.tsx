@@ -143,10 +143,6 @@ const EmptyComponent: React.FC = () => {
                 </Button>
                 {open && (<BuildPipeLineCreatePopup handleClose={handleClose} open={open}  showToast={showToast}/>)}
 
-                {/* Additional guidance */}
-                <p className="mt-6 text-sm text-muted-foreground">
-                    Click the button above to begin setting up your data pipeline
-                </p>
             </div>
         </div>
     </Card>

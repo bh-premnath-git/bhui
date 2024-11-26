@@ -75,8 +75,8 @@ function CatalogSchema() {
 
 
     return (
-        <Box className="container" sx={{ width: '100%' }}>
-            <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
+        <Box sx={{ width: '100%', height: '100%' }}>
+            <Stack direction={'row'} spacing={2} justifyContent={'space-between'} sx={{ px: 2, py: 1 }}>
                 <Stack>
                     <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered
                         TabIndicatorProps={{
@@ -137,28 +137,26 @@ function CatalogSchema() {
 
             </Stack>
 
+            <Box sx={{ height: 'calc(100% - 64px)', overflow: 'auto' }}>
+                <CustomTabPanel value={value} index={0}>
+                    <CatalogsBody search={searchValue} />
+                </CustomTabPanel>
+                {/* <CustomTabPanel value={value} index={1}>
+                    <Lineage data={props.data} />
+                </CustomTabPanel>
+                
+               
+                <CustomTabPanel value={value} index={2}>
+                    <Properties data={props.data} />
+                </CustomTabPanel>
+                <CustomTabPanel value={value} index={5}>
+                    <ValidationDtl data={props.data}  />
+                </CustomTabPanel>
+                <CustomTabPanel value={value} index={6}>
+                    <DocumentEditor />
+                </CustomTabPanel> */}
 
-
-
-            <CustomTabPanel value={value} index={0}>
-                {/* welcome */}
-                <CatalogsBody search={searchValue} />
-            </CustomTabPanel>
-            {/* <CustomTabPanel value={value} index={1}>
-                <Lineage data={props.data} />
-            </CustomTabPanel>
-            
-           
-            <CustomTabPanel value={value} index={2}>
-                <Properties data={props.data} />
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={5}>
-                <ValidationDtl data={props.data}  />
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={6}>
-                <DocumentEditor />
-            </CustomTabPanel> */}
-
+            </Box>
         </Box>
 
     );

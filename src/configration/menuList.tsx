@@ -1,33 +1,66 @@
+import { 
+    Database, 
+    LayoutDashboard, 
+    Settings, 
+    PenTool,
+    GitBranch,
+    Bell,
+    Package,
+    TableProperties,
+    GitPullRequest,
+    AlertCircle,
+    Share2,
+    Network
+} from "lucide-react";
 
 export const menuList = [
     {
         label: "Data Catalog",
-        icon: <img src="/assets/menu/catalog.png" alt="data-catalog" width={20} height={20} />,
+        icon: <Database size={20} />,
         path: "/DataCatalog"
     },
     {
         label: "Designer",
-        icon: <img src="/assets/menu/designer.png" alt="Designer"  width={20} height={20} />,
+        icon: <PenTool size={20} />,
         path: "/designers",
         subPaths: [
-            { label: "Build Data Pipelines", path: "/designers/build-datapipeline/" },
-            { label: "Manage Flow", path: "/designers/manage-flow" },
+            { 
+                label: "Build Data Pipelines", 
+                path: "/designers/build-datapipeline/",
+                icon: <Share2 size={18} />
+            },
+            { 
+                label: "Manage Flow", 
+                path: "/designers/manage-flow",
+                icon: <GitBranch size={18} />
+            },
         ]
     },
     {
         label: "DataOps Hub",
-        icon: <img src="/assets/menu/dataops.png" alt="DataOps"  width={20} height={20} />,
-
+        icon: <LayoutDashboard size={20} />,
         path: "/dashboard",
         subPaths: [
-            { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
-            { label: "Alerts", path: "/alerts" },
-            { label: "Manage Releases", path: "/dataops-hub/release-bundle" },
+            { 
+                label: "Ops Hub", 
+                path: "/dataops-hub/ops-hub",
+                icon: <Package size={18} />
+            },
+            { 
+                label: "Alerts", 
+                path: "/alerts",
+                icon: <AlertCircle size={18} />
+            },
+            { 
+                label: "Manage Releases", 
+                path: "/dataops-hub/release-bundle",
+                icon: <GitPullRequest size={18} />
+            },
         ]
     },
     {
         label: "Admin Console",
-        icon: <img src="/assets/menu/admin.svg" alt="DataOps"  width={20} height={20} />,
+        icon: <Settings size={20} />,
         path: "/admin-console"
     },
 ]

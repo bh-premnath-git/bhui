@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
+import { Tooltip } from '@mui/material';
 
 interface NavItem {
   icon: React.ReactNode;
   path: string;
   label: string;
-  subPaths?: { path: string; label: string }[];
+  subPaths?: { 
+    path: string; 
+    label: string;
+    icon: React.ReactNode;
+  }[];
 }
 
 interface RoleAccess {
@@ -31,14 +36,12 @@ export function Sidebar() {
   const [isMounted, setIsMounted] = useState(false);
   const [shouldCollapse, setShouldCollapse] = useState(false);
   const { pathname } = useLocation();
-  const userRoles = getUserRoles(); // Fetch the user roles
+  const userRoles = getUserRoles();
 
-  // Combine all allowed menu items for the user's roles
   const allowedItems = Array.from(
     new Set(userRoles?.flatMap((role:any) => roleAccess[role] || []))
   );
 
-  // Filter the navItems based on user roles
   const filteredNavItems: NavItem[] = menuList.filter((item) =>
     allowedItems.includes(item.label)
   );
@@ -53,8 +56,9 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${isExpanded ? 'w-60' : 'w-16'
-        }`}
+      className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
+        isExpanded ? 'w-60' : 'w-16'
+      }`}
       onMouseEnter={() => {
         if (!shouldCollapse) {
           setIsExpanded(true);
@@ -74,10 +78,11 @@ export function Sidebar() {
               <li key={item.path} className="relative">
                 <Link
                   to={item.path}
-                  className={`flex items-center p-2 rounded-lg text-black transition-colors duration-200 ${pathname === item.path
+                  className={`flex items-center p-2 rounded-lg text-black transition-colors duration-200 ${
+                    pathname === item.path
                       ? 'text-white bg-gray-400'
                       : 'hover:text-white hover:bg-gray-400'
-                    }`}
+                  }`}
                   aria-current={pathname === item.path ? 'page' : undefined}
                   onClick={() => {
                     setIsExpanded(false);
@@ -86,37 +91,54 @@ export function Sidebar() {
                 >
                   <span className="flex items-center min-w-[22px] mr-1">{item.icon}</span>
                   <span
-                    className={`whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                      }`}
+                    className={`whitespace-nowrap transition-all duration-300 ${
+                      isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                    }`}
                   >
                     {item.label}
                   </span>
                 </Link>
                 {item.subPaths && (
                   <ul
-                    className={`ml-6 space-y-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                      }`}
+                    className={`ml-6 space-y-1 overflow-hidden transition-all duration-300 ${
+                      isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-fit opacity-100'
+                    }`}
                     role="menu"
                     aria-label={`${item.label} submenu`}
                   >
                     {item.subPaths.map((subPath) => (
                       <li key={subPath.path} role="none">
-                        <Link
-                          to={subPath.path}
-                          className={`flex items-center p-1.5 text-sm rounded-md text-black transition-colors duration-200 ${pathname === subPath.path
-                              ? 'text-white bg-gray-400'
-                              : 'hover:text-white hover:bg-gray-400'
-                            }`}
-                          role="menuitem"
-                          aria-current={pathname === subPath.path ? 'page' : undefined}
-                          onClick={() => {
-                            setIsExpanded(false);
-                            setShouldCollapse(true);
-                          }}
+                        <Tooltip 
+                          title={!isExpanded ? subPath.label : ""}
+                          placement="right"
+                          arrow
                         >
-                          <span className="w-1.5 h-1.5 mr-2"></span>
-                          <span className="whitespace-nowrap">{subPath.label}</span>
-                        </Link>
+                          <Link
+                            to={subPath.path}
+                            className={`flex items-center p-1.5 text-sm rounded-md text-black transition-colors duration-200 ${
+                              pathname === subPath.path
+                                ? 'text-white bg-gray-400'
+                                : 'hover:text-white hover:bg-gray-400'
+                            }`}
+                            role="menuitem"
+                            aria-current={pathname === subPath.path ? 'page' : undefined}
+                            onClick={() => {
+                              setIsExpanded(false);
+                              setShouldCollapse(true);
+                            }}
+                          >
+                            <span className="flex items-center min-w-[22px] mr-1">
+                              {subPath.icon}
+                            </span>
+                            <span 
+                              className={`whitespace-nowrap transition-all duration-300 ${
+                                isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                              }`}
+                            >
+                              {subPath.label}
+                            </span>
+                          </Link>
+                        </Tooltip>
                       </li>
                     ))}
                   </ul>

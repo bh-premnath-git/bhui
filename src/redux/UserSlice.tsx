@@ -1,21 +1,23 @@
-import {ApiService} from '@/services/apiServices';
-import {LocalStorageService} from "@/services/localStorageServices";
+// redux/UserSlice.ts
+
+import { ApiService } from '@/services/apiServices';
+import { LocalStorageService } from "@/services/localStorageServices";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
   userDataList: any;
-  codesDtl: any;
-  loading: boolean;
-  error: string | null;
-
-
+  loadingUsers: boolean;
+  loadingDeployment: boolean;
+  errorUsers: string | null;
+  errorDeployment: string | null;
 }
 
 const initialState: ApiState = {
-  loading: false,
-  error: null,
-  userDataList: [],
-  codesDtl: []
+  loadingUsers: false,
+  loadingDeployment: false,
+  errorUsers: null,
+  errorDeployment: null,
+  userDataList: []
 };
 
 interface ApiResponse {
@@ -23,12 +25,39 @@ interface ApiResponse {
   name: string;
 }
 
-export const getUserDataList: any = createAsyncThunk(
+// Fetch User Data List
+export const getUserDataList = createAsyncThunk<
+  ApiResponse[],
+  any,
+  { rejectValue: string }
+>(
   'user/getUserDataList',
   async (params: any, thunkAPI) => {
-    // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/bh_user/list/', null, params);
+      const response = await ApiService('8005', 'get', '/users', null, params, null, false);
+      return response.users;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+
+// Create User Deployment
+export const createUserDeployment = createAsyncThunk<
+  any,
+  any,
+  { rejectValue: string }
+>(
+  'user/deployment/create',
+  async (params, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8005',
+        'post',
+        '/users',
+        params, null, {}, false
+      );
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -36,78 +65,62 @@ export const getUserDataList: any = createAsyncThunk(
   }
 );
 
-
-export const getCodesDtl: any = createAsyncThunk(
-  'user/getCodesDtl',
-  async (params: any, thunkAPI) => {
-    // alert(JSON.stringify(params))
-    try {
-
-      let data =await LocalStorageService.getItem('codesDtl');
-      return data;
-    } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-
-
 const UserSlice = createSlice({
   name: "api/buildDataPipeline",
   initialState,
   reducers: {
-    setCodesData: (state,pa) => {
-      let data = LocalStorageService.getItem('codesDtl');
-      state.codesDtl = data;
+    clearErrors: (state) => {
+      state.errorUsers = null;
+      state.errorDeployment = null;
     },
-    
+    resetState: () => initialState,
   },
   extraReducers: (builder) => {
+    // Handle getUserDataList
     builder
       .addCase(getUserDataList.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loadingUsers = true;
+        state.errorUsers = null;
       })
       .addCase(
         getUserDataList.fulfilled,
         (state, action: PayloadAction<ApiResponse[]>) => {
-          state.loading = false;
+          state.loadingUsers = false;
           state.userDataList = action.payload;
-
         }
       )
       .addCase(
         getUserDataList.rejected,
         (state, action: PayloadAction<string>) => {
-          state.loading = false;
-          state.error = action.payload;
+          state.loadingUsers = false;
+          state.errorUsers = action.payload;
         }
-      )
+      );
 
-      .addCase(getCodesDtl.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+    // Handle createUserDeployment
+    builder
+      .addCase(createUserDeployment.pending, (state) => {
+        state.loadingDeployment = true;
+        state.errorDeployment = null;
       })
       .addCase(
-        getCodesDtl.fulfilled,
-        (state, action: PayloadAction<ApiResponse[]>) => {
-          state.loading = false;
-          state.codesDtl = action.payload;
-
+        createUserDeployment.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.loadingDeployment = false;
+          // Assuming the response contains the newly created user
+          state.userDataList.push(action.payload);
         }
       )
       .addCase(
-        getCodesDtl.rejected,
+        createUserDeployment.rejected,
         (state, action: PayloadAction<string>) => {
-          state.loading = false;
-          state.error = action.payload;
+          state.loadingDeployment = false;
+          state.errorDeployment = action.payload;
         }
-      )
-
-
+      );
   },
 });
 
 export default UserSlice.reducer;
-export const { setCodesData } = UserSlice.actions;
+export const { clearErrors, resetState } = UserSlice.actions;
+

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import {ApiService} from "@/services/apiServices";
+import { ApiService } from "@/services/apiServices";
 
 export interface ApiState {
   gitProjectList: any;
@@ -89,11 +89,42 @@ export const updateProject: any = createAsyncThunk(
   }
 );
 
+const createProjectDeployment = createAsyncThunk<
+  any,
+  any,
+  {
+    rejectValue: string;
+  }
+>(
+  'project/deployment/create',
+  async (params, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8005',
+        'post',
+        '/projects',
+        params, null, {}, false
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 export const createProject: any = createAsyncThunk(
   'All Projects/New',
   async (projectData: CreateProjectData, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'post', '/bh_project/', projectData);
+      const deployPayload = {
+        name: response.bh_project_name,
+        description: `${response.bh_project_name} deployment`,
+      }
+      const deploymentResult = await thunkAPI.dispatch(createProjectDeployment(deployPayload));
+      if (createProjectDeployment.rejected.match(deploymentResult)) {
+        throw new Error(`Project created in catalog but failed in keycloak: ${deploymentResult.payload}`);
+      }
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -188,6 +219,17 @@ const projectSlice = createSlice({
           state.error = action.payload;
         }
       )
+      .addCase(createProjectDeployment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createProjectDeployment.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(createProjectDeployment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Deployment failed';
+      })
       .addCase(searchProject.pending, (state) => {
         state.loading = true;
         state.error = null;

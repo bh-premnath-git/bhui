@@ -80,8 +80,8 @@ export function Sidebar() {
                   to={item.path}
                   className={`flex items-center p-2 rounded-lg text-black transition-colors duration-200 ${
                     pathname === item.path
-                      ? 'text-white bg-gray-400'
-                      : 'hover:text-white hover:bg-gray-400'
+                      ? 'bg-gray-100 text-primary-600 font-medium'
+                      : 'hover:bg-gray-50'
                   }`}
                   aria-current={pathname === item.path ? 'page' : undefined}
                   onClick={() => {
@@ -89,9 +89,9 @@ export function Sidebar() {
                     setShouldCollapse(true);
                   }}
                 >
-                  <span className="flex items-center min-w-[22px] mr-1">{item.icon}</span>
+                  <span className="flex items-center min-w-[22px]">{item.icon}</span>
                   <span
-                    className={`whitespace-nowrap transition-all duration-300 ${
+                    className={`ml-3 whitespace-nowrap transition-all duration-300 ${
                       isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
                     }`}
                   >
@@ -100,9 +100,7 @@ export function Sidebar() {
                 </Link>
                 {item.subPaths && (
                   <ul
-                    className={`ml-6 space-y-1 overflow-hidden transition-all duration-300 ${
-                      isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-fit opacity-100'
-                    }`}
+                    className="mt-1 space-y-1"
                     role="menu"
                     aria-label={`${item.label} submenu`}
                   >
@@ -115,11 +113,15 @@ export function Sidebar() {
                         >
                           <Link
                             to={subPath.path}
-                            className={`flex items-center p-1.5 text-sm rounded-md text-black transition-colors duration-200 ${
-                              pathname === subPath.path
-                                ? 'text-white bg-gray-400'
-                                : 'hover:text-white hover:bg-gray-400'
-                            }`}
+                            className={`flex items-center p-2 text-sm transition-colors duration-200
+                              ${!isExpanded ? 'justify-center' : ''}
+                              ${pathname === subPath.path
+                                ? 'bg-primary-50 text-primary-600 font-medium'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                              }
+                              relative group rounded-lg
+                              ${isExpanded ? 'before:content-[""] before:absolute before:left-0 before:w-[2px] before:h-full before:bg-gray-200 before:rounded-full' : ''}
+                            `}
                             role="menuitem"
                             aria-current={pathname === subPath.path ? 'page' : undefined}
                             onClick={() => {
@@ -127,16 +129,19 @@ export function Sidebar() {
                               setShouldCollapse(true);
                             }}
                           >
-                            <span className="flex items-center min-w-[22px] mr-1">
+                            <span className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''}`}>
                               {subPath.icon}
                             </span>
                             <span 
-                              className={`whitespace-nowrap transition-all duration-300 ${
-                                isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                              }`}
+                              className={`whitespace-nowrap transition-all duration-300 ml-3
+                                ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
+                              `}
                             >
                               {subPath.label}
                             </span>
+                            {pathname === subPath.path && isExpanded && (
+                              <span className="absolute left-0 w-[2px] h-full bg-primary-600 rounded-full" />
+                            )}
                           </Link>
                         </Tooltip>
                       </li>

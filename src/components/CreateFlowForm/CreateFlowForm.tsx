@@ -31,7 +31,7 @@ interface CreateFlowFormProps {
 
 interface CreateFlowPayload {
   flow_name: string;
-  recipent_emails: string[]; // Changed to string array
+  recipent_emails: string; 
   notes: string;
   tags: Tag;
   bh_project_id: number;
@@ -265,7 +265,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
             flow_name: values.name,
             bh_project_id: Number(values.selectedProject),
             notes: values.notes,
-            recipent_emails: values.recipientEmails,
+            recipent_emails: values.recipientEmails.join(","),
             tags: tags,
             alert_settings: values.alert_settings,
           };

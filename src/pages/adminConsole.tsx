@@ -81,7 +81,7 @@ const adminList: AdminItem[] = [
   {
     id: 1,
     img: "/assets/userlanding/managedatapu.png",
-    title: "Manage Data Platform Users",
+    title: "Manage Users",
     desc: "Select this option to manage internal users of the platform.",
     buttonText: 'Manage Users',
     link: '/admin-console/users'
@@ -89,7 +89,7 @@ const adminList: AdminItem[] = [
   {
     id: 2,
     img: "/assets/userlanding/manage.png",
-    title: "Manage Customer",
+    title: "Manage Customers",
     desc: "Select this option to manage consumers",
     buttonText: 'Manage Customer',
     link: '/admin-console/customers'
@@ -105,7 +105,7 @@ const adminList: AdminItem[] = [
   {
     id: 4,
     img: "/assets/userlanding/manageenv.png",
-    title: "Manage Environment",
+    title: "Manage Environments",
     desc: "Select this option to manage environment",
     buttonText: 'Manage Environment',
     link: '/admin-console/environment'

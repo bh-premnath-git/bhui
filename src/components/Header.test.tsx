@@ -76,11 +76,11 @@ describe('renderingHeadContent', () => {
     },
     {
       path: '/admin-console/users',
-      expected: 'Admin Console > Manage Data Platform User'
+      expected: 'Admin Console > Manage Users'
     },
     {
       path: '/admin-console/users/new',
-      expected: 'Admin Console > Manage Data Platform User > Add User'
+      expected: 'Admin Console > Manage Users > Add User'
     },
     {
       path: '/admin-console/customers',

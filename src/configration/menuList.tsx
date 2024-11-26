@@ -10,7 +10,10 @@ import {
     GitPullRequest,
     AlertCircle,
     Share2,
-    Network
+    Users,
+    Building2,
+    FolderGit2,
+    Settings2
 } from "lucide-react";
 
 export const menuList = [
@@ -61,6 +64,28 @@ export const menuList = [
     {
         label: "Admin Console",
         icon: <Settings size={20} />,
-        path: "/admin-console"
+        path: "/admin-console",
+        subPaths: [
+            { 
+                label: "Manage Data Platform Users", 
+                path: "/admin-console/users",
+                icon: <Users size={18} />
+            },
+            { 
+                label: "Manage Customer", 
+                path: "/admin-console/customers",
+                icon: <Building2 size={18} />
+            },
+            { 
+                label: "Manage Projects", 
+                path: "/admin-console/projects",
+                icon: <FolderGit2 size={18} />
+            },
+            { 
+                label: "Manage Environment", 
+                path: "/admin-console/environment",
+                icon: <Settings2 size={18} />
+            },
+        ]
     },
 ]

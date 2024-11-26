@@ -1,0 +1,251 @@
+{
+    "schema": [
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Filter",
+            "description": "",
+            "type": "object",
+            "ui_type": "normal",
+            "properties": {
+                "expression": {
+                    "type": "string",
+                    "ui_type": "expression",
+                    "minLength": 1
+                }
+            },
+            "required": [
+                "expression"
+            ]
+        },
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "description": "",
+            "type": "object",
+            "title": "Schema Transformation",
+            "ui_type": "array-container",
+            "properties": {
+                "derived_fields": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "minItems": 1,
+                    "items": {
+                        "required": [
+                            "name",
+                            "expression"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "expression": {
+                                "type": "string",
+                                "ui_type": "expression",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "derived_fields"
+            ]
+        },
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "description": "",
+            "type": "object",
+            "title": "Aggregate",
+            "ui_type": "tab-container",
+            "properties": {
+                "aggregate": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "group_by": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "pivot": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "aggregate",
+                "group_by",
+                "pivot"
+            ]
+        },
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "description": "",
+            "type": "object",
+            "title": "Join",
+            "ui_type": "tab-container",
+            "properties": {
+                "condition": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "column": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "hint": {
+                    "type": "object",
+                    "properties": {
+                        "derived_fields": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "expression"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "expression": {
+                                        "type": "string",
+                                        "ui_type": "expression",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "aggregate",
+                "group_by",
+                "pivot"
+            ]
+        }
+    ]
+}

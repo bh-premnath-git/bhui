@@ -45,7 +45,6 @@ export function FlowEditor() {
           height: 20,
           color: '#94a3b8',
         },
-        animated: true,
       };
       setEdges((eds) => {
         const newEdges = addEdge(edge, eds);
@@ -127,7 +126,6 @@ export function FlowEditor() {
               source: sourceHandle.nodeId,
               target: targetHandle.nodeId,
               type: 'custom',
-              animated: true,
               style: { stroke: '#888' },
             }];
           }
@@ -181,7 +179,6 @@ export function FlowEditor() {
             className="bg-background"
             defaultEdgeOptions={{
               type: 'custom',
-              animated: true,
             }}
             panOnScroll
             selectionOnDrag

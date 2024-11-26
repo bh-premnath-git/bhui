@@ -85,7 +85,7 @@ export const menuList = [
                 label: "Manage Customers", 
                 path: "/admin-console/customers",
                 icon: <Building2 size={18} />,
-                shortcut: "⌘C"
+                shortcut: "⌘Q"
             },
             { 
                 label: "Manage Projects", 

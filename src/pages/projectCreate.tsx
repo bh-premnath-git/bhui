@@ -206,7 +206,12 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 rounded-xl border bg-card text-card-foreground shadow w-full mt-4">
+    <div className="max-w-6xl mx-auto p-8 space-y-8 rounded-xl border bg-card text-card-foreground shadow-lg w-full mt-6">
+      <div className="border-b pb-4">
+        <h2 className="text-2xl font-semibold">Create New Project</h2>
+        <p className="text-muted-foreground mt-1">Configure your project settings and repository details</p>
+      </div>
+
       <Formik
         initialValues={initialValue}
         validationSchema={validationSchema}
@@ -214,38 +219,48 @@ export default function ProjectCreationComponent() {
         onSubmit={handleSubmitForm}
       >
         {({ values, setFieldValue, isValid }) => (
-          <Form>
+          <Form className="space-y-8">
+            {/* Project Name Section */}
             <div className="flex justify-between items-start">
-              <div className="space-y-1 w-1/2">
+              <div className="space-y-2 w-1/2">
                 <RequiredLabel>
-                  <Label htmlFor="bh_project_name">Project Name</Label>
+                  <Label htmlFor="bh_project_name" className="text-base">Project Name</Label>
                 </RequiredLabel>
                 <Field name="bh_project_name">
                   {({ field }: any) => (
-                    <Input
-                      {...field}
-                      id="bh_project_name"
-                      placeholder="Project Name"
-                      className="h-9 w-1/2"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleProjectNameChange(e, setFieldValue)
-                      }
-                    />
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        id="bh_project_name"
+                        placeholder="Enter project name"
+                        className="h-10 w-2/3"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          handleProjectNameChange(e, setFieldValue)
+                        }
+                      />
+                      {projectExistsModalOpen && (
+                        <span className="absolute right-0 top-1/2 -translate-y-1/2 mr-3 text-red-500">
+                          ⚠️ Name already exists
+                        </span>
+                      )}
+                    </div>
                   )}
                 </Field>
-                <ErrorMessage name="bh_project_name" component="div" className="text-red-500" />
+                <ErrorMessage name="bh_project_name" component="div" className="text-red-500 text-sm" />
               </div>
               <Button
-                variant="ghost"
-                className="mt-1"
+                variant="outline"
+                className="hover:bg-gray-100"
                 onClick={() => navigate('/admin-console/projects')}
               >
                 View All Projects
               </Button>
             </div>
 
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-4 gap-4">
+            {/* Repository Details Section */}
+            <div className="bg-gray-50 p-6 rounded-lg space-y-6">
+              <h3 className="text-lg font-medium mb-4">Repository Details</h3>
+              <div className="grid grid-cols-4 gap-6">
                 <div>
                   <RequiredLabel>
                     <Label htmlFor="bh_github_provider">Github Provider</Label>
@@ -332,7 +347,7 @@ export default function ProjectCreationComponent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-6">
                 <div className='space-y-2'>
                   <RequiredLabel>
                     <Label htmlFor="bh_github_url">Github Repository URL</Label>
@@ -377,36 +392,25 @@ export default function ProjectCreationComponent() {
                   />
                 </div>
               </div>
+            </div>
 
-              <div>
-                <Label className='font-medium'>Add Tags</Label>
-                <p className="text-sm text-gray-500 mb-2">
-                  Add one or more tags to easily identify compute instances created by
-                  BigHammer.ai in your AWS account (e.g., Key: Product, Value: BigHammer.ai)
-                </p>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="px-2 py-1">
-                      {`${tag.tagKey} >> ${tag.tagValue}`}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="ml-2 h-4 w-4 p-0"
-                        onClick={() => removeTag(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
+            {/* Tags Section */}
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <Label className="text-lg font-medium">Tags</Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Add tags to identify compute instances in your AWS account
+                  </p>
                 </div>
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      variant="ghost"
-                      className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
+                      variant="outline"
+                      className="flex items-center text-emerald-600 hover:bg-emerald-50 border-emerald-200"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      ADD TAG
+                      Add New Tag
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[385px]">
@@ -445,16 +449,43 @@ export default function ProjectCreationComponent() {
                   </DialogContent>
                 </Dialog>
               </div>
+              
+              <div className="flex flex-wrap gap-2 min-h-[50px] bg-white p-4 rounded-md border">
+                {tags.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No tags added yet</p>
+                ) : (
+                  tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="px-3 py-1.5 text-sm">
+                      {`${tag.tagKey}: ${tag.tagValue}`}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-4 w-4 p-0 hover:bg-red-100 hover:text-red-600"
+                        onClick={() => removeTag(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-center mt-6">
+            {/* Submit Button */}
+            <div className="flex justify-center pt-4">
               <Button
                 type="submit"
-                className="w-1/6 bg-gray-900 text-white hover:bg-gray-800"
-                disabled={isTokenValid === 'inValid' || !isValid}
+                className="w-1/4 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                disabled={isTokenValid === 'inValid' || !isValid || isLoading}
               >
-                {isLoading ? <Spinner /> : null}
-                {'Create Project'}
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <Spinner className="mr-2" />
+                    Creating...
+                  </div>
+                ) : (
+                  'Create Project'
+                )}
               </Button>
             </div>
           </Form>

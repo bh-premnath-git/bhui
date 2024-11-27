@@ -11,8 +11,10 @@ export interface FlowProject {
 
 export interface FlowState {
   loading: boolean;
+  searchLoading: boolean;
   error: string | null;
   flowData: any | null;
+  searchedFlow: any | null;
   flows: any[];
   flowProjectList: FlowProject[];
   environments: any[];
@@ -22,8 +24,10 @@ export interface FlowState {
 
 const initialState: FlowState = {
   loading: false,
+  searchLoading: false,
   error: null,
   flowData: null,
+  searchedFlow: null,
   flows: [],
   flowProjectList: [],
   environments: [],
@@ -56,37 +60,6 @@ interface DeploymentParams {
   cron_expression: any
 }
 
-// Create deployment thunk
-const createDeployment = createAsyncThunk<
-  any,
-  DeploymentParams,
-  {
-    rejectValue: string;
-  }
->(
-  'flow/deployment/create',
-  async (params, thunkAPI) => {
-    try {
-      const response = await ApiService(
-        '8011',
-        'post',
-        '/flow/flow-deployement/create',
-        params
-      );
-      return response;
-    } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-const shouldCreateDeployment = (flowParams: any): boolean => {
-  return (
-    flowParams.flow_id > 0 &&
-    flowParams.bh_env_id > 0
-  );
-};
-
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
@@ -98,15 +71,6 @@ export const createFlow = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'post', '/flow/create/', params);
-      const deploymentParams = { flow_id: response.flow_id, bh_env_id: params.bh_env_id, cron_expression: params.schedule_interval }
-      if (shouldCreateDeployment(deploymentParams)) {
-        const deploymentResult = await thunkAPI.dispatch(createDeployment(deploymentParams));
-        
-        if (createDeployment.rejected.match(deploymentResult)) {
-          throw new Error(`Flow created but deployment failed: ${deploymentResult.payload}`);
-        }
-      }
-
       return response;
     } catch (error: any) {
       const isDeploymentError = error.message?.includes('deployment failed');
@@ -193,6 +157,18 @@ export const getEnvironmentList = createAsyncThunk<
   }
 );
 
+export const searchFlow: any = createAsyncThunk(
+  'flows/searchFlow',
+  async (value: string, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'get', `/flow/flow/search?flow_name=${value}`);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const flowSlice = createSlice({
   name: "api/flow",
   initialState,
@@ -202,6 +178,9 @@ const flowSlice = createSlice({
     },
     setSelectedEnv: (state, action: PayloadAction<any | null>) => {
       state.selectedEnvironment = action.payload;
+    },
+    clearSearchResults: (state) => {
+      state.searchedFlow = null;
     },
   },
   extraReducers: (builder) => {
@@ -218,18 +197,6 @@ const flowSlice = createSlice({
       .addCase(createFlow.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Network error occurred';
-      })
-      // createdeployment
-      .addCase(createDeployment.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createDeployment.fulfilled, (state, action) => {
-        state.loading = false;
-      })
-      .addCase(createDeployment.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || 'Deployment failed';
       })
       // listFlows
       .addCase(listFlows.pending, (state) => {
@@ -258,6 +225,25 @@ const flowSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'An error occurred';
       })
+      // searchFlow
+      .addCase(searchFlow.pending, (state) => {
+        state.searchLoading = true; 
+        state.error = null;
+      })
+      .addCase(
+        searchFlow.fulfilled,
+        (state, action) => {
+          state.searchLoading = false;
+          state.searchedFlow = action.payload;
+        }
+      )
+      .addCase(
+        searchFlow.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.searchLoading = false;
+          state.error = action.payload;
+        }
+      )
       // getEnvironmentList
       .addCase(getEnvironmentList.pending, (state) => {
         state.loading = true;
@@ -276,5 +262,5 @@ const flowSlice = createSlice({
 
 
 
-export const { setSelectedFlowFromList, setSelectedEnv } = flowSlice.actions;
+export const { setSelectedFlowFromList, setSelectedEnv, clearSearchResults } = flowSlice.actions;
 export default flowSlice.reducer;

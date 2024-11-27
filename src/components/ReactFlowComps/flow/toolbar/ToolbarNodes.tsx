@@ -32,7 +32,7 @@ export function ToolbarNodes() {
       const id = (nodes.length + 1).toString();
       const lastNode = nodes[nodes.length - 1];
       const position = {
-        x: (lastNode?.position?.x ?? 100) + 140,        y: 150,
+        x: (lastNode?.position?.x ?? 100) + 140, y: 150,
       };
 
       addNode({

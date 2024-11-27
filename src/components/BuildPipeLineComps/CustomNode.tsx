@@ -21,9 +21,10 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [titleValue, setTitleValue] = useState(data.title || 'No Title');
+    const [titleValue, setTitleValue] = useState(data.title || data.label);
     const edges = useEdges();
     const reactFlowInstance = useReactFlow();
+    const [showInfo, setShowInfo] = useState(false);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -81,6 +82,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     const handleInfo = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
+        setShowInfo(true);
     }, []);
 
     const handleImageClick = useCallback((e: React.MouseEvent) => {
@@ -103,8 +105,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         e.stopPropagation();
         if (formStates[id]) {
             const allNodes = reactFlowInstance.getNodes();
-
-            // Modified to return nodes in topological order
             const getOrderedNodes = (nodeId: string): string[] => {
                 const visited = new Set<string>();
                 const ordered: string[] = [];
@@ -118,8 +118,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     for (const edge of incomingEdges) {
                         visit(edge.source);
                     }
-
-                    // Then add current node
                     ordered.push(currentId);
                 };
 
@@ -233,7 +231,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 </div>
             )}
             {debuggedNodes.has(id) && (
-                <div className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+                <div className="absolute -top-2 -right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             )}
             <Handle
                 type="source"
@@ -246,56 +244,51 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 <div className="flex flex-col items-center gap-0">
                     <div className="flex items-center gap-2">
                         <div className="relative group">
-                            <div className="bg-white bg-opacity-20 rounded-lg relative">
-                                <img
-                                    src={data.icon}
-                                    alt={data.label}
-                                    className="w-8 h-8 object-contain cursor-pointer"
-                                    onClick={handleImageClick}
-                                />
-                                {formStates[id] && (
-                                    <button
-                                        onClick={handleRunClick}
-                                        className="absolute -top-0.5 -right-0.5 p-0.5 
-                                                 bg-blue-500 hover:bg-blue-400
-                                                 rounded-full shadow-lg
-                                                 opacity-0 group-hover:opacity-100
-                                                 transition-all duration-300 ease-in-out
-                                                 transform scale-75 hover:scale-100
-                                                 flex items-center justify-center
-                                                 border border-white"
-                                        title="Run Configuration"
+                            <img
+                                src={data.icon}
+                                alt={data.label}
+                                className="w-8 h-8 object-contain cursor-pointer"
+                                onClick={handleImageClick}
+                            />
+                            {formStates[id] && (
+                                <button
+                                    onClick={handleRunClick}
+                                    className="absolute -top-0.5 -right-0.5 p-0.5 
+                                             bg-blue-500 hover:bg-blue-600
+                                             rounded-full shadow-lg
+                                             opacity-100
+                                             transition-all duration-300 ease-in-out
+                                             transform scale-90 hover:scale-100
+                                             flex items-center justify-center
+                                             border-2 border-white
+                                             z-10"
+                                    title="Run Configuration"
+                                >
+                                    <svg
+                                        className="w-3 h-3 text-white"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
                                     >
-                                        <svg
-                                            className="w-2.5 h-2.5 text-white"
-                                            fill="currentColor"
-                                            viewBox="0 0 24 24"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                        >
-                                            <path
-                                                fillRule="evenodd"
-                                                clipRule="evenodd"
-                                                d="M8.5 8.84V15.16c0 1.52 1.63 2.48 2.93 1.73l5.5-3.16c1.3-.75 1.3-2.71 0-3.46l-5.5-3.16c-1.3-.75-2.93.21-2.93 1.73z"
-                                            />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
+                                        <path
+                                            fillRule="evenodd"
+                                            clipRule="evenodd"
+                                            d="M8.5 8.84V15.16c0 1.52 1.63 2.48 2.93 1.73l5.5-3.16c1.3-.75 1.3-2.71 0-3.46l-5.5-3.16c-1.3-.75-2.93.21-2.93 1.73z"
+                                        />
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     </div>
-                    <div
-                        className="flex justify-center text-black text-[8px] w-9 m-auto text-center font-medium text-center cursor-pointer select-none"
-                    >
-                        {data.label}
-                    </div>
-                    <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center font-medium text-center">
+                    <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center ">{data.label}</div>
+                    <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center font-medium ">
                         {isEditingTitle ? (
                             <input
                                 type="text"
                                 value={titleValue}
                                 onChange={handleTitleChange}
                                 onBlur={handleTitleBlur}
-                                className="w-full text-center text-[8px] border border-gray-200 rounded 
+                                className="w-[90px] text-center text-[8px] border border-gray-200 rounded-sm 
                                          px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 
                                          focus:border-blue-400 transition-all duration-200 
                                          shadow-sm hover:border-gray-300"
@@ -304,11 +297,10 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                             />
                         ) : (
                             <span className="cursor-pointer select-none">
-                                {titleValue || 'No Title'}
+                                {titleValue || data.label}
                             </span>
                         )}
-                    </div>
-                </div>
+                    </div>                </div>
             </div>
             {data.label?.toLowerCase() !== 'source' && (<Handle
                 type="target"
@@ -316,6 +308,56 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 style={{ top: '35%', transform: 'translateY(-50%)', opacity: 0.1 }}
             />)}
 
+            {showInfo && (
+                <div 
+                    className="absolute z-20 w-48 p-2.5 bg-white rounded-md shadow-lg border border-gray-100 
+                             transform -translate-x-1/2 left-1/2 bottom-full mb-2
+                             text-[10px] animate-fadeIn"
+                    onClick={e => e.stopPropagation()}
+                >
+                    {/* Arrow pointer */}
+                    <div className="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 
+                                  w-2 h-2 bg-white border-r border-b border-gray-100 
+                                  rotate-45">
+                    </div>
+                    
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-1.5">
+                            <img src={data.icon} alt={data.label} className="w-4 h-4 object-contain" />
+                            <h3 className="font-medium text-gray-800">{data.label}</h3>
+                        </div>
+                        <button 
+                            onClick={() => setShowInfo(false)}
+                            className="text-gray-400 hover:text-gray-600 p-0.5"
+                        >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="grid grid-cols-5 gap-x-2 text-[9px]">
+                            <span className="col-span-2 text-gray-500">Title:</span>
+                            <span className="col-span-3 text-gray-700 font-medium">{titleValue || 'No Title'}</span>
+                            
+                            <span className="col-span-2 text-gray-500">Debug:</span>
+                            <span className="col-span-3 text-gray-700 font-medium">
+                                {debuggedNodes.has(id) ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+
+                        {formStates[id] && (
+                            <div className="mt-2 pt-2 border-t border-gray-50">
+                                <p className="text-gray-500 mb-1">Configuration:</p>
+                                <pre className="bg-gray-50 p-1.5 rounded text-[8px] max-h-20 overflow-y-auto">
+                                    {JSON.stringify(formStates[id], null, 2)}
+                                </pre>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
         </div>
     );

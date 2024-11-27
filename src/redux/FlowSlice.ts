@@ -17,6 +17,7 @@ export interface FlowState {
   flowProjectList: FlowProject[];
   environments: any[];
   selectedFlowFromList: any | null;
+  selectedEnvironment: any | null;
 }
 
 const initialState: FlowState = {
@@ -27,6 +28,7 @@ const initialState: FlowState = {
   flowProjectList: [],
   environments: [],
   selectedFlowFromList: null,
+  selectedEnvironment: null
 };
 
 interface CreateFlowParams {
@@ -37,7 +39,7 @@ interface CreateFlowParams {
   bh_env_provider: number;
   bh_env_id: number;
   flow_class: number;
-  recipent_emails: string;
+  recipient_email: Record<string, string[]>;
   notes: string;
   job: string;
   last_executed: string;
@@ -198,6 +200,9 @@ const flowSlice = createSlice({
     setSelectedFlowFromList: (state, action: PayloadAction<any | null>) => {
       state.selectedFlowFromList = action.payload;
     },
+    setSelectedEnv: (state, action: PayloadAction<any | null>) => {
+      state.selectedEnvironment = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -212,7 +217,7 @@ const flowSlice = createSlice({
       })
       .addCase(createFlow.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'An error occurred';
+        state.error = action.payload || 'Network error occurred';
       })
       // createdeployment
       .addCase(createDeployment.pending, (state) => {
@@ -271,5 +276,5 @@ const flowSlice = createSlice({
 
 
 
-export const { setSelectedFlowFromList } = flowSlice.actions;
+export const { setSelectedFlowFromList, setSelectedEnv } = flowSlice.actions;
 export default flowSlice.reducer;

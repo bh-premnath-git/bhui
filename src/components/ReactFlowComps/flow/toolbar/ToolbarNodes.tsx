@@ -14,7 +14,6 @@ export function ToolbarNodes() {
   const [selectedOperator, setSelectedOperator] = React.useState<SelectedOperator | null>(null);
 
   const moduleTypes = useModules();
-
   const handleOperatorSelect = React.useCallback(
     (operator: ModuleType["operators"][number], moduleInfo: ModuleType) => {
       const selectedData: SelectedOperator = {
@@ -29,11 +28,11 @@ export function ToolbarNodes() {
       };
 
       setSelectedOperator(selectedData);
-      
+
       const id = (nodes.length + 1).toString();
+      const lastNode = nodes[nodes.length - 1];
       const position = {
-        x: 120 + nodes.length * 40,
-        y: 150,
+        x: (lastNode?.position?.x ?? 100) + 140,        y: 150,
       };
 
       addNode({

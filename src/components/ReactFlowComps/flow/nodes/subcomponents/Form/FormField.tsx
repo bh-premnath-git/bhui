@@ -29,14 +29,13 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       endpoint,
       language,
     } = property.ui_properties;
-    const { selectedFlowFromList } = useSelector(
+    const { selectedEnvironment } = useSelector(
       (state: RootState) => state.flowApi
     );
-
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
     const { options, isLoading } = useDropdownOptions(
-      endpoint, 
-      selectedFlowFromList?.flow_deployment[0]?.bh_env_id ?? "0"
+      endpoint,
+      selectedEnvironment ?? "0"
     );
 
     const renderField = () => {

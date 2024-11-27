@@ -19,6 +19,8 @@ export interface ApiState {
   nodesList: any,
   tranformationCount: any;
   isDebug: boolean;
+  metricsData: any;
+  isMetricsLoading: boolean;
 }
 
 const initialState: ApiState = {
@@ -39,6 +41,8 @@ const initialState: ApiState = {
   nodesList: [],
   tranformationCount: {},
   isDebug: false,
+  metricsData: null,
+  isMetricsLoading: false,
 };
 
 interface ApiResponse {
@@ -183,6 +187,31 @@ export const stopPipeLine: any = createAsyncThunk(
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
+  }
+);
+
+export const fetchTransformationOutput = createAsyncThunk(
+  'pipeline/fetchTransformationOutput',
+  async ({ pipelineName, transformationName }: { pipelineName: string, transformationName: string }) => {
+    const response = await ApiService(
+      "8011",
+      "get",
+      `/pipeline/debug/get_transformation_output`,
+      null,
+      {
+        pipeline_name: pipelineName,
+        transformation_name: transformationName,
+        page: 1,
+        page_size: 50,
+        sort_columns: 'id',
+      }
+    );
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    return response.outputs;
   }
 );
 
@@ -437,6 +466,18 @@ const buildPipeLineSlice = createSlice({
           state.error = action.payload;
         }
       )
+      .addCase(fetchTransformationOutput.pending, (state) => {
+        state.isMetricsLoading = true;
+      })
+      .addCase(fetchTransformationOutput.fulfilled, (state, action) => {
+        state.isMetricsLoading = false;
+        state.metricsData = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTransformationOutput.rejected, (state, action) => {
+        state.isMetricsLoading = false;
+        state.error = action.error.message || 'Failed to fetch metrics';
+      })
 
   },
 });

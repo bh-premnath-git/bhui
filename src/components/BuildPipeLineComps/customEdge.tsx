@@ -1,133 +1,242 @@
-import React, { useState, useEffect } from 'react';
-import { EdgeProps, getBezierPath } from 'reactflow';
-import { FaCut, FaTachometerAlt } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { Stack } from '@mui/material';
-import PipeLinePopUp from './pipeLinePopUp';
-import { ApiService } from '@/services/apiServices';
-import { BsSpeedometer } from 'react-icons/bs';
+import { memo, useMemo, useState } from "react";
+import { useReactFlow } from "reactflow";
+import { MdSpeed } from "react-icons/md";
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from "../../store/store";
+import { AppDispatch } from "../../store/store";
+import { fetchTransformationOutput } from "@/redux/BuildPipeLineSlice";
+import PipeLinePopUp from "./pipeLinePopUp";
+import { HiChartBar } from "react-icons/hi";
+const edgeStyles = {
+    stroke: '#b1b1b7',
+    strokeWidth: 2,
+    transition: 'stroke-width 0.2s, stroke 0.2s',
+};
 
-const CustomEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, data }) => {
-    const [edgePath, labelX, labelY] = getBezierPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-    });
+interface EdgeMetricsDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    metricsData: any[] | null;
+    isLoading: boolean;
+}
 
-    const [hovered, setHovered] = useState(false);
-    const { isRun, isDebug,nodesList, tranformationCount } = useSelector((state: RootState) => state.buildPipeLineApi);
-    const nodes = JSON.parse(nodesList);
-    const [open, setOpen] = React.useState(false);
-    const [rowCount, setRowCount] = useState<number | null>(null);
-    const [transformData, setTransformData] = useState<any>();
+const EdgeMetricsDialog: React.FC<EdgeMetricsDialogProps> = ({ 
+    isOpen, 
+    onClose, 
+    metricsData, 
+}) => {
 
-    const fetchRowCount = async () => {
-        if (data?.params?.source) {
-            const source = nodes.find((node: any) => node.id === data.params.source)?.data?.display;
-            if (source) {
-                const count = tranformationCount?.transformationOutputCounts?.find(
-                    (count: any) => count.transformationName === source
-                )?.rowCount;
-                console.log("Fetched count:", count);
-                setRowCount(count ?? 0); 
-            }
-        }
-    };
+   
 
+    return (
+        <PipeLinePopUp 
+            open={isOpen} 
+            handleClose={onClose} 
+            transformData={metricsData?.[0]?.rows ?? []} 
+        />
+    );
+};
 
-    useEffect(() => {
-        console.log("isRun:", isRun, "data.params:", data.params);
-        fetchRowCount();
-    }, [isRun, data.params,tranformationCount?.transformationOutputCounts?.length>0 ])
-    // useEffect(() => {
-    //     console.log("Row count updated in state:", rowCount);
-    //     console.log("RtranformationCount:", tranformationCount);
-    // }, [tranformationCount?.transformationOutputCounts?.length>0]);
+interface CustomEdgeProps {
+    id: string;
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    style?: React.CSSProperties;
+    source: string;
+    transformationCounts: Array<{ transformationName: string; rowCount: number }>;
+    interactionWidth?: number;
+    selected?: boolean;
+}
 
+export const CustomEdge = memo(({ 
+    id, 
+    sourceX, 
+    sourceY, 
+    targetX, 
+    targetY, 
+    style = {}, 
+    source,
+    transformationCounts,
+    interactionWidth = 1,
+    selected,
+}: CustomEdgeProps) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const [isMetricsOpen, setIsMetricsOpen] = useState(false);
 
-    const handleDeleteEdge = () => {
-        if (data.onDeleteEdge) {
-            data.onDeleteEdge(id);
-        }
-    };
+    const { setEdges, getNode } = useReactFlow();
+    const dispatch = useDispatch<AppDispatch>();
+    const { metricsData, isMetricsLoading } = useSelector((state: RootState) => state.buildPipeLineApi);
 
-    const handleClickOpen = async (e: any) => {
+    const sourceNode = getNode(source);
+    const rowCount = transformationCounts.find(
+        (t) => t.transformationName === sourceNode?.data.title
+    )?.rowCount;
+
+    const edgeCenter = useMemo(() => ({
+        x: (sourceX + targetX) / 2,
+        y: (sourceY + targetY) / 2,
+    }), [sourceX, targetX, sourceY, targetY]);
+
+    const path = useMemo(() => {
+        const controlPointOffset = Math.abs(targetX - sourceX) * 0.5;
+        return `M ${sourceX} ${sourceY} 
+                C ${sourceX + controlPointOffset} ${sourceY},
+                  ${targetX - controlPointOffset} ${targetY},
+                  ${targetX} ${targetY}`;
+    }, [sourceX, sourceY, targetX, targetY]);
+
+    const handleMetricsClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        console.log(data.params.source);
-        const source = nodes.find((node: any) => node.id === data.params.source)?.data?.display;
-        console.log(source);
-        if (source) {
-            const transformationName = tranformationCount?.transformationOutputCounts?.find(
-                (count: any) => count?.transformationName === source
-            )?.transformationName;
-            console.log(transformationName);
-            let params = {
-                pipeline_name: 'sample',
-                transformation_name: transformationName,
-                page: 1,
-                page_size: 50,
-                sort_columns: 'id',
-            };
-            const response = await ApiService('8011', 'get', `/pipeline/debug/get_transformation_output`, null, params);
-console.log(response)
-            if (response?.outputs) {
-                setTransformData(response?.outputs[0]?.rows);
-                console.log(response)
-                setOpen(!open);
-            }
-        }
+        setIsMetricsOpen(true);
+        dispatch(fetchTransformationOutput({ 
+            pipelineName: 'sample', 
+            transformationName: sourceNode?.data.title 
+        }));
+    };
+
+    const handleEdgeRemove = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEdges(edges => edges.filter(edge => edge.id !== id));
     };
 
     return (
         <>
             <path
+                d={path}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={interactionWidth}
+                className="react-flow__edge-interaction"
+                style={{ pointerEvents: 'stroke' }}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            />
+            
+            <path
                 id={id}
+                style={{ 
+                    ...edgeStyles, 
+                    ...style,
+                    strokeWidth: selected || isHovered ? 1 : 1,
+                    stroke: selected || isHovered ? '#666' : '#b1b1b7',
+                }}
                 className="react-flow__edge-path"
-                d={edgePath}
-                style={{ stroke: '#000', strokeWidth: 1, padding: 2 }}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-                onClick={handleDeleteEdge}
+                d={path}
+            />
+            
+            {/* Edge Controls */}
+            <EdgeControls
+                edgeCenter={edgeCenter}
+                isHovered={isHovered}
+                rowCount={rowCount}
+                onMetricsClick={handleMetricsClick}
+                onRemove={handleEdgeRemove}
+                onHoverChange={setIsHovered}
             />
 
-            <foreignObject
-                width={40}
-                height={30}
-                x={labelX-25}
-                y={labelY - 15}
-                className="overflow-visible"
-            >
-                {hovered && (
-                    <div
-                        className="flex justify-center items-center cursor-pointer absolute"
-                        style={{ width: '0.6rem', height: '1.25rem' }}
-                    >
-                        <FaCut size={12} className='text-red-500' />
-                    </div>
-                )}
-
-                {isDebug && (
-                    <Stack className="text-center" sx={{ fontSize: '6px', mx: 'auto' }}>
-                        {rowCount !== null ? `${rowCount} row${rowCount !== 1 ? 's' : ''}` : "Loading..."}
-                    </Stack>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    {isDebug && (
-                        <div onClick={handleClickOpen} style={{ cursor: 'pointer' }}>
-                            {/* <img src='/assets/buildPipeline/meter.png' alt='img' width={15} /> */}
-                            <BsSpeedometer className='text-slate-700' size={12}/>
-                        </div>
-                    )}
-                </div>
-            </foreignObject>
-            <PipeLinePopUp open={open} handleClose={handleClickOpen} transformData={transformData} />
+            {/* Metrics Dialog */}
+            <EdgeMetricsDialog
+                isOpen={isMetricsOpen}
+                onClose={() => setIsMetricsOpen(false)}
+                metricsData={metricsData}
+                isLoading={isMetricsLoading}
+            />
         </>
     );
-};
+});
 
-export default CustomEdge;
+interface EdgeControlsProps {
+    edgeCenter: { x: number; y: number };
+    isHovered: boolean;
+    rowCount?: number;
+    onMetricsClick: (e: React.MouseEvent) => void;
+    onRemove: (e: React.MouseEvent) => void;
+    onHoverChange: (isHovered: boolean) => void;
+}
+
+const EdgeControls: React.FC<EdgeControlsProps> = ({
+    edgeCenter,
+    isHovered,
+    rowCount,
+    onMetricsClick,
+    onRemove,
+    onHoverChange
+}) => (
+    <foreignObject
+        width={120}
+        height={24}
+        x={edgeCenter.x - 60}
+        y={edgeCenter.y - 12}
+        className="edge-buttons"
+        style={{ zIndex: 1000, pointerEvents: 'all' }}
+        onMouseEnter={() => onHoverChange(true)}
+        onMouseLeave={() => onHoverChange(false)}
+    >
+        <div className="flex items-center justify-between w-full">
+            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} />
+            <RemoveButton isHovered={isHovered} onClick={onRemove} />
+        </div>
+    </foreignObject>
+);
+
+interface MetricsButtonProps {
+    rowCount?: number;
+    onClick: (e: React.MouseEvent) => void;
+}
+
+const MetricsButton: React.FC<MetricsButtonProps> = ({ rowCount, onClick }) => (
+    <div className="flex items-center">
+        {rowCount && (
+            <div className="flex flex-col items-center ml-8">
+                <button
+                    className="w-3 h-3"
+                    onClick={onClick}
+                >
+                    <HiChartBar className="w-3 h-3 text-emerald-600" />
+                </button>
+                <span style={{fontSize:'6px'}} className="font-medium text-gray-700 min-w-[24px] text-center">
+                    {rowCount} rows
+                </span>
+            </div>
+        )}
+    </div>
+);
+
+interface RemoveButtonProps {
+    isHovered: boolean;
+    onClick: (e: React.MouseEvent) => void;
+}
+
+const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
+    <button
+        className={`flex items-center justify-center w-4 h-4
+                 bg-white rounded-full 
+                 shadow-md border border-gray-200
+                 hover:bg-red-50 hover:border-red-200
+                 transition-all duration-200
+                 ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        onClick={onClick}
+        style={{
+            pointerEvents: isHovered ? 'all' : 'none',
+            transform: 'translateX(-50px)'
+        }}
+        title="Remove Edge"
+    >
+        <svg
+            className="w-2.5 h-2.5 text-gray-500 hover:text-red-500
+                     transition-colors duration-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+            />
+        </svg>
+    </button>
+);

@@ -1,0 +1,130 @@
+{
+  "nodes": [
+    {
+      "ui_properties": {
+        "module_name": "Source",
+        "color": "#f7a01f",
+        "icon": "/assets/buildPipeline/6.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Target",
+        "color": "#07a260",
+        "icon": "/assets/buildPipeline/7.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Filter",
+        "color": "#f5bc2a",
+        "icon": "/assets/buildPipeline/display/filter.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Join",
+        "color": "#ff7396",
+        "icon": "/assets/buildPipeline/display/join.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Router",
+        "color": "#804fbf",
+        "icon": "/assets/buildPipeline/display/route.svg"
+      }
+    },
+   {"ui_properties":{
+    "module_name":"Transform",
+    "color":"#06babd",
+    "icon":"/assets/buildPipeline/display/transform.svg"
+   }
+  },
+  {
+    "ui_properties":{
+      "module_name":"Ship",
+      "color":"#c049c0",
+      "icon":"/assets/buildPipeline/display/ship.svg"
+    }
+  },
+    {
+      "ui_properties": {
+        "module_name": "Schema Transformation",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/28.svg"
+      }
+    },
+   
+    {
+      "ui_properties": {
+        "module_name": "Sort",
+        "color": "#219fe7",
+        "icon": "/assets/buildPipeline/squre/1.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Aggregate",
+        "color": "#d43faa",
+        "icon": "/assets/buildPipeline/squre/2.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Lookup",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/3.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "DQ Check",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/4.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Dedupe",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/5.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Repartition",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/6.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "SQL Transformation",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/7.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Union",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/8.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Limit",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/9.svg"
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Change Detection",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/10.svg"
+      }
+    }
+  ]
+}

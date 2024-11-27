@@ -154,18 +154,24 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }, [selectedFlowId, loadFlow]);
 
   const updateNodes = useCallback((updater: React.SetStateAction<Node<CustomNodeData>[]>) => {
-    setIsSaved(false); 
+    setIsSaved(false);
     setNodes(updater);
   }, []);
-  
+
   const updateEdges = useCallback((updater: React.SetStateAction<Edge[]>) => {
-    setIsSaved(false); 
+    setIsSaved(false);
     setEdges(updater);
   }, []);
 
   const togglePlayback = useCallback(() => {
+
+
     setIsPlaying((prev) => !prev);
   }, []);
+
+  if (isPlaying && selectedFlowId) {
+    console.log(">>>", LocalStorageService.getItem(`flow-${selectedFlowId}`));
+  }
 
   const toggleDataPreview = useCallback(() => {
     setIsDataPreviewOpen((prev) => !prev);
@@ -249,15 +255,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       prevNodes.map((node) =>
         node.id === nodeId
           ? {
-              ...node,
-              data: {
-                ...node.data,
-                meta: {
-                  ...node.data.meta,
-                  type: newLabel,
-                },
+            ...node,
+            data: {
+              ...node.data,
+              meta: {
+                ...node.data.meta,
+                type: newLabel,
               },
-            }
+            },
+          }
           : node
       )
     );
@@ -368,7 +374,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  
+
 
   const updateNodeMeta = useCallback(
     (nodeId: string, newMeta: Partial<MetaData>) => {
@@ -376,15 +382,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         prevNodes.map((node) =>
           node.id === nodeId
             ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  meta: {
-                    ...node.data.meta,
-                    ...newMeta,
-                  },
+              ...node,
+              data: {
+                ...node.data,
+                meta: {
+                  ...node.data.meta,
+                  ...newMeta,
                 },
-              }
+              },
+            }
             : node
         )
       );

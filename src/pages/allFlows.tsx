@@ -161,6 +161,7 @@ const AllFlows: React.FC = () => {
     setIsCreatingFlow(true);
     try {
       const result = await dispatch(createFlow(payload));
+      await dispatch(listFlows());
       if (createFlow.fulfilled.match(result)) {
         dispatch(setSelectedFlowFromList(result.payload));
         closeModal();

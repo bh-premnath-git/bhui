@@ -8,6 +8,7 @@ interface NavItem {
   icon: React.ReactNode;
   path: string;
   label: string;
+  shortcut?: string;
   subPaths?: { 
     path: string; 
     label: string;
@@ -49,7 +50,11 @@ export function Sidebar() {
   );
 
   useEffect(() => {
-    setIsMounted(true);
+    if(pathname === '/login'){
+      setIsMounted(false);
+    }else{
+      setIsMounted(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -120,7 +125,7 @@ export function Sidebar() {
                       {item.label}
                     </span>
                   </div>
-                  {isExpanded && item.shortcut && (
+                  {isExpanded && item?.shortcut && (
                     <Typography
                       variant="caption"
                       sx={{

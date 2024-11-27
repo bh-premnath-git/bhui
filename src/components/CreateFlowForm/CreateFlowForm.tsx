@@ -1,27 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { debounce } from 'lodash';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, PlusCircle, X } from "lucide-react";
+import { ChevronDown, ChevronUp, PlusCircle, X, AlertTriangle } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import * as Yup from 'yup';
 import { Spinner } from "@/components/ui/spinner";
-import { useAppSelector } from '@/redux/hooks';
+import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
+import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
 
 // Types
+
 type Tag = {
   tagList: { key: string; value: string }[];
 };
-
-interface Project {
-  ProjectId: string;
-  Name: string;
-}
 
 interface CreateFlowFormProps {
   onClose: () => void;
@@ -31,10 +30,11 @@ interface CreateFlowFormProps {
 
 interface CreateFlowPayload {
   flow_name: string;
-  recipient_email: Record<string, string[]>; 
+  recipient_email: Record<string, string[]>;
   notes: string;
   tags: Tag;
   bh_project_id: number;
+  bh_env_id: number;
   alert_settings: {
     on_job_start: boolean;
     on_job_failure: boolean;
@@ -46,8 +46,9 @@ interface CreateFlowPayload {
 
 interface FormValues {
   selectedProject: string;
+  selectedEnvironment: string;
   name: string;
-  recipientEmails: string[]; // Changed to string array
+  recipientEmails: string[];
   notes: string;
   alert_settings: {
     on_job_start: boolean;
@@ -57,13 +58,92 @@ interface FormValues {
   };
 }
 
-// Multiple Email Input Component
-const MultipleEmailInput: React.FC<{
+interface MultipleEmailInputProps {
   value: string[];
   onChange: (emails: string[]) => void;
   error?: string;
-}> = ({ value, onChange, error }) => {
-  const [inputValue, setInputValue] = useState("");
+}
+
+interface TagInputProps {
+  tags: Tag;
+  setTags: React.Dispatch<React.SetStateAction<Tag>>;
+}
+
+interface AccordionSectionProps {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  borderColor: string;
+  titleColor: string;
+  hasError?: boolean;
+}
+
+interface FlowSearchResult {
+  exists: boolean;
+  flowName: string;
+}
+
+// Validation Schema
+const validationSchema = Yup.object().shape({
+  selectedProject: Yup.string().required('Project is required'),
+  selectedEnvironment: Yup.string().required('Environment is required'),
+  name: Yup.string()
+    .required('Flow name is required')
+    .min(2, 'Flow name must be at least 2 characters')
+    .max(50, 'Flow name must not exceed 50 characters')
+    .matches(
+      /^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]+$/,
+      'Flow name must contain at least one letter and one number, no spaces or special characters allowed'
+    ),
+  recipientEmails: Yup.array()
+    .of(Yup.string().email('Invalid email'))
+    .min(1, 'At least one email is required')
+    .required('Recipient email is required'),
+});
+
+// Accordion Section Component
+const AccordionSection: React.FC<AccordionSectionProps> = ({
+  title,
+  isOpen,
+  onToggle,
+  children,
+  borderColor,
+  titleColor,
+  hasError = false,
+}) => {
+  return (
+    <Card className={`border-${borderColor} transition-all duration-200`}>
+      <CardHeader className="cursor-pointer hover:bg-gray-50" onClick={onToggle}>
+        <div className="flex items-center justify-between">
+          <CardTitle className={`text-lg font-semibold ${titleColor}`}>
+            {title}
+            {hasError && <AlertTriangle className="ml-2 h-5 w-5 text-red-500 inline" />}
+          </CardTitle>
+          {isOpen ? (
+            <ChevronUp className="h-5 w-5 text-gray-500" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-500" />
+          )}
+        </div>
+      </CardHeader>
+      <div
+        className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[500px]' : 'max-h-0'
+          }`}
+      >
+        <CardContent className="space-y-4">{children}</CardContent>
+      </div>
+    </Card>
+  );
+};
+
+// Multiple Email Input Component
+const MultipleEmailInput: React.FC<MultipleEmailInputProps> = ({
+  value,
+  onChange,
+  error,
+}) => {
+  const [inputValue, setInputValue] = useState('');
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -73,11 +153,11 @@ const MultipleEmailInput: React.FC<{
     const newValue = e.target.value;
     setInputValue(newValue);
 
-    // Handle comma separation
     if (newValue.includes(',')) {
-      const emails = newValue.split(',')
-        .map(email => email.trim())
-        .filter(email => email && validateEmail(email) && !value.includes(email));
+      const emails = newValue
+        .split(',')
+        .map((email) => email.trim())
+        .filter((email) => email && validateEmail(email) && !value.includes(email));
       if (emails.length > 0) {
         onChange([...value, ...emails]);
         setInputValue('');
@@ -106,12 +186,12 @@ const MultipleEmailInput: React.FC<{
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2 mb-2">
         {value.map((email, index) => (
-          <Badge key={index} variant="secondary" className="px-2 py-1 text-white">
+          <Badge key={index} variant="secondary" className="px-2 py-1 bg-blue-100 text-blue-800">
             {email}
             <Button
               variant="ghost"
               size="sm"
-              className="ml-2 h-4 w-4 p-0"
+              className="ml-2 h-4 w-4 p-0 hover:text-red-500"
               onClick={() => removeEmail(index)}
             >
               <X className="h-3 w-3" />
@@ -124,7 +204,7 @@ const MultipleEmailInput: React.FC<{
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder="Enter email and press Enter or comma to add"
-        className="w-full"
+        className="w-full border-blue-200 focus:ring-blue-500"
       />
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
@@ -132,27 +212,24 @@ const MultipleEmailInput: React.FC<{
 };
 
 // Tag Input Component
-const TagInput: React.FC<{
-  tags: Tag;
-  setTags: React.Dispatch<React.SetStateAction<Tag>>;
-}> = ({ tags, setTags }) => {
+const TagInput: React.FC<TagInputProps> = ({ tags, setTags }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tagKey, setTagKey] = useState("");
-  const [tagValue, setTagValue] = useState("");
+  const [tagKey, setTagKey] = useState('');
+  const [tagValue, setTagValue] = useState('');
 
   const removeTag = (itemIndex: number) => {
-    setTags(prevTags => ({
-      tagList: prevTags.tagList.filter((_, index) => index !== itemIndex)
+    setTags((prevTags) => ({
+      tagList: prevTags.tagList.filter((_, index) => index !== itemIndex),
     }));
   };
 
   const addTag = () => {
     if (tagKey && tagValue) {
-      setTags(prevTags => ({
-        tagList: [...prevTags.tagList, { key: tagKey, value: tagValue }]
+      setTags((prevTags) => ({
+        tagList: [...prevTags.tagList, { key: tagKey, value: tagValue }],
       }));
-      setTagKey("");
-      setTagValue("");
+      setTagKey('');
+      setTagValue('');
       setIsModalOpen(false);
     }
   };
@@ -164,12 +241,16 @@ const TagInput: React.FC<{
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
         {tags.tagList.map((item, index) => (
-          <Badge key={index} variant="secondary" className="px-2 py-1 text-white">
+          <Badge
+            key={index}
+            variant="secondary"
+            className="px-2 py-1 bg-purple-100 text-purple-800"
+          >
             {`${item.key} >> ${item.value}`}
             <Button
               variant="ghost"
               size="sm"
-              className="ml-2 h-4 w-4 p-0"
+              className="ml-2 h-4 w-4 p-0 hover:text-red-500"
               onClick={() => removeTag(index)}
             >
               <X className="h-3 w-3" />
@@ -181,7 +262,7 @@ const TagInput: React.FC<{
         <DialogTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center text-emerald-500 hover:text-emerald-600 transition-colors duration-200"
+            className="flex items-center text-purple-600 hover:text-purple-700 transition-colors duration-200"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             ADD TAG
@@ -216,7 +297,10 @@ const TagInput: React.FC<{
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
+            <Button
+              onClick={addTag}
+              className="w-full bg-purple-600 text-white hover:bg-purple-700"
+            >
               Add Tag
             </Button>
           </DialogFooter>
@@ -226,24 +310,81 @@ const TagInput: React.FC<{
   );
 };
 
-// Validation Schema
-const validationSchema = Yup.object().shape({
-  selectedProject: Yup.string().required('Project is required'),
-  name: Yup.string().required('Name is required'),
-  recipientEmails: Yup.array()
-    .of(Yup.string().email('Invalid email'))
-    .min(1, 'At least one email is required')
-    .required('Recipient email is required'),
-});
-
 // Main Form Component
-const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, isLoading }) => {
+const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
+  onClose,
+  onCreateFlow,
+  isLoading,
+}) => {
+  const dispatch = useAppDispatch();
   const [showNotes, setShowNotes] = useState(false);
   const [tags, setTags] = useState<Tag>({ tagList: [] });
-  const { flowProjectList: data } = useAppSelector((state) => state.flowApi);
+  const [flowExistsModalOpen, setFlowExistsModalOpen] = useState(false);
+  const { environments, flowProjectList: projects, searchedFlow, searchLoading } = useAppSelector(
+    (state) => state.flowApi
+  );
+
+  // Accordion state
+  const [openSections, setOpenSections] = useState({
+    basicInfo: true,
+    additionalDetails: false,
+    notifications: false,
+  });
+
+  const debouncedSearchFlow = useMemo(
+    () =>
+      debounce((flowName: string) => {
+        if (flowName.length >= 3) {
+          dispatch(searchFlow(flowName));
+        } else {
+          dispatch(clearSearchResults());
+        }
+      }, 500),
+    [dispatch]
+  );
+
+  const handleFlowNameChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFieldValue: (field: string, value: any) => void
+  ) => {
+    e.preventDefault();
+    const flowName = e.target.value;
+    setFieldValue('name', flowName);
+
+    // Clear search results if input is too short
+    if (flowName.length < 3) {
+      setFlowExistsModalOpen(false);
+      dispatch(clearSearchResults());
+      return;
+    }
+
+    debouncedSearchFlow(flowName);
+  };
+
+  useEffect(() => {
+    return () => {
+      debouncedSearchFlow.cancel(); // Cleanup debounce on unmount
+    };
+  }, [debouncedSearchFlow]);
+
+  useEffect(() => {
+    if (Array.isArray(searchedFlow) && searchedFlow.length > 0) {
+      setFlowExistsModalOpen(true);
+    } else {
+      setFlowExistsModalOpen(false);
+    }
+  }, [searchedFlow]);
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
   const initialValues: FormValues = {
     selectedProject: '',
+    selectedEnvironment: '',
     name: '',
     recipientEmails: [],
     notes: '',
@@ -256,8 +397,14 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-lg w-full">
-      <h2 className="text-2xl font-semibold mb-6">Create Flow</h2>
+    <div className="bg-gradient-to-b from-gray-50 to-white p-6 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
+      <div className="border-b pb-2 mb-2">
+        <h2 className="text-3xl font-bold text-gray-800">Create Flow</h2>
+        <p className="text-gray-500 mt-0">
+          Configure your flow settings and notifications
+        </p>
+      </div>
+
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
@@ -265,172 +412,248 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
           const payload: CreateFlowPayload = {
             flow_name: values.name,
             bh_project_id: Number(values.selectedProject),
+            bh_env_id: Number(values.selectedEnvironment),
             notes: values.notes,
-            recipient_email:{email: values.recipientEmails},
+            recipient_email: { email: values.recipientEmails },
             tags: tags,
             alert_settings: values.alert_settings,
-            flow_json: {}
+            flow_json: {},
           };
           onCreateFlow(payload);
           setSubmitting(false);
         }}
       >
-        {({ values, setFieldValue, errors }) => (
-          <Form className="space-y-3">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <RequiredLabel>
-                  <Label htmlFor="selectedProject" className="text-sm font-medium">Project</Label>
-                </RequiredLabel>
-                <Field name="selectedProject">
-                  {({ field, form }: any) => (
-                    <Select
-                      value={field.value || undefined}
-                      onValueChange={(value) => {
-                        form.setFieldValue('selectedProject', Number(value));
-                      }}
-                    >
-                      <SelectTrigger id="selectedProject">
-                        <SelectValue placeholder="Select Project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {data.map((project: Project) => (
-                          <SelectItem key={project.ProjectId} value={project.ProjectId}>
-                            {project.Name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </Field>
-                <ErrorMessage name="selectedProject" component="div" className="text-red-500 text-sm mt-1" />
-              </div>
-              <div>
-                <RequiredLabel>
-                  <Label htmlFor="name" className="text-sm font-medium">Name</Label>
-                </RequiredLabel>
-                <Field name="name">
-                  {({ field }: any) => (
-                    <Input
-                      id="name"
-                      placeholder="Enter Flow Name"
-                      {...field}
-                      className="w-full"
-                    />
-                  )}
-                </Field>
-                <ErrorMessage name="name" component="div" className="text-red-500 text-sm mt-1" />
-              </div>
-            </div>
+        {({ values, setFieldValue, errors, isValid, isSubmitting }) => {
+          // Determine if there are errors in each section
+          const hasError = (errorFields: string[]) => {
+            return errorFields.some((field) => {
+              const error = field.split('.').reduce((acc, curr) => {
+                return acc ? acc[curr] : null;
+              }, errors as any);
+              return !!error;
+            });
+          };
 
-            <div>
-              <button
-                type="button"
-                className="text-blue-600 flex items-center font-medium"
-                onClick={() => setShowNotes(!showNotes)}
+          const basicInfoHasError = hasError([
+            'selectedProject',
+            'selectedEnvironment',
+            'name',
+          ]);
+
+          const notificationsHasError = hasError(['recipientEmails']);
+
+          return (
+            <Form className="space-y-2">
+              <AccordionSection
+                title="Basic Information"
+                isOpen={openSections.basicInfo}
+                onToggle={() => toggleSection('basicInfo')}
+                borderColor="blue-100"
+                titleColor="text-blue-800"
+                hasError={basicInfoHasError}
               >
-                {showNotes ? 'Hide Notes' : 'Add Notes'}
-                {showNotes ? <ChevronUp className="ml-1" size={16} /> : <ChevronDown className="ml-1" size={16} />}
-              </button>
-              {showNotes && (
-                <Field name="notes">
-                  {({ field }: any) => (
-                    <textarea
-                      className="mt-2 w-full p-3 border rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter notes here..."
-                      rows={4}
-                      {...field}
+                <div className="grid grid-cols-2 gap-4 ">
+                  <div>
+                    <RequiredLabel>
+                      <Label htmlFor="selectedProject" className="text-sm font-medium mb-2">
+                        Project
+                      </Label>
+                    </RequiredLabel>
+                    <Field name="selectedProject">
+                      {({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => setFieldValue('selectedProject', value)}
+                        >
+                          <SelectTrigger id="selectedProject" className="border-blue-200">
+                            <SelectValue placeholder="Select Project" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((project) => (
+                              <SelectItem
+                                key={project.ProjectId}
+                                value={project.ProjectId.toString()}
+                              >
+                                {project.Name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                    <ErrorMessage
+                      name="selectedProject"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
                     />
+                  </div>
+                  <div>
+                    <RequiredLabel>
+                      <Label htmlFor="selectedEnvironment" className="text-sm font-medium mb-2">
+                        Environment
+                      </Label>
+                    </RequiredLabel>
+                    <Field name="selectedEnvironment">
+                      {({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => setFieldValue('selectedEnvironment', value)}
+                        >
+                          <SelectTrigger id="selectedEnvironment" className="border-blue-200">
+                            <SelectValue placeholder="Select Environment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {environments.map((env) => (
+                              <SelectItem key={env.id} value={env.id.toString()}>
+                                {env.envName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                    <ErrorMessage
+                      name="selectedEnvironment"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                  <div>
+                    <RequiredLabel>
+                      <Label htmlFor="name" className="text-sm font-medium mb-2 relative">
+                        Flow Name
+                      </Label>
+                    </RequiredLabel>
+                    <Field name="name">
+                      {({ field }) => (
+                        <div>
+                          <Input
+                            id="name"
+                            placeholder="Enter Flow Name"
+                            {...field} // Spread Formik's field props first
+                            onChange={(e) => handleFlowNameChange(e, setFieldValue)}
+                            className="border-blue-200 focus:ring-blue-500"
+                          />
+                          {flowExistsModalOpen && (
+                            <span className="absolute right-12 top-1/2 -translate-y-1/2 mr-3 text-red-500">
+                              ⚠️ Name exists
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </Field>
+                    <ErrorMessage
+                      name="name"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                </div>
+              </AccordionSection>
+
+              <AccordionSection
+                title="Additional Details"
+                isOpen={openSections.additionalDetails}
+                onToggle={() => toggleSection('additionalDetails')}
+                borderColor="purple-100"
+                titleColor="text-purple-800"
+              >
+                <div>
+                  <button
+                    type="button"
+                    className="text-purple-600 flex items-center font-medium hover:text-purple-700 transition-colors"
+                    onClick={() => setShowNotes(!showNotes)}
+                  >
+                    {showNotes ? 'Hide Notes' : 'Add Notes'}
+                    {showNotes ? (
+                      <ChevronUp className="ml-1" size={16} />
+                    ) : (
+                      <ChevronDown className="ml-1" size={16} />
+                    )}
+                  </button>
+                  {showNotes && (
+                    <Field name="notes">
+                      {({ field }) => (
+                        <textarea
+                          className="mt-2 w-full p-3 border border-purple-200 rounded-md resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Enter notes here..."
+                          rows={4}
+                          {...field}
+                        />
+                      )}
+                    </Field>
                   )}
-                </Field>
-              )}
-            </div>
+                </div>
+                <TagInput tags={tags} setTags={setTags} />
+              </AccordionSection>
 
-            <div className="space-y-4">
-              <TagInput tags={tags} setTags={setTags} />
-            </div>
+              <AccordionSection
+                title="Notification Settings"
+                isOpen={openSections.notifications}
+                onToggle={() => toggleSection('notifications')}
+                borderColor="green-100"
+                titleColor="text-green-800"
+                hasError={notificationsHasError}
+              >
+                <div>
+                  <RequiredLabel>
+                    <Label htmlFor="recipientEmails" className="text-sm font-medium mb-2">
+                      Recipient Email IDs
+                    </Label>
+                  </RequiredLabel>
+                  <MultipleEmailInput
+                    value={values.recipientEmails}
+                    onChange={(emails) => setFieldValue('recipientEmails', emails)}
+                    error={errors.recipientEmails as string}
+                  />
+                </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Alert Settings</h3>
-              <div>
-                <RequiredLabel>
-                  <Label htmlFor="recipientEmails" className="text-sm font-medium">
-                    Recipient Email IDs
-                  </Label>
-                </RequiredLabel>
-                <MultipleEmailInput
-                  value={values.recipientEmails}
-                  onChange={(emails) => setFieldValue('recipientEmails', emails)}
-                  error={errors.recipientEmails as string}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(values.alert_settings).map(([key]) => (
+                    <div
+                      key={key}
+                      className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg hover:bg-green-100 transition-colors duration-200"
+                    >
+                      <Field name={`alert_settings.${key}`} type="checkbox">
+                        {({ field }) => (
+                          <Checkbox
+                            id={key}
+                            checked={field.value}
+                            onCheckedChange={(checked) =>
+                              setFieldValue(`alert_settings.${key}`, checked)
+                            }
+                            className="border-green-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                          />
+                        )}
+                      </Field>
+                      <label htmlFor={key} className="text-sm capitalize">
+                        {key.split('_').join(' ')}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+
+              <div className="flex justify-end space-x-4 pt-6">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={onClose}
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                  type="submit"
+                  disabled={!isValid || isSubmitting || isLoading}
+                >
+                  {isLoading ? <Spinner /> : 'Create Flow'}
+                </Button>
               </div>
-
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center space-x-2">
-                  <Field name="alert_settings.on_job_start" type="checkbox">
-                    {({ field }: any) => (
-                      <Checkbox
-                        id="on_job_start"
-                        checked={field.value}
-                        onCheckedChange={(checked) => setFieldValue('alert_settings.on_job_start', checked)}
-                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                    )}
-                  </Field>
-                  <label htmlFor="on_job_start" className="text-sm">On Job Start</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Field name="alert_settings.on_job_failure" type="checkbox">
-                    {({ field }: any) => (
-                      <Checkbox
-                        id="on_job_failure"
-                        checked={field.value}
-                        onCheckedChange={(checked) => setFieldValue('alert_settings.on_job_failure', checked)}
-                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                    )}
-                  </Field>
-                  <label htmlFor="on_job_failure" className="text-sm">On Job Failure</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Field name="alert_settings.on_job_success" type="checkbox">
-                    {({ field }: any) => (
-                      <Checkbox
-                        id="on_job_success"
-                        checked={field.value}
-                        onCheckedChange={(checked) => setFieldValue('alert_settings.on_job_success', checked)}
-                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                    )}
-                  </Field>
-                  <label htmlFor="on_job_success" className="text-sm">On Job Success</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Field name="alert_settings.on_job_in_progress" type="checkbox">
-                    {({ field }: any) => (
-                      <Checkbox
-                        id="on_job_in_progress"
-                        checked={field.value}
-                        onCheckedChange={(checked) => setFieldValue('alert_settings.on_job_in_progress', checked)}
-                        className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                    )}
-                  </Field>
-                  <label htmlFor="on_job_in_progress" className="text-sm">On Job InProgress</label>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-6">
-              <Button variant="outline" type="button" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button className="bg-black text-white hover:bg-gray-800" type="submit" disabled={isLoading}>
-                {isLoading ? <Spinner /> : "Create Flow"}
-              </Button>
-            </div>
-          </Form>
-        )}
+            </Form>
+          );
+        }}
       </Formik>
     </div>
   );

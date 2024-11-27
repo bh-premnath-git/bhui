@@ -20,6 +20,7 @@ export interface ApiState {
   tranformationCount: any;
   isDebug: boolean;
   metricsData: any;
+  isMetricsLoading: boolean;
 }
 
 const initialState: ApiState = {
@@ -41,6 +42,7 @@ const initialState: ApiState = {
   tranformationCount: {},
   isDebug: false,
   metricsData: null,
+  isMetricsLoading: false,
 };
 
 interface ApiResponse {

@@ -8,15 +8,16 @@ import ReactFlow, {
     ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import nodeData from './node_display.json';
-import schemaData from './mdata.json';
+import nodeData from '../../pages/buildPipeLine/node_display.json';
+import schemaData from '../../pages/buildPipeLine/mdata.json';
 import { Button, Dialog, DialogActions, DialogContent, Menu, MenuItem } from '@mui/material';
-import schemaValidation from './sample_validation.json';
+import schemaValidation from '../../pages/buildPipeLine/sample_validation.json';
+import { CustomNode } from '@/components/BuildPipeLineComps/CustomNode';
 import { ApiService } from '@/services/apiServices';
 import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
-import { CustomNode } from '@/components/BuildPipeLineComps/CustomNode';
 import { FlowControls } from './FlowControls';
 import CreateFormFormik from '@/components/BuildPipeLineComps/CreateForm';
+
 
 interface UIProperties {
     color: string;
@@ -35,7 +36,7 @@ interface Schema {
     [key: string]: any;
 }
 
-const AllNodes: React.FC = () => {
+const BuildPlayGround: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedSchema, setSelectedSchema]: any = useState<Schema | null>(null);
     const [formStates, setFormStates] = useState<{ [key: string]: any }>({});
@@ -54,7 +55,16 @@ const AllNodes: React.FC = () => {
     const [isPipelineRunning, setIsPipelineRunning] = useState(false);
     const [transformationCounts, setTransformationCounts] = useState<Array<{ transformationName: string, rowCount: string }>>([]);
 
+    const onError = useCallback((id: string) => {
+        console.error('Flow Error:', id);
+    }, []);
+
     const handleNodeClick = useCallback((node: Node) => {
+        if (!node?.ui_properties?.module_name) {
+            console.error('Invalid node data');
+            return;
+        }
+        
         const currentCount = nodeCounters[node.ui_properties.module_name] || 0;
         const newCount = currentCount + 1;
 
@@ -176,7 +186,6 @@ const AllNodes: React.FC = () => {
     }, [formStates, nodes, edges]);
 
     const filteredNodes = useMemo(() => nodeData.nodes, []);
-    console.log(filteredNodes)
 
     const checkConnectionExists = useCallback((connection: Connection): boolean => {
         return edges.some(
@@ -199,14 +208,60 @@ const AllNodes: React.FC = () => {
         }
     }, [nodes]);
 
+
+
+    const checkForCircularDependency = (source: string, target: string): boolean => {
+        // Example of a simple circular check:
+        const graph = buildGraphFromEdges(edges);
+        return hasCycle(graph, source, target);
+    };
+
     const onConnect = useCallback((connection: Connection) => {
         if (checkConnectionExists(connection)) {
             return;
         }
-
-        setEdges(eds => addEdge(connection, eds));
+    
+        // Check for circular dependency
+        const isCircular = checkForCircularDependency(connection.source, connection.target);
+        if (isCircular) {
+            console.error("Circular dependency detected, connection not added.");
+            return;
+        }
+    
+        setEdges((eds: any) => addEdge(connection, eds));
         handleNodeForm(connection.target!);
-    }, [checkConnectionExists, handleNodeForm, setEdges]);
+    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges]);
+    
+    
+    const buildGraphFromEdges = (edges: any[]) => {
+        const graph: { [key: string]: string[] } = {};
+        edges.forEach(edge => {
+            if (!graph[edge.source]) graph[edge.source] = [];
+            graph[edge.source].push(edge.target);
+        });
+        return graph;
+    };
+    
+    const hasCycle = (graph: any, startNode: string, targetNode: string): boolean => {
+        const visited = new Set<string>();
+        const stack = [startNode];
+        while (stack.length > 0) {
+            const currentNode = stack.pop()!;
+            if (currentNode === targetNode) {
+                return true;
+            }
+            visited.add(currentNode);
+            if (graph[currentNode]) {
+                graph[currentNode].forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        stack.push(neighbor);
+                    }
+                });
+            }
+        }
+        return false;
+    };
+    
 
     const handleDebugToggle = useCallback((nodeId: string, title: string) => {
         setDebuggedNodes(prev => {
@@ -250,7 +305,11 @@ const AllNodes: React.FC = () => {
     };
 
     const handleCenter = useCallback(() => {
-        fitView({ duration: 800, padding: 0.1 });
+        try {
+            fitView({ duration: 800, padding: 0.1 });
+        } catch (error) {
+            console.error('FitView error:', error);
+        }
     }, [fitView]);
 
     // Add new function for zoom in
@@ -350,6 +409,7 @@ const AllNodes: React.FC = () => {
             }
         } catch (error) {
             console.error('Error in handleNext:', error);
+            // Handle error appropriately (e.g., show error message to user)
         }
     }, []);
 
@@ -360,9 +420,9 @@ const AllNodes: React.FC = () => {
     }), [transformationCounts]);
 
     return (
-        <div className="p-6  mx-auto">
+        <div className="p-1 ml-8">
             {debuggedNodesList.length > 0 && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <div className="mb-4 p-2 bg-blue-50 rounded-lg">
                     <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
                     <div className="flex flex-wrap gap-2">
                         {debuggedNodesList.map(({ id, title }) => (
@@ -468,35 +528,25 @@ const AllNodes: React.FC = () => {
                     </>
                 )}
             </div>
-            <div style={{ height: '72vh', width: '100%', }}>
+            <div style={{ height: '69vh', width: '100%', }}>
                 <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
+                    nodes={nodes || []}
+                    edges={edges || []}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     nodeTypes={memoizedNodeTypes}
                     edgeTypes={edgeTypes}
+                    onError={onError}
                     fitView
                     proOptions={{ hideAttribution: true }}
-
-                >
-                    
-                </ReactFlow>
+                />
             </div>
             <div className="flex items-center justify-end gap-4 mt-4">
-                {/* <button
-                    onClick={handleRunPipelineClick}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                    disabled={Object.keys(formStates).filter(key => formStates[key] !== null).length === 0}
-                >
-                    Run Pipeline
-                </button> */}
                 <FlowControls
                     onZoomIn={handleZoomIn}
                     onZoomOut={handleZoomOut}
                     onCenter={handleCenter}
-                    // onFit={handleFit}
                     onRun={handleRun}
                     onStop={handleStop}
                     onNext={handleNext}
@@ -538,9 +588,35 @@ const AllNodes: React.FC = () => {
     );
 };
 
-// Wrap the exported component with ReactFlowProvider
+// 4. Add error boundary wrapper
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+    constructor(props: {children: React.ReactNode}) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error('Flow Error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return <div>Something went wrong with the flow editor.</div>;
+        }
+
+        return this.props.children;
+    }
+}
+
+// Wrap the exported component with both providers
 export default React.memo(() => (
-    <ReactFlowProvider>
-        <AllNodes />
-    </ReactFlowProvider>
+    <ErrorBoundary>
+        <ReactFlowProvider>
+            <BuildPlayGround />
+        </ReactFlowProvider>
+    </ErrorBoundary>
 ));

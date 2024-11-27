@@ -4,8 +4,9 @@ import { MdSpeed } from "react-icons/md";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "../../store/store";
 import { AppDispatch } from "../../store/store";
-import PipeLinePopUp from "./pipeLinePopUp";
 import { fetchTransformationOutput } from "@/redux/BuildPipeLineSlice";
+import PipeLinePopUp from "./pipeLinePopUp";
+import { HiChartBar } from "react-icons/hi";
 const edgeStyles = {
     stroke: '#b1b1b7',
     strokeWidth: 2,
@@ -66,7 +67,7 @@ export const CustomEdge = memo(({
 
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
-    const { metricsData, isMetricsLoading } = useSelector((state: RootState) => state.pipeline);
+    const { metricsData, isMetricsLoading } = useSelector((state: RootState) => state.buildPipeLineApi);
 
     const sourceNode = getNode(source);
     const rowCount = transformationCounts.find(
@@ -193,7 +194,7 @@ const MetricsButton: React.FC<MetricsButtonProps> = ({ rowCount, onClick }) => (
                     className="w-3 h-3"
                     onClick={onClick}
                 >
-                    <MdSpeed className="w-3 h-3 text-emerald-600" />
+                    <HiChartBar className="w-3 h-3 text-emerald-600" />
                 </button>
                 <span style={{fontSize:'6px'}} className="font-medium text-gray-700 min-w-[24px] text-center">
                     {rowCount} rows

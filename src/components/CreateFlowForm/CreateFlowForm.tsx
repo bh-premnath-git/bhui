@@ -31,7 +31,7 @@ interface CreateFlowFormProps {
 
 interface CreateFlowPayload {
   flow_name: string;
-  recipent_emails: string[]; // Changed to string array
+  recipient_email: Record<string, string[]>; 
   notes: string;
   tags: Tag;
   bh_project_id: number;
@@ -41,6 +41,7 @@ interface CreateFlowPayload {
     on_job_success: boolean;
     on_job_in_progress: boolean;
   };
+  flow_json: Record<string, any>;
 }
 
 interface FormValues {
@@ -265,9 +266,10 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({ onClose, onCreateFlow, 
             flow_name: values.name,
             bh_project_id: Number(values.selectedProject),
             notes: values.notes,
-            recipent_emails: values.recipientEmails,
+            recipient_email:{email: values.recipientEmails},
             tags: tags,
             alert_settings: values.alert_settings,
+            flow_json: {}
           };
           onCreateFlow(payload);
           setSubmitting(false);

@@ -29,6 +29,7 @@ interface CustomNodeData {
   type: string;
   status: string;
   meta: MetaData;
+  position?: { x: number; y: number };
 }
 
 interface NodeFormData {
@@ -151,6 +152,16 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaving(false);
     }
   }, [selectedFlowId, loadFlow]);
+
+  const updateNodes = useCallback((updater: React.SetStateAction<Node<CustomNodeData>[]>) => {
+    setIsSaved(false); 
+    setNodes(updater);
+  }, []);
+  
+  const updateEdges = useCallback((updater: React.SetStateAction<Edge[]>) => {
+    setIsSaved(false); 
+    setEdges(updater);
+  }, []);
 
   const togglePlayback = useCallback(() => {
     setIsPlaying((prev) => !prev);
@@ -403,8 +414,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     selectedFlowId,
     nodes,
     edges,
-    setNodes,
-    setEdges,
+    setNodes: updateNodes,
+    setEdges: updateEdges,
     isPlaying,
     togglePlayback,
     updateNodeDimensions,

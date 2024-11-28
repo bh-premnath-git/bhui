@@ -307,29 +307,6 @@ function DataCatalogTable({
           playRowFn={playRowFn}
           playRow={true}
           background='primary.main'
-          sx={{
-            '& .MuiTableCell-root': {
-              px: 2,  // Consistent padding with header
-              py: 2,
-              borderBottom: '1px solid',
-              borderColor: 'divider'
-            },
-            '& .MuiTableHead-root': {
-              backgroundColor: 'background.default',
-              '& .MuiTableCell-root': {
-                fontWeight: 600,
-                color: 'text.primary',
-                borderBottom: '2px solid',
-                borderColor: 'divider'
-              }
-            },
-            '& .MuiTableBody-root tr:last-child .MuiTableCell-root': {
-              borderBottom: 'none'
-            },
-            '& .MuiTableBody-root tr:hover': {
-              backgroundColor: 'action.hover'
-            }
-          }}
         />
       </Paper>
 
@@ -339,9 +316,9 @@ function DataCatalogTable({
         onClose={() => setIsDrawerOpen(false)}
         sx={{
           '& .MuiDrawer-paper': {
-            width: '50%',
-            minWidth: '600px',
-            maxWidth: '800px',
+            width: '75%',
+            minWidth: '900px',
+            maxWidth: '1200px',
             boxSizing: 'border-box',
             backgroundColor: 'background.paper',
             borderLeft: '1px solid',
@@ -376,7 +353,7 @@ function DataCatalogTable({
             </IconButton>
           </Box>
           
-          <Box sx={{ p: 0, height: 'calc(100% - 64px)', overflow: 'auto' }}>
+          <Box sx={{ p: 2, height: 'calc(100% - 64px)', overflow: 'auto' }}>
             <CatalogSchema />
           </Box>
         </Box>

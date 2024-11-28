@@ -1,113 +1,377 @@
-import * as React from 'react';
-import {
-    Stack, LinearProgress, Typography, IconButton, Dialog, DialogTitle, DialogContent,
-    DialogContentText, DialogActions, Button, Box, TextField, Chip, Divider, Popover
+import { useState, useEffect } from 'react';
+import { 
+    Stack, Typography, Paper, TableContainer, 
+    TextField, Chip, IconButton
 } from '@mui/material';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import ShareIcon from '@mui/icons-material/Share';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import * as Yup from 'yup';
-import About from '../../components/Catalog/About';
-import {ApiService} from '@/services/apiServices';
-import ShowAll from './showAll';
-import { LuCalendarDays } from "react-icons/lu";
-import { BsChatDots } from "react-icons/bs";
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { FlexibleTable } from '@/components/Tabel';
-import { catalogColumns } from '@/features/catalogColumn';
-interface Column {
-    id: string;
-    label: string;
-    align: 'left' | 'right' | 'center';
-    format?: (value: React.ReactNode) => React.ReactNode;
+import { toast } from 'react-toastify';
+import { Plus, X } from 'lucide-react';
+import About from '@/components/Catalog/About';
+
+interface FieldData {
+    field_id: string | number;
+    field_name: string;
+    description: string;
+    tags: string[];
+    isEditing?: {
+        field_name?: boolean;
+        description?: boolean;
+        tags?: boolean;
+    };
 }
 
-interface Row {
-    [key: string]: React.ReactNode;
-}
-
-const validationSchema = Yup.object({
-    tagKey: Yup.string().required('Tag Key is required'),
-    tagValue: Yup.string().required('Tag Value is required'),
-});
-
-
-const columns: Column[] = [
-    { id: 'field', label: 'Field', align: 'left' },
-    { id: 'description', label: 'Description', align: 'left' },
-    { id: 'tags', label: 'Tags', align: 'left' },
-    { id: 'glossaryterms', label: 'Glossary Terms', align: 'center' },
-    { id: 'edit', label: ' ', align: 'center', },
-
+// Mock data generator
+const generateMockData = (): FieldData[] => [
+    {
+        field_id: 1,
+        field_name: "employee_id",
+        description: "Unique identifier for employee records",
+        tags: ["primary_key", "integer"]
+    },
+    {
+        field_id: 2,
+        field_name: "first_name",
+        description: "Employee's first name",
+        tags: ["personal", "varchar"]
+    },
+    {
+        field_id: 3,
+        field_name: "last_name",
+        description: "Employee's last name",
+        tags: ["personal", "varchar"]
+    },
+    {
+        field_id: 4,
+        field_name: "hire_date",
+        description: "Date when employee was hired",
+        tags: ["date", "timestamp"]
+    },
+    {
+        field_id: 5,
+        field_name: "salary",
+        description: "Employee's current salary",
+        tags: ["confidential", "decimal"]
+    }
 ];
 
-
-
-function createData(field: React.ReactNode, description: React.ReactNode, tags: React.ReactNode, glossaryterms: string, edit: React.ReactNode): Row {
-    return { field, description, tags, glossaryterms, edit };
-}
-
-
-
-export default function CatalogsBody(props: any) {
+export default function CatalogsBody() {
     const { layoutList } = useSelector((state: RootState) => state.catalogApi);
-    const [open2, setOpen2]: any = useState(false);
+    const [fields, setFields] = useState<FieldData[]>([]);
+    const [editingField, setEditingField] = useState<FieldData | null>(null);
+    const [newTag, setNewTag] = useState('');
 
-    const handleClickOpen = () => {
-        setOpen2(true);
-    }
+    // Fetch mock data
+    useEffect(() => {
+        const mockData = generateMockData();
+        setFields(mockData.map(field => ({ ...field, isEditing: {} })));
+    }, []);
 
-    const handleClose1 = () => {
-        setOpen2(false);
+    // Mock API call
+    const mockApiCall = async (data: any) => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { success: true };
     };
 
-
-    const actionFn = () => {
-    }
-    const createNewFn = () => {
-        // navigate("/all-projects/new");
+    const handleStartEdit = (field: FieldData, field_key: string) => {
+        setFields(prevFields => 
+            prevFields.map(f => 
+                f.field_id === field.field_id 
+                    ? { ...f, isEditing: { ...f.isEditing, [field_key]: true } }
+                    : f
+            )
+        );
     };
+
+    const handleSaveEdit = async (field: FieldData, field_key: string, value: any) => {
+        try {
+            await mockApiCall({ field_id: field.field_id, [field_key]: value });
+            setFields(prevFields =>
+                prevFields.map(f =>
+                    f.field_id === field.field_id
+                        ? { 
+                            ...f, 
+                            [field_key]: value,
+                            isEditing: { ...f.isEditing, [field_key]: false }
+                          }
+                        : f
+                )
+            );
+            toast.success('Field updated successfully', {
+                position: "top-right",
+                autoClose: 3000
+            });
+        } catch (error) {
+            toast.error('Failed to update field', {
+                position: "top-right",
+                autoClose: 3000
+            });
+        }
+    };
+
+    const handleAddTag = async (field: FieldData, tag: string) => {
+        if (!tag.trim()) return;
+        try {
+            await mockApiCall({ field_id: field.field_id, tag });
+            setFields(prevFields =>
+                prevFields.map(f =>
+                    f.field_id === field.field_id
+                        ? { ...f, tags: [...f.tags, tag.trim()] }
+                        : f
+                )
+            );
+            setNewTag('');
+        } catch (error) {
+            toast.error('Failed to add tag');
+        }
+    };
+
+    const handleRemoveTag = async (field: FieldData, tagToRemove: string) => {
+        try {
+            await mockApiCall({ field_id: field.field_id, tag: tagToRemove });
+            setFields(prevFields =>
+                prevFields.map(f =>
+                    f.field_id === field.field_id
+                        ? { ...f, tags: f.tags.filter(tag => tag !== tagToRemove) }
+                        : f
+                )
+            );
+        } catch (error) {
+            toast.error('Failed to remove tag');
+        }
+    };
+
+    const catalogColumns = [
+        {
+            key: 'field_name',
+            header: 'Field',
+            type: 'text' as const,
+            render: (value: string, row: FieldData) => (
+                row.isEditing?.field_name ? (
+                    <TextField
+                        size="small"
+                        defaultValue={value}
+                        autoFocus
+                        variant="standard"
+                        onBlur={(e) => handleSaveEdit(row, 'field_name', e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSaveEdit(row, 'field_name', e.target.value);
+                            }
+                        }}
+                        sx={{
+                            '& .MuiInputBase-root': {
+                                fontSize: '0.875rem',
+                                '&:before, &:after': {
+                                    borderBottom: '2px solid',
+                                    borderColor: 'primary.main'
+                                }
+                            }
+                        }}
+                    />
+                ) : (
+                    <Typography 
+                        onClick={() => handleStartEdit(row, 'field_name')}
+                        sx={{ 
+                            cursor: 'pointer', 
+                            p: 0.5,
+                            borderRadius: 1,
+                            '&:hover': { 
+                                backgroundColor: 'action.hover',
+                                color: 'primary.main'
+                            }
+                        }}
+                    >
+                        {value}
+                    </Typography>
+                )
+            )
+        },
+        {
+            key: 'description',
+            header: 'Description',
+            type: 'text' as const,
+            render: (value: string, row: FieldData) => (
+                row.isEditing?.description ? (
+                    <TextField
+                        size="small"
+                        defaultValue={value}
+                        autoFocus
+                        variant="standard"
+                        multiline
+                        onBlur={(e) => handleSaveEdit(row, 'description', e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSaveEdit(row, 'description', e.target.value);
+                            }
+                        }}
+                        sx={{
+                            width: '100%',
+                            '& .MuiInputBase-root': {
+                                fontSize: '0.875rem',
+                                '&:before, &:after': {
+                                    borderBottom: '2px solid',
+                                    borderColor: 'primary.main'
+                                }
+                            }
+                        }}
+                    />
+                ) : (
+                    <Typography 
+                        onClick={() => handleStartEdit(row, 'description')}
+                        sx={{ 
+                            cursor: 'pointer', 
+                            p: 0.5,
+                            borderRadius: 1,
+                            '&:hover': { 
+                                backgroundColor: 'action.hover',
+                                color: 'primary.main'
+                            }
+                        }}
+                    >
+                        {value}
+                    </Typography>
+                )
+            )
+        },
+        {
+            key: 'tags',
+            header: 'Tags',
+            type: 'text' as const,
+            render: (value: string[], row: FieldData) => (
+                <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+                    {value?.map((tag: string, index: number) => (
+                        <Chip
+                            key={index}
+                            label={tag}
+                            size="small"
+                            onDelete={() => handleRemoveTag(row, tag)}
+                            sx={{
+                                borderRadius: '4px',
+                                backgroundColor: 'primary.lighter',
+                                color: 'primary.main',
+                                height: '24px',
+                                fontSize: '0.75rem',
+                                '&:hover': {
+                                    backgroundColor: 'primary.light'
+                                }
+                            }}
+                        />
+                    ))}
+                    {row.isEditing?.tags ? (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <TextField
+                                size="small"
+                                value={newTag}
+                                placeholder="Add tag"
+                                variant="standard"
+                                onChange={(e) => setNewTag(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddTag(row, newTag);
+                                    } else if (e.key === 'Escape') {
+                                        setFields(prevFields =>
+                                            prevFields.map(f =>
+                                                f.field_id === row.field_id
+                                                    ? { ...f, isEditing: { ...f.isEditing, tags: false } }
+                                                    : f
+                                            )
+                                        );
+                                    }
+                                }}
+                                sx={{
+                                    width: '100px',
+                                    '& .MuiInputBase-root': {
+                                        fontSize: '0.875rem',
+                                        '&:before, &:after': {
+                                            borderBottom: '2px solid',
+                                            borderColor: 'primary.main'
+                                        }
+                                    }
+                                }}
+                            />
+                            <IconButton 
+                                size="small" 
+                                onClick={() => setFields(prevFields =>
+                                    prevFields.map(f =>
+                                        f.field_id === row.field_id
+                                            ? { ...f, isEditing: { ...f.isEditing, tags: false } }
+                                            : f
+                                    )
+                                )}
+                                sx={{
+                                    color: 'text.secondary',
+                                    '&:hover': {
+                                        color: 'error.main'
+                                    }
+                                }}
+                            >
+                                <X size={16} />
+                            </IconButton>
+                        </Stack>
+                    ) : (
+                        <IconButton 
+                            size="small" 
+                            onClick={() => handleStartEdit(row, 'tags')}
+                            sx={{
+                                color: 'text.secondary',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    backgroundColor: 'primary.lighter'
+                                }
+                            }}
+                        >
+                            <Plus size={16} />
+                        </IconButton>
+                    )}
+                </Stack>
+            )
+        }
+    ];
+
     return (
         <>
-
-            <Stack direction={'row'} spacing={1} sx={{ height: '100%' }}>
-                <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '4px', border: '1px solid lightgrey' }} elevation={0}>
-                    <Stack sx={{ p: '16px' }}>
-                        <Stack direction={'row'} justifyContent={'space-between'} >
-                            <Typography variant='h6' fontWeight={'bold'}>{layoutList[0].data_src_lyt_name}</Typography>
-                            <Typography color={'black'} fontSize={'15px'} onClick={handleClickOpen} sx={{ textDecoration: 'underline' }}>Show All</Typography>
-                            <ShowAll open2={open2} handleClose1={handleClose1} />
+            <Stack direction={'row'} spacing={2} sx={{ height: '100%' }}>
+                <Paper 
+                    sx={{ 
+                        width: '75%',
+                        overflow: 'hidden', 
+                        borderRadius: '4px', 
+                        border: '1px solid lightgrey' 
+                    }} 
+                    elevation={0}
+                >
+                    <Stack sx={{ p: '24px' }}>
+                        <Stack direction={'row'} justifyContent={'space-between'} sx={{ mb: 2 }}>
+                            <Typography variant='h6' fontWeight={'bold'}>
+                                {layoutList[0]?.data_src_lyt_name || 'Employee Data Schema'}
+                            </Typography>
                         </Stack>
                         <TableContainer sx={{ maxHeight: 800 }}>
                             <FlexibleTable
-                                data={layoutList[0].layout_fields}
+                                data={fields}
                                 columns={catalogColumns}
                                 itemsPerPageOptions={[5, 10, 20]}
                                 defaultItemsPerPage={10}
                                 isSearch={false}
-                                createNewFn={createNewFn}
-                                actionFn={actionFn}
-                                background='bg-green-700'
                             />
                         </TableContainer>
-
-
                     </Stack>
                 </Paper>
-                <Paper sx={{ width: '25%', overflow: 'hidden', borderRadius: '4px', border: '1px solid lightgrey' }} elevation={0}>
+                
+                <Paper 
+                    sx={{ 
+                        width: '25%',
+                        overflow: 'hidden', 
+                        borderRadius: '4px', 
+                        border: '1px solid lightgrey'
+                    }} 
+                    elevation={0}
+                >
                     <About />
                 </Paper>
-
             </Stack>
         </>
     );

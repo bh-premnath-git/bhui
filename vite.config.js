@@ -12,6 +12,21 @@ export default defineConfig({
     host: '0.0.0.0', 
     port: 5000,
   },
+  proxy: {
+    '/api': {
+     // target: 'http://54.157.234.126:8000',
+      target: 'http://localhost:8000',
+      changeOrigin: true,
+      secure: false,
+    },
+    '/superset': {
+      //target: 'http://54.157.234.126:8088',
+      target: 'http://localhost:8088',
+      changeOrigin: true,
+      secure: false,
+      rewrite: (path) => path.replace(/^\/superset/, '')
+    },
+  },
   optimizeDeps: {
     include: [
       '@emotion/react', 

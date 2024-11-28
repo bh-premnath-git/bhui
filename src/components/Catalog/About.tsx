@@ -27,7 +27,7 @@ interface OwnerData {
   avatar?: string;
 }
 
-export default function About() {
+export default function About(data) {
   const [description, setDescription] = useState('Sample Description about the data source. This needs to be updated by the user.');
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [links, setLinks] = useState<LinkData[]>([]);

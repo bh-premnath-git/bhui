@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { FlowProvider } from '@/contexts/FlowContext';
+import { ToastContainer } from 'react-toastify';
 import Loading from '@/pages/loadingPage';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
@@ -125,6 +126,7 @@ function App() {
           </BrowserRouter>
         </Provider>
       </FlowProvider>
+      <ToastContainer />
     </ThemeProvider>
   );
 }

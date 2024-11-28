@@ -31,7 +31,7 @@ const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClo
             fullWidth
         >
             <DialogTitle className="flex justify-between items-center bg-gray-100">
-                <span className="text-lg font-semibold text-black">Cost Optimization for Daily Job</span>
+                <span className="text-lg font-semibold text-black">Cost Optimization</span>
                 <IconButton onClick={onClose} aria-label="close">
                     <CloseIcon className="text-black" />
                 </IconButton>

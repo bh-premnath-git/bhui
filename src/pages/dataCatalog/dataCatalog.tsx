@@ -316,9 +316,9 @@ function DataCatalogTable({
         onClose={() => setIsDrawerOpen(false)}
         sx={{
           '& .MuiDrawer-paper': {
-            width: '50%',
-            minWidth: '600px',
-            maxWidth: '800px',
+            width: '75%',
+            minWidth: '900px',
+            maxWidth: '1200px',
             boxSizing: 'border-box',
             backgroundColor: 'background.paper',
             borderLeft: '1px solid',
@@ -353,7 +353,7 @@ function DataCatalogTable({
             </IconButton>
           </Box>
           
-          <Box sx={{ p: 0, height: 'calc(100% - 64px)', overflow: 'auto' }}>
+          <Box sx={{ p: 2, height: 'calc(100% - 64px)', overflow: 'auto' }}>
             <CatalogSchema />
           </Box>
         </Box>

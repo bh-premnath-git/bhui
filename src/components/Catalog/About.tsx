@@ -1,7 +1,7 @@
 import { Box, Typography, Button, Stack, Avatar, Chip } from '@mui/material';
 import { Link as LinkIcon, Plus } from 'lucide-react';
 
-export default function About() {
+export default function About({ data }: any) {
   return (
     <Box sx={{ 
       p: 2.5,

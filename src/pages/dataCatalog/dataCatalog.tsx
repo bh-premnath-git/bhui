@@ -307,29 +307,6 @@ function DataCatalogTable({
           playRowFn={playRowFn}
           playRow={true}
           background='primary.main'
-          sx={{
-            '& .MuiTableCell-root': {
-              px: 2,  // Consistent padding with header
-              py: 2,
-              borderBottom: '1px solid',
-              borderColor: 'divider'
-            },
-            '& .MuiTableHead-root': {
-              backgroundColor: 'background.default',
-              '& .MuiTableCell-root': {
-                fontWeight: 600,
-                color: 'text.primary',
-                borderBottom: '2px solid',
-                borderColor: 'divider'
-              }
-            },
-            '& .MuiTableBody-root tr:last-child .MuiTableCell-root': {
-              borderBottom: 'none'
-            },
-            '& .MuiTableBody-root tr:hover': {
-              backgroundColor: 'action.hover'
-            }
-          }}
         />
       </Paper>
 

@@ -98,7 +98,7 @@ export function Sidebar() {
       <div className="flex flex-col h-full p-2">
         <nav className="flex-1 mt-1 overflow-y-auto">
           <ul className="space-y-1">
-            {filteredNavItems.map((item) => (
+            {filteredNavItems.map((item:any) => (
               <li key={item.path} className="relative">
                 <Link
                   to={item.path}

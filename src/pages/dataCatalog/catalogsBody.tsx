@@ -79,14 +79,32 @@ export default function CatalogsBody(props: any) {
     };
     return (
         <>
-
-            <Stack direction={'row'} spacing={1} sx={{ height: '100%' }}>
-                <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '4px', border: '1px solid lightgrey' }} elevation={0}>
-                    <Stack sx={{ p: '16px' }}>
-                        <Stack direction={'row'} justifyContent={'space-between'} >
-                            <Typography variant='h6' fontWeight={'bold'}>{layoutList[0].data_src_lyt_name}</Typography>
-                            <Typography color={'black'} fontSize={'15px'} onClick={handleClickOpen} sx={{ textDecoration: 'underline' }}>Show All</Typography>
-                            <ShowAll open2={open2} handleClose1={handleClose1} />
+            <Stack direction={'row'} spacing={2} sx={{ height: '100%' }}>
+                <Paper 
+                    sx={{ 
+                        width: '75%',
+                        overflow: 'hidden', 
+                        borderRadius: '4px', 
+                        border: '1px solid lightgrey' 
+                    }} 
+                    elevation={0}
+                >
+                    <Stack sx={{ p: '24px' }}>
+                        <Stack direction={'row'} justifyContent={'space-between'} sx={{ mb: 2 }}>
+                            <Typography variant='h6' fontWeight={'bold'}>
+                                {layoutList[0].data_src_lyt_name}
+                            </Typography>
+                            <Typography 
+                                color={'black'} 
+                                fontSize={'15px'} 
+                                onClick={handleClickOpen} 
+                                sx={{ 
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Show All
+                            </Typography>
                         </Stack>
                         <TableContainer sx={{ maxHeight: 800 }}>
                             <FlexibleTable
@@ -100,14 +118,20 @@ export default function CatalogsBody(props: any) {
                                 background='bg-green-700'
                             />
                         </TableContainer>
-
-
                     </Stack>
                 </Paper>
-                <Paper sx={{ width: '25%', overflow: 'hidden', borderRadius: '4px', border: '1px solid lightgrey' }} elevation={0}>
+                
+                <Paper 
+                    sx={{ 
+                        width: '25%',
+                        overflow: 'hidden', 
+                        borderRadius: '4px', 
+                        border: '1px solid lightgrey'
+                    }} 
+                    elevation={0}
+                >
                     <About />
                 </Paper>
-
             </Stack>
         </>
     );

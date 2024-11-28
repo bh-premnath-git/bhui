@@ -12,7 +12,14 @@ interface JsonInputProps {
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-export const JsonInput: React.FC<JsonInputProps> = ({label, placeholder, mandatory, id, value, onChange }) => {
+export const JsonInput: React.FC<JsonInputProps> = ({
+  label,
+  placeholder,
+  mandatory,
+  id,
+  value,
+  onChange
+}) => {
   const [jsonError, setJsonError] = useState<string>('');
   const [isValid, setIsValid] = useState(false);
 
@@ -29,7 +36,6 @@ export const JsonInput: React.FC<JsonInputProps> = ({label, placeholder, mandato
       setJsonError('');
       setIsValid(true);
       if (formatted !== input) {
-        // Create a synthetic event
         const syntheticEvent = {
           target: {
             value: formatted
@@ -59,8 +65,11 @@ export const JsonInput: React.FC<JsonInputProps> = ({label, placeholder, mandato
   };
 
   return (
-    <div className="p-2  ">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+    <div className="w-full max-w-sm space-y-4">
+      <label 
+        htmlFor={id} 
+        className="text-sm text-gray-600"
+      >
         {label} {mandatory && <span className="text-red-500">*</span>}
       </label>
       <textarea
@@ -68,11 +77,13 @@ export const JsonInput: React.FC<JsonInputProps> = ({label, placeholder, mandato
         value={value}
         onChange={onChange}
         rows={4}
-        className={`mt-1 block w-full rounded-lg border-2 shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:text-sm font-mono transition-colors duration-200 ${getBorderColor()}`}
+        className={`w-full border px-3 py-2 text-sm bg-white rounded-md font-mono
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+          ${getBorderColor()}`}
         placeholder={placeholder}
       />
       {jsonError && (
-        <p className="mt-1 text-sm text-red-600 flex items-center">
+        <p className="text-red-500 text-xs flex items-center">
           <AlertCircle className="w-4 h-4 mr-1" />
           {jsonError}
         </p>

@@ -38,8 +38,11 @@ export const InputField: React.FC<InputFieldProps> = ({
   const displayError = touched ? fieldError : error;
 
   return (
-    <div className="p-1 border-gray-200 hover:border-slate-500 transition-colors">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="w-full max-w-sm space-y-4">
+      <label 
+        htmlFor={id} 
+        className="text-sm text-gray-600"
+      >
         {label} {mandatory && <span className="text-red-500">*</span>}
       </label>
       <input
@@ -50,11 +53,12 @@ export const InputField: React.FC<InputFieldProps> = ({
         placeholder={placeholder}
         onChange={onChange}
         onBlur={handleBlur}
-        className={`block w-full rounded-md border-2 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm
+        className={`w-full border border-gray-300 px-3 py-2 text-sm bg-white rounded-md 
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           ${displayError ? 'border-red-500' : 'border-gray-300'}`}
       />
       {displayError && (
-        <p className="mt-1 text-sm text-red-600 flex items-center">
+        <p className="text-red-500 text-xs flex items-center">
           <AlertCircle className="w-4 h-4 mr-1" />
           {displayError}
         </p>
@@ -62,3 +66,5 @@ export const InputField: React.FC<InputFieldProps> = ({
     </div>
   );
 };
+
+export default InputField;

@@ -65,7 +65,7 @@ export function ToolbarNodes() {
 
   return (
     <div className="relative w-full">
-      <div className="p-2 bg-white shadow-sm">
+      <div className="p-2 bg-white">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="w-10" />
           <div className="flex gap-2 flex-wrap justify-center">

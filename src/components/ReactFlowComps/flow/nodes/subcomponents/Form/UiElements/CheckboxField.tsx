@@ -1,10 +1,10 @@
 import React from 'react';
-import { Checkbox } from "@/components/ui/checkbox"; // Adjust the import based on your project structure
-import { Label } from "@/components/ui/label";       // Adjust the import based on your project structure
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { AlertCircle } from 'lucide-react';
 
 interface CheckboxFieldProps {
-    id:string;
+    id: string;
     property_key: string;
     property_name: string;
     value: string;
@@ -12,7 +12,6 @@ interface CheckboxFieldProps {
     label?: string;
     error?: string;
     mandatory: boolean;
-
 }
 
 export const CheckboxField: React.FC<CheckboxFieldProps> = ({
@@ -29,35 +28,34 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
     };
 
     return (
-        <div className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 transition-colors">
+        <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center space-x-2">
                 <Checkbox 
                     id={property_key}
                     checked={value === 'true'}
                     onCheckedChange={handleCheckedChange}
-                    className={`rounded border-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500
+                    className={`border text-sm bg-white
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                         ${error ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {label ? (
                     <Label 
                         htmlFor={property_key}
-                        className={`text-sm font-normal leading-none cursor-pointer
-                            ${error ? 'text-red-600' : 'text-gray-700'}`}
+                        className="text-sm text-gray-600 cursor-pointer"
                     >
                         {label} {mandatory && <span className="text-red-500">*</span>}
                     </Label>
                 ) : (
                     <Label 
                         htmlFor={property_key}
-                        className={`text-sm font-normal leading-none cursor-pointer
-                            ${error ? 'text-red-600' : 'text-gray-700'}`}
+                        className="text-sm text-gray-600 cursor-pointer"
                     >
                         {property_name} {mandatory && <span className="text-red-500">*</span>}
                     </Label>
                 )}
             </div>
             {error && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <p className="text-red-500 text-xs flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
                     {error}
                 </p>

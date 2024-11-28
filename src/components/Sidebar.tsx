@@ -2,15 +2,22 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
-import { Tooltip, Typography } from '@mui/material';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
   icon: React.ReactNode;
   path: string;
   label: string;
   shortcut?: string;
-  subPaths?: { 
-    path: string; 
+  subPaths?: {
+    path: string;
     label: string;
     icon: React.ReactNode;
     shortcut?: string;
@@ -18,7 +25,7 @@ interface NavItem {
 }
 
 interface RoleAccess {
-  [key: string]: string[]; // Mapping of role to allowed menu items
+  [key: string]: string[];
 }
 
 const roleAccess: RoleAccess = {
@@ -30,19 +37,18 @@ const roleAccess: RoleAccess = {
 const getUserRoles = () => {
   const token: any = sessionStorage?.getItem("token");
   const decoded: any = token ? jwtDecode(token) : null;
-
   return decoded?.realm_access?.roles;
 };
+
 export function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [shouldCollapse, setShouldCollapse] = useState(false);
   const { pathname } = useLocation();
   const userRoles = getUserRoles();
   const navigate = useNavigate();
 
   const allowedItems = Array.from(
-    new Set(userRoles?.flatMap((role:any) => roleAccess[role] || []))
+    new Set(userRoles?.flatMap((role: any) => roleAccess[role] || []))
   );
 
   const filteredNavItems: NavItem[] = menuList.filter((item) =>
@@ -50,24 +56,17 @@ export function Sidebar() {
   );
 
   useEffect(() => {
-    if(pathname === '/login'){
-      setIsMounted(false);
-    }else{
-      setIsMounted(true);
-    }
-  }, []);
+    const isDesignerFlowWithId = /^\/designers\/manage-flow\/.+$/.test(pathname);
+    setIsMounted(!isDesignerFlowWithId && pathname !== '/login');
+  }, [pathname]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.altKey) { // Command or Ctrl key
-        const allItems = menuList.flatMap(item => 
-          [item, ...(item.subPaths || [])]
-        );
-        
-        const matchingItem = allItems.find(item => 
+      if (event.metaKey || event.altKey) {
+        const allItems = menuList.flatMap(item => [item, ...(item.subPaths || [])]);
+        const matchingItem = allItems.find(item =>
           item.shortcut?.toLowerCase().includes(event.key.toLowerCase())
         );
-
         if (matchingItem) {
           event.preventDefault();
           navigate(matchingItem.path);
@@ -79,126 +78,109 @@ export function Sidebar() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  if (!isMounted) {
-    return null;
-  }
+  if (!isMounted) return null;
 
   return (
     <aside
-      className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
-        isExpanded ? 'w-60' : 'w-16'
-      }`}
-      onMouseEnter={() => {
-        if (!shouldCollapse) {
-          setIsExpanded(true);
-        }
-      }}
-      onMouseLeave={() => {
-        setIsExpanded(false);
-        setShouldCollapse(false);
-      }}
-      role="navigation"
-      aria-label="Main Navigation"
+      className={cn(
+        "fixed top-14 left-0 z-20 h-[calc(100vh-56px)] bg-background/60 backdrop-blur-sm transition-all duration-500 ease-in-out border-r border-border/40",
+        isExpanded ? "w-60" : "w-14"
+      )}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
     >
-      <div className="flex flex-col h-full p-2">
-        <nav className="flex-1 mt-1 overflow-y-auto">
-          <ul className="space-y-1">
-            {filteredNavItems.map((item) => (
-              <li key={item.path} className="relative">
-                <Link
-                  to={item.path}
-                  className={`flex items-center justify-between p-2 rounded-lg text-black transition-colors duration-200
-                    ${pathname === item.path
-                      ? 'bg-gray-100 text-primary-600 font-semibold'
-                      : 'hover:bg-gray-50'
-                    }
-                    ${item.subPaths ? 'font-semibold' : ''}
-                  `}
-                >
-                  <div className="flex items-center">
-                    <span className="flex items-center min-w-[22px]">{item.icon}</span>
-                    <span
-                      className={`ml-3 whitespace-nowrap transition-all duration-300 ${
-                        isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                      }`}
+      <div className="flex flex-col h-full py-1">
+        <nav className="flex-1 px-2 space-y-0.5">
+          {filteredNavItems.map((item) => (
+            <div key={item.path} className="relative space-y-0.5">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.path}
+                      className={cn(
+                        "flex items-center justify-between w-full rounded-md px-2.5 py-1.5 text-sm transition-all duration-200",
+                        "group relative overflow-hidden",
+                        pathname === item.path
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-accent/50 text-muted-foreground hover:text-foreground",
+                      )}
                     >
-                      {item.label}
-                    </span>
-                  </div>
-                  {isExpanded && item?.shortcut && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                        bgcolor: 'action.hover',
-                        color: 'text.secondary',
-                        fontSize: '0.6875rem',
-                        fontFamily: 'monospace'
-                      }}
-                    >
-                      {item.shortcut}
-                    </Typography>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-4 w-4 items-center justify-center">
+                          {item.icon}
+                        </span>
+                        <span className={cn(
+                          "transition-all duration-300",
+                          !isExpanded && "opacity-0 -translate-x-4 overflow-hidden"
+                        )}>
+                          {item.label}
+                        </span>
+                      </div>
+                      {isExpanded && item.shortcut && (
+                        <Badge variant="secondary" className="bg-whiteh-4 px-1 text-[10px] font-mono">
+                          {item.shortcut}
+                        </Badge>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  {!isExpanded && (
+                    <TooltipContent side="right" sideOffset={10}>
+                      {item.label} {item.shortcut && `(${item.shortcut})`}
+                    </TooltipContent>
                   )}
-                </Link>
+                </Tooltip>
+              </TooltipProvider>
 
-                {item.subPaths && (
-                  <ul className="mt-1 space-y-1">
-                    {item.subPaths.map((subPath) => (
-                      <li key={subPath.path}>
-                        <Tooltip 
-                          title={!isExpanded ? `${subPath.label} ${subPath.shortcut}` : ""}
-                          placement="right"
-                          arrow
-                        >
+              {item.subPaths && (
+                <div className={cn(
+                  "space-y-0.5",
+                  isExpanded ? "ml-6" : "ml-0"
+                )}>
+                  {item.subPaths.map((subPath) => (
+                    <TooltipProvider key={subPath.path}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Link
                             to={subPath.path}
-                            className={`flex items-center justify-between p-2 text-sm transition-colors duration-200
-                              relative group rounded-lg font-normal
-                              ${pathname === subPath.path
-                                ? 'bg-primary-50 text-primary-600'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }
-                            `}
+                            className={cn(
+                              "flex items-center justify-between w-full rounded-md px-2.5 py-1.5 text-sm transition-all duration-200",
+                              "group relative overflow-hidden",
+                              pathname === subPath.path
+                                ? "bg-accent text-accent-foreground font-medium"
+                                : "hover:bg-accent/40 text-muted-foreground/70 hover:text-foreground"
+                            )}
                           >
-                            <div className="flex items-center">
-                              <span className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-3.5 w-3.5 items-center justify-center">
                                 {subPath.icon}
                               </span>
-                              <span 
-                                className={`whitespace-nowrap transition-all duration-300 ml-3
-                                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
-                                `}
-                              >
+                              <span className={cn(
+                                "transition-all duration-300",
+                                !isExpanded && "opacity-0 -translate-x-4 overflow-hidden"
+                              )}>
                                 {subPath.label}
                               </span>
                             </div>
                             {isExpanded && subPath.shortcut && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  px: 1,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  bgcolor: 'action.hover',
-                                  color: 'text.secondary',
-                                  fontSize: '0.6875rem',
-                                  fontFamily: 'monospace'
-                                }}
-                              >
+                              <Badge variant="outline" className="h-4 px-1 text-[10px] font-mono opacity-50">
                                 {subPath.shortcut}
-                              </Typography>
+                              </Badge>
                             )}
                           </Link>
-                        </Tooltip>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
+                        </TooltipTrigger>
+                        {!isExpanded && (
+                          <TooltipContent side="right" sideOffset={10}>
+                            {subPath.label} {subPath.shortcut && `(${subPath.shortcut})`}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
       </div>
     </aside>

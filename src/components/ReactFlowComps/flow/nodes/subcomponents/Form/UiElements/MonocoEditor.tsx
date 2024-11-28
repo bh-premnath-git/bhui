@@ -35,13 +35,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full max-w-sm space-y-4', className)}>
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label 
+          htmlFor={id} 
+          className="text-sm text-gray-600"
+        >
           {label} {mandatory && <span className="text-red-500">*</span>}
         </label>
       )}
-      <div className="border-2 border-gray-200 rounded-lg hover:border-slate-500 transition-colors">
+      <div className="border rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 border-gray-300">
         <Editor
           height="150px" 
           defaultLanguage={language}
@@ -60,6 +63,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             scrollBeyondLastLine: false,
           }}
           aria-label={label || 'Code Editor'}
+          className="text-sm"
         />
       </div>
     </div>

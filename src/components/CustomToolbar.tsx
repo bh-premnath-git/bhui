@@ -296,7 +296,7 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="bg-white">
       <div className="max-w-screen-xl px-1 py-2">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">

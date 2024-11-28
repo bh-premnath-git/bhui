@@ -4,22 +4,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGroupedProperties } from "@/hooks/useGroupedProperties";
 import { useFlow } from "@/contexts/FlowContext";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
 } from '@/components/ui/tabs';
-import { FormFields } from "./Form/FormFields";
+import { FormLayout } from "./Form/FormLayout";
 
 interface NodeFormProps {
     closeTap: () => void;
 }
 type TabType = "property" | "settings";
-
+//selectedFlowFromList
 export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
     const { selectedNode, nodeFormData, prevNodeFn, updateNodeFormData } = useFlow();
+    console.log("selectedNode", selectedNode);
+    
     const [activeTab, setActiveTab] = useState<TabType>("property");
-
     // Guard clause for when no node is selected
     if (!selectedNode) {
         return null;
@@ -60,7 +61,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
     }, []);
 
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-6">
+        <div className="w-full max-w-3xl mx-auto space-y-6 rounded-lg bg-gradient-to-b from-gray-50 to-white">
             {/* Replace TabButtons with Tabs */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -71,7 +72,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
                 {/* Property Tab Content */}
                 <TabsContent value="property" className="space-y-4">
                     <ScrollArea className="h-[400px] pr-4">
-                        <FormFields
+                        <FormLayout
                             properties={groupedProperties['property']}
                             formValues={currentFormData}
                             onInputChange={handleInputChange}
@@ -83,7 +84,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
                 {/* Settings Tab Content */}
                 <TabsContent value="settings" className="space-y-4">
                     <ScrollArea className="h-[400px] pr-4">
-                        <FormFields
+                        <FormLayout
                             properties={groupedProperties['settings']}
                             formValues={currentFormData}
                             onInputChange={handleInputChange}

@@ -56,7 +56,7 @@ const generateMockData = (): FieldData[] => [
     }
 ];
 
-export default function CatalogsBody() {
+export default function CatalogsBody(data:any) {
     const { layoutList } = useSelector((state: RootState) => state.catalogApi);
     const [fields, setFields] = useState<FieldData[]>([]);
     const [editingField, setEditingField] = useState<FieldData | null>(null);
@@ -155,7 +155,7 @@ export default function CatalogsBody() {
                         autoFocus
                         variant="standard"
                         onBlur={(e) => handleSaveEdit(row, 'field_name', e.target.value)}
-                        onKeyDown={(e) => {
+                        onKeyDown={(e:any) => {
                             if (e.key === 'Enter') {
                                 handleSaveEdit(row, 'field_name', e.target.value);
                             }
@@ -201,7 +201,7 @@ export default function CatalogsBody() {
                         variant="standard"
                         multiline
                         onBlur={(e) => handleSaveEdit(row, 'description', e.target.value)}
-                        onKeyDown={(e) => {
+                        onKeyDown={(e:any) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSaveEdit(row, 'description', e.target.value);

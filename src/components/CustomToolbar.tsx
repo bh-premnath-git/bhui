@@ -3,7 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { useFlow } from '@/contexts/FlowContext';
 import { getEnvironmentList, setSelectedEnv } from '@/redux/FlowSlice';
-import { ChevronLeft, CloudSun, Cloud, CloudOff, Edit, Clock, Settings, PlusCircle, X, MoreVertical } from 'lucide-react';
+import {
+  ChevronLeft,
+  CloudSun,
+  Cloud,
+  CloudOff,
+  Edit,
+  Clock,
+  Settings,
+  PlusCircle,
+  X,
+  GitCommit
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,36 +23,24 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from '@/components/ui/badge';
+import { PlaybackButton } from './ReactFlowComps/flow/toolbar/PlaybackButton';
 
 // Types
 type Tag = {
   tagList: { key: string; value: string }[];
 };
-
-interface DropdownItem {
-  id: string;
-  label: string;
-  action: string;
-  isDestructive?: boolean;
-}
 
 // TagInput Component
 const TagInput: React.FC<{
@@ -231,11 +230,12 @@ const SettingsModal = ({ isOpen, onClose, selectedData }: {
 };
 
 // Main CustomToolbarComponent
-export function CustomToolbarComponent({ selectedData }: { selectedData?: any }) {
+export const CustomToolbarComponent = ({ selectedData }: { selectedData?: any }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [flowType, setFlowType] = useState("Flow_type 1");
   const [selectedEnvironment, setSelectedEnvironment] = useState("");
-  const { autoSave, isSaved, isSaving, toggleAutoSave } = useFlow();
+  const [selectedSchedule, setSelectedSchedule] = useState("none");
+  const { autoSave, isSaved, isSaving, isPlaying,toggleAutoSave, togglePlayback } = useFlow();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { environments: data } = useAppSelector((state) => state.flowApi);
@@ -248,24 +248,26 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
     }))
   ];
 
-  // Dropdown items
-  const menuItems: DropdownItem[] = [
-    { id: '1', label: 'Export Flow', action: 'export' },
+  const schedules = [
+    { value: 'none', label: 'No Schedule' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' }
   ];
-
-  const handleDropdownAction = (action: string) => {
-    switch (action) {
-      case 'export':
-        console.log('Exporting flow...');
-        break;
-      default:
-        console.log(`Unhandled action: ${action}`);
-    }
-  };
 
   const handleEnvironmentChange = (value: string) => {
     setSelectedEnvironment(value);
     dispatch(setSelectedEnv(value));
+  };
+
+  const getCloudIcon = () => {
+    if (isSaving) return <CloudSun className="h-9 w-9 text-blue-500 animate-pulse" />;
+    if (autoSave) {
+      return isSaved ?
+        <Cloud className="h-9 w-9 text-blue-500" /> :
+        <CloudSun className="h-9 w-9 text-blue-500" />;
+    }
+    return <CloudOff className="h-9 w-9 text-gray-400" />;
   };
 
   useEffect(() => {
@@ -285,20 +287,11 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
     fetchEnvironments();
   }, [dispatch]);
 
-  const getCloudIcon = () => {
-    if (isSaving) return <CloudSun className="h-9 w-9 text-blue-500 animate-pulse" />;
-    if (autoSave) {
-      return isSaved ?
-        <Cloud className="h-9 w-9 text-blue-500" /> :
-        <CloudSun className="h-9 w-9 text-blue-500" />;
-    }
-    return <CloudOff className="h-9 w-9 text-gray-400" />;
-  };
-
   return (
-    <div className="bg-white">
+    <div className="bg-white border-b">
       <div className="max-w-screen-xl px-1 py-2">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-2">
+          {/* Left group */}
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -342,7 +335,10 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
             >
               <Settings className="h-6 w-6 text-gray-600" />
             </Button>
+          </div>
 
+          {/* Middle group */}
+          <div className="flex items-center space-x-4">
             <Select value={selectedEnvironment} onValueChange={handleEnvironmentChange}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Select Environment" />
@@ -356,35 +352,37 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
               </SelectContent>
             </Select>
 
-            <div className="relative">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-gray-100 rounded-full h-10 w-10 p-2"
-                  >
-                    <MoreVertical className="h-6 w-6 text-gray-600" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-48"
-                  align="end"
-                  sideOffset={5}
-                  alignOffset={0}
-                >
-                  {menuItems.map((item) => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      onClick={() => handleDropdownAction(item.action)}
-                      className={`${item.isDestructive ? "text-red-600" : ""} cursor-pointer`}
-                    >
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Select Schedule" />
+              </SelectTrigger>
+              <SelectContent>
+                {schedules.map((schedule) => (
+                  <SelectItem key={schedule.value} value={schedule.value}>
+                    {schedule.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Right group */}
+          <div className="flex items-center space-x-4">
+            <time
+              className="text-sm bg-white px-3 py-1 rounded-md border-2 border-gray-200"
+              dateTime="2023-11-28T08:45"
+            >
+              Last deployed: 2023-11-28 08:45
+            </time>
+            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="border-1 border-gray-200 hover:bg-gray-100 rounded-full h-10 w-10 p-2"
+              aria-label="Commit changes"
+            >
+              <GitCommit className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -396,4 +394,4 @@ export function CustomToolbarComponent({ selectedData }: { selectedData?: any })
       />
     </div>
   );
-}
+};

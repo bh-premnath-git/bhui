@@ -11,11 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "/assets/logo/fixLogo.svg";
-import { CustomToolbarComponent } from "./CustomToolbar";
+import { CustomToolbar } from "./CustomToolbar/CustomToolbar";
 import { CustomBuildToolbar } from "./CustomBuildToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -244,7 +244,7 @@ export function renderingHeadContent(pathname: string) {
   );
 
   if (isManageFlowPath) {
-    return <CustomToolbarComponent selectedData={selectedFlowFromList} />;
+    return <CustomToolbar selectedData={selectedFlowFromList} />;
   }
 
   // Handle build-playground paths

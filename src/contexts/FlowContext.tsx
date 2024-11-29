@@ -409,7 +409,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     if (autoSave && selectedFlowId) {
       saveFlow();
     }
-  }, 1000);
+  }, 30000);
 
 
   useEffect(() => {

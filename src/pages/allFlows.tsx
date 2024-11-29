@@ -165,10 +165,9 @@ const AllFlows: React.FC = () => {
       if (createFlow.fulfilled.match(result)) {
         dispatch(setSelectedFlowFromList(result.payload));
         closeModal();
-        
         // Navigate after successful creation
         setTimeout(() => {
-          navigate('/designers/manage-flow');
+          navigate('/designers/manage-flow/' + result.payload.flow_id);
         }, 1000);
       } else {
         throw new Error('Flow creation failed');

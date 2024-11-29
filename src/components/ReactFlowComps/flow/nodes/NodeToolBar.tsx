@@ -33,7 +33,7 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
         <NodeToolbar
           isVisible={isHovered as boolean}
           position={Position.Top}
-          className="p-0 rounded-md bg-transparent"
+          className="p-1 rounded-md bg-transparent"
         >
           <div className="flex">
             <Button

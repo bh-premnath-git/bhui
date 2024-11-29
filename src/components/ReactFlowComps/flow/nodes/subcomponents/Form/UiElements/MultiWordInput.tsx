@@ -47,31 +47,33 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
   };
 
   return (
-    <div className="relative w-full">
+    <div className="w-full max-w-sm space-y-4">
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+        <label 
+          htmlFor={id} 
+          className="text-sm text-gray-600"
+        >
           {label} {mandatory && <span className="text-red-500">*</span>}
         </label>
       )}
       <div
         ref={containerRef}
         className={cn(
-          "flex items-center h-10 min-h-[40px] max-h-[40px]", // Fixed height
-          "p-2 border-2 border-gray-300 rounded-md transition-colors",
-          "focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500",
-          "overflow-x-auto overflow-y-hidden", // Prevent vertical scroll, allow horizontal
-          "whitespace-nowrap", // Prevent wrapping
-          "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent",
-          "hover:scrollbar-thumb-gray-400"
+          "flex items-center h-10 min-h-[40px] max-h-[40px]",
+          "px-3 py-2 border border-gray-300 rounded-md",
+          "focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500",
+          "overflow-x-auto overflow-y-hidden",
+          "whitespace-nowrap",
+          "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
         )}
         onClick={() => inputRef.current?.focus()}
       >
-        <div className="flex items-center gap-2 h-full"> {/* Container for badges and input */}
+        <div className="flex items-center gap-2 h-full">
           {values.map((word, index) => (
             <Badge 
               key={index} 
               variant="secondary" 
-              className="flex-shrink-0 items-center px-2 py-1 rounded-full bg-indigo-100 text-indigo-800"
+              className="flex-shrink-0 items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800"
             >
               {word}
               <button
@@ -80,7 +82,7 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
                   e.stopPropagation();
                   handleRemove(index);
                 }}
-                className="ml-1 flex items-center justify-center p-0.5 rounded-full hover:bg-indigo-200 focus:outline-none"
+                className="ml-1 flex items-center justify-center p-0.5 rounded-full hover:bg-blue-200 focus:outline-none"
                 aria-label={`Remove ${word}`}
               >
                 <X className="h-3 w-3" />
@@ -94,7 +96,7 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-shrink-0 min-w-[120px] bg-transparent outline-none placeholder:text-muted-foreground text-sm"
+            className="flex-shrink-0 min-w-[120px] bg-transparent outline-none text-sm text-gray-600"
             placeholder={values.length === 0 ? placeholder : ""}
             aria-label="Enter a word"
           />

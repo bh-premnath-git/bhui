@@ -2,14 +2,14 @@ import React from 'react';
 import { FormField } from '@/components/ReactFlowComps/flow/nodes/subcomponents/Form/FormField';
 import { Property, FormValues } from '@/types/flow';
 
-interface FormFieldsProps {
+interface FormLayoutProps {
   properties: Property[];
   formValues: FormValues;
   onInputChange: (key: string, value: string) => void;
   dependsOn?: string[];
 }
 
-export const FormFields: React.FC<FormFieldsProps> = React.memo(({ 
+export const FormLayout: React.FC<FormLayoutProps> = React.memo(({ 
   properties, 
   formValues, 
   dependsOn, 
@@ -58,4 +58,4 @@ export const FormFields: React.FC<FormFieldsProps> = React.memo(({
   );
 });
 
-FormFields.displayName = 'FormFields';
+FormLayout.displayName = 'FormFields';

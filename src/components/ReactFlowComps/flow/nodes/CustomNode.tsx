@@ -3,7 +3,7 @@ import { NodeProps } from "reactflow";
 import { NodeContent } from "./NodeContent";
 import { NodeHandles } from "./NodeHandles";
 import { useFlow } from "@/contexts/FlowContext";
-import { PortalModal } from "@/portal/PortalModal";
+import { SlidingPortalModal } from "@/portal/SlidingPortal";
 import { NodeForm } from "./subcomponents/NodeForm";
 
 interface CustomNodeData {
@@ -63,13 +63,13 @@ export const CustomNode = memo(
           />
           <NodeHandles />
         </div>
-        <PortalModal
+        <SlidingPortalModal
           isOpen={isNodeTapModalOpen}
           onClose={() => setIsNodeTapModalOpen(false)}
           title={newLabel}
         >
           <NodeForm closeTap={() => setIsNodeTapModalOpen(false)} />
-        </PortalModal>
+        </SlidingPortalModal>
       </>
     );
   }

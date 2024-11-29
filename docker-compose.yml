@@ -8,3 +8,5 @@ services:
       - "5000:5000"
     volumes:
       - .:/app  # Mounts the current directory into the container
+    env_file:
+      - .env

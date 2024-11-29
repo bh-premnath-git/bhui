@@ -50,16 +50,13 @@ export function Sidebar() {
   );
 
   useEffect(() => {
-    if(pathname === '/login'){
-      setIsMounted(false);
-    }else{
-      setIsMounted(true);
-    }
-  }, []);
+    const isDesignerFlowWithId = /^\/designers\/manage-flow\/.+$/.test(pathname);
+    setIsMounted(!isDesignerFlowWithId && pathname !== '/login');
+  }, [pathname]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.altKey) { // Command or Ctrl key
+      if (event.metaKey || event.ctrlKey) { // Command or Ctrl key
         const allItems = menuList.flatMap(item => 
           [item, ...(item.subPaths || [])]
         );
@@ -103,7 +100,7 @@ export function Sidebar() {
       <div className="flex flex-col h-full p-2">
         <nav className="flex-1 mt-1 overflow-y-auto">
           <ul className="space-y-1">
-            {filteredNavItems.map((item:any) => (
+            {filteredNavItems.map((item) => (
               <li key={item.path} className="relative">
                 <Link
                   to={item.path}
@@ -125,7 +122,7 @@ export function Sidebar() {
                       {item.label}
                     </span>
                   </div>
-                  {isExpanded && item?.shortcut && (
+                  {isExpanded && item.shortcut && (
                     <Typography
                       variant="caption"
                       sx={{

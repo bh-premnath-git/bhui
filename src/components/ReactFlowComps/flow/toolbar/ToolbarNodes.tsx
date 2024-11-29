@@ -2,12 +2,11 @@ import React from "react";
 import { useFlow } from "@/contexts/FlowContext";
 import { ModuleButton } from "./ModuleButton";
 import { OperatorList } from "./OperatorList";
-import { PlaybackButton } from "./PlaybackButton";
 import { ModuleType, SelectedOperator } from "@/types/flow";
 import { useModules } from "@/hooks/useModules";
 
 export function ToolbarNodes() {
-  const { nodes, isPlaying, togglePlayback, addNode } = useFlow();
+  const { nodes, addNode } = useFlow();
   const [activeType, setActiveType] = React.useState<number | null>(null);
   const [hoveredType, setHoveredType] = React.useState<number | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -65,7 +64,7 @@ export function ToolbarNodes() {
 
   return (
     <div className="relative w-full">
-      <div className="p-2 bg-white shadow-sm">
+      <div className="p-2 bg-white">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="w-10" />
           <div className="flex gap-2 flex-wrap justify-center">
@@ -83,7 +82,7 @@ export function ToolbarNodes() {
               />
             ))}
           </div>
-          <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} />
+          <div></div>
         </div>
       </div>
 

@@ -30,9 +30,12 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
     }, [onChange, property_key]);
 
     return (
-        <div className="p-2  border-gray-200  hover:border-stale-500 transition-colors">
+        <div className="w-full max-w-sm space-y-4">
             {label && (
-                <label htmlFor={property_key} className="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                    htmlFor={property_key} 
+                    className="text-sm text-gray-600"
+                >
                     {label} {mandatory && <span className="text-red-500">*</span>}
                 </label>
             )}
@@ -42,8 +45,10 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
                 value={value}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`block w-full rounded-md border-2 shadow-sm focus:border-stale-500 focus:ring-indigo-500 sm:text-sm
-                    ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border px-3 py-2 text-sm bg-white rounded-md
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    ${error ? 'border-red-500' : 'border-gray-300'}
+                    ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
             >
                 <option value="">{isLoading ? "Loading..." : `Select ${property_name}`}</option>
                 {options.map((option) => (
@@ -53,7 +58,7 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
                 ))}
             </select>
             {error && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <p className="text-red-500 text-xs flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
                     {error}
                 </p>

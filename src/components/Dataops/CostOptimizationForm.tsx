@@ -26,12 +26,12 @@ const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClo
         <Dialog
             open={open}
             onClose={onClose}
-            sx={{ borderRadius: 4 }}
-            maxWidth="md"
+            sx={{ borderRadius: 2 }}
+            maxWidth="sm"
             fullWidth
         >
             <DialogTitle className="flex justify-between items-center bg-gray-100">
-                <span className="text-lg font-semibold text-black">Cost Optimization</span>
+                <span className="text-md font-semibold text-black">Cost Optimization</span>
                 <IconButton onClick={onClose} aria-label="close">
                     <CloseIcon className="text-black" />
                 </IconButton>
@@ -76,7 +76,7 @@ const CostOptimization = ({ onClose, showToast }: any) => {
     return (
         <Formik initialValues={initialValues} onSubmit={handleSubmit}>
             {({ isSubmitting }) => (
-                <Form className="space-y-6">
+                <Form className="space-y-4">
                     {/* Metrics Section */}
                     <Accordion defaultExpanded>
                         <AccordionSummary
@@ -87,7 +87,7 @@ const CostOptimization = ({ onClose, showToast }: any) => {
                             <Typography className="text-md font-semibold text-black">Metrics</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-3 gap-2">
                                 <div className="font-medium text-gray-600">Metric</div>
                                 <div className="font-medium text-gray-600">Recommended</div>
                                 <div className="font-medium text-gray-600">Actual</div>
@@ -117,7 +117,7 @@ const CostOptimization = ({ onClose, showToast }: any) => {
                             <Typography className="text-md font-semibold text-black">Cost of Run</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-2">
                                 <div className="text-black">Current</div>
                                 <CustomField name="currentCost" className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-black" disabled />
 
@@ -137,7 +137,7 @@ const CostOptimization = ({ onClose, showToast }: any) => {
                             <Typography className="text-md font-semibold text-black">Machine Configuration</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-4 gap-2">
                                 <div className="font-medium text-gray-600">Type</div>
                                 <div className="font-medium text-gray-600">Current</div>
                                 <div className="font-medium text-gray-600">Proposed</div>
@@ -166,7 +166,7 @@ const CostOptimization = ({ onClose, showToast }: any) => {
                             <Typography className="text-md font-semibold text-black">Spark Tuning</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-4 gap-2">
                                 <div className="font-medium text-gray-600">Parameter</div>
                                 <div className="font-medium text-gray-600">Current</div>
                                 <div className="font-medium text-gray-600">Proposed</div>

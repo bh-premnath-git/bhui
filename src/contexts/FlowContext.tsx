@@ -233,6 +233,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const cloneNode = useCallback((nodeId: string) => {
+    const lastNode = nodes[nodes.length - 1];
+
     setNodes((prevNodes) => {
       const nodeToClone = prevNodes.find((node) => node.id === nodeId);
       if (!nodeToClone) return prevNodes;
@@ -241,7 +243,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         ...nodeToClone,
         id: `${nodeId}-clone-${Date.now()}`,
         position: {
-          x: nodeToClone.position.x + 150,
+          x: (lastNode?.position?.x ?? nodeToClone.position.x) + 150,
           y: nodeToClone.position.y,
         },
       };

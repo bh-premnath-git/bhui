@@ -17,13 +17,16 @@ export interface BaseOperatorProperties {
   depends_on?: string[];
 }
 
-export type OperatorType = "SimpleHttpOperator" | "HttpSensor" | "BashOperator" | "EmailOperator" | "S3KeySensor" | "SFTPToS3Operator";
+export type OperatorType = "SimpleHttpOperator" | "HttpSensor" | "BashOperator" | "EmailOperator" | "S3KeySensor" | "SFTPToS3Operator" | any;
 
 export interface ModuleType {
   id: number;
   label: string;
   color: string;
   icon: string;
+  type: string;
+  description: string;
+  properties: any;
   operators: Array<{
     type: OperatorType;
     description: string;
@@ -39,7 +42,7 @@ export interface SelectedOperator {
     color: string;
     label: string;
   };
-  properties: BaseOperatorProperties;
+  properties: any;
 }
 
 export interface NodeToolBarRef {

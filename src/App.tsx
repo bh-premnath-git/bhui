@@ -9,7 +9,7 @@ import Loading from '@/pages/loadingPage';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
-import { createTheme, ThemeProvider } from '@mui/material';
+import {  ThemeProvider } from '@mui/material';
 import { routeList, theme } from '@/router/route';
 
 interface LayoutProps {
@@ -102,7 +102,7 @@ function App() {
     kc.logout({
       // redirectUri: 'http://54.157.234.126:5000/landing',
       // redirectUri: 'http://localhost:5000/dashboard',
-      redirectUri: import.meta.env.VITE_KEYCLOAK_REDIRECT_URI + '/dashboard',
+      redirectUri: import.meta.env.VITE_KEYCLOAK_REDIRECT_URI + 'login',
     });
   }
   

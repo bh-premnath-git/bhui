@@ -17,6 +17,8 @@ interface CustomNodeData {
       label: string;
     };
     type: string;
+    properties: Record<string, any>;
+    description: string;
   };
 }
 

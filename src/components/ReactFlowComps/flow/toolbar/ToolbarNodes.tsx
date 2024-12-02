@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useFlow } from "@/contexts/FlowContext";
 import { ModuleButton } from "./ModuleButton";
-import { OperatorList } from "./OperatorList";
 import { ModuleType, SelectedOperator } from "@/types/flow";
 import { useModules } from "@/hooks/useModules";
 
@@ -9,24 +8,22 @@ export function ToolbarNodes() {
   const { nodes, addNode } = useFlow();
   const [activeType, setActiveType] = React.useState<number | null>(null);
   const [hoveredType, setHoveredType] = React.useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedOperator, setSelectedOperator] = React.useState<SelectedOperator | null>(null);
+
 
   const moduleTypes = useModules();
   const handleOperatorSelect = React.useCallback(
-    (operator: ModuleType["operators"][number], moduleInfo: ModuleType) => {
+    (moduleInfo: ModuleType) => {
+      console.log("moduleInfo >> ", moduleInfo);
       const selectedData: SelectedOperator = {
-        type: operator.type,
-        description: operator.description,
+        type: moduleInfo.type,
+        description: moduleInfo.description,
         moduleInfo: {
           icon: moduleInfo.icon,
           color: moduleInfo.color,
           label: moduleInfo.label,
         },
-        properties: operator.properties,
+        properties: moduleInfo.operators,
       };
-
-      setSelectedOperator(selectedData);
 
       const id = (nodes.length + 1).toString();
       const lastNode = nodes[nodes.length - 1];
@@ -40,17 +37,17 @@ export function ToolbarNodes() {
         position,
         data: {
           label: moduleInfo.label,
-          type: operator.type,
+          type: selectedData.type,
           status: "pending",
           meta: {
-            type: operator.type,
+            type: selectedData.type,
             moduleInfo: {
               color: moduleInfo.color,
               icon: moduleInfo.icon,
               label: moduleInfo.label,
             },
-            properties: operator.properties,
-            description: operator.description,
+            properties: selectedData.properties,
+            description: selectedData.description,
           },
         },
       });
@@ -61,6 +58,12 @@ export function ToolbarNodes() {
   );
 
   const activeModule = moduleTypes.find((type) => type.id === activeType);
+
+  useEffect(() => {
+    if (activeModule) {
+      handleOperatorSelect(activeModule);
+    }
+  }, [activeModule, activeType]);
 
   return (
     <div className="relative w-full">
@@ -74,9 +77,10 @@ export function ToolbarNodes() {
                 color={type.color}
                 icon={type.icon}
                 label={type.label}
-                isActive={activeType === type.id}
                 isHovered={hoveredType === type.id}
-                onClick={() => setActiveType(activeType === type.id ? null : type.id)}
+                onClick={() => {
+                  setActiveType(activeType === type.id ? null : type.id)
+                }}
                 onMouseEnter={() => setHoveredType(type.id)}
                 onMouseLeave={() => setHoveredType(null)}
               />
@@ -85,19 +89,6 @@ export function ToolbarNodes() {
           <div></div>
         </div>
       </div>
-
-      {activeModule && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-20">
-          <OperatorList
-            module={activeModule}
-            searchTerm={searchTerm}
-            selectedOperator={selectedOperator}
-            onSearchChange={setSearchTerm}
-            onClose={() => setActiveType(null)}
-            onOperatorSelect={(operator) => handleOperatorSelect(operator, activeModule)}
-          />
-        </div>
-      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Panel,
@@ -9,7 +9,10 @@ import ReactFlow, {
   EdgeChange,
   MarkerType,
   applyNodeChanges,
-  applyEdgeChanges, useReactFlow, getOutgoers
+  applyEdgeChanges, 
+  useReactFlow, 
+  getOutgoers,
+  getNodesBounds,
 } from 'reactflow';
 import { useFlow } from '@/contexts/FlowContext';
 import { ToolbarNodes } from '@/components/ReactFlowComps/flow/toolbar/ToolbarNodes';
@@ -20,7 +23,7 @@ import 'reactflow/dist/style.css';
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
-const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
+const defaultViewport = { x: -180, y: 0, zoom: 1.5 };
 
 export function FlowEditor() {
   const {
@@ -31,57 +34,114 @@ export function FlowEditor() {
     setReactFlowInstance,
   } = useFlow();
 
-
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const { fitView, getViewport, setViewport } = useReactFlow();
+
+  // Improved viewport check function
+  const checkAndFitView = useCallback(() => {
+    if (!reactFlowWrapper.current || nodes.length === 0) return;
+
+    const { width, height } = reactFlowWrapper.current.getBoundingClientRect();
+    const bounds = getNodesBounds(nodes);
+    const viewport = getViewport();
+
+    // Calculate visible area boundaries
+    const visibleLeft = viewport.x;
+    const visibleRight = viewport.x + (width / viewport.zoom);
+    const visibleTop = viewport.y;
+    const visibleBottom = viewport.y + (height / viewport.zoom);
+
+    // Check if any node is outside the visible area
+    const nodesOutOfView = nodes.some(node => {
+      const nodeRight = node.position.x + (node.width || 0);
+      const nodeBottom = node.position.y + (node.height || 0);
+      
+      return (
+        node.position.x < visibleLeft ||
+        nodeRight > visibleRight ||
+        node.position.y < visibleTop ||
+        nodeBottom > visibleBottom
+      );
+    });
+
+    if (nodesOutOfView) {
+      fitView({
+        padding: 0.2,
+        duration: 800,
+        maxZoom: 1.5,
+        minZoom: 0.5,
+      });
+    }
+  }, [nodes, fitView, getViewport]);
+
+  // Check viewport when nodes are added or changed
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkAndFitView();
+    }, 100); // Small delay to ensure nodes are properly rendered
+    
+    return () => clearTimeout(timer);
+  }, [nodes, checkAndFitView]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
       const edge = {
         ...connection,
         type: 'custom',
-        markerEnd: {
+        markerStart: {
           type: MarkerType.ArrowClosed,
-          width: 20,
+          width: 34,
           height: 20,
           color: '#94a3b8',
+          orient: 'auto-start',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 34,
+          height: 20,
+          color: '#94a3b8',
+          orient: 'auto-start',
         },
       };
       setEdges((eds) => {
         const newEdges = addEdge(edge, eds);
-
         return newEdges;
       });
     },
-    [setEdges, nodes]
+    [setEdges]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       setEdges((eds) => {
         const newEdges = applyEdgeChanges(changes, eds);
-
         return newEdges;
       });
     },
-    [setEdges, nodes]
+    [setEdges]
   );
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes((nds) => {
         const newNodes = applyNodeChanges(changes, nds);
-
         return newNodes;
       });
+      
+      // Add small delay before checking viewport after node changes
+      setTimeout(checkAndFitView, 50);
     },
-    [setNodes, edges]
+    [setNodes, checkAndFitView]
   );
 
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
       setReactFlowInstance(instance);
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 0 });
+      }, 100);
     },
-    [setReactFlowInstance]
+    [setReactFlowInstance, fitView]
   );
 
   const checkNodeProximityAndConnect = useCallback(() => {
@@ -137,23 +197,22 @@ export function FlowEditor() {
     if (newEdges.length > 0) {
       setEdges((eds) => [...eds, ...newEdges]);
     }
-  }, [nodes, edges, setEdges]);
+    
+    // Check viewport after connecting nodes with a small delay
+    setTimeout(checkAndFitView, 50);
+  }, [nodes, edges, setEdges, checkAndFitView]);
 
   const isValidConnection = useCallback(
     (connection) => {
-      
       const target = nodes.find((node) => node.id === connection.target);
       const hasCycle = (node, visited = new Set()) => {
         if (visited.has(node.id)) return false;
-
         visited.add(node.id);
-
         for (const outgoer of getOutgoers(node, nodes, edges)) {
           if (outgoer.id === connection.source) return true;
           if (hasCycle(outgoer, visited)) return true;
         }
       };
-
       if (target.id === connection.source) return false;
       return !hasCycle(target);
     },
@@ -183,7 +242,7 @@ export function FlowEditor() {
             panOnScroll
             selectionOnDrag
             defaultViewport={defaultViewport}
-            panOnDrag={[1, 2]}
+            panOnDrag={true}
             zoomOnScroll={false}
             nodesDraggable
             nodesConnectable

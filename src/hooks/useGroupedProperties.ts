@@ -3,11 +3,22 @@ import { useMemo } from 'react';
 
 export const useGroupedProperties = (selectedNode: any) => {
   return useMemo(() => {
-    const properties = selectedNode.data.meta.properties || {};
+    // Return empty grouped properties if selectedNode is undefined
+    if (!selectedNode) {
+      return {
+        property: [],
+        settings: []
+      };
+    }
+
+    const properties = selectedNode.properties || {};
     const grouped: GroupedProperties = {
       property: [],
       settings: []
     };
+
+    // Add console.log for debugging if needed
+    // console.log('Selected Node in useGroupedProperties:', selectedNode);
 
     Object.entries(properties).forEach(([key, value]: [string, any]) => {
       if (key !== 'type' && key !== 'task_id' && key !== 'depends_on') {
@@ -32,5 +43,5 @@ export const useGroupedProperties = (selectedNode: any) => {
     });
 
     return grouped;
-  }, [selectedNode]);
+  }, [selectedNode]); // Keep a single dependency
 };

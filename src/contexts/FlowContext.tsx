@@ -29,6 +29,7 @@ interface CustomNodeData {
   type: string;
   status: string;
   meta: MetaData;
+  selectedData: string | null;
   position?: { x: number; y: number };
 }
 
@@ -71,6 +72,7 @@ interface FlowContextType {
   cloneNode: (nodeId: string) => void;
   renameNode: (nodeId: string, newLabel: string) => void;
   showNodeInfo: (nodeId: string) => void;
+  updatedSelectedNodeId: (newNodeId: string, data: string) => void;
   selectNode: (nodeId: string) => void;
   updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
   getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
@@ -86,15 +88,16 @@ interface FlowContextType {
     data: CustomNodeData;
   }) => void;
   updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
+  revertOrSaveData: (nodeId: string, save: boolean) => void;
   setSelectedFlowId: (flowId: string) => void;
 }
 
 function useDebouncedCallback<Func extends (...args: any[]) => void>(
   func: Func,
-  delay: number
+  delay: number,
+  dependencies: any[] = []
 ): Func {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedFunc = useCallback(
     ((...args: any[]) => {
       if (timeoutRef.current) {
@@ -104,7 +107,7 @@ function useDebouncedCallback<Func extends (...args: any[]) => void>(
         func(...args);
       }, delay);
     }) as Func,
-    [func, delay]
+    [func, delay, ...dependencies]
   );
 
   return debouncedFunc;
@@ -168,10 +171,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
     setIsPlaying((prev) => !prev);
   }, []);
-
-  if (isPlaying && selectedFlowId) {
-    console.log(">>>", LocalStorageService.getItem(`flow-${selectedFlowId}`));
-  }
 
   const toggleDataPreview = useCallback(() => {
     setIsDataPreviewOpen((prev) => !prev);
@@ -250,7 +249,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
       return [...prevNodes, newNode];
     });
-  }, []);
+  }, [nodes]);
 
   const renameNode = useCallback((nodeId: string, newLabel: string) => {
     setNodes((prevNodes) =>
@@ -275,7 +274,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     (nodeId: string) => {
       const node = nodes.find((n) => n.id === nodeId);
       if (node) {
-        console.log("Node Info:", node.data.meta);
+        // console.log("Node Info:", node.data.meta);
       }
     },
     [nodes]
@@ -307,6 +306,50 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       });
     },
     []
+  );
+
+  const updatedSelectedNodeId = useCallback(
+    (nodeId: string, selectedType: string) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          const selectionId = node.id === nodeId
+          return (selectionId
+            ? {
+              ...node,
+              data: {
+                ...node.data,
+                selectedData: selectedType
+              }
+            }
+            : node)
+        }
+        )
+      );
+    },
+    [nodes]
+  );
+
+  const revertOrSaveData = useCallback(
+    (nodeId: string, save: boolean) => {
+      if (!save) {
+        setNodes((prevNodes) =>
+          prevNodes.map((node) => {
+            const selectionId = node.id === nodeId
+            return (selectionId
+              ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedData: null
+                }
+              }
+              : node)
+          }
+          )
+        );
+      }
+    },
+    [nodes]
   );
 
   const getNodeFormData = useCallback(
@@ -411,12 +454,20 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     if (autoSave && selectedFlowId) {
       saveFlow();
     }
-  }, 30000);
+  }, 30000,
+    [autoSave, selectedFlowId]
+  );
 
 
   useEffect(() => {
     debouncedSave();
   }, [nodes, edges, debouncedSave]);
+
+  useEffect(() => {
+    if (isPlaying && selectedFlowId) {
+      console.log(">>>", LocalStorageService.getItem(`flow-${selectedFlowId}`));
+    }
+  }, [isPlaying, selectedFlowId]);
 
   const value: FlowContextType = {
     selectedFlowId,
@@ -457,6 +508,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     addNode,
     updateNodeMeta,
     setSelectedFlowId,
+    updatedSelectedNodeId,
+    revertOrSaveData
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

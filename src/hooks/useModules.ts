@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
-import { ModuleType } from '@/types/flow';
 import schema from '@/pages/manageFlow/data/flow_schema.json';
 //src/pages/manageFlow/data
 export function useModules() {
   return useMemo(() => {
-    const modules = new Map<string, ModuleType>();
+    const modules = new Map<string, any>();
 
     schema.properties.tasks.items.oneOf.forEach((operator: any, index: number) => {
       const { module_name, color, icon } = operator.properties.type.ui_properties;

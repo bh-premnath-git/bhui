@@ -13,7 +13,6 @@ export function ToolbarNodes() {
   const moduleTypes = useModules();
   const handleOperatorSelect = React.useCallback(
     (moduleInfo: ModuleType) => {
-      console.log("moduleInfo >> ", moduleInfo);
       const selectedData: SelectedOperator = {
         type: moduleInfo.type,
         description: moduleInfo.description,
@@ -37,6 +36,7 @@ export function ToolbarNodes() {
         position,
         data: {
           label: moduleInfo.label,
+          selectedData: null,
           type: selectedData.type,
           status: "pending",
           meta: {

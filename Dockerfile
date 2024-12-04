@@ -2,7 +2,11 @@
 FROM node:lts-alpine as builder
 WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm install
+
+# Add a dynamic element to invalidate the cache for npm install
+RUN --mount=type=cache,target=/root/.npm \
+    echo $(date +%s) > .build_timestamp && npm install
+
 COPY . .
 # Add this environment variable to bypass TypeScript errors
 ENV TSC_COMPILE_ON_ERROR=true

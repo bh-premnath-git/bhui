@@ -9,25 +9,30 @@ export function ToolbarNodes() {
   const [activeType, setActiveType] = React.useState<number | null>(null);
   const [hoveredType, setHoveredType] = React.useState<number | null>(null);
 
+  const [moduleTypes] = useModules();
 
-  const moduleTypes = useModules();
+  const activeModule = moduleTypes.find((type) => type.id === activeType);
+
+  // Update handleOperatorSelect to accept requiredFields
   const handleOperatorSelect = React.useCallback(
-    (moduleInfo: ModuleType) => {
+    (moduleInfo: ModuleType, requiredFields: string[]) => {
+      const [selectedOperator] = moduleInfo.operators;
       const selectedData: SelectedOperator = {
-        type: moduleInfo.type,
-        description: moduleInfo.description,
+        type: selectedOperator.type,
+        description: selectedOperator.description,
         moduleInfo: {
           icon: moduleInfo.icon,
           color: moduleInfo.color,
           label: moduleInfo.label,
         },
-        properties: moduleInfo.operators,
+        properties: moduleInfo.operators.map((op) => op.properties),
       };
 
       const id = (nodes.length + 1).toString();
       const lastNode = nodes[nodes.length - 1];
       const position = {
-        x: (lastNode?.position?.x ?? 100) + 140, y: 150,
+        x: (lastNode?.position?.x ?? 100) + 140,
+        y: 150,
       };
 
       addNode({
@@ -35,6 +40,7 @@ export function ToolbarNodes() {
         type: "custom",
         position,
         data: {
+          tempSave: false,
           label: moduleInfo.label,
           selectedData: null,
           type: selectedData.type,
@@ -49,6 +55,7 @@ export function ToolbarNodes() {
             properties: selectedData.properties,
             description: selectedData.description,
           },
+          requiredFields,
         },
       });
 
@@ -57,13 +64,13 @@ export function ToolbarNodes() {
     [nodes.length, addNode]
   );
 
-  const activeModule = moduleTypes.find((type) => type.id === activeType);
-
   useEffect(() => {
     if (activeModule) {
-      handleOperatorSelect(activeModule);
+      // Get the required fields from the operator(s) of the active module
+      const requiredFields = activeModule.operators?.[0]?.requiredFields || [];
+      handleOperatorSelect(activeModule, requiredFields);
     }
-  }, [activeModule, activeType]);
+  }, [activeModule, activeType, handleOperatorSelect]);
 
   return (
     <div className="relative w-full">
@@ -79,7 +86,7 @@ export function ToolbarNodes() {
                 label={type.label}
                 isHovered={hoveredType === type.id}
                 onClick={() => {
-                  setActiveType(activeType === type.id ? null : type.id)
+                  setActiveType(activeType === type.id ? null : type.id);
                 }}
                 onMouseEnter={() => setHoveredType(type.id)}
                 onMouseLeave={() => setHoveredType(null)}

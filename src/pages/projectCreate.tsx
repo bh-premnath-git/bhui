@@ -206,8 +206,8 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-8 rounded-xl border bg-card text-card-foreground shadow-lg w-full mt-6">
-      <div className="border-b pb-4">
+    <div className="max-w-6xl mx-auto p-4 space-y-4 rounded-xl border bg-card text-card-foreground shadow-lg w-full mt-2">
+      <div className="border-b pb-1">
         <h2 className="text-2xl font-semibold">Create New Project</h2>
         <p className="text-muted-foreground mt-1">Configure your project settings and repository details</p>
       </div>
@@ -219,10 +219,10 @@ export default function ProjectCreationComponent() {
         onSubmit={handleSubmitForm}
       >
         {({ values, setFieldValue, isValid }) => (
-          <Form className="space-y-8">
+          <Form className="space-y-4">
             {/* Project Name Section */}
             <div className="flex justify-between items-start">
-              <div className="space-y-2 w-1/2">
+              <div className="space-y-1 w-1/2">
                 <RequiredLabel>
                   <Label htmlFor="bh_project_name" className="text-base">Project Name</Label>
                 </RequiredLabel>
@@ -258,9 +258,9 @@ export default function ProjectCreationComponent() {
             </div>
 
             {/* Repository Details Section */}
-            <div className="bg-gray-50 p-6 rounded-lg space-y-6">
-              <h3 className="text-lg font-medium mb-4">Repository Details</h3>
-              <div className="grid grid-cols-4 gap-6">
+            <div className="bg-gray-50 p-2 rounded-lg space-y-6">
+              <h3 className="text-lg font-medium mb-2">Repository Details</h3>
+              <div className="grid grid-cols-4 gap-2">
                 <div>
                   <RequiredLabel>
                     <Label htmlFor="bh_github_provider">Github Provider</Label>
@@ -450,7 +450,7 @@ export default function ProjectCreationComponent() {
                 </Dialog>
               </div>
               
-              <div className="flex flex-wrap gap-2 min-h-[50px] bg-white p-4 rounded-md border">
+              <div className="flex flex-wrap gap-1 min-h-[50px] bg-white p-1 rounded-md border">
                 {tags.length === 0 ? (
                   <p className="text-gray-400 text-sm">No tags added yet</p>
                 ) : (

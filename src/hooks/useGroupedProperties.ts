@@ -17,9 +17,6 @@ export const useGroupedProperties = (selectedNode: any) => {
       settings: []
     };
 
-    // Add console.log for debugging if needed
-    // console.log('Selected Node in useGroupedProperties:', selectedNode);
-
     Object.entries(properties).forEach(([key, value]: [string, any]) => {
       if (key !== 'type' && key !== 'task_id' && key !== 'depends_on') {
         const group = value.ui_properties?.group_key;
@@ -41,7 +38,6 @@ export const useGroupedProperties = (selectedNode: any) => {
         (a.ui_properties?.order || 0) - (b.ui_properties?.order || 0)
       );
     });
-
     return grouped;
   }, [selectedNode]); // Keep a single dependency
 };

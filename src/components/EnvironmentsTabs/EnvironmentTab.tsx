@@ -13,12 +13,14 @@ import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
 import { Badge } from "@/components/ui/badge"
 import RequiredLabel from '@/components/RequiredFieldLabel';
-
+import { useAppSelector } from '@/redux/hooks';
+import { encrypt_string } from '@/services/encryption';
 
 // Types
 type Tag = {
   tagList: { key: string; value: string }[];
 } | null;
+
 type Platform = { id: string; name: string; logo: string; cloud_provider: number };
 
 interface EnvironmentTabProps {
@@ -39,7 +41,6 @@ interface EnvironmentTabProps {
   chamgeVerification: (verified: boolean) => void;
 }
 
-
 interface FormValues {
   environmentName: string;
   environment: string;
@@ -52,6 +53,7 @@ interface FormValues {
   privateKeyFile: File | null;
   selectedPlatform: string;
 }
+
 // Constants
 const PLATFORMS: Platform[] = [
   {
@@ -68,7 +70,6 @@ const PLATFORMS: Platform[] = [
   },
 ];
 
-// Validation Schema
 const validationSchema = Yup.object().shape({
   environmentName: Yup.string().required('Environment name is required'),
   environment: Yup.string().required('Environment is required'),
@@ -94,7 +95,6 @@ const validationSchema = Yup.object().shape({
   airflowDagBucket: Yup.string().notRequired(),
 });
 
-// Helper Components
 const PlatformSelector: React.FC<{
   selectedPlatform: string;
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
@@ -243,27 +243,30 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   chamgeVerification,
 }) => {
   const [ToastComponent, showToast] = useToast();
-  const [isTestConnection, setIsTestConnection] = useState(false);
+  const { flowProjectList } = useAppSelector(
+    (state) => state.flowApi
+  );
 
   const handleValidate = async (values: FormValues) => {
     try {
+      const encryted_aws_key_id = encrypt_string(values.accessKey)
+      const encryted_aws_secret_access_key = encrypt_string(values.secretAccessKey, encryted_aws_key_id.initVector)
       const result = await ApiService('8011', 'post', `/aws/test_connection`, {
-        aws_access_key_id: values.accessKey,
-        aws_secret_access_key: values.secretAccessKey
+        aws_access_key_id: encryted_aws_key_id.encryptedString,
+        aws_secret_access_key: encryted_aws_secret_access_key.encryptedString,
+        location: values.location,
+        init_vector: encryted_aws_key_id.initVector
       });
       if (result.status) {
-        setIsTestConnection(true);
         showToast('Successfully able to connect', { color: '#00b060' });
         chamgeVerification(true);
         return true;
       } else {
-        setIsTestConnection(false);
         showToast('Failed to connect', { color: '#FF0000' });
         chamgeVerification(false);
         return false;
       }
     } catch (error) {
-      setIsTestConnection(false);
       showToast('Failed to connect', { color: '#FF0000' });
       chamgeVerification(false);
       return false;
@@ -294,17 +297,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     "303": "Production"
   } as const;
 
-  type LocationOptions = {
-    "1": string;
-    "2": string;
-    "3": string;
-  }
-
-  const locationOptions: LocationOptions = {
-    "1": "US East",
-    "2": "US West",
-    "3": "EU Central",
-  } as const;
+  // Updated location options to an array of strings
+  const locationOptions = ["us-east-1", "us-west-1", "eu-central-1"] as const;
+  type LocationOption = typeof locationOptions[number];
 
   return (
     <Formik
@@ -393,40 +388,48 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 <RequiredLabel>
                   <Label htmlFor="projectId">Project ID</Label>
                 </RequiredLabel>
-                <Field
-                  as={Input}
-                  id="projectId"
-                  name="projectId"
-                  placeholder="Enter Project Id"
-                  className="w-[60%]"
-                  onChange={(e: { target: { value: any; }; }) => {
-                    handleChange(e);
-                    onChange({ projectId: e.target.value });
+                <Select
+                  value={values.projectId}
+                  onValueChange={(value: string) => {
+                    setFieldValue('projectId', value);
+                    onChange({ projectId: value });
                   }}
-                />
+                >
+                  <SelectTrigger className="w-[60%]">
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {flowProjectList.map((project) => (
+                      <SelectItem key={project.ProjectId} value={project.ProjectId.toString()}>
+                        {project.Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
               </div>
+
+              {/* Updated location select to use string values directly */}
               <div className="col-span-2 space-y-2">
                 <RequiredLabel>
                   <Label htmlFor="location">Location</Label>
                 </RequiredLabel>
                 <Select
-                  defaultValue={values.location}
                   value={values.location}
-                  onValueChange={(value: keyof LocationOptions) => {
+                  onValueChange={(value: string) => {
                     setFieldValue('location', value);
                     onChange({ location: value });
                   }}
                 >
                   <SelectTrigger className="w-[60%]">
-                    <SelectValue placeholder="Select Environment" >
-                      {values.location ? locationOptions[values.location as keyof LocationOptions] : "Select Location"}
+                    <SelectValue placeholder="Select Location" >
+                      {values.location || "Select Location"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.entries(locationOptions) as [keyof LocationOptions, string][]).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
+                    {locationOptions.map((loc) => (
+                      <SelectItem key={loc} value={loc}>
+                        {loc}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -477,6 +480,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 </>
               )}
             </div>
+
             {values.selectedPlatform === 'google-cloud' && (
               <div className="w-full">
                 <div className="space-y-2">
@@ -534,4 +538,4 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   );
 };
 
-export default EnvironmentTab;                
+export default EnvironmentTab;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { useFlow } from '@/contexts/FlowContext';
-import { getEnvironmentList, setSelectedEnv } from '@/redux/FlowSlice';
+import { getEnvironmentList, setSelectedEnv, patchFlowOperation } from '@/redux/FlowSlice';
 import {
   ChevronLeft,
   CloudSun,
@@ -15,16 +15,9 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { PlaybackButton } from '../ReactFlowComps/flow/toolbar/PlaybackButton';
+import { PlaybackButton } from '@/components/ReactFlowComps/flow/toolbar/PlaybackButton';
 import { SettingsModal } from './SettingsModal';
-import {EnvironmentSelect} from './EnvironmentSelect';
+import { EnvironmentSelect } from './EnvironmentSelect';
 import { CustomToolbarProps } from './types';
 import SchedulePicker from './SchedulePicker';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,7 +27,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
   const [flowType, setFlowType] = useState("Flow_type 1");
   const [selectedEnvironment, setSelectedEnvironment] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState("none");
-  const { autoSave, isSaved, isSaving, isPlaying, toggleAutoSave, togglePlayback } = useFlow();
+  const { autoSave, isSaved, isSaving, isPlaying, toggleAutoSave, togglePlayback, selectedFlowId } = useFlow();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { environments } = useAppSelector((state) => state.flowApi);
@@ -43,6 +36,18 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
     setSelectedEnvironment(value);
     dispatch(setSelectedEnv(value));
   };
+
+  const renameflowByid = async (name) => {
+    try {
+      const payload = {
+        flow_name: name,
+        flow_key: name
+      }
+      dispatch(patchFlowOperation({ flow_id: selectedData.id, data: payload }))
+    } catch (error) {
+      console.error("error", error);
+    }
+  }
 
   const getCloudIcon = () => {
     if (isSaving) return <CloudSun className="h-9 w-9 text-blue-500 animate-pulse" />;
@@ -70,6 +75,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
     };
     fetchEnvironments();
   }, [dispatch]);
+
 
   return (
     <div className="bg-white border-b">
@@ -100,6 +106,11 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
               <Input
                 value={flowType}
                 onChange={(e) => setFlowType(e.target.value)}
+                onBlur={() => {
+                  if (flowType && flowType !== selectedData?.flow_name) {
+                    renameflowByid(flowType);
+                  }
+                }}
                 className="pr-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
               />
               <Button
@@ -123,7 +134,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
 
           {/* Middle group */}
           <div className="flex items-center space-x-4">
-          <EnvironmentSelect 
+            <EnvironmentSelect
               value={selectedEnvironment}
               onValueChange={handleEnvironmentChange}
               environments={environments}
@@ -147,7 +158,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
               </time>
             </div>
 
-            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} />
+            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} selectedFlowId={selectedFlowId} />
 
             <TooltipProvider>
               <Tooltip>

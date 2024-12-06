@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,13 +13,17 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useState } from "react"
 
 interface DeletePipelineDialogProps {
+  title: string;
+  placeholder: string;
   isOpen: boolean
   onClose: () => void
   pipelineName: string
-  onDelete: (withCommit: boolean) => Promise<void>
+  onDelete: () => Promise<void>
 }
 
-export default function DeletePipelineDialog({
+export function DeleteDialog({
+  title,
+  placeholder,
   isOpen,
   onClose,
   pipelineName,
@@ -32,12 +35,12 @@ export default function DeletePipelineDialog({
 
   const isConfirmValid = confirmText === pipelineName
 
-  const handleDelete = async (withCommit: boolean) => {
+  const handleDelete = async () => {
     if (!isConfirmValid) return
     setIsLoading(true)
     setError(null)
     try {
-      await onDelete(withCommit)
+      await onDelete()
       onClose()
     } catch (err) {
       setError("An error occurred while deleting the pipeline. Please try again.")
@@ -48,15 +51,24 @@ export default function DeletePipelineDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="
+          sm:max-w-md 
+          bg-white/10 
+          backdrop-blur-sm 
+          border border-white/20 
+          shadow-lg
+          text-white
+        "
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-warning" />
-            Delete Pipeline
+            {title}
           </DialogTitle>
-          <DialogDescription className="space-y-3 pt-3">
+          <DialogDescription className="space-y-3 pt-3 text-white">
             <p>Are you sure you want to delete {pipelineName}?</p>
-            <p className="text-muted-foreground">
+            <p className="opacity-80">
               This action cannot be undone. This will permanently delete the {pipelineName}.
             </p>
             <div className="space-y-2">
@@ -67,8 +79,8 @@ export default function DeletePipelineDialog({
                 id="confirm"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="Enter pipeline name"
-                className="font-mono"
+                placeholder={placeholder}
+                className="font-mono text-white"
                 disabled={isLoading}
               />
             </div>
@@ -79,20 +91,12 @@ export default function DeletePipelineDialog({
         )}
         <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
           <Button
-            variant="outline"
-            onClick={() => handleDelete(true)}
-            disabled={!isConfirmValid || isLoading}
-          >
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Commit & Save
-          </Button>
-          <Button
             variant="destructive"
-            onClick={() => handleDelete(false)}
+            onClick={handleDelete}
             disabled={!isConfirmValid || isLoading}
           >
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Delete without commit
+            Delete 
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -60,6 +60,11 @@ interface DeploymentParams {
   cron_expression: any
 }
 
+interface UpdateFlowDefinitionParams {
+  flow_id: string;
+  flow_json: Record<string, any>;
+}
+
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
@@ -79,6 +84,8 @@ export const createFlow = createAsyncThunk<
     }
   }
 );
+
+
 
 export const listFlows = createAsyncThunk<
   any[], // Return type
@@ -169,6 +176,60 @@ export const searchFlow: any = createAsyncThunk(
   }
 );
 
+export const patchFlowOperation = createAsyncThunk<
+  any, 
+  { flow_id: string; data: Record<string, any> },
+  { rejectValue: string }
+>(
+  'flow/patchFlowOperation',
+  async ({ flow_id, data }, thunkAPI) => {
+    try {
+      const response = await ApiService('8011', 'patch', `/flow/${flow_id}`, data);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+///api/v1/flow/{flow_id}
+export const deleteFlowbyId = createAsyncThunk<
+  any,
+  { flow_id: string | number },
+  { rejectValue: string }
+>(
+  "flow/deleteFlow",
+  async ({ flow_id }, thunkAPI) => {
+    try {
+      const response = await ApiService("8011", "delete", `/flow/${flow_id}`);
+      return { flow_id, response };
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateFlowDefinition = createAsyncThunk<
+  any,
+  UpdateFlowDefinitionParams,
+  { rejectValue: string }
+>(
+  'flow/updateFlowDefinition',
+  async ({ flow_id, flow_json }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011', 
+        'put', 
+        `/flow/flow-definition/update-by-flow-id/${flow_id}`, 
+        flow_json
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const flowSlice = createSlice({
   name: "api/flow",
   initialState,
@@ -197,6 +258,21 @@ const flowSlice = createSlice({
       .addCase(createFlow.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Network error occurred';
+      })
+      //delete
+      .addCase(deleteFlowbyId.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteFlowbyId.fulfilled, (state, action) => {
+        state.loading = false;
+        const { flow_id } = action.payload;
+        // Remove the deleted flow from the state
+        state.flows = state.flows.filter((flow) => flow.id !== flow_id);
+      })
+      .addCase(deleteFlowbyId.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "An error occurred while deleting the flow";
       })
       // listFlows
       .addCase(listFlows.pending, (state) => {
@@ -256,6 +332,32 @@ const flowSlice = createSlice({
       .addCase(getEnvironmentList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred';
+      })
+      .addCase(patchFlowOperation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(patchFlowOperation.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedFlow = action.payload;
+      })
+      .addCase(patchFlowOperation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while patching the flow';
+      })
+      .addCase(updateFlowDefinition.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateFlowDefinition.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedFlow = action.payload;
+        console.log("updatedFlow def", updatedFlow);
+        
+      })
+      .addCase(updateFlowDefinition.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while updating flow definition';
       });
   },
 });

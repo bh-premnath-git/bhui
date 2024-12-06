@@ -18,8 +18,8 @@ const ApiService = async (
   additionalHeaders: Record<string, string> = {},
   usePrefix: boolean = true,
 ) => {
-  const BASE_URL = usePrefix 
-    ? `${DOMAIN}:${PORT_NUMBER}${PRIFIX_URL}` 
+  const BASE_URL = usePrefix
+    ? `${DOMAIN}:${PORT_NUMBER}${PRIFIX_URL}`
     : `${DOMAIN}:${PORT_NUMBER}`;
   try {
     let headers: HeadersWithAuthorization = { headers: {} };
@@ -61,6 +61,9 @@ const ApiService = async (
       case "put":
         response = await axiosInstance.put(url, data, config);
         break;
+      case "patch":
+        response = await axiosInstance.patch(url, data, config)
+        break;
       case "delete":
         response = await axiosInstance.delete(url, config);
         break;
@@ -73,18 +76,18 @@ const ApiService = async (
     // Enhanced error handling
     if (error.response) {
       console.error(
-        `Error ${method.toUpperCase()}ing data at ${url}:`, 
+        `Error ${method.toUpperCase()}ing data at ${url}:`,
         error.response.data
       );
-      return {error:error.response.data?.message||error.response.data}
+      return { error: error.response.data?.message || error.response.data }
     } else if (error.request) {
       console.error(
-        `No response received from ${url}:`, 
+        `No response received from ${url}:`,
         error.request
       );
     } else {
       console.error(
-        `Error in request setup for ${url}:`, 
+        `Error in request setup for ${url}:`,
         error.message
       );
     }

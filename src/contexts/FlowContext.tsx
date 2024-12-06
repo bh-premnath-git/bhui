@@ -1,133 +1,21 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
-import { Node, Edge, ReactFlowInstance } from "reactflow";
-import { LocalStorageService } from "@/services/localStorageServices";
-
-// Interface Definitions
-interface ModuleInfo {
-  color: string;
-  icon: string;
-  label: string;
-}
-
-interface MetaData {
-  type: string;
-  moduleInfo: ModuleInfo;
-  properties: Record<string, any>;
-  description: string;
-  [key: string]: any;
-}
-
-interface CustomNodeData {
-  label: string;
-  type: string;
-  status: string;
-  meta: MetaData;
-  selectedData: string | null;
-  position?: { x: number; y: number };
-}
-
-interface NodeFormData {
-  nodeId: string;
-  formData: Record<string, any>;
-}
-
-interface EditingNode {
-  id: string;
-  label: string;
-  content: string;
-}
-
-interface FlowContextType {
-  selectedFlowId: string | null;
-  nodes: Node<CustomNodeData>[];
-  edges: Edge[];
-  isPlaying: boolean;
-  isDataPreviewOpen: boolean;
-  selectedNode: Node<CustomNodeData> | null;
-  nodeFormData: NodeFormData[];
-  isSaving: boolean;
-  isSaved: boolean;
-  autoSave: boolean;
-  editingNode: EditingNode | null;
-  temporaryEdgeId: string | null;
-  setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>;
-  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
-  deleteEdgeBySourceTarget: (source: string, target: string) => void;
-  togglePlayback: () => void;
-  updateNodeDimensions: (nodeId: string, dimensions: { width: number; height: number }) => void;
-  reactFlowInstance: ReactFlowInstance | null;
-  setReactFlowInstance: (instance: ReactFlowInstance | null) => void;
-  toggleDataPreview: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  fitView: () => void;
-  deleteNode: (nodeId: string) => void;
-  cloneNode: (nodeId: string) => void;
-  renameNode: (nodeId: string, newLabel: string) => void;
-  showNodeInfo: (nodeId: string) => void;
-  updatedSelectedNodeId: (newNodeId: string, data: string) => void;
-  selectNode: (nodeId: string) => void;
-  updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
-  getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
-  prevNodeFn: (nodeId: string) => Node<CustomNodeData>[] | undefined;
-  setEditingNode: (node: EditingNode | null) => void;
-  setTemporaryEdgeId: (id: string | null) => void;
-  toggleAutoSave: () => void;
-  saveFlow: () => Promise<void>;
-  addNode: (data: {
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: CustomNodeData;
-  }) => void;
-  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
-  revertOrSaveData: (nodeId: string, save: boolean) => void;
-  setSelectedFlowId: (flowId: string) => void;
-}
-
-function useDebouncedCallback<Func extends (...args: any[]) => void>(
-  func: Func,
-  delay: number,
-  dependencies: any[] = []
-): Func {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debouncedFunc = useCallback(
-    ((...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        func(...args);
-      }, delay);
-    }) as Func,
-    [func, delay, ...dependencies]
-  );
-
-  return debouncedFunc;
-}
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Node, Edge, ReactFlowInstance } from 'reactflow';
+import { LocalStorageService } from '@/services/localStorageServices';
+import {
+  FlowContextType,
+  CustomNodeData,
+  NodeFormData,
+  EditingNode,
+} from '@/types/flow';
+import { useDebouncedCallback } from '@/hooks/useDebounce';
+import { useNodeOperations } from '@/hooks/useNodeOperations';
+import { useFlowOperations } from '@/hooks/useFlowOperations';
+import { useFormOperations } from '@/hooks/useFormOperations';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(null);
-
-  const loadFlow = useCallback((flowId: string) => {
-    const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
-    setNodes(savedFlow ? savedFlow.nodes : []);
-    setEdges(savedFlow ? savedFlow.edges : []);
-    setNodeFormData(savedFlow ? savedFlow.nodeFormData : []);
-    setSelectedNode(null);
-    setIsSaved(true);
-    setIsSaving(false);
-  }, []);
-
   const [nodes, setNodes] = useState<Node<CustomNodeData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeFormData, setNodeFormData] = useState<NodeFormData[]>([]);
@@ -141,75 +29,43 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [editingNode, setEditingNode] = useState<EditingNode | null>(null);
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
 
-  // Effect to load flow when selectedFlowId changes
-  useEffect(() => {
-    if (selectedFlowId) {
-      loadFlow(selectedFlowId);
-    } else {
-      // If no flow is selected, reset the state
-      setNodes([]);
-      setEdges([]);
-      setNodeFormData([]);
-      setSelectedNode(null);
-      setIsSaved(true);
-      setIsSaving(false);
-    }
-  }, [selectedFlowId, loadFlow]);
+  const {
+    deleteNode,
+    deleteSelectedNodes,
+    cloneNode,
+    updateNodeMeta,
+    renameNode,
+    updateNodeDimensions
+  } = useNodeOperations(nodes, setNodes, setEdges);
 
-  const updateNodes = useCallback((updater: React.SetStateAction<Node<CustomNodeData>[]>) => {
-    setIsSaved(false);
-    setNodes(updater);
-  }, []);
+  const {
+    zoomIn,
+    zoomOut,
+    fitView,
+    saveFlow,
+    loadFlow
+  } = useFlowOperations(
+    reactFlowInstance,
+    nodes,
+    edges,
+    nodeFormData,
+    selectedFlowId,
+    setIsSaving,
+    setIsSaved
+  );
 
-  const updateEdges = useCallback((updater: React.SetStateAction<Edge[]>) => {
-    setIsSaved(false);
-    setEdges(updater);
-  }, []);
+  const {
+    updateNodeFormData,
+    getNodeFormData
+  } = useFormOperations(nodeFormData, setNodeFormData);
 
   const togglePlayback = useCallback(() => {
-
-
     setIsPlaying((prev) => !prev);
   }, []);
 
   const toggleDataPreview = useCallback(() => {
     setIsDataPreviewOpen((prev) => !prev);
   }, []);
-
-  const updateNodeDimensions = useCallback(
-    (nodeId: string, dimensions: { width: number; height: number }) => {
-      setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              dimensions,
-            };
-          }
-          return node;
-        })
-      );
-    },
-    []
-  );
-
-  const zoomIn = useCallback(() => {
-    if (reactFlowInstance) {
-      reactFlowInstance.zoomIn();
-    }
-  }, [reactFlowInstance]);
-
-  const zoomOut = useCallback(() => {
-    if (reactFlowInstance) {
-      reactFlowInstance.zoomOut();
-    }
-  }, [reactFlowInstance]);
-
-  const fitView = useCallback(() => {
-    if (reactFlowInstance) {
-      reactFlowInstance.fitView({ duration: 500 });
-    }
-  }, [reactFlowInstance]);
 
   const deleteEdgeBySourceTarget = useCallback(
     (source: string, target: string) => {
@@ -221,54 +77,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     },
     []
   );
-
-  const deleteNode = useCallback((nodeId: string) => {
-    setNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
-    setEdges((prevEdges) =>
-      prevEdges.filter(
-        (edge) => edge.source !== nodeId && edge.target !== nodeId
-      )
-    );
-  }, []);
-
-  const cloneNode = useCallback((nodeId: string) => {
-    const lastNode = nodes[nodes.length - 1];
-
-    setNodes((prevNodes) => {
-      const nodeToClone = prevNodes.find((node) => node.id === nodeId);
-      if (!nodeToClone) return prevNodes;
-
-      const newNode = {
-        ...nodeToClone,
-        id: `${nodeId}-clone-${Date.now()}`,
-        position: {
-          x: (lastNode?.position?.x ?? nodeToClone.position.x) + 150,
-          y: nodeToClone.position.y,
-        },
-      };
-
-      return [...prevNodes, newNode];
-    });
-  }, [nodes]);
-
-  const renameNode = useCallback((nodeId: string, newLabel: string) => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) =>
-        node.id === nodeId
-          ? {
-            ...node,
-            data: {
-              ...node.data,
-              meta: {
-                ...node.data.meta,
-                type: newLabel,
-              },
-            },
-          }
-          : node
-      )
-    );
-  }, []);
 
   const showNodeInfo = useCallback(
     (nodeId: string) => {
@@ -286,77 +94,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode(node || null);
     },
     [nodes]
-  );
-
-  const updateNodeFormData = useCallback(
-    (nodeId: string, newFormData: Record<string, any>) => {
-      setNodeFormData((prevData) => {
-        const existingIndex = prevData.findIndex(
-          (item) => item.nodeId === nodeId
-        );
-        if (existingIndex !== -1) {
-          const newData = [...prevData];
-          newData[existingIndex] = {
-            nodeId,
-            formData: { ...newFormData },
-          };
-          return newData;
-        }
-        return [...prevData, { nodeId, formData: { ...newFormData } }];
-      });
-    },
-    []
-  );
-
-  const updatedSelectedNodeId = useCallback(
-    (nodeId: string, selectedType: string) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          const selectionId = node.id === nodeId
-          return (selectionId
-            ? {
-              ...node,
-              data: {
-                ...node.data,
-                selectedData: selectedType
-              }
-            }
-            : node)
-        }
-        )
-      );
-    },
-    [nodes]
-  );
-
-  const revertOrSaveData = useCallback(
-    (nodeId: string, save: boolean) => {
-      if (!save) {
-        setNodes((prevNodes) =>
-          prevNodes.map((node) => {
-            const selectionId = node.id === nodeId
-            return (selectionId
-              ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  selectedData: null
-                }
-              }
-              : node)
-          }
-          )
-        );
-      }
-    },
-    [nodes]
-  );
-
-  const getNodeFormData = useCallback(
-    (nodeId: string) => {
-      return nodeFormData.find((item) => item.nodeId === nodeId)?.formData;
-    },
-    [nodeFormData]
   );
 
   const prevNodeFn = useCallback(
@@ -377,35 +114,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setAutoSave((prev) => !prev);
   }, []);
 
-  const saveFlow = useCallback(async () => {
-    if (!selectedFlowId) {
-      console.warn("No flow selected. Cannot save.");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const flowData = {
-        nodes,
-        edges,
-        nodeFormData,
-      };
-      // Simulate async operation
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
-      setIsSaved(true);
-    } catch (error) {
-      console.error("Error saving flow:", error);
-      setIsSaved(false);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [nodes, edges, nodeFormData, selectedFlowId]);
-
   const addNode = useCallback(
     (data: {
       id: string;
       type: string;
       position: { x: number; y: number };
+      tempSave: boolean;
       data: CustomNodeData;
     }) => {
       const newNode: Node<CustomNodeData> = {
@@ -419,28 +133,62 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-
-
-  const updateNodeMeta = useCallback(
-    (nodeId: string, newMeta: Partial<MetaData>) => {
+  const updatedSelectedNodeId = useCallback(
+    (nodeId: string, selectedType: string) => {
       setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          node.id === nodeId
+        prevNodes.map((node) => {
+          const selectionId = node.id === nodeId;
+          return selectionId
             ? {
               ...node,
               data: {
                 ...node.data,
-                meta: {
-                  ...node.data.meta,
-                  ...newMeta,
-                },
+                selectedData: selectedType,
               },
             }
-            : node
-        )
+            : node;
+        })
       );
     },
     []
+  );
+
+  const revertOrSaveData = useCallback(
+    (nodeId: string, save: boolean) => {
+      if (!save) {
+        setNodes((prevNodes) =>
+          prevNodes.map((node) => {
+            const selectionId = node.id === nodeId;
+            if (node.data.tempSave) return node; // Return unchanged node if tempSave is true
+            return selectionId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedData: null,
+                  },
+                }
+              : node;
+          })
+        );
+      } else {
+        setNodes((prevNodes) =>
+          prevNodes.map((node) => {
+            const selectionId = node.id === nodeId;
+            return selectionId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    tempSave: true,
+                  },
+                }
+              : node;
+          })
+        );
+      }
+    },
+    [setNodes] 
   );
 
   const setSelectedFlowId = useCallback(
@@ -450,31 +198,49 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const debouncedSave = useDebouncedCallback(() => {
-    if (autoSave && selectedFlowId) {
-      saveFlow();
-    }
-  }, 30000,
+  const debouncedSave = useDebouncedCallback(
+    () => {
+      if (autoSave && selectedFlowId) {
+        saveFlow();
+      }
+    },
+    10000,
     [autoSave, selectedFlowId]
   );
 
+  // Effect to load flow when selectedFlowId changes
+  useEffect(() => {
+    if (selectedFlowId) {
+      const savedFlow = loadFlow(selectedFlowId);
+      setNodes(savedFlow ? savedFlow.nodes : []);
+      setEdges(savedFlow ? savedFlow.edges : []);
+      setNodeFormData(savedFlow ? savedFlow.nodeFormData : []);
+      setSelectedNode(null);
+      setIsSaved(true);
+      setIsSaving(false);
+    } else {
+      // If no flow is selected, reset the state
+      setNodes([]);
+      setEdges([]);
+      setNodeFormData([]);
+      setSelectedNode(null);
+      setIsSaved(true);
+      setIsSaving(false);
+    }
+  }, [selectedFlowId, loadFlow]);
 
+  // Effect for auto-save
   useEffect(() => {
     debouncedSave();
   }, [nodes, edges, debouncedSave]);
 
-  useEffect(() => {
-    if (isPlaying && selectedFlowId) {
-      console.log(">>>", LocalStorageService.getItem(`flow-${selectedFlowId}`));
-    }
-  }, [isPlaying, selectedFlowId]);
-
+ 
   const value: FlowContextType = {
     selectedFlowId,
     nodes,
     edges,
-    setNodes: updateNodes,
-    setEdges: updateEdges,
+    setNodes,
+    setEdges,
     isPlaying,
     togglePlayback,
     updateNodeDimensions,
@@ -487,6 +253,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     deleteEdgeBySourceTarget,
     fitView,
     cloneNode,
+    deleteSelectedNodes,
     deleteNode,
     renameNode,
     showNodeInfo,
@@ -509,7 +276,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     updateNodeMeta,
     setSelectedFlowId,
     updatedSelectedNodeId,
-    revertOrSaveData
+    revertOrSaveData,
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

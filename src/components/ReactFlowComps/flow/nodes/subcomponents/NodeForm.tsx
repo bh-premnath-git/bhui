@@ -38,8 +38,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
     );
 
-    const groupedProperties = useGroupedProperties(selectedProperties) ?? { property: [], settings: [] };
-
+    const groupedProperties = useGroupedProperties({properties: selectedProperties}) ?? { properties:{property: [], settings: []} };
     const currentFormData = useMemo(() =>
         nodeFormData.find(item => item.nodeId === selectedNode.id)?.formData || {},
         [nodeFormData, selectedNode.id]
@@ -82,6 +81,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             setSelectedValue(selectedNode.data.selectedData);
         }
     }, [selectedNode?.data?.selectedData]);
+
+    
 
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg">

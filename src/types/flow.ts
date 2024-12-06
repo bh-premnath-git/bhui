@@ -1,3 +1,5 @@
+import { Node, Edge, ReactFlowInstance } from "reactflow";
+
 export type TriggerRule =
   | "all_success"
   | "all_failed"
@@ -73,4 +75,90 @@ export interface GroupedProperties {
 
 export interface FormValues {
   [key: string]: any;
+}
+/**  */
+
+export interface ModuleInfo {
+  color: string;
+  icon: string;
+  label: string;
+}
+
+export interface MetaData {
+  type: string;
+  moduleInfo: ModuleInfo;
+  properties: Record<string, any>;
+  description: string;
+  [key: string]: any;
+}
+
+export interface CustomNodeData {
+  label: string;
+  type: string;
+  status: string;
+  meta: MetaData;
+  selectedData: string | null;
+  position?: { x: number; y: number };
+  tempSave: boolean;
+  requiredFields: any
+}
+
+export interface NodeFormData {
+  nodeId: string;
+  formData: Record<string, any>;
+}
+
+export interface EditingNode {
+  id: string;
+  label: string;
+  content: string;
+}
+
+export interface FlowContextType {
+  selectedFlowId: string | null;
+  nodes: Node<CustomNodeData>[];
+  edges: Edge[];
+  isPlaying: boolean;
+  isDataPreviewOpen: boolean;
+  selectedNode: Node<CustomNodeData> | null;
+  nodeFormData: NodeFormData[];
+  isSaving: boolean;
+  isSaved: boolean;
+  autoSave: boolean;
+  editingNode: EditingNode | null;
+  temporaryEdgeId: string | null;
+  setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>;
+  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+  deleteEdgeBySourceTarget: (source: string, target: string) => void;
+  togglePlayback: () => void;
+  updateNodeDimensions: (nodeId: string, dimensions: { width: number; height: number }) => void;
+  reactFlowInstance: ReactFlowInstance | null;
+  setReactFlowInstance: (instance: ReactFlowInstance | null) => void;
+  toggleDataPreview: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  fitView: () => void;
+  deleteNode: (nodeId: string) => void;
+  deleteSelectedNodes: ()=>void;
+  cloneNode: (nodeId: string) => void;
+  renameNode: (nodeId: string, newLabel: string) => void;
+  showNodeInfo: (nodeId: string) => void;
+  updatedSelectedNodeId: (newNodeId: string, data: string) => void;
+  selectNode: (nodeId: string) => void;
+  updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
+  getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
+  prevNodeFn: (nodeId: string) => Node<CustomNodeData>[] | undefined;
+  setEditingNode: (node: EditingNode | null) => void;
+  setTemporaryEdgeId: (id: string | null) => void;
+  toggleAutoSave: () => void;
+  saveFlow: () => Promise<void>;
+  addNode: (data: {
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: CustomNodeData;
+  }) => void;
+  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
+  revertOrSaveData: (nodeId: string, save: boolean) => void;
+  setSelectedFlowId: (flowId: string) => void;
 }

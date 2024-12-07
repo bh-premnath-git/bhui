@@ -206,7 +206,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   }
 
   return (
-    <div className="container mx-auto p-2 space-y-4">
+    <div className="container p-0 space-y-2">
       <Tabs value={state.activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex-1 flex justify-center">
@@ -215,7 +215,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                 <TabsTrigger
                   key={tab}
                   value={tab}
-                  className="px-4 py-2 rounded-md transition-colors duration-200 data-[state=active]:bg-black data-[state=active]:text-white"
+                  className="px-2 py-2 rounded-md transition-colors duration-200 data-[state=active]:bg-black data-[state=active]:text-white"
                 >
                   {tab.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
                 </TabsTrigger>
@@ -227,9 +227,9 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
           </Button>
         </div>
 
-        <Card className="w-full mt-4">
-          <CardContent className="p-6">
-            <div className="max-w-[850px] mx-auto">
+        <Card className="w-full mt-2">
+          <CardContent className="p-2">
+            <div className="max-w-[1050px] mx-auto">
               <TabsContent value="environment">
                 <EnvironmentTab 
                   selectedPlatform={state.selectedPlatform}

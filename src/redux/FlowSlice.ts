@@ -121,9 +121,9 @@ export const getFlowProjectList = createAsyncThunk<
   }
 >(
   'flow/gitproject',
-  async (params, thunkAPI) => {
+  async (params= {}, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/bh_project/list/', null, params = {});
+      const response = await ApiService('8011', 'get', '/bh_project/list/', null, params);
 
       const transformed: FlowProject[] = response.map((item: any) => {
         return ({

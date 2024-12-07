@@ -108,6 +108,9 @@ body {
   }
 }
 
+.card-header.text-left {
+  text-align: left !important;
+}
 
 .bg-pink {
   background-color: #FF7396;

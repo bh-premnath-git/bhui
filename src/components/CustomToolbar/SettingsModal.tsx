@@ -157,20 +157,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg">
-        <DialogHeader className="space-y-1">
-          <DialogTitle className="text-2xl font-semibold tracking-tight">
+      <DialogContent className="sm:max-w-[600px] bg-white border-0 shadow-xl rounded-xl">
+        <DialogHeader className="space-y-2 px-2">
+          <DialogTitle className="text-2xl font-semibold">
             Flow Settings
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500">
             Configure your flow settings and add relevant tags
           </p>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="configuration">Configuration</TabsTrigger>
+          <TabsList className="grid w-80 grid-cols-2 mb-6 p-1 bg-gray-100 rounded-lg gap-1">
+            <TabsTrigger 
+              value="settings" 
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              Settings
+            </TabsTrigger>
+            <TabsTrigger 
+              value="configuration"
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              Configuration
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="mt-0">
@@ -197,10 +207,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           </TabsContent>
         </Tabs>
 
-        <DialogFooter>
+        <DialogFooter className="px-2 pb-2">
           <Button
             type="submit"
-            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
+            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200"
           >
             Save Changes
           </Button>

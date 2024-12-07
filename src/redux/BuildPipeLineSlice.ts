@@ -8,11 +8,10 @@ export interface ApiState {
   error: string | null;
   isHover: boolean;
   selectedOption: string;
-  isRun: boolean;
+  isPipelineRunning: boolean;
   dynamicConData: any;
   pipelineList: any;
   nestedFields: any;
-  joinList: any;
   orderByList: any;
   createPipeLineDtl: any;
   buildPipeLineDtl: any;
@@ -30,11 +29,10 @@ const initialState: ApiState = {
   dataConfig: [],
   isHover: false,
   selectedOption: '',
-  isRun: false,
+  isPipelineRunning: false,
   dynamicConData: null,
   nestedFields: null,
   pipelineList: [],
-  joinList: [],
   orderByList: [],
   createPipeLineDtl: {},
   buildPipeLineDtl: {},
@@ -225,8 +223,8 @@ const buildPipeLineSlice = createSlice({
     setSelectedOption: (state, action) => {
       state.selectedOption = action.payload;
     },
-    setIsRun: (state, action) => {
-      state.isRun = action.payload;
+    setIsPipelineRunning: (state, action) => {
+      state.isPipelineRunning = action.payload;
     },
     setIsDebug: (state, action) => {
       state.isDebug = action.payload;
@@ -353,24 +351,6 @@ const buildPipeLineSlice = createSlice({
         }
       )
 
-      .addCase(getCodesValue.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        getCodesValue.fulfilled,
-        (state, action: PayloadAction<ApiResponse[]>) => {
-          state.loading = false;
-          state.joinList = action.payload;
-        }
-      )
-      .addCase(
-        getCodesValue.rejected,
-        (state, action: PayloadAction<string>) => {
-          state.loading = false;
-          state.error = action.payload;
-        }
-      )
 
       .addCase(getOrderBy.pending, (state) => {
         state.loading = true;
@@ -485,7 +465,7 @@ const buildPipeLineSlice = createSlice({
 export default buildPipeLineSlice.reducer;
 export const { setIsHover,
    setSelectedOption,
-    setIsRun, 
+    setIsPipelineRunning, 
     setNestedField, 
     setBuildPipeLineDtl, 
     setBuildPipeLineNodes, 

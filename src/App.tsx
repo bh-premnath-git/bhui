@@ -1,5 +1,5 @@
 import { useState, Suspense, lazy, useEffect, useRef } from 'react';
-import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, Outlet, createBrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';

@@ -23,6 +23,7 @@ interface UIProperties {
     color: string;
     icon: string;
     module_name: string;
+    ports: any;
 }
 
 interface Node {
@@ -87,6 +88,7 @@ const BuildPlayGround: React.FC = () => {
             data: {
                 label: `${node.ui_properties.module_name}`,
                 icon: node.ui_properties.icon,
+                ports: node.ui_properties.ports
             }
         };
 
@@ -220,17 +222,32 @@ const BuildPlayGround: React.FC = () => {
         if (checkConnectionExists(connection)) {
             return;
         }
-    
+
+        // Get source and target nodes
+        const sourceNode = nodes.find(n => n.id === connection.source);
+        const targetNode = nodes.find(n => n.id === connection.target);
+
+        if (!sourceNode || !targetNode) return;
+
+        // Check input limits
+        const targetInputs = edges.filter(e => e.target === connection.target).length;
+        const maxInputs = targetNode.data.ports?.maxInputs;
+        
+        if (maxInputs !== "unlimited" && targetInputs >= maxInputs) {
+            console.warn("Maximum inputs reached for this node");
+            return;
+        }
+
         // Check for circular dependency
-        const isCircular = checkForCircularDependency(connection.source, connection.target);
+        const isCircular = checkForCircularDependency(connection.source!, connection.target!);
         if (isCircular) {
             console.error("Circular dependency detected, connection not added.");
             return;
         }
-    
+
         setEdges((eds: any) => addEdge(connection, eds));
         handleNodeForm(connection.target!);
-    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges]);
+    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, nodes, edges]);
     
     
     const buildGraphFromEdges = (edges: any[]) => {
@@ -419,6 +436,9 @@ const BuildPlayGround: React.FC = () => {
         )
     }), [transformationCounts]);
 
+    // Add defaultViewport configuration
+    const defaultViewport = { x: 0, y: 0, zoom: 0.7 }; // Adjust zoom value as needed (0.7 = 70% zoom)
+
     return (
         <div className="p-1 ml-8">
             {debuggedNodesList.length > 0 && (
@@ -538,7 +558,11 @@ const BuildPlayGround: React.FC = () => {
                     nodeTypes={memoizedNodeTypes}
                     edgeTypes={edgeTypes}
                     onError={onError}
+                    defaultViewport={defaultViewport}
+                    minZoom={0.2}  // Minimum zoom level
+                    maxZoom={1.5}  // Maximum zoom level
                     fitView
+                    fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }} // Adjust fitView zoom
                     proOptions={{ hideAttribution: true }}
                 />
             </div>
@@ -551,6 +575,7 @@ const BuildPlayGround: React.FC = () => {
                     onStop={handleStop}
                     onNext={handleNext}
                     isPipelineRunning={isPipelineRunning}
+                    isLoading={false}
                 />
             </div>
 

@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useAppDispatch } from '@/redux/hooks';
+import { updateFlowDefinition } from '@/redux/FlowSlice';
+import { LocalStorageService } from '@/services/localStorageServices';
 
 interface PlaybackButtonProps {
+  selectedFlowId: string;
   isPlaying: boolean;
   onToggle: () => void;
   size?: 'default' | 'sm' | 'lg';
@@ -11,12 +15,14 @@ interface PlaybackButtonProps {
 }
 
 export function PlaybackButton({
+  selectedFlowId,
   isPlaying,
   onToggle,
   size = 'default',
   className = ""
 }: PlaybackButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const dispatch = useAppDispatch();
 
   const sizeClasses = {
     default: "h-10 w-10",
@@ -42,6 +48,13 @@ export function PlaybackButton({
     lg: "text-base"
   };
 
+  const asnycupdateFlowDef = async () => {
+    if (!isPlaying && selectedFlowId) {
+      const flowJson = LocalStorageService.getItem(`flow-${selectedFlowId}`)?.nodeFormData?.map(item => item.formData);
+      dispatch(updateFlowDefinition({ flow_id: selectedFlowId, flow_json: { flow_json: { flowJson } } }))
+    }
+  }
+
   return (
     <>
       <motion.div
@@ -60,7 +73,7 @@ export function PlaybackButton({
           variant="ghost"
           size="icon"
           className={`${sizeClasses[size]} p-0`}
-          onClick={onToggle}
+          onClick={() => { asnycupdateFlowDef(); onToggle(); }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           aria-label={`${isPlaying ? "Pause playback" : "Play playback"}`}

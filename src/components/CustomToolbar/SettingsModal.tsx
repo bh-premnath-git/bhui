@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import { TagInput } from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppDispatch } from '@/redux/hooks';
+import { patchFlowOperation } from '@/redux/FlowSlice';
 
 // Types
 interface Tag {
@@ -20,7 +22,7 @@ interface ConfigItem {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedData?: any;
+  selectedData?: any; // Ensure this has flow_id or whatever ID you need
 }
 
 // Configuration Row Component
@@ -137,6 +139,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
   const [tags, setTags] = useState<Tag>({ tagList: [] });
   const [activeTab, setActiveTab] = useState("settings");
   const [configs, setConfigs] = useState<ConfigItem[]>([{ key: '', value: '' }]);
+  
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (selectedData) {
+      setNotes(selectedData.notes || "");  
+      setTags({
+        tagList: Array.isArray(selectedData.tags?.tagList) ? selectedData.tags.tagList : []
+      });
+    }
+  }, [selectedData]);
 
   const handleConfigChange = (index: number, field: 'key' | 'value', value: string) => {
     const newConfigs = [...configs];
@@ -155,11 +168,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
     }
   };
 
+  const handleSave = async () => {
+    if (!selectedData?.id) {
+      console.error("No flow_id available in selectedData.");
+      return;
+    }
+
+    const payload = {
+      notes,
+      tags: { tagList: tags.tagList },
+    };
+
+    try {
+      await dispatch(patchFlowOperation({ flow_id: selectedData.id, data: payload }));
+      onClose();
+    } catch (error) {
+      console.error("Patch failed:", error);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] bg-white border-0 shadow-xl rounded-xl">
-        <DialogHeader className="space-y-2 px-2">
-          <DialogTitle className="text-2xl font-semibold">
+      <DialogContent className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg" aria-describedby="flowform">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
             Flow Settings
           </DialogTitle>
           <p className="text-sm text-gray-500">
@@ -209,8 +241,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
 
         <DialogFooter className="px-2 pb-2">
           <Button
-            type="submit"
-            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200"
+            type="button"
+            onClick={handleSave}
+            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
           >
             Save Changes
           </Button>

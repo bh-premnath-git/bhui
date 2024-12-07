@@ -63,14 +63,14 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
           </div>
           <div
             ref={editableRef}
-            className="absolute bottom-[-22px] text-[8px] text-gray-500"
+            className="absolute w-17 bottom-[-26px] text-[8px] text-gray-500"
             contentEditable={isEditing}
             suppressContentEditableWarning
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             data-node-id={id}
           >
-            {type}
+            {type ?? "SelectType"}
           </div>
         </div>
       </div>

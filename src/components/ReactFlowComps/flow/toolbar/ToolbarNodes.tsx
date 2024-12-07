@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useFlow } from "@/contexts/FlowContext";
 import { ModuleButton } from "./ModuleButton";
-import { OperatorList } from "./OperatorList";
 import { ModuleType, SelectedOperator } from "@/types/flow";
 import { useModules } from "@/hooks/useModules";
 
@@ -9,29 +8,31 @@ export function ToolbarNodes() {
   const { nodes, addNode } = useFlow();
   const [activeType, setActiveType] = React.useState<number | null>(null);
   const [hoveredType, setHoveredType] = React.useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedOperator, setSelectedOperator] = React.useState<SelectedOperator | null>(null);
 
-  const moduleTypes = useModules();
+  const [moduleTypes] = useModules();
+
+  const activeModule = moduleTypes.find((type) => type.id === activeType);
+
+  // Update handleOperatorSelect to accept requiredFields
   const handleOperatorSelect = React.useCallback(
-    (operator: ModuleType["operators"][number], moduleInfo: ModuleType) => {
+    (moduleInfo: ModuleType, requiredFields: string[]) => {
+      const [selectedOperator] = moduleInfo.operators;
       const selectedData: SelectedOperator = {
-        type: operator.type,
-        description: operator.description,
+        type: selectedOperator.type,
+        description: selectedOperator.description,
         moduleInfo: {
           icon: moduleInfo.icon,
           color: moduleInfo.color,
           label: moduleInfo.label,
         },
-        properties: operator.properties,
+        properties: moduleInfo.operators.map((op) => op.properties),
       };
-
-      setSelectedOperator(selectedData);
 
       const id = (nodes.length + 1).toString();
       const lastNode = nodes[nodes.length - 1];
       const position = {
-        x: (lastNode?.position?.x ?? 100) + 140, y: 150,
+        x: (lastNode?.position?.x ?? 100) + 140,
+        y: 150,
       };
 
       addNode({
@@ -39,19 +40,22 @@ export function ToolbarNodes() {
         type: "custom",
         position,
         data: {
+          tempSave: false,
           label: moduleInfo.label,
-          type: operator.type,
+          selectedData: null,
+          type: selectedData.type,
           status: "pending",
           meta: {
-            type: operator.type,
+            type: selectedData.type,
             moduleInfo: {
               color: moduleInfo.color,
               icon: moduleInfo.icon,
               label: moduleInfo.label,
             },
-            properties: operator.properties,
-            description: operator.description,
+            properties: selectedData.properties,
+            description: selectedData.description,
           },
+          requiredFields,
         },
       });
 
@@ -60,7 +64,13 @@ export function ToolbarNodes() {
     [nodes.length, addNode]
   );
 
-  const activeModule = moduleTypes.find((type) => type.id === activeType);
+  useEffect(() => {
+    if (activeModule) {
+      // Get the required fields from the operator(s) of the active module
+      const requiredFields = activeModule.operators?.[0]?.requiredFields || [];
+      handleOperatorSelect(activeModule, requiredFields);
+    }
+  }, [activeModule, activeType, handleOperatorSelect]);
 
   return (
     <div className="relative w-full">
@@ -74,9 +84,10 @@ export function ToolbarNodes() {
                 color={type.color}
                 icon={type.icon}
                 label={type.label}
-                isActive={activeType === type.id}
                 isHovered={hoveredType === type.id}
-                onClick={() => setActiveType(activeType === type.id ? null : type.id)}
+                onClick={() => {
+                  setActiveType(activeType === type.id ? null : type.id);
+                }}
                 onMouseEnter={() => setHoveredType(type.id)}
                 onMouseLeave={() => setHoveredType(null)}
               />
@@ -85,19 +96,6 @@ export function ToolbarNodes() {
           <div></div>
         </div>
       </div>
-
-      {activeModule && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-20">
-          <OperatorList
-            module={activeModule}
-            searchTerm={searchTerm}
-            selectedOperator={selectedOperator}
-            onSearchChange={setSearchTerm}
-            onClose={() => setActiveType(null)}
-            onOperatorSelect={(operator) => handleOperatorSelect(operator, activeModule)}
-          />
-        </div>
-      )}
     </div>
   );
 }

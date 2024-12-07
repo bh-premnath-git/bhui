@@ -4,7 +4,6 @@ interface ModuleButtonProps {
   color: string;
   icon: string;
   label: string;
-  isActive: boolean;
   isHovered: boolean;
   onClick: () => void;
   onMouseEnter: () => void;
@@ -15,7 +14,6 @@ export function ModuleButton({
   color,
   icon,
   label,
-  isActive,
   isHovered,
   onClick,
   onMouseEnter,
@@ -29,7 +27,7 @@ export function ModuleButton({
       )}
       style={{
         backgroundColor: color,
-        width: isActive || isHovered ? "auto" : "40px",
+        width:  isHovered ? "auto" : "40px",
         padding: "8px",
       }}
       onClick={onClick}
@@ -40,7 +38,7 @@ export function ModuleButton({
       <span
         className={cn(
           "text-white ml-2 whitespace-nowrap transition-all duration-300",
-          isActive || isHovered ? "opacity-100 max-w-[100px]" : "opacity-0 max-w-0"
+           isHovered ? "opacity-100 max-w-[100px]" : "opacity-0 max-w-0"
         )}
       >
         {label}

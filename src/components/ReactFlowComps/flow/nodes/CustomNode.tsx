@@ -17,16 +17,19 @@ interface CustomNodeData {
       label: string;
     };
     type: string;
+    properties: Record<string, any>;
+    description: string;
   };
+  selectedData?: any | null;
 }
 
 export const CustomNode = memo(
   ({ id, data, selected }: NodeProps<CustomNodeData>) => {
+
     const [isHovered, setIsHovered] = useState(false);
     const [isNodeTapModalOpen, setIsNodeTapModalOpen] = useState(false);
-    const { selectNode, selectedNode } = useFlow();
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const newLabel = selectedNode?.data?.meta?.type ?? "";
+    const { selectNode, revertOrSaveData } = useFlow();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const showToolbar = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -57,7 +60,7 @@ export const CustomNode = memo(
           <NodeContent
             id={id}
             label={data.meta.moduleInfo.label}
-            type={data.type}
+            type={data.selectedData}
             moduleInfo={data.meta.moduleInfo}
             isHovered={isHovered}
           />
@@ -65,10 +68,10 @@ export const CustomNode = memo(
         </div>
         <SlidingPortalModal
           isOpen={isNodeTapModalOpen}
-          onClose={() => setIsNodeTapModalOpen(false)}
-          title={newLabel}
+          onClose={() => { setIsNodeTapModalOpen(false); revertOrSaveData(id, false) }}
+          title={"Configure current node properties and settings"}
         >
-          <NodeForm closeTap={() => setIsNodeTapModalOpen(false)} />
+          <NodeForm id={id} closeTap={() => { setIsNodeTapModalOpen(false); }} />
         </SlidingPortalModal>
       </>
     );

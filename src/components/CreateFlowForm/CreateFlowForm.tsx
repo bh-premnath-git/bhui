@@ -128,8 +128,9 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         </div>
       </CardHeader>
       <div
-        className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[500px]' : 'max-h-0'
-          }`}
+        className={`overflow-hidden transition-all duration-200 ${
+          isOpen ? 'max-h-[500px]' : 'max-h-0'
+        }`}
       >
         <CardContent className="space-y-4">{children}</CardContent>
       </div>
@@ -268,7 +269,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTags }) => {
             ADD TAG
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[385px]">
+        <DialogContent className="sm:max-w-[385px]" aria-describedby="flowcreation">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
           </DialogHeader>
@@ -331,6 +332,22 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     notifications: false,
   });
 
+  // Modified toggleSection function:
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections((prev) => {
+      const isCurrentlyOpen = prev[section];
+      // Close all sections first
+      const newState = {
+        basicInfo: false,
+        additionalDetails: false,
+        notifications: false,
+      };
+      // Toggle the clicked section
+      newState[section] = !isCurrentlyOpen;
+      return newState;
+    });
+  };
+
   const debouncedSearchFlow = useMemo(
     () =>
       debounce((flowName: string) => {
@@ -374,13 +391,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
       setFlowExistsModalOpen(false);
     }
   }, [searchedFlow]);
-
-  const toggleSection = (section: keyof typeof openSections) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
 
   const initialValues: FormValues = {
     selectedProject: '',

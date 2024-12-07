@@ -14,6 +14,7 @@ export const CustomEdge = memo(({
   sourcePosition,
   targetPosition,
   style = {},
+  markerStart,
   markerEnd,
 }: EdgeProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -46,6 +47,7 @@ export const CustomEdge = memo(({
         }}
         className="react-flow__edge-path transition-all duration-300 hover:stroke-primary hover:stroke-[3]"
         d={edgePath}
+        markerStart={markerStart}
         markerEnd={markerEnd}
       />
       {isHovered && (

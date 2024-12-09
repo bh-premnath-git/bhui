@@ -1,22 +1,21 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Clock, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IntervalModalComponent, IntervalModalRef, IntervalState } from '@/components/IntervalModal';
+import { useAppDispatch } from '@/redux/hooks';
+import { patchCronDeployment } from '@/redux/FlowSlice';
 
 const convertToCron = (interval: IntervalState): string => {
   const [hours, minutes] = interval.repeatAt.split(':').map(Number);
-  
+
   switch (interval.selectedInterval.toLowerCase()) {
     case 'minutes':
       return `*/${interval.repeatEvery} * * * *`;
-      
     case 'hourly':
       return `${minutes} */${interval.repeatEvery} * * *`;
-      
     case 'daily':
       return `${minutes} ${hours} * * *`;
-      
     case 'weekly': {
       const days = interval.selectedDays.map(day => {
         const dayMap: Record<string, number> = {
@@ -26,15 +25,12 @@ const convertToCron = (interval: IntervalState): string => {
       }).sort().join(',');
       return `${minutes} ${hours} * * ${days || '*'}`;
     }
-    
     case 'monthly':
       return `${minutes} ${hours} ${interval.selectedDate} * *`;
-      
     case 'yearly': {
       const monthNum = months.indexOf(interval.selectedMonth) + 1;
       return `${minutes} ${hours} ${interval.selectedDate} ${monthNum} *`;
     }
-    
     default:
       return '* * * * *';
   }
@@ -54,21 +50,58 @@ const defaultState: IntervalState = {
   selectedDate: "1"
 };
 
-const SchedulePicker = ({ value, onChange }) => {
+const SchedulePicker = ({ value, onChange, selectedData }) => {
+  const dispatch = useAppDispatch();
   const intervalModalRef = useRef<IntervalModalRef>(null);
   const [cronExpression, setCronExpression] = useState<string>(value || "* * * * *");
   const [currentState, setCurrentState] = useState<IntervalState>(defaultState);
-  
-  const handleIntervalSave = (intervalString: string) => {
+
+  useEffect(() => {
+    if (selectedData?.cron_expression) {
+      setCronExpression(selectedData.cron_expression);
+    }
+  }, [selectedData?.cron_expression]);
+
+  const handleIntervalSave = async (intervalString: string) => {
     const interval = JSON.parse(intervalString);
     const cron = convertToCron(interval);
-    setCronExpression(cron);
-    setCurrentState(interval);
-    onChange(intervalString);
+    
+    if (selectedData?.flow_deployment_id) {
+      try {
+        await dispatch(patchCronDeployment({
+          flow_deployment_id: selectedData.flow_deployment_id,
+          cron_expression: {cron_expression: cron}
+        })).unwrap();
+        
+        setCronExpression(cron);
+        setCurrentState(interval);
+        onChange(intervalString);
+      } catch (error) {
+        console.error('Failed to update cron schedule:', error);
+      }
+    } else {
+      setCronExpression(cron);
+      setCurrentState(interval);
+      onChange(intervalString);
+    }
   };
 
-  const handleClear = () => {
-    setCronExpression("* * * * *");
+  const handleClear = async () => {
+    const defaultCron = "* * * * *";
+    
+    if (selectedData?.flow_deployment_id) {
+      try {
+        await dispatch(patchCronDeployment({
+          flow_deployment_id: selectedData.flow_deployment_id,
+          cron_expression: defaultCron
+        })).unwrap();
+      } catch (error) {
+        console.error('Failed to clear cron schedule:', error);
+        return;
+      }
+    }
+    
+    setCronExpression(defaultCron);
     setCurrentState(defaultState);
     onChange(JSON.stringify(defaultState));
   };
@@ -101,7 +134,7 @@ const SchedulePicker = ({ value, onChange }) => {
           </Button>
         </div>
       </div>
-      
+
       <IntervalModalComponent
         ref={intervalModalRef}
         onSave={handleIntervalSave}

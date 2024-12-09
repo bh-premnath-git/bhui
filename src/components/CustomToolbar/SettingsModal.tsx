@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import { TagInput } from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch } from '@/redux/hooks';
-import { patchFlowOperation } from '@/redux/FlowSlice';
+import { patchFlowOperation, updateFlowConfiguration } from '@/redux/FlowSlice';
 
 // Types
 interface Tag {
@@ -22,7 +22,7 @@ interface ConfigItem {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedData?: any; // Ensure this has flow_id or whatever ID you need
+  selectedData?: any;
 }
 
 // Configuration Row Component
@@ -139,15 +139,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
   const [tags, setTags] = useState<Tag>({ tagList: [] });
   const [activeTab, setActiveTab] = useState("settings");
   const [configs, setConfigs] = useState<ConfigItem[]>([{ key: '', value: '' }]);
-  
+  const [isSaving, setIsSaving] = useState(false);
+
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (selectedData) {
-      setNotes(selectedData.notes || "");  
+      setNotes(selectedData.notes || "");
       setTags({
         tagList: Array.isArray(selectedData.tags?.tagList) ? selectedData.tags.tagList : []
       });
+
+      const existingConfigs = selectedData?.flow_config[0]?.flow_config?.flow_config;
+      if (existingConfigs && Array.isArray(existingConfigs)) {
+        setConfigs(existingConfigs);
+      } else {
+        setConfigs([{ key: '', value: '' }]);
+      }
     }
   }, [selectedData]);
 
@@ -174,16 +182,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
       return;
     }
 
-    const payload = {
-      notes,
-      tags: { tagList: tags.tagList },
-    };
+    setIsSaving(true);
 
     try {
-      await dispatch(patchFlowOperation({ flow_id: selectedData.id, data: payload }));
+      // Save general settings
+      const settingsPayload = {
+        notes,
+        tags: { tagList: tags.tagList },
+      };
+      await dispatch(patchFlowOperation({
+        flow_id: selectedData.id,
+        data: settingsPayload
+      }));
+
+      // Save configuration if we're on the configuration tab
+      if (activeTab === "configuration") {
+        const flow_config_id = selectedData?.flow_config[0]?.flow_config_id;
+        if (flow_config_id) {
+          await dispatch(updateFlowConfiguration({
+            flow_config_id,
+            flow_config: { flow_config: configs }
+          }));
+        }
+      }
+
       onClose();
     } catch (error) {
-      console.error("Patch failed:", error);
+      console.error("Save failed:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -233,9 +260,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           <Button
             type="button"
             onClick={handleSave}
-            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
+            disabled={isSaving}
+            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
           >
-            Save Changes
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

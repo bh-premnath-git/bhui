@@ -169,12 +169,14 @@ const AllFlows: React.FC = () => {
       const result = await dispatch(createFlow(payload));
       await dispatch(listFlows());
       if (createFlow.fulfilled.match(result)) {
-        dispatch(setSelectedFlowFromList(result.payload));
+        dispatch(setSelectedFlowFromList(result.payload));        
         closeModal();
-        // Navigate after successful creation
-        /*  setTimeout(() => {
-           navigate('/designers/manage-flow/' + result.payload.flow_id);
-         }, 1000); */
+        // Only navigate if flow_id exists
+        if (result.payload.flow_id) {
+          setTimeout(() => {
+            navigate('/designers/manage-flow/' + result.payload.flow_id);
+          }, 1000);
+        }
       } else {
         throw new Error('Flow creation failed');
       }
@@ -184,7 +186,7 @@ const AllFlows: React.FC = () => {
     } finally {
       setIsCreatingFlow(false);
     }
-  }, [dispatch, navigate, closeModal]);
+}, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
     setSelectedFlowId(data.flow_id);

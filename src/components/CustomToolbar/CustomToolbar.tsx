@@ -143,6 +143,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
             <SchedulePicker
               value={selectedSchedule}
               onChange={setSelectedSchedule}
+              selectedData={selectedData?.flow_deployment?.[0]}
             />
           </div>
 

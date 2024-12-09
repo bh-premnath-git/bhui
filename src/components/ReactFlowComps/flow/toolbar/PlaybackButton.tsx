@@ -50,8 +50,9 @@ export function PlaybackButton({
 
   const asnycupdateFlowDef = async () => {
     if (!isPlaying && selectedFlowId) {
-      const flowJson = LocalStorageService.getItem(`flow-${selectedFlowId}`)?.nodeFormData?.map(item => item.formData);
-      dispatch(updateFlowDefinition({ flow_id: selectedFlowId, flow_json: { flow_json: { flowJson } } }))
+      const flowStructure = LocalStorageService.getItem(`flow-${selectedFlowId}`)
+      const flowJson = flowStructure?.nodeFormData?.map(item => item.formData);
+      dispatch(updateFlowDefinition({ flow_id: selectedFlowId, flow_json: { flow_json: { flowJson, flowStructure } } }))
     }
   }
 

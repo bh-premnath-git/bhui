@@ -58,7 +58,7 @@ interface EnvironmentTabProps {
   airflowUrl?: string;
   airflowDagBucket?: string;
   privateKeyFile?: File | null;
-  chamgeVerification: (verified: boolean) => void;
+  changeVerification: (verified: boolean) => void;
 }
 
 // Constants
@@ -104,8 +104,8 @@ const validationSchema = Yup.object().shape({
 
 const PlatformSelector: React.FC<{
   selectedPlatform: string;
-  setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
-}> = ({ selectedPlatform, setFieldValue }) => (
+  setSelectedPlatform: (platform: string) => void;
+}> = ({ selectedPlatform, setSelectedPlatform }) => (
   <div className="flex flex-wrap gap-6">
     {PLATFORMS.map((platform) => (
       <div
@@ -114,7 +114,7 @@ const PlatformSelector: React.FC<{
           ? "border-green-500 bg-green-50 shadow-md"
           : "border-gray-700 bg-gray-50 hover:bg-gray-200 hover:shadow-sm"
           }`}
-        onClick={() => setFieldValue('selectedPlatform', platform.id)}
+        onClick={() => setSelectedPlatform(platform.id)}
         style={{ width: "250px", minWidth: "200px" }}
       >
         <div
@@ -260,7 +260,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   airflowUrl = '',
   airflowDagBucket = '',
   privateKeyFile = null,
-  chamgeVerification,
+  changeVerification,
 }) => {
   const [ToastComponent, showToast] = useToast();
   const { flowProjectList } = useAppSelector((state) => state.flowApi);
@@ -310,12 +310,20 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     selectedPlatform,
   ]);
 
+  useEffect(() => {
+    setInitialValues(prev => ({
+      ...prev,
+      selectedPlatform,
+    }));
+  }, [selectedPlatform])
+
   const handleValidate = async (values: FormValues) => {
     try {
       if (!values.accessKey || !values.secretAccessKey || !values.location) {
         showToast('Please fill in all required fields', { color: '#FF0000' });
         return false;
       }
+      const actualLocation = locationOptions[parseInt(values.location) - 1];
       const encryted_aws_key_id = encrypt_string(values.accessKey);
       const encryted_aws_secret_access_key = encrypt_string(
         values.secretAccessKey,
@@ -325,7 +333,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       const result = await ApiService('8011', 'post', '/environment/list-mwaa-environments', {
         aws_access_key_id: encryted_aws_key_id.encryptedString,
         aws_secret_access_key: encryted_aws_secret_access_key.encryptedString,
-        location: values.location,
+        location: actualLocation,
         init_vector: encryted_aws_key_id.initVector
       });
 
@@ -335,11 +343,11 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         success ? 'Successfully connected to AWS' : 'Failed to connect',
         { color: success ? '#00b060' : '#FF0000' }
       );
-      chamgeVerification(success);
+      changeVerification(success);
       return success;
     } catch (error) {
       showToast('Failed to connect', { color: '#FF0000' });
-      chamgeVerification(false);
+      changeVerification(false);
       return false;
     } finally {
     }
@@ -370,6 +378,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   } as const;
 
   const locationOptions = ["us-east-1", "us-west-1", "eu-central-1"] as const;
+  type LocationOption = typeof locationOptions[number];
 
   return (
     <Formik
@@ -392,7 +401,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <CardHeader className="bg-gray-50 border-b border-gray-200">
               <CardTitle className="text-lg font-semibold text-gray-800 text-left">Environment Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 p-6">
+            <CardContent className="space-y-4 p-2">
               <div className="flex flex-col md:flex-row space-x-0 md:space-x-6 space-y-4 md:space-y-0">
                 <div className="w-full md:w-1/2 space-y-2">
                   <RequiredLabel>
@@ -447,13 +456,16 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <CardHeader className="bg-gray-50 border-b border-gray-200">
               <CardTitle className="text-lg font-semibold text-gray-800 text-left">Select Platform</CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-2">
               <RequiredLabel>
                 <Label className="text-gray-800 font-medium">Select which platform you'd like to use</Label>
               </RequiredLabel>
               <PlatformSelector
                 selectedPlatform={values.selectedPlatform}
-                setFieldValue={setFieldValue}
+                setSelectedPlatform={(platform) => {
+                  setFieldValue('selectedPlatform', platform);
+                  setSelectedPlatform(platform);
+                }}
               />
               <ErrorMessage name="selectedPlatform" component="div" className="text-red-500 text-sm mt-2" />
             </CardContent>
@@ -464,7 +476,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <CardHeader className="bg-gray-50 border-b border-gray-200">
               <CardTitle className="text-lg font-semibold text-gray-800 text-left">Credentials</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 p-6">
+            <CardContent className="space-y-4 p-2">
               <div className="text-sm text-gray-600">
                 Select a project, location, and provide platform-specific credentials.
               </div>
@@ -499,20 +511,26 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     <Label htmlFor="location" className="text-gray-800 font-medium">Location</Label>
                   </RequiredLabel>
                   <Select
-                    value={values.location}
+                    value={values.location ? locationOptions[parseInt(values.location) - 1] : undefined}
                     onValueChange={(value) => {
-                      setFieldValue('location', value);
-                      onChange({ location: value });
+                      const locationIndex = locationOptions.indexOf(value as LocationOption);
+                      const locationNumber = (locationIndex + 1).toString();
+                      setFieldValue('location', locationNumber);
+                      onChange({ location: locationNumber });
                     }}
                   >
                     <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
                       <SelectValue placeholder="Select Location">
-                        {values.location || "Select Location"}
+                        {values.location ? locationOptions[parseInt(values.location) - 1] : "Select Location"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
                       {locationOptions.map((loc) => (
-                        <SelectItem key={loc} value={loc} className="text-gray-800 hover:bg-gray-50">
+                        <SelectItem
+                          key={loc}
+                          value={loc}
+                          className="text-gray-800 hover:bg-gray-50"
+                        >
                           {loc}
                         </SelectItem>
                       ))}
@@ -588,7 +606,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <CardHeader className="bg-gray-50 border-b border-gray-200">
               <CardTitle className="text-lg font-semibold text-gray-800 text-left">Advanced Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 p-6">
+            <CardContent className="space-y-4 p-2">
               <p className="text-sm text-gray-600">
                 Provide optional Airflow configuration if needed.
               </p>
@@ -632,7 +650,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             <CardHeader className="bg-gray-50 border-b border-gray-200">
               <CardTitle className="text-lg font-semibold text-gray-800 text-left">Tags</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-2">
               <TagInput tags={tags} setTags={handleSetTags} />
             </CardContent>
           </Card>

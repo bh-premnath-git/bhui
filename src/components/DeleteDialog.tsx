@@ -69,7 +69,7 @@ export function DeleteDialog({
           <DialogDescription className="space-y-3 pt-3 text-white">
             <p>Are you sure you want to delete {pipelineName}?</p>
             <p className="opacity-80">
-              This action cannot be undone. This will permanently delete the {pipelineName}.
+              This action cannot be undone. This will permanently delete the "{pipelineName}".
             </p>
             <div className="space-y-2">
               <Label htmlFor="confirm">

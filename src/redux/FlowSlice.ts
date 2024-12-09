@@ -65,6 +65,12 @@ interface UpdateFlowDefinitionParams {
   flow_json: Record<string, any>;
 }
 
+interface UpdateFlowConfigParams {
+  flow_config_id: string | number;
+  flow_config: Record<string, any>;
+}
+
+
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
@@ -230,6 +236,49 @@ export const updateFlowDefinition = createAsyncThunk<
   }
 );
 
+export const updateFlowConfiguration = createAsyncThunk<
+any,
+UpdateFlowConfigParams,
+{ rejectValue: string }
+>(
+'flow/updateFlowConfiguration',
+async ({ flow_config_id, flow_config }, thunkAPI) => {
+  try {
+    const response = await ApiService(
+      '8011', 
+      'put', 
+      `/flow/flow-config/${flow_config_id}`, 
+      {flow_config: flow_config}
+    );
+    return response;
+  } catch (error: any) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+}
+);
+
+// /api/v1/flow/flow-deployement/{flow_deployment_id} cron_expression
+export const patchCronDeployment = createAsyncThunk<
+any,
+{ flow_deployment_id: string | number; cron_expression: any },
+{ rejectValue: string }
+>(
+'flow/patchCronDeployment',
+async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
+  try {
+    const response = await ApiService(
+      '8011',
+      'patch',
+      `/flow/flow-deployement/${flow_deployment_id}`,
+      { cron_expression: cron_expression }
+    );
+    return response;
+  } catch (error: any) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+}
+);
+
 const flowSlice = createSlice({
   name: "api/flow",
   initialState,
@@ -358,6 +407,36 @@ const flowSlice = createSlice({
       .addCase(updateFlowDefinition.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred while updating flow definition';
+      })
+      // update flow config
+      .addCase(updateFlowConfiguration.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateFlowConfiguration.fulfilled, (state, action) => {
+        state.loading = false;
+        // You might want to update the state with the updated configuration
+        // depending on your requirements
+        const updatedConfig = action.payload;
+        console.log("updatedFlowConfig", updatedConfig);
+      })
+      .addCase(updateFlowConfiguration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while updating flow configuration';
+      })
+      .addCase(patchCronDeployment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(patchCronDeployment.fulfilled, (state, action) => {
+        state.loading = false;
+        // You might want to update relevant state here depending on the response
+        const updatedDeployment = action.payload;
+        console.log("updatedDeployment", updatedDeployment);
+      })
+      .addCase(patchCronDeployment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while updating deployment schedule';
       });
   },
 });

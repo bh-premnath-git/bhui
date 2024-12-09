@@ -4,55 +4,95 @@
       "ui_properties": {
         "module_name": "Source",
         "color": "#f7a01f",
-        "icon": "/assets/buildPipeline/6.svg"
+        "icon": "/assets/buildPipeline/6.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Target",
         "color": "#07a260",
-        "icon": "/assets/buildPipeline/7.svg"
+        "icon": "/assets/buildPipeline/7.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 0,
+          "maxInputs": 1
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Filter",
         "color": "#f5bc2a",
-        "icon": "/assets/buildPipeline/display/filter.svg"
+        "icon": "/assets/buildPipeline/display/filter.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Join",
         "color": "#ff7396",
-        "icon": "/assets/buildPipeline/display/join.svg"
+        "icon": "/assets/buildPipeline/display/join.svg",
+        "ports": {
+          "inputs": 2,
+          "outputs": 1,
+          "maxInputs": "unlimited"
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Router",
         "color": "#804fbf",
-        "icon": "/assets/buildPipeline/display/route.svg"
+        "icon": "/assets/buildPipeline/display/route.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
    {"ui_properties":{
     "module_name":"Transform",
     "color":"#06babd",
-    "icon":"/assets/buildPipeline/display/transform.svg"
+    "icon":"/assets/buildPipeline/display/transform.svg",
+    "ports": {
+      "inputs": 0,
+      "outputs": 1,
+      "maxInputs": 0
+    }
    }
   },
   {
     "ui_properties":{
       "module_name":"Ship",
       "color":"#c049c0",
-      "icon":"/assets/buildPipeline/display/ship.svg"
+      "icon":"/assets/buildPipeline/display/ship.svg",
+      "ports": {
+        "inputs": 0,
+        "outputs": 1,
+        "maxInputs": 0
+      }
     }
   },
     {
       "ui_properties": {
         "module_name": "Schema Transformation",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/28.svg"
+        "icon": "/assets/buildPipeline/28.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
    
@@ -60,70 +100,120 @@
       "ui_properties": {
         "module_name": "Sort",
         "color": "#219fe7",
-        "icon": "/assets/buildPipeline/squre/1.svg"
+        "icon": "/assets/buildPipeline/squre/1.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Aggregate",
         "color": "#d43faa",
-        "icon": "/assets/buildPipeline/squre/2.svg"
+        "icon": "/assets/buildPipeline/squre/2.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Lookup",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/3.svg"
+        "icon": "/assets/buildPipeline/squre/3.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "DQ Check",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/4.svg"
+        "icon": "/assets/buildPipeline/squre/4.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Dedupe",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/5.svg"
+        "icon": "/assets/buildPipeline/squre/5.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Repartition",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/6.svg"
+        "icon": "/assets/buildPipeline/squre/6.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "SQL Transformation",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/7.svg"
+        "icon": "/assets/buildPipeline/squre/7.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Union",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/8.svg"
+        "icon": "/assets/buildPipeline/squre/8.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Limit",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/9.svg"
+        "icon": "/assets/buildPipeline/squre/9.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     },
     {
       "ui_properties": {
         "module_name": "Change Detection",
         "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/10.svg"
+        "icon": "/assets/buildPipeline/squre/10.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
       }
     }
   ]

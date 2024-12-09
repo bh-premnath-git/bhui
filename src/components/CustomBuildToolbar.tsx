@@ -8,119 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ChevronLeft, CloudCog, Edit, Link, Clock, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { SettingsModal } from './CustomToolbar'
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 
-const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
-  const [notes, setNotes] = useState("")
-  const [showNotes, setShowNotes] = useState(false)
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="project">Project</Label>
-              <Select>
-                <SelectTrigger id="project">
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="project1">Project 1</SelectItem>
-                  <SelectItem value="project2">Project 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="branch">Branch</Label>
-              <Input id="branch" placeholder="Enter Branch" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="environment">Environment</Label>
-              <Select>
-                <SelectTrigger id="environment">
-                  <SelectValue placeholder="Select Environment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dev">Development</SelectItem>
-                  <SelectItem value="prod">Production</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="class">Class</Label>
-              <Select>
-                <SelectTrigger id="class">
-                  <SelectValue placeholder="Select Class" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="class1">Class 1</SelectItem>
-                  <SelectItem value="class2">Class 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="retries">No. Of Retries</Label>
-              <Input id="retries" placeholder="Enter No. Of Retries" type="number" min="0" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cluster">Default Cluster</Label>
-              <Select>
-                <SelectTrigger id="cluster">
-                  <SelectValue placeholder="Select Cluster" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cluster1">Cluster 1</SelectItem>
-                  <SelectItem value="cluster2">Cluster 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="schedule">Schedule</Label>
-            <div className="relative">
-              <Input id="schedule" placeholder="Schedule Interval" />
-              <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" aria-hidden="true" />
-            </div>
-          </div>
-          <Button variant="link" className="justify-start px-0 text-blue-500" onClick={() => setShowNotes(!showNotes)}>
-            {showNotes ? "Hide Notes ▲" : "Add Notes ▼"}
-          </Button>
-          {showNotes && (
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Add your notes here"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label>Add Tags</Label>
-            <p className="text-sm text-gray-500">Add one or more tags to easily identify compute instances created by bighammer.ai in your AWS account (Eg : Key : 'Product', Value : Bighammer.ai)</p>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button type="submit">Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 export function CustomBuildToolbar(props: any) {
   const [isVisual, setIsVisual] = useState(true)

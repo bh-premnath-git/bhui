@@ -10,6 +10,7 @@ import {
     MdOutlineStop,
 } from "react-icons/md";
 import { HiOutlinePlay } from 'react-icons/hi';
+import { CircularProgress } from '@mui/material';
 
 interface FlowControlsProps {
     onZoomIn: () => void;
@@ -20,6 +21,7 @@ interface FlowControlsProps {
     onStop: () => void;
     onNext: () => void;
     isPipelineRunning: boolean;
+    isLoading: boolean;
 }
 
 export const FlowControls: React.FC<FlowControlsProps> = ({
@@ -30,7 +32,8 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     onRun,
     onStop,
     onNext,
-    isPipelineRunning
+    isPipelineRunning,
+    isLoading
 }) => {
     const actions = [
         { key: 'zoom-in', icon: BiZoomIn, handler: onZoomIn },
@@ -53,6 +56,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
                                  hover:bg-gray-900 active:bg-gray-800 
                                  transition-all duration-200 ease-in-out"
                         title={action.key.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        disabled={action.key === 'run' && isLoading || action.key === 'next' && !isPipelineRunning}
                     >
                         <span className="absolute -top-10 scale-0 transition-all rounded bg-gray-800 p-2 text-xs text-white group-hover:scale-100">
                             {action.key.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}

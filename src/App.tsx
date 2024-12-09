@@ -1,4 +1,4 @@
-import { useState, Suspense, useEffect, useRef } from 'react';
+import { useState, Suspense, lazy, useEffect, useRef } from 'react';
 import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';

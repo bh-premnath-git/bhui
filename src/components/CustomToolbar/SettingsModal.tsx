@@ -221,15 +221,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           <DialogTitle className="text-2xl font-semibold tracking-tight">
             Flow Settings
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500">
             Configure your flow settings and add relevant tags
           </p>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="configuration">Configuration</TabsTrigger>
+          <TabsList className="grid w-80 grid-cols-2 mb-6 p-1 bg-gray-100 rounded-lg gap-1">
+            <TabsTrigger 
+              value="settings" 
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              Settings
+            </TabsTrigger>
+            <TabsTrigger 
+              value="configuration"
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              Configuration
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="mt-0">
@@ -256,7 +266,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           </TabsContent>
         </Tabs>
 
-        <DialogFooter>
+        <DialogFooter className="px-2 pb-2">
           <Button
             type="button"
             onClick={handleSave}

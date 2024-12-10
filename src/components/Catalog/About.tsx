@@ -7,6 +7,8 @@ import {
 import { Link as LinkIcon, Plus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import EditIcon from '@mui/icons-material/Edit';
+
 
 // Mock API service
 const mockApiCall = async (data: any) => {
@@ -24,6 +26,7 @@ interface OwnerData {
   id: string;
   name: string;
   role: string;
+  email: string;
   avatar?: string;
 }
 
@@ -41,7 +44,7 @@ export default function About(data) {
   
   // Form states
   const [newLink, setNewLink] = useState({ url: '', title: '' });
-  const [newOwner, setNewOwner] = useState({ name: '', role: '' });
+  const [newOwner, setNewOwner] = useState({ name: '', role: '', email: '' });
   const [newTag, setNewTag] = useState('');
 
   // Handle description edit
@@ -90,7 +93,7 @@ export default function About(data) {
       await mockApiCall({ owner });
       setOwners([...owners, owner]);
       setOwnerDialog(false);
-      setNewOwner({ name: '', role: '' });
+      setNewOwner({ name: '', role: '', email: '' });
       toast.success('Owner added successfully', {
         position: "top-right",
         autoClose: 3000
@@ -198,7 +201,7 @@ export default function About(data) {
                   }
                 }}
               >
-                Edit
+                <EditIcon sx={{ fontSize: 16, color: 'black' }} />
               </Button>
             </>
           )}
@@ -223,10 +226,16 @@ export default function About(data) {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <Typography variant="body2" component="a" href={link.url} target="_blank" sx={{ color: 'primary.main' }}>
+                  <Typography variant="body2" component="a" href={link.url} target="_blank" sx={{ color: 'black','&:hover': { color: 'primary.main' } }}>
                     {link.title}
                   </Typography>
-                  <IconButton size="small" onClick={() => setLinks(links.filter((_, i) => i !== index))}>
+                  <IconButton size="small" onClick={() => setLinks(links.filter((_, i) => i !== index))}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {
+                          color: 'error.main'
+                      }
+                    }}>
                     <X size={14} />
                   </IconButton>
                 </Box>
@@ -258,19 +267,24 @@ export default function About(data) {
                   sx={{ 
                     width: 32, 
                     height: 32, 
-                    bgcolor: 'primary.lighter',
-                    color: 'primary.main',
+                    bgcolor: 'grey.200',
+                    color: '#1a1732',
                     fontSize: '0.875rem'
                   }}
                 >
-                  {owner.name.charAt(0)}
+                  {owner.name.split(' ').length > 1
+                    ? owner.name.split(' ').map(namePart => namePart.charAt(0).toUpperCase()).join('')
+                    : owner.name.charAt(0).toUpperCase() + owner.name.charAt(owner.name.length - 1).toUpperCase()}
                 </Avatar>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
                     {owner.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary">
                     {owner.role}
+                  </Typography>
+                  <Typography variant='caption' color="text.secondary">
+                    {owner.email}
                   </Typography>
                 </Box>
               </Stack>
@@ -301,12 +315,17 @@ export default function About(data) {
                 label={tag}
                 size="small"
                 onDelete={() => setTags(tags.filter((_, i) => i !== index))}
-                sx={{ 
+                sx={{
                   borderRadius: '4px',
                   backgroundColor: 'primary.lighter',
-                  color: 'primary.main',
+                  color: '#20405f',
                   height: '24px',
-                  fontSize: '0.75rem'
+                  fontSize: '0.75rem',
+                  '& .MuiChip-deleteIcon': {
+                      '&:hover': {
+                          color: 'error.main', 
+                      },
+                  },
                 }}
               />
             ))}
@@ -355,6 +374,12 @@ export default function About(data) {
               fullWidth
               value={newOwner.role}
               onChange={(e) => setNewOwner({ ...newOwner, role: e.target.value })}
+            />
+            <TextField
+              label="Email"
+              fullWidth
+              value={newOwner.email}
+              onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
             />
           </Stack>
         </DialogContent>

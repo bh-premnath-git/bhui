@@ -253,7 +253,7 @@ const AddUser = () => {
                                         <Autocomplete
                                             multiple
                                             size="small"
-                                            options={projects}
+                                            options={projects.filter(project => !values.project_details[index].project.some(selected => selected.value === project.value))}
                                             getOptionLabel={(option: any) => option.label || ''}
                                             isOptionEqualToValue={(option, value) => option.value === value.value}
                                             value={values.project_details[index].project}
@@ -280,7 +280,7 @@ const AddUser = () => {
                                         <Autocomplete
                                             multiple
                                             size="small"
-                                            options={roles}
+                                            options={roles.filter(role => !values.project_details[index].projectRole.includes(role))}
                                             value={values.project_details[index].projectRole}
                                             renderInput={(params) => (
                                                 <TextField

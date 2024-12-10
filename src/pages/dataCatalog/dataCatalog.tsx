@@ -297,17 +297,19 @@ function DataCatalogTable({
           }
         }}
       >
-        <FlexibleTable 
-          data={catalogList}
-          columns={columns}
-          itemsPerPageOptions={[10, 25, 50]}
-          defaultItemsPerPage={10}
-          tableName="Xplore"
-          createNewFn={createNewFn}
-          playRowFn={playRowFn}
-          playRow={true}
-          background='primary.main'
-        />
+        
+          <FlexibleTable 
+            data={catalogList}
+            columns={columns}
+            itemsPerPageOptions={[10, 25, 50]}
+            defaultItemsPerPage={10}
+            tableName="Xplore"
+            createNewFn={createNewFn}
+            playRowFn={playRowFn}
+            playRow={true}
+            background="bg-black"
+          />
+        
       </Paper>
 
       <Drawer

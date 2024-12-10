@@ -139,15 +139,15 @@ const AllUsers: React.FC = () => {
             </div>
 
             {/* Updated Search and Filter Section */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
+            <div className="p-4 ml-auto flex items-center justify-end">
                 <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-md">
+                    <div className="relative flex-1 max-w-lg">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
+                            <Search className="h-5 w-5 text-gray-400" />
                         </div>
                         <Input
                             placeholder="    Search by name or email..."
-                            className="pl-9 h-10 bg-gray-50 border-gray-200 w-full"
+                            className="pl-10 h-12 bg-gray-50 border-gray-300 w-96 rounded-md text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -156,7 +156,6 @@ const AllUsers: React.FC = () => {
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="gap-2 h-10">
                                 <Filter className="h-4 w-4" />
-                                Filter
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -206,7 +205,12 @@ const AllUsers: React.FC = () => {
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                            {user.username?.[0]?.toUpperCase()}
+                                        {(() => {
+                                            const parts = user.username?.split(/[-_]/); 
+                                            return parts?.length > 1 
+                                                ? (parts[0][0] + parts[1][0]).toUpperCase() 
+                                                : user.username?.slice(0, 2).toUpperCase();
+                                        })()}
                                         </div>
                                         <div>
                                             <div className="font-semibold">{user.username}</div>

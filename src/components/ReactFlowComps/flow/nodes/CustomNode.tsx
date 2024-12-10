@@ -19,6 +19,7 @@ interface CustomNodeData {
     type: string;
     properties: Record<string, any>;
     description: string;
+    renameType?: string;
   };
   selectedData?: any | null;
 }
@@ -60,7 +61,7 @@ export const CustomNode = memo(
           <NodeContent
             id={id}
             label={data.meta.moduleInfo.label}
-            type={data.selectedData}
+            type={data.meta?.renameType ?? data.selectedData}
             moduleInfo={data.meta.moduleInfo}
             isHovered={isHovered}
           />
@@ -70,8 +71,9 @@ export const CustomNode = memo(
           isOpen={isNodeTapModalOpen}
           onClose={() => { setIsNodeTapModalOpen(false); revertOrSaveData(id, false) }}
           title={"Configure current node properties and settings"}
+          type={data.meta?.renameType ?? data.selectedData}
         >
-          <NodeForm id={id} closeTap={() => { setIsNodeTapModalOpen(false); }} />
+          <NodeForm id={id}  closeTap={() => { setIsNodeTapModalOpen(false); }} />
         </SlidingPortalModal>
       </>
     );

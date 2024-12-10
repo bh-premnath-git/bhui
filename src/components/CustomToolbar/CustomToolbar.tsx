@@ -138,6 +138,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
               value={selectedEnvironment}
               onValueChange={handleEnvironmentChange}
               environments={environments}
+              selectedData={selectedData?.flow_deployment?.[0]}
             />
 
             <SchedulePicker

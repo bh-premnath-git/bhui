@@ -13,7 +13,7 @@ import { FormLayout } from "./Form/FormLayout";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-
+import { createShortUUID } from "@/Utils/uid";
 interface NodeFormProps {
     id: string;
     closeTap: () => void;
@@ -51,11 +51,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
     const handleInputChange = useCallback((key: string, value: string) => {
         if (!selectedNode) return;
-
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
-            type: selectedNode.data.meta.type,
-            task_id: selectedNode.data.label,
+            type: selectedValue ?? "",
+            task_id: `${selectedNode.data.label}-${selectedValue}-${createShortUUID()}`,
             dependsOn,
             [key]: value,
         });

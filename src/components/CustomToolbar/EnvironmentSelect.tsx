@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import useToast from '@/oldcomponents/teast-service';
 
-export const EnvironmentSelect = ({ value, onValueChange, environments }) => {
+export const EnvironmentSelect = ({ value, onValueChange, environments, selectedData }) => {
   const environmentOptions = [
     { value: "select", label: "Select Environment" },
     ...environments.map(env => ({
@@ -30,12 +30,21 @@ export const EnvironmentSelect = ({ value, onValueChange, environments }) => {
 
   const selectedEnvironment = environmentOptions.find(opt => opt.value === value);
 
-  // Check initially if no environment is selected
+  // Set default environment on mount if one is provided in selectedData
   useEffect(() => {
-    if (showWarning) {
+    if (selectedData?.bh_env_id && !value) {
+      const defaultEnvId = selectedData.bh_env_id.toString();
+      const defaultExists = environments.some(env => env.id.toString() === defaultEnvId);
+      
+      if (defaultExists) {
+        onValueChange(defaultEnvId);
+      } else {
+        showToast('Default environment not found', { color: 'yellow' });
+      }
+    } else if (showWarning) {
       showToast('No environment selected', { color: 'red' });
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, [selectedData?.bh_env_id, environments]); // Dependencies updated to include environments
 
   const handleValueChange = (newValue) => {
     if (newValue === "select" || !newValue) {
@@ -152,3 +161,5 @@ export const EnvironmentSelect = ({ value, onValueChange, environments }) => {
     </div>
   );
 };
+
+export default EnvironmentSelect;

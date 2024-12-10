@@ -73,7 +73,7 @@ export function DeleteDialog({
             </p>
             <div className="space-y-2">
               <Label htmlFor="confirm">
-                Please type <span className="font-mono">{pipelineName}</span> to confirm.
+                Please type <span className="font-mono">"{pipelineName}"</span> to confirm.
               </Label>
               <Input
                 id="confirm"

@@ -89,6 +89,7 @@ export interface MetaData {
   moduleInfo: ModuleInfo;
   properties: Record<string, any>;
   description: string;
+  renameType?: string;
   [key: string]: any;
 }
 

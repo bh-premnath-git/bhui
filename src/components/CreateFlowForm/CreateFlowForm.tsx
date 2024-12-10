@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
+import { jwtDecode } from 'jwt-decode';
 
 // Types
 
@@ -128,9 +129,8 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         </div>
       </CardHeader>
       <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isOpen ? 'max-h-[500px]' : 'max-h-0'
-        }`}
+        className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[500px]' : 'max-h-0'
+          }`}
       >
         <CardContent className="space-y-4">{children}</CardContent>
       </div>
@@ -145,6 +145,16 @@ const MultipleEmailInput: React.FC<MultipleEmailInputProps> = ({
   error,
 }) => {
   const [inputValue, setInputValue] = useState('');
+
+  useEffect(() => {
+    const token = sessionStorage?.getItem("token");
+    const decoded: any = token ? jwtDecode(token) : null;
+    const decodedEmail = decoded?.email;
+
+    if (decodedEmail && value.length === 0) {
+      onChange([decodedEmail]);
+    }
+  }, []);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -400,7 +410,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     notes: '',
     alert_settings: {
       on_job_start: false,
-      on_job_failure: false,
+      on_job_failure: true,
       on_job_success: false,
       on_job_in_progress: false,
     },
@@ -654,7 +664,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                   Cancel
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                  className="bg-gradient-to-r from-slate-600 to-black hover:from-slate-700 hover:to-black text-white"
                   type="submit"
                   disabled={!isValid || isSubmitting || isLoading}
                 >

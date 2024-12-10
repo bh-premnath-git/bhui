@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Node, Edge, ReactFlowInstance } from 'reactflow';
-import { LocalStorageService } from '@/services/localStorageServices';
 import {
   FlowContextType,
   CustomNodeData,

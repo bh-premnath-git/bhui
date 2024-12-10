@@ -123,7 +123,7 @@ export function useNodeOperations(
               ...node.data,
               meta: {
                 ...node.data.meta,
-                type: newLabel,
+                renameType: newLabel,
               },
             },
           }

@@ -238,7 +238,9 @@ const buildPipeLineSlice = createSlice({
     setBuildPipeLineNodes: (state, action) => {
       state.nodesList = action.payload;
     },
-    
+    setIsRun: (state, action) => {
+      state.isPipelineRunning = action.payload;
+    }
 
   },
   extraReducers: (builder) => {
@@ -464,9 +466,9 @@ const buildPipeLineSlice = createSlice({
 
 export default buildPipeLineSlice.reducer;
 export const { setIsHover,
-   setSelectedOption,
-    setIsPipelineRunning, 
-    setNestedField, 
-    setBuildPipeLineDtl, 
-    setBuildPipeLineNodes, 
-    setIsDebug } = buildPipeLineSlice.actions;
+  setSelectedOption,
+  setIsPipelineRunning,
+  setNestedField,
+  setBuildPipeLineDtl,
+  setBuildPipeLineNodes,
+  setIsDebug, setIsRun } = buildPipeLineSlice.actions;

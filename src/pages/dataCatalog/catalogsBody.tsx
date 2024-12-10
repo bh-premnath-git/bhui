@@ -251,12 +251,14 @@ export default function CatalogsBody(data:any) {
                             sx={{
                                 borderRadius: '4px',
                                 backgroundColor: 'primary.lighter',
-                                color: 'primary.main',
+                                color: '#20405f',
                                 height: '24px',
                                 fontSize: '0.75rem',
-                                '&:hover': {
-                                    backgroundColor: 'primary.light'
-                                }
+                                '& .MuiChip-deleteIcon': {
+                                    '&:hover': {
+                                        color: 'error.main', 
+                                    },
+                                },
                             }}
                         />
                     ))}

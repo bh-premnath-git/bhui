@@ -282,7 +282,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                   airflowUrl={state.environmentTab.airflowUrl || editenvdata.airflow_url || ''}
                   airflowDagBucket={state.environmentTab.airflowDagBucket || editenvdata.airflow_bucket_name || ''}
                   privateKeyFile={state.environmentTab.privateKeyFile || editenvdata.privateKeyFile || ''}
-                  chamgeVerification={handleChangeVerification}
+                  changeVerification={handleChangeVerification}
                 />         
 
               </TabsContent>

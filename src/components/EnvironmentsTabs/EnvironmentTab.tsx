@@ -382,11 +382,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
 
   return (
     <Formik
-      key={formKey}
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={(values) => { }}
-      enableReinitialize={true}
     >
       {({ values, errors, touched, setFieldValue, handleChange }) => (
         <Form className="space-y-6 p-6 rounded-lg">

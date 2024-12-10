@@ -99,7 +99,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     (nodeId: string): Node<CustomNodeData>[] | undefined => {
       const incomingEdges = edges.filter((edge) => edge.target === nodeId);
       if (incomingEdges.length === 0) return undefined;
-
+     // debugger
       const sourceNodeIds = incomingEdges.map((edge) => edge.source);
       const previousNodes = nodes.filter((node) =>
         sourceNodeIds.includes(node.id)

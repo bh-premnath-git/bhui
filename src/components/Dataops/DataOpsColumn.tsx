@@ -7,6 +7,8 @@ import StopPopUp from "./StopPopUp";
 import CostOptimizationForm from "@/components/Dataops/CostOptimizationForm";
 import { IoSearchSharp } from "react-icons/io5";
 import ExploreDrawer from "./ExploreDrawer";
+import { cn } from "@/lib/utils";
+import { CircleCheckBig, Hourglass, XCircle } from "lucide-react";
 
 type ColumnConfig = {
     key: string;
@@ -82,15 +84,20 @@ export const dataopsColumn: ColumnConfig[] = [
         sortable: false,
         render: (value: any) => {
             return (
-                <div style={{
-                    backgroundColor: value == "Success" ? COLORS.green :
-                        value == 'Failed' ? COLORS.red : '#ffa500',
-                    color: 'white',
-                    padding: 8,
-                    borderRadius: '4px'
-                }}>
+                <div
+                className={cn(
+                "inline-flex items-center gap-2 text-sm font-bold",
+                {
+                    "text-green-600": value === "Success",
+                    "text-red-600": value === "Failed",
+                    "text-yellow-500": value !== "Success" && value !== "Failed",
+                }
+                )}>
+                    {value === "Success" && <CircleCheckBig className="h-4 w-4" style={{ strokeWidth: '4' }}/>}
+                    {value === "Failed" && <XCircle className="h-4 w-4" style={{ strokeWidth: '4' }} />}
+                    {value !== "Success" && value !== "Failed" && <Hourglass className="h-4 w-4" style={{ strokeWidth: '4' }} />}
                     {value}
-                </div>
+            </div>
             )
         }
     },

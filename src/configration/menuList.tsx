@@ -20,7 +20,7 @@ export const menuList = [
     {
         label: "Data Catalog",
         icon: <Database size={20} />,
-        path: "/DataCatalog",
+        path: "/data-catalog",
         shortcut: "⌘D"
     },
     {

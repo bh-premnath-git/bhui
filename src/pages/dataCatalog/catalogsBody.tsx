@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
     Stack, Typography, Paper, TableContainer, 
-    TextField, Chip, IconButton
+    TextField, Chip, IconButton,
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -358,6 +358,7 @@ export default function CatalogsBody(data:any) {
                                 itemsPerPageOptions={[5, 10, 20]}
                                 defaultItemsPerPage={10}
                                 isSearch={false}
+                                rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
                             />
                         </TableContainer>
                     </Stack>

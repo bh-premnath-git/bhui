@@ -230,13 +230,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           <TabsList className="grid w-80 grid-cols-2 mb-6 p-1 bg-gray-100 rounded-lg gap-1">
             <TabsTrigger 
               value="settings" 
-              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-white"
             >
               Settings
             </TabsTrigger>
             <TabsTrigger 
               value="configuration"
-              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:bg-black data-[state=active]:text-white"
+              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-white"
             >
               Configuration
             </TabsTrigger>

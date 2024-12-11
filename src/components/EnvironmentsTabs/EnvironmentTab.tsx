@@ -382,11 +382,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
 
   return (
     <Formik
-      key={formKey}
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={(values) => { }}
-      enableReinitialize={true}
     >
       {({ values, errors, touched, setFieldValue, handleChange }) => (
         <Form className="space-y-6 p-6 rounded-lg">
@@ -485,24 +483,17 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                   <RequiredLabel>
                     <Label htmlFor="projectId" className="text-gray-800 font-medium">Project ID</Label>
                   </RequiredLabel>
-                  <Select
-                    value={values.projectId}
-                    onValueChange={(value) => {
-                      setFieldValue('projectId', value);
-                      onChange({ projectId: value });
+                  <Field
+                    as={Input}
+                    id="projectId"
+                    name="projectId"
+                    placeholder="Enter project ID"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      handleChange(e);
+                      onChange({ projectId: e.target.value });
                     }}
-                  >
-                    <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
-                      <SelectValue placeholder="Select a project" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
-                      {flowProjectList.map((project) => (
-                        <SelectItem key={project.ProjectId} value={project.ProjectId.toString()} className="text-gray-800 hover:bg-gray-50">
-                          {project.Name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                   <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
                 </div>
 

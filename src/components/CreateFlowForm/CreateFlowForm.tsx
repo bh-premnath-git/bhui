@@ -92,11 +92,7 @@ const validationSchema = Yup.object().shape({
   name: Yup.string()
     .required('Flow name is required')
     .min(2, 'Flow name must be at least 2 characters')
-    .max(50, 'Flow name must not exceed 50 characters')
-    .matches(
-      /^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]+$/,
-      'Flow name must contain at least one letter and one number, no spaces or special characters allowed'
-    ),
+    .max(50, 'Flow name must not exceed 50 characters'),
   recipientEmails: Yup.array()
     .of(Yup.string().email('Invalid email'))
     .min(1, 'At least one email is required')

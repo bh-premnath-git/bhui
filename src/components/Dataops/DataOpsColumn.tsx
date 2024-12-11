@@ -84,20 +84,15 @@ export const dataopsColumn: ColumnConfig[] = [
         sortable: false,
         render: (value: any) => {
             return (
-                <div
-                className={cn(
-                "inline-flex items-center gap-2 text-sm font-bold",
-                {
-                    "text-green-600": value === "Success",
-                    "text-red-600": value === "Failed",
-                    "text-yellow-500": value !== "Success" && value !== "Failed",
-                }
-                )}>
-                    {value === "Success" && <CircleCheckBig className="h-4 w-4" style={{ strokeWidth: '4' }}/>}
-                    {value === "Failed" && <XCircle className="h-4 w-4" style={{ strokeWidth: '4' }} />}
-                    {value !== "Success" && value !== "Failed" && <Hourglass className="h-4 w-4" style={{ strokeWidth: '4' }} />}
+                <div style={{
+                    backgroundColor: value == "Success" ? COLORS.green :
+                        value == 'Failed' ? COLORS.red : '#ffa500',
+                    color: 'white',
+                    padding: 5,
+                    borderRadius: '15px'
+                }}>
                     {value}
-            </div>
+                </div>
             )
         }
     },

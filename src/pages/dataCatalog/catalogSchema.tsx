@@ -139,7 +139,7 @@ function CatalogSchema() {
 
             <Box sx={{ height: 'calc(100% - 64px)', overflow: 'auto' }}>
                 <CustomTabPanel value={value} index={0}>
-                    <CatalogsBody search={searchValue} />
+                    <CatalogsBody />
                 </CustomTabPanel>
                 {/* <CustomTabPanel value={value} index={1}>
                     <Lineage data={props.data} />

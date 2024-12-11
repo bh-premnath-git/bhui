@@ -35,90 +35,94 @@ const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround
 const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
+
 export const routeList = [
-    { path: "/", element: <RedirectToDash /> },
-    { path: "/dashboard", element: <Dashboard /> },
-    { path: "/login", element: <Login /> },
-    { path: "/admin-console", element: <AdminConsole /> },
-    { path: "/admin-console/manage-users", element: <PageNotFound /> },
-    { path: "/admin-console/manage-customer", element: <PageNotFound /> },
-    { path: "/admin-console/projects", element: <AllProjects /> },
-    { path: "/admin-console/projects/new", element: <ProjectCreate /> },
-    { path: "/admin-console/projects/:id", element: <ProjectEdit /> },
-    { path: "/admin-console/environment", element: <AllEnvironments /> },
-    { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
-    { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
-    { path: "/designers/manage-flow", element: <AllFlows /> },
-    { path: '/designers/manage-flow/:id', element: <ManageFlow /> },
-    { path: "*", element: <PageNotFound /> },
-    { path: '/data-catalogs', element: <Catalog /> },
-    { path: '/Catalog/Catalogs', element: <Catalogs /> },
-    { path: '/designers', element: <Designer /> },
-    { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
-    { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
-    { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
-    { path: '/Alerts', element: <Alerts /> },
-    { path: '/dataops-hub/alerts', element: <Alerts /> },
-    { path: '/Alerts/New Monitor', element: <MonitorPage /> },
-    { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
-    { path: '/data-catalog', element: <DataCatalog /> },
-    { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
-    { path: '/admin-console/users', element: <AllUsers /> },
-    { path: '/admin-console/users/new', element: <AddUser /> },
-    { path: '/admin-console/users/:id', element: <EditUser /> },
-    { path: '/admin-console/customers', element: <AllCustomers /> },
-    { path: '/admin-console/customers/new', element: <AddCustomers /> },
-    { path: '/admin-console/customers/:id', element: <EditCustomer /> },
-    { path: '/designers/build-datapipeline/', element: <AllBuildDataPipeLine /> },
-    { path: '/designers/build-playground/:id', element: <BuildPlayGround /> },
-    { path: '/designers/build-playground/', element: <BuildPlayGround /> },
-    { path: '/dataops-hub/ops-hub', element: <Dataops /> },
-    { path: '/AllDataOps', element: <Dataops /> },
-    { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
-    { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
-    { path: '/ReleaseBundle', element: <ReleaseBundle /> },
-  ];
+  {
+    path: "/",
+    element: <RedirectToDash element={<Dashboard />} />,
+  },
+  { path: "/dashboard", element: <Dashboard /> },
+  { path: "/login",  element: <RedirectToDash element={<Login />} />, },
+  { path: "/admin-console", element: <AdminConsole /> },
+  { path: "/admin-console/manage-users", element: <PageNotFound /> },
+  { path: "/admin-console/manage-customer", element: <PageNotFound /> },
+  { path: "/admin-console/projects", element: <AllProjects /> },
+  { path: "/admin-console/projects/new", element: <ProjectCreate /> },
+  { path: "/admin-console/projects/:id", element: <ProjectEdit /> },
+  { path: "/admin-console/environment", element: <AllEnvironments /> },
+  { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
+  { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
+  { path: "/designers/manage-flow", element: <AllFlows /> },
+  { path: '/designers/manage-flow/:id', element: <ManageFlow /> },
+  { path: "*", element: <PageNotFound /> },
+  { path: '/data-catalogs', element: <Catalog /> },
+  { path: '/Catalog/Catalogs', element: <Catalogs /> },
+  { path: '/designers', element: <Designer /> },
+  { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
+  { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
+  { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
+  { path: '/Alerts', element: <Alerts /> },
+  { path: '/dataops-hub/alerts', element: <Alerts /> },
+  { path: '/Alerts/New Monitor', element: <MonitorPage /> },
+  { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
+  { path: '/data-catalog', element: <DataCatalog /> },
+  { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
+  { path: '/admin-console/users', element: <AllUsers /> },
+  { path: '/admin-console/users/new', element: <AddUser /> },
+  { path: '/admin-console/users/:id', element: <EditUser /> },
+  { path: '/admin-console/customers', element: <AllCustomers /> },
+  { path: '/admin-console/customers/new', element: <AddCustomers /> },
+  { path: '/admin-console/customers/:id', element: <EditCustomer /> },
+  { path: '/designers/build-datapipeline/', element: <AllBuildDataPipeLine /> },
+  { path: '/designers/build-playground/:id', element: <BuildPlayGround /> },
+  { path: '/designers/build-playground/', element: <BuildPlayGround /> },
+  { path: '/dataops-hub/ops-hub', element: <Dataops /> },
+  { path: '/AllDataOps', element: <Dataops /> },
+  { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
+  { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
+  { path: '/ReleaseBundle', element: <ReleaseBundle /> },
+];
 
-  export const theme = createTheme({
-    typography: {
-      fontFamily: 'Inter ',
+export const theme = createTheme({
+  typography: {
+    fontFamily: 'Inter ',
+  },
+  components: {
+
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'Inter',
+          textTransform: 'none',
+        },
+      }
     },
-    components: {
-
-      MuiButton: {
-        styleOverrides: {
-          root: {
-            fontFamily: 'Inter',
-            textTransform: 'none',
-          },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'Inter',
         }
-      },
-      MuiTypography: {
-        styleOverrides: {
-          root: {
-            fontFamily: 'Inter',
-          }
-        }
-      },
-      MuiSelect: { 
-        styleOverrides: {
-          root: {
-            fontFamily: 'Inter',
-            fontSize: '15px',
-            fontWeight: 'normal'
-          },
+      }
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'Inter',
+          fontSize: '15px',
+          fontWeight: 'normal'
         },
       },
-      MuiMenuItem: {
-        styleOverrides: {
-          root: {
-            fontFamily: 'Inter',
-            fontSize: '15px'
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'Inter',
+          fontSize: '15px'
 
-          },
         },
       },
+    },
 
-    }
+  }
 
-  });
+});

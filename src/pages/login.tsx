@@ -1,15 +1,15 @@
+import { useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ChevronRight } from "lucide-react";
 
 export default function Component() {
-  const token = sessionStorage?.getItem("token");
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const token = sessionStorage.getItem("token");
+  useLayoutEffect(() => {
     if (token) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [token, navigate]);
 
@@ -28,7 +28,10 @@ export default function Component() {
           <p className="text-xl text-gray-700 mb-8">
             We encountered a problem with the Keycloak login
           </p>
-          <Button className="bg-black text-white hover:bg-gray-800 transition-colors duration-300 text-lg px-6 py-3 rounded-full" onClick={() => navigate("/")}>
+          <Button
+            className="bg-black text-white hover:bg-gray-800 transition-colors duration-300 text-lg px-6 py-3 rounded-full"
+            onClick={() => navigate("/")}
+          >
             Return to Home
             <ChevronRight className="ml-2 w-5 h-5" />
           </Button>

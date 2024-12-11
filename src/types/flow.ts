@@ -61,8 +61,9 @@ export interface Property {
     group_key: string;
     language?: string;
     order?: number;
-    spancol?:number;
-    mandatory:boolean;
+    default?: any;
+    spancol?: number;
+    mandatory: boolean;
     endpoint?: string;
   };
 }
@@ -140,7 +141,7 @@ export interface FlowContextType {
   zoomOut: () => void;
   fitView: () => void;
   deleteNode: (nodeId: string) => void;
-  deleteSelectedNodes: ()=>void;
+  deleteSelectedNodes: () => void;
   cloneNode: (nodeId: string) => void;
   renameNode: (nodeId: string, newLabel: string) => void;
   showNodeInfo: (nodeId: string) => void;
@@ -148,7 +149,7 @@ export interface FlowContextType {
   selectNode: (nodeId: string) => void;
   updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
   getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
-  prevNodeFn: (nodeId: string) => Node<CustomNodeData>[] | undefined;
+  prevNodeFn: (nodeId: string) => string[] | undefined;
   setEditingNode: (node: EditingNode | null) => void;
   setTemporaryEdgeId: (id: string | null) => void;
   toggleAutoSave: () => void;

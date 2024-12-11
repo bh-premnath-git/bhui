@@ -12,6 +12,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   className?: string;
   mandatory: boolean;
+  default?:any;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({

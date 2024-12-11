@@ -13,7 +13,6 @@ import useToast from '@/oldcomponents/teast-service';
 import ValidationComponent from '@/components/validation-component';
 import { Badge } from "@/components/ui/badge";
 import RequiredLabel from '@/components/RequiredFieldLabel';
-import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { encrypt_string } from '@/services/encryption';
 import { getFlowProjectList } from '@/redux/FlowSlice';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -42,6 +41,9 @@ interface FormValues {
   privateKeyFile: File | null;
   selectedPlatform: string;
 }
+type MWAAEnvironments = {
+  environments: string[];
+};
 
 interface EnvironmentTabProps {
   selectedPlatform: string;
@@ -263,9 +265,14 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   changeVerification,
 }) => {
   const [ToastComponent, showToast] = useToast();
-  const { flowProjectList } = useAppSelector((state) => state.flowApi);
-  const dispatch = useAppDispatch();
-  const [formKey, setFormKey] = useState(0);
+  const [mwaaEnvironments, setMwaaEnvironments] = useState<MWAAEnvironments>({ environments: [] });
+  const [selectedMwaaEnv, setSelectedMwaaEnv] = useState("")
+  const [credentialsVal, setCredentialsVal] = useState<{
+    aws_access_key_id: string;
+    aws_secret_access_key: string;
+    location: string;
+    init_vector: string;
+  } | null>(null);
   const [initialValues, setInitialValues] = useState<FormValues>({
     environmentName,
     environment,
@@ -280,10 +287,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   });
 
   useEffect(() => {
-    dispatch(getFlowProjectList({}));
-  }, [dispatch]);
-
-  useEffect(() => {
     setInitialValues({
       environmentName,
       environment,
@@ -296,7 +299,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       privateKeyFile,
       selectedPlatform,
     });
-    setFormKey(prev => prev + 1);
   }, [
     environmentName,
     environment,
@@ -330,14 +332,22 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         encryted_aws_key_id.initVector
       );
 
-      const result = await ApiService('8011', 'post', '/environment/list-mwaa-environments', {
+      const credentials = {
         aws_access_key_id: encryted_aws_key_id.encryptedString,
         aws_secret_access_key: encryted_aws_secret_access_key.encryptedString,
         location: actualLocation,
         init_vector: encryted_aws_key_id.initVector
-      });
+      };
+
+      setCredentialsVal(credentials);
+
+      const result = await ApiService('8011', 'post', '/environment/list-mwaa-environments', credentials);
 
       const success = result && typeof result === 'object' && 'environments' in result;
+
+      if (success) {
+        setMwaaEnvironments(result as MWAAEnvironments);
+      }
 
       showToast(
         success ? 'Successfully connected to AWS' : 'Failed to connect',
@@ -352,6 +362,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     } finally {
     }
   };
+
 
   const handleSetTags = (newTags: Tag[] | ((prevTags: Tag[]) => Tag[])) => {
     if (typeof newTags === 'function') {
@@ -386,269 +397,317 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       validationSchema={validationSchema}
       onSubmit={(values) => { }}
     >
-      {({ values, errors, touched, setFieldValue, handleChange }) => (
-        <Form className="space-y-6 p-6 rounded-lg">
-          <div className="space-y-3">
-            <h1 className="text-2xl font-bold text-gray-800">Configure Environment</h1>
-            <p className="text-sm text-gray-600">
-              Set up your environment details, select a cloud platform, and provide necessary credentials.
-            </p>
-          </div>
-          {/* Environment Details Card */}
-          <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
-              <CardTitle className="text-lg font-semibold text-gray-800 text-left">Environment Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-2">
-              <div className="flex flex-col md:flex-row space-x-0 md:space-x-6 space-y-4 md:space-y-0">
-                <div className="w-full md:w-1/2 space-y-2">
-                  <RequiredLabel>
-                    <Label htmlFor="environmentName" className="text-gray-800 font-medium">Environment Name</Label>
-                  </RequiredLabel>
-                  <Field
-                    as={Input}
-                    id="environmentName"
-                    name="environmentName"
-                    placeholder="e.g. My Dev Env"
-                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleChange(e);
-                      onChange({ environmentName: e.target.value });
-                    }}
-                  />
-                  <ErrorMessage name="environmentName" component="div" className="text-red-500 text-sm" />
-                </div>
-                <div className="w-full md:w-1/2 space-y-2">
-                  <RequiredLabel>
-                    <Label htmlFor="environment" className="text-gray-800 font-medium">Environment</Label>
-                  </RequiredLabel>
-                  <Select
-                    defaultValue={values.environment}
-                    value={values.environment}
-                    onValueChange={(value) => {
-                      setFieldValue('environment', value);
-                      onChange({ environment: value });
-                    }}
-                  >
-                    <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
-                      <SelectValue placeholder="Select Environment">
-                        {values.environment ? environmentOptions[values.environment as keyof EnvironmentOptions] : "Select Environment"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
-                      {Object.entries(environmentOptions).map(([value, label]) => (
-                        <SelectItem key={value} value={value} className="text-gray-800 hover:bg-gray-50">
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <ErrorMessage name="environment" component="div" className="text-red-500 text-sm" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {({ values, errors, touched, setFieldValue, handleChange }) => {
+        const handleGetMWAAInfos = async (value: string) => {
 
-          {/* Platform Selection Card */}
-          <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
-              <CardTitle className="text-lg font-semibold text-gray-800 text-left">Select Platform</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <RequiredLabel>
-                <Label className="text-gray-800 font-medium">Select which platform you'd like to use</Label>
-              </RequiredLabel>
-              <PlatformSelector
-                selectedPlatform={values.selectedPlatform}
-                setSelectedPlatform={(platform) => {
-                  setFieldValue('selectedPlatform', platform);
-                  setSelectedPlatform(platform);
-                }}
-              />
-              <ErrorMessage name="selectedPlatform" component="div" className="text-red-500 text-sm mt-2" />
-            </CardContent>
-          </Card>
-
-          {/* Credentials Card */}
-          <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
-              <CardTitle className="text-lg font-semibold text-gray-800 text-left">Credentials</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-2">
-              <div className="text-sm text-gray-600">
-                Select a project, location, and provide platform-specific credentials.
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <RequiredLabel>
-                    <Label htmlFor="projectId" className="text-gray-800 font-medium">Project ID</Label>
-                  </RequiredLabel>
-                  <Field
-                    as={Input}
-                    id="projectId"
-                    name="projectId"
-                    placeholder="Enter project ID"
-                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleChange(e);
-                      onChange({ projectId: e.target.value });
-                    }}
-                  />
-                  <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
-                </div>
-
-                <div className="space-y-2">
-                  <RequiredLabel>
-                    <Label htmlFor="location" className="text-gray-800 font-medium">Location</Label>
-                  </RequiredLabel>
-                  <Select
-                    value={values.location ? locationOptions[parseInt(values.location) - 1] : undefined}
-                    onValueChange={(value) => {
-                      const locationIndex = locationOptions.indexOf(value as LocationOption);
-                      const locationNumber = (locationIndex + 1).toString();
-                      setFieldValue('location', locationNumber);
-                      onChange({ location: locationNumber });
-                    }}
-                  >
-                    <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
-                      <SelectValue placeholder="Select Location">
-                        {values.location ? locationOptions[parseInt(values.location) - 1] : "Select Location"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
-                      {locationOptions.map((loc) => (
-                        <SelectItem
-                          key={loc}
-                          value={loc}
-                          className="text-gray-800 hover:bg-gray-50"
-                        >
-                          {loc}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
-                </div>
-              </div>
-
-              {values.selectedPlatform === 'aws' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                  <div className="space-y-2">
-                    <RequiredLabel>
-                      <Label htmlFor="accessKey" className="text-gray-800 font-medium">Access Key</Label>
-                    </RequiredLabel>
-                    <Field
-                      as={Input}
-                      id="accessKey"
-                      name="accessKey"
-                      placeholder="Enter AWS Access Key"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        handleChange(e);
-                        onChange({ accessKey: e.target.value });
-                      }}
-                    />
-                    <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
-                  </div>
-                  <div className="space-y-2">
-                    <RequiredLabel>
-                      <Label htmlFor="secretAccessKey" className="text-gray-800 font-medium">Secret Access Key</Label>
-                    </RequiredLabel>
-                    <Field
-                      as={Input}
-                      id="secretAccessKey"
-                      name="secretAccessKey"
-                      type="password"
-                      placeholder="Enter AWS Secret Access Key"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        handleChange(e);
-                        onChange({ secretAccessKey: e.target.value });
-                      }}
-                    />
-                    <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
-                  </div>
-                  <div className="mt-2 flex items-center">
-                    <ValidationComponent
-                      onValidate={() => handleValidate(values)}
-                      error={false}
-                      errorMsg="Failed to connect"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {values.selectedPlatform === 'google-cloud' && (
-                <div className="mt-4 space-y-2">
-                  <RequiredLabel>
-                    <Label htmlFor="privateKeyFile" className="text-gray-800 font-medium">Google Cloud Private Key</Label>
-                  </RequiredLabel>
-                  <div className="w-full md:w-1/2">
-                    <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
-                  </div>
-                  <ErrorMessage name="privateKeyFile" component="div" className="text-red-500 text-sm" />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Advanced Settings Card */}
-          <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
-              <CardTitle className="text-lg font-semibold text-gray-800 text-left">Advanced Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-2">
+          try {
+            const result = await ApiService(
+              '8011',
+              'post',
+              `/environment/get_aws_mwaa_env_connection?env_name=${value}`,
+              credentialsVal
+            );
+            if (result) {
+              setFieldValue('airflowUrl', result.WebserverUrl);
+              setFieldValue('airflowDagBucket', result.SourceBucketArn);
+              onChange({ 
+                airflowUrl: result.WebserverUrl, 
+                airflowDagBucket: result.SourceBucketArn 
+              });
+            }
+          } catch (error) {
+            console.error("err", error);
+      
+          }
+        }
+        return (
+          <Form className="space-y-6 p-6 rounded-lg">
+            <div className="space-y-3">
+              <h1 className="text-2xl font-bold text-gray-800">Configure Environment</h1>
               <p className="text-sm text-gray-600">
-                Provide optional Airflow configuration if needed.
+                Set up your environment details, select a cloud platform, and provide necessary credentials.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="airflowUrl" className="text-gray-800 font-medium">Airflow URL</Label>
-                  <Field
-                    as={Input}
-                    id="airflowUrl"
-                    name="airflowUrl"
-                    placeholder="https://my-airflow-url"
-                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleChange(e);
-                      onChange({ airflowUrl: e.target.value });
-                    }}
-                  />
-                  <ErrorMessage name="airflowUrl" component="div" className="text-red-500 text-sm" />
+            </div>
+            {/* Environment Details Card */}
+            <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
+              <CardHeader className="bg-gray-50 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-800 text-left">Environment Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-2">
+                <div className="flex flex-col md:flex-row space-x-0 md:space-x-6 space-y-4 md:space-y-0">
+                  <div className="w-full md:w-1/2 space-y-2">
+                    <RequiredLabel>
+                      <Label htmlFor="environmentName" className="text-gray-800 font-medium">Environment Name</Label>
+                    </RequiredLabel>
+                    <Field
+                      as={Input}
+                      id="environmentName"
+                      name="environmentName"
+                      placeholder="e.g. My Dev Env"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleChange(e);
+                        onChange({ environmentName: e.target.value });
+                      }}
+                    />
+                    <ErrorMessage name="environmentName" component="div" className="text-red-500 text-sm" />
+                  </div>
+                  <div className="w-full md:w-1/2 space-y-2">
+                    <RequiredLabel>
+                      <Label htmlFor="environment" className="text-gray-800 font-medium">Environment</Label>
+                    </RequiredLabel>
+                    <Select
+                      defaultValue={values.environment}
+                      value={values.environment}
+                      onValueChange={(value) => {
+                        setFieldValue('environment', value);
+                        onChange({ environment: value });
+                      }}
+                    >
+                      <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                        <SelectValue placeholder="Select Environment">
+                          {values.environment ? environmentOptions[values.environment as keyof EnvironmentOptions] : "Select Environment"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
+                        {Object.entries(environmentOptions).map(([value, label]) => (
+                          <SelectItem key={value} value={value} className="text-gray-800 hover:bg-gray-50">
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ErrorMessage name="environment" component="div" className="text-red-500 text-sm" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="airflowDagBucket" className="text-gray-800 font-medium">Airflow DAG Bucket</Label>
-                  <Field
-                    as={Input}
-                    id="airflowDagBucket"
-                    name="airflowDagBucket"
-                    placeholder="my-airflow-dag-bucket"
-                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleChange(e);
-                      onChange({ airflowDagBucket: e.target.value });
-                    }}
-                  />
-                  <ErrorMessage name="airflowDagBucket" component="div" className="text-red-500 text-sm" />
+              </CardContent>
+            </Card>
+
+            {/* Platform Selection Card */}
+            <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
+              <CardHeader className="bg-gray-50 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-800 text-left">Select Platform</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <RequiredLabel>
+                  <Label className="text-gray-800 font-medium">Select which platform you'd like to use</Label>
+                </RequiredLabel>
+                <PlatformSelector
+                  selectedPlatform={values.selectedPlatform}
+                  setSelectedPlatform={(platform) => {
+                    setFieldValue('selectedPlatform', platform);
+                    setSelectedPlatform(platform);
+                  }}
+                />
+                <ErrorMessage name="selectedPlatform" component="div" className="text-red-500 text-sm mt-2" />
+              </CardContent>
+            </Card>
+
+            {/* Credentials Card */}
+            <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
+              <CardHeader className="bg-gray-50 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-800 text-left">Credentials</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-2">
+                <div className="text-sm text-gray-600">
+                  Select a project, location, and provide platform-specific credentials.
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <RequiredLabel>
+                      <Label htmlFor="projectId" className="text-gray-800 font-medium">Project ID</Label>
+                    </RequiredLabel>
+                    <Field
+                      as={Input}
+                      id="projectId"
+                      name="projectId"
+                      placeholder="Enter project ID"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleChange(e);
+                        onChange({ projectId: e.target.value });
+                      }}
+                    />
+                    <ErrorMessage name="projectId" component="div" className="text-red-500 text-sm" />
+                  </div>
 
-          {/* Tags Card */}
-          <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
-              <CardTitle className="text-lg font-semibold text-gray-800 text-left">Tags</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <TagInput tags={tags} setTags={handleSetTags} />
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <RequiredLabel>
+                      <Label htmlFor="location" className="text-gray-800 font-medium">Location</Label>
+                    </RequiredLabel>
+                    <Select
+                      value={values.location ? locationOptions[parseInt(values.location) - 1] : undefined}
+                      onValueChange={(value) => {
+                        const locationIndex = locationOptions.indexOf(value as LocationOption);
+                        const locationNumber = (locationIndex + 1).toString();
+                        setFieldValue('location', locationNumber);
+                        onChange({ location: locationNumber });
+                      }}
+                    >
+                      <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                        <SelectValue placeholder="Select Location">
+                          {values.location ? locationOptions[parseInt(values.location) - 1] : "Select Location"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
+                        {locationOptions.map((loc) => (
+                          <SelectItem
+                            key={loc}
+                            value={loc}
+                            className="text-gray-800 hover:bg-gray-50"
+                          >
+                            {loc}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ErrorMessage name="location" component="div" className="text-red-500 text-sm" />
+                  </div>
+                </div>
 
-          <ToastComponent />
-        </Form>
-      )}
+                {values.selectedPlatform === 'aws' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div className="space-y-2">
+                      <RequiredLabel>
+                        <Label htmlFor="accessKey" className="text-gray-800 font-medium">Access Key</Label>
+                      </RequiredLabel>
+                      <Field
+                        as={Input}
+                        id="accessKey"
+                        name="accessKey"
+                        placeholder="Enter AWS Access Key"
+                        className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          handleChange(e);
+                          onChange({ accessKey: e.target.value });
+                        }}
+                      />
+                      <ErrorMessage name="accessKey" component="div" className="text-red-500 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <RequiredLabel>
+                        <Label htmlFor="secretAccessKey" className="text-gray-800 font-medium">Secret Access Key</Label>
+                      </RequiredLabel>
+                      <Field
+                        as={Input}
+                        id="secretAccessKey"
+                        name="secretAccessKey"
+                        type="password"
+                        placeholder="Enter AWS Secret Access Key"
+                        className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          handleChange(e);
+                          onChange({ secretAccessKey: e.target.value });
+                        }}
+                      />
+                      <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
+                    </div>
+                    <div className="mt-2 flex items-center">
+                      <ValidationComponent
+                        onValidate={() => handleValidate(values)}
+                        error={false}
+                        errorMsg="Failed to connect"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {values.selectedPlatform === 'google-cloud' && (
+                  <div className="mt-4 space-y-2">
+                    <RequiredLabel>
+                      <Label htmlFor="privateKeyFile" className="text-gray-800 font-medium">Google Cloud Private Key</Label>
+                    </RequiredLabel>
+                    <div className="w-full md:w-1/2">
+                      <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
+                    </div>
+                    <ErrorMessage name="privateKeyFile" component="div" className="text-red-500 text-sm" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Advanced Settings Card */}
+            <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
+              <CardHeader className="bg-gray-50 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-800 text-left">Advanced Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-2">
+                <p className="text-sm text-gray-600">
+                  Provide optional Airflow configuration if needed.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="mwaaEnvironment" className="text-gray-800 font-medium">MWAA Environment</Label>
+                    <Select
+                      value={selectedMwaaEnv}
+                      onValueChange={(value) => {
+                        setSelectedMwaaEnv(value);
+                        handleGetMWAAInfos(value);
+                      }}>
+                      <SelectTrigger className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                        <SelectValue placeholder="Select MWAA Environment">
+                          {selectedMwaaEnv || (mwaaEnvironments.environments.length === 0 ? "No MWAA Environments available" : "Select MWAA Environment")}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
+                        {mwaaEnvironments.environments.map((env) => (
+                          <SelectItem
+                            key={env}
+                            value={env}
+                            className="text-gray-800 hover:bg-gray-50"
+                          >
+                            {env}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="airflowUrl" className="text-gray-800 font-medium">Airflow URL</Label>
+                    <Field
+                      as={Input}
+                      id="airflowUrl"
+                      name="airflowUrl"
+                      value={values.airflowUrl}
+                      placeholder="https://my-airflow-url"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      readOnly
+                    />
+                    <ErrorMessage name="airflowUrl" component="div" className="text-red-500 text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="airflowDagBucket" className="text-gray-800 font-medium">Airflow DAG Bucket</Label>
+                    <Field
+                      as={Input}
+                      id="airflowDagBucket"
+                      name="airflowDagBucket"
+                      value={values.airflowDagBucket}
+                      placeholder="my-airflow-dag-bucket"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      readOnly
+                    />
+                    <ErrorMessage name="airflowDagBucket" component="div" className="text-red-500 text-sm" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tags Card */}
+            <Card className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 bg-white">
+              <CardHeader className="bg-gray-50 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-800 text-left">Tags</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <TagInput tags={tags} setTags={handleSetTags} />
+              </CardContent>
+            </Card>
+
+            <ToastComponent />
+          </Form>
+        )
+      }}
     </Formik>
   );
 };

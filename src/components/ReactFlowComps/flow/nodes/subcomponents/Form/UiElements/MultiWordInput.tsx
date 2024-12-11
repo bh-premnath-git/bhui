@@ -10,6 +10,7 @@ interface MultiWordInputProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   mandatory: boolean;
+  default?:any;
 }
 
 export const MultiWordInput: React.FC<MultiWordInputProps> = ({

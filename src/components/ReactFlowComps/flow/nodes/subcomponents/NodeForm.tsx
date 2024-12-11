@@ -31,21 +31,21 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }
 
     // Update selectedProperties with selectedValue dependency
-    const selectedProperties = useMemo(() => 
+    const selectedProperties = useMemo(() =>
         selectedNode.data.meta.properties.find(
             (item: any) => item.type === selectedValue || item.type === selectedNode.data.selectedData
         ),
         [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
     );
 
-    const groupedProperties = useGroupedProperties({properties: selectedProperties}) ?? { properties:{property: [], settings: []} };
+    const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? { properties: { property: [], settings: [] } };
     const currentFormData = useMemo(() =>
         nodeFormData.find(item => item.nodeId === selectedNode.id)?.formData || {},
         [nodeFormData, selectedNode.id]
     );
 
     const dependsOn = useMemo(() =>
-        prevNodeFn(selectedNode.id)?.map(node => node.data.meta.type) ?? [],
+        prevNodeFn(selectedNode.id)?.map(node => node) ?? [],
         [prevNodeFn, selectedNode.id]
     );
 
@@ -81,7 +81,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
     }, [selectedNode?.data?.selectedData]);
 
-    
+
 
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg">

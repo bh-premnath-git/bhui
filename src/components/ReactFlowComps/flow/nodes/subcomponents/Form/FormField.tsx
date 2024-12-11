@@ -37,6 +37,9 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       endpoint,
       selectedEnvironment ?? "0"
     );
+    const defaultValue = property.ui_properties.default
+
+    console.log("Formfield defaultValue >>>", defaultValue);
 
     const renderField = () => {
       switch (ui_type) {

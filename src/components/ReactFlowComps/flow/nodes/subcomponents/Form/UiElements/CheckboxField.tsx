@@ -12,6 +12,7 @@ interface CheckboxFieldProps {
     label?: string;
     error?: string;
     mandatory: boolean;
+    default?:any;
 }
 
 export const CheckboxField: React.FC<CheckboxFieldProps> = ({

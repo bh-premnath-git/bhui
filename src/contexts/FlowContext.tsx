@@ -96,15 +96,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   );
 
   const prevNodeFn = useCallback(
-    (nodeId: string): Node<CustomNodeData>[] | undefined => {
+    (nodeId: string): string[] | undefined => {
       const incomingEdges = edges.filter((edge) => edge.target === nodeId);
       if (incomingEdges.length === 0) return undefined;
-     // debugger
       const sourceNodeIds = incomingEdges.map((edge) => edge.source);
-      const previousNodes = nodes.filter((node) =>
-        sourceNodeIds.includes(node.id)
+      
+      const previousNodesFormData = nodeFormData.filter((formData) =>
+        sourceNodeIds.includes(formData.nodeId)
       );
-      return previousNodes.length > 0 ? previousNodes : undefined;
+      if (previousNodesFormData.length === 0) return undefined;
+
+      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
+      return taskIds;
     },
     [edges, nodes]
   );
@@ -161,12 +164,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
             if (node.data.tempSave) return node; // Return unchanged node if tempSave is true
             return selectionId
               ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedData: null,
-                  },
-                }
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedData: null,
+                },
+              }
               : node;
           })
         );
@@ -176,18 +179,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
             const selectionId = node.id === nodeId;
             return selectionId
               ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    tempSave: true,
-                  },
-                }
+                ...node,
+                data: {
+                  ...node.data,
+                  tempSave: true,
+                },
+              }
               : node;
           })
         );
       }
     },
-    [setNodes] 
+    [setNodes]
   );
 
   const setSelectedFlowId = useCallback(
@@ -233,7 +236,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     debouncedSave();
   }, [nodes, edges, debouncedSave]);
 
- 
+
   const value: FlowContextType = {
     selectedFlowId,
     nodes,

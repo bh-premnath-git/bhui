@@ -8,6 +8,7 @@ interface JsonInputProps {
   value: string;
   spanCol?: number;
   mandatory: boolean;
+  default?:any;
   error?: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }

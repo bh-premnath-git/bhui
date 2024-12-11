@@ -11,6 +11,7 @@ interface InputFieldProps {
   mandatory: boolean;
   error?: string;
   type?: string;
+  default?:any;
 }
 
 export const InputField: React.FC<InputFieldProps> = ({

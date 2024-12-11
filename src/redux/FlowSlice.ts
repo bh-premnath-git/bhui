@@ -401,7 +401,7 @@ const flowSlice = createSlice({
       .addCase(updateFlowDefinition.fulfilled, (state, action) => {
         state.loading = false;
         const updatedFlow = action.payload;
-        console.log("updatedFlow def", updatedFlow);
+        //console.log("updatedFlow def", updatedFlow);
         
       })
       .addCase(updateFlowDefinition.rejected, (state, action) => {
@@ -418,7 +418,7 @@ const flowSlice = createSlice({
         // You might want to update the state with the updated configuration
         // depending on your requirements
         const updatedConfig = action.payload;
-        console.log("updatedFlowConfig", updatedConfig);
+        //console.log("updatedFlowConfig", updatedConfig);
       })
       .addCase(updateFlowConfiguration.rejected, (state, action) => {
         state.loading = false;
@@ -432,7 +432,7 @@ const flowSlice = createSlice({
         state.loading = false;
         // You might want to update relevant state here depending on the response
         const updatedDeployment = action.payload;
-        console.log("updatedDeployment", updatedDeployment);
+        //console.log("updatedDeployment", updatedDeployment);
       })
       .addCase(patchCronDeployment.rejected, (state, action) => {
         state.loading = false;

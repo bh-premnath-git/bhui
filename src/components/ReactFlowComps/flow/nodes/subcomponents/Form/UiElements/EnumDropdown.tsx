@@ -11,6 +11,7 @@ interface EnumDropdownProps {
     mandatory: boolean;
     label?: string;
     error?: string;
+    default?:any;
 }
 
 export const EnumDropdown: React.FC<EnumDropdownProps> = React.memo(({

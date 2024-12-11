@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+import tailwindcssAnimate from 'tailwindcss-animate';
 export default {
 	darkMode: ["class"],
 	content: [
@@ -57,9 +58,18 @@ export default {
 				},
 				'custom-bg': '#f4f4f4',
 				'custom-color': '#8fd1ed',
+			},
+			keyframes: {
+				fadeIn: {
+					'0%': { opacity: '0', transform: 'translateY(-10px) translateX(-50%)' },
+					'100%': { opacity: '1', transform: 'translateY(0) translateX(-50%)' }
+				}
+			},
+			animation: {
+				fadeIn: 'fadeIn 0.2s ease-out'
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 }
 

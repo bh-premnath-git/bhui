@@ -27,26 +27,29 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
         onChange(property_key, checked ? 'true' : 'false');
     };
 
+    console.log(">>>", value);
+
+
     return (
         <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center space-x-2">
-                <Checkbox 
+                <Checkbox
                     id={property_key}
-                    checked={value === 'true'}
+                    checked={value === "true"}
                     onCheckedChange={handleCheckedChange}
-                    className={`border text-sm bg-white
+                    className={`border 
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                         ${error ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {label ? (
-                    <Label 
+                    <Label
                         htmlFor={property_key}
                         className="text-sm text-gray-600 cursor-pointer"
                     >
                         {label} {mandatory && <span className="text-red-500">*</span>}
                     </Label>
                 ) : (
-                    <Label 
+                    <Label
                         htmlFor={property_key}
                         className="text-sm text-gray-600 cursor-pointer"
                     >

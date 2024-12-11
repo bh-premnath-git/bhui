@@ -8,9 +8,10 @@ interface ModalProps {
   onClose: () => void
   children: ReactElement
   title: string
+  type?: string
 }
 
-export const SlidingPortalModal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
+export const SlidingPortalModal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, type }) => {
   const [portalElement, setPortalElement] = useState<HTMLElement | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -50,18 +51,22 @@ export const SlidingPortalModal: React.FC<ModalProps> = ({ isOpen, onClose, chil
         onClick={(e) => e.stopPropagation()}
       >
         <div className="h-full flex flex-col">
-          <div className="flex justify-between items-center p-6 border-b">
-            <div>
-              <h2 className="text-2xl font-semibold">{title}</h2>
-              <p className="text-sm text-muted-foreground">Configure your flow settings and notifications</p>
+          <div className="flex items-center p-6 border-b">
+            <div className="flex items-center flex-1">
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                aria-label="Close modal"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              {type && (
+                <span className="ml-4 px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-full">
+                  {type}
+                </span>
+              )}
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-              aria-label="Close modal"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <p className="text-sm text-muted-foreground">{title}</p>
           </div>
           <div className="flex-grow overflow-y-auto p-6">
             {children}

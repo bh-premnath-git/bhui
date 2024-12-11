@@ -3,7 +3,15 @@ import { useMemo } from 'react';
 
 export const useGroupedProperties = (selectedNode: any) => {
   return useMemo(() => {
-    const properties = selectedNode.data.meta.properties || {};
+    // Return empty grouped properties if selectedNode is undefined
+    if (!selectedNode) {
+      return {
+        property: [],
+        settings: []
+      };
+    }
+
+    const properties = selectedNode.properties || {};
     const grouped: GroupedProperties = {
       property: [],
       settings: []
@@ -30,7 +38,6 @@ export const useGroupedProperties = (selectedNode: any) => {
         (a.ui_properties?.order || 0) - (b.ui_properties?.order || 0)
       );
     });
-
     return grouped;
-  }, [selectedNode]);
+  }, [selectedNode]); // Keep a single dependency
 };

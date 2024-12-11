@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGroupedProperties } from "@/hooks/useGroupedProperties";
@@ -10,31 +10,40 @@ import {
     TabsTrigger,
 } from '@/components/ui/tabs';
 import { FormLayout } from "./Form/FormLayout";
-
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { createShortUUID } from "@/Utils/uid";
 interface NodeFormProps {
+    id: string;
     closeTap: () => void;
 }
+
 type TabType = "property" | "settings";
-//selectedFlowFromList
-export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
-    const { selectedNode, nodeFormData, prevNodeFn, updateNodeFormData } = useFlow();
-    console.log("selectedNode", selectedNode);
-    
+
+export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
+    const { selectedNode, nodeFormData, prevNodeFn, updateNodeFormData, updatedSelectedNodeId, revertOrSaveData } = useFlow();
     const [activeTab, setActiveTab] = useState<TabType>("property");
-    // Guard clause for when no node is selected
+    const [selectedValue, setSelectedValue] = useState<string>("");
+
     if (!selectedNode) {
         return null;
     }
 
-    const groupedProperties = useGroupedProperties(selectedNode);
+    // Update selectedProperties with selectedValue dependency
+    const selectedProperties = useMemo(() => 
+        selectedNode.data.meta.properties.find(
+            (item: any) => item.type === selectedValue || item.type === selectedNode.data.selectedData
+        ),
+        [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
+    );
 
-    // Memoize form data lookup
+    const groupedProperties = useGroupedProperties({properties: selectedProperties}) ?? { properties:{property: [], settings: []} };
     const currentFormData = useMemo(() =>
         nodeFormData.find(item => item.nodeId === selectedNode.id)?.formData || {},
         [nodeFormData, selectedNode.id]
     );
 
-    // Memoize depends on calculation
     const dependsOn = useMemo(() =>
         prevNodeFn(selectedNode.id)?.map(node => node.data.meta.type) ?? [],
         [prevNodeFn, selectedNode.id]
@@ -42,11 +51,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
 
     const handleInputChange = useCallback((key: string, value: string) => {
         if (!selectedNode) return;
-
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
-            type: selectedNode.data.meta.type,
-            task_id: selectedNode.data.label,
+            type: selectedValue ?? "",
+            task_id: `${selectedNode.data.label}-${selectedValue}-${createShortUUID()}`,
             dependsOn,
             [key]: value,
         });
@@ -54,53 +62,102 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap }) => {
 
     const handleSave = useCallback(() => {
         closeTap();
+        revertOrSaveData(id, true)
     }, [closeTap]);
 
     const handleTabChange = useCallback((tab: TabType) => {
         setActiveTab(tab);
     }, []);
 
+    const handleValueChange = useCallback((value: string) => {
+        setSelectedValue(value);
+        updatedSelectedNodeId(selectedNode.id, value);
+    }, [selectedNode?.id, updatedSelectedNodeId]);
+
+    // Synchronize selectedValue with selectedNode.data.selectedData
+    useEffect(() => {
+        if (selectedNode?.data?.selectedData) {
+            setSelectedValue(selectedNode.data.selectedData);
+        }
+    }, [selectedNode?.data?.selectedData]);
+
+    
+
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-6 rounded-lg bg-gradient-to-b from-gray-50 to-white">
-            {/* Replace TabButtons with Tabs */}
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="property">Property</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
-                </TabsList>
+        <Card className="w-full max-w-3xl mx-auto shadow-lg">
+            <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4 items-center">
+                    <Label htmlFor="type-select" className="text-sm font-medium text-gray-700">
+                        Select Node Type
+                    </Label>
+                    <Select
+                        onValueChange={handleValueChange}
+                        value={selectedValue}
+                    >
+                        <SelectTrigger
+                            id="type-select"
+                            className="bg-white border-gray-200 hover:border-gray-300 focus:ring-black"
+                        >
+                            <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {selectedNode.data.meta.properties.map((prop: any) => (
+                                <SelectItem key={prop.type} value={prop.type}>
+                                    {prop.type}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                {/* Property Tab Content */}
-                <TabsContent value="property" className="space-y-4">
-                    <ScrollArea className="h-[400px] pr-4">
-                        <FormLayout
-                            properties={groupedProperties['property']}
-                            formValues={currentFormData}
-                            onInputChange={handleInputChange}
-                            dependsOn={dependsOn}
-                        />
-                    </ScrollArea>
-                </TabsContent>
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                        <TabsTrigger
+                            value="property"
+                            className="data-[state=active]:bg-black data-[state=active]:text-white"
+                        >
+                            Properties
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="settings"
+                            className="data-[state=active]:bg-black data-[state=active]:text-white"
+                        >
+                            Settings
+                        </TabsTrigger>
+                    </TabsList>
 
-                {/* Settings Tab Content */}
-                <TabsContent value="settings" className="space-y-4">
-                    <ScrollArea className="h-[400px] pr-4">
-                        <FormLayout
-                            properties={groupedProperties['settings']}
-                            formValues={currentFormData}
-                            onInputChange={handleInputChange}
-                            dependsOn={dependsOn}
-                        />
-                    </ScrollArea>
-                </TabsContent>
-            </Tabs>
+                    <TabsContent value="property">
+                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                            <FormLayout
+                                properties={groupedProperties['property']}
+                                formValues={currentFormData}
+                                onInputChange={handleInputChange}
+                                dependsOn={dependsOn}
+                            />
+                        </ScrollArea>
+                    </TabsContent>
 
-            <div className="flex justify-center gap-4 pt-4">
-                <Button
-                    variant="outline"
-                    onClick={handleSave}>
-                    Save
-                </Button>
-            </div>
-        </div>
+                    <TabsContent value="settings">
+                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                            <FormLayout
+                                properties={groupedProperties['settings']}
+                                formValues={currentFormData}
+                                onInputChange={handleInputChange}
+                                dependsOn={dependsOn}
+                            />
+                        </ScrollArea>
+                    </TabsContent>
+                </Tabs>
+
+                <div className="flex justify-center pt-4">
+                    <Button
+                        onClick={handleSave}
+                        className="bg-black hover:bg-black/90 text-white px-8"
+                    >
+                        Save Changes
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 };

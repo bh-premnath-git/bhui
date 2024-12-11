@@ -5,12 +5,13 @@ import { FlexibleTable } from "@/components/Tabel";
 import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";
-import { 
-  listFlows, 
-  getFlowProjectList, 
-  getEnvironmentList, 
-  createFlow, 
-  setSelectedFlowFromList 
+import {
+  listFlows,
+  getFlowProjectList,
+  getEnvironmentList,
+  createFlow,
+  setSelectedFlowFromList,
+  deleteFlowbyId,
 } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -19,6 +20,7 @@ import { FolderPlus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useFlow } from "@/contexts/FlowContext";
+import { DeleteDialog } from "@/components/DeleteDialog";
 
 interface Flow {
   id: number;
@@ -89,7 +91,7 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddF
         <div className="max-w-2xl mx-auto text-center">
           <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          
+
           <div className="relative inline-flex mb-8">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
             <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
@@ -122,11 +124,15 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddF
 const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const {setSelectedFlowId} = useFlow();
+  const { setSelectedFlowId } = useFlow();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingFlow, setIsCreatingFlow] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteFlowName, setDeleteFlowName] = useState<string>("");
+  const [deleteFlowId, setDeleteFlowId] = useState<number | null>(null);
+
   const { flows, loading, error } = useAppSelector(
     (state: RootState) => state.flowApi
   );
@@ -163,12 +169,14 @@ const AllFlows: React.FC = () => {
       const result = await dispatch(createFlow(payload));
       await dispatch(listFlows());
       if (createFlow.fulfilled.match(result)) {
-        dispatch(setSelectedFlowFromList(result.payload));
+        dispatch(setSelectedFlowFromList(result.payload));        
         closeModal();
-        // Navigate after successful creation
-        setTimeout(() => {
-          navigate('/designers/manage-flow/' + result.payload.flow_id);
-        }, 1000);
+        // Only navigate if flow_id exists
+        if (result.payload.flow_id) {
+          setTimeout(() => {
+            navigate('/designers/manage-flow/' + result.payload.flow_id);
+          }, 1000);
+        }
       } else {
         throw new Error('Flow creation failed');
       }
@@ -178,13 +186,40 @@ const AllFlows: React.FC = () => {
     } finally {
       setIsCreatingFlow(false);
     }
-  }, [dispatch, navigate, closeModal]);
+}, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
     setSelectedFlowId(data.flow_id);
     dispatch(setSelectedFlowFromList(data));
     navigate("/designers/manage-flow/" + data.flow_id);
   }, [navigate, setSelectedFlowId, dispatch]);
+
+
+  const actionFn = (rowData: any, action: string) => {
+    console.log(rowData, action);
+    if (action === "delete") {
+      setDeleteFlowName(rowData.flow_name);
+      setDeleteFlowId(rowData.flow_id);
+      setDeleteDialogOpen(true);
+    }
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setDeleteFlowName("");
+    setDeleteFlowId(null);
+  };
+
+  const handleDeleteFlow = async () => {
+    if (!deleteFlowId) return;
+    try {
+      await dispatch(deleteFlowbyId({ flow_id: deleteFlowId }));
+      await dispatch(listFlows());
+      closeDeleteDialog();
+    } catch (error) {
+      console.error("Error deleting flow:", error);
+    }
+  }
 
   if (!initialLoadComplete || loading) {
     return (
@@ -216,17 +251,26 @@ const AllFlows: React.FC = () => {
           createNewFn={funcCreateFlow}
           playRow={true}
           playRowFn={playground}
+          actionFn={actionFn}
         />
       )}
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={closeModal}>
-          <CreateFlowForm 
-            onClose={closeModal} 
-            onCreateFlow={handleCreateFlow} 
-            isLoading={isCreatingFlow} 
+          <CreateFlowForm
+            onClose={closeModal}
+            onCreateFlow={handleCreateFlow}
+            isLoading={isCreatingFlow}
           />
         </Modal>
       )}
+      <DeleteDialog
+        title="Delete Flow"
+        placeholder="Enter flow name"
+        isOpen={deleteDialogOpen}
+        onClose={closeDeleteDialog}
+        pipelineName={deleteFlowName}
+        onDelete={handleDeleteFlow}
+      />
     </div>
   );
 };

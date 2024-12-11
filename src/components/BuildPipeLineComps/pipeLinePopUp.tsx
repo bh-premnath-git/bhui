@@ -9,7 +9,7 @@ import CustomTable, { generateColumnsFromData } from '@/common/CustomTable';
 import LogsPage from './LogsPage';
 import AddFilterPopUp from './AddFilterPopUp';
 import AddSortPopUp from './AddSortPopUp';
-import { FlexibleTable } from '../Tabel';
+import { FlexibleTable } from '../Tabel'; 
 import { downloadCSV } from '@/lib/utils';
 export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
     const [isExpanded, setIsExpanded] = React.useState(false);

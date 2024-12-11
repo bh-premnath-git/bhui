@@ -396,7 +396,7 @@ export default function Component() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="ml-5 p-4 space-y-4">
       <div className="flex flex-wrap items-end gap-4">
         <FilterSelect
           label="Project"

@@ -5,9 +5,12 @@ import {
   IconButton, Autocomplete
 } from '@mui/material';
 import { Link as LinkIcon, Plus, X } from 'lucide-react';
+import SaveIcon from '@mui/icons-material/Save'
+import CloseIcon from '@mui/icons-material/Close';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import EditIcon from '@mui/icons-material/Edit';
+import { red } from '@mui/material/colors';
 
 
 // Mock API service
@@ -153,34 +156,54 @@ export default function About(data) {
           
           {isEditingDesc ? (
             <Box sx={{ mb: 1 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                size="small"
-                sx={{ mb: 1 }}
-              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                  size="small" 
+                  variant="text"
+                  onClick={() => setIsEditingDesc(false)}
+                  sx={{
+                    textTransform: 'none',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline'
+                    }
+                  }}>
+                  <CloseIcon sx={{ fontSize: 20, color: 'error.main' }}/>
+                </Button>
+              </Box>
+              <Box sx={{ position: 'relative' }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+              </Box>
               <Stack direction="row" spacing={1}>
                 <Button 
                   size="small" 
-                  variant="contained"
+                  variant="text"
                   onClick={handleDescriptionSave}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Save
-                </Button>
-                <Button 
-                  size="small" 
-                  variant="outlined"
-                  onClick={() => setIsEditingDesc(false)}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Cancel
+                  sx={{
+                    textTransform: 'none',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline'
+                    }
+                  }}>
+                  <SaveIcon sx={{ fontSize: 20, color: 'black' }}/>
                 </Button>
               </Stack>
             </Box>
+            
           ) : (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

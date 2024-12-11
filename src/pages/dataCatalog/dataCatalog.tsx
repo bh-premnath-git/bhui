@@ -258,7 +258,7 @@ function DataCatalogTable({
 
   useLayoutEffect(() => {
     dispatch(getGitProject());
-    dispatch(getdataSourceList());
+    dispatch(getdataSourceList({offset: 0, limit: 1000}));
   }, [dispatch]);
 
   if (loading) {

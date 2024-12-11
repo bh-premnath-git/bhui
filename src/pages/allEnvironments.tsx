@@ -4,7 +4,6 @@ import { RootState } from "@/store/store";
 import { FlexibleTable } from "@/components/Tabel";
 import { useNavigate } from "react-router-dom";
 import { listEnvironments, setEditEnvironmentData } from '@/redux/EnvironmentSlice';
-import { getUserDataList } from '@/redux/UserSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display"
 import { FolderPlus, Sparkles } from "lucide-react";

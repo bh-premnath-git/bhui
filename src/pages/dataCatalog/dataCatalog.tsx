@@ -8,12 +8,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getDataSourceLayout, getdataSourceList, setSelectedDataSource } from "@/redux/CatalogSlice";
-import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/Utils/dateFormatter";
 import { Paper, Typography, Box, LinearProgress, Tooltip, Drawer, IconButton } from "@mui/material";
 import { 
   Database, 
   Users, 
-  FileSpreadsheet, 
   Clock
 } from "lucide-react";
 import CloseIcon from '@mui/icons-material/Close';

@@ -142,12 +142,10 @@ const AllUsers: React.FC = () => {
             <div className="p-4 ml-auto flex items-center justify-end">
                 <div className="flex items-center gap-4">
                     <div className="relative flex-1 max-w-lg">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-gray-400" />
-                        </div>
+
                         <Input
-                            placeholder="    Search by name or email..."
-                            className="pl-10 h-12 bg-gray-50 border-gray-300 w-96 rounded-md text-sm"
+                            placeholder="Search"
+                            className="pl-1 h-10 bg-gray-50 border-gray-300 w-55 rounded-md text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -159,19 +157,19 @@ const AllUsers: React.FC = () => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus(null)}
                                 className="cursor-pointer"
                             >
                                 All Users
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus('active')}
                                 className="cursor-pointer"
                             >
                                 Active Users
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus('inactive')}
                                 className="cursor-pointer"
                             >
@@ -205,12 +203,12 @@ const AllUsers: React.FC = () => {
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                        {(() => {
-                                            const parts = user.username?.split(/[-_]/); 
-                                            return parts?.length > 1 
-                                                ? (parts[0][0] + parts[1][0]).toUpperCase() 
-                                                : user.username?.slice(0, 2).toUpperCase();
-                                        })()}
+                                            {(() => {
+                                                const parts = user.username?.split(/[-_]/);
+                                                return parts?.length > 1
+                                                    ? (parts[0][0] + parts[1][0]).toUpperCase()
+                                                    : user.username?.slice(0, 2).toUpperCase();
+                                            })()}
                                         </div>
                                         <div>
                                             <div className="font-semibold">{user.username}</div>
@@ -234,7 +232,7 @@ const AllUsers: React.FC = () => {
                                                         variant="outline"
                                                         className={cn(
                                                             "text-xs",
-                                                            role === 'admin-user' 
+                                                            role === 'admin-user'
                                                                 ? "bg-amber-50 text-amber-700 border-amber-200"
                                                                 : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                         )}
@@ -273,7 +271,7 @@ const AllUsers: React.FC = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem
-                                                onClick={() => navigate(`/admin-console/users/${user.id}`, 
+                                                onClick={() => navigate(`/admin-console/users/${user.id}`,
                                                     { state: { rowData: user } }
                                                 )}
                                             >

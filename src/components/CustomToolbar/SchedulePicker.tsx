@@ -112,7 +112,7 @@ const SchedulePicker = ({ value, onChange, selectedData }) => {
         <Input
           value={cronExpression}
           readOnly
-          className="pr-20 cursor-pointer font-mono"
+          className="pr-20 cursor-pointer font-sans"
           onClick={() => intervalModalRef.current?.open()}
         />
         <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">

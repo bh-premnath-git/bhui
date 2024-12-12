@@ -70,6 +70,10 @@ interface UpdateFlowConfigParams {
   flow_config: Record<string, any>;
 }
 
+interface ListParams {
+  offset: number;
+  limit: number;
+}
 
 export const createFlow = createAsyncThunk<
   any, // Return type
@@ -95,15 +99,15 @@ export const createFlow = createAsyncThunk<
 
 export const listFlows = createAsyncThunk<
   any[], // Return type
-  void,
+  ListParams,
   {
     rejectValue: string;
   }
 >(
   'flow/list',
-  async (_, thunkAPI) => {
+  async (params:any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/flow/list/');
+      const response = await ApiService('8011', 'get', '/flow/list/', null, params);
       const transformed: any[] = response.map((item: any) => {
         return ({
           id: item["flow_id"],

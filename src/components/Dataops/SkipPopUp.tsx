@@ -21,8 +21,8 @@ interface SkipPopUpProps {
 
 }
 
+
 const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
-    console.log(jobDetail)
     const [reason, setReason] = useState('');
 
     const handleClose = () => {

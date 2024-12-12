@@ -209,6 +209,14 @@ export function renderingHeadContent(pathname: string) {
 
   const breadcrumbs = getBreadcrumbs(pathname);
 
+  if (pathname === "/dashboard") {
+    return (
+      <div className="w-2/5 font-bold">
+        <span className="text-gray-900 font-bold">DataOps</span>
+      </div>
+    );
+  }
+
   const breadcrumbRender = (
     <div className="w-2/5 font-bold">
       {breadcrumbs.length > 0 ? (

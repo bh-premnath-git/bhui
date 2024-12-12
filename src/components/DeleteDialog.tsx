@@ -73,14 +73,14 @@ export function DeleteDialog({
             </p>
             <div className="space-y-2">
               <Label htmlFor="confirm">
-                Please type <span className="font-mono">"{pipelineName}"</span> to confirm.
+                Please type <span className="font-sans">"{pipelineName}"</span> to confirm.
               </Label>
               <Input
                 id="confirm"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={placeholder}
-                className="font-mono text-white"
+                className="font-sans text-white"
                 disabled={isLoading}
               />
             </div>

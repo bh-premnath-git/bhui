@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormFieldWrapper } from '@/components/FormFieldWrapper';
 import { Autocomplete, TextField } from '@mui/material';
@@ -138,9 +137,6 @@ const AddUser = () => {
                 username: `${value.bh_user_first_name}_${value.bh_user_last_name}`,
             };
             dispatch(createUserDeployment(userData));
-
-            // TODO: Add API call to create user
-
             handleNext1();
         } catch (error) {
             console.error('Error creating user:', error);
@@ -157,21 +153,19 @@ const AddUser = () => {
         }, 1000);
     };
 
-    // Add a debug handler to check form values
-    const handleFormChange = (values: any, setFieldValue: any) => {
-        console.log('Form Values:', values); // This will help debug the values
-    };
-
     return (
-        <div className="max-w-6xl mx-auto p-8 space-y-8 rounded-xl border bg-card text-card-foreground shadow-lg w-full mt-6">
-            <div className="border-b pb-4 flex justify-between items-center">
+        <div className="max-w-4xl mx-auto p-3 space-y-6 rounded border bg-white text-black shadow w-full mt-8">
+            {/* Header Section */}
+            <div className="border-b pb-2 flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold">Create New User</h2>
-                    <p className="text-muted-foreground mt-1">Add a new user and configure their access permissions</p>
+                    <h2 className="text-xl font-semibold">Create New User</h2>
+                    <p className="text-sm text-gray-700 mt-1">
+                        Add a new user and configure their access permissions
+                    </p>
                 </div>
                 <Button
                     variant="outline"
-                    className="hover:bg-gray-100"
+                    className="text-xs font-medium px-3 py-1 border-gray-300 hover:bg-gray-100"
                     onClick={() => navigate('/admin-console/users')}
                 >
                     View All Users
@@ -184,10 +178,12 @@ const AddUser = () => {
                 onSubmit={createKeyCloakUser}
                 enableReinitialize
             >
-                {({ values, isSubmitting, setFieldValue }) => (
-                    <Form className="space-y-8">
-                        <div className="space-y-6 w-full">
-                            <div className="grid grid-cols-3 gap-6">
+                {({ values, isSubmitting, setFieldValue, errors, touched }) => (
+                    <Form className="space-y-6">
+                        {/* User Details Section */}
+                        <div className="p-1 rounded bg-white border space-y-2">
+                            <h3 className="text-base font-medium text-black border-b pb-2">User Details</h3>
+                            <div className="grid grid-cols-3 gap-4">
                                 <FormFieldWrapper
                                     name="bh_user_first_name"
                                     label="First Name"
@@ -198,6 +194,7 @@ const AddUser = () => {
                                         name="bh_user_first_name"
                                         placeholder="Enter first name"
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFirstName(e, setFieldValue)}
+                                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
                                     />
                                 </FormFieldWrapper>
 
@@ -209,6 +206,7 @@ const AddUser = () => {
                                         as={Input}
                                         name="bh_user_middle_name"
                                         placeholder="Enter middle name"
+                                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
                                     />
                                 </FormFieldWrapper>
 
@@ -221,30 +219,34 @@ const AddUser = () => {
                                         as={Input}
                                         name="bh_user_last_name"
                                         placeholder="Enter last name"
+                                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
                                     />
                                 </FormFieldWrapper>
                             </div>
 
-                            <FormFieldWrapper
-                                name="user_email_id"
-                                label="Email Address"
-                                required
-                                className="w-1/2"
-                            >
-                                <Field
-                                    as={Input}
+                            <div className="grid grid-cols-3 gap-4 mt-2">
+                                <FormFieldWrapper
                                     name="user_email_id"
-                                    placeholder="Enter email address"
-                                    type="email"
-                                />
-                            </FormFieldWrapper>
+                                    label="Email Address"
+                                    required
+                                    className="col-span-1"
+                                >
+                                    <Field
+                                        as={Input}
+                                        name="user_email_id"
+                                        placeholder="Enter email address"
+                                        type="email"
+                                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400 w-full"
+                                    />
+                                </FormFieldWrapper>
+                            </div>
                         </div>
 
                         {/* Project Access Section */}
-                        <div className="bg-gray-50 p-6 rounded-lg space-y-6">
-                            <h3 className="text-lg font-medium">Project Access</h3>
+                        <div className="p-3 rounded bg-white border space-y-4">
+                            <h3 className="text-base font-medium text-black border-b pb-2">Project Access</h3>
                             {values.project_details.map((detail, index) => (
-                                <div key={index} className="grid grid-cols-2 gap-6">
+                                <div key={index} className="grid grid-cols-2 gap-4">
                                     <FormFieldWrapper
                                         name={`project_details.${index}.project`}
                                         label="Projects"
@@ -253,7 +255,7 @@ const AddUser = () => {
                                         <Autocomplete
                                             multiple
                                             size="small"
-                                            options={projects.filter(project => !values.project_details[index].project.some(selected => selected.value === project.value))}
+                                            options={projects.filter(project => !values.project_details[index].project.some((selected: any) => selected.value === project.value))}
                                             getOptionLabel={(option: any) => option.label || ''}
                                             isOptionEqualToValue={(option, value) => option.value === value.value}
                                             value={values.project_details[index].project}
@@ -301,24 +303,24 @@ const AddUser = () => {
                         </div>
 
                         {/* Submit Button */}
-                        <div className="flex justify-center pt-4">
+                        <div className="flex justify-center pt-2">
                             <Button
                                 type="submit"
-                                className="w-1/4 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                                className="w-1/4 h-8 bg-black hover:bg-gray-800 text-white font-medium text-sm focus:ring focus:ring-blue-200"
                                 disabled={
-                                    isSubmitting || 
-                                    !values.bh_user_first_name || 
-                                    !values.bh_user_last_name || 
-                                    !values.user_email_id || 
-                                    !values.project_details[0].project || 
-                                    values.project_details[0].project.length === 0 || 
-                                    !values.project_details[0].projectRole || 
+                                    isSubmitting ||
+                                    !values.bh_user_first_name ||
+                                    !values.bh_user_last_name ||
+                                    !values.user_email_id ||
+                                    !values.project_details[0].project ||
+                                    values.project_details[0].project.length === 0 ||
+                                    !values.project_details[0].projectRole ||
                                     values.project_details[0].projectRole.length === 0
                                 }
                             >
                                 {isSubmitting ? (
                                     <div className="flex items-center">
-                                        <Spinner className="mr-2" />
+                                        <Spinner className="mr-1 h-4 w-4" />
                                         Creating...
                                     </div>
                                 ) : (
@@ -333,17 +335,22 @@ const AddUser = () => {
             {/* User Exists Dialog */}
             {userExistModelOpen && (
                 <Dialog open={userExistModelOpen} onOpenChange={setuserExistModelOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-[300px] rounded-md bg-white text-black border border-gray-300 p-3">
                         <DialogHeader>
-                            <DialogTitle>User Already Exists</DialogTitle>
+                            <DialogTitle className="text-base font-semibold text-red-600">
+                                User Already Exists
+                            </DialogTitle>
                         </DialogHeader>
-                        <div className="flex flex-col items-center justify-center gap-2 py-2">
-                            <p className="text-gray-700">
-                                A user with this first name already exists.
+                        <div className="flex flex-col items-center justify-center gap-1 py-2 text-center">
+                            <p className="text-sm text-gray-700">
+                                A user with this first name already exists. Please choose a different name.
                             </p>
-                            <p className="text-gray-700">
-                                Please choose a different first name.
-                            </p>
+                            <Button
+                                onClick={() => setuserExistModelOpen(false)}
+                                className="bg-black text-white hover:bg-gray-800 mt-2 h-8 text-sm"
+                            >
+                                OK
+                            </Button>
                         </div>
                     </DialogContent>
                 </Dialog>

@@ -55,7 +55,7 @@ export default function Component() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-black text-2xl font-mono relative"
+        className="text-black text-2xl font-sans relative"
       >
         <motion.span
           className="absolute inset-0 bg-black opacity-10 blur-md"

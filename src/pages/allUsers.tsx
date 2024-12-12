@@ -119,11 +119,11 @@ const AllUsers: React.FC = () => {
     if (!userDataList?.length) return <EmptyComponent />;
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
+        <div className="container mx-auto py-2 px-1 max-w-7xl">
             {/* Enhanced Header Section */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+                    <h1 className="text-xl font-bold tracking-tight">Users</h1>
                     <p className="text-muted-foreground mt-1">
                         Manage user access and permissions
                     </p>
@@ -139,8 +139,8 @@ const AllUsers: React.FC = () => {
             </div>
 
             {/* Updated Search and Filter Section */}
-            <div className="p-4 ml-auto flex items-center justify-end">
-                <div className="flex items-center gap-4">
+            <div className="p-2 ml-auto flex items-center justify-end">
+                <div className="flex items-center gap-2">
                     <div className="relative flex-1 max-w-lg">
 
                         <Input

@@ -42,6 +42,11 @@ interface CreateEnvironmentData {
   access_key?: string;
 }
 
+interface ListParams {
+  offset: number;
+  limit: number;
+}
+
 const formatDate = (date: Date | undefined | null): string | null => {
   if (!date) return null;
   const day = String(date.getDate()).padStart(2, '0');
@@ -75,11 +80,11 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
   }
 );
 
-export const listEnvironments = createAsyncThunk<Environment[], void, { rejectValue: string }>(
+export const listEnvironments = createAsyncThunk<Environment[], ListParams, { rejectValue: string }>(
   'environment/list',
-  async (_, thunkAPI) => {
+  async (params:any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, null);
+      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, params);
       const transformed = response.map((item: any) => {
         return ({
           Environment_Id: item["bh_env_id"],

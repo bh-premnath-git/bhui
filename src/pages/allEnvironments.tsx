@@ -40,7 +40,7 @@ type ColumnConfig = {
 const AllEnvironments: React.FC = () => {
   const dispatch = useAppDispatch();
   useLayoutEffect(() => {
-    dispatch(listEnvironments());
+    dispatch(listEnvironments({offset: 0, limit: 1000}));
   }, [dispatch]);
   const { environmentList, loading, error } = useAppSelector(
     (state: RootState) => state.environmentApi

@@ -20,7 +20,6 @@ interface RestartPopUpProps {
 }
 
 const RestartPopUp: React.FC<RestartPopUpProps> = ({ open, onClose, jobDetail }) => {
-    console.log(jobDetail);
     const [reason, setReason] = useState('');
     const handleChange = (e: { target: { value: React.SetStateAction<string>; }; }) => {
         setReason(e.target.value);

@@ -141,7 +141,7 @@ const AllFlows: React.FC = () => {
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(listFlows()),
+          dispatch(listFlows({offset: 0, limit: 1000})),
           dispatch(getFlowProjectList({})),
           dispatch(getEnvironmentList())
         ]);
@@ -167,7 +167,6 @@ const AllFlows: React.FC = () => {
     setIsCreatingFlow(true);
     try {
       const result = await dispatch(createFlow(payload));
-      await dispatch(listFlows());
       if (createFlow.fulfilled.match(result)) {
         dispatch(setSelectedFlowFromList(result.payload));        
         closeModal();
@@ -214,7 +213,6 @@ const AllFlows: React.FC = () => {
     if (!deleteFlowId) return;
     try {
       await dispatch(deleteFlowbyId({ flow_id: deleteFlowId }));
-      await dispatch(listFlows());
       closeDeleteDialog();
     } catch (error) {
       console.error("Error deleting flow:", error);

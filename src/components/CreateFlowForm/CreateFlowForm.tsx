@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, PlusCircle, X, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, PlusCircle, X, AlertTriangle, Save, Loader } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
 import { jwtDecode } from 'jwt-decode';
+
 
 // Types
 type Tag = {
@@ -671,7 +672,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                                 )}
                               </Field>
                               <label htmlFor={key} className="text-sm capitalize">
-                                {key.split('_').join(' ')}
+                                Delayed
                               </label>
                             </div>
                           ))}
@@ -686,16 +687,24 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                   variant="outline"
                   type="button"
                   onClick={onClose}
-                  className="border-gray-300 hover:bg-gray-50"
+                  className="border-gray-300 hover:bg-gray-50 flex items-center space-x-2"
                 >
-                  Cancel
+                  <X className="h-4 w-4" />
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-slate-600 to-black hover:from-slate-700 hover:to-black text-white"
+                  className="bg-gradient-to-r from-slate-600 to-black hover:from-slate-700 hover:to-black text-white flex items-center space-x-2"
                   type="submit"
                   disabled={!isValid || isSubmitting || isLoading}
                 >
-                  {isLoading ? <Spinner /> : 'Create Flow'}
+                  {isLoading ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </div>
             </Form>

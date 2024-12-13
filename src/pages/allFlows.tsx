@@ -41,7 +41,7 @@ type ColumnConfig = {
   sortable?: boolean;
   filterable?: boolean;
   type?: 'text' | 'number' | 'date' | 'badge';
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, rowData: Flow) => React.ReactNode;
 };
 
 const columns: ColumnConfig[] = [
@@ -51,6 +51,22 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: 'text',
+    render: (value: string, rowData: Flow) => (
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+          {(() => {
+            const parts = value?.split(/[-_]/);
+            const initials = parts?.length > 1
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : value?.slice(0, 2).toUpperCase();
+            return <span className="font-bold">{initials}</span>;
+          })()}
+        </div>
+        <span>
+          {value}
+        </span>
+    </div>
+    ),
   },
   {
     key: 'bh_project_name',

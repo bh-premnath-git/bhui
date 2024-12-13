@@ -71,7 +71,7 @@ const columns: ColumnConfig[] = [
           borderRadius: 1,
           p: 1
         }}>
-          <Database className="text-primary" size={20} />
+          <Database color="green" size={20} />
         </Box>
         <Box>
           <Typography 

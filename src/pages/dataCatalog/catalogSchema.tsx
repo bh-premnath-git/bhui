@@ -119,7 +119,7 @@ function CatalogSchema() {
 
                     </Tabs>
                 </Stack>
-                <Stack>
+                {/* <Stack>
                     <Stack direction={'row'} spacing={2}>
                         <Stack>
                             <Input id="retries" value={searchValue}
@@ -133,7 +133,7 @@ function CatalogSchema() {
 
                         </Stack>
                     </Stack>
-                </Stack>
+                </Stack> */}
 
             </Stack>
 

@@ -5,11 +5,8 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { FlexibleTable } from '@/components/Tabel';
-import { toast } from 'react-toastify';
 import { Plus, X } from 'lucide-react';
 import About from '@/components/Catalog/About';
-import { ApiService } from '@/services/apiServices';
-import { result } from 'lodash';
 
 interface FieldData {
     field_id: number;
@@ -59,7 +56,7 @@ const EditableField = ({
             sx={{
                 '& .MuiInputBase-root': {
                     fontSize: '0.875rem',
-                    '&:before, &:after': { borderBottom: '2px solid', borderColor: 'primary.main' }
+                    '&:before, &:after': { borderBottom: '2px solid', borderColor: 'green' }
                 }
             }}
         />
@@ -68,7 +65,7 @@ const EditableField = ({
             onClick={onStartEdit}
             sx={{
                 cursor: 'pointer', p: 0.5, borderRadius: 1,
-                '&:hover': { backgroundColor: 'action.hover', color: 'primary.main' }
+                '&:hover': { backgroundColor: 'action.hover', color: 'green' }
             }}
         >
             {value}
@@ -122,7 +119,7 @@ const TagManager = ({
                             width: '100px',
                             '& .MuiInputBase-root': {
                                 fontSize: '0.875rem',
-                                '&:before, &:after': { borderBottom: '2px solid', borderColor: 'primary.main' }
+                                '&:before, &:after': { borderBottom: '2px solid', borderColor: 'green' }
                             }
                         }}
                     />
@@ -231,6 +228,7 @@ export default function CatalogsBody() {
                             columns={columns}
                             itemsPerPageOptions={[5, 10, 20]}
                             defaultItemsPerPage={10}
+                            rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
                         />
                     </TableContainer>
                 </Stack>

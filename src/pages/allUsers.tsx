@@ -187,7 +187,8 @@ const AllUsers: React.FC = () => {
                         <TableRow className="bg-gray-50">
                             <TableHead className="font-semibold">User</TableHead>
                             <TableHead className="font-semibold">Email</TableHead>
-                            <TableHead className="font-semibold">Projects & Roles</TableHead>
+                            <TableHead className="font-semibold">Projects</TableHead>
+                            <TableHead className="font-semibold">Roles</TableHead>
                             <TableHead className="font-semibold">Status</TableHead>
                             <TableHead className="font-semibold">Created</TableHead>
                             <TableHead className="font-semibold">Last Active</TableHead>
@@ -226,6 +227,14 @@ const AllUsers: React.FC = () => {
                                                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                                     {project}
                                                 </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-2">
+                                        {user.projects?.map((idx) => (
+                                            <div key={idx} className="flex flex-wrap gap-2">
                                                 {user.realm_roles?.map((role, roleIdx) => (
                                                     <Badge
                                                         key={roleIdx}

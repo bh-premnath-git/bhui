@@ -34,7 +34,6 @@ type ColumnConfig = {
   badgeConfig?: {
     colorMap: Record<string, string>;
   };
-  render?: (value: any, rowData: Environment) => React.ReactNode;
 };
 
 const AllEnvironments: React.FC = () => {
@@ -47,7 +46,7 @@ const AllEnvironments: React.FC = () => {
   );
   const navigate = useNavigate();
 
-  const handleProjectClick = (env: Environment) => {
+  const handleEnvClick = (env: Environment) => {
     dispatch(setEditEnvironmentData(env));
       navigate(`/admin-console/environment/${env.bh_env_id}`);
   };
@@ -61,9 +60,20 @@ const columns: ColumnConfig[] = [
     filterable: true,
     type: 'text',
     render: (value: string, rowData: Environment) => (
-      <span onClick={() => handleProjectClick(rowData)} className="cursor-pointer">
-        {value}
-      </span>
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+          {(() => {
+            const parts = value?.split(/[-_]/);
+            const initials = parts?.length > 1
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : value?.slice(0, 2).toUpperCase();
+            return <span className="font-bold">{initials}</span>;
+          })()}
+        </div>
+        <span onClick={() => handleEnvClick(rowData)} className="cursor-pointer">
+          {value}
+        </span>
+    </div>
     ),
   },
   {
@@ -179,9 +189,10 @@ const EmptyComponent: React.FC = () => {
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Create New Environment"
+        tableName="Create Environment"
         createNewFn={createNewFn}
         actionFn={actionFn}
+        background="bg-black"
       />
     </div>
   );

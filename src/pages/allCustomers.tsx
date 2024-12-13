@@ -66,11 +66,21 @@ const columns: ColumnConfig[] = [
         filterable: true,
         type: 'text',
         render: (value, row) => (
-            <span onClick={() => viewFn(row)} className="cursor-pointer">
-                {row?.relation_ship_owner}
-            </span>
+            <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    {(() => {
+                        const parts = value?.split(/[-_]/);
+                        const initials = parts?.length > 1
+                        ? (parts[0][0] + parts[1][0]).toUpperCase()
+                        : value?.slice(0, 2).toUpperCase();
+                        return <span className="font-bold">{initials}</span>;
+                    })()}
+                </div>
+                <span onClick={() => viewFn(row)} className="cursor-pointer">
+                    {row?.relation_ship_owner}
+                </span>
+            </div>
         )
-
     },
     {
         key: 'status',

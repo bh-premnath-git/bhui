@@ -11,7 +11,9 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["SimpleHttpOperator"],
+                "enum": [
+                  "SimpleHttpOperator"
+                ],
                 "description": "Type of the operator",
                 "ui_properties": {
                   "module_name": "Sensor",
@@ -61,7 +63,11 @@
               },
               "method": {
                 "type": "string",
-                "enum": ["GET", "POST", "PUT"],
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT"
+                ],
                 "description": "The HTTP method to use",
                 "ui_properties": {
                   "property_name": "Method",
@@ -274,7 +280,9 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["HttpSensor"],
+                "enum": [
+                  "HttpSensor"
+                ],
                 "description": "Type of the sensor",
                 "ui_properties": {
                   "module_name": "Sensor",
@@ -311,7 +319,10 @@
               },
               "method": {
                 "type": "string",
-                "enum": ["GET", "POST"],
+                "enum": [
+                  "GET",
+                  "POST"
+                ],
                 "description": "The HTTP request method to use",
                 "ui_properties": {
                   "property_name": "Method",
@@ -503,7 +514,9 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["BashOperator"],
+                "enum": [
+                  "BashOperator"
+                ],
                 "description": "Type of the operator",
                 "ui_properties": {
                   "module_name": "Custom",
@@ -639,14 +652,174 @@
                 }
               }
             },
-            "required": ["type", "task_id", "bash_command"]
+            "required": [
+              "type",
+              "task_id",
+              "bash_command"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["EmailOperator"],
+                "enum": [
+                  "EMRCreateClusterOperator"
+                ],
+                "description": "Creates an EMR cluster",
+                "ui_properties": {
+                  "module_name": "AWS",
+                  "color": "#0FBAEF",
+                  "icon": "/assets/flow/EMR.svg"
+                }
+              },
+              "task_id": {
+                "type": "string",
+                "description": "The task ID",
+                "ui_properties": {
+                  "property_name": "Task ID",
+                  "property_key": "task_id",
+                  "ui_type": "text",
+                  "order": 1,
+                  "mandatory": true,
+                  "group_key": "property"
+                }
+              },
+              "aws_conn_id": {
+                "type": "string",
+                "description": "AWS connection ID",
+                "default": "aws_default",
+                "ui_properties": {
+                  "property_name": "AWS Connection ID",
+                  "property_key": "aws_conn_id",
+                  "ui_type": "dropdown",
+                  "order": 2,
+                  "mandatory": true,
+                  "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
+                  "group_key": "property"
+                }
+              },
+              "cluster_config": {
+                "type": "object",
+                "description": "Cluster configuration for EMR",
+                "default": {
+                  "master_instance_type": "m5.xlarge",
+                  "slave_instance_type": "m5.xlarge",
+                  "instance_count": 3,
+                  "release_label": "emr-6.10.0",
+                  "applications": [
+                    "Spark",
+                    "Hadoop"
+                  ],
+                  "log_uri": "s3://path-to-logs/",
+                  "keep_cluster_alive": false
+                },
+                "ui_properties": {
+                  "property_name": "Cluster Configuration",
+                  "property_key": "cluster_config",
+                  "ui_type": "json",
+                  "order": 3,
+                  "mandatory": true,
+                  "group_key": "property"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "task_id",
+              "aws_conn_id",
+              "cluster_config",
+              "release_label"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "EMROperator"
+                ],
+                "description": "Performs operations on an EMR cluster",
+                "ui_properties": {
+                  "module_name": "AWS",
+                  "color": "#0FBAEF",
+                  "icon": "/assets/flow/EMR.svg"
+                }
+              },
+              "task_id": {
+                "type": "string",
+                "description": "The task ID",
+                "ui_properties": {
+                  "property_name": "Task ID",
+                  "property_key": "task_id",
+                  "ui_type": "text",
+                  "order": 1,
+                  "mandatory": true,
+                  "group_key": "property"
+                }
+              },
+              "job_flow_id": {
+                "type": "string",
+                "description": "The ID of the EMR cluster",
+                "ui_properties": {
+                  "property_name": "Job Flow ID",
+                  "property_key": "job_flow_id",
+                  "ui_type": "text",
+                  "order": 2,
+                  "mandatory": true,
+                  "group_key": "property"
+                }
+              },
+              "aws_conn_id": {
+                "type": "string",
+                "description": "AWS connection ID",
+                "default": "aws_default",
+                "ui_properties": {
+                  "property_name": "AWS Connection ID",
+                  "property_key": "aws_conn_id",
+                  "ui_type": "dropdown",
+                  "order": 3,
+                  "mandatory": true,
+                  "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
+                  "group_key": "property"
+                }
+              },
+              "operation": {
+                "type": "string",
+                "description": "The operation to be performed (e.g., TERMINATE_CLUSTER, LIST_STEPS)",
+                "enum": [
+                  "TERMINATE_CLUSTER",
+                  "LIST_STEPS",
+                  "DESCRIBE_CLUSTER"
+                ],
+                "default": "DESCRIBE_CLUSTER",
+                "ui_properties": {
+                  "property_name": "Operation",
+                  "property_key": "operation",
+                  "ui_type": "enum",
+                  "order": 4,
+                  "mandatory": true,
+                  "group_key": "property"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "task_id",
+              "job_flow_id",
+              "aws_conn_id",
+              "operation"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "EmailOperator"
+                ],
                 "description": "Type of the operator",
                 "ui_properties": {
                   "module_name": "Alert",
@@ -830,14 +1003,22 @@
                 }
               }
             },
-            "required": ["type", "task_id", "to", "subject", "html_content"]
+            "required": [
+              "type",
+              "task_id",
+              "to",
+              "subject",
+              "html_content"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["S3KeySensor"],
+                "enum": [
+                  "S3KeySensor"
+                ],
                 "description": "Type of the sensor",
                 "ui_properties": {
                   "module_name": "Sensor",
@@ -930,17 +1111,17 @@
                   "group_key": "settings"
                 }
               },
-              "ver_CA":{
+              "ver_CA": {
                 "type": "string",
                 "description": "A filename of the CA cert bundle to use",
                 "ui_properties": {
-                    "property_name": "Ca cert bundle",
-                    "property_key": "ca_verify",
-                    "ui_type": "text",
-                    "order": 8,
-                    "mandatory": false
+                  "property_name": "Ca cert bundle",
+                  "property_key": "ca_verify",
+                  "ui_type": "text",
+                  "order": 8,
+                  "mandatory": false
                 }
-            },
+              },
               "deferrable": {
                 "type": "boolean",
                 "description": "Run operator in the deferrable mode",
@@ -1022,14 +1203,20 @@
                 }
               }
             },
-            "required": ["type", "task_id", "bucket_key"]
+            "required": [
+              "type",
+              "task_id",
+              "bucket_key"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["SFTPToS3Operator"],
+                "enum": [
+                  "SFTPToS3Operator"
+                ],
                 "description": "Type of the operator",
                 "ui_properties": {
                   "module_name": "Transfer",
@@ -1179,5 +1366,7 @@
       }
     }
   },
-  "required": ["tasks"]
+  "required": [
+    "tasks"
+  ]
 }

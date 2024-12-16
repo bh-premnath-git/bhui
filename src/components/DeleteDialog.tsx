@@ -59,10 +59,10 @@ export function DeleteDialog({
             {title}
           </DialogTitle>
           <DialogDescription className="space-y-3 pt-3 text-white">
-            <p>Are you sure you want to delete {pipelineName}?</p>
-            <p className="opacity-80">
+            <div>Are you sure you want to delete {pipelineName}?</div>
+            <div className="opacity-80">
               This action cannot be undone. This will permanently delete the "{pipelineName}".
-            </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">
                 Please type <span className="font-sans">"{pipelineName}"</span> to confirm.

@@ -58,7 +58,7 @@ const SchedulePicker = ({ value, onChange, selectedData }) => {
 
   useEffect(() => {
     if (selectedData?.cron_expression) {
-      setCronExpression(selectedData.cron_expression);
+      setCronExpression(selectedData.cron_expression.cron_expression);
     }
   }, [selectedData?.cron_expression]);
 

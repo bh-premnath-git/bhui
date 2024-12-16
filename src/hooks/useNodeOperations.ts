@@ -91,7 +91,7 @@ export function useNodeOperations(
   }, [nodes, setNodes, setIsSaved]);
 
   const updateNodeMeta = useCallback(
-    (nodeId: string, newMeta: Partial<MetaData>) => {
+    (nodeId: string, newMeta: Partial<MetaData>, newData?:any) => {
       setNodes((prevNodes) =>
         prevNodes.map((node) =>
           node.id === nodeId
@@ -99,6 +99,7 @@ export function useNodeOperations(
               ...node,
               data: {
                 ...node.data,
+                ...(newData || {}),
                 meta: {
                   ...node.data.meta,
                   ...newMeta,

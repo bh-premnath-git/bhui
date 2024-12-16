@@ -26,7 +26,9 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+const rootStyle = getComputedStyle(document.documentElement);
+ 
+ 
 type DataItem = {
   name: string;
   project: string;
@@ -37,39 +39,39 @@ type DataItem = {
   status: "In Progress" | "Completed" | "Failed" | "Did Not Arrive" | "Not Published";
   date: Date;
 };
-
+ 
 type FilterOption = "All" | string;
-
+ 
 interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string;[key: string]: any };
+  payload?: { name: string; [key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
   isShow?: boolean;
   key?: string;
 }
-
+ 
 // Define theme colors using CSS variables
 const COLORS = [
-  'hsl(var(--chart-1))',  
-  'hsl(var(--chart-2))',  
-  'hsl(var(--chart-3))',  
-  'hsl(var(--chart-5))', 
+  rootStyle.getPropertyValue('--chart-1-color').trim(),
+  rootStyle.getPropertyValue('--chart-2-color').trim(),
+  rootStyle.getPropertyValue('--chart-3-color').trim(),
+  rootStyle.getPropertyValue('--chart-5-color').trim(),
 ];
-
+ 
 // Create semi-transparent versions for area charts
 const COLORS_WITH_OPACITY = COLORS.map(color => ({
   stroke: color,
   fill: color
 }));
-
+ 
 const months = ["Jan", "Feb", "Mar", "Apr", "May"];
 const projects = ["Project1", "Project2", "Project3", "Project4"];
 const pipelines = ["Pipeline1", "Pipeline2", "Pipeline3", "Pipeline4"];
-
+ 
 const generateData = (): DataItem[] => {
   return months.flatMap((month, monthIndex) =>
     projects.flatMap((project) =>
@@ -88,10 +90,10 @@ const generateData = (): DataItem[] => {
     )
   );
 };
-
+ 
 const CustomLegend: React.FC<any> = (props) => {
   const { payload } = props;
-
+ 
   return (
     <ul className="flex flex-wrap justify-center gap-2 text-xs">
       {payload.map((entry: any, index: number) => (
@@ -106,7 +108,7 @@ const CustomLegend: React.FC<any> = (props) => {
     </ul>
   );
 };
-
+ 
 const computeAverageMetrics = (
   data: DataItem[],
   metric: keyof Pick<DataItem, "latency" | "cost" | "freshness">
@@ -130,7 +132,7 @@ const computeAverageMetrics = (
     };
   });
 };
-
+ 
 const CustomizedDot: React.FC<CustomizedDotProps> = (props) => {
   const { cx, cy, stroke } = props;
   return (
@@ -144,19 +146,19 @@ const CustomizedDot: React.FC<CustomizedDotProps> = (props) => {
     />
   );
 };
-
+ 
 const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
   <div role="alert" className="text-destructive">
     <p>Something went wrong:</p>
     <pre>{error.message}</pre>
   </div>
 );
-
+ 
 interface ChartCardProps {
   title: string;
   children: React.ReactNode;
 }
-
+ 
 const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
   <Card className="col-span-1">
     <CardHeader>
@@ -171,14 +173,14 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
     </CardContent>
   </Card>
 );
-
+ 
 interface FilterSelectProps {
   label: string;
   value: FilterOption;
   onChange: (value: FilterOption) => void;
   options: string[];
 }
-
+ 
 const FilterSelect: React.FC<FilterSelectProps> = ({
   label,
   value,
@@ -200,19 +202,19 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
     </Select>
   </div>
 );
-
+ 
 const setCookie = (name: string, value: string, days: number) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
 };
-
+ 
 const getCookie = (name: string) => {
   return document.cookie.split('; ').reduce((r, v) => {
     const parts = v.split('=');
     return parts[0] === name ? decodeURIComponent(parts[1]) : r;
   }, '');
 };
-
+ 
 export default function Component() {
   const [filters, setFilters] = useState({
     project: "All" as FilterOption,
@@ -220,14 +222,14 @@ export default function Component() {
     status: "All" as FilterOption,
     duration: "All" as FilterOption,
   });
-
+ 
   useEffect(() => {
     const savedFilters = getCookie('dashboardFilters');
     if (savedFilters) {
       setFilters(JSON.parse(savedFilters));
     }
   }, []);
-
+ 
   const handleFilterChange = useCallback((key: string, value: FilterOption) => {
     setFilters((prev) => {
       const newFilters = { ...prev, [key]: value };
@@ -235,24 +237,24 @@ export default function Component() {
       return newFilters;
     });
   }, []);
-
+ 
   const allData = useMemo(() => generateData(), []);
-
+ 
   const filteredData = useMemo(() => {
     let filtered = allData;
-
+ 
     if (filters.project !== "All") {
       filtered = filtered.filter((item) => item.project === filters.project);
     }
-
+ 
     if (filters.pipeline !== "All") {
       filtered = filtered.filter((item) => item.pipeline === filters.pipeline);
     }
-
+ 
     if (filters.status !== "All") {
       filtered = filtered.filter((item) => item.status === filters.status);
     }
-
+ 
     if (filters.duration !== "All") {
       const now = new Date();
       const startDate = new Date(now);
@@ -271,10 +273,10 @@ export default function Component() {
       }
       filtered = filtered.filter((item) => item.date >= startDate);
     }
-
+ 
     return filtered;
   }, [allData, filters]);
-
+ 
   const chartData = useMemo(
     () => ({
       latency: computeAverageMetrics(filteredData, "latency"),
@@ -365,21 +367,21 @@ export default function Component() {
     }),
     [filteredData]
   );
-
+ 
   const minValue = useMemo(() => {
     const freshnessValues = chartData.freshness.flatMap((item) =>
       Object.values(item).filter((value) => typeof value === "number")
     );
     return Math.min(...freshnessValues) - 10;
   }, [chartData]);
-
+ 
   const maxValue = useMemo(() => {
     const freshnessValues = chartData.freshness.flatMap((item) =>
       Object.values(item).filter((value) => typeof value === "number")
     );
     return Math.max(...freshnessValues) + 10;
   }, [chartData]);
-
+ 
   const resetFilters = useCallback(() => {
     const defaultFilters = {
       project: "All",
@@ -390,11 +392,11 @@ export default function Component() {
     setFilters(defaultFilters);
     setCookie('dashboardFilters', JSON.stringify(defaultFilters), 30);
   }, []);
-
+ 
   if (!allData.length) {
     return <div className="p-4">No data available. Please check your data source.</div>;
   }
-
+ 
   return (
     <div className="ml-5 p-4 space-y-4">
       <div className="flex flex-wrap items-end gap-4">
@@ -431,7 +433,7 @@ export default function Component() {
           <X className="h-4 w-4" />
         </Button>
       </div>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <ChartCard title="Latency Trend">
           <LineChart
@@ -469,7 +471,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
-
+ 
         <ChartCard title="Cost Trend">
           <AreaChart
             data={chartData.cost}
@@ -502,7 +504,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </AreaChart>
         </ChartCard>
-
+ 
         <ChartCard title="Ingestion Status">
           <PieChart>
             <Pie
@@ -528,7 +530,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
-
+ 
         <ChartCard title="Publish Status">
           <PieChart>
             <Pie
@@ -555,7 +557,7 @@ export default function Component() {
           </PieChart>
         </ChartCard>
       </div>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <ChartCard title="Project Health Status">
           <BarChart
@@ -583,7 +585,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
-
+ 
         <ChartCard title="Project Quality Status">
           <BarChart
             layout="vertical"
@@ -610,7 +612,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
-
+ 
         <ChartCard title="Incident Summary">
           <BarChart
             data={chartData.incident}
@@ -634,7 +636,7 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
-
+ 
         <ChartCard title="Freshness">
           <LineChart
             data={chartData.freshness}
@@ -660,7 +662,7 @@ export default function Component() {
                 dataKey={proj}
                 stroke={COLORS[index % COLORS.length]}
                 strokeWidth={2}
-                fillOpacity={1} 
+                fillOpacity={1}
                 dot={(props) => {
                   const { key, ...rest } = props;
                   const dotKey = `dot-${proj}-${props.index}`;

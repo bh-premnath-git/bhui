@@ -12,6 +12,7 @@ import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
 import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 
 interface SkipPopUpProps {
     open: boolean;
@@ -43,8 +44,8 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
     useEffect(() => {
         if (jobDetail && !jobDetail.job_statistics) {
             jobDetail.job_statistics = {
-                record_discarded: 0,
-                record_failed: 0,
+                records_discarded: 0,
+                records_failed: 0,
                 records_passed: 0,
                 records_read: 0,
             };
@@ -97,8 +98,8 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             'tags': {},
             'trace_id': jobDetail?.trace_id,
             'job_statistics': {
-                record_discarded: jobDetail?.job_statistics.record_discarded,
-                record_failed: jobDetail?.job_statistics.record_failed,
+                record_discarded: jobDetail?.job_statistics.records_discarded,
+                record_failed: jobDetail?.job_statistics.records_failed,
                 records_passed: jobDetail?.job_statistics.records_passed,
                 records_read: jobDetail?.job_statistics.records_read
             },

@@ -8,15 +8,12 @@ import { FlexibleTable } from "@/components/Tabel";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import ShowingLogs from "@/components/Dataops/ShowingLogs";
-import MyChartComponent from "@/components/Dataops/ChartComponent";
 import DataOpsChartHeader from "@/components/Dataops/DataOpsChartHeader";
 import FilterForm from '@/components/Dataops/FilterForm';
 import TaskDetails from '@/components/TaskDetails/TaskDetails';
 
 // Material UI imports
-import { Card, CardContent, Divider, Grid, Tab, Tabs, Stack } from "@mui/material";
+import { Stack } from "@mui/material";
 
 // Icons
 import { FileQuestion } from "lucide-react";
@@ -46,7 +43,6 @@ interface DataOpsTableProps {
 }
 
 const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error }) => {
-  const [selectedTab, setSelectedTab] = useState(0);
   const [selectedRowData, setSelectedRowData] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -105,7 +101,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
       {/* Header Section */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
         <DataOpsChartHeader selectedRowData={selectedRowData} />
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} alignItems="center" mt={13}>
           <Input
             placeholder="Search Pipeline"
             className="w-44"
@@ -145,86 +141,11 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         <TaskDetails 
           jobId={selectedJobId}
           onClose={() => setSelectedJobId(null)}
+          selectedRowData={selectedRowData}
         />
       )}
 
       {/* Details Card */}
-      {selectedRowData && (
-        <Card elevation={0} className="border rounded shadow-sm mt-4">
-          <CardContent>
-            <Label className="text-md">
-              Job Name: <span className="font-bold">{selectedRowData.pipeline_name}</span>
-            </Label>
-            <Stack  direction={'row'} spacing={2} justifyContent={'space-between'}>
-              <Tabs
-                value={selectedTab}
-                onChange={(_, newValue) => setSelectedTab(newValue)}
-                className="mt-4"
-                TabIndicatorProps={{
-                  style: {
-                    textTransform: 'none',
-                    backgroundColor: '#000', // Customize the background color of the indicator
-                    height: 5,
-                    width: '30px', // Set the width of the indicator based on the number of tabs
-                    marginLeft: 'calc((100% / 2.5) / 2)',
-                    borderRadius: '10px 10px 0px 0px' // Center the indicator within each tab
-                  },
-                }}
-                TabScrollButtonProps={{
-                  style: {
-                    display: 'none' // Hide scroll buttons if not needed
-                  }
-                }}
-                sx={{
-                  '& .MuiTabs-flexContainer': {
-                    justifyContent: 'center', // Center tabs horizontally
-                  },
-                  '& .MuiTab-root': {
-                    display: 'flex', // Make each tab a flex container
-                    justifyContent: 'center', // Center tab content horizontally
-                  }
-                }}
-              >
-                <Tab label={<Label>Properties</Label>} sx={{
-                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
-                    color: 'black',
-                    fontWeight: 'bold'
-                  }
-                }} />
-                <Tab label={<Label>Show Logs</Label>} sx={{
-                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
-                    color: 'black',
-                    fontWeight: 'bold'
-                  },
-                }} />
-              </Tabs>
-            </Stack>
-            <Divider sx={{ width: '12%', mb: 2 }} />
-
-            {selectedTab === 0 && (
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <Stack spacing={1}>
-                    <Label className="text-sm">Batch ID: {selectedRowData.batch_id}</Label>
-                    <Label className="text-sm">Input data: {selectedRowData.input_data_path}</Label>
-                    <Label className="text-sm">Output data: {selectedRowData.output_data_path}</Label>
-                  </Stack>
-                </Grid>
-                <Grid item xs={8}>
-                  <Card className="border shadow-sm rounded" elevation={0}>
-                    <CardContent>
-                      <Label className="text-md mb-4">Data Statistics</Label>
-                      <MyChartComponent selectedRowData={selectedRowData} />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            )}
-
-            {selectedTab === 1 && <ShowingLogs  selectedRowData={selectedRowData} />}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

@@ -160,7 +160,7 @@ export interface FlowContextType {
     position: { x: number; y: number };
     data: CustomNodeData;
   }) => void;
-  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
+  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>, newData?:any) => void;
   revertOrSaveData: (nodeId: string, save: boolean) => void;
   setSelectedFlowId: (flowId: string) => void;
 }

@@ -3,44 +3,58 @@ import schema from '@/pages/manageFlow/data/flow_schema.json';
 
 export function useModules() {
   return useMemo(() => {
-    const modules = new Map<string, any>();
+    const operators = schema.properties.tasks.items.oneOf;
 
-    schema.properties.tasks.items.oneOf.forEach((operator: any, index: number) => {
-      const requiredFields = operator.required.filter((item: any) => !["type", "task_id"].includes(item));
-
+    const normalizedOperators = operators.map((operator: any, index: number) => {
       const { module_name, color, icon } = operator.properties.type.ui_properties;
       const operatorType = operator.properties.type.enum[0];
 
-      if (!modules.has(module_name)) {
-        modules.set(module_name, {
+      const requiredFields = (operator.required || []).filter(
+        (item: string) => !["type", "task_id"].includes(item)
+      );
+
+      const properties = {
+        type: operatorType,
+        task_id: "",
+        ...Object.keys(operator.properties).reduce((acc: any, key: string) => {
+          if (key !== "type") {
+            acc[key] = operator.properties[key] || null;
+          }
+          return acc;
+        }, {}),
+      };
+
+      return {
+        module_name,
+        operator: {
+          type: operatorType,
+          description: operator.properties.type.description,
+          requiredFields,
+          properties,
+        },
+        module_meta: { color, icon },
+      };
+    });
+
+    const modulesMap = new Map<string, any>();
+
+    normalizedOperators.forEach((item, index) => {
+      const { module_name, module_meta, operator } = item;
+
+      if (!modulesMap.has(module_name)) {
+        modulesMap.set(module_name, {
           id: index + 1,
           label: module_name,
-          color,
-          icon,
+          color: module_meta.color,
+          icon: module_meta.icon,
           operators: [],
         });
       }
 
-      const moduleData = modules.get(module_name);
-      if (moduleData) {
-        moduleData.operators.push({
-          type: operatorType,
-          description: operator.properties.type.description,
-          requiredFields,
-          properties: {
-            type: operatorType,
-            task_id: "",
-            ...Object.keys(operator.properties).reduce((acc: any, key: string) => {
-              if (key !== "type") {
-                acc[key] = operator.properties[key] || null;
-              }
-              return acc;
-            }, {}),
-          },
-        });
-      }
+      const moduleData = modulesMap.get(module_name);
+      moduleData.operators.push(operator);
     });
 
-    return [Array.from(modules.values())];
+    return [Array.from(modulesMap.values())];
   }, []);
 }

@@ -49,12 +49,12 @@ export function PlaybackButton({
           <Button
             variant="ghost"
             size="icon"
-            className={`${sizeClasses[size]} border-1 border-gray-200 hover:bg-gray-100 rounded-full p-2 ${className}`}
+            className={`${sizeClasses[size]} border border-gray-100 hover:bg-gray-200 rounded-md ${className}`}
             onClick={() => { asyncUpdateFlowDef(); onToggle(); }}
-            aria-label={`${isPlaying ? "Pause playback" : "Play playback"}`}
+            aria-label={`${!isPlaying ? "Deployment Stopped" : "Deployment Started"}`}
           >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
-            {isPlaying ? (
+            {!isPlaying ? (
               <Pause className={iconSizes[size]} />
             ) : (
               <Play className={iconSizes[size]} />
@@ -65,7 +65,7 @@ export function PlaybackButton({
           className="bg-gray-900 px-3 py-1.5 text-xs font-medium text-white rounded-md border-0"
           sideOffset={5}
         >
-          <p>{isPlaying ? "Pause playback" : "Play playback"}</p>
+          <p>{!isPlaying ? "Deployment Stopped" : "Deployment Started"}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

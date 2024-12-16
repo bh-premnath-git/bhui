@@ -28,9 +28,6 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
         onChange(property_key, checked ? 'true' : 'false');
     };
 
-    console.log(">>>", value);
-
-
     return (
         <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center space-x-2">

@@ -26,6 +26,8 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+const rootStyle = getComputedStyle(document.documentElement);
+
 
 type DataItem = {
   name: string;
@@ -44,7 +46,7 @@ interface CustomizedDotProps {
   cx: number;
   cy: number;
   stroke: string;
-  payload?: { name: string;[key: string]: any };
+  payload?: { name: string; [key: string]: any };
   value?: number;
   index?: number;
   dataKey?: string;
@@ -54,10 +56,10 @@ interface CustomizedDotProps {
 
 // Define theme colors using CSS variables
 const COLORS = [
-  'hsl(var(--chart-1))',  
-  'hsl(var(--chart-2))',  
-  'hsl(var(--chart-3))',  
-  'hsl(var(--chart-5))', 
+  rootStyle.getPropertyValue('--chart-1-color').trim(),
+  rootStyle.getPropertyValue('--chart-2-color').trim(),
+  rootStyle.getPropertyValue('--chart-3-color').trim(),
+  rootStyle.getPropertyValue('--chart-5-color').trim(),
 ];
 
 // Create semi-transparent versions for area charts

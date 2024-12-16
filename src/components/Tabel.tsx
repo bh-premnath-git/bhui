@@ -45,6 +45,7 @@ interface ColumnConfig {
   badgeConfig?: {
     colorMap: { [key: string]: string };
   };
+  align?: "left" | "center" | "right";
 }
 
 interface TableProps {
@@ -140,7 +141,15 @@ const TableBodyComponent: React.FC<{
         {columns.map((column) => {
           const value = row[column.key];
           return (
-            <TableCell key={column.key} className={cn(column.type === "number" ? "text-center" : "text-justify")}>
+            <TableCell
+              key={column.key}
+              className={cn(
+                column.align === "left" ? "text-left" :
+                column.align === "center" ? "text-center" :
+                column.align === "right" ? "text-right" :
+                column.type === "number" ? "text-center" : "text-justify"
+              )}
+            >
               {column.render ? (
                 column.render(value, row)
               ) : column.type === "image" ? (

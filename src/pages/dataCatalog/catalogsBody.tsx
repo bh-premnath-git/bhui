@@ -144,9 +144,7 @@ export default function CatalogsBody() {
     async function dataSourceLayout(): Promise<FieldData[]> {
         try {
             const result = layoutList[0].layout_fields
-            console.log(result)
             return result.map((item: any) => { 
-                console.log(item)
                 return ({
                 field_id:item.lyt_fld_id,
                 field_name: item.lyt_fld_name,

@@ -90,8 +90,8 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open, onClose, jobDetail }) => {
             'tags': {},
             'trace_id': jobDetail?.trace_id,
             'job_statistics': {
-                record_discarded: jobDetail?.job_statistics.record_discarded,
-                record_failed: jobDetail?.job_statistics.record_failed,
+                record_discarded: jobDetail?.job_statistics.records_discarded,
+                record_failed: jobDetail?.job_statistics.records_failed,
                 records_passed: jobDetail?.job_statistics.records_passed,
                 records_read: jobDetail?.job_statistics.records_read
             },

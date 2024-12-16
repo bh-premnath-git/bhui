@@ -17,6 +17,7 @@ import { createShortUUID } from "@/Utils/uid";
 import { Save } from "lucide-react";
 import useToast from '@/oldcomponents/teast-service';
 
+
 interface NodeFormProps {
     id: string;
     closeTap: () => void;
@@ -35,13 +36,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         return null;
     }
 
-    useEffect(() => {
-        if (selectedNode) {
-            setRequiredFieldsState(selectedNode.data.requiredFields);
-        }
-    }, [selectedNode]);
-
-    // Update selectedProperties with selectedValue dependency
     const selectedProperties = useMemo(() =>
         selectedNode.data.meta.properties.find(
             (item: any) => item.type === selectedValue || item.type === selectedNode.data.selectedData
@@ -49,9 +43,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
     );
 
-    // Ensure groupedProperties always has property and settings arrays
-    const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? { property: [], settings: [] };
-
+    const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? { properties: { property: [], settings: [] } };
     const currentFormData = useMemo(() =>
         nodeFormData.find(item => item.nodeId === selectedNode.id)?.formData || {},
         [nodeFormData, selectedNode.id]
@@ -71,10 +63,28 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             dependsOn,
             [key]: value,
         });
-    }, [selectedNode, currentFormData, dependsOn, updateNodeFormData, selectedValue]);
+    }, [selectedNode, currentFormData, dependsOn, updateNodeFormData]);
+
+    const isSaveDisabled = useMemo(() => {
+        const currentFields = getNodeFormData(selectedNode.id) || {};
+        return requiredFieldsState.some(
+            (field) => !currentFields[field] || currentFields[field].trim() === ""
+        );
+    }, [getNodeFormData, requiredFieldsState, selectedNode.id]);
 
     const handleSave = useCallback(() => {
+
+        if (!selectedNode) return;
+
         const currentFields = getNodeFormData(selectedNode.id);
+        if (!currentFields) {
+            showToast(`Missing required fields`, {
+                color: "#f44336",
+            });
+            return
+        }
+
+        console.log("missingFields", requiredFieldsState, currentFields);
         // Validate required fields
         const missingFields = requiredFieldsState.filter(
             (field) => !currentFields[field] || currentFields[field].trim() === ""
@@ -88,7 +98,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
         closeTap();
         revertOrSaveData(id, true);
-    }, [closeTap, id, getNodeFormData, revertOrSaveData, requiredFieldsState, selectedNode?.id, showToast]);
+    }, [closeTap, id, getNodeFormData, revertOrSaveData]);
 
     const handleTabChange = useCallback((tab: TabType) => {
         setActiveTab(tab);
@@ -103,7 +113,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         setRequiredFieldsState(reqfieldsVal);
         updateNodeMeta(selectedNode.id, { type: value }, { type: value, requiredFields: reqfieldsVal });
         updatedSelectedNodeId(selectedNode.id, value);
-    }, [selectedNode?.id, updatedSelectedNodeId, selectedNode?.data?.requiredFields, updateNodeMeta]);
+    }, [selectedNode?.id, updatedSelectedNodeId]);
 
     // Synchronize selectedValue with selectedNode.data.selectedData
     useEffect(() => {
@@ -112,13 +122,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
     }, [selectedNode?.data?.selectedData]);
 
-    // Check if save button should be disabled
-    const isSaveDisabled = useMemo(() => {
-        const currentFields = getNodeFormData(selectedNode.id) || {};
-        return requiredFieldsState.some(
-            (field) => !currentFields[field] || currentFields[field].trim() === ""
-        );
-    }, [getNodeFormData, requiredFieldsState, selectedNode.id]);
+    useEffect(() => {
+        if (selectedNode) {
+            setRequiredFieldsState(selectedNode.data.requiredFields);
+        }
+    }, [selectedNode]);
 
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg">
@@ -165,7 +173,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
                     <TabsContent value="property">
                         <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
-                            {/* Don't change this line as requested */}
                             <FormLayout
                                 properties={groupedProperties['property']}
                                 formValues={currentFormData}
@@ -177,7 +184,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
                     <TabsContent value="settings">
                         <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
-                            {/* Don't change this line as requested */}
                             <FormLayout
                                 properties={groupedProperties['settings']}
                                 formValues={currentFormData}
@@ -191,9 +197,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 <div className="flex justify-center pt-4">
                     <Button
                         onClick={handleSave}
-                        disabled={isSaveDisabled}
-                        className="bg-black hover:bg-black/90 text-white px-8"
-                    >
+                        className={`bg-black hover:bg-black/90 text-white px-8 ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
                         <Save className="w-4 h-4" />
                     </Button>
                 </div>

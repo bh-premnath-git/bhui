@@ -49,7 +49,6 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [activeStatuses, setActiveStatuses] = useState<string[]>([]);
-  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (dataOpsList?.length && !selectedRowData) {

@@ -70,26 +70,21 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             "updated_at": currentDate,
             "updated_by": jobDetail?.updated_by
         }
-        console.log('Body:', body);
         try {
             const url = '/event_details';
             const result = await ApiService('8003', 'post', url, body);
-            console.log('Response:', result);
             if (result) {
                 showToast('Job has been skipped successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
                     handleClose();
                 }, 3000);
             }
-            console.log(result)
         }
         catch (error) {
             console.error('Error fetching Status', error);
         }
     }
-    console.log(jobDetail)
     const updateEvent = async (pipeline_status: string) => {
-        console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,
             'batch_id': jobDetail?.batch_id,
@@ -108,11 +103,9 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             'updated_at': currentDate,
             'updated_by': jobDetail?.updated_by
         };
-        console.log(data)
         try {
             const url = `/job_details/${jobDetail.job_id}`;
-            const result = await ApiService('8003', 'put', url, data);
-            console.log('Response:', result);
+            const result = await ApiService('8003', 'put', url, data)
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }

@@ -16,7 +16,7 @@ import TaskDetails from '@/components/TaskDetails/TaskDetails';
 import { Stack } from "@mui/material";
 
 // Icons
-import { FileQuestion } from "lucide-react";
+import { FileQuestion } from 'lucide-react';
 import { FaFilter } from "react-icons/fa";
 
 // Constants and Types
@@ -48,6 +48,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [activeStatuses, setActiveStatuses] = useState<string[]>([]);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -56,28 +57,35 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     }
   }, [dataOpsList]);
 
-  // Filter data based on search term and active field-based filters
   const filteredData = useMemo(() => {
-    let filtered = dataOpsList.filter(item =>
+    let filtered = dataOpsList.filter((item) =>
       Object.values(item).some((value: any) =>
         value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
 
+    // Filter by active filters
     if (Object.keys(activeFilters).length > 0) {
-      filtered = filtered.filter(item =>
+      filtered = filtered.filter((item) =>
         Object.entries(activeFilters).every(([key, value]) =>
           item[key]?.toString().toLowerCase().includes(value.toLowerCase())
         )
       );
     }
 
+    // Apply status filtering
+    if (activeStatuses.length > 0) {
+      filtered = filtered.filter((item) =>
+        activeStatuses.includes(item.pipeline_status)
+      );
+    }
+
     return filtered;
-  }, [dataOpsList, searchTerm, activeFilters]);
+  }, [dataOpsList, searchTerm, activeFilters, activeStatuses]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  }
+  };
 
   const handleFilterSubmit = useCallback((values: Record<string, string>) => {
     const nonEmptyFilters = Object.fromEntries(
@@ -92,15 +100,21 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     setSelectedRowData(row);
   };
 
+  const handleStatusFilterChange = (selectedStatuses: string[]) => {
+    setActiveStatuses(selectedStatuses);
+  };
+
   if (loading) return <Spinner size="lg" />;
   if (error) return <ErrorDisplay message={error.message} />;
   if (!dataOpsList?.length) return <EmptyState />;
 
   return (
     <div className="container mx-auto px-4">
-      {/* Header Section */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
-        <DataOpsChartHeader selectedRowData={selectedRowData} />
+        <DataOpsChartHeader
+          selectedRowData={countPipelineStatuses(dataOpsList)}
+          clickstatusType={handleStatusFilterChange}
+        />
         <Stack direction="row" spacing={2} alignItems="center" mt={13}>
           <Input
             placeholder="Search Pipeline"
@@ -115,7 +129,6 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         </Stack>
       </Stack>
 
-      {/* Table Component */}
       <FlexibleTable
         data={filteredData}
         columns={dataopsColumn}
@@ -127,7 +140,6 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         isAction={false}
       />
 
-      {/* Filter Form */}
       <FilterForm
         open={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
@@ -136,16 +148,13 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         filterableFields={filterableFields}
       />
 
-      {/* Add TaskDetails component */}
       {selectedJobId && (
-        <TaskDetails 
+        <TaskDetails
           jobId={selectedJobId}
           onClose={() => setSelectedJobId(null)}
           selectedRowData={selectedRowData}
         />
       )}
-
-      {/* Details Card */}
     </div>
   );
 };
@@ -157,7 +166,14 @@ const AllDataOps: React.FC = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(getDataOps());
+    const timenow = new Date();
+    const thirtyDaysAgo = new Date(timenow);
+    thirtyDaysAgo.setDate(timenow.getDate() - 10);
+
+    const thirtyDaysAgoISOString = thirtyDaysAgo.toISOString();
+    const params = { job_start_time: thirtyDaysAgoISOString };
+
+    dispatch(getDataOps(params));
   }, [dispatch]);
 
   const error = apiError ? { message: apiError } : null;
@@ -172,3 +188,24 @@ const AllDataOps: React.FC = () => {
 };
 
 export default AllDataOps;
+
+function countPipelineStatuses(dataArray) {
+  const statusCounts = {
+    Success: 0,
+    Failed: 0,
+    InProgress: 0,
+  };
+
+  dataArray.forEach(item => {
+    if (item.pipeline_status === "Success") {
+      statusCounts.Success++;
+    } else if (item.pipeline_status === "Failed") {
+      statusCounts.Failed++;
+    } else if (item.pipeline_status === "In Progress") {
+      statusCounts.InProgress++;
+    }
+  });
+
+  return statusCounts;
+}
+

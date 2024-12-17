@@ -1,4 +1,6 @@
+// import SourceForm from '@/components/BuildPipeLineComps/SourceForm';
 import { createTheme } from '@mui/material';
+import path from 'path';
 import { lazy } from 'react';
 const Catalog = lazy(() => import('@/pages/catalog'));
 const Catalogs = lazy(() => import('@/components/Catalog/Catalogs'));
@@ -42,7 +44,7 @@ export const routeList = [
     element: <RedirectToDash element={<Dashboard />} />,
   },
   { path: "/dashboard", element: <Dashboard /> },
-  { path: "/login",  element: <RedirectToDash element={<Login />} />, },
+  { path: "/login", element: <RedirectToDash element={<Login />} />, },
   { path: "/admin-console", element: <AdminConsole /> },
   { path: "/admin-console/manage-users", element: <PageNotFound /> },
   { path: "/admin-console/manage-customer", element: <PageNotFound /> },
@@ -81,6 +83,7 @@ export const routeList = [
   { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
   { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
   { path: '/ReleaseBundle', element: <ReleaseBundle /> },
+  // { path: '/source', element: <SourceForm /> },
 ];
 
 export const theme = createTheme({

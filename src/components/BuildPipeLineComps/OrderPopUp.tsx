@@ -10,8 +10,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import SchemaTable from "./SchemaTable";
 import OnboardTaggingStep from "./OnboardTaggingStep";
 import PreviewTable from "./PreviewTable";
+import { ReaderOptionsForm } from "./ReaderOptionsForm";
 
-export default function OrderPopUp({ isOpen, onClose}:any) {
+export default function OrderPopUp({ isOpen, onClose }: any) {
     const [selected, setSelected] = React.useState(0);
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
 
@@ -27,7 +28,7 @@ export default function OrderPopUp({ isOpen, onClose}:any) {
     const id = open ? 'simple-popover' : undefined;
 
 
-    const handleClick = (index:any) => {
+    const handleClick = (index: any) => {
         setSelected(index);
         switch (index) {
             case 0:
@@ -77,93 +78,81 @@ export default function OrderPopUp({ isOpen, onClose}:any) {
                         borderRadius: 1,
                         boxShadow: 24,
                         outline: 'none',
-                        maxWidth: 600
+                        width: '1000px',
+                        height: '800px',
+                        maxWidth: 'none',
+                        overflow: 'auto'
                     }}
                 >
-                    <Stack direction={"row"} justifyContent={"space-between"} color={"black"}>
-                        <Typography className="myHeadFont" fontWeight={"bold"}>Orders</Typography>
-                        <ClearIcon onClick={handleClose} style={{ cursor: 'pointer' }} />
-                    </Stack>
-                    <Stack my={2} direction={"row"} justifyContent={"space-between"}>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-                            <ButtonGroup variant="text" aria-label="Basic button group" sx={{ backgroundColor: 'lightgray' }}>
-                                {['Schema', 'Tag', 'Preview'].map((label, index) => (
-                                    <Button className="myFont"
+                    <div className="flex flex-col">
+                        {/* Header */}
+                        <div className="flex justify-between items-center text-black">
+                            <Typography className="font-bold">Orders</Typography>
+                            <ClearIcon onClick={handleClose} className="cursor-pointer" />
+                        </div>
+
+                        <div className="flex justify-between items-center mt-2">
+                            <div className="flex">
+                                {['Reader Options', 'Schema', 'Tag', 'Preview', 'Connection'].map((label, index) => (
+                                    <button
                                         key={label}
                                         onClick={() => handleClick(index)}
-                                        sx={{
-                                            backgroundColor: selected === index ? 'black' : '#DBDBDB',
-                                            color: selected === index ? 'white' : 'black',
-                                            textTransform: 'none', px: 4,
-                                            '&:hover': {
-                                                backgroundColor: selected === index ? 'black' : '#DBDBDB',
-                                                color: selected === index ? 'white' : 'black',
-                                            },
-                                        }}
+                                        className={`
+                    px-6 py-2 text-sm font-medium
+                    ${selected === index
+                                                ? 'bg-black text-white border-b-2 border-black rounded'
+                                                : 'text-gray-600 border-b-2 border-transparent hover:border-gray-300'
+                                            }
+                    transition-all duration-200
+                `}
                                     >
                                         {label}
-                                    </Button>
+                                    </button>
                                 ))}
-                            </ButtonGroup>
-                        </Box>
-                        {/* <Button
-                            className="mmf"
-                            variant="contained"
-                            sx={{
-                                backgroundColor: 'black',
-                                textTransform: 'none',
-                                px: 1,
-                                transition: 'background 0.3s ease',
-                                '&:hover': {
-                                    background: 'linear-gradient(45deg, violet, blue, purple, lightcoral)',
-                                    boxShadow: 'none',
-                                },
-                            }}
-                            onClick={handleClick1}
-                        >
-                            <BorderColorIcon sx={{ mx: 1 }} />
-                            Generate Description
-                        </Button> */}
+                            </div>
 
-                        <Popover
-                            id={id}
-                            open={open}
-                            anchorEl={anchorEl}
-                            onClose={handleClose2}
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'left',
-                            }}
-                        >
-                            <Stack sx={{ background: 'linear-gradient(45deg, violet, blue, purple, lightcoral)', color: 'white' }}> <Typography sx={{ p: 2 }}>How Can I Help You Today?</Typography></Stack>
-                            <Stack m={2}>
-                                <TextField
-                                    autoFocus
-                                    margin="dense"
-                                    id="search"
-                                    // label="Search"
-                                    type="search"
-                                    fullWidth
-                                    variant="outlined"
-                                    placeholder="Search By Keywords"
-                                    InputProps={{
-                                        startAdornment: (
-                                            <IconButton edge="end" aria-label="search" sx={{ mr: 1 }}>
-                                                <SearchIcon />
-                                            </IconButton>
-                                        ),
-                                    }}
-                                />
-                            </Stack>
-                        </Popover>
-                    </Stack>
-                    <Stack sx={{ marginTop: 2 }}>
-                        {selected === 0 && <SchemaTable />}
-                        {selected === 1 && <OnboardTaggingStep />}
-                        {selected === 2 && <PreviewTable />}
-                    </Stack>
+                            {/* Popover */}
+                            <Popover
+                                id={id}
+                                open={open}
+                                anchorEl={anchorEl}
+                                onClose={handleClose2}
+                                anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'left',
+                                }}
+                            >
+                                <div className="flex flex-col">
+                                    <div className="bg-gradient-to-r from-violet-500 via-blue-500 via-purple-500 to-pink-300 text-white">
+                                        <p className="p-4">How Can I Help You Today?</p>
+                                    </div>
+                                    <div className="m-4">
+                                        <div className="relative">
+                                            <input
+                                                autoFocus
+                                                type="search"
+                                                id="search"
+                                                placeholder="Search By Keywords"
+                                                className="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Popover>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="">
+                            {selected === 0 && <ReaderOptionsForm onSubmit={() => { }} onChange={() => { }} />}
+                            {selected === 1 && <SchemaTable />}
+                            {selected === 2 && <OnboardTaggingStep />}
+                            {selected === 3 && <PreviewTable />}
+                            {selected === 4 && <PreviewTable />}
+                        </div>
+                    </div>
                 </Container>
-            </Modal>
+            </Modal >
         </>
     );
 }

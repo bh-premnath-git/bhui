@@ -1,135 +1,69 @@
-import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
+import React from 'react';
+import { FlexibleTable } from '@/components/Tabel';
 
-interface Column {
-    id: 'orderid' | 'orderdate' | 'orderamount' | 'comment';
-    label: string;
-    minWidth?: number;
-    align?: 'left';
-    format?: (value: number) => string;
-}
-
-const columns: readonly Column[] = [
-    { id: 'orderid', label: 'Order ID', minWidth: 170 },
-    { id: 'orderdate', label: 'Order Date', minWidth: 100 },
-    {
-        id: 'orderamount',
-        label: 'Order Amount',
-        minWidth: 170,
-        align: 'left',
-        format: (value: number) => value.toLocaleString('en-US'),
-    },
-    {
-        id: 'comment',
-        label: 'Comment',
-        minWidth: 170,
-        align: 'left',
-        format: (value: number) => value.toLocaleString('en-US'),
-    },
-];
-
-interface Data {
+interface PreviewTableData {
     orderid: string;
     orderdate: string;
     orderamount: number;
     comment: string;
-
 }
 
-function createData(
-    orderid: string,
-    orderdate: string,
-    orderamount: number,
-    comment: string,
-): Data {
-    return { orderid, orderdate, orderamount, comment };
-}
+const columns: any = [
+    {
+        key: 'orderid',
+        header: 'Order ID',
+        type: 'text',
+    },
+    {
+        key: 'orderdate',
+        header: 'Order Date',
+        type: 'date',
+    },
+    {
+        key: 'orderamount',
+        header: 'Order Amount',
+        type: 'number',
+        render: (value: number) => `$${value.toLocaleString('en-US')}`,
+    },
+    {
+        key: 'comment',
+        header: 'Comment',
+        type: 'text',
+    },
+];
 
-const rows = [
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-    createData('Order_ID1234', '1/04/2024', 1000000000, 'Lorem Ipusm is Simply Dummy Test Of the Printing '),
-
+const mockData: PreviewTableData[] = [
+    { orderid: 'ORD-2024-001', orderdate: '2024-01-04', orderamount: 1000000000, comment: 'Lorem ipsum dolor sit amet' },
+    { orderid: 'ORD-2024-002', orderdate: '2024-01-04', orderamount: 1500000000, comment: 'Consectetur adipiscing elit' },
+    { orderid: 'ORD-2024-003', orderdate: '2024-01-04', orderamount: 2000000000, comment: 'Sed do eiusmod tempor' },
+    { orderid: 'ORD-2024-004', orderdate: '2024-01-04', orderamount: 2500000000, comment: 'Ut labore et dolore' },
+    { orderid: 'ORD-2024-005', orderdate: '2024-01-04', orderamount: 3000000000, comment: 'Magna aliqua ut enim' },
+    { orderid: 'ORD-2024-006', orderdate: '2024-01-04', orderamount: 3500000000, comment: 'Ad minim veniam quis' },
+    { orderid: 'ORD-2024-007', orderdate: '2024-01-04', orderamount: 4000000000, comment: 'Nostrud exercitation ullamco' },
+    { orderid: 'ORD-2024-008', orderdate: '2024-01-04', orderamount: 4500000000, comment: 'Laboris nisi ut aliquip' },
+    { orderid: 'ORD-2024-009', orderdate: '2024-01-04', orderamount: 5000000000, comment: 'Ex ea commodo consequat' },
+    { orderid: 'ORD-2024-010', orderdate: '2024-01-04', orderamount: 5500000000, comment: 'Duis aute irure dolor' },
 ];
 
 function PreviewTable() {
-    const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
-
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(+event.target.value);
-        setPage(0);
+    // Alternate row colors function
+    const getRowColor = (_row: any, index: number) => {
+        return index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
     };
 
     return (
-        <Paper elevation={0} sx={{ width: '100%', overflow: 'hidden' }}>
-            <TableContainer sx={{ maxHeight: 500 }}>
-                <Table stickyHeader aria-label="sticky table">
-                    <TableHead>
-                        <TableRow>
-                            {columns.map((column) => (
-                                <TableCell className='myHeadFont'
-                                    key={column.id}
-                                    align={column.align}
-                                    style={{ minWidth: column.minWidth }}
-                                    sx={{ backgroundColor: '#E9E9E9', fontWeight: 'bold' }}
-
-                                >
-                                    {column.label}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                            .map((row) => {
-                                return (
-                                    <TableRow hover role="checkbox" tabIndex={-1} key={row.orderid}>
-                                        {columns.map((column) => {
-                                            const value = row[column.id];
-                                            return (
-                                                <TableCell className='myFont' key={column.id} align={column.align}>
-                                                    {column.format && typeof value === 'number'
-                                                        ? column.format(value)
-                                                        : value}
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                );
-                            })}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            {/* <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
-                component="div"
-                count={rows.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-            /> */}
-        </Paper>
+        <div className="w-full  ">
+            <FlexibleTable
+                data={mockData}
+                columns={columns}
+                itemsPerPageOptions={[5, 10, 25]}
+                defaultItemsPerPage={10}
+                isSearch={false}
+                isAction={false}
+                background="bg-blue-600"
+                rowColorFn={getRowColor}
+            />
+        </div>
     );
 }
 

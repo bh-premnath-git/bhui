@@ -1,4 +1,4 @@
-import React, {  useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import ReactFlow, {
     useNodesState,
     useEdgesState,
@@ -17,6 +17,7 @@ import { ApiService } from '@/services/apiServices';
 import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
 import { FlowControls } from './FlowControls';
 import CreateFormFormik from '@/components/BuildPipeLineComps/CreateForm';
+import NodeDropList from '@/components/BuildPipeLineComps/NodeDropList';
 
 
 interface UIProperties {
@@ -48,7 +49,6 @@ const BuildPlayGround: React.FC = () => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const reactFlowInstance = useReactFlow();
     const { zoomIn, zoomOut, fitView } = useReactFlow();
     const [debuggedNodes, setDebuggedNodes] = useState<Set<string>>(new Set());
@@ -65,7 +65,7 @@ const BuildPlayGround: React.FC = () => {
             console.error('Invalid node data');
             return;
         }
-        
+
         const currentCount = nodeCounters[node.ui_properties.module_name] || 0;
         const newCount = currentCount + 1;
 
@@ -232,7 +232,7 @@ const BuildPlayGround: React.FC = () => {
         // Check input limits
         const targetInputs = edges.filter(e => e.target === connection.target).length;
         const maxInputs = targetNode.data.ports?.maxInputs;
-        
+
         if (maxInputs !== "unlimited" && targetInputs >= maxInputs) {
             console.warn("Maximum inputs reached for this node");
             return;
@@ -248,8 +248,8 @@ const BuildPlayGround: React.FC = () => {
         setEdges((eds: any) => addEdge(connection, eds));
         handleNodeForm(connection.target!);
     }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, nodes, edges]);
-    
-    
+
+
     const buildGraphFromEdges = (edges: any[]) => {
         const graph: { [key: string]: string[] } = {};
         edges.forEach(edge => {
@@ -258,7 +258,7 @@ const BuildPlayGround: React.FC = () => {
         });
         return graph;
     };
-    
+
     const hasCycle = (graph: any, startNode: string, targetNode: string): boolean => {
         const visited = new Set<string>();
         const stack = [startNode];
@@ -278,7 +278,7 @@ const BuildPlayGround: React.FC = () => {
         }
         return false;
     };
-    
+
 
     const handleDebugToggle = useCallback((nodeId: string, title: string) => {
         setDebuggedNodes(prev => {
@@ -313,13 +313,7 @@ const BuildPlayGround: React.FC = () => {
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
         setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes]);
 
-    const handleMoreClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
 
-    const handleMoreClose = () => {
-        setAnchorEl(null);
-    };
 
     const handleCenter = useCallback(() => {
         try {
@@ -465,88 +459,8 @@ const BuildPlayGround: React.FC = () => {
                 </div>
             )}
             <div className="flex justify-center gap-4 mb-4">
-                {filteredNodes.slice(0, 8).map((node: Node) => (
-                    <div
-                        key={node.ui_properties.module_name}
-                        onMouseEnter={() => setHoveredNode(node.ui_properties.module_name)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                    >
-                        <button
-                            onClick={() => handleNodeClick(node)}
-                            className="rounded text-white flex items-center transition-all duration-500 ease-in-out"
-                            style={{
-                                backgroundColor: node.ui_properties.color,
-                                padding: hoveredNode === node.ui_properties.module_name ? '1px 5px' : '1px',
-                            }}
-                        >
-                            {hoveredNode === node.ui_properties.module_name ? (
-                                <div className="flex items-center transition-all duration-500 ease-in-out rounded-lg">
-                                    <img
-                                        src={node.ui_properties.icon}
-                                        alt={node.ui_properties.module_name}
-                                        className="w-9 h-9"
-                                    />
-                                    <div className="ml-2 opacity-100 transition-opacity duration-500 ease-in-out text-sm">
-                                        {node.ui_properties.module_name}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center transition-all duration-300 rounded-lg ease-in-out">
-                                    <img
-                                        src={node.ui_properties.icon}
-                                        alt={node.ui_properties.module_name}
-                                        className="w-9 h-9 rounded"
-                                    />
-                                </div>
-                            )}
-                        </button>
-                    </div>
-                ))}
+                <NodeDropList filteredNodes={filteredNodes} handleNodeClick={handleNodeClick} />
 
-                {filteredNodes.length > 8 && (
-                    <>
-                        <button
-                            onClick={handleMoreClick}
-                            className="rounded"
-                        >
-                            <img src="/assets/buildPipeline/add.svg" alt="" />
-                        </button>
-
-                        <Menu elevation={1}
-                            anchorEl={anchorEl}
-                            open={Boolean(anchorEl)}
-                            onClose={handleMoreClose}
-                        >
-                            {filteredNodes.slice(8).map((node: Node) => (
-                                <MenuItem
-                                    key={node.ui_properties.module_name}
-                                    onClick={() => {
-                                        handleNodeClick(node);
-                                        handleMoreClose();
-                                    }}
-                                    sx={{
-                                        width: '300px',  // Increased width
-                                        padding: '12px 16px' // More padding for elegance
-                                    }}
-                                >
-                                    <div className="flex items-center w-full">
-                                        <img
-                                            src={node.ui_properties.icon}
-                                            alt={node.ui_properties.module_name}
-                                            className="w-9 h-9"
-                                        />
-                                        <div className="mx-4 flex flex-col justify-between h-8 relative">
-                                            <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
-                                            <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-gray-200 -translate-x-1/2"></div>
-                                            <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
-                                        </div>
-                                        <span className="text-gray-700">{node.ui_properties.module_name}</span>
-                                    </div>
-                                </MenuItem>
-                            ))}
-                        </Menu>
-                    </>
-                )}
             </div>
             <div style={{ height: '69vh', width: '100%', }}>
                 <ReactFlow
@@ -614,8 +528,8 @@ const BuildPlayGround: React.FC = () => {
 };
 
 // 4. Add error boundary wrapper
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
-    constructor(props: {children: React.ReactNode}) {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+    constructor(props: { children: React.ReactNode }) {
         super(props);
         this.state = { hasError: false };
     }

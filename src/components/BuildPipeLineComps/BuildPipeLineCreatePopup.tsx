@@ -36,7 +36,7 @@ interface BuildPipeLineCreatePopupProps {
 
 const validationSchema = Yup.object().shape({
     bh_project_id: Yup.string().required('Project is required'),
-    git_branch: Yup.string().required('Branch is required'),
+    // git_branch: Yup.string().required('Branch is required'),
     pipeline_name: Yup.string().required('Name is required'),
     notes: Yup.string().notRequired(),
 });
@@ -68,7 +68,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                 <Formik
                     initialValues={{
                         bh_project_id: '',
-                        git_branch: '',
+                        // git_branch: '',
                         pipeline_name: '',
                         notes: '',
                     }}
@@ -121,9 +121,9 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                                         labelKey="bh_project_name"
                                         size="small"
                                         placeholder="Select Project"
-                                    /> 
+                                    />
                                 </Stack>
-                                <Stack className='w-100'>
+                                {/* <Stack className='w-100'>
                                     <CustomField
                                         name="git_branch"
                                         label="Branch"
@@ -132,7 +132,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                                         size="small"
                                     />
 
-                                </Stack>
+                                </Stack> */}
                                 <Stack className='w-100'>
                                     <CustomField
                                         name="pipeline_name"
@@ -173,12 +173,14 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                             <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={'center'}>
                                 <Button className='w-23'
                                     variant="outlined"
-                                    sx={{ borderColor: 'black', color: 'black', textTransform: 'none', '&:hover': {
-                                        borderColor: 'black',
-                                        backgroundColor: 'transparent',
-                                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                                        } }}
-                                onClick={handleClose}
+                                    sx={{
+                                        borderColor: 'black', color: 'black', textTransform: 'none', '&:hover': {
+                                            borderColor: 'black',
+                                            backgroundColor: 'transparent',
+                                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                                        }
+                                    }}
+                                    onClick={handleClose}
                                 >
                                     Close
                                 </Button>

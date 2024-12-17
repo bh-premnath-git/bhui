@@ -20,7 +20,6 @@ interface StopPopUpProps {
 }
 
 const StopPopUp: React.FC<StopPopUpProps> = ({ open, onClose, jobDetail }) => {
-    console.log(jobDetail);
     const [reason, setReason] = useState('');
     const handleChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
         setReason(event.target.value);
@@ -62,26 +61,21 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open, onClose, jobDetail }) => {
             "updated_at": currentDate,
             "updated_by": jobDetail?.updated_by
         }
-        console.log('Body:', body);
-        console.log(jobDetail)
         try {
             const url = '/event_details';
             const result = await ApiService('8003', 'post', url, body);
-            console.log('Response:', result);
             if (result) {
                 showToast('Job has been stopped successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
                     handleClose2();
                 }, 3000);
             }
-            console.log(result)
         }
         catch (error) {
             console.error('Error fetching Status', error);
         }
     }
     const updateEvent2 = async (pipeline_status: string) => {
-        console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,
             'batch_id': jobDetail?.batch_id,
@@ -100,11 +94,9 @@ const StopPopUp: React.FC<StopPopUpProps> = ({ open, onClose, jobDetail }) => {
             'updated_at': currentDate,
             'updated_by': jobDetail?.updated_by
         };
-        console.log(data)
         try {
             const url = `/job_details/${jobDetail?.job_id}`;
             const result = await ApiService('8003', 'put', url, data);
-            console.log('Response:', result);
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }

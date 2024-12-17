@@ -4,14 +4,14 @@ import { useState } from "react";
 import RestartPopUp from "./RestartPopUp";
 import StopPopUp from "./StopPopUp";
 import CostOptimizationForm from "@/components/Dataops/CostOptimizationForm";
-import { IoSearchSharp } from "react-icons/io5";
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ExploreDrawer from "./ExploreDrawer";
-import { cn } from "@/lib/utils";
-import { CircleCheckBig, Hourglass, XCircle } from "lucide-react";
+import ExploreIcon from '@mui/icons-material/Explore';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import StopIcon from '@mui/icons-material/Stop';
 import Tooltip from '@mui/material/Tooltip';
+import DoneIcon from '@mui/icons-material/Done';
 
 const rootStyle = getComputedStyle(document.documentElement);
 
@@ -75,8 +75,16 @@ export const dataopsColumn: ColumnConfig[] = [
 
             return (
                 <>
-                    <div className="text-black flex items-center cursor-pointer" onClick={handleClick}>
-                        <IoSearchSharp className="mr-1" /> {value}
+                    <div className="text-black flex items-center gap-2 hover:bg-gray-50 rounded px-2 py-1">
+                        {value}
+                        <Tooltip title="Explore Flow">
+                            < ExploreIcon
+                            className="text-green-600 hover:text-green-800 cursor-pointer mb-2" 
+                            sx={{ fontSize: '1.2rem' }}
+                            onClick={handleClick} />
+                        </Tooltip>
+                        
+                        {/* <AttachMoneyIcon className="mr-1" /> */}
                     </div>
                     {open && (
                         <ExploreDrawer
@@ -118,7 +126,15 @@ export const dataopsColumn: ColumnConfig[] = [
                 </div>
             )
         }
-    },    
+    },   
+    {
+        key: 'job_start_time',
+        header: 'Start Time',
+        type: 'number',
+        sortable: false,
+        filterable: false,
+        align: "left",
+    }, 
     {
         key: 'duration',
         header: 'Duration',
@@ -166,13 +182,22 @@ export const dataopsColumn: ColumnConfig[] = [
             return (
                 <div className="text-white" onClick={(e) => e.stopPropagation()}>
                     {row?.pipeline_status == 'Success' && (
+                        // <Stack direction={'row'}>
+                        //     {/* <div
+                        //         onClick={(e) => handleActionClick(e, () => setOpenCost(true))}
+                        //         className="bg-gray-600 p-1 rounded cursor-pointer"
+                        //     >
+                        //         <span className="px-1 rounded-sm bg-white text-black">$</span> Optimize Cost
+                        //     </div> */}
+                        //     <div style={color:'#f56565', fontSize: '16px', transition:'color 0.3'}>Running...</div>
+                        // </Stack>
                         <Stack direction={'row'}>
-                            <div
-                                onClick={(e) => handleActionClick(e, () => setOpenCost(true))}
-                                className="bg-gray-600 p-1 rounded cursor-pointer"
-                            >
-                                <span className="px-1 rounded-sm bg-white text-black">$</span> Optimize Cost
-                            </div>
+                            <DoneIcon style={{ 
+                                color: 'green', 
+                                fontSize: '18px', 
+                                transition: 'color 0.3s' 
+                            }}>
+                            </DoneIcon>
                         </Stack>
                     )}
                     {row?.pipeline_status == 'Failed' && (
@@ -186,7 +211,7 @@ export const dataopsColumn: ColumnConfig[] = [
                                         sx={{
                                             color: "#054c97",
                                             '&:hover': {
-                                                color: "#054c9744", // Change this to your desired hover color
+                                                color: "#054c9744",
                                             },
                                         }}
                                     />

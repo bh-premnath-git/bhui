@@ -73,7 +73,6 @@ const CostOptimization = ({ onClose, showToast }: any) => {
     };
 
     const handleSubmit = (values: any) => {
-        console.log(values);
         showToast({ message: 'Cost optimization settings saved!', type: 'success' });
         onClose();
     };

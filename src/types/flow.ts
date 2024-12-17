@@ -54,6 +54,7 @@ export interface NodeToolBarRef {
 export interface Property {
   key: string;
   enum?: string[];
+  description: string;
   ui_properties: {
     property_name: string;
     property_key: string;
@@ -91,6 +92,7 @@ export interface MetaData {
   properties: Record<string, any>;
   description: string;
   renameType?: string;
+  fullyOptimized: boolean;
   [key: string]: any;
 }
 
@@ -160,7 +162,25 @@ export interface FlowContextType {
     position: { x: number; y: number };
     data: CustomNodeData;
   }) => void;
-  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>, newData?:any) => void;
+  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>, newData?: any) => void;
   revertOrSaveData: (nodeId: string, save: boolean) => void;
   setSelectedFlowId: (flowId: string) => void;
+  isDirty: boolean;
+  selectedNodeConnection: (flowId: string) => {
+    selected: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    };
+    previous: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    }[];
+    next: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    }[];
+  };
+  selectedNodeOptimized: (flowId: string) => void;
+  fullFlowOptimizzed: () => boolean;
+  hasDeployedValue: (date: string) => boolean;
 }

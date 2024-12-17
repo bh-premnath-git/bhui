@@ -229,7 +229,7 @@ export const updateFlowDefinition = createAsyncThunk<
     try {
       const response = await ApiService(
         '8011', 
-        'put', 
+        'patch', 
         `/flow/flow-definition/update-by-flow-id/${flow_id}`, 
         flow_json
       );

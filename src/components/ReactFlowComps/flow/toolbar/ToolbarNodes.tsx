@@ -52,6 +52,7 @@ export function ToolbarNodes() {
             },
             properties: selectedData.properties,
             description: selectedData.description,
+            fullyOptimized: false,
           },
           requiredFields,
         },

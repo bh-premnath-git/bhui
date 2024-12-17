@@ -133,7 +133,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
           <div className="flex items-center space-x-4">
             <DeployingPart selectedData={selectedData} />
             <CommitPart selectedData={selectedData?.flow_deployment[0]} />
-            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} selectedFlowId={selectedFlowId} />
+            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} selectedFlowId={selectedFlowId} selectedData={selectedData?.flow_deployment[0]}/>
           </div>
         </div>
 

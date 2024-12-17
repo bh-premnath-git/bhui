@@ -6,6 +6,7 @@ export function useModules() {
     const operators = schema.properties.tasks.items.oneOf;
 
     const normalizedOperators = operators.map((operator: any, index: number) => {
+      const { description } = operator.properties.type;
       const { module_name, color, icon } = operator.properties.type.ui_properties;
       const operatorType = operator.properties.type.enum[0];
 
@@ -28,7 +29,7 @@ export function useModules() {
         module_name,
         operator: {
           type: operatorType,
-          description: operator.properties.type.description,
+          description: description,
           requiredFields,
           properties,
         },

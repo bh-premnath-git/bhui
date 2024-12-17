@@ -83,8 +83,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             });
             return
         }
-
-        console.log("missingFields", requiredFieldsState, currentFields);
         // Validate required fields
         const missingFields = requiredFieldsState.filter(
             (field) => !currentFields[field] || currentFields[field].trim() === ""

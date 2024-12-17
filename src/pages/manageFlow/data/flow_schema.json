@@ -38,12 +38,13 @@
                 "type": "string",
                 "description": "The HTTP connection to run the operator against",
                 "ui_properties": {
-                  "property_name": "Http conn. id",
+                  "property_name": "HTTP connection ID",
                   "property_key": "http_conn_id",
                   "ui_type": "dropdown",
                   "order": 2,
                   "spancol": 1,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/http_connections",
                   "group_key": "property"
                 }
@@ -76,6 +77,7 @@
                   "order": 4,
                   "spancol": 1,
                   "mandatory": true,
+                  "default": "GET",
                   "group_key": "property"
                 }
               },
@@ -86,7 +88,7 @@
                   "property_name": "Data",
                   "property_key": "data",
                   "ui_type": "json",
-                  "order": 5,
+                  "order": 6,
                   "spancol": 1,
                   "mandatory": false,
                   "group_key": "property"
@@ -138,7 +140,7 @@
                   "property_name": "Extra options",
                   "property_key": "extra_options",
                   "ui_type": "json",
-                  "order": 9,
+                  "order": 19,
                   "spancol": 1,
                   "mandatory": false,
                   "group_key": "settings"
@@ -243,7 +245,7 @@
                   "property_name": "Trigger rule",
                   "property_key": "trigger_rule",
                   "ui_type": "enum",
-                  "order": 17,
+                  "order": 5,
                   "spancol": 1,
                   "mandatory": true,
                   "default": "all_success",
@@ -307,12 +309,13 @@
                 "type": "string",
                 "description": "The HTTP connection to run the sensor against",
                 "ui_properties": {
-                  "property_name": "Http conn. id",
+                  "property_name": "HTTP connection ID",
                   "property_key": "http_conn_id",
                   "ui_type": "dropdown",
                   "order": 2,
                   "spancol": 1,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/http_connections",
                   "group_key": "property"
                 }
@@ -331,6 +334,7 @@
                   "order": 3,
                   "spancol": 1,
                   "mandatory": true,
+                  "default": "GET",
                   "group_key": "property"
                 }
               },
@@ -406,7 +410,7 @@
                   "property_name": "Extra options",
                   "property_key": "extra_options",
                   "ui_type": "json",
-                  "order": 9,
+                  "order": 19,
                   "mandatory": false,
                   "group_key": "settings"
                 }
@@ -418,7 +422,7 @@
                   "property_name": "Tcp keep alive",
                   "property_key": "tcp_keep_alive",
                   "ui_type": "checkbox",
-                  "order": 10,
+                  "order": 19,
                   "mandatory": false,
                   "group_key": "settings"
                 }
@@ -695,6 +699,7 @@
                   "ui_type": "dropdown",
                   "order": 2,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
                   "group_key": "property"
                 }
@@ -724,13 +729,7 @@
                 }
               }
             },
-            "required": [
-              "type",
-              "task_id",
-              "aws_conn_id",
-              "cluster_config",
-              "release_label"
-            ]
+            "required": ["type", "task_id", "aws_conn_id", "cluster_config", "release_label"]
           },
           {
             "type": "object",
@@ -738,79 +737,101 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "EMROperator"
+                  "EmrStepSensor"
                 ],
-                "description": "Performs operations on an EMR cluster",
+                "description": "Monitors a specific step on an EMR cluster",
                 "ui_properties": {
                   "module_name": "AWS",
-                  "color": "#0FBAEF",
-                  "icon": "/assets/flow/EMR.svg"
+                  "color": "#FF9900",
+                  "icon": "/assets/flow/EMRStepSensor.svg"
                 }
               },
               "task_id": {
                 "type": "string",
+                "default": "monitor_emr_job",
                 "description": "The task ID",
                 "ui_properties": {
                   "property_name": "Task ID",
                   "property_key": "task_id",
                   "ui_type": "text",
-                  "order": 1,
-                  "mandatory": true,
-                  "group_key": "property"
+                  "mandatory": true
                 }
               },
               "job_flow_id": {
                 "type": "string",
-                "description": "The ID of the EMR cluster",
+                "default": "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
+                "description": "Job flow ID of the EMR cluster",
                 "ui_properties": {
                   "property_name": "Job Flow ID",
                   "property_key": "job_flow_id",
                   "ui_type": "text",
-                  "order": 2,
-                  "mandatory": true,
-                  "group_key": "property"
+                  "mandatory": true
                 }
               },
-              "aws_conn_id": {
+              "step_id": {
                 "type": "string",
-                "description": "AWS connection ID",
-                "default": "aws_default",
+                "default": "{{ task_instance.xcom_pull(task_ids='submit_emr_job', key='return_value')[0] }}",
+                "description": "Step ID to monitor",
                 "ui_properties": {
-                  "property_name": "AWS Connection ID",
-                  "property_key": "aws_conn_id",
-                  "ui_type": "dropdown",
-                  "order": 3,
-                  "mandatory": true,
-                  "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
-                  "group_key": "property"
+                  "property_name": "Step ID",
+                  "property_key": "step_id",
+                  "ui_type": "text",
+                  "mandatory": true
                 }
               },
-              "operation": {
-                "type": "string",
-                "description": "The operation to be performed (e.g., TERMINATE_CLUSTER, LIST_STEPS)",
-                "enum": [
-                  "TERMINATE_CLUSTER",
-                  "LIST_STEPS",
-                  "DESCRIBE_CLUSTER"
-                ],
-                "default": "DESCRIBE_CLUSTER",
+              "poke_interval": {
+                "type": "integer",
+                "default": 30,
+                "description": "Interval for polling the step status",
                 "ui_properties": {
-                  "property_name": "Operation",
-                  "property_key": "operation",
-                  "ui_type": "enum",
-                  "order": 4,
-                  "mandatory": true,
-                  "group_key": "property"
+                  "property_name": "Poke Interval",
+                  "property_key": "poke_interval",
+                  "ui_type": "number",
+                  "mandatory": false
                 }
               }
             },
-            "required": [
-              "type",
-              "task_id",
-              "job_flow_id",
-              "aws_conn_id",
-              "operation"
-            ]
+            "required": ["type", "task_id", "job_flow_id", "step_id"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "EmrTerminateJobFlowOperator"
+                ],
+                "description": "Terminates an EMR cluster",
+                "ui_properties": {
+                  "module_name": "AWS",
+                  "color": "#FF9900",
+                  "icon": "/assets/flow/EMRTerminate.svg"
+                }
+              },
+              "task_id": {
+                "type": "string",
+                "default": "terminate_emr_cluster",
+                "description": "The task ID",
+                "ui_properties": {
+                  "property_name": "Task ID",
+                  "property_key": "task_id",
+                  "ui_type": "text",
+                  "mandatory": true
+                }
+              },
+              "job_flow_id": {
+                "type": "string",
+                "default": "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
+                "description": "Job flow ID for the EMR cluster",
+                "ui_properties": {
+                  "property_name": "Job Flow ID",
+                  "property_key": "job_flow_id",
+                  "ui_type": "text",
+                  "mandatory": true
+                }
+              }
+            },
+            "required": ["type", "task_id", "job_flow_id"]
           },
           {
             "type": "object",
@@ -1069,7 +1090,7 @@
                   "property_name": "Wildcard  match",
                   "property_key": "wildcard_match",
                   "ui_type": "checkbox",
-                  "order": 4,
+                  "order": 18,
                   "mandatory": false,
                   "group_key": "property"
                 }
@@ -1090,11 +1111,12 @@
                 "type": "string",
                 "description": "A reference to the S3 connection",
                 "ui_properties": {
-                  "property_name": "Aws conn. id",
+                  "property_name": "AWS connection ID",
                   "property_key": "aws_conn_id",
                   "ui_type": "dropdown",
                   "order": 6,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
                   "group_key": "property"
                 }
@@ -1118,7 +1140,7 @@
                   "property_name": "Ca cert bundle",
                   "property_key": "ca_verify",
                   "ui_type": "text",
-                  "order": 8,
+                  "order": 9,
                   "mandatory": false
                 }
               },
@@ -1129,7 +1151,7 @@
                   "property_name": "Deferrable",
                   "property_key": "deferrable",
                   "ui_type": "checkbox",
-                  "order": 9,
+                  "order": 10,
                   "mandatory": false,
                   "group_key": "settings"
                 }
@@ -1156,7 +1178,7 @@
                   "property_name": "Metadata keys",
                   "property_key": "metadata_keys",
                   "ui_type": "list[string]",
-                  "order": 11,
+                  "order": 6,
                   "mandatory": false,
                   "group_key": "settings"
                 }
@@ -1245,6 +1267,7 @@
                   "ui_type": "dropdown",
                   "order": 2,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/sftp_connections",
                   "group_key": "property"
                 }
@@ -1270,6 +1293,7 @@
                   "ui_type": "dropdown",
                   "order": 4,
                   "mandatory": true,
+                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
                   "group_key": "property"
                 }

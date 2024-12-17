@@ -34,12 +34,14 @@ type ColumnConfig = {
   badgeConfig?: {
     colorMap: Record<string, string>;
   };
+  render?: (value: any, row: any) => React.ReactNode;
+
 };
 
 const AllEnvironments: React.FC = () => {
   const dispatch = useAppDispatch();
   useLayoutEffect(() => {
-    dispatch(listEnvironments({offset: 0, limit: 1000}));
+    dispatch(listEnvironments({ offset: 0, limit: 1000 }));
   }, [dispatch]);
   const { environmentList, loading, error } = useAppSelector(
     (state: RootState) => state.environmentApi
@@ -48,117 +50,117 @@ const AllEnvironments: React.FC = () => {
 
   const handleEnvClick = (env: Environment) => {
     dispatch(setEditEnvironmentData(env));
-      navigate(`/admin-console/environment/${env.bh_env_id}`);
+    navigate(`/admin-console/environment/${env.bh_env_id}`);
   };
 
-// Define the columns configuration
-const columns: ColumnConfig[] = [
-  {
-    key: 'Environment_Name',
-    header: 'Environment Name',
-    sortable: true,
-    filterable: true,
-    type: 'text',
-    render: (value: string, rowData: Environment) => (
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-          {(() => {
-            const parts = value?.split(/[-_]/);
-            const initials = parts?.length > 1
-              ? (parts[0][0] + parts[1][0]).toUpperCase()
-              : value?.slice(0, 2).toUpperCase();
-            return <span className="font-bold">{initials}</span>;
-          })()}
+  // Define the columns configuration
+  const columns: ColumnConfig[] = [
+    {
+      key: 'Environment_Name',
+      header: 'Environment Name',
+      sortable: true,
+      filterable: true,
+      type: 'text',
+      render: (value: string, rowData: Environment) => (
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+            {(() => {
+              const parts = value?.split(/[-_]/);
+              const initials = parts?.length > 1
+                ? (parts[0][0] + parts[1][0]).toUpperCase()
+                : value?.slice(0, 2).toUpperCase();
+              return <span className="font-bold">{initials}</span>;
+            })()}
+          </div>
+          <span onClick={() => handleEnvClick(rowData)} className="cursor-pointer">
+            {value}
+          </span>
         </div>
-        <span onClick={() => handleEnvClick(rowData)} className="cursor-pointer">
-          {value}
-        </span>
-    </div>
-    ),
-  },
-  {
-    key: 'Cloud_Provider',
-    header: 'Cloud Provider',
-    sortable: false,
-    filterable: false,
-    type: 'text',
-  },
-  {
-    key: 'Created_On',
-    header: 'Created On',
-    sortable: false,
-    type: 'date',
-  },
-  {
-    key: 'bh_env_provider_name',
-    header: 'Environment Type',
-    sortable: false,
-    filterable: false,
-    type: 'text',
-  },
-  {
-    key: 'status',
-    header: 'Status',
-    sortable: true,
-    filterable: true,
-    type: 'badge',
-    badgeConfig: {
-      colorMap: {
-        active: 'bg-green-500',
-        inactive: 'bg-red-500',
-        // Add more status colors as needed
+      ),
+    },
+    {
+      key: 'Cloud_Provider',
+      header: 'Cloud Provider',
+      sortable: false,
+      filterable: false,
+      type: 'text',
+    },
+    {
+      key: 'Created_On',
+      header: 'Created On',
+      sortable: false,
+      type: 'date',
+    },
+    {
+      key: 'bh_env_provider_name',
+      header: 'Environment Type',
+      sortable: false,
+      filterable: false,
+      type: 'text',
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      filterable: true,
+      type: 'badge',
+      badgeConfig: {
+        colorMap: {
+          active: 'bg-green-500',
+          inactive: 'bg-red-500',
+          // Add more status colors as needed
+        },
       },
     },
-  },
-  // Add more columns as needed
-];
-const EmptyComponent: React.FC = () => {
-  const navigate = useNavigate();
+    // Add more columns as needed
+  ];
+  const EmptyComponent: React.FC = () => {
+    const navigate = useNavigate();
 
-  return (
-    <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
-      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
-      <div className="relative p-8 sm:p-12">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          
-          <div className="relative inline-flex mb-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
-            <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
-              <Sparkles className="w-12 h-12 text-gradient" />
+    return (
+      <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+        <div className="relative p-8 sm:p-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+            <div className="relative inline-flex mb-8">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+              <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+                <Sparkles className="w-12 h-12 text-gradient" />
+              </div>
             </div>
+
+            <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Welcome to Your Environment
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+              Start your journey by creating your first Environment. Transform your ideas into reality.
+            </p>
+
+            <Button
+              size="lg"
+              onClick={() => navigate("/admin-console/environment/new")}
+              className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
+            >
+              <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
+              <FolderPlus className="mr-2 h-5 w-5" />
+              <span className="relative">Create Environment</span>
+            </Button>
+
+            <p className="mt-6 text-sm text-muted-foreground">
+              Click the button above to begin your Environment
+            </p>
           </div>
-
-          <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Welcome to Your Environment
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-            Start your journey by creating your first Environment. Transform your ideas into reality.
-          </p>
-
-          <Button
-            size="lg"
-            onClick={() => navigate("/admin-console/environment/new")}
-            className="relative group bg-foreground hover:bg-foreground/90 text-background rounded-md px-6 py-3 font-medium"
-          >
-            <span className="absolute inset-0 transform transition-transform group-hover:scale-105 bg-gradient-to-r from-primary to-primary/90 rounded-md blur opacity-0 group-hover:opacity-30" />
-            <FolderPlus className="mr-2 h-5 w-5" />
-            <span className="relative">Create Environment</span>
-          </Button>
-
-          <p className="mt-6 text-sm text-muted-foreground">
-            Click the button above to begin your Environment
-          </p>
         </div>
-      </div>
-    </Card>
-  );
-};
+      </Card>
+    );
+  };
 
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return <Spinner />;
 
   }
 

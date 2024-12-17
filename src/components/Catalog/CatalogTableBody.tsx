@@ -52,7 +52,6 @@ export default function CatalogTableBody(props: any) {
     const [record, setRecord] = useState(props.data);
 
 
-    console.log(props.data);
     const handleClose1 = () => {
         setOpen1(false);
     };
@@ -83,8 +82,6 @@ export default function CatalogTableBody(props: any) {
     // 
 
     const handleSort = (columnId: string) => {
-        console.log('Sorting by column:', columnId);
-        console.log('Current data:', record);
 
         const isAsc = orderBy === columnId && orderDirection === 'asc';
         setOrderDirection(isAsc ? 'desc' : 'asc');
@@ -93,8 +90,6 @@ export default function CatalogTableBody(props: any) {
         const sortedData = [...record].sort((a, b) => {
             const valueA = a[columnId];
             const valueB = b[columnId];
-
-            console.log(`Value A: ${valueA}, Value B: ${valueB}`);
 
             // Handle undefined or null values
             if (valueA === undefined || valueA === null) return 1;
@@ -110,7 +105,6 @@ export default function CatalogTableBody(props: any) {
             return 0;
         });
 
-        console.log('Sorted data:', sortedData);
         setRecord(sortedData);
     };
     const handleNext = (event:any) => {

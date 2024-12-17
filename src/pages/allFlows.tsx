@@ -65,7 +65,7 @@ const columns: ColumnConfig[] = [
         <span>
           {value}
         </span>
-    </div>
+      </div>
     ),
   },
   {
@@ -157,7 +157,7 @@ const AllFlows: React.FC = () => {
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(listFlows({offset: 0, limit: 1000})),
+          dispatch(listFlows({ offset: 0, limit: 1000 })),
           dispatch(getFlowProjectList({})),
           dispatch(getEnvironmentList())
         ]);
@@ -184,10 +184,11 @@ const AllFlows: React.FC = () => {
     try {
       const result = await dispatch(createFlow(payload));
       if (createFlow.fulfilled.match(result)) {
-        dispatch(setSelectedFlowFromList(result.payload));        
+        dispatch(setSelectedFlowFromList(result.payload));
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
+
           setTimeout(() => {
             navigate('/designers/manage-flow/' + result.payload.flow_id);
           }, 1000);
@@ -201,7 +202,7 @@ const AllFlows: React.FC = () => {
     } finally {
       setIsCreatingFlow(false);
     }
-}, [dispatch, navigate, closeModal]);
+  }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
     setSelectedFlowId(data.flow_id);
@@ -238,7 +239,7 @@ const AllFlows: React.FC = () => {
   if (!initialLoadComplete || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Spinner size="lg" />
+        <Spinner />
       </div>
     );
   }

@@ -9,8 +9,8 @@ import ReactFlow, {
   EdgeChange,
   MarkerType,
   applyNodeChanges,
-  applyEdgeChanges, 
-  useReactFlow, 
+  applyEdgeChanges,
+  useReactFlow,
   getOutgoers,
   getNodesBounds,
 } from 'reactflow';
@@ -34,8 +34,10 @@ export function FlowEditor() {
     setReactFlowInstance,
   } = useFlow();
 
+  useEffect(() => { }, [])
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { fitView, getViewport, setViewport } = useReactFlow();
+  const { fitView, getViewport } = useReactFlow();
 
   // Improved viewport check function
   const checkAndFitView = useCallback(() => {
@@ -55,7 +57,7 @@ export function FlowEditor() {
     const nodesOutOfView = nodes.some(node => {
       const nodeRight = node.position.x + (node.width || 0);
       const nodeBottom = node.position.y + (node.height || 0);
-      
+
       return (
         node.position.x < visibleLeft ||
         nodeRight > visibleRight ||
@@ -79,7 +81,7 @@ export function FlowEditor() {
     const timer = setTimeout(() => {
       checkAndFitView();
     }, 100); // Small delay to ensure nodes are properly rendered
-    
+
     return () => clearTimeout(timer);
   }, [nodes, checkAndFitView]);
 
@@ -127,7 +129,7 @@ export function FlowEditor() {
         const newNodes = applyNodeChanges(changes, nds);
         return newNodes;
       });
-      
+
       // Add small delay before checking viewport after node changes
       setTimeout(checkAndFitView, 50);
     },
@@ -197,7 +199,7 @@ export function FlowEditor() {
     if (newEdges.length > 0) {
       setEdges((eds) => [...eds, ...newEdges]);
     }
-    
+
     // Check viewport after connecting nodes with a small delay
     setTimeout(checkAndFitView, 50);
   }, [nodes, edges, setEdges, checkAndFitView]);

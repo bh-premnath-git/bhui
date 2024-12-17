@@ -1,7 +1,8 @@
 import React, { useState, KeyboardEvent, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X, HelpCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface MultiWordInputProps {
   id: string;
@@ -10,7 +11,8 @@ interface MultiWordInputProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   mandatory: boolean;
-  default?:any;
+  default?: string[]; // Assuming default is an array of strings
+  description: string;
 }
 
 export const MultiWordInput: React.FC<MultiWordInputProps> = ({
@@ -19,11 +21,21 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
   values,
   onChange,
   placeholder = "Type and press Enter or comma to add",
+  description,
+  default: defaultValue,
   mandatory
 }) => {
   const [inputValue, setInputValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+
+  // If no values are selected and a defaultValue is provided, set them
+  useEffect(() => {
+    if (values.length === 0 && defaultValue && Array.isArray(defaultValue) && defaultValue.length > 0) {
+      onChange(defaultValue);
+    }
+  }, [values, defaultValue, onChange]);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -50,12 +62,26 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
   return (
     <div className="w-full max-w-sm space-y-4">
       {label && (
-        <label 
-          htmlFor={id} 
-          className="text-sm text-gray-600"
-        >
-          {label} {mandatory && <span className="text-red-500">*</span>}
-        </label>
+        <div className="flex items-center space-x-1">
+          <label
+            htmlFor={id}
+            className="text-sm text-gray-600"
+          >
+            {label} {mandatory && <span className="text-red-500">*</span>}
+          </label>
+          {description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="w-4 h-4 text-gray-400 cursor-pointer" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs p-2 bg-white text-gray-700 border border-gray-200 rounded shadow-sm">
+                  {description}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       )}
       <div
         ref={containerRef}
@@ -71,9 +97,9 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
       >
         <div className="flex items-center gap-2 h-full">
           {values.map((word, index) => (
-            <Badge 
-              key={index} 
-              variant="secondary" 
+            <Badge
+              key={index}
+              variant="secondary"
               className="flex-shrink-0 items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800"
             >
               {word}
@@ -106,3 +132,5 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
     </div>
   );
 };
+
+export default MultiWordInput;

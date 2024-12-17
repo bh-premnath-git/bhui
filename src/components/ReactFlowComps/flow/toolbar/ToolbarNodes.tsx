@@ -12,7 +12,6 @@ export function ToolbarNodes() {
   const [moduleTypes] = useModules();
 
   const activeModule = moduleTypes.find((type) => type.id === activeType);
-
   // Update handleOperatorSelect to accept requiredFields
   const handleOperatorSelect = React.useCallback(
     (moduleInfo: ModuleType, requiredFields: string[]) => {
@@ -34,7 +33,6 @@ export function ToolbarNodes() {
         x: (lastNode?.position?.x ?? 100) + 140,
         y: 150,
       };
-
       addNode({
         id,
         type: "custom",
@@ -54,6 +52,7 @@ export function ToolbarNodes() {
             },
             properties: selectedData.properties,
             description: selectedData.description,
+            fullyOptimized: false,
           },
           requiredFields,
         },
@@ -66,8 +65,10 @@ export function ToolbarNodes() {
 
   useEffect(() => {
     if (activeModule) {
-      // Get the required fields from the operator(s) of the active module
-      const requiredFields = activeModule.operators?.[0]?.requiredFields || [];
+      const requiredFields = activeModule.operators?.map?.((op:any) => {
+        return ({[op.type]:op.requiredFields})
+      }) || [];
+
       handleOperatorSelect(activeModule, requiredFields);
     }
   }, [activeModule, activeType, handleOperatorSelect]);

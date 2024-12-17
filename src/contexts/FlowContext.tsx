@@ -27,6 +27,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [autoSave, setAutoSave] = useState(true);
   const [editingNode, setEditingNode] = useState<EditingNode | null>(null);
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   const {
     deleteNode,
@@ -100,7 +101,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       const incomingEdges = edges.filter((edge) => edge.target === nodeId);
       if (incomingEdges.length === 0) return undefined;
       const sourceNodeIds = incomingEdges.map((edge) => edge.source);
-      
+
       const previousNodesFormData = nodeFormData.filter((formData) =>
         sourceNodeIds.includes(formData.nodeId)
       );
@@ -200,14 +201,84 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const selectedNodeConnection = useCallback((nodeId: string) => {
+    const currentNode = nodes.find((n) => n.id === nodeId);
+    if (!currentNode) return null;
+
+    const currentNodeForm = getNodeFormData(nodeId);
+
+    // Previous nodes (incoming edges: those that have `target` = current node)
+    const incomingEdges = edges.filter((edge) => edge.target === nodeId);
+    const previousNodes = incomingEdges.map((edge) => {
+      const prevNode = nodes.find((n) => n.id === edge.source) || null;
+      const prevNodeForm = prevNode ? getNodeFormData(prevNode.id) : null;
+      return {
+        nodeData: prevNode,
+        nodeForm: prevNodeForm,
+      };
+    });
+
+    // Next nodes (outgoing edges: those that have `source` = current node)
+    const outgoingEdges = edges.filter((edge) => edge.source === nodeId);
+    const nextNodes = outgoingEdges.map((edge) => {
+      const nextNode = nodes.find((n) => n.id === edge.target) || null;
+      const nextNodeForm = nextNode ? getNodeFormData(nextNode.id) : null;
+      return {
+        nodeData: nextNode,
+        nodeForm: nextNodeForm,
+      };
+    });
+
+    return {
+      selected: {
+        nodeData: currentNode,
+        nodeForm: currentNodeForm,
+      },
+      previous: previousNodes,
+      next: nextNodes,
+    };
+  }, [nodes, edges, getNodeFormData]);
+
+  const selectedNodeOptimized = useCallback(
+    (nodeId: string) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  meta: {
+                    ...node.data.meta,
+                    fullyOptimized: true,
+                  },
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
+
+  const fullFlowOptimizzed = useCallback(() => {
+    return false
+  }, [])
+
+  const hasDeployedValue = useCallback((date:string) => {
+    return false
+  }, [])
+
   const debouncedSave = useDebouncedCallback(
     () => {
-      if (autoSave && selectedFlowId) {
+      if (autoSave && selectedFlowId && isDirty) {
         saveFlow();
+        setIsDirty(false);
+
       }
     },
-    10000,
-    [autoSave, selectedFlowId]
+    30000,
+    [autoSave, selectedFlowId, isDirty]
   );
 
   // Effect to load flow when selectedFlowId changes
@@ -220,6 +291,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode(null);
       setIsSaved(true);
       setIsSaving(false);
+      setIsDirty(false);
     } else {
       // If no flow is selected, reset the state
       setNodes([]);
@@ -228,13 +300,17 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode(null);
       setIsSaved(true);
       setIsSaving(false);
+      setIsDirty(false);
     }
   }, [selectedFlowId, loadFlow]);
 
   // Effect for auto-save
   useEffect(() => {
-    debouncedSave();
-  }, [nodes, edges, debouncedSave]);
+    if (selectedFlowId) {
+      setIsDirty(true);
+      debouncedSave();
+    }
+  }, [nodes, edges, debouncedSave, selectedFlowId]);
 
 
   const value: FlowContextType = {
@@ -279,6 +355,11 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setSelectedFlowId,
     updatedSelectedNodeId,
     revertOrSaveData,
+    selectedNodeConnection,
+    selectedNodeOptimized,
+    fullFlowOptimizzed,
+    hasDeployedValue,
+    isDirty
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

@@ -56,7 +56,7 @@ export const menuList = [
                 shortcut: "⌘O"
             },
             { 
-                label: "Alerts", 
+                label: "Alerts Hub", 
                 path: "/alerts",
                 icon: <AlertCircle size={18} />,
                 shortcut: "⌘A"

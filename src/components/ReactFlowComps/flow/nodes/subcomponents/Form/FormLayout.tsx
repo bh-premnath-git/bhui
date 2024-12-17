@@ -21,6 +21,8 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
   let currentRowWidth = 0;
 
   properties.forEach((property) => {
+    //console.log("property >>", property);
+        
     const spancol = property.ui_properties.spancol || 1;
     
     // If adding this property would exceed 2 columns, start a new row

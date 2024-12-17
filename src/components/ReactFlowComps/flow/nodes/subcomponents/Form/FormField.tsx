@@ -38,9 +38,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       selectedEnvironment ?? "0"
     );
     const defaultValue = property.ui_properties.default
-
-    console.log("Formfield defaultValue >>>", defaultValue);
-
+    const description = property.description
+    //defaultValue
     const renderField = () => {
       switch (ui_type) {
         case 'json':
@@ -52,6 +51,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               onChange={(e) => onChange(property_key, e.target.value)}
               placeholder={property_name}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
         case 'list[string]':
@@ -75,6 +76,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               onChange={(newValues) => onChange(property_key, JSON.stringify(newValues))}
               placeholder={property_name}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
         case 'checkbox':
@@ -87,6 +90,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               value={value}
               onChange={onChange}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
         case 'dropdown':
@@ -101,6 +106,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               value={value}
               onChange={onChange}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
         case 'enum':
@@ -114,6 +121,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               onChange={onChange}
               enumValues={property.enum || []}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
         case 'number':
@@ -126,6 +135,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               placeholder={property_name}
               mandatory={mandatory}
               type="number"
+              default={defaultValue}
+              description={description}
             />
           );
         case "textbox":
@@ -140,6 +151,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               readOnly={false}
               mandatory={mandatory}
               className={`col-span-${columnSpan}`}
+              default={defaultValue}
+              description={description}
             />
           );
         default:
@@ -151,6 +164,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               onChange={(e) => onChange(property_key, e.target.value)}
               placeholder={property_name}
               mandatory={mandatory}
+              default={defaultValue}
+              description={description}
             />
           );
       }

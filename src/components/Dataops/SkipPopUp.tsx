@@ -12,6 +12,7 @@ import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '../../oldcomponents/teast-service';
 import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 
 interface SkipPopUpProps {
     open: boolean;
@@ -43,8 +44,8 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
     useEffect(() => {
         if (jobDetail && !jobDetail.job_statistics) {
             jobDetail.job_statistics = {
-                record_discarded: 0,
-                record_failed: 0,
+                records_discarded: 0,
+                records_failed: 0,
                 records_passed: 0,
                 records_read: 0,
             };
@@ -69,26 +70,21 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             "updated_at": currentDate,
             "updated_by": jobDetail?.updated_by
         }
-        console.log('Body:', body);
         try {
             const url = '/event_details';
             const result = await ApiService('8003', 'post', url, body);
-            console.log('Response:', result);
             if (result) {
                 showToast('Job has been skipped successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
                     handleClose();
                 }, 3000);
             }
-            console.log(result)
         }
         catch (error) {
             console.error('Error fetching Status', error);
         }
     }
-    console.log(jobDetail)
     const updateEvent = async (pipeline_status: string) => {
-        console.log(jobDetail)
         const data = {
             'pipeline_status': pipeline_status,
             'batch_id': jobDetail?.batch_id,
@@ -97,8 +93,8 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             'tags': {},
             'trace_id': jobDetail?.trace_id,
             'job_statistics': {
-                record_discarded: jobDetail?.job_statistics.record_discarded,
-                record_failed: jobDetail?.job_statistics.record_failed,
+                record_discarded: jobDetail?.job_statistics.records_discarded,
+                record_failed: jobDetail?.job_statistics.records_failed,
                 records_passed: jobDetail?.job_statistics.records_passed,
                 records_read: jobDetail?.job_statistics.records_read
             },
@@ -107,11 +103,9 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
             'updated_at': currentDate,
             'updated_by': jobDetail?.updated_by
         };
-        console.log(data)
         try {
             const url = `/job_details/${jobDetail.job_id}`;
-            const result = await ApiService('8003', 'put', url, data);
-            console.log('Response:', result);
+            const result = await ApiService('8003', 'put', url, data)
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }

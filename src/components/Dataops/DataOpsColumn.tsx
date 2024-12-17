@@ -1,14 +1,25 @@
-import { COLORS } from "@/Utils/constants"
 import { Stack } from "@mui/material";
 import SkipPopUp from "./SkipPopUp";
 import { useState } from "react";
 import RestartPopUp from "./RestartPopUp";
 import StopPopUp from "./StopPopUp";
 import CostOptimizationForm from "@/components/Dataops/CostOptimizationForm";
-import { IoSearchSharp } from "react-icons/io5";
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ExploreDrawer from "./ExploreDrawer";
-import { cn } from "@/lib/utils";
-import { CircleCheckBig, Hourglass, XCircle } from "lucide-react";
+import ExploreIcon from '@mui/icons-material/Explore';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import StopIcon from '@mui/icons-material/Stop';
+import Tooltip from '@mui/material/Tooltip';
+import DoneIcon from '@mui/icons-material/Done';
+
+const rootStyle = getComputedStyle(document.documentElement);
+
+const COLORS = [
+    rootStyle.getPropertyValue('--chart-1-color').trim(),
+    rootStyle.getPropertyValue('--chart-2-color').trim(),
+    rootStyle.getPropertyValue('--chart-5-color').trim(),
+];
 
 type ColumnConfig = {
     key: string;
@@ -20,26 +31,28 @@ type ColumnConfig = {
         colorMap: Record<string, string>;
     };
     render?: (value: any, row: any) => React.ReactNode;
+    align?: "left" | "center" | "right";
+};
+
+const formatDuration = (start: string, end: string) => {
+    const startTime = new Date(start);
+    const endTime = new Date(end);
+
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        return 'Invalid Time';
+    }
+
+    const diffInSeconds = Math.abs(Math.floor((endTime.getTime() - startTime.getTime()) / 1000));
+    const minutes = Math.floor(diffInSeconds / 60);
+    const seconds = diffInSeconds % 60;
+
+    return `${minutes} min ${seconds} sec`;
 };
 
 export const dataopsColumn: ColumnConfig[] = [
     {
-        key: 'pipeline_type',
-        header: 'Job Type',
-        sortable: true,
-        filterable: false,
-        type: 'text',
-    },
-    {
-        key: 'project_name',
-        header: 'Project',
-        type: 'number',
-        sortable: false,
-        filterable: false,
-    },
-    {
         key: 'pipeline_name',
-        header: 'Pipeline',
+        header: 'Flow',
         type: 'number',
         sortable: false,
         filterable: false,
@@ -53,7 +66,7 @@ export const dataopsColumn: ColumnConfig[] = [
                     setIsExpanded(false);
                 }
             };
-            
+
             const handleClick = (e: React.MouseEvent) => {
                 e.stopPropagation();
                 setOpen(true);
@@ -62,11 +75,19 @@ export const dataopsColumn: ColumnConfig[] = [
 
             return (
                 <>
-                    <div className="text-black flex items-center cursor-pointer" onClick={handleClick}>
-                        <IoSearchSharp className="mr-1" /> {value}
+                    <div className="text-black flex items-center gap-2 hover:bg-gray-50 rounded px-2 py-1">
+                        {value}
+                        <Tooltip title="Explore Flow">
+                            < ExploreIcon
+                            className="text-green-600 hover:text-green-800 cursor-pointer mb-2" 
+                            sx={{ fontSize: '1.2rem' }}
+                            onClick={handleClick} />
+                        </Tooltip>
+                        
+                        {/* <AttachMoneyIcon className="mr-1" /> */}
                     </div>
                     {open && (
-                        <ExploreDrawer 
+                        <ExploreDrawer
                             isExpanded={isExpanded}
                             toggleDrawer={toggleDrawer}
                             handleClick={handleClick}
@@ -77,50 +98,63 @@ export const dataopsColumn: ColumnConfig[] = [
         }
     },
     {
+        key: 'project_name',
+        header: 'Project',
+        type: 'number',
+        sortable: false,
+        filterable: false,
+        align: "left",
+    },
+    {
         key: 'pipeline_status',
         header: 'Status',
         type: 'number',
         filterable: false,
         sortable: false,
+        align: "center",
         render: (value: any) => {
             return (
                 <div style={{
-                    backgroundColor: value == "Success" ? COLORS.green :
-                        value == 'Failed' ? COLORS.red : '#ffa500',
+                    backgroundColor: value == "Success" ? COLORS[0] :
+                        value == 'Failed' ? COLORS[2] : COLORS[1],
                     color: 'white',
                     padding: 5,
-                    borderRadius: '15px'
+                    borderRadius: '15px',
+                    width: '90px' 
                 }}>
                     {value}
                 </div>
             )
         }
-    },
+    },   
     {
         key: 'job_start_time',
         header: 'Start Time',
         type: 'number',
         sortable: false,
         filterable: false,
-    },
+        align: "left",
+    }, 
     {
-        key: 'zone_name',
-        header: 'Target Zone',
-        type: 'number',
-        sortable: false,
-        filterable: false,
-    },
-    {
-        key: 'job_end_time',
+        key: 'duration',
         header: 'Duration',
         type: 'number',
         sortable: false,
+        align: "left",
+        render: (value: any, row: any) => {
+            return (
+                <div className="pr-0 mr-0">
+                    {formatDuration(row.job_start_time, row.job_end_time)}
+                </div>
+            );
+        },
     },
     {
         key: 'created_by',
         header: 'Owner',
         type: 'number',
         sortable: false,
+        align: "left",
     },
     {
         key: 'action',
@@ -148,42 +182,79 @@ export const dataopsColumn: ColumnConfig[] = [
             return (
                 <div className="text-white" onClick={(e) => e.stopPropagation()}>
                     {row?.pipeline_status == 'Success' && (
+                        // <Stack direction={'row'}>
+                        //     {/* <div
+                        //         onClick={(e) => handleActionClick(e, () => setOpenCost(true))}
+                        //         className="bg-gray-600 p-1 rounded cursor-pointer"
+                        //     >
+                        //         <span className="px-1 rounded-sm bg-white text-black">$</span> Optimize Cost
+                        //     </div> */}
+                        //     <div style={color:'#f56565', fontSize: '16px', transition:'color 0.3'}>Running...</div>
+                        // </Stack>
                         <Stack direction={'row'}>
-                            <div 
-                                onClick={(e) => handleActionClick(e, () => setOpenCost(true))} 
-                                className="bg-gray-600 p-1 rounded cursor-pointer"
-                            >
-                                <span className="px-1 rounded-sm bg-white text-black">$</span> Optimize Cost
-                            </div>
+                            <DoneIcon style={{ 
+                                color: 'green', 
+                                fontSize: '18px', 
+                                transition: 'color 0.3s' 
+                            }}>
+                            </DoneIcon>
                         </Stack>
                     )}
                     {row?.pipeline_status == 'Failed' && (
                         <Stack direction={'row'} spacing={2}>
-                            <div 
-                                className="underline text-black p-1 rounded cursor-pointer" 
-                                onClick={(e) => handleActionClick(e, () => setOpenSkip(true))}
-                            >
-                                Skip
-                            </div>
-                            <div 
-                                className="underline text-black p-1 rounded cursor-pointer" 
-                                onClick={(e) => handleActionClick(e, () => setOpenRestart(true))}
-                            >
-                                Restart
-                            </div>
+                            <Tooltip title="Skip Job">
+                                <div
+                                    className="underline text-black p-1 rounded cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, () => setOpenSkip(true))}
+                                >
+                                    <SkipNextIcon
+                                        sx={{
+                                            color: "#054c97",
+                                            '&:hover': {
+                                                color: "#054c9744",
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </Tooltip>
+                            <Tooltip title="Restart Job">
+                                <div
+                                    className="underline text-black p-1 rounded cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, () => setOpenRestart(true))}
+                                >
+                                    <RestartAltIcon 
+                                        sx={{
+                                            color: "#008000",
+                                            '&:hover': {
+                                                color: "#00800044", // Change this to your desired hover color
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </Tooltip>
                         </Stack>
                     )}
                     {row?.pipeline_status == 'In Progress' && (
                         <Stack direction={'row'} spacing={2}>
-                            <div 
-                                className="underline text-black p-1 rounded cursor-pointer" 
-                                onClick={(e) => handleActionClick(e, () => setOpenStop(true))}
-                            >
-                                Stop
-                            </div>
+                            <Tooltip title="Stop Job">
+                                <div
+                                    className="underline text-black p-1 rounded cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, () => setOpenStop(true))}
+                                >
+                                    <StopIcon
+                                        sx={{
+                                            color: "#c40101",
+                                            '&:hover': {
+                                                color: "#c4010144", // Change this to your desired hover color
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </Tooltip>
+                            
                         </Stack>
                     )}
-                    
+
                     <SkipPopUp open={openSkip} jobDetail={row} onClose={() => setOpenSkip(false)} />
                     <RestartPopUp open={openRestart} jobDetail={row} onClose={() => setOpenRestart(false)} />
                     <StopPopUp open={openStop} jobDetail={row} onClose={() => setOpenStop(false)} />

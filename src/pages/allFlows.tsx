@@ -239,7 +239,7 @@ const AllFlows: React.FC = () => {
   if (!initialLoadComplete || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Spinner size="lg" />
+        <Spinner />
       </div>
     );
   }

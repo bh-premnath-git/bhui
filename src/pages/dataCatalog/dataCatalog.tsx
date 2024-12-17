@@ -261,7 +261,7 @@ function DataCatalogTable({
   }, [dispatch]);
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return <Spinner  />;
   }
 
   if (error) {

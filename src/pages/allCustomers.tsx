@@ -154,7 +154,7 @@ const EmptyComponent: React.FC = () => {
 
 
     if (loading) {
-        return <Spinner size="lg" />;
+        return <Spinner  />;
     }
 
     if (error) {

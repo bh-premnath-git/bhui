@@ -528,7 +528,7 @@ export default function ProjectCreationComponent() {
               >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <Spinner className="mr-1 h-4 w-4" />
+                    <Spinner  />
                     Creating...
                   </div>
                 ) : (

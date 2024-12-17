@@ -103,7 +103,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     setActiveStatuses(selectedStatuses);
   };
 
-  if (loading) return <Spinner size="lg" />;
+  if (loading) return <Spinner  />;
   if (error) return <ErrorDisplay message={error.message} />;
   if (!dataOpsList?.length) return <EmptyState />;
 

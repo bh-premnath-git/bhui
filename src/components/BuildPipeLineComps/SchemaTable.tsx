@@ -1,222 +1,251 @@
 import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
+import { FlexibleTable } from '@/components/Tabel';
 import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import { Button, Stack, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, } from '@mui/material';
+import { Button, Stack, Typography, Dialog, DialogTitle, DialogContent, TextField } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { MdOutlineDeleteSweep } from 'react-icons/md';
-import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-
-interface Column {
-    id: 'name' | 'datatype' | 'primarykey' | 'optional' | 'description' | 'tags' | 'clear';
-    label: string;
-    minWidth?: number;
-    align?: 'left';
-    format?: (value: number) => string;
-}
-
-const columns: readonly Column[] = [
-    { id: 'name', label: 'Field Name', align: 'left' },
-    { id: 'datatype', label: 'Data Type', align: 'left' },
-    { id: 'primarykey', label: 'Primary Key', align: 'left' },
-    { id: 'optional', label: 'Optional', align: 'left' },
-    { id: 'description', label: 'Description', align: 'left' },
-    { id: 'tags', label: 'Tags', minWidth: 170, align: 'left' },
-    { id: 'clear', label: '', minWidth: 170, align: 'left' },
-];
-
-interface Data {
-    name: string;
-    datatype: string;
-    primarykey: React.ReactNode;
-    optional: React.ReactNode;
-    description: React.ReactNode;
-    tags: React.ReactNode;
-    clear: React.ReactNode;
-}
-
-function createData(
-    name: string,
-    datatype: string,
-    primarykey: React.ReactNode,
-    optional: React.ReactNode,
-    description: React.ReactNode,
-    tags: React.ReactNode,
-    clear: React.ReactNode
-): Data {
-    return { name, datatype, primarykey, optional, description, tags, clear };
-}
-
-const rows = [
-    createData('NameType2', '', <Checkbox defaultChecked sx={{'&.Mui-checked': {color: '#07A260'}}} color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, 'Lorem Ispusm Is..', <Stack direction={"row"} > <Typography sx={{ backgroundColor: '#E9E9E9', mx: 2, p: '5px', borderRadius: 1 ,fontSize:'14px'}}>Infer Schema from Data<ClearIcon sx={{fontSize:'14px'}} /></Typography></Stack>, <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, 'Lorem Ispusm Is..', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked disabled color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-    createData('NameType2', '', <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, <Checkbox sx={{'&.Mui-checked': {color: '#07A260'}}} defaultChecked color="success" />, '', '', <MdOutlineDeleteSweep className='text-danger fs-4' />),
-];
+import MenuItem from '@mui/material/MenuItem';
+import { Label } from '../ui/label';
 
 function SchemaTable() {
-    const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [openDialog, setOpenDialog] = React.useState(false);
     const [inputValue, setInputValue] = React.useState('');
+    const [selectedDataType, setSelectedDataType] = React.useState('');
 
-    const [age, setAge] = React.useState('');
+    // Column configuration for FlexibleTable
+    const columns: any[] = [
+        {
+            key: 'name',
+            header: 'Field Name',
+            type: 'text',
+        },
+        {
+            key: 'datatype',
+            header: 'Data Type',
+            type: 'text',
+            render: () => (
+                <Select
+                    size='small'
+                    value={selectedDataType}
+                    onChange={(e: SelectChangeEvent) => setSelectedDataType(e.target.value)}
+                    className="min-w-[150px] bg-white h-[28px]"
+                    sx={{
+                        '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#e5e7eb',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#9ca3af',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6b7280',
+                        },
+                    }}
+                    displayEmpty
+                >
+                    <MenuItem value="">Timestamp</MenuItem>
+                    <MenuItem value="array">Array</MenuItem>
+                    <MenuItem value="binary">Binary</MenuItem>
+                    <MenuItem value="boolean">Boolean</MenuItem>
+                    <MenuItem value="byte">Byte</MenuItem>
+                    <MenuItem value="date">Date</MenuItem>
+                    <MenuItem value="int">Integer</MenuItem>
+                    <MenuItem value="double">Double</MenuItem>
+                </Select>
+            )
+        },
+        {
+            key: 'primarykey',
+            header: 'Primary Key',
+            type: 'text',
+            render: () => (
+                <Checkbox
+                    defaultChecked
+                    size="small"
+                    sx={{
+                        padding: '4px',
+                        '&.Mui-checked': { color: '#07A260' },
+                        '&:hover': { backgroundColor: 'transparent' }
+                    }}
+                    color="success"
+                />
+            )
+        },
+        {
+            key: 'optional',
+            header: 'Optional',
+            type: 'text',
+            render: () => (
+                <Checkbox
+                    defaultChecked
+                    size="small"
+                    sx={{
+                        padding: '4px',
+                        '&.Mui-checked': { color: '#07A260' },
+                        '&:hover': { backgroundColor: 'transparent' }
+                    }}
+                    color="success"
+                />
+            )
+        },
+        {
+            key: 'description',
+            header: 'Description',
+            type: 'text',
+            render: (value: any) => (
+                <button
+                    onClick={() => setOpenDialog(true)}
+                    className="text-blue-500 hover:text-blue-700"
+                >
+                    {value || "Add"}
+                </button>
+            )
+        },
+        {
+            key: 'tags',
+            header: 'Tags',
+            type: 'text',
+            render: (value: any) => value ? (
+                <div className="flex items-center gap-2">
+                    <span className="bg-gray-100 px-2 py-1 rounded-md text-sm flex items-center">
+                        Infer Schema from Data
+                        <ClearIcon className="ml-1 h-4 w-4 cursor-pointer" />
+                    </span>
+                </div>
+            ) : null
+        },
+        {
+            key: 'actions',
+            header: '',
+            type: 'text',
+            render: () => (
+                <MdOutlineDeleteSweep className="text-red-500 text-xl cursor-pointer hover:text-red-700" />
+            )
+        }
+    ];
 
-    const handleChange = (event: SelectChangeEvent) => {
-        setAge(event.target.value);
-    };
+    // Sample data
+    const tableData = Array(10).fill({
+        name: 'NameType2',
+        datatype: '',
+        primarykey: true,
+        optional: true,
+        description: '',
+        tags: '',
+        actions: ''
+    });
 
-
-    const handleClickOpenDialog = () => {
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-    };
-
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(event.target.value);
-    };
-
-    const handleSave = () => {
-        // Handle save action
-        console.log('Saved value:', inputValue);
-        handleCloseDialog();
+    const getDescription = (text: string) => {
+        switch (text) {
+            case 'Eliminate Duplicate Records':
+                return 'Automatically removes any duplicate entries from your dataset';
+            case 'Trim All Columns':
+                return 'Removes leading and trailing whitespace from all text fields';
+            case 'Eliminate Records without Primary Key':
+                return 'Ensures data integrity by removing records with missing primary keys';
+            default:
+                return '';
+        }
     };
 
     return (
-        <Paper elevation={0} sx={{ width: '100%', overflow: 'hidden' }} className='myFont'>
-            <TableContainer sx={{ maxHeight: 440 }}>
-                <Table stickyHeader aria-label="sticky table">
-                    <TableHead>
-                        <TableRow>
-                            {columns.map((column) => (
-                                <TableCell className=''
-                                    key={column.id}
-                                    align={column.align}
-                                    style={{ minWidth: column.minWidth }}
-                                    sx={{ backgroundColor: '#E9E9E9', fontWeight: 'bold' }}
-                                >
-                                    {column.label}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                            .map((row) => (
-                                <TableRow hover role="checkbox" tabIndex={-1} key={row.name}>
-                                    {columns.map((column) => {
-                                        const value = row[column.id];
-                                        return (
-                                            <TableCell className='myFont' key={column.id} align={column.align}>
-                                                {column.id === 'description' && (
-                                                    <Link href="#" onClick={handleClickOpenDialog}>
-                                                        {value ? ('') : "Add"}
-                                                    </Link>
-                                                )}
-                                                {column.id === 'datatype' && (
-                                                    <Select
-                                                    size='small'
-                                                        value={age}
-                                                        onChange={handleChange}
-                                                        displayEmpty
-                                                        inputProps={{ 'aria-label': 'Without label' }}
-                                                    >
-                                                        <MenuItem value="">
-                                                            Timestamp
-                                                        </MenuItem>
-                                                        <MenuItem value={"array"}>Array</MenuItem>
-                                                        <MenuItem value={"binary"}>Binary</MenuItem>
-                                                        <MenuItem value={"boolean"}>Boolean</MenuItem>
-                                                        <MenuItem value={'byte'}>Byte</MenuItem>
-                                                        <MenuItem value={'date'}>Date</MenuItem>
-                                                        <MenuItem value={'int'}>Integer</MenuItem>
-                                                        <MenuItem value={'double'}>Double</MenuItem>
-                                                    </Select>
-                                                )}
-                                                {column.format && typeof value === 'number'
-                                                    ? column.format(value)
-                                                    : value}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Stack my={2}>
-                <Stack direction={"row"} spacing={1}>
-                    <Typography my={2} color={'skyblue'} fontWeight={"bold"}> <Checkbox defaultChecked disabled /> Eliminate Duplicate Records</Typography>
-                </Stack>
-                <Stack direction={"row"} spacing={1}>
-                    <Typography my={2} color={'skyblue'} fontWeight={"bold"}> <Checkbox defaultChecked disabled /> Trim All Columns</Typography>
-                </Stack>
-                <Stack direction={"row"} spacing={1}>
-                    <Typography my={2} color={'skyblue'} fontWeight={"bold"}> <Checkbox defaultChecked disabled /> Eliminate Records without Primary Key</Typography>
-                </Stack>
-            </Stack>
+        <div className="">
+            <FlexibleTable
+                data={tableData}
+                columns={columns}
+                itemsPerPageOptions={[5, 10, 15]}
+                defaultItemsPerPage={10}
+                isSearch={false}
+                isAction={false}
+                background="bg-black"
+            />
 
-            <Stack direction={"row"} spacing={4} justifyContent={"center"}>
-                <Button variant='outlined' sx={{ color: 'black', borderColor: 'black', px: 7, textTransform: 'none' }}>
+            {/* Checkboxes Section */}
+            <div className="space-y-1 bg-gray-50 p-2 rounded-lg mt-2">
+                {[
+                    'Eliminate Duplicate Records',
+                    'Trim All Columns',
+                    'Eliminate Records without Primary Key'
+                ].map((text) => (
+                    <div key={text} className="flex items-center gap-1">
+                        <Checkbox
+                            defaultChecked
+                            disabled
+                            size="small"
+                            sx={{
+                                padding: '2px',
+                                '&.Mui-checked': {
+                                    color: 'lightgery',
+                                },
+                            }}
+                        />
+                        <Label className="text-gray-500 font-light text-sm">
+                            {text}
+                        </Label>
+                    </div>
+                ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3 mt-4">
+                <button className="px-6 py-1.5 border border-black rounded-md hover:bg-gray-50 transition-colors text-sm">
                     Close
-                </Button>
-                <Button variant='contained' sx={{ backgroundColor: 'black', color: 'white', px: 7, textTransform: 'none' }}>
+                </button>
+                <button className="px-6 py-1.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors text-sm">
                     Save
-                </Button>
-            </Stack>
+                </button>
+            </div>
 
-            <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth>
-                <Stack direction={"row"} justifyContent={"space-between"}>
-                    <DialogTitle fontWeight={"bold"} sx={{fontSize:'15px'}}>Add Description</DialogTitle>
-                    <ClearIcon sx={{ my: 1, mx: 2 }} onClick={handleCloseDialog} />
-                </Stack>
-
-                <DialogContent>
+            {/* Description Dialog */}
+            <Dialog
+                open={openDialog}
+                onClose={() => setOpenDialog(false)}
+                className="rounded-lg"
+                maxWidth="sm"
+                fullWidth
+            >
+                <div className="p-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <DialogTitle className="text-lg font-bold p-0">
+                            Add Description
+                        </DialogTitle>
+                        <ClearIcon
+                            className="cursor-pointer hover:text-gray-700"
+                            onClick={() => setOpenDialog(false)}
+                        />
+                    </div>
+                    {/* <DialogContent className="p-0"> */}
                     <TextField
                         autoFocus
-                        margin="dense"
-                        type="text"
                         fullWidth
-                        variant="outlined"
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        placeholder='Enter Description Here'
                         multiline
                         rows={4}
+                        placeholder="Enter Description Here"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        className="mt-2"
                     />
-                </DialogContent>
-                <Stack direction={"row"} spacing={4} justifyContent={"center"} my={2}>
-                    <Button variant='outlined' sx={{ color: 'black', borderColor: 'black', px: 7, textTransform: 'none' }} onClick={handleCloseDialog}>
-                        Close
-                    </Button>
-                    <Button variant='contained' sx={{ backgroundColor: 'black', color: 'white', px: 7, textTransform: 'none' }} onClick={handleSave}>
-                        Save
-                    </Button>
-                </Stack>
+                    {/* </DialogContent> */}
+                    <div className="flex justify-center gap-4 mt-6">
+                        <button
+                            className="px-7 py-2 border border-black rounded-md hover:bg-gray-50 transition-colors"
+                            onClick={() => setOpenDialog(false)}
+                        >
+                            Close
+                        </button>
+                        <button
+                            className="px-7 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                            onClick={() => {
+                                console.log('Saved:', inputValue);
+                                setOpenDialog(false);
+                            }}
+                        >
+                            Save
+                        </button>
+                    </div>
+                </div>
             </Dialog>
-        </Paper>
+        </div>
     );
 }
 

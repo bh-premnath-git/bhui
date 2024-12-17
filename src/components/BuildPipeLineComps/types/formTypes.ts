@@ -38,4 +38,24 @@ export interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
-} 
+}
+
+export interface Node {
+  ui_properties: UIProperties;
+  [key: string]: any;
+}
+
+
+export interface UIProperties {
+  color: string;
+  icon: string;
+  module_name: string;
+  ports: any;
+}
+
+
+export interface Schema {
+  title: string;
+  nodeId?: string;
+  [key: string]: any;
+}

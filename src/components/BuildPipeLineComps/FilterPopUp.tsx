@@ -47,7 +47,6 @@ export default function FilterPopUp({ isOpen, onClose }: FilterPopUpProps) {
         <Formik
           initialValues={{ condition: '' }} // Define initial values for the form
           onSubmit={(values, actions) => {
-            console.log('Form submitted with values:', values);
             // Add any form submission logic here
             onClose(); // Close the modal after submission
           }}

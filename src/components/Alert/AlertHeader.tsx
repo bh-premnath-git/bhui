@@ -60,7 +60,6 @@ function AlertHeader() {
         try {
             setIsLoading(true);
             const result = await ApiService('8004', 'post', '/monitor_template_data/count', params);
-            console.log(result);
             if (result && result.length > 0 && result[0]?.get_monitor_template_data) {
                 setTemplateCountList(result[0]?.get_monitor_template_data);
             }

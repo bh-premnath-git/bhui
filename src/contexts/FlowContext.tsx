@@ -36,7 +36,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     updateNodeMeta,
     renameNode,
     updateNodeDimensions
-  } = useNodeOperations(nodes, setNodes, setEdges);
+  } = useNodeOperations(nodes, setNodes, setEdges, setSelectedNode, setIsSaved);
 
   const {
     zoomIn,
@@ -245,15 +245,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         prevNodes.map((node) =>
           node.id === nodeId
             ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  meta: {
-                    ...node.data.meta,
-                    fullyOptimized: true,
-                  },
+              ...node,
+              data: {
+                ...node.data,
+                meta: {
+                  ...node.data.meta,
+                  fullyOptimized: true,
                 },
-              }
+              },
+            }
             : node
         )
       );
@@ -262,12 +262,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   );
 
   const fullFlowOptimizzed = useCallback(() => {
-    return false
-  }, [])
+    const allOptimized = nodes.every(node => node?.data?.meta?.fullyOptimized === true);
+    return allOptimized
+  }, [nodes])
 
-  const hasDeployedValue = useCallback((date:string) => {
-    return false
-  }, [])
+  const hasDeployedValue = useCallback((date: string) => {
+    if (!date || date.trim() === '') {
+      return false;
+    }
+    const isValidDate = !isNaN(new Date(date).getTime());
+
+    return isValidDate;
+  }, []);
 
   const debouncedSave = useDebouncedCallback(
     () => {

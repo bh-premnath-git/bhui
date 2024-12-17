@@ -119,7 +119,6 @@ function decrypt_string(
         return aes.decrypt(encryptedString);
     } catch (error) {
         if (error instanceof AESEncryptionError && ignoreEncryption) {
-            console.log('Decryption failed, string may not be encrypted, storing as-is');
             return encryptedString;
         }
         throw error;

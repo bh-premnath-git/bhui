@@ -25,8 +25,11 @@ export function PlaybackButton({
   selectedData
 }: PlaybackButtonProps) {
   const dispatch = useAppDispatch();
-  const { isDirty } = useFlow();
-  
+  const { isDirty, fullFlowOptimizzed, hasDeployedValue } = useFlow();
+  const hasOptimized = fullFlowOptimizzed()
+  const hasDeployable = hasDeployedValue("")
+  console.log(hasDeployable, hasOptimized);
+
   const sizeClasses = {
     default: "h-10 w-10",
     sm: "h-8 w-8",
@@ -63,7 +66,8 @@ export function PlaybackButton({
             className={`${sizeClasses[size]} border border-gray-100 hover:bg-gray-200 rounded-md ${className}`}
             onClick={() => { onToggle(); }}
             aria-label={`${!isPlaying ? "Deployment Stopped" : "Deployment Started"}`}
-          >
+            disabled={!hasDeployable || !hasOptimized}
+            >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
             {!isPlaying ? (
               <Pause className={iconSizes[size]} />

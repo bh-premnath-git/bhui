@@ -33,7 +33,6 @@ export function FlowEditor() {
     setEdges,
     setReactFlowInstance,
   } = useFlow();
-
   useEffect(() => { }, [])
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);

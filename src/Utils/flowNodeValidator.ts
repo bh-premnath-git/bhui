@@ -1,4 +1,7 @@
 export const flowNodeValidator = (node: any) => {
+    if (!node) {
+        return [false, []]
+    }
     const errors: string[] = [];
 
     // Check connections
@@ -6,7 +9,7 @@ export const flowNodeValidator = (node: any) => {
     const hasNoNext = !node.next || node.next.length === 0;
 
     if (hasNoPrevious && hasNoNext) {
-        errors.push("Need downstream connection");
+        errors.push("Need at least one stream connection");
     }
 
     // Check selected data

@@ -69,7 +69,7 @@ export function PlaybackButton({
             disabled={!hasDeployable || !hasOptimized}
             >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
-            {!isPlaying ? (
+            {isPlaying ? (
               <Pause className={iconSizes[size]} />
             ) : (
               <Play className={iconSizes[size]} />

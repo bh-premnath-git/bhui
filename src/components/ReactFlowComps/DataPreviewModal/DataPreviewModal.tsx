@@ -18,7 +18,6 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
         </button>
         <h2>Flow Name: Flow_type 1</h2>
         <div className={styles.tabContainer}>
-          <button className={styles.activeTab}>Results</button>
           <button>Logs</button>
         </div>
         <table className={styles.dataTable}>

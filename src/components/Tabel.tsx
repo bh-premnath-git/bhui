@@ -16,7 +16,9 @@ import {
   Filter,
   ChevronUp,
   ChevronDown,
-  MoreVertical
+  MoreVertical,
+  ArrowLeftCircle,
+  ArrowRightCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,6 +45,7 @@ interface ColumnConfig {
   badgeConfig?: {
     colorMap: { [key: string]: string };
   };
+  align?: "left" | "center" | "right";
 }
 
 interface TableProps {
@@ -58,6 +61,7 @@ interface TableProps {
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
   background?: string;
+  rowColorFn?: (rowData: any, index: number) => string;
 }
 
 type SortConfig = {
@@ -122,20 +126,29 @@ const TableBodyComponent: React.FC<{
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
   isAction?: boolean;
-}> = React.memo(({ tableName, data, columns, actionFn, playRow, playRowFn, isAction }) => (
+  rowColorFn?: (rowData: any, index: number) => string; // Updated to include index
+}> = React.memo(({ tableName, data, columns, actionFn, playRow, playRowFn, isAction, rowColorFn }) => (
   <TableBody>
     {data?.map((row, index) => (
       <TableRow
         key={index}
         onClick={playRow && playRowFn ? () => playRowFn(row) : undefined}
-        className={playRow ? "cursor-pointer" : ""}
+        className={cn(
+          playRow ? "cursor-pointer" : "",
+          rowColorFn ? rowColorFn(row, index) : "" // Apply rowColorFn
+        )}
       >
         {columns.map((column) => {
           const value = row[column.key];
           return (
             <TableCell
               key={column.key}
-              className={cn(column.type === "number" ? "text-center" : "text-justify")}
+              className={cn(
+                column.align === "left" ? "text-left" :
+                column.align === "center" ? "text-center" :
+                column.align === "right" ? "text-right" :
+                column.type === "number" ? "text-center" : "text-justify"
+              )}
             >
               {column.render ? (
                 column.render(value, row)
@@ -148,7 +161,7 @@ const TableBodyComponent: React.FC<{
                 </Avatar>
               ) : column.type === "badge" && column.badgeConfig ? (
                 <Badge className={`${column.badgeConfig.colorMap[value]} text-white p-1`}>
-                  {value && value.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+                  {value}
                 </Badge>
               ) : (
                 value
@@ -192,7 +205,6 @@ const TableBodyComponent: React.FC<{
     ))}
   </TableBody>
 ));
-
 /**
  * Table Filters Component
  */
@@ -263,23 +275,19 @@ const TablePaginationControls: React.FC<{
     return (
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center space-x-2">
-          <Button
-            className="bg-gray-900 text-white hover:bg-gray-800"
+          <ArrowLeftCircle
+            className={`text-gray-900 ${currentPage === 1 ? 'opacity-50' : 'hover:text-gray-800 cursor-pointer'}`}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
+            style={{ fontSize: '1.5rem' }}
+          />
           <span>
             Page {currentPage} of {totalPages}
           </span>
-          <Button
-            className="bg-gray-900 text-white hover:bg-gray-800"
+          <ArrowRightCircle
+            className={`text-gray-900 ${currentPage === totalPages ? 'opacity-50' : 'hover:text-gray-800 cursor-pointer'}`}
             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
+            style={{ fontSize: '1.5rem' }}
+          />
         </div>
         <Select
           value={itemsPerPage.toString()}
@@ -319,6 +327,7 @@ export function FlexibleTable({
   playRow = false,
   playRowFn,
   background = 'gray',
+  rowColorFn,
 }: TableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
@@ -442,6 +451,7 @@ export function FlexibleTable({
           playRow={playRow}
           playRowFn={playRowFn}
           isAction={isAction}
+          rowColorFn={rowColorFn}
         />
       </Table>
 

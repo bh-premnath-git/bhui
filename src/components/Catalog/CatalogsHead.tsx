@@ -137,7 +137,7 @@ function CatalogsHead(props:any) {
 
 
             <CustomTabPanel value={value} index={0}>
-                <CatalogsBody data={data} search={searchValue}/>
+                <CatalogsBody />
             </CustomTabPanel>
             <CustomTabPanel value={value} index={1}>
                 {/* <Lineage data={props.data} /> */}

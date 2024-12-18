@@ -119,7 +119,7 @@ function CatalogSchema() {
 
                     </Tabs>
                 </Stack>
-                <Stack>
+                {/* <Stack>
                     <Stack direction={'row'} spacing={2}>
                         <Stack>
                             <Input id="retries" value={searchValue}
@@ -133,13 +133,13 @@ function CatalogSchema() {
 
                         </Stack>
                     </Stack>
-                </Stack>
+                </Stack> */}
 
             </Stack>
 
             <Box sx={{ height: 'calc(100% - 64px)', overflow: 'auto' }}>
                 <CustomTabPanel value={value} index={0}>
-                    <CatalogsBody search={searchValue} />
+                    <CatalogsBody />
                 </CustomTabPanel>
                 {/* <CustomTabPanel value={value} index={1}>
                     <Lineage data={props.data} />

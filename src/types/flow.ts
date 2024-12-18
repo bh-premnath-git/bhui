@@ -54,6 +54,7 @@ export interface NodeToolBarRef {
 export interface Property {
   key: string;
   enum?: string[];
+  description: string;
   ui_properties: {
     property_name: string;
     property_key: string;
@@ -61,8 +62,9 @@ export interface Property {
     group_key: string;
     language?: string;
     order?: number;
-    spancol?:number;
-    mandatory:boolean;
+    default?: any;
+    spancol?: number;
+    mandatory: boolean;
     endpoint?: string;
   };
 }
@@ -90,6 +92,7 @@ export interface MetaData {
   properties: Record<string, any>;
   description: string;
   renameType?: string;
+  fullyOptimized: boolean;
   [key: string]: any;
 }
 
@@ -140,7 +143,7 @@ export interface FlowContextType {
   zoomOut: () => void;
   fitView: () => void;
   deleteNode: (nodeId: string) => void;
-  deleteSelectedNodes: ()=>void;
+  deleteSelectedNodes: () => void;
   cloneNode: (nodeId: string) => void;
   renameNode: (nodeId: string, newLabel: string) => void;
   showNodeInfo: (nodeId: string) => void;
@@ -148,7 +151,7 @@ export interface FlowContextType {
   selectNode: (nodeId: string) => void;
   updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
   getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
-  prevNodeFn: (nodeId: string) => Node<CustomNodeData>[] | undefined;
+  prevNodeFn: (nodeId: string) => string[] | undefined;
   setEditingNode: (node: EditingNode | null) => void;
   setTemporaryEdgeId: (id: string | null) => void;
   toggleAutoSave: () => void;
@@ -159,7 +162,25 @@ export interface FlowContextType {
     position: { x: number; y: number };
     data: CustomNodeData;
   }) => void;
-  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>) => void;
+  updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>, newData?: any) => void;
   revertOrSaveData: (nodeId: string, save: boolean) => void;
   setSelectedFlowId: (flowId: string) => void;
+  isDirty: boolean;
+  selectedNodeConnection: (flowId: string) => {
+    selected: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    };
+    previous: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    }[];
+    next: {
+      nodeData: any | null;
+      nodeForm: any | null;
+    }[];
+  };
+  selectedNodeOptimized: (flowId: string) => void;
+  fullFlowOptimizzed: () => boolean;
+  hasDeployedValue: (date: string) => boolean;
 }

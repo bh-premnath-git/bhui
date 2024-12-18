@@ -8,12 +8,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { FileQuestion } from "lucide-react";
 import { getDataSourceLayout, getdataSourceList, setSelectedDataSource } from "@/redux/CatalogSlice";
-import { formatDate, formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/Utils/dateFormatter";
 import { Paper, Typography, Box, LinearProgress, Tooltip, Drawer, IconButton } from "@mui/material";
 import { 
   Database, 
   Users, 
-  FileSpreadsheet, 
   Clock
 } from "lucide-react";
 import CloseIcon from '@mui/icons-material/Close';
@@ -72,7 +71,7 @@ const columns: ColumnConfig[] = [
           borderRadius: 1,
           p: 1
         }}>
-          <Database className="text-primary" size={20} />
+          <Database color="green" size={20} />
         </Box>
         <Box>
           <Typography 
@@ -258,11 +257,11 @@ function DataCatalogTable({
 
   useLayoutEffect(() => {
     dispatch(getGitProject());
-    dispatch(getdataSourceList());
+    dispatch(getdataSourceList({offset: 0, limit: 1000}));
   }, [dispatch]);
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return <Spinner  />;
   }
 
   if (error) {
@@ -297,17 +296,19 @@ function DataCatalogTable({
           }
         }}
       >
-        <FlexibleTable 
-          data={catalogList}
-          columns={columns}
-          itemsPerPageOptions={[10, 25, 50]}
-          defaultItemsPerPage={10}
-          tableName="Xplore"
-          createNewFn={createNewFn}
-          playRowFn={playRowFn}
-          playRow={true}
-          background='primary.main'
-        />
+        
+          <FlexibleTable 
+            data={catalogList}
+            columns={columns}
+            itemsPerPageOptions={[10, 25, 50]}
+            defaultItemsPerPage={10}
+            tableName="Xplore"
+            createNewFn={createNewFn}
+            playRowFn={playRowFn}
+            playRow={true}
+            background="bg-black"
+          />
+        
       </Paper>
 
       <Drawer

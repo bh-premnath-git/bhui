@@ -8,18 +8,15 @@ import { FlexibleTable } from "@/components/Tabel";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import ShowingLogs from "@/components/Dataops/ShowingLogs";
-import MyChartComponent from "@/components/Dataops/ChartComponent";
 import DataOpsChartHeader from "@/components/Dataops/DataOpsChartHeader";
 import FilterForm from '@/components/Dataops/FilterForm';
 import TaskDetails from '@/components/TaskDetails/TaskDetails';
 
 // Material UI imports
-import { Card, CardContent, Divider, Grid, Tab, Tabs, Stack } from "@mui/material";
+import { Stack } from "@mui/material";
 
 // Icons
-import { FileQuestion } from "lucide-react";
+import { FileQuestion } from 'lucide-react';
 import { FaFilter } from "react-icons/fa";
 
 // Constants and Types
@@ -46,13 +43,12 @@ interface DataOpsTableProps {
 }
 
 const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error }) => {
-  const [selectedTab, setSelectedTab] = useState(0);
   const [selectedRowData, setSelectedRowData] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const dispatch = useAppDispatch();
+  const [activeStatuses, setActiveStatuses] = useState<string[]>([]);
 
   useEffect(() => {
     if (dataOpsList?.length && !selectedRowData) {
@@ -60,28 +56,35 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     }
   }, [dataOpsList]);
 
-  // Filter data based on search term and active field-based filters
   const filteredData = useMemo(() => {
-    let filtered = dataOpsList.filter(item =>
+    let filtered = dataOpsList.filter((item) =>
       Object.values(item).some((value: any) =>
         value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
 
+    // Filter by active filters
     if (Object.keys(activeFilters).length > 0) {
-      filtered = filtered.filter(item =>
+      filtered = filtered.filter((item) =>
         Object.entries(activeFilters).every(([key, value]) =>
           item[key]?.toString().toLowerCase().includes(value.toLowerCase())
         )
       );
     }
 
+    // Apply status filtering
+    if (activeStatuses.length > 0) {
+      filtered = filtered.filter((item) =>
+        activeStatuses.includes(item.pipeline_status)
+      );
+    }
+
     return filtered;
-  }, [dataOpsList, searchTerm, activeFilters]);
+  }, [dataOpsList, searchTerm, activeFilters, activeStatuses]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  }
+  };
 
   const handleFilterSubmit = useCallback((values: Record<string, string>) => {
     const nonEmptyFilters = Object.fromEntries(
@@ -96,16 +99,22 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
     setSelectedRowData(row);
   };
 
-  if (loading) return <Spinner size="lg" />;
+  const handleStatusFilterChange = (selectedStatuses: string[]) => {
+    setActiveStatuses(selectedStatuses);
+  };
+
+  if (loading) return <Spinner  />;
   if (error) return <ErrorDisplay message={error.message} />;
   if (!dataOpsList?.length) return <EmptyState />;
 
   return (
     <div className="container mx-auto px-4">
-      {/* Header Section */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
-        <DataOpsChartHeader selectedRowData={selectedRowData} />
-        <Stack direction="row" spacing={2} alignItems="center">
+        <DataOpsChartHeader
+          selectedRowData={countPipelineStatuses(dataOpsList)}
+          clickstatusType={handleStatusFilterChange}
+        />
+        <Stack direction="row" spacing={2} alignItems="center" mt={13}>
           <Input
             placeholder="Search Pipeline"
             className="w-44"
@@ -119,7 +128,6 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         </Stack>
       </Stack>
 
-      {/* Table Component */}
       <FlexibleTable
         data={filteredData}
         columns={dataopsColumn}
@@ -131,7 +139,6 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         isAction={false}
       />
 
-      {/* Filter Form */}
       <FilterForm
         open={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
@@ -140,90 +147,12 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
         filterableFields={filterableFields}
       />
 
-      {/* Add TaskDetails component */}
       {selectedJobId && (
-        <TaskDetails 
+        <TaskDetails
           jobId={selectedJobId}
           onClose={() => setSelectedJobId(null)}
+          selectedRowData={selectedRowData}
         />
-      )}
-
-      {/* Details Card */}
-      {selectedRowData && (
-        <Card elevation={0} className="border rounded shadow-sm mt-4">
-          <CardContent>
-            <Label className="text-md">
-              Job Name: <span className="font-bold">{selectedRowData.pipeline_name}</span>
-            </Label>
-            <Stack  direction={'row'} spacing={2} justifyContent={'space-between'}>
-              <Tabs
-                value={selectedTab}
-                onChange={(_, newValue) => setSelectedTab(newValue)}
-                className="mt-4"
-                TabIndicatorProps={{
-                  style: {
-                    textTransform: 'none',
-                    backgroundColor: '#000', // Customize the background color of the indicator
-                    height: 5,
-                    width: '30px', // Set the width of the indicator based on the number of tabs
-                    marginLeft: 'calc((100% / 2.5) / 2)',
-                    borderRadius: '10px 10px 0px 0px' // Center the indicator within each tab
-                  },
-                }}
-                TabScrollButtonProps={{
-                  style: {
-                    display: 'none' // Hide scroll buttons if not needed
-                  }
-                }}
-                sx={{
-                  '& .MuiTabs-flexContainer': {
-                    justifyContent: 'center', // Center tabs horizontally
-                  },
-                  '& .MuiTab-root': {
-                    display: 'flex', // Make each tab a flex container
-                    justifyContent: 'center', // Center tab content horizontally
-                  }
-                }}
-              >
-                <Tab label={<Label>Properties</Label>} sx={{
-                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
-                    color: 'black',
-                    fontWeight: 'bold'
-                  }
-                }} />
-                <Tab label={<Label>Show Logs</Label>} sx={{
-                  textTransform: 'none', color: 'black', '&.Mui-selected': { // Add this to target the selected tab
-                    color: 'black',
-                    fontWeight: 'bold'
-                  },
-                }} />
-              </Tabs>
-            </Stack>
-            <Divider sx={{ width: '12%', mb: 2 }} />
-
-            {selectedTab === 0 && (
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <Stack spacing={1}>
-                    <Label className="text-sm">Batch ID: {selectedRowData.batch_id}</Label>
-                    <Label className="text-sm">Input data: {selectedRowData.input_data_path}</Label>
-                    <Label className="text-sm">Output data: {selectedRowData.output_data_path}</Label>
-                  </Stack>
-                </Grid>
-                <Grid item xs={8}>
-                  <Card className="border shadow-sm rounded" elevation={0}>
-                    <CardContent>
-                      <Label className="text-md mb-4">Data Statistics</Label>
-                      <MyChartComponent selectedRowData={selectedRowData} />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            )}
-
-            {selectedTab === 1 && <ShowingLogs  selectedRowData={selectedRowData} />}
-          </CardContent>
-        </Card>
       )}
     </div>
   );
@@ -236,7 +165,14 @@ const AllDataOps: React.FC = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(getDataOps());
+    const timenow = new Date();
+    const thirtyDaysAgo = new Date(timenow);
+    thirtyDaysAgo.setDate(timenow.getDate() - 10);
+
+    const thirtyDaysAgoISOString = thirtyDaysAgo.toISOString();
+    const params = { job_start_time: thirtyDaysAgoISOString };
+
+    dispatch(getDataOps(params));
   }, [dispatch]);
 
   const error = apiError ? { message: apiError } : null;
@@ -251,3 +187,24 @@ const AllDataOps: React.FC = () => {
 };
 
 export default AllDataOps;
+
+function countPipelineStatuses(dataArray) {
+  const statusCounts = {
+    Success: 0,
+    Failed: 0,
+    InProgress: 0,
+  };
+
+  dataArray.forEach(item => {
+    if (item.pipeline_status === "Success") {
+      statusCounts.Success++;
+    } else if (item.pipeline_status === "Failed") {
+      statusCounts.Failed++;
+    } else if (item.pipeline_status === "In Progress") {
+      statusCounts.InProgress++;
+    }
+  });
+
+  return statusCounts;
+}
+

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { PlusCircle, X } from 'lucide-react';
+import { PlusCircle, X, AlertTriangle, CheckCircle } from 'lucide-react';
 import useToast from '@/oldcomponents/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject } from '@/redux/ProjectSlice';
@@ -129,13 +129,14 @@ export default function ProjectCreationComponent() {
     setValidationError(false);
     setValidationErrorMsg('');
 
-    // Check required fields
-    if (!values.bh_github_provider ||
+    if (
+      !values.bh_github_provider ||
       !values.bh_github_token_url ||
       !values.bh_github_url ||
-      !values.bh_github_username) {
+      !values.bh_github_username
+    ) {
       setValidationError(true);
-      setValidationErrorMsg('Fill in all required fields');
+      setValidationErrorMsg('Please fill in all required fields before validating the token.');
       return false;
     }
     try {
@@ -156,14 +157,14 @@ export default function ProjectCreationComponent() {
       } else {
         setIsTokenValid('inValid');
         setValidationError(true);
-        setValidationErrorMsg('Error validating');
+        setValidationErrorMsg('Error validating your token.');
         showToast(result.error, { color: '#FF0000' });
         return false;
       }
     } catch (error) {
       setIsTokenValid('inValid');
       setValidationError(true);
-      setValidationErrorMsg('Error validating');
+      setValidationErrorMsg('Error validating your token.');
       showToast('Error validating token', { color: '#FF0000' });
       return false;
     }
@@ -206,10 +207,13 @@ export default function ProjectCreationComponent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-4 rounded-xl border bg-card text-card-foreground shadow-lg w-full mt-2">
-      <div className="border-b pb-1">
-        <h2 className="text-2xl font-semibold">Create New Project</h2>
-        <p className="text-muted-foreground mt-1">Configure your project settings and repository details</p>
+    <div className="max-w-4xl mx-auto p-3 space-y-6 rounded border bg-white text-black shadow w-full mt-8">
+      {/* Header Section */}
+      <div className="border-b pb-2">
+        <h2 className="text-xl font-semibold">Create New Project</h2>
+        <p className="text-sm text-gray-700 mt-1">
+          Configure your project settings and repository details.
+        </p>
       </div>
 
       <Formik
@@ -219,12 +223,14 @@ export default function ProjectCreationComponent() {
         onSubmit={handleSubmitForm}
       >
         {({ values, setFieldValue, isValid }) => (
-          <Form className="space-y-4">
+          <Form className="space-y-6">
             {/* Project Name Section */}
-            <div className="flex justify-between items-start">
+            <div className="flex items-center justify-between">
               <div className="space-y-1 w-1/2">
                 <RequiredLabel>
-                  <Label htmlFor="bh_project_name" className="text-base">Project Name</Label>
+                  <Label htmlFor="bh_project_name" className="font-medium">
+                    Project Name
+                  </Label>
                 </RequiredLabel>
                 <Field name="bh_project_name">
                   {({ field }: any) => (
@@ -233,24 +239,26 @@ export default function ProjectCreationComponent() {
                         {...field}
                         id="bh_project_name"
                         placeholder="Enter project name"
-                        className="h-10 w-2/3"
+                        className="h-8 w-2/3 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           handleProjectNameChange(e, setFieldValue)
                         }
                       />
                       {projectExistsModalOpen && (
-                        <span className="absolute right-0 top-1/2 -translate-y-1/2 mr-3 text-red-500">
-                          ⚠️ Name already exists
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 flex items-center text-xs">
+                          <AlertTriangle className="mr-1 h-3 w-3" />
+                          Name exists
                         </span>
                       )}
                     </div>
                   )}
                 </Field>
-                <ErrorMessage name="bh_project_name" component="div" className="text-red-500 text-sm" />
+                <ErrorMessage name="bh_project_name" component="div" className="text-red-500 text-xs" />
               </div>
+
               <Button
                 variant="outline"
-                className="hover:bg-gray-100"
+                className="text-xs font-medium px-3 py-1 border-gray-300 hover:bg-gray-100"
                 onClick={() => navigate('/admin-console/projects')}
               >
                 View All Projects
@@ -258,18 +266,20 @@ export default function ProjectCreationComponent() {
             </div>
 
             {/* Repository Details Section */}
-            <div className="bg-gray-50 p-2 rounded-lg space-y-6">
-              <h3 className="text-lg font-medium mb-2">Repository Details</h3>
+            <div className="p-3 rounded bg-white border space-y-4">
+              <h3 className="text-base font-medium text-black border-b pb-2">Repository Details</h3>
               <div className="grid grid-cols-4 gap-2">
-                <div>
+                <div className="space-y-1">
                   <RequiredLabel>
-                    <Label htmlFor="bh_github_provider">Github Provider</Label>
+                    <Label htmlFor="bh_github_provider" className="font-medium text-sm">
+                      Git Provider
+                    </Label>
                   </RequiredLabel>
                   <Field name="bh_github_provider">
                     {({ field }: any) => {
                       const initialProviderId = initialValue.bh_github_provider?.toString();
                       const providerName = githubProviderList.find(
-                        (provider) => provider.id.toString() === initialProviderId.toString()
+                        (provider) => provider.id.toString() === initialProviderId?.toString()
                       )?.dtl_desc || '';
 
                       return (
@@ -280,7 +290,7 @@ export default function ProjectCreationComponent() {
                             setFieldValue('bh_github_provider', selectedProviderId);
                           }}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="h-8 w-full border-gray-300 text-sm focus:ring focus:ring-blue-200 focus:border-blue-400">
                             <SelectValue className="whitespace-nowrap overflow-hidden text-ellipsis">
                               {field.value && githubProviderList.find((item) => item.id.toString() === field.value)
                                 ? githubProviderList.find((item) => item.id.toString() === field.value)?.dtl_desc
@@ -304,163 +314,201 @@ export default function ProjectCreationComponent() {
                   <ErrorMessage
                     name="bh_github_provider"
                     component="div"
-                    className="text-red-500"
+                    className="text-red-500 text-xs"
                   />
                 </div>
-                <div>
+
+                <div className="space-y-1">
                   <RequiredLabel>
-                    <Label htmlFor="bh_github_username">Github Username</Label>
+                    <Label htmlFor="bh_github_username" className="font-medium text-sm">Git Username</Label>
                   </RequiredLabel>
                   <Field name="bh_github_username">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_username" placeholder="Github Username" />
+                      <Input
+                        {...field}
+                        id="bh_github_username"
+                        placeholder="e.g. johndoe"
+                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                      />
                     )}
                   </Field>
                   <ErrorMessage
                     name="bh_github_username"
                     component="div"
-                    className="text-red-500"
+                    className="text-red-500 text-xs"
                   />
                 </div>
-                <div>
+
+                <div className="space-y-1">
                   <RequiredLabel>
-                    <Label htmlFor="bh_github_email">Github Email</Label>
+                    <Label htmlFor="bh_github_email" className="font-medium text-sm">Git Email</Label>
                   </RequiredLabel>
                   <Field name="bh_github_email">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_github_email" placeholder="user@github.com" />
+                      <Input
+                        {...field}
+                        id="bh_github_email"
+                        placeholder="user@github.com"
+                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                      />
                     )}
                   </Field>
                   <ErrorMessage
                     name="bh_github_email"
                     component="div"
-                    className="text-red-500"
+                    className="text-red-500 text-xs"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="bh_default_branch">Default Branch</Label>
+
+                <div className="space-y-1">
+                  <Label htmlFor="bh_default_branch" className="font-medium text-sm">Default Branch</Label>
                   <Field name="bh_default_branch">
                     {({ field }: any) => (
-                      <Input {...field} id="bh_default_branch" placeholder="<main>" />
+                      <Input
+                        {...field}
+                        id="bh_default_branch"
+                        placeholder="e.g. main"
+                        className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                      />
                     )}
                   </Field>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div className='space-y-2'>
+              {/* GitHub URL and Token Row */}
+              <div className="grid grid-cols-3 gap-2 mt-2 items-center" style={{minHeight:'60px'}}>
+                <div className="space-y-1 col-span-1">
                   <RequiredLabel>
-                    <Label htmlFor="bh_github_url">Github Repository URL</Label>
-                  </ RequiredLabel>
-                  <Field name="bh_github_url">
-                    {({ field }: any) => (
-                      <Input {...field} id="bh_github_url" placeholder="https://github.com/..." className='w-full' />
-                    )}
-                  </Field>
-                  <ErrorMessage name="bh_github_url" component="div" className="text-red-500" />
-                </div>
-                <div className='space-y-2'>
-                  <RequiredLabel>
-                    <Label htmlFor="bh_github_token_url">Github Token</Label>
+                    <Label htmlFor="bh_github_url" className="font-medium text-sm">GitHub URL</Label>
                   </RequiredLabel>
-                  <Field name="bh_github_token_url">
+                  <Field name="bh_github_url">
                     {({ field }: any) => (
                       <Input
                         {...field}
-                        id="bh_github_token_url"
-                        type="password"
-                        placeholder="********"
-                        onChange={(e: any) => {
-                          setIsTokenValid('inValid');
-                          field.onChange(e);
-                        }}
-                        className='w-full'
+                        id="bh_github_url"
+                        placeholder="https://github.com/username/repository"
+                        className="h-8 w-full border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
                       />
                     )}
                   </Field>
-                  <ErrorMessage
-                    name="bh_github_token_url"
-                    component="div"
-                    className="text-red-500"
-                  />
+                  <ErrorMessage name="bh_github_url" component="div" className="text-red-500 text-xs" />
                 </div>
-                <div className="flex items-end">
-                  <ValidationComponent
-                    onValidate={() => handleVerification(values)}
-                    error={validationError}
-                    errorMsg={validationErrorMsg}
-                  />
+
+                {/* Token and Validation on the same line */}
+                <div className="col-span-2 flex items-end gap-2">
+                  <div className="flex flex-col space-y-1 w-1/2">
+                    <RequiredLabel>
+                      <Label htmlFor="bh_github_token_url" className="font-medium text-sm">GitHub Token</Label>
+                    </RequiredLabel>
+                    <div className="relative">
+                      <Field name="bh_github_token_url">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="bh_github_token_url"
+                            type="password"
+                            placeholder="••••••••"
+                            onChange={(e: any) => {
+                              setIsTokenValid('inValid');
+                              field.onChange(e);
+                            }}
+                            className="h-8 w-full border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400 pr-8"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage
+                        name="bh_github_token_url"
+                        component="div"
+                        className="text-red-500 text-xs mt-1"
+                      />
+                      {isTokenValid === 'valid' && (
+                        <CheckCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-600" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <ValidationComponent
+                      onValidate={() => handleVerification(values)}
+                      error={validationError}
+                      errorMsg={validationErrorMsg}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Tags Section */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-3 rounded bg-white border space-y-2">
+              <div className="flex justify-between items-center mb-1">
                 <div>
-                  <Label className="text-lg font-medium">Tags</Label>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Add tags to identify compute instances in your AWS account
+                  <Label className="text-base font-medium">Tags</Label>
+                  <p className="text-xs text-gray-700 mt-1">
+                    Add tags to identify compute instances.
                   </p>
                 </div>
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
-                      className="flex items-center text-emerald-600 hover:bg-emerald-50 border-emerald-200"
+                      className="flex items-center text-xs font-medium px-2 py-1 border-gray-300 hover:bg-gray-100"
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add New Tag
+                      <PlusCircle className="mr-1 h-3 w-3" />
+                      Add Tag
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[385px]">
+                  <DialogContent className="sm:max-w-[300px] rounded-md bg-white text-black border border-gray-300 p-3">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-semibold">Add New Tag</DialogTitle>
+                      <DialogTitle className="text-base font-semibold">Add a New Tag</DialogTitle>
                     </DialogHeader>
-                    <div className="mt-6 space-y-4">
-                      <div className="flex flex-col space-y-2">
+                    <div className="mt-4 space-y-2">
+                      <div className="flex flex-col space-y-1">
                         <Label htmlFor="tagKey" className="text-sm font-medium">
-                          Key
+                          Tag Key
                         </Label>
                         <Input
                           id="tagKey"
                           value={tagKey}
                           onChange={(e) => setTagKey(e.target.value)}
-                          className="w-full"
+                          className="border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400 h-8"
                         />
                       </div>
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex flex-col space-y-1">
                         <Label htmlFor="tagValue" className="text-sm font-medium">
-                          Value
+                          Tag Value
                         </Label>
                         <Input
                           id="tagValue"
                           value={tagValue}
                           onChange={(e) => setTagValue(e.target.value)}
-                          className="w-full"
+                          className="border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400 h-8"
                         />
                       </div>
                     </div>
-                    <DialogFooter className="mt-6">
-                      <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800">
+                    <DialogFooter className="mt-4">
+                      <Button onClick={addTag} className="w-full bg-black text-white hover:bg-gray-800 h-8 text-sm">
                         Add Tag
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
-              
-              <div className="flex flex-wrap gap-1 min-h-[50px] bg-white p-1 rounded-md border">
+
+              <div className="flex flex-wrap gap-1 min-h-[40px] bg-gray-50 p-1 rounded border border-gray-200">
                 {tags.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No tags added yet</p>
+                  <p className="text-gray-400 text-xs">No tags added yet</p>
                 ) : (
                   tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="px-3 py-1.5 text-sm">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="px-2 py-1 text-xs bg-gray-100 text-black border border-gray-300 flex items-center"
+                    >
                       {`${tag.tagKey}: ${tag.tagValue}`}
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="ml-2 h-4 w-4 p-0 hover:bg-red-100 hover:text-red-600"
+                        className="ml-1 h-4 w-4 p-0 hover:bg-red-100 hover:text-red-600"
                         onClick={() => removeTag(index)}
                       >
                         <X className="h-3 w-3" />
@@ -472,15 +520,15 @@ export default function ProjectCreationComponent() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center pt-2">
               <Button
                 type="submit"
-                className="w-1/4 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                className="w-1/4 h-8 bg-black hover:bg-gray-800 text-white font-medium text-sm focus:ring focus:ring-blue-200"
                 disabled={isTokenValid === 'inValid' || !isValid || isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <Spinner className="mr-2" />
+                    <Spinner  />
                     Creating...
                   </div>
                 ) : (
@@ -492,19 +540,23 @@ export default function ProjectCreationComponent() {
         )}
       </Formik>
 
+      {/* Existing Project Warning Modal */}
       {projectExistsModalOpen && (
         <Dialog open={projectExistsModalOpen} onOpenChange={setProjectExistsModalOpen}>
-          <DialogContent>
+          <DialogContent className="rounded-md bg-white text-black border border-gray-300 p-3">
             <DialogHeader>
-              <DialogTitle>Project Already Exists</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-red-600 flex items-center">
+                <AlertTriangle className="mr-1 h-4 w-4 text-red-600" />
+                Project Already Exists
+              </DialogTitle>
             </DialogHeader>
-            <div className="flex flex-col items-center justify-center gap-2 py-2">
-              <p className="text-gray-700">
-                A project with this name already exists.
+            <div className="flex flex-col items-center justify-center gap-1 py-2 text-center">
+              <p className="text-sm text-gray-700">
+                A project with this name already exists. Please choose a different name.
               </p>
-              <p className="text-gray-700">
-                Please choose a different name.
-              </p>
+              <Button onClick={() => setProjectExistsModalOpen(false)} className="bg-black text-white hover:bg-gray-800 mt-2 h-8 text-sm">
+                OK
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

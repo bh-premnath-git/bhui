@@ -12,6 +12,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Drawer } from '@mui/material';
 
 interface CostOptimizationFormProps {
     open: boolean;
@@ -23,12 +24,16 @@ const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClo
     const [ToastComponent, showToast]: any = useToast();
 
     return (
-        <Dialog
+        <Drawer
+            anchor="right" 
             open={open}
             onClose={onClose}
-            sx={{ borderRadius: 2 }}
-            maxWidth="sm"
-            fullWidth
+            sx={{
+                '& .MuiDrawer-paper': {
+                  width: '1000px',
+                  maxWidth: '100%',
+                },
+              }}
         >
             <DialogTitle className="flex justify-between items-center bg-gray-100">
                 <span className="text-md font-semibold text-black">Cost Optimization</span>
@@ -40,7 +45,7 @@ const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClo
                 <CostOptimization onClose={onClose} showToast={showToast} />
             </DialogContent>
             {ToastComponent}
-        </Dialog>
+        </Drawer>
     );
 };
 
@@ -68,7 +73,6 @@ const CostOptimization = ({ onClose, showToast }: any) => {
     };
 
     const handleSubmit = (values: any) => {
-        console.log(values);
         showToast({ message: 'Cost optimization settings saved!', type: 'success' });
         onClose();
     };

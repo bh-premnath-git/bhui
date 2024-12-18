@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, HelpCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip"
 
 interface InputFieldProps {
   label: string;
@@ -11,6 +17,8 @@ interface InputFieldProps {
   mandatory: boolean;
   error?: string;
   type?: string;
+  default?: any;
+  description: string;
 }
 
 export const InputField: React.FC<InputFieldProps> = ({
@@ -21,6 +29,8 @@ export const InputField: React.FC<InputFieldProps> = ({
   onChange,
   mandatory,
   error,
+  description,
+  default: defaultValue,
   type = 'text'
 }) => {
   const [touched, setTouched] = useState(false);
@@ -28,32 +38,48 @@ export const InputField: React.FC<InputFieldProps> = ({
 
   const handleBlur = () => {
     setTouched(true);
-    if (mandatory && !value.trim()) {
+    if (mandatory && !value.trim() && !defaultValue?.toString().trim()) {
       setFieldError(`${label} is required`);
     } else {
       setFieldError(error);
     }
   };
 
+  const displayValue = value || defaultValue || "";
+
   const displayError = touched ? fieldError : error;
 
   return (
     <div className="w-full max-w-sm space-y-4">
-      <label 
-        htmlFor={id} 
-        className="text-sm text-gray-600"
-      >
-        {label} {mandatory && <span className="text-red-500">*</span>}
-      </label>
+      <div className="flex items-center space-x-1">
+        <label
+          htmlFor={id}
+          className="text-sm text-gray-600"
+        >
+          {label} {mandatory && <span className="text-red-500">*</span>}
+        </label>
+        {description && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <HelpCircle className="w-4 h-4 text-gray-400 cursor-pointer" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs p-2 bg-white text-gray-700 border border-gray-200 rounded shadow-sm">
+                {description}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
       <input
         type={type}
         id={id}
         name={label}
-        value={value}
+        value={displayValue}
         placeholder={placeholder}
         onChange={onChange}
         onBlur={handleBlur}
-        className={`w-full border border-gray-300 px-3 py-2 text-sm bg-white rounded-md 
+        className={`w-full border px-3 py-2 text-sm bg-white rounded-md 
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           ${displayError ? 'border-red-500' : 'border-gray-300'}`}
       />

@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { 
   Box, Typography, Button, Stack, Avatar, Chip, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  IconButton, Autocomplete
+  IconButton, Autocomplete,
+  MenuItem
 } from '@mui/material';
-import { Link as LinkIcon, Plus, X } from 'lucide-react';
+import { Link as LinkIcon, Plus, Save, X } from 'lucide-react';
+import SaveIcon from '@mui/icons-material/Save'
+import CloseIcon from '@mui/icons-material/Close';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import EditIcon from '@mui/icons-material/Edit';
+import { red } from '@mui/material/colors';
+
 
 // Mock API service
 const mockApiCall = async (data: any) => {
@@ -24,10 +30,12 @@ interface OwnerData {
   id: string;
   name: string;
   role: string;
+  email: string;
   avatar?: string;
 }
 
 export default function About(data) {
+  const roles = ["admin-user", "ops-user", "designer-user"];
   const [description, setDescription] = useState('Sample Description about the data source. This needs to be updated by the user.');
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [links, setLinks] = useState<LinkData[]>([]);
@@ -41,7 +49,7 @@ export default function About(data) {
   
   // Form states
   const [newLink, setNewLink] = useState({ url: '', title: '' });
-  const [newOwner, setNewOwner] = useState({ name: '', role: '' });
+  const [newOwner, setNewOwner] = useState({ name: '', role: '', email: '' });
   const [newTag, setNewTag] = useState('');
 
   // Handle description edit
@@ -90,7 +98,7 @@ export default function About(data) {
       await mockApiCall({ owner });
       setOwners([...owners, owner]);
       setOwnerDialog(false);
-      setNewOwner({ name: '', role: '' });
+      setNewOwner({ name: '', role: '', email: '' });
       toast.success('Owner added successfully', {
         position: "top-right",
         autoClose: 3000
@@ -142,6 +150,7 @@ export default function About(data) {
               sx={{
                 textTransform: 'none',
                 borderRadius: 1,
+                width: '125px',
               }}
             >
               Add Link
@@ -150,34 +159,54 @@ export default function About(data) {
           
           {isEditingDesc ? (
             <Box sx={{ mb: 1 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                size="small"
-                sx={{ mb: 1 }}
-              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                  size="small" 
+                  variant="text"
+                  onClick={() => setIsEditingDesc(false)}
+                  sx={{
+                    textTransform: 'none',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline'
+                    }
+                  }}>
+                  <CloseIcon sx={{ fontSize: 20, color: 'error.main' }}/>
+                </Button>
+              </Box>
+              <Box sx={{ position: 'relative' }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+              </Box>
               <Stack direction="row" spacing={1}>
                 <Button 
                   size="small" 
-                  variant="contained"
+                  variant="text"
                   onClick={handleDescriptionSave}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Save
-                </Button>
-                <Button 
-                  size="small" 
-                  variant="outlined"
-                  onClick={() => setIsEditingDesc(false)}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Cancel
+                  sx={{
+                    textTransform: 'none',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline'
+                    }
+                  }}>
+                  <SaveIcon sx={{ fontSize: 20, color: 'black' }}/>
                 </Button>
               </Stack>
             </Box>
+            
           ) : (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -198,7 +227,7 @@ export default function About(data) {
                   }
                 }}
               >
-                Edit
+                <EditIcon sx={{ fontSize: 16, color: 'black' }} />
               </Button>
             </>
           )}
@@ -223,10 +252,16 @@ export default function About(data) {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <Typography variant="body2" component="a" href={link.url} target="_blank" sx={{ color: 'primary.main' }}>
+                  <Typography variant="body2" component="a" href={link.url} target="_blank" sx={{ color: 'black','&:hover': { color: 'primary.main' } }}>
                     {link.title}
                   </Typography>
-                  <IconButton size="small" onClick={() => setLinks(links.filter((_, i) => i !== index))}>
+                  <IconButton size="small" onClick={() => setLinks(links.filter((_, i) => i !== index))}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {
+                          color: 'error.main'
+                      }
+                    }}>
                     <X size={14} />
                   </IconButton>
                 </Box>
@@ -246,7 +281,10 @@ export default function About(data) {
               variant="outlined"
               size="small"
               onClick={() => setOwnerDialog(true)}
-              sx={{ textTransform: 'none' }}
+              sx={{ 
+                textTransform: 'none',
+                borderRadius: 1,
+                width: '125px', }}
             >
               Add Owner
             </Button>
@@ -258,19 +296,24 @@ export default function About(data) {
                   sx={{ 
                     width: 32, 
                     height: 32, 
-                    bgcolor: 'primary.lighter',
-                    color: 'primary.main',
+                    bgcolor: 'grey.200',
+                    color: '#1a1732',
                     fontSize: '0.875rem'
                   }}
                 >
-                  {owner.name.charAt(0)}
+                  {owner.name.split(' ').length > 1
+                    ? owner.name.split(' ').map(namePart => namePart.charAt(0).toUpperCase()).join('')
+                    : owner.name.charAt(0).toUpperCase() + owner.name.charAt(owner.name.length - 1).toUpperCase()}
                 </Avatar>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
                     {owner.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary">
                     {owner.role}
+                  </Typography>
+                  <Typography variant='caption' color="text.secondary">
+                    {owner.email}
                   </Typography>
                 </Box>
               </Stack>
@@ -289,7 +332,9 @@ export default function About(data) {
               variant="outlined"
               size="small"
               onClick={() => setTagDialog(true)}
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none',
+                borderRadius: 1,
+                width: '125px', }}
             >
               Add Tags
             </Button>
@@ -301,12 +346,17 @@ export default function About(data) {
                 label={tag}
                 size="small"
                 onDelete={() => setTags(tags.filter((_, i) => i !== index))}
-                sx={{ 
+                sx={{
                   borderRadius: '4px',
                   backgroundColor: 'primary.lighter',
-                  color: 'primary.main',
+                  color: '#20405f',
                   height: '24px',
-                  fontSize: '0.75rem'
+                  fontSize: '0.75rem',
+                  '& .MuiChip-deleteIcon': {
+                      '&:hover': {
+                          color: 'error.main', 
+                      },
+                  },
                 }}
               />
             ))}
@@ -316,7 +366,9 @@ export default function About(data) {
 
       {/* Add Link Dialog */}
       <Dialog open={linkDialog} onClose={() => setLinkDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Link</DialogTitle>
+        <DialogTitle>Add Link
+        <IconButton edge="start" color="inherit" onClick={() => setLinkDialog(false)} aria-label="close" sx={{ position: 'absolute', right: 8, top: 8, color: '#1a1a1a' }} > <CloseIcon /> </IconButton>
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -324,24 +376,43 @@ export default function About(data) {
               fullWidth
               value={newLink.title}
               onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: '#1a1a1a'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#1a1a1a'
+                }
+              }}
             />
             <TextField
               label="URL"
               fullWidth
               value={newLink.url}
               onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: '#1a1a1a'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#1a1a1a'
+                }
+              }}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLinkDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddLink} variant="contained">Add</Button>
+          <Button onClick={handleAddLink} variant="contained" sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}>
+            <Save className="h-5 w-5"/>
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Owner Dialog */}
       <Dialog open={ownerDialog} onClose={() => setOwnerDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Owner</DialogTitle>
+        <DialogTitle>Add Owner
+        <IconButton edge="start" color="inherit" onClick={() => setOwnerDialog(false)} aria-label="close" sx={{ position: 'absolute', right: 8, top: 8, color: '#1a1a1a' }} > <CloseIcon /> </IconButton>
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -349,36 +420,87 @@ export default function About(data) {
               fullWidth
               value={newOwner.name}
               onChange={(e) => setNewOwner({ ...newOwner, name: e.target.value })}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: '#1a1a1a'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#1a1a1a'
+                }
+              }}
             />
             <TextField
+              select
               label="Role"
               fullWidth
               value={newOwner.role}
               onChange={(e) => setNewOwner({ ...newOwner, role: e.target.value })}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: '#1a1a1a'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#1a1a1a'
+                }
+              }}
+            >
+              {roles.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Email"
+              fullWidth
+              value={newOwner.email}
+              onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: '#1a1a1a'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#1a1a1a'
+                }
+              }}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOwnerDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddOwner} variant="contained">Add</Button>
+          <Button onClick={() => setOwnerDialog(false)} sx={{ color: 'black', }}>Cancel</Button>
+          <Button onClick={handleAddOwner} variant="contained"  sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}>
+            <Save className="h-5 w-5"/>
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Tag Dialog */}
       <Dialog open={tagDialog} onClose={() => setTagDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Tag</DialogTitle>
+        <DialogTitle>
+          Add Tag
+          <IconButton edge="start" color="inherit" onClick={() => setTagDialog(false)} aria-label="close" sx={{ position: 'absolute', right: 8, top: 8, color: '#1a1a1a' }} > <CloseIcon /> </IconButton>
+        </DialogTitle>
         <DialogContent>
           <TextField
             label="Tag"
             fullWidth
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
-            sx={{ mt: 1 }}
+            sx={{
+              mt: 1,
+              '& .MuiInputLabel-root': {
+                color: '#1a1a1a'
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: '#1a1a1a'
+              }
+            }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTagDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddTag} variant="contained">Add</Button>
+          <Button onClick={handleAddTag} variant="contained"  sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}>
+            <Save className="h-5 w-5"/>
+          </Button>
         </DialogActions>
       </Dialog>
 

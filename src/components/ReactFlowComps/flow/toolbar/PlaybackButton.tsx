@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAppDispatch } from '@/redux/hooks';
 import { updateFlowDefinition } from '@/redux/FlowSlice';
 import { LocalStorageService } from '@/services/localStorageServices';
+import { useFlow } from '@/contexts/FlowContext';
 
 interface PlaybackButtonProps {
   selectedFlowId: string;
@@ -11,6 +13,7 @@ interface PlaybackButtonProps {
   onToggle: () => void;
   size?: 'default' | 'sm' | 'lg';
   className?: string;
+  selectedData: any;
 }
 
 export function PlaybackButton({
@@ -18,9 +21,14 @@ export function PlaybackButton({
   isPlaying,
   onToggle,
   size = 'default',
-  className = ""
+  className = "",
+  selectedData
 }: PlaybackButtonProps) {
   const dispatch = useAppDispatch();
+  const { isDirty, fullFlowOptimizzed, hasDeployedValue } = useFlow();
+  const hasOptimized = fullFlowOptimizzed()
+  const hasDeployable = hasDeployedValue("")
+  console.log(hasDeployable, hasOptimized);
 
   const sizeClasses = {
     default: "h-10 w-10",
@@ -38,9 +46,15 @@ export function PlaybackButton({
     if (!isPlaying && selectedFlowId) {
       const flowStructure = LocalStorageService.getItem(`flow-${selectedFlowId}`)
       const flowJson = flowStructure?.nodeFormData?.map(item => item.formData);
-      dispatch(updateFlowDefinition({ flow_id: selectedFlowId, flow_json: { flow_json: { flowJson, flowStructure } } }))
+      dispatch(updateFlowDefinition({ flow_id: selectedFlowId, flow_json: { flow_deployment_id: selectedData?.flow_deployment_id, flow_id: selectedFlowId, flow_json: { flowJson, flowStructure } } }))
     }
   }
+
+  useEffect(() => {
+    if (!isDirty && selectedFlowId) {
+      asyncUpdateFlowDef();
+    }
+  }, [isDirty, selectedFlowId]);
 
   return (
     <TooltipProvider>
@@ -49,12 +63,13 @@ export function PlaybackButton({
           <Button
             variant="ghost"
             size="icon"
-            className={`${sizeClasses[size]} border-1 border-gray-200 hover:bg-gray-100 rounded-full p-2 ${className}`}
-            onClick={() => { asyncUpdateFlowDef(); onToggle(); }}
-            aria-label={`${isPlaying ? "Pause playback" : "Play playback"}`}
-          >
+            className={`${sizeClasses[size]} border border-gray-100 hover:bg-gray-200 rounded-md ${className}`}
+            onClick={() => { onToggle(); }}
+            aria-label={`${!isPlaying ? "Deployment Stopped" : "Deployment Started"}`}
+            disabled={!hasDeployable || !hasOptimized}
+            >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
-            {isPlaying ? (
+            {!isPlaying ? (
               <Pause className={iconSizes[size]} />
             ) : (
               <Play className={iconSizes[size]} />
@@ -65,7 +80,7 @@ export function PlaybackButton({
           className="bg-gray-900 px-3 py-1.5 text-xs font-medium text-white rounded-md border-0"
           sideOffset={5}
         >
-          <p>{isPlaying ? "Pause playback" : "Play playback"}</p>
+          <p>{!isPlaying ? "Deployment Stopped" : "Deployment Started"}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

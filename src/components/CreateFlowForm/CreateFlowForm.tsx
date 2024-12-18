@@ -5,20 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, PlusCircle, X, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, PlusCircle, X, AlertTriangle, Save, Loader } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import * as Yup from 'yup';
-import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
 import { jwtDecode } from 'jwt-decode';
 
-// Types
 
+// Types
 type Tag = {
   tagList: { key: string; value: string }[];
 };
@@ -40,7 +39,7 @@ interface CreateFlowPayload {
     on_job_start: boolean;
     on_job_failure: boolean;
     on_job_success: boolean;
-    on_job_in_progress: boolean;
+    long_running: boolean;
   };
   flow_json: Record<string, any>;
 }
@@ -55,7 +54,7 @@ interface FormValues {
     on_job_start: boolean;
     on_job_failure: boolean;
     on_job_success: boolean;
-    on_job_in_progress: boolean;
+    long_running: boolean;
   };
 }
 
@@ -80,11 +79,6 @@ interface AccordionSectionProps {
   hasError?: boolean;
 }
 
-interface FlowSearchResult {
-  exists: boolean;
-  flowName: string;
-}
-
 // Validation Schema
 const validationSchema = Yup.object().shape({
   selectedProject: Yup.string().required('Project is required'),
@@ -100,7 +94,7 @@ const validationSchema = Yup.object().shape({
 });
 
 // Accordion Section Component
-const AccordionSection: React.FC<AccordionSectionProps> = ({
+export const AccordionSection: React.FC<AccordionSectionProps> = ({
   title,
   isOpen,
   onToggle,
@@ -338,17 +332,14 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     notifications: false,
   });
 
-  // Modified toggleSection function:
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections((prev) => {
       const isCurrentlyOpen = prev[section];
-      // Close all sections first
       const newState = {
         basicInfo: false,
         additionalDetails: false,
         notifications: false,
       };
-      // Toggle the clicked section
       newState[section] = !isCurrentlyOpen;
       return newState;
     });
@@ -374,7 +365,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     const flowName = e.target.value;
     setFieldValue('name', flowName);
 
-    // Clear search results if input is too short
     if (flowName.length < 3) {
       setFlowExistsModalOpen(false);
       dispatch(clearSearchResults());
@@ -386,7 +376,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
 
   useEffect(() => {
     return () => {
-      debouncedSearchFlow.cancel(); // Cleanup debounce on unmount
+      debouncedSearchFlow.cancel();
     };
   }, [debouncedSearchFlow]);
 
@@ -408,14 +398,14 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
       on_job_start: false,
       on_job_failure: true,
       on_job_success: false,
-      on_job_in_progress: false,
+      long_running: false,
     },
   };
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white p-6 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
-      <div className="border-b pb-2 mb-2">
-        <h2 className="text-3xl font-bold text-gray-800">Create Flow</h2>
+    <div className="bg-gradient-to-b from-gray-50 to-white p-2 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
+      <div className="border-b pb-1 mb-1">
+        <h2 className="text-xl font-bold text-gray-800">Create Flow</h2>
         <p className="text-gray-500 mt-0">
           Configure your flow settings and notifications
         </p>
@@ -432,7 +422,9 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
             notes: values.notes,
             recipient_email: { email: values.recipientEmails },
             tags: tags,
-            alert_settings: values.alert_settings,
+            alert_settings: {
+              ...values.alert_settings,
+            },
             flow_json: {},
           };
           onCreateFlow(payload);
@@ -440,7 +432,6 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
         }}
       >
         {({ values, setFieldValue, errors, isValid, isSubmitting }) => {
-          // Determine if there are errors in each section
           const hasError = (errorFields: string[]) => {
             return errorFields.some((field) => {
               const error = field.split('.').reduce((acc, curr) => {
@@ -468,7 +459,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                 titleColor="text-blue-800"
                 hasError={basicInfoHasError}
               >
-                <div className="grid grid-cols-2 gap-4 ">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <RequiredLabel>
                       <Label htmlFor="selectedProject" className="text-sm font-medium mb-2">
@@ -546,7 +537,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                           <Input
                             id="name"
                             placeholder="Enter Flow Name"
-                            {...field} // Spread Formik's field props first
+                            {...field}
                             onChange={(e) => handleFlowNameChange(e, setFieldValue)}
                             className="border-blue-200 focus:ring-blue-500"
                           />
@@ -604,67 +595,115 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
               </AccordionSection>
 
               <AccordionSection
-                title="Notification Settings"
+                title="Monitor Settings"
                 isOpen={openSections.notifications}
                 onToggle={() => toggleSection('notifications')}
                 borderColor="green-100"
                 titleColor="text-green-800"
                 hasError={notificationsHasError}
               >
-                <div>
-                  <RequiredLabel>
-                    <Label htmlFor="recipientEmails" className="text-sm font-medium mb-2">
-                      Recipient Email IDs
-                    </Label>
-                  </RequiredLabel>
-                  <MultipleEmailInput
-                    value={values.recipientEmails}
-                    onChange={(emails) => setFieldValue('recipientEmails', emails)}
-                    error={errors.recipientEmails as string}
-                  />
-                </div>
+                <div className="space-y-6">
+                  <div>
+                    <RequiredLabel>
+                      <Label htmlFor="recipientEmails" className="text-sm font-medium mb-2">
+                        Recipient Email IDs
+                      </Label>
+                    </RequiredLabel>
+                    <MultipleEmailInput
+                      value={values.recipientEmails}
+                      onChange={(emails) => setFieldValue('recipientEmails', emails)}
+                      error={errors.recipientEmails as string}
+                    />
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(values.alert_settings).map(([key]) => (
-                    <div
-                      key={key}
-                      className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg hover:bg-green-100 transition-colors duration-200"
-                    >
-                      <Field name={`alert_settings.${key}`} type="checkbox">
-                        {({ field }) => (
-                          <Checkbox
-                            id={key}
-                            checked={field.value}
-                            onCheckedChange={(checked) =>
-                              setFieldValue(`alert_settings.${key}`, checked)
-                            }
-                            className="border-green-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                          />
-                        )}
-                      </Field>
-                      <label htmlFor={key} className="text-sm capitalize">
-                        {key.split('_').join(' ')}
-                      </label>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">Alert Settings</Label>
+                      {/* First row: Three settings */}
+                      <div className="flex gap-4 mt-2">
+                        {Object.entries(values.alert_settings)
+                          .filter(([key]) => key !== 'long_running')
+                          .map(([key]) => (
+                            <div
+                              key={key}
+                              className={`flex items-center space-x-2 p-3 rounded-lg hover:bg-green-50 transition-colors duration-200 ${values.alert_settings[key] ? 'bg-green-50' : 'bg-gray-50'
+                                }`}
+                            >
+                              <Field name={`alert_settings.${key}`} type="checkbox">
+                                {({ field }) => (
+                                  <Checkbox
+                                    id={key}
+                                    checked={field.value}
+                                    onCheckedChange={(checked) =>
+                                      setFieldValue(`alert_settings.${key}`, checked)
+                                    }
+                                    className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                  />
+                                )}
+                              </Field>
+                              <label htmlFor={key} className="text-sm capitalize">
+                                {key.split('_').join(' ')}
+                              </label>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Second row: Only the "long_running" setting */}
+                      <div className="flex gap-4 mt-2">
+                        {Object.entries(values.alert_settings)
+                          .filter(([key]) => key === 'long_running')
+                          .map(([key]) => (
+                            <div
+                              key={key}
+                              className={`flex items-center space-x-2 p-3 rounded-lg hover:bg-green-50 transition-colors duration-200 ${values.alert_settings[key] ? 'bg-green-50' : 'bg-gray-50'
+                                }`}
+                            >
+                              <Field name={`alert_settings.${key}`} type="checkbox">
+                                {({ field }) => (
+                                  <Checkbox
+                                    id={key}
+                                    checked={field.value}
+                                    onCheckedChange={(checked) =>
+                                      setFieldValue(`alert_settings.${key}`, checked)
+                                    }
+                                    className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                  />
+                                )}
+                              </Field>
+                              <label htmlFor={key} className="text-sm capitalize">
+                                Delayed
+                              </label>
+                            </div>
+                          ))}
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </AccordionSection>
 
-              <div className="flex justify-end space-x-4 pt-6">
+              <div className="flex justify-end space-x-4 pt-2">
                 <Button
                   variant="outline"
                   type="button"
                   onClick={onClose}
-                  className="border-gray-300 hover:bg-gray-50"
+                  className="border-gray-300 hover:bg-gray-50 flex items-center space-x-2"
                 >
-                  Cancel
+                  <X className="h-4 w-4" />
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-slate-600 to-black hover:from-slate-700 hover:to-black text-white"
+                  className="bg-gradient-to-r from-slate-600 to-black hover:from-slate-700 hover:to-black text-white flex items-center space-x-2"
                   type="submit"
                   disabled={!isValid || isSubmitting || isLoading}
                 >
-                  {isLoading ? <Spinner /> : 'Create Flow'}
+                  {isLoading ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </div>
             </Form>

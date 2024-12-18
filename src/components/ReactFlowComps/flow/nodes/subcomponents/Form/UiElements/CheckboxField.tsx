@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface CheckboxFieldProps {
     id: string;
@@ -12,6 +13,8 @@ interface CheckboxFieldProps {
     label?: string;
     error?: string;
     mandatory: boolean;
+    default?: boolean; // boolean default value
+    description: string;
 }
 
 export const CheckboxField: React.FC<CheckboxFieldProps> = ({
@@ -21,14 +24,20 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
     onChange,
     label,
     error,
+    description,
+    default: defaultValue,
     mandatory
 }) => {
+    // If value is empty and defaultValue is a boolean, set the checkbox state accordingly
+    useEffect(() => {
+        if (!value && typeof defaultValue === 'boolean') {
+            onChange(property_key, defaultValue.toString());
+        }
+    }, [value, defaultValue, onChange, property_key]);
+
     const handleCheckedChange = (checked: boolean) => {
         onChange(property_key, checked ? 'true' : 'false');
     };
-
-    console.log(">>>", value);
-
 
     return (
         <div className="w-full max-w-sm space-y-4">
@@ -42,19 +51,47 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
                         ${error ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {label ? (
-                    <Label
-                        htmlFor={property_key}
-                        className="text-sm text-gray-600 cursor-pointer"
-                    >
-                        {label} {mandatory && <span className="text-red-500">*</span>}
-                    </Label>
+                    <div className="flex items-center space-x-1">
+                        <Label
+                            htmlFor={property_key}
+                            className="text-sm text-gray-600 cursor-pointer"
+                        >
+                            {label} {mandatory && <span className="text-red-500">*</span>}
+                        </Label>
+                        {description && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-pointer" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs p-2 bg-white text-gray-700 border border-gray-200 rounded shadow-sm">
+                                        {description}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
                 ) : (
-                    <Label
-                        htmlFor={property_key}
-                        className="text-sm text-gray-600 cursor-pointer"
-                    >
-                        {property_name} {mandatory && <span className="text-red-500">*</span>}
-                    </Label>
+                    <div className="flex items-center space-x-1">
+                        <Label
+                            htmlFor={property_key}
+                            className="text-sm text-gray-600 cursor-pointer"
+                        >
+                            {property_name} {mandatory && <span className="text-red-500">*</span>}
+                        </Label>
+                        {description && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-pointer" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs p-2 bg-white text-gray-700 border border-gray-200 rounded shadow-sm">
+                                        {description}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
                 )}
             </div>
             {error && (
@@ -66,3 +103,5 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
         </div>
     );
 };
+
+export default CheckboxField;

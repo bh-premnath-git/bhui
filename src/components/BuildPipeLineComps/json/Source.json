@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Schema for Source",
+    "type": "object",
+    "title": "Source",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Source Name",
+            "minLength": 1
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "File",
+                "Relational"
+            ]
+        },
+        "connection": {
+            "type": "object",
+            "$ref": "Connection.json"
+        }
+    },
+    "required": [
+        "name",
+        "type",
+        "connection"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "File"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_name": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "file_name"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "Relational"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "table_name"
+                ]
+            }
+        }
+    ]
+}

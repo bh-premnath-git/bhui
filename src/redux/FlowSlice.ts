@@ -70,6 +70,10 @@ interface UpdateFlowConfigParams {
   flow_config: Record<string, any>;
 }
 
+interface ListParams {
+  offset: number;
+  limit: number;
+}
 
 export const createFlow = createAsyncThunk<
   any, // Return type
@@ -95,15 +99,15 @@ export const createFlow = createAsyncThunk<
 
 export const listFlows = createAsyncThunk<
   any[], // Return type
-  void,
+  ListParams,
   {
     rejectValue: string;
   }
 >(
   'flow/list',
-  async (_, thunkAPI) => {
+  async (params:any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/flow/list/');
+      const response = await ApiService('8011', 'get', '/flow/list/', null, params);
       const transformed: any[] = response.map((item: any) => {
         return ({
           id: item["flow_id"],
@@ -225,7 +229,7 @@ export const updateFlowDefinition = createAsyncThunk<
     try {
       const response = await ApiService(
         '8011', 
-        'put', 
+        'patch', 
         `/flow/flow-definition/update-by-flow-id/${flow_id}`, 
         flow_json
       );
@@ -401,7 +405,7 @@ const flowSlice = createSlice({
       .addCase(updateFlowDefinition.fulfilled, (state, action) => {
         state.loading = false;
         const updatedFlow = action.payload;
-        console.log("updatedFlow def", updatedFlow);
+        //console.log("updatedFlow def", updatedFlow);
         
       })
       .addCase(updateFlowDefinition.rejected, (state, action) => {
@@ -418,7 +422,7 @@ const flowSlice = createSlice({
         // You might want to update the state with the updated configuration
         // depending on your requirements
         const updatedConfig = action.payload;
-        console.log("updatedFlowConfig", updatedConfig);
+        //console.log("updatedFlowConfig", updatedConfig);
       })
       .addCase(updateFlowConfiguration.rejected, (state, action) => {
         state.loading = false;
@@ -432,7 +436,7 @@ const flowSlice = createSlice({
         state.loading = false;
         // You might want to update relevant state here depending on the response
         const updatedDeployment = action.payload;
-        console.log("updatedDeployment", updatedDeployment);
+        //console.log("updatedDeployment", updatedDeployment);
       })
       .addCase(patchCronDeployment.rejected, (state, action) => {
         state.loading = false;

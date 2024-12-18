@@ -73,24 +73,11 @@ const ApiService = async (
 
     return response.data;
   } catch (error: any) {
-    // Enhanced error handling
-    if (error.response) {
-      console.error(
-        `Error ${method.toUpperCase()}ing data at ${url}:`,
-        error.response.data
-      );
-      return { error: error.response.data?.message || error.response.data }
-    } else if (error.request) {
-      console.error(
-        `No response received from ${url}:`,
-        error.request
-      );
-    } else {
-      console.error(
-        `Error in request setup for ${url}:`,
-        error.message
-      );
-    }
+    
+    console.error(
+      `Error in setup for ${url}:`,
+      JSON.stringify(error)
+    );
     throw error;
   }
 };

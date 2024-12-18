@@ -30,7 +30,7 @@
         "color": "#f5bc2a",
         "icon": "/assets/buildPipeline/display/filter.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
           "maxInputs": 0
         }

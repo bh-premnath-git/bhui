@@ -1,7 +1,14 @@
-import { Navigate } from 'react-router-dom';
+import { useLayoutEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 
-export default function RedirectToHome() {
-    const isAuthenticated = sessionStorage.getItem('authenticated');
-    return isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />;
-    //return <Navigate to="/dashboard" />;
-}
+const ProtectedRoute = ({ element }: { element: JSX.Element }) => {
+    const [token, setToken] = useState<string | null>(null);
+
+    useLayoutEffect(() => {
+        const storedToken = sessionStorage.getItem("token");
+        setToken(storedToken);
+    }, []);
+
+    return token ? <Navigate to="/dashboard" replace /> : element;
+};
+export default ProtectedRoute

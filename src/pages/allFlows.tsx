@@ -41,7 +41,7 @@ type ColumnConfig = {
   sortable?: boolean;
   filterable?: boolean;
   type?: 'text' | 'number' | 'date' | 'badge';
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, rowData: Flow) => React.ReactNode;
 };
 
 const columns: ColumnConfig[] = [
@@ -51,6 +51,22 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: 'text',
+    render: (value: string, rowData: Flow) => (
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+          {(() => {
+            const parts = value?.split(/[-_]/);
+            const initials = parts?.length > 1
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : value?.slice(0, 2).toUpperCase();
+            return <span className="font-bold">{initials}</span>;
+          })()}
+        </div>
+        <span>
+          {value}
+        </span>
+      </div>
+    ),
   },
   {
     key: 'bh_project_name',
@@ -141,7 +157,7 @@ const AllFlows: React.FC = () => {
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(listFlows()),
+          dispatch(listFlows({ offset: 0, limit: 1000 })),
           dispatch(getFlowProjectList({})),
           dispatch(getEnvironmentList())
         ]);
@@ -167,12 +183,12 @@ const AllFlows: React.FC = () => {
     setIsCreatingFlow(true);
     try {
       const result = await dispatch(createFlow(payload));
-      await dispatch(listFlows());
       if (createFlow.fulfilled.match(result)) {
-        dispatch(setSelectedFlowFromList(result.payload));        
+        dispatch(setSelectedFlowFromList(result.payload));
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
+
           setTimeout(() => {
             navigate('/designers/manage-flow/' + result.payload.flow_id);
           }, 1000);
@@ -186,7 +202,7 @@ const AllFlows: React.FC = () => {
     } finally {
       setIsCreatingFlow(false);
     }
-}, [dispatch, navigate, closeModal]);
+  }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
     setSelectedFlowId(data.flow_id);
@@ -214,7 +230,6 @@ const AllFlows: React.FC = () => {
     if (!deleteFlowId) return;
     try {
       await dispatch(deleteFlowbyId({ flow_id: deleteFlowId }));
-      await dispatch(listFlows());
       closeDeleteDialog();
     } catch (error) {
       console.error("Error deleting flow:", error);
@@ -224,7 +239,7 @@ const AllFlows: React.FC = () => {
   if (!initialLoadComplete || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Spinner size="lg" />
+        <Spinner />
       </div>
     );
   }

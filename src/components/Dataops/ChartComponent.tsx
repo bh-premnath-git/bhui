@@ -1,4 +1,11 @@
 import ReactECharts from 'echarts-for-react';
+const rootStyle = getComputedStyle(document.documentElement);
+
+const COLORS = [
+  rootStyle.getPropertyValue('--chart-1-color').trim(),
+  rootStyle.getPropertyValue('--chart-2-color').trim(),
+  rootStyle.getPropertyValue('--chart-5-color').trim(),
+];
 
 const MyChartComponent = ({ selectedRowData }: any) => {
   // Define the option object outside the component
@@ -54,10 +61,10 @@ const MyChartComponent = ({ selectedRowData }: any) => {
             borderRadius: [5, 5, 5, 5] // Set border radius for all corners
           },
           data: [
-            { value: selectedRowData?.job_statistics?.record_discarded, itemStyle: { color: '#ffa500' } },
-            { value: selectedRowData?.job_statistics?.record_failed, itemStyle: { color: '#d10e00' } },
-            { value: selectedRowData?.job_statistics?.records_passed, itemStyle: { color: '#00b060'} },
-            { value: selectedRowData?.job_statistics?.records_read, itemStyle: { color: '#2dcd6f' } },
+            { value: selectedRowData?.job_statistics?.records_discarded, itemStyle: { color: COLORS[1] } },
+            { value: selectedRowData?.job_statistics?.records_failed, itemStyle: { color: COLORS[2] } },
+            { value: selectedRowData?.job_statistics?.records_passed, itemStyle: { color: COLORS[0] } },
+            { value: selectedRowData?.job_statistics?.records_read, itemStyle: { color: COLORS[3] } },
           ],
         }
       ]

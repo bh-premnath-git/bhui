@@ -112,18 +112,18 @@ const AllUsers: React.FC = () => {
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
-            <Spinner className="h-8 w-8" />
+            <Spinner  />
         </div>
     );
     if (apiError) return <ErrorDisplay message={apiError} />;
     if (!userDataList?.length) return <EmptyComponent />;
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
+        <div className="container mx-auto py-2 px-1 max-w-7xl">
             {/* Enhanced Header Section */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+                    <h1 className="text-xl font-bold tracking-tight">Users</h1>
                     <p className="text-muted-foreground mt-1">
                         Manage user access and permissions
                     </p>
@@ -139,15 +139,13 @@ const AllUsers: React.FC = () => {
             </div>
 
             {/* Updated Search and Filter Section */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
-                <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
-                        </div>
+            <div className="p-2 ml-auto flex items-center justify-end">
+                <div className="flex items-center gap-2">
+                    <div className="relative flex-1 max-w-lg">
+
                         <Input
-                            placeholder="    Search by name or email..."
-                            className="pl-9 h-10 bg-gray-50 border-gray-200 w-full"
+                            placeholder="Search"
+                            className="pl-1 h-10 bg-gray-50 border-gray-300 w-55 rounded-md text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -156,23 +154,22 @@ const AllUsers: React.FC = () => {
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="gap-2 h-10">
                                 <Filter className="h-4 w-4" />
-                                Filter
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus(null)}
                                 className="cursor-pointer"
                             >
                                 All Users
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus('active')}
                                 className="cursor-pointer"
                             >
                                 Active Users
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setSelectedStatus('inactive')}
                                 className="cursor-pointer"
                             >
@@ -190,7 +187,8 @@ const AllUsers: React.FC = () => {
                         <TableRow className="bg-gray-50">
                             <TableHead className="font-semibold">User</TableHead>
                             <TableHead className="font-semibold">Email</TableHead>
-                            <TableHead className="font-semibold">Projects & Roles</TableHead>
+                            <TableHead className="font-semibold">Projects</TableHead>
+                            <TableHead className="font-semibold">Roles</TableHead>
                             <TableHead className="font-semibold">Status</TableHead>
                             <TableHead className="font-semibold">Created</TableHead>
                             <TableHead className="font-semibold">Last Active</TableHead>
@@ -206,7 +204,12 @@ const AllUsers: React.FC = () => {
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                            {user.username?.[0]?.toUpperCase()}
+                                            {(() => {
+                                                const parts = user.username?.split(/[-_]/);
+                                                return parts?.length > 1
+                                                    ? (parts[0][0] + parts[1][0]).toUpperCase()
+                                                    : user.username?.slice(0, 2).toUpperCase();
+                                            })()}
                                         </div>
                                         <div>
                                             <div className="font-semibold">{user.username}</div>
@@ -224,13 +227,21 @@ const AllUsers: React.FC = () => {
                                                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                                     {project}
                                                 </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-2">
+                                        {user.projects?.map((idx) => (
+                                            <div key={idx} className="flex flex-wrap gap-2">
                                                 {user.realm_roles?.map((role, roleIdx) => (
                                                     <Badge
                                                         key={roleIdx}
                                                         variant="outline"
                                                         className={cn(
                                                             "text-xs",
-                                                            role === 'admin-user' 
+                                                            role === 'admin-user'
                                                                 ? "bg-amber-50 text-amber-700 border-amber-200"
                                                                 : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                         )}
@@ -269,7 +280,7 @@ const AllUsers: React.FC = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem
-                                                onClick={() => navigate(`/admin-console/users/${user.id}`, 
+                                                onClick={() => navigate(`/admin-console/users/${user.id}`,
                                                     { state: { rowData: user } }
                                                 )}
                                             >

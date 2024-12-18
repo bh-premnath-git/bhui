@@ -15,7 +15,7 @@ export const NodeInfo: React.FC<{ id: string }> = ({ id }) => {
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm font-medium">Node ID:</label>
-            <p className="text-sm text-muted-foreground font-mono bg-muted p-1 rounded">{id}</p>
+            <p className="text-sm text-muted-foreground font-sans bg-muted p-1 rounded">{id}</p>
           </div>
         </div>
       </div>

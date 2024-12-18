@@ -48,7 +48,7 @@ function GitProjectTable({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   useLayoutEffect(() => {
-    dispatch(getGitProject());
+    dispatch(getGitProject({offset: 0, limit: 1000}));
   }, [dispatch]);
 
   const handleProjectClick = (project: GitProject) => {
@@ -66,9 +66,20 @@ const columns: ColumnConfig[] = [
     filterable: true,
     type: 'text',
     render: (value: string, rowData: GitProject) => (
-      <span onClick={() => handleProjectClick(rowData)} className="cursor-pointer">
-        {value}
-      </span>
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+          {(() => {
+            const parts = value?.split(/[-_]/);
+            const initials = parts?.length > 1
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : value?.slice(0, 2).toUpperCase();
+            return <span className="font-bold">{initials}</span>;
+          })()}
+        </div>
+        <span onClick={() => handleProjectClick(rowData)} className="cursor-pointer">
+          {value}
+        </span>
+    </div>
     ),
   },
   {
@@ -163,7 +174,7 @@ const EmptyComponent: React.FC = () => {
 
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return <Spinner />;
   }
 
   if (error) {
@@ -194,9 +205,10 @@ const EmptyComponent: React.FC = () => {
         columns={columns}
         itemsPerPageOptions={[5, 10, 20]}
         defaultItemsPerPage={10}
-        tableName="Create New Project"
+        tableName="Create Project"
         createNewFn={createNewFn}
         actionFn={actionFn}
+        background="bg-black"
       />
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { memo, useCallback, useState, useEffect } from 'react';
 import { Handle, Position, useEdges, useReactFlow } from 'reactflow';
 import schemaData from '../../pages/buildPipeLine/mdata.json';
+import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
+import OrderPopUp from './OrderPopUp';
 interface Schema {
     title: string;
     nodeId?: string;
@@ -51,7 +53,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [validationStatus, setValidationStatus] = useState<'none' | 'valid' | 'warning' | 'error'>('none');
     const [validationMessages, setValidationMessages] = useState<string[]>([]);
     const [showValidationTooltip, setShowValidationTooltip] = useState(false);
-
+    const [selectedSource, setSelectedSource] = useState(null);
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -171,6 +173,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 [id]: existingState
             }));
             setIsFormOpen(true);
+        } else {
+            if (data.label === 'Source') {
+                console.log(data.label)
+                setSelectedSource(data.label)
+            }
         }
     }, [data.label, formStates, setSelectedSchema, setFormStates, setIsFormOpen, id]);
 
@@ -322,81 +329,77 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
                     <div className="flex">
 
-                            <div className=" flex items-center justify-center"
-                                onMouseEnter={() => setShowValidationTooltip(true)}
-                                onMouseLeave={() => setShowValidationTooltip(false)}>
-                                <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${validationStatus === 'valid' ? 'bg-green-500' :
-                                        validationStatus === 'warning' ? 'bg-yellow-500' :
-                                            validationStatus === 'error' ? 'bg-red-500' :
-                                                'bg-gray-300'
-                                    }`} />
+                        <div className=" flex items-center justify-center"
+                            onMouseEnter={() => setShowValidationTooltip(true)}
+                            onMouseLeave={() => setShowValidationTooltip(false)}>
+                            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${validationStatus === 'valid' ? 'bg-green-500' :
+                                validationStatus === 'warning' ? 'bg-yellow-500' :
+                                    validationStatus === 'error' ? 'bg-red-500' :
+                                        'bg-gray-300'
+                                }`} />
 
-                                {/* Validation tooltip */}
-                                {showValidationTooltip && validationMessages.length > 0 && (
-                                    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
+                            {/* Validation tooltip */}
+                            {showValidationTooltip && validationMessages.length > 0 && (
+                                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
                                               bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
                                               text-xs w-max max-w-[280px] animate-fadeIn">
-                                        {/* Glass-morphism Tooltip Arrow */}
-                                        <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 
+                                    {/* Glass-morphism Tooltip Arrow */}
+                                    <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 
                                                     w-5 h-5 bg-white/95 backdrop-blur-sm rotate-45 border-r border-b border-gray-100"></div>
-                                        
-                                        {/* Status Header */}
-                                        <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
-                                            <div className={`p-1.5 rounded-lg ${
-                                                validationStatus === 'error' ? 'bg-red-50' :
-                                                validationStatus === 'warning' ? 'bg-amber-50' :
+
+                                    {/* Status Header */}
+                                    <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
+                                        <div className={`p-1.5 rounded-lg ${validationStatus === 'error' ? 'bg-red-50' :
+                                            validationStatus === 'warning' ? 'bg-amber-50' :
                                                 'bg-emerald-50'
                                             }`}>
-                                                <svg className={`w-4 h-4 ${
-                                                    validationStatus === 'error' ? 'text-red-500' :
-                                                    validationStatus === 'warning' ? 'text-amber-500' :
+                                            <svg className={`w-4 h-4 ${validationStatus === 'error' ? 'text-red-500' :
+                                                validationStatus === 'warning' ? 'text-amber-500' :
                                                     'text-emerald-500'
                                                 }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    {validationStatus === 'error' ? (
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    ) : validationStatus === 'warning' ? (
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                    ) : (
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                              d="M5 13l4 4L19 7" />
-                                                    )}
-                                                </svg>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className={`font-semibold ${
-                                                    validationStatus === 'error' ? 'text-red-600' :
-                                                    validationStatus === 'warning' ? 'text-amber-600' :
+                                                {validationStatus === 'error' ? (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                ) : validationStatus === 'warning' ? (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                ) : (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                        d="M5 13l4 4L19 7" />
+                                                )}
+                                            </svg>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className={`font-semibold ${validationStatus === 'error' ? 'text-red-600' :
+                                                validationStatus === 'warning' ? 'text-amber-600' :
                                                     'text-emerald-600'
                                                 }`}>
-                                                    {validationStatus.charAt(0).toUpperCase() + validationStatus.slice(1)}
-                                                </span>
-                                                <span className="text-gray-400 text-[10px]">Validation Status</span>
-                                            </div>
+                                                {validationStatus.charAt(0).toUpperCase() + validationStatus.slice(1)}
+                                            </span>
+                                            <span className="text-gray-400 text-[10px]">Validation Status</span>
                                         </div>
+                                    </div>
 
-                                        {/* Messages List */}
-                                        <ul className="space-y-2">
-                                            {validationMessages.map((msg, idx) => (
-                                                <li key={idx} className="flex items-start gap-2.5 group">
-                                                    <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${
-                                                        validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
-                                                        validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
+                                    {/* Messages List */}
+                                    <ul className="space-y-2">
+                                        {validationMessages.map((msg, idx) => (
+                                            <li key={idx} className="flex items-start gap-2.5 group">
+                                                <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
+                                                    validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
                                                         'bg-emerald-300 group-hover:bg-emerald-400'
                                                     }`}></span>
-                                                    <span className="text-gray-600 leading-relaxed">{msg}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center mt-1">
-                        {data.label}
+                                                <span className="text-gray-600 leading-relaxed">{msg}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center mt-1">
+                            {data.label}
+                        </div>
                     </div>
-                    </div>
-                    
+
                 </div>
             </div>
 
@@ -499,7 +502,17 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     </div>
                 </div>
             )}
+            {/* <Dialog
+                open={selectedSource ? true : false}
+                onClose={() => setSelectedSource(null)}
+                maxWidth={false}
+            >
+                <DialogContent sx={{ width: '800px' }}>
+                    {selectedSource} */}
+            {selectedSource == "Source" ? <OrderPopUp isOpen={true} onClose={() => setSelectedSource(null)} /> : null}
+            {/* </DialogContent>
 
+            </Dialog> */}
         </div>
     );
 });

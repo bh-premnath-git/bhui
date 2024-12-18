@@ -1,75 +1,116 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-
-export default function Component() {
-  const [loadingText, setLoadingText] = useState('Loading')
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLoadingText((prev) => (prev.length < 10 ? prev + '.' : 'Loading'))
-    }, 500)
-
-    return () => clearInterval(interval)
-  }, [])
-
+const LoadingScreen = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-white">
-      <motion.div
-        animate={{
-          rotate: [0, -15, 0],
-          y: [0, -10, 0],
-        }}
-        transition={{
-          duration: 0.5,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="w-32 h-32 mb-8 relative"
-      >
-        <motion.div
-          className="absolute inset-0 bg-black opacity-10 rounded-full"
-          animate={{
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="black"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-full h-full"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+      <div className="relative w-40 h-40">
+        {/* Inner spinning circles */}
+        <div className="absolute inset-0">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-full h-full origin-center"
+              style={{
+                transform: `rotate(${i * 60}deg)`,
+              }}
+            >
+              <div 
+                className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2"
+              >
+                <div 
+                  className="w-full h-full rounded-full bg-blue-500/70 blur-[2px] animate-pulse-scale"
+                  style={{
+                    animationDelay: `${i * 0.15}s`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Outer rotating ring */}
+        <svg 
+          className="absolute inset-0 animate-reverse-spin" 
+          viewBox="0 0 100 100"
         >
-          <path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 010-3L12 9" />
-          <path d="M17.64 15L22 10.64" />
-          <path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 00-3.94-1.64H9l.92.82A6.18 6.18 0 0112 8.4v1.56l2 2h2.47l2.26 1.91" />
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke="url(#gradient)"
+            strokeWidth="2.5"
+            strokeDasharray="30 10"
+            className="animate-stroke-dash"
+          />
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#2563EB" />
+              <stop offset="100%" stopColor="#3B82F6" />
+            </linearGradient>
+          </defs>
         </svg>
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="text-black text-2xl font-mono relative"
-      >
-        <motion.span
-          className="absolute inset-0 bg-black opacity-10 blur-md"
-          animate={{
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        {loadingText}
-      </motion.div>
+
+        {/* Middle ring */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full border-2 border-blue-500/20 animate-pulse" />
+        </div>
+
+        {/* Center element */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-12 h-12">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-3 h-3 bg-blue-600 rounded-full animate-center-pulse"
+                style={{
+                  top: i === 0 ? 0 : i === 2 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
+                  left: i === 3 ? 0 : i === 1 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
+                  animationDelay: `${i * 0.2}s`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
+        Loading
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes stroke-dash {
+          to {
+            stroke-dashoffset: -40;
+          }
+        }
+
+        @keyframes pulse-scale {
+          0%, 100% { transform: scale(0.5); opacity: 0.3; }
+          50% { transform: scale(1); opacity: 0.8; }
+        }
+
+        @keyframes center-pulse {
+          0%, 100% { transform: scale(0.8); opacity: 0.6; }
+          50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .animate-stroke-dash {
+          animation: stroke-dash 2s linear infinite;
+        }
+
+        .animate-pulse-scale {
+          animation: pulse-scale 2s ease-in-out infinite;
+        }
+
+        .animate-center-pulse {
+          animation: center-pulse 1.5s ease-in-out infinite;
+        }
+
+        .animate-reverse-spin {
+          animation: spin 8s linear infinite reverse;
+        }
+      `}} />
     </div>
-  )
-}
+  );
+};
+
+export default LoadingScreen;

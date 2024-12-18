@@ -8,7 +8,7 @@ import { TagInput } from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch } from '@/redux/hooks';
 import { patchFlowOperation, updateFlowConfiguration } from '@/redux/FlowSlice';
-
+import { Save, Loader } from 'lucide-react';
 // Types
 interface Tag {
   tagList: { key: string; value: string }[];
@@ -216,7 +216,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg" aria-describedby="flowform">
+      <DialogContent
+        className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg"
+        aria-describedby="flowform"
+      >
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-2xl font-semibold tracking-tight">
             Flow Settings
@@ -227,53 +230,61 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-80 grid-cols-2 mb-6 p-1 bg-gray-100 rounded-lg gap-1">
-            <TabsTrigger 
-              value="settings" 
-              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-white"
+          <TabsList className="flex space-x-4 mb-6 p-1 rounded-lg">
+            <TabsTrigger
+              value="settings"
+              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black data-[state=focus]:outline-none data-[state=focus]:ring-2 data-[state=focus]:ring-gray-400"
             >
               Settings
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="configuration"
-              className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-white"
+              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black data-[state=focus]:outline-none data-[state=focus]:ring-2 data-[state=focus]:ring-gray-400"
             >
               Configuration
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="settings" className="mt-0">
-            <div className="grid gap-6 py-4">
-              <NotesSection
-                notes={notes}
-                showNotes={showNotes}
-                setShowNotes={setShowNotes}
-                setNotes={setNotes}
-              />
-              <div className="px-4 pt-2">
-                <TagInput tags={tags} setTags={setTags} />
+          <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
+            {/* Container to keep consistent height */}
+            <TabsContent value="settings" className="mt-0 h-full">
+              <div className="grid gap-6 py-4">
+                <NotesSection
+                  notes={notes}
+                  showNotes={showNotes}
+                  setShowNotes={setShowNotes}
+                  setNotes={setNotes}
+                />
+                <div className="px-4 pt-2">
+                  <TagInput tags={tags} setTags={setTags} />
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="configuration" className="mt-0">
-            <ConfigurationSection
-              configs={configs}
-              onConfigChange={handleConfigChange}
-              onAddConfig={addConfigRow}
-              onRemoveConfig={removeConfigRow}
-            />
-          </TabsContent>
+            <TabsContent value="configuration" className="mt-0 h-full">
+              <ConfigurationSection
+                configs={configs}
+                onConfigChange={handleConfigChange}
+                onAddConfig={addConfigRow}
+                onRemoveConfig={removeConfigRow}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
 
-        <DialogFooter className="px-2 pb-2">
+        <DialogFooter className="px-2 pb-2 flex justify-end">
           <Button
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
+            aria-label={isSaving ? 'Saving' : 'Save'}
+            className="bg-black hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
           >
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

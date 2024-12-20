@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -35,6 +35,17 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+// Utility functions
+const getValidPageNumber = (current: number, total: number): number =>
+  Math.max(1, Math.min(current, total || 1));
+
+const getSafeString = (value: any): string =>
+  value?.toString?.() || '';
+
+const getSafeNumber = (value: any): number =>
+  Number(value) || 0;
+
+// Types and Interfaces
 interface ColumnConfig {
   key: string;
   header: string;
@@ -64,21 +75,19 @@ interface TableProps {
   rowColorFn?: (rowData: any, index: number) => string;
 }
 
-type SortConfig = {
+interface SortConfig {
   key: string;
   direction: "asc" | "desc" | null;
-};
+}
 
-const tableNameCheckList = [
+const TABLE_NAME_CHECK_LIST = [
   "Create New Flow",
   "Create New Project",
   "Create New Environment",
   "Create New Bundle"
 ];
 
-/**
- * Custom Table Header Component
- */
+// Custom Table Header Component
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
   sortConfig: SortConfig;
@@ -86,16 +95,14 @@ const CustomTableHeader: React.FC<{
   className?: string;
   isAction?: boolean;
 }> = React.memo(({ columns, sortConfig, requestSort, className, isAction }) => {
-  const getSortIcon = (key: string) => {
-    if (sortConfig.key === key) {
-      return sortConfig.direction === "asc" ? (
-        <ChevronUp className="inline ml-1 h-4 w-4" />
-      ) : sortConfig.direction === "desc" ? (
-        <ChevronDown className="inline ml-1 h-4 w-4" />
-      ) : null;
-    }
-    return null;
-  };
+  const getSortIcon = useCallback((key: string) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="inline ml-1 h-4 w-4" />
+    ) : sortConfig.direction === "desc" ? (
+      <ChevronDown className="inline ml-1 h-4 w-4" />
+    ) : null;
+  }, [sortConfig]);
 
   return (
     <TableHeader className={cn("bg-gray-200 text-black font-bold", className)}>
@@ -104,7 +111,7 @@ const CustomTableHeader: React.FC<{
           <TableHead
             key={column.key}
             onClick={() => column.sortable && requestSort(column.key)}
-            className={column.sortable ? "cursor-pointer" : ""}
+            className={cn(column.sortable ? "cursor-pointer" : "")}
           >
             {column.header} {column.sortable && getSortIcon(column.key)}
           </TableHead>
@@ -115,9 +122,7 @@ const CustomTableHeader: React.FC<{
   );
 });
 
-/**
- * Table Body Component
- */
+// Table Body Component
 const TableBodyComponent: React.FC<{
   tableName?: string;
   data: any[];
@@ -126,133 +131,161 @@ const TableBodyComponent: React.FC<{
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
   isAction?: boolean;
-  rowColorFn?: (rowData: any, index: number) => string; // Updated to include index
-}> = React.memo(({ tableName, data, columns, actionFn, playRow, playRowFn, isAction, rowColorFn }) => (
-  <TableBody>
-    {data?.map((row, index) => (
-      <TableRow
-        key={index}
-        onClick={playRow && playRowFn ? () => playRowFn(row) : undefined}
-        className={cn(
-          playRow ? "cursor-pointer" : "",
-          rowColorFn ? rowColorFn(row, index) : "" // Apply rowColorFn
-        )}
-      >
-        {columns.map((column) => {
-          const value = row[column.key];
-          return (
-            <TableCell
-              key={column.key}
-              className={cn(
-                column.align === "left" ? "text-left" :
-                column.align === "center" ? "text-center" :
-                column.align === "right" ? "text-right" :
-                column.type === "number" ? "text-center" : "text-justify"
-              )}
-            >
-              {column.render ? (
-                column.render(value, row)
-              ) : column.type === "image" ? (
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={value} alt={value} />
-                  <AvatarFallback>
-                    {value ? value[0] : <PlusCircle className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-              ) : column.type === "badge" && column.badgeConfig ? (
-                <Badge className={`${column.badgeConfig.colorMap[value]} text-white p-1`}>
-                  {value}
-                </Badge>
-              ) : (
-                value
-              )}
-            </TableCell>
-          );
-        })}
-        {isAction && (
+  rowColorFn?: (rowData: any, index: number) => string;
+}> = React.memo(({
+  tableName,
+  data,
+  columns,
+  actionFn,
+  playRow,
+  playRowFn,
+  isAction,
+  rowColorFn
+}) => {
+  if (!data?.length) {
+    return (
+      <TableBody>
+        <TableRow>
           <TableCell
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            colSpan={columns.length + (isAction ? 1 : 0)}
+            className="text-center py-4"
           >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start" sideOffset={-15}>
-                {tableName !== "Create New Flow" && (
-                  <>
-                    <DropdownMenuItem onClick={() => actionFn && actionFn(row, "edit")}>
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => actionFn && actionFn(row, "changeStatus")}>
-                      Change Status
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {tableName === "Create New Flow" && (
-                  <DropdownMenuItem onClick={() => actionFn && actionFn(row, "delete")}>
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            No data available
           </TableCell>
-        )}
-      </TableRow>
-    ))}
-  </TableBody>
-));
-/**
- * Table Filters Component
- */
+        </TableRow>
+      </TableBody>
+    );
+  }
+
+  return (
+    <TableBody>
+      {data.map((row, index) => (
+        <TableRow
+          key={index}
+          onClick={playRow && playRowFn ? () => playRowFn(row) : undefined}
+          className={cn(
+            playRow ? "cursor-pointer" : "",
+            rowColorFn ? rowColorFn(row, index) : ""
+          )}
+        >
+          {columns.map((column) => {
+            const value = row[column.key];
+            return (
+              <TableCell
+                key={column.key}
+                className={cn(
+                  column.align === "left" ? "text-left" :
+                    column.align === "center" ? "text-center" :
+                      column.align === "right" ? "text-right" :
+                        column.type === "number" ? "text-center" : "text-justify"
+                )}
+              >
+                {column.render ? (
+                  column.render(value, row)
+                ) : column.type === "image" ? (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={value} alt={value} />
+                    <AvatarFallback>
+                      {value ? value[0] : <PlusCircle className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : column.type === "badge" && column.badgeConfig ? (
+                  <Badge className={`${column.badgeConfig.colorMap[value]} text-white p-1`}>
+                    {value}
+                  </Badge>
+                ) : (
+                  value
+                )}
+              </TableCell>
+            );
+          })}
+          {isAction && (
+            <TableCell onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" sideOffset={-15}>
+                  {tableName !== "Create New Flow" ? (
+                    <>
+                      <DropdownMenuItem onClick={() => actionFn?.(row, "edit")}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => actionFn?.(row, "changeStatus")}>
+                        Change Status
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={() => actionFn?.(row, "delete")}>
+                      Delete
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          )}
+        </TableRow>
+      ))}
+    </TableBody>
+  );
+});
+
+// Table Filters Component
 const TableFilters: React.FC<{
   columns: ColumnConfig[];
   data: any[];
   filters: { [key: string]: string };
   setFilters: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
-}> = ({ columns, data, filters, setFilters }) => {
-  const handleFilter = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+}> = React.memo(({ columns, data, filters, setFilters, setCurrentPage }) => {
+  const handleFilter = useCallback((key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, [setFilters, setCurrentPage]);
+
+  const filterableColumns = columns.filter(col => col.filterable);
+  if (!filterableColumns.length) return null;
 
   return (
     <>
-      {columns.filter((col) => col.filterable).map((column) => (
-        <DropdownMenu key={column.key}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Filter className="mr-2 h-2 w-2" /> {column.header} /{" "}
-              {filters[column.key] || "All"}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleFilter(column.key, "All")}>
-              All
-            </DropdownMenuItem>
-            {Array.from(
-              new Set(
-                data
-                  .map((item) => item[column.key])
-                  .filter((value) => value !== undefined)
-              )
-            ).map((value) => (
-              <DropdownMenuItem key={value} onClick={() => handleFilter(column.key, value)}>
-                {value}
+      {filterableColumns.map((column) => {
+        const uniqueValues = new Set(
+          data
+            .map(item => item[column.key])
+            .filter(value => value !== undefined)
+        );
+
+        return (
+          <DropdownMenu key={column.key}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-2 w-2" /> {column.header} /{" "}
+                {filters[column.key] || "All"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleFilter(column.key, "All")}>
+                All
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ))}
+              {Array.from(uniqueValues).map((value) => (
+                <DropdownMenuItem
+                  key={value}
+                  onClick={() => handleFilter(column.key, value)}
+                >
+                  {value}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      })}
     </>
   );
-};
+});
 
-/**
- * Table Pagination Controls Component
- */
+// Table Pagination Controls Component
 const TablePaginationControls: React.FC<{
   currentPage: number;
   totalPages: number;
@@ -261,61 +294,73 @@ const TablePaginationControls: React.FC<{
   setItemsPerPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPageOptions: number[];
   showPagination: boolean;
-}> = ({
+  totalItems: number;
+}> = React.memo(({
   currentPage,
   totalPages,
   setCurrentPage,
   itemsPerPage,
   setItemsPerPage,
   itemsPerPageOptions,
-  showPagination
+  showPagination,
+  totalItems
 }) => {
-    if (!showPagination) return null;
 
-    return (
-      <div className="flex justify-between items-center mt-4">
-        <div className="flex items-center space-x-2">
-          <ArrowLeftCircle
-            className={`text-gray-900 ${currentPage === 1 ? 'opacity-50' : 'hover:text-gray-800 cursor-pointer'}`}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            style={{ fontSize: '1.5rem' }}
-          />
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-          <ArrowRightCircle
-            className={`text-gray-900 ${currentPage === totalPages ? 'opacity-50' : 'hover:text-gray-800 cursor-pointer'}`}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            style={{ fontSize: '1.5rem' }}
-          />
-        </div>
-        <Select
-          value={itemsPerPage.toString()}
-          onValueChange={(value) => {
-            setItemsPerPage(Number(value));
-            setCurrentPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select items per page" />
-          </SelectTrigger>
-          <SelectContent>
-            {itemsPerPageOptions.map((num) => (
-              <SelectItem key={num} value={num.toString()}>
-                {num} per page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+  const validCurrentPage = getValidPageNumber(currentPage, totalPages);
+
+  if (validCurrentPage !== currentPage) {
+    setCurrentPage(validCurrentPage);
+  }
+
+  return showPagination ? (
+    <div className="flex justify-between items-center mt-4">
+      <div className="flex items-center space-x-2">
+        <ArrowLeftCircle
+          className={cn(
+            "text-gray-900",
+            validCurrentPage === 1 ? "opacity-50" : "hover:text-gray-800 cursor-pointer"
+          )}
+          onClick={() => validCurrentPage > 1 && setCurrentPage(validCurrentPage - 1)}
+          style={{ fontSize: '1.5rem' }}
+        />
+        <span>
+          Page {validCurrentPage} of {Math.max(1, totalPages)} ({totalItems} items)
+        </span>
+        <ArrowRightCircle
+          className={cn(
+            "text-gray-900",
+            validCurrentPage === totalPages ? "opacity-50" : "hover:text-gray-800 cursor-pointer"
+          )}
+          onClick={() => validCurrentPage < totalPages && setCurrentPage(validCurrentPage + 1)}
+          style={{ fontSize: '1.5rem' }}
+        />
       </div>
-    );
-  };
+      <Select
+        value={itemsPerPage.toString()}
+        onValueChange={(value) => {
+          const newItemsPerPage = getSafeNumber(value);
+          setItemsPerPage(newItemsPerPage);
+          setCurrentPage(1); // Reset to first page when changing items per page
+        }}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select items per page" />
+        </SelectTrigger>
+        <SelectContent>
+          {itemsPerPageOptions.map((num) => (
+            <SelectItem key={num} value={num.toString()}>
+              {num} per page
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  ) : null;
+});
 
-/**
- * Main FlexibleTable Component
- */
+// Main FlexibleTable Component
 export function FlexibleTable({
-  data,
+  data = [],
   columns,
   itemsPerPageOptions = [5, 15, 25],
   defaultItemsPerPage = 5,
@@ -329,6 +374,7 @@ export function FlexibleTable({
   background = 'gray',
   rowColorFn,
 }: TableProps) {
+  // debugger
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: columns[0].key,
     direction: null,
@@ -338,8 +384,13 @@ export function FlexibleTable({
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const requestSort = (key: string) => {
-    setSortConfig((prevConfig) => ({
+  // Reset page when filters, search, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchTerm, itemsPerPage]);
+
+  const requestSort = useCallback((key: string) => {
+    setSortConfig(prevConfig => ({
       key,
       direction:
         prevConfig.key === key
@@ -350,64 +401,88 @@ export function FlexibleTable({
               : "asc"
           : "asc",
     }));
-  };
+  }, []);
 
   const filteredData = useMemo(() => {
-    return data
-      ?.filter((item) =>
-        Object.entries(filters).every(
-          ([key, value]) => value === "All" || item[key]?.toString() === value
-        )
-      )
-      .filter((item) =>
-        Object.values(item).some((val) =>
-          val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+    if (!Array.isArray(data)) return [];
+
+    return data.filter(item => {
+      const matchesFilters = Object.entries(filters).every(
+        ([key, value]) => value === "All" || getSafeString(item[key]) === value
       );
+
+      const matchesSearch = searchTerm
+        ? Object.values(item).some(val =>
+          getSafeString(val).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : true;
+
+      return matchesFilters && matchesSearch;
+    });
   }, [data, filters, searchTerm]);
 
-  const sortedAndFilteredData = useMemo(() => {
-    if (!filteredData) return [];
+  const sortedData = useMemo(() => {
     if (!sortConfig.direction) return filteredData;
 
     const { key, direction } = sortConfig;
-    const column = columns.find((col) => col.key === key);
+    const column = columns.find(col => col.key === key);
 
     return [...filteredData].sort((a, b) => {
-      let aValue = a[key];
-      let bValue = b[key];
-      let compare = 0;
+      try {
+        let aValue = a[key];
+        let bValue = b[key];
+        let compare = 0;
+        if (column?.type === "date") {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+          compare = aValue - bValue;
+        } else if (typeof aValue === "number" && typeof bValue === "number") {
+          compare = aValue - bValue;
+        } else {
+          compare = getSafeString(aValue).localeCompare(getSafeString(bValue));
+        }
 
-      if (column?.type === "date") {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-        compare = aValue - bValue;
-      } else if (typeof aValue === "number" && typeof bValue === "number") {
-        compare = aValue - bValue;
-      } else {
-        compare = aValue.toString().localeCompare(bValue.toString());
+        return direction === "asc" ? compare : -compare;
+      } catch (error) {
+        console.error('Sorting error:', error);
+        return 0;
       }
-
-      return direction === "asc" ? compare : -compare;
     });
   }, [filteredData, sortConfig, columns]);
 
+  const validTotalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
+  const validCurrentPage = getValidPageNumber(currentPage, validTotalPages);
+
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedAndFilteredData?.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedAndFilteredData, currentPage, itemsPerPage]);
+    if (!Array.isArray(sortedData)) return [];
 
-  const totalPages = Math.ceil((sortedAndFilteredData?.length || 0) / itemsPerPage);
+    const startIndex = (validCurrentPage - 1) * itemsPerPage;
+    return sortedData.slice(
+      startIndex,
+      Math.min(startIndex + itemsPerPage, sortedData.length)
+    );
+  }, [sortedData, validCurrentPage, itemsPerPage]);
 
-  const handleCreateNew = () => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value || '');
+    setCurrentPage(1); // Reset to first page on search
+  }, []);
+
+  const handleCreateNew = useCallback(() => {
     if (createNewFn) createNewFn();
-  };
+  }, [createNewFn]);
 
   return (
     <div className="container mx-auto p-1">
       <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-2">
-          <TableFilters columns={columns} data={data} filters={filters} setFilters={setFilters} />
+          <TableFilters
+            columns={columns}
+            data={data}
+            filters={filters}
+            setFilters={setFilters}
+            setCurrentPage={setCurrentPage}
+          />
         </div>
 
         <div className="flex space-x-2">
@@ -416,17 +491,17 @@ export function FlexibleTable({
               placeholder="Search"
               className="w-44"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           )}
           {tableName && (
             <Button
               variant="default"
-              className={
-                tableNameCheckList.includes(tableName)
+              className={cn(
+                TABLE_NAME_CHECK_LIST.includes(tableName)
                   ? "bg-gray-900 text-white hover:bg-gray-800"
                   : `${background} hover:${background} text-white`
-              }
+              )}
               onClick={handleCreateNew}
             >
               {tableName} <PlusCircle className="ml-2 h-4 w-4" />
@@ -456,13 +531,14 @@ export function FlexibleTable({
       </Table>
 
       <TablePaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
+        currentPage={validCurrentPage}
+        totalPages={validTotalPages}
         setCurrentPage={setCurrentPage}
         itemsPerPage={itemsPerPage}
         setItemsPerPage={setItemsPerPage}
         itemsPerPageOptions={itemsPerPageOptions}
         showPagination={data?.length > 10}
+        totalItems={sortedData.length}
       />
     </div>
   );

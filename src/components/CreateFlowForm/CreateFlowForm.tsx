@@ -35,6 +35,7 @@ interface CreateFlowPayload {
   tags: Tag;
   bh_project_id: number;
   bh_env_id: number;
+  projectName: string;
   alert_settings: {
     on_job_start: boolean;
     on_job_failure: boolean;
@@ -415,6 +416,9 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={(values, { setSubmitting }) => {
+          const selectedProjectObject = projects.find(
+            (project) => project.ProjectId.toString() === values.selectedProject
+          );
           const payload: CreateFlowPayload = {
             flow_name: values.name,
             bh_project_id: Number(values.selectedProject),
@@ -426,6 +430,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
               ...values.alert_settings,
             },
             flow_json: {},
+            projectName: selectedProjectObject?.Name,
           };
           onCreateFlow(payload);
           setSubmitting(false);

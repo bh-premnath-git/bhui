@@ -58,7 +58,7 @@ export const ReaderOptionsForm: React.FC<any> = () => {
                     if (fileTypeCondition) {
                         // Add CSV options schema when file_type is CSV
                         if (formData.file_type === 'CSV') {
-                            resolvedSchema = {
+                            resolvedSchema= {
                                 ...resolvedSchema,
                                 properties: {
                                     ...resolvedSchema.properties,
@@ -67,7 +67,7 @@ export const ReaderOptionsForm: React.FC<any> = () => {
                                         properties: csvOptionsSchema.properties
                                     }
                                 },
-                            };
+                            } as any;
                         } else {
                             resolvedSchema = {
                                 ...resolvedSchema,
@@ -75,7 +75,7 @@ export const ReaderOptionsForm: React.FC<any> = () => {
                                     ...resolvedSchema.properties,
                                     ...fileTypeCondition.then.properties,
                                 },
-                            };
+                            } as any;
                         }
                     }
                 }

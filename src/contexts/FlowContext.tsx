@@ -266,15 +266,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     return allOptimized
   }, [nodes])
 
-  const hasDeployedValue = useCallback((date: string) => {
-    if (!date || date.trim() === '') {
-      return false;
-    }
-    const isValidDate = !isNaN(new Date(date).getTime());
-
-    return isValidDate;
-  }, []);
-
   const debouncedSave = useDebouncedCallback(
     () => {
       if (autoSave && selectedFlowId && isDirty) {
@@ -283,7 +274,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
       }
     },
-    30000,
+    6000,
     [autoSave, selectedFlowId, isDirty]
   );
 
@@ -364,7 +355,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     selectedNodeConnection,
     selectedNodeOptimized,
     fullFlowOptimizzed,
-    hasDeployedValue,
     isDirty
   };
 

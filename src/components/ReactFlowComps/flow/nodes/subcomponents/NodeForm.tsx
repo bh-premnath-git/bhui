@@ -17,7 +17,6 @@ import { createShortUUID } from "@/Utils/uid";
 import { Save } from "lucide-react";
 import useToast from '@/oldcomponents/teast-service';
 
-
 interface NodeFormProps {
     id: string;
     closeTap: () => void;
@@ -164,6 +163,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         <TabsTrigger
                             value="settings"
                             className="data-[state=active]:bg-black data-[state=active]:text-white"
+                            disabled={!groupedProperties['settings']?.length}
                         >
                             Settings
                         </TabsTrigger>
@@ -196,7 +196,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     <Button
                         onClick={handleSave}
                         className={`bg-black hover:bg-black/90 text-white px-8 ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
+                    >
                         <Save className="w-4 h-4" />
                     </Button>
                 </div>

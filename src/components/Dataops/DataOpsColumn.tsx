@@ -4,7 +4,6 @@ import { useState } from "react";
 import RestartPopUp from "./RestartPopUp";
 import StopPopUp from "./StopPopUp";
 import CostOptimizationForm from "@/components/Dataops/CostOptimizationForm";
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ExploreDrawer from "./ExploreDrawer";
 import ExploreIcon from '@mui/icons-material/Explore';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
@@ -34,19 +33,24 @@ type ColumnConfig = {
     align?: "left" | "center" | "right";
 };
 
-const formatDuration = (start: string, end: string) => {
-    const startTime = new Date(start);
-    const endTime = new Date(end);
+const formatDuration = (start: string, end: string): string => {
+    try {
+        const startTime = new Date(start);
+        const endTime = new Date(end);
 
-    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+            return 'Invalid Time';
+        }
+
+        const diffInSeconds = Math.abs(Math.floor((endTime.getTime() - startTime.getTime()) / 1000));
+        const minutes = Math.floor(diffInSeconds / 60);
+        const seconds = diffInSeconds % 60;
+
+        return `${minutes} min ${seconds} sec`;
+    } catch (error) {
+        console.error('Error in formatDuration:', error);
         return 'Invalid Time';
     }
-
-    const diffInSeconds = Math.abs(Math.floor((endTime.getTime() - startTime.getTime()) / 1000));
-    const minutes = Math.floor(diffInSeconds / 60);
-    const seconds = diffInSeconds % 60;
-
-    return `${minutes} min ${seconds} sec`;
 };
 
 export const dataopsColumn: ColumnConfig[] = [
@@ -61,16 +65,26 @@ export const dataopsColumn: ColumnConfig[] = [
             const [open, setOpen] = useState(false);
 
             const toggleDrawer = (newState: boolean) => () => {
-                setOpen(newState);
-                if (!newState) {
+                try {
+                    setOpen(newState);
+                    if (!newState) {
+                        setIsExpanded(false);
+                    }
+                } catch (error) {
+                    console.error('Error in toggleDrawer:', error);
+                    setOpen(false);
                     setIsExpanded(false);
                 }
             };
 
             const handleClick = (e: React.MouseEvent) => {
-                e.stopPropagation();
-                setOpen(true);
-                setIsExpanded(!isExpanded);
+                try {
+                    e.stopPropagation();
+                    setOpen(true);
+                    setIsExpanded(!isExpanded);
+                } catch (error) {
+                    console.error('Error in handleClick:', error);
+                }
             };
 
             return (
@@ -78,13 +92,12 @@ export const dataopsColumn: ColumnConfig[] = [
                     <div className="text-black flex items-center gap-2 hover:bg-gray-50 rounded px-2 py-1">
                         {value}
                         <Tooltip title="Explore Flow">
-                            < ExploreIcon
-                            className="text-green-600 hover:text-green-800 cursor-pointer mb-2" 
-                            sx={{ fontSize: '1.2rem' }}
-                            onClick={handleClick} />
+                            <ExploreIcon
+                                className="text-green-600 hover:text-green-800 cursor-pointer mb-2" 
+                                sx={{ fontSize: '1.2rem' }}
+                                onClick={handleClick}
+                            />
                         </Tooltip>
-                        
-                        {/* <AttachMoneyIcon className="mr-1" /> */}
                     </div>
                     {open && (
                         <ExploreDrawer
@@ -94,7 +107,7 @@ export const dataopsColumn: ColumnConfig[] = [
                         />
                     )}
                 </>
-            )
+            );
         }
     },
     {
@@ -112,20 +125,18 @@ export const dataopsColumn: ColumnConfig[] = [
         filterable: false,
         sortable: false,
         align: "center",
-        render: (value: any) => {
-            return (
-                <div style={{
-                    backgroundColor: value == "Success" ? COLORS[0] :
-                        value == 'Failed' ? COLORS[2] : COLORS[1],
-                    color: 'white',
-                    padding: 5,
-                    borderRadius: '15px',
-                    width: '90px' 
-                }}>
-                    {value}
-                </div>
-            )
-        }
+        render: (value: any) => (
+            <div style={{
+                backgroundColor: value === "Success" ? COLORS[0] :
+                    value === 'Failed' ? COLORS[2] : COLORS[1],
+                color: 'white',
+                padding: 5,
+                borderRadius: '15px',
+                width: '90px' 
+            }}>
+                {value}
+            </div>
+        )
     },   
     {
         key: 'job_start_time',
@@ -134,20 +145,18 @@ export const dataopsColumn: ColumnConfig[] = [
         sortable: false,
         filterable: false,
         align: "left",
-    }, 
+    },
     {
         key: 'duration',
         header: 'Duration',
         type: 'number',
         sortable: false,
         align: "left",
-        render: (value: any, row: any) => {
-            return (
-                <div className="pr-0 mr-0">
-                    {formatDuration(row.job_start_time, row.job_end_time)}
-                </div>
-            );
-        },
+        render: (value: any, row: any) => (
+            <div className="pr-0 mr-0">
+                {formatDuration(row.job_start_time, row.job_end_time)}
+            </div>
+        ),
     },
     {
         key: 'created_by',
@@ -168,39 +177,37 @@ export const dataopsColumn: ColumnConfig[] = [
             const [openCost, setOpenCost] = useState(false);
 
             const handleActionClick = (e: React.MouseEvent, action: () => void) => {
-                e.stopPropagation();
-                action();
+                try {
+                    e.stopPropagation();
+                    action();
+                } catch (error) {
+                    console.error('Error in handleActionClick:', error);
+                }
             };
 
             const handleCostClose = (e?: React.MouseEvent) => {
-                if (e) {
-                    e.stopPropagation();
+                try {
+                    if (e) {
+                        e.stopPropagation();
+                    }
+                    setOpenCost(false);
+                } catch (error) {
+                    console.error('Error in handleCostClose:', error);
                 }
-                setOpenCost(false);
             };
-
+            
             return (
                 <div className="text-white" onClick={(e) => e.stopPropagation()}>
-                    {row?.pipeline_status == 'Success' && (
-                        // <Stack direction={'row'}>
-                        //     {/* <div
-                        //         onClick={(e) => handleActionClick(e, () => setOpenCost(true))}
-                        //         className="bg-gray-600 p-1 rounded cursor-pointer"
-                        //     >
-                        //         <span className="px-1 rounded-sm bg-white text-black">$</span> Optimize Cost
-                        //     </div> */}
-                        //     <div style={color:'#f56565', fontSize: '16px', transition:'color 0.3'}>Running...</div>
-                        // </Stack>
+                    {row?.pipeline_status === 'Success' && (
                         <Stack direction={'row'}>
                             <DoneIcon style={{ 
                                 color: 'green', 
                                 fontSize: '18px', 
                                 transition: 'color 0.3s' 
-                            }}>
-                            </DoneIcon>
+                            }} />
                         </Stack>
                     )}
-                    {row?.pipeline_status == 'Failed' && (
+                    {row?.pipeline_status === 'Failed' && (
                         <Stack direction={'row'} spacing={2}>
                             <Tooltip title="Skip Job">
                                 <div
@@ -226,7 +233,7 @@ export const dataopsColumn: ColumnConfig[] = [
                                         sx={{
                                             color: "#008000",
                                             '&:hover': {
-                                                color: "#00800044", // Change this to your desired hover color
+                                                color: "#00800044",
                                             },
                                         }}
                                     />
@@ -234,7 +241,7 @@ export const dataopsColumn: ColumnConfig[] = [
                             </Tooltip>
                         </Stack>
                     )}
-                    {row?.pipeline_status == 'In Progress' && (
+                    {row?.pipeline_status === 'In Progress' && (
                         <Stack direction={'row'} spacing={2}>
                             <Tooltip title="Stop Job">
                                 <div
@@ -245,13 +252,12 @@ export const dataopsColumn: ColumnConfig[] = [
                                         sx={{
                                             color: "#c40101",
                                             '&:hover': {
-                                                color: "#c4010144", // Change this to your desired hover color
+                                                color: "#c4010144",
                                             },
                                         }}
                                     />
                                 </div>
                             </Tooltip>
-                            
                         </Stack>
                     )}
 
@@ -260,10 +266,11 @@ export const dataopsColumn: ColumnConfig[] = [
                     <StopPopUp open={openStop} jobDetail={row} onClose={() => setOpenStop(false)} />
                     <CostOptimizationForm open={openCost} jobDetail={row} onClose={handleCostClose} />
                 </div>
-            )
+            );
         }
     },
 ];
+
 
 export const logData = [
     { date: '2023-11-03 14:35:20.000', label: 'EST', description: 'User login successful for user_id: 1024' },

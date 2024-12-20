@@ -9,8 +9,9 @@ import Loading from '@/pages/loadingPage';
 import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
-import {  ThemeProvider } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { routeList, theme } from '@/router/route';
+import { ErrorBoundary } from "@/ErrorBoundry"
 
 interface LayoutProps {
   isAuthenticated: boolean;
@@ -105,28 +106,31 @@ function App() {
       redirectUri: import.meta.env.VITE_KEYCLOAK_REDIRECT_URI + 'login',
     });
   }
-  
+
 
 
 
   return (
     <ThemeProvider theme={theme}>
-      <FlowProvider>
-        <Provider store={store}>
-          <BrowserRouter>
-            <Suspense fallback={<Loading />}>
-              <Routes>
-                <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                  {routeList.map((route, index) => (
-                    <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                  ))}
-                </Route>
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </Provider>
-      </FlowProvider>
-      <ToastContainer />
+      <ErrorBoundary>
+        <FlowProvider>
+          <Provider store={store}>
+            <BrowserRouter>
+              <Suspense fallback={<Loading />}>
+                <Routes>
+                  <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                    {routeList.map((route, index) => (
+                      <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                    ))}
+                  </Route>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </Provider>
+        </FlowProvider>
+        <ToastContainer />
+      </ErrorBoundary>
+
     </ThemeProvider>
   );
 }

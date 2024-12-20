@@ -1,6 +1,13 @@
-export const Spinner = () => {
+import { cn } from "@/lib/utils";
+
+interface SpinnerProps {
+  className?: string;
+  showLoadingTxt?: boolean;
+}
+
+export const Spinner: React.FC<SpinnerProps> = ({ className, showLoadingTxt = true }) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+    <div className={cn("flex flex-col items-center justify-center bg-white", className)}>
       <div className="relative w-40 h-40">
         {/* Inner spinning circles */}
         <div className="absolute inset-0">
@@ -12,10 +19,8 @@ export const Spinner = () => {
                 transform: `rotate(${i * 60}deg)`,
               }}
             >
-              <div 
-                className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2"
-              >
-                <div 
+              <div className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2">
+                <div
                   className="w-full h-full rounded-full bg-blue-500/70 blur-[2px] animate-pulse-scale"
                   style={{
                     animationDelay: `${i * 0.15}s`,
@@ -27,10 +32,7 @@ export const Spinner = () => {
         </div>
 
         {/* Outer rotating ring */}
-        <svg 
-          className="absolute inset-0 animate-reverse-spin" 
-          viewBox="0 0 100 100"
-        >
+        <svg className="absolute inset-0 animate-reverse-spin" viewBox="0 0 100 100">
           <circle
             cx="50"
             cy="50"
@@ -62,8 +64,8 @@ export const Spinner = () => {
                 key={i}
                 className="absolute w-3 h-3 bg-blue-600 rounded-full animate-center-pulse"
                 style={{
-                  top: i === 0 ? 0 : i === 2 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
-                  left: i === 3 ? 0 : i === 1 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
+                  top: i === 0 ? 0 : i === 2 ? "calc(100% - 0.75rem)" : "calc(50% - 0.375rem)",
+                  left: i === 3 ? 0 : i === 1 ? "calc(100% - 0.75rem)" : "calc(50% - 0.375rem)",
                   animationDelay: `${i * 0.2}s`,
                 }}
               />
@@ -72,9 +74,12 @@ export const Spinner = () => {
         </div>
       </div>
 
-      <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
-        Loading
-      </div>
+      {/* Conditionally display the "Loading" text */}
+      {showLoadingTxt && (
+        <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
+          Loading
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes stroke-dash {

@@ -39,10 +39,9 @@ interface FormValues {
   airflowDagBucket: string;
   privateKeyFile: File | null;
   selectedPlatform: string;
+  selectedMwaaEnv: string | null;
 }
-type MWAAEnvironments = {
-  environments: string[];
-};
+type MWAAEnvironments = string[];
 
 interface EnvironmentTabProps {
   selectedPlatform: string;
@@ -98,7 +97,7 @@ const validationSchema = Yup.object().shape({
     then: () => Yup.mixed().required('Private Key File is required for Google Cloud'),
     otherwise: () => Yup.mixed().notRequired(),
   }),
-  airflowUrl: Yup.string().url('Invalid URL format').notRequired(),
+  airflowUrl: Yup.string().notRequired(),
   airflowDagBucket: Yup.string().notRequired(),
 });
 
@@ -262,15 +261,11 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   privateKeyFile = null,
   changeVerification,
 }) => {
+
   const [ToastComponent, showToast] = useToast();
-  const [mwaaEnvironments, setMwaaEnvironments] = useState<MWAAEnvironments>({ environments: [] });
+  const [mwaaEnvironments, setMwaaEnvironments] = useState<MWAAEnvironments>([]);
   const [selectedMwaaEnv, setSelectedMwaaEnv] = useState("")
-  const [credentialsVal, setCredentialsVal] = useState<{
-    aws_access_key_id: string;
-    aws_secret_access_key: string;
-    location: string;
-    init_vector: string;
-  } | null>(null);
+
 
   // Ensure only one section is expanded at a time:
   const [openSections, setOpenSections] = useState({
@@ -307,6 +302,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     airflowDagBucket,
     privateKeyFile,
     selectedPlatform,
+    selectedMwaaEnv
   };
 
   const environmentOptions = {
@@ -330,7 +326,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         values.secretAccessKey,
         encryted_aws_key_id.initVector
       );
-
+      const params = {
+        bh_env_name: values.environmentName,
+      }
       const credentials = {
         aws_access_key_id: encryted_aws_key_id.encryptedString,
         aws_secret_access_key: encryted_aws_secret_access_key.encryptedString,
@@ -338,12 +336,11 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         init_vector: encryted_aws_key_id.initVector
       };
 
-      setCredentialsVal(credentials);
-
-      const result = await ApiService('8011', 'post', '/environment/list-mwaa-environments', credentials);
-      const success = result && typeof result === 'object' && 'environments' in result;
+      const result = await ApiService('8011', 'post', '/aws/test_connection', credentials, params);
+      const success = result && typeof result === 'object' && 'success' in result;
 
       if (success) {
+        const result = await ApiService('8011', 'get', '/bh_airflow/list-airflow-environments', null, { ...params, location: locationVal });
         setMwaaEnvironments(result as MWAAEnvironments);
       }
 
@@ -388,7 +385,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={() => {}}
+      onSubmit={() => { }}
       validateOnChange={true}
       validateOnBlur={true}
     >
@@ -404,18 +401,27 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         }
         const credentialsHasError = hasError(credentialsFields, errors);
 
-        const handleGetMWAAInfos = async (value: string) => {
+        const handleGetMWAAInfos = async (value:string) => {
           try {
-            if (!credentialsVal) return;
+            if (!value) return;
+            // /api/v1/bh_airflow/get_airflow_environment
             const result = await ApiService(
               '8011',
-              'post',
-              `/environment/get_aws_mwaa_env_connection?env_name=${value}`,
-              credentialsVal
+              'get',
+              `/bh_airflow/get_airflow_environment`,
+              null, {
+              airflow_env_name: value,
+              location: values.location,
+              bh_env_name: values.environmentName
+            }
             );
             if (result) {
-              setFieldValue('airflowUrl', result.environment_details.WebserverUrl);
-              setFieldValue('airflowDagBucket', result.environment_details.SourceBucketArn);
+              setFieldValue('airflowUrl', result.WebserverUrl);
+              setFieldValue('airflowDagBucket', result.SourceBucketArn);
+              onChange({
+                airflowUrl: result.WebserverUrl,
+                airflowDagBucket: result.SourceBucketArn,
+              });
             }
           } catch (error) {
             console.error("err", error);
@@ -423,7 +429,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         };
 
         return (
-          <Form className="space-y-2 p-2 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-md">
+          <Form className="space-y-2 p bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-md">
             <div className="space-y-3 mb-4">
               <h1 className="text-2xl font-bold text-gray-800">Configure Environment</h1>
               <p className="text-sm text-gray-600">
@@ -517,10 +523,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               titleColor="text-yellow-800"
               hasError={credentialsHasError}
             >
-              <div className="text-sm text-gray-600 mb-4">
+              <div className="text-sm text-gray-600 mb-2">
                 Select a project, location, and provide platform-specific credentials.
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <RequiredLabel>
                     <Label htmlFor="projectId" className="font-medium">Project ID</Label>
@@ -574,7 +580,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               </div>
 
               {values.selectedPlatform === 'aws' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   <div className="space-y-2">
                     <RequiredLabel>
                       <Label htmlFor="accessKey" className="font-medium">Access Key</Label>
@@ -610,7 +616,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     />
                     <ErrorMessage name="secretAccessKey" component="div" className="text-red-500 text-sm" />
                   </div>
-                  <div className="mt-2 flex items-center">
+                  <div className="mt h-16 flex items-center">
                     <ValidationComponent
                       onValidate={() => handleValidate(values)}
                       error={false}
@@ -621,7 +627,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               )}
 
               {values.selectedPlatform === 'google-cloud' && (
-                <div className="mt-4 space-y-2">
+                <div className="mt space-y-2">
                   <RequiredLabel>
                     <Label htmlFor="privateKeyFile" className="font-medium">Google Cloud Private Key</Label>
                   </RequiredLabel>
@@ -650,20 +656,21 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                     value={selectedMwaaEnv}
                     onValueChange={(value) => {
                       setSelectedMwaaEnv(value);
+                      onChange({ selectedMwaaEnv: value });
                       handleGetMWAAInfos(value);
                     }}
                   >
                     <SelectTrigger className="border-blue-200">
-                      <SelectValue placeholder={mwaaEnvironments.environments.length === 0
+                      <SelectValue placeholder={mwaaEnvironments.length === 0
                         ? "No MWAA Environments available"
                         : selectedMwaaEnv || "Select MWAA Environment"}>
-                        {mwaaEnvironments.environments.length === 0
+                        {mwaaEnvironments.length === 0
                           ? "No MWAA Environments available"
                           : selectedMwaaEnv || "Select MWAA Environment"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {mwaaEnvironments.environments.map((env) => (
+                      {mwaaEnvironments.map((env) => (
                         <SelectItem
                           key={env}
                           value={env}

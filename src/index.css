@@ -46,7 +46,7 @@ body {
     --chart-2-color: #F2994A; /* complete with delay (soft amber orange) */
     --chart-3-color: #56CCF2; /* failed (sky blue) */
     --chart-4-color: #BDBDBD; /* neutral (light gray) */
-    --chart-5-color: #FF274D; /* not arrived (soft red) */
+    --chart-5-color: #ff250dbc; /* not arrived (soft red) */
     --radius: 0.5rem;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -94,7 +94,7 @@ body {
     --chart-2-color: #EA580C; /*complete with delay*/
     --chart-3-color: #2563EB; /*failed*/
     --chart-4-color: #4B5563;
-    --chart-5-color: #DC2626; /*don't arrived*/
+    --chart-5-color: #ff250dbc; /* not arrived (soft red) */
   }
 }
  

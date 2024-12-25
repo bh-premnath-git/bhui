@@ -12,6 +12,7 @@ import {
   createFlow,
   setSelectedFlowFromList,
   deleteFlowbyId,
+  setDagRunId,
 } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useFlow } from "@/contexts/FlowContext";
 import { DeleteDialog } from "@/components/DeleteDialog";
+import { LocalStorageService } from "@/services/localStorageServices";
 
 interface Flow {
   id: number;
@@ -140,7 +142,7 @@ const EmptyComponent: React.FC<{ onAddFlow: () => void }> = React.memo(({ onAddF
 const AllFlows: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { setSelectedFlowId } = useFlow();
+  const { setSelectedFlowId, setNodes, setEdges } = useFlow();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingFlow, setIsCreatingFlow] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -183,12 +185,16 @@ const AllFlows: React.FC = () => {
     setIsCreatingFlow(true);
     try {
       const result = await dispatch(createFlow(payload));
+      await dispatch(listFlows({ offset: 0, limit: 1000 }));
+      setNodes([])
+      setEdges([])
       if (createFlow.fulfilled.match(result)) {
+        dispatch(setSelectedFlowFromList(null));
         dispatch(setSelectedFlowFromList(result.payload));
+        dispatch(setDagRunId(null));
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
-
           setTimeout(() => {
             navigate('/designers/manage-flow/' + result.payload.flow_id);
           }, 1000);
@@ -205,8 +211,11 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
+    const details = LocalStorageService.getItem(`flow-${data.flow_id}`)
     setSelectedFlowId(data.flow_id);
+    dispatch(setSelectedFlowFromList(null));
     dispatch(setSelectedFlowFromList(data));
+    dispatch(setDagRunId(null));
     navigate("/designers/manage-flow/" + data.flow_id);
   }, [navigate, setSelectedFlowId, dispatch]);
 

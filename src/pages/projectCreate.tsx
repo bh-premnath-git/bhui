@@ -376,7 +376,7 @@ export default function ProjectCreationComponent() {
               </div>
 
               {/* GitHub URL and Token Row */}
-              <div className="grid grid-cols-3 gap-2 mt-2 items-center" style={{minHeight:'60px'}}>
+              <div className="grid grid-cols-3 gap-2 mt-2 items-center" style={{ minHeight: '60px' }}>
                 <div className="space-y-1 col-span-1">
                   <RequiredLabel>
                     <Label htmlFor="bh_github_url" className="font-medium text-sm">GitHub URL</Label>
@@ -528,8 +528,7 @@ export default function ProjectCreationComponent() {
               >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <Spinner  />
-                    Creating...
+                    <Spinner className="max-h-[10px]" showLoadingTxt={false} />
                   </div>
                 ) : (
                   'Create Project'

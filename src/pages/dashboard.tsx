@@ -398,8 +398,8 @@ export default function Component() {
   }
  
   return (
-    <div className="ml-5 p-4 space-y-4">
-      <div className="flex flex-wrap items-end gap-4">
+    <div className="ml-7 p space-y-2">
+      <div className="flex flex-wrap items-end gap-2">
         <FilterSelect
           label="Project"
           value={filters.project}
@@ -434,7 +434,7 @@ export default function Component() {
         </Button>
       </div>
  
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
         <ChartCard title="Latency Trend">
           <LineChart
             data={chartData.latency}
@@ -558,7 +558,7 @@ export default function Component() {
         </ChartCard>
       </div>
  
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
         <ChartCard title="Project Health Status">
           <BarChart
             data={chartData.health}

@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAppDispatch } from '@/redux/hooks';
-import { updateFlowDefinition } from '@/redux/FlowSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { updateFlowDefinition, setDagRunId } from '@/redux/FlowSlice';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { useFlow } from '@/contexts/FlowContext';
-
+import { ApiService } from '@/services/apiServices';
 interface PlaybackButtonProps {
   selectedFlowId: string;
   isPlaying: boolean;
@@ -14,6 +14,8 @@ interface PlaybackButtonProps {
   size?: 'default' | 'sm' | 'lg';
   className?: string;
   selectedData: any;
+  flowName: string;
+  selectedEnvName: any;
 }
 
 export function PlaybackButton({
@@ -22,14 +24,16 @@ export function PlaybackButton({
   onToggle,
   size = 'default',
   className = "",
-  selectedData
+  selectedData,
+  flowName,
+  selectedEnvName
 }: PlaybackButtonProps) {
   const dispatch = useAppDispatch();
-  const { isDirty, fullFlowOptimizzed, hasDeployedValue } = useFlow();
+  const { isDirty, fullFlowOptimizzed } = useFlow();
   const hasOptimized = fullFlowOptimizzed()
-  const hasDeployable = hasDeployedValue("")
-  console.log(hasDeployable, hasOptimized);
-
+  const { dagParserTime } = useAppSelector((state) => state.flowApi)
+  const [isLoading, setIsLoading] = useState(false);
+  
   const sizeClasses = {
     default: "h-10 w-10",
     sm: "h-8 w-8",
@@ -50,11 +54,35 @@ export function PlaybackButton({
     }
   }
 
+  const asyncFlowDeploy = async (): Promise<boolean> => {
+    try {
+      const result = await ApiService('8011', 'post', '/bh_airflow/trigger_dag', null, { dag_id: flowName, ...selectedEnvName });
+      dispatch(setDagRunId({ dag_run_id: result.dag_run_id, dag_id: flowName, ...selectedEnvName }));
+      return true;
+    } catch (error) {
+      console.error('Error deploying flow:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (!isDirty && selectedFlowId) {
       asyncUpdateFlowDef();
     }
   }, [isDirty, selectedFlowId]);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    if (!isPlaying) {
+      const success = await asyncFlowDeploy();
+      if (success) {
+        onToggle();
+      }
+    } else {
+      onToggle();
+    }
+    setIsLoading(false);
+  };
 
   return (
     <TooltipProvider>
@@ -64,12 +92,14 @@ export function PlaybackButton({
             variant="ghost"
             size="icon"
             className={`${sizeClasses[size]} border border-gray-100 hover:bg-gray-200 rounded-md ${className}`}
-            onClick={() => { onToggle(); }}
+            onClick={handleClick}
             aria-label={`${!isPlaying ? "Deployment Stopped" : "Deployment Started"}`}
-            disabled={!hasDeployable || !hasOptimized}
-            >
+        
+          >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
-            {!isPlaying ? (
+            {isLoading ? (
+              <Loader2 className={`${iconSizes[size]} animate-spin`} />
+            ) : isPlaying ? (
               <Pause className={iconSizes[size]} />
             ) : (
               <Play className={iconSizes[size]} />

@@ -104,6 +104,7 @@
                   "order": 6,
                   "spancol": 1,
                   "mandatory": false,
+                  "default": "{\n  \"Content-Type\": \"application/json\"\n}",
                   "group_key": "property"
                 }
               },
@@ -143,6 +144,7 @@
                   "order": 19,
                   "spancol": 1,
                   "mandatory": false,
+                  "default": "{\n  \"timeout\": \"10\"\n}",
                   "group_key": "settings"
                 }
               },
@@ -373,6 +375,7 @@
                   "ui_type": "json",
                   "order": 6,
                   "mandatory": false,
+                  "default": "{\n  \"Content-Type\": \"application/json\"\n}",
                   "group_key": "settings"
                 }
               },
@@ -412,6 +415,7 @@
                   "ui_type": "json",
                   "order": 19,
                   "mandatory": false,
+                  "default": "{\n  \"timeout\": \"10\"\n}",
                   "group_key": "settings"
                 }
               },
@@ -587,6 +591,7 @@
                   "ui_type": "text",
                   "order": 5,
                   "mandatory": false,
+                  "default": "utf-8",
                   "group_key": "settings"
                 }
               },
@@ -667,10 +672,8 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": [
-                  "EMRCreateClusterOperator"
-                ],
-                "description": "Creates an EMR cluster",
+                "enum": ["EMRCreateClusterOperator"],
+                "description": "Creates an EMR cluster with integrated step monitoring",
                 "ui_properties": {
                   "module_name": "AWS",
                   "color": "#0FBAEF",
@@ -687,111 +690,81 @@
                   "order": 1,
                   "mandatory": true,
                   "group_key": "property"
-                }
+                },
+                "default": "create_emr_cluster"
               },
               "aws_conn_id": {
                 "type": "string",
                 "description": "AWS connection ID",
-                "default": "aws_default",
                 "ui_properties": {
                   "property_name": "AWS Connection ID",
                   "property_key": "aws_conn_id",
                   "ui_type": "dropdown",
                   "order": 2,
                   "mandatory": true,
-                  "default": "options[0].value",
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
+                  "default": "options[0].value",
                   "group_key": "property"
-                }
+                },
+                "default": "aws_default"
               },
               "cluster_config": {
                 "type": "object",
                 "description": "Cluster configuration for EMR",
-                "default": {
-                  "master_instance_type": "m5.xlarge",
-                  "slave_instance_type": "m5.xlarge",
-                  "instance_count": 3,
-                  "release_label": "emr-6.10.0",
-                  "applications": [
-                    "Spark",
-                    "Hadoop"
-                  ],
-                  "log_uri": "s3://path-to-logs/",
-                  "keep_cluster_alive": false
-                },
                 "ui_properties": {
                   "property_name": "Cluster Configuration",
                   "property_key": "cluster_config",
                   "ui_type": "json",
                   "order": 3,
                   "mandatory": true,
+                  "default": "{\n  \"master_instance_type\": \"m5.xlarge\",\n  \"slave_instance_type\": \"m5.xlarge\",\n  \"instance_count\": 3,\n  \"release_label\": \"emr-6.10.0\",\n  \"applications\": [\"Spark\", \"Hadoop\"],\n  \"log_uri\": \"s3://path-to-logs/\",\n  \"keep_cluster_alive\": false\n}",
                   "group_key": "property"
                 }
-              }
-            },
-            "required": ["type", "task_id", "aws_conn_id", "cluster_config", "release_label"]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
+              },
+              "pipeline_name": {
                 "type": "string",
-                "enum": [
-                  "EmrStepSensor"
+                "description": "The pipeline name",
+                "enum":[
+                  "pipeline1", "pipeline2", "default_pipeline"
                 ],
-                "description": "Monitors a specific step on an EMR cluster",
                 "ui_properties": {
-                  "module_name": "AWS",
-                  "color": "#FF9900",
-                  "icon": "/assets/flow/EMRStepSensor.svg"
+                  "property_name": "Pipeline Name",
+                  "property_key": "pipeline_name",
+                  "ui_type": "enum",
+                  "order": 4,
+                  "mandatory": false,
+                  "default": "default_pipeline",
+                  "group_key": "property"
                 }
               },
-              "task_id": {
-                "type": "string",
-                "default": "monitor_emr_job",
-                "description": "The task ID",
+              "monitor_steps": {
+                "type": "boolean",
+                "description": "Enable step monitoring (handled by backend)",
                 "ui_properties": {
-                  "property_name": "Task ID",
-                  "property_key": "task_id",
-                  "ui_type": "text",
-                  "mandatory": true
-                }
-              },
-              "job_flow_id": {
-                "type": "string",
-                "default": "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
-                "description": "Job flow ID of the EMR cluster",
-                "ui_properties": {
-                  "property_name": "Job Flow ID",
-                  "property_key": "job_flow_id",
-                  "ui_type": "text",
-                  "mandatory": true
-                }
-              },
-              "step_id": {
-                "type": "string",
-                "default": "{{ task_instance.xcom_pull(task_ids='submit_emr_job', key='return_value')[0] }}",
-                "description": "Step ID to monitor",
-                "ui_properties": {
-                  "property_name": "Step ID",
-                  "property_key": "step_id",
-                  "ui_type": "text",
-                  "mandatory": true
+                  "property_name": "Monitor Steps",
+                  "property_key": "monitor_steps",
+                  "ui_type": "checkbox",
+                  "order": 5,
+                  "mandatory": false,
+                  "default": true,
+                  "group_key": "settings"
                 }
               },
               "poke_interval": {
                 "type": "integer",
-                "default": 30,
                 "description": "Interval for polling the step status",
                 "ui_properties": {
                   "property_name": "Poke Interval",
                   "property_key": "poke_interval",
                   "ui_type": "number",
-                  "mandatory": false
+                  "order": 6,
+                  "mandatory": false,
+                  "default": 30,
+                  "group_key": "settings"
                 }
               }
             },
-            "required": ["type", "task_id", "job_flow_id", "step_id"]
+            "required": ["type", "task_id", "aws_conn_id", "cluster_config"]
           },
           {
             "type": "object",
@@ -826,8 +799,10 @@
                 "ui_properties": {
                   "property_name": "Job Flow ID",
                   "property_key": "job_flow_id",
+                  "order": 1,
                   "ui_type": "text",
-                  "mandatory": true
+                  "mandatory": true,
+                  "group_key": "property"
                 }
               }
             },
@@ -1237,7 +1212,7 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "SFTPToS3Operator"
+                  "SFTPOperator"
                 ],
                 "description": "Type of the operator",
                 "ui_properties": {

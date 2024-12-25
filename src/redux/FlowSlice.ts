@@ -20,6 +20,8 @@ export interface FlowState {
   environments: any[];
   selectedFlowFromList: any | null;
   selectedEnvironment: any | null;
+  dagParserTime: string | null;
+  dagEunID: any | null
 }
 
 const initialState: FlowState = {
@@ -32,7 +34,9 @@ const initialState: FlowState = {
   flowProjectList: [],
   environments: [],
   selectedFlowFromList: null,
-  selectedEnvironment: null
+  selectedEnvironment: null,
+  dagParserTime: null,
+  dagEunID: null
 };
 
 interface CreateFlowParams {
@@ -105,7 +109,7 @@ export const listFlows = createAsyncThunk<
   }
 >(
   'flow/list',
-  async (params:any, thunkAPI) => {
+  async (params: any, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'get', '/flow/list/', null, params);
       const transformed: any[] = response.map((item: any) => {
@@ -131,7 +135,7 @@ export const getFlowProjectList = createAsyncThunk<
   }
 >(
   'flow/gitproject',
-  async (params= {}, thunkAPI) => {
+  async (params = {}, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'get', '/bh_project/list/', null, params);
 
@@ -159,11 +163,12 @@ export const getEnvironmentList = createAsyncThunk<
   'flow/environmentList',
   async (_, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/environment/environment/list/');
+      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, { offset: 0, limit: 100 });
       const transformed = response.map((item: any) => (
         {
           id: item["bh_env_id"],
           envName: item["bh_env_name"],
+          airflowEnvName: item["airflow_env_name"],
         }
 
       ))
@@ -187,7 +192,7 @@ export const searchFlow: any = createAsyncThunk(
 );
 
 export const patchFlowOperation = createAsyncThunk<
-  any, 
+  any,
   { flow_id: string; data: Record<string, any> },
   { rejectValue: string }
 >(
@@ -228,9 +233,9 @@ export const updateFlowDefinition = createAsyncThunk<
   async ({ flow_id, flow_json }, thunkAPI) => {
     try {
       const response = await ApiService(
-        '8011', 
-        'patch', 
-        `/flow/flow-definition/update-by-flow-id/${flow_id}`, 
+        '8011',
+        'patch',
+        `/flow/flow-definition/update-by-flow-id/${flow_id}`,
         flow_json
       );
       return response;
@@ -241,46 +246,64 @@ export const updateFlowDefinition = createAsyncThunk<
 );
 
 export const updateFlowConfiguration = createAsyncThunk<
-any,
-UpdateFlowConfigParams,
-{ rejectValue: string }
+  any,
+  UpdateFlowConfigParams,
+  { rejectValue: string }
 >(
-'flow/updateFlowConfiguration',
-async ({ flow_config_id, flow_config }, thunkAPI) => {
-  try {
-    const response = await ApiService(
-      '8011', 
-      'put', 
-      `/flow/flow-config/${flow_config_id}`, 
-      {flow_config: flow_config}
-    );
-    return response;
-  } catch (error: any) {
-    return thunkAPI.rejectWithValue(error.message);
+  'flow/updateFlowConfiguration',
+  async ({ flow_config_id, flow_config }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011',
+        'put',
+        `/flow/flow-config/${flow_config_id}`,
+        { flow_config: flow_config }
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
   }
-}
 );
 
 // /api/v1/flow/flow-deployement/{flow_deployment_id} cron_expression
 export const patchCronDeployment = createAsyncThunk<
-any,
-{ flow_deployment_id: string | number; cron_expression: any },
-{ rejectValue: string }
+  any,
+  { flow_deployment_id: string | number; cron_expression: any },
+  { rejectValue: string }
 >(
-'flow/patchCronDeployment',
-async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
-  try {
-    const response = await ApiService(
-      '8011',
-      'patch',
-      `/flow/flow-deployement/${flow_deployment_id}`,
-      { cron_expression: cron_expression }
-    );
-    return response;
-  } catch (error: any) {
-    return thunkAPI.rejectWithValue(error.message);
+  'flow/patchCronDeployment',
+  async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011',
+        'patch',
+        `/flow/flow-deployment/${flow_deployment_id}`,
+        { cron_expression: cron_expression }
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
   }
-}
+);
+
+export const dagParserTimeFunc = createAsyncThunk<
+  string,
+  any,
+  {
+    rejectValue: string;
+  }
+>(
+  'flow/dagParserTime',
+  async (params, thunkAPI) => {
+    try {
+      const response: string = await ApiService('8011', 'get', 'bh_airflow/dag_parse_time', null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
 );
 
 const flowSlice = createSlice({
@@ -292,6 +315,9 @@ const flowSlice = createSlice({
     },
     setSelectedEnv: (state, action: PayloadAction<any | null>) => {
       state.selectedEnvironment = action.payload;
+    },
+    setDagRunId: (state, action: PayloadAction<any | null>) => {
+      state.dagEunID = action.payload;
     },
     clearSearchResults: (state) => {
       state.searchedFlow = null;
@@ -356,7 +382,7 @@ const flowSlice = createSlice({
       })
       // searchFlow
       .addCase(searchFlow.pending, (state) => {
-        state.searchLoading = true; 
+        state.searchLoading = true;
         state.error = null;
       })
       .addCase(
@@ -406,7 +432,7 @@ const flowSlice = createSlice({
         state.loading = false;
         const updatedFlow = action.payload;
         //console.log("updatedFlow def", updatedFlow);
-        
+
       })
       .addCase(updateFlowDefinition.rejected, (state, action) => {
         state.loading = false;
@@ -441,11 +467,23 @@ const flowSlice = createSlice({
       .addCase(patchCronDeployment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred while updating deployment schedule';
+      })
+      .addCase(dagParserTimeFunc.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(dagParserTimeFunc.fulfilled, (state, action) => {
+        state.loading = false;
+        state.dagParserTime = action.payload;
+      })
+      .addCase(dagParserTimeFunc.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while fetching DAG parser time';
       });
   },
 });
 
 
 
-export const { setSelectedFlowFromList, setSelectedEnv, clearSearchResults } = flowSlice.actions;
+export const { setSelectedFlowFromList, setSelectedEnv, setDagRunId, clearSearchResults } = flowSlice.actions;
 export default flowSlice.reducer;

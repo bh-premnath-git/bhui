@@ -121,7 +121,7 @@ function BundleTable({
   };
 
   if (loading) {
-    return <Spinner size="lg" />;
+    return <Spinner />;
   }
 
   if (error) {

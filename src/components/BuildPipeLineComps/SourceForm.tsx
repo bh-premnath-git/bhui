@@ -49,7 +49,7 @@ export const SourceForm: React.FC<any> = () => {
     };
 
     const resolveSchema = async () => {
-        let resolvedSchema = { ...sourceSchema };
+        let resolvedSchema:any = { ...sourceSchema };
 
         // Resolve Source schema conditions
         if (formData.type) {
@@ -90,7 +90,7 @@ export const SourceForm: React.FC<any> = () => {
                             ]
                         },
                     },
-                };
+                } as any;
             }
         }
 

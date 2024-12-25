@@ -33,7 +33,7 @@ export function PlaybackButton({
   const hasOptimized = fullFlowOptimizzed()
   const { dagParserTime } = useAppSelector((state) => state.flowApi)
   const [isLoading, setIsLoading] = useState(false);
-
+  
   const sizeClasses = {
     default: "h-10 w-10",
     sm: "h-8 w-8",
@@ -56,8 +56,8 @@ export function PlaybackButton({
 
   const asyncFlowDeploy = async (): Promise<boolean> => {
     try {
-     const result = await ApiService('8011', 'post', '/bh_airflow/trigger_dag', null, { dag_id: flowName, ...selectedEnvName });
-      dispatch(setDagRunId({dag_run_id:result.dag_run_id, dag_id: flowName, ...selectedEnvName}));
+      const result = await ApiService('8011', 'post', '/bh_airflow/trigger_dag', null, { dag_id: flowName, ...selectedEnvName });
+      dispatch(setDagRunId({ dag_run_id: result.dag_run_id, dag_id: flowName, ...selectedEnvName }));
       return true;
     } catch (error) {
       console.error('Error deploying flow:', error);
@@ -94,7 +94,7 @@ export function PlaybackButton({
             className={`${sizeClasses[size]} border border-gray-100 hover:bg-gray-200 rounded-md ${className}`}
             onClick={handleClick}
             aria-label={`${!isPlaying ? "Deployment Stopped" : "Deployment Started"}`}
-            disabled={dagParserTime && !hasOptimized}
+        
           >
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
             {isLoading ? (

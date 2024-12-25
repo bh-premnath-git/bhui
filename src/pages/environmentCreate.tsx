@@ -28,6 +28,7 @@ type EnvironmentTabState = {
   secretAccessKey: string;
   airflowUrl: string;
   airflowDagBucket: string;
+  awsPvtKey: string | null;
   privateKeyFile: File | null;
   verification: boolean;
   selectedMwaaEnv: string | null;
@@ -98,6 +99,7 @@ const initialState: State = {
     airflowUrl: "",
     airflowDagBucket: "",
     selectedMwaaEnv: null,
+    awsPvtKey: null,
     privateKeyFile: null,
     verification: false
   },
@@ -171,6 +173,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         airflow_url: state.environmentTab.airflowUrl,
         airflow_bucket_name: (state.environmentTab.airflowDagBucket).match(/([^:]+)$/)[1],
         airflow_env_name: state.environmentTab.selectedMwaaEnv,
+        pvt_key: state.environmentTab.awsPvtKey,
         tags: JSON.stringify({
           tagList: formattedTags
         }),

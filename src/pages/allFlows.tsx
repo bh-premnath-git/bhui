@@ -12,6 +12,7 @@ import {
   createFlow,
   setSelectedFlowFromList,
   deleteFlowbyId,
+  setDagRunId,
 } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -188,7 +189,9 @@ const AllFlows: React.FC = () => {
       setNodes([])
       setEdges([])
       if (createFlow.fulfilled.match(result)) {
+        dispatch(setSelectedFlowFromList(null));
         dispatch(setSelectedFlowFromList(result.payload));
+        dispatch(setDagRunId(null));
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
@@ -210,7 +213,9 @@ const AllFlows: React.FC = () => {
   const playground = useCallback((data: any) => {
     const details = LocalStorageService.getItem(`flow-${data.flow_id}`)
     setSelectedFlowId(data.flow_id);
+    dispatch(setSelectedFlowFromList(null));
     dispatch(setSelectedFlowFromList(data));
+    dispatch(setDagRunId(null));
     navigate("/designers/manage-flow/" + data.flow_id);
   }, [navigate, setSelectedFlowId, dispatch]);
 

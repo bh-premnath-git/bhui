@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Terminal, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/redux/hooks';
 import { ApiService } from '@/services/apiServices';
@@ -11,10 +12,18 @@ interface DataPreviewModalProps {
 
 const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) => {
   const dagEunID = useAppSelector((state) => state.flowApi.dagEunID);
+  const selectedFlowFromList = useAppSelector((state) => state.flowApi.selectedFlowFromList);
   const [logContent, setLogContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('logs');
+  const seletors = Array.from(selectedFlowFromList.flow_definition.flow_json.flowJson ?? []);
+  const tasks = []
+  seletors.map((item: any) => {
+
+    tasks.push({ type: item.type, taskid: item.task_id })
+  })
+  const [selectedTask, setSelectedTask] = useState(tasks[0]?.taskid || '');
+
 
   async function getData() {
     try {
@@ -53,11 +62,29 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
         <div className="bg-white rounded-t-lg shadow-lg relative">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-gray-700 text-sm font-mono">
-                <Terminal className="h-4 w-4" />
-                Flow Name: {dagEunID?.dag_id || 'Unknown'}
-              </div>
-              <button 
+                <div className="flex items-center gap-2 text-gray-700 text-sm">
+                  <Terminal className="h-4 w-4" />
+                  Flow Name: {dagEunID?.dag_id || 'Unknown'}
+                </div>
+                <Select
+                  defaultValue={tasks[0]?.taskid}
+                  onValueChange={(value) => setSelectedTask(value)}
+                >
+                  <SelectTrigger className="w-[280px]">
+                    <SelectValue placeholder="Select a task" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tasks.map((task) => (
+                      <SelectItem
+                        key={task.taskid}
+                        value={task.taskid}
+                      >
+                        {task.type} - {task.taskid}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              <button
                 onClick={onClose}
                 className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
                 aria-label="Close"

@@ -40,6 +40,7 @@ interface FormValues {
   privateKeyFile: File | null;
   selectedPlatform: string;
   selectedMwaaEnv: string | null;
+  awsPvtKey: string | null;
 }
 type MWAAEnvironments = string[];
 
@@ -302,7 +303,8 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     airflowDagBucket,
     privateKeyFile,
     selectedPlatform,
-    selectedMwaaEnv
+    selectedMwaaEnv,
+    awsPvtKey: null
   };
 
   const environmentOptions = {
@@ -337,6 +339,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       };
 
       const result = await ApiService('8011', 'post', '/aws/test_connection', credentials, params);
+      const pvtkey = result["pvt_key"]
+      onChange({
+        awsPvtKey: pvtkey
+      })
       const success = result && typeof result === 'object' && 'success' in result;
 
       if (success) {
@@ -401,7 +407,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         }
         const credentialsHasError = hasError(credentialsFields, errors);
 
-        const handleGetMWAAInfos = async (value:string) => {
+        const handleGetMWAAInfos = async (value: string) => {
           try {
             if (!value) return;
             // /api/v1/bh_airflow/get_airflow_environment

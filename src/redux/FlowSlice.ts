@@ -288,7 +288,7 @@ export const patchCronDeployment = createAsyncThunk<
   }
 );
 
-export const dagParserTime = createAsyncThunk<
+export const dagParserTimeFunc = createAsyncThunk<
   string,
   any,
   {
@@ -468,15 +468,15 @@ const flowSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'An error occurred while updating deployment schedule';
       })
-      .addCase(dagParserTime.pending, (state) => {
+      .addCase(dagParserTimeFunc.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(dagParserTime.fulfilled, (state, action) => {
+      .addCase(dagParserTimeFunc.fulfilled, (state, action) => {
         state.loading = false;
         state.dagParserTime = action.payload;
       })
-      .addCase(dagParserTime.rejected, (state, action) => {
+      .addCase(dagParserTimeFunc.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred while fetching DAG parser time';
       });

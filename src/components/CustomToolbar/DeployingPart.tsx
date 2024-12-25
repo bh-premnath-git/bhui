@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { dagParserTime as fetchDagParserTime } from '@/redux/FlowSlice';
+import { dagParserTimeFunc as fetchDagParserTime } from '@/redux/FlowSlice';
 export const DeployingPart = ({ selectedData, selectedEnvName }) => {
     const dispatch = useAppDispatch();
     const { error, dagParserTime } = useAppSelector((state) => state.flowApi)
 
     useEffect(() => {
-        if (selectedData && selectedEnvName) {
+        if ( selectedData && selectedEnvName) {
             const query = {
                 dag_id: selectedData.flow_name,
                 ...selectedEnvName

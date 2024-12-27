@@ -9,6 +9,7 @@ import { Label } from "../ui/label";
 import { Select } from "../ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ApiService } from "@/services/apiServices";
+import { encrypt_string, decrypt_string } from "@/services/encryption";
 
 const schemaReferences: Record<string, any> = {
     "Connection.json": connectionSchema,
@@ -51,11 +52,10 @@ export const SourceForm: React.FC<any> = () => {
     const resolveSchema = async () => {
         let resolvedSchema = { ...sourceSchema };
 
-        // Resolve Source schema conditions
+        // Resolve Source schema conditions first
         if (formData.type) {
             const sourceCondition = sourceSchema.allOf?.find(
-                (condition) =>
-                    condition.if.properties.type.const === formData.type
+                (condition) => condition.if.properties.type.const === formData.type
             );
             if (sourceCondition) {
                 resolvedSchema = {
@@ -64,33 +64,68 @@ export const SourceForm: React.FC<any> = () => {
                         ...resolvedSchema.properties,
                         ...sourceCondition.then.properties,
                     },
+                    required: [
+                        ...(resolvedSchema.required || []),
+                        ...(sourceCondition.then.required || [])
+                    ]
                 };
             }
         }
 
-        // Resolve Connection schema - Simplified logic
+        // Resolve Connection schema based on connection type
         if (formData.connection?.type) {
             const connectionType = formData.connection.type.toLowerCase();
-            const specificSchema = schemaReferences[`connections/${connectionType}.json`];
 
-            if (specificSchema) {
-                resolvedSchema = {
-                    ...resolvedSchema,
-                    properties: {
-                        ...resolvedSchema.properties,
-                        connection: {
-                            ...resolvedSchema.properties.connection,
+            // Find matching condition in Connection schema
+            const connectionCondition = connectionSchema.allOf?.find(
+                (condition) =>
+                    condition.if.properties.type.const?.toLowerCase() === connectionType
+            );
+
+            if (connectionCondition) {
+                // If it's a direct schema (like local, GCS, S3)
+                if (connectionCondition.then.properties) {
+                    resolvedSchema = {
+                        ...resolvedSchema,
+                        properties: {
+                            ...resolvedSchema.properties,
+                            connection: {
+                                ...resolvedSchema.properties.connection,
+                                properties: {
+                                    ...connectionSchema.properties,
+                                    ...connectionCondition.then.properties,
+                                },
+                                required: [
+                                    ...connectionSchema.required,
+                                    ...(connectionCondition.then.required || [])
+                                ]
+                            }
+                        }
+                    };
+                }
+                // If it's a reference to another schema (like bigquery, postgres, snowflake)
+                else if (connectionCondition.then.$ref) {
+                    const specificSchema = schemaReferences[connectionCondition.then.$ref];
+                    if (specificSchema) {
+                        resolvedSchema = {
+                            ...resolvedSchema,
                             properties: {
-                                ...connectionSchema.properties,
-                                ...specificSchema.connectionSpecification.properties,
-                            },
-                            required: [
-                                ...(resolvedSchema.properties.connection?.required || []),
-                                ...(specificSchema.connectionSpecification?.required || [])
-                            ]
-                        },
-                    },
-                };
+                                ...resolvedSchema.properties,
+                                connection: {
+                                    ...resolvedSchema.properties.connection,
+                                    properties: {
+                                        ...connectionSchema.properties,
+                                        ...specificSchema.connectionSpecification?.properties,
+                                    },
+                                    required: [
+                                        ...connectionSchema.required,
+                                        ...(specificSchema.connectionSpecification?.required || [])
+                                    ]
+                                }
+                            }
+                        };
+                    }
+                }
             }
         }
 
@@ -538,76 +573,59 @@ export const SourceForm: React.FC<any> = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         console.log("Form Data:", formData);
+        const { encryptedString, initVector } = encrypt_string(JSON.stringify(formData));
+        console.log(encryptedString, initVector)
+        console.log(decrypt_string(encryptedString, initVector))
+
     };
 
     const renderFields = () => {
-        const orderedFields = [];
+        // Get all properties with their order
+        const orderedFields = Object.entries(currentSchema.properties)
+            .map(([fieldName, fieldSchema]: [string, any]) => ({
+                fieldName,
+                fieldSchema,
+                order: fieldSchema.order || Infinity
+            }))
+            .sort((a, b) => a.order - b.order);
 
-        // 1. Always render name first
-        if (currentSchema.properties.name) {
-            orderedFields.push(['name', currentSchema.properties.name]);
-        }
+        // Special handling for grouped fields (like in postgres)
+        if (formData.connection?.type?.toLowerCase() === 'postgres') {
+            const specificSchema = schemaReferences['connections/postgres.json'];
 
-        // 2. Then type
-        if (currentSchema.properties.type) {
-            orderedFields.push(['type', currentSchema.properties.type]);
-        }
+            // Separate connection fields from other fields
+            const connectionFields = orderedFields.filter(({ fieldName }) => fieldName === 'connection');
+            const otherFields = orderedFields.filter(({ fieldName }) => fieldName !== 'connection');
 
-        // 3. Add filename or table_name based on the selected type
-        if (formData.type) {
-            const sourceCondition = sourceSchema.allOf?.find(
-                (condition) => condition.if.properties.type.const === formData.type
-            );
-            if (sourceCondition?.then?.properties) {
-                if (sourceCondition.then.properties.file_name) {
-                    orderedFields.push(['file_name', sourceCondition.then.properties.file_name]);
-                }
-                if (sourceCondition.then.properties.table_name) {
-                    orderedFields.push(['table_name', sourceCondition.then.properties.table_name]);
-                }
-            }
-        }
+            return (
+                <div className="grid grid-cols-3 gap-2">
+                    {/* Render non-connection fields first */}
+                    {otherFields.map(({ fieldName, fieldSchema }) =>
+                        renderField(fieldName, fieldSchema)
+                    )}
 
-        // 4. Finally, add connection properties
-        if (currentSchema.properties.connection && formData.connection?.type !== 'postgres') {
-            orderedFields.push(['connection', currentSchema.properties.connection]);
-        }
-
-        // Render the fields with groups if applicable
-        if (formData.connection?.type === 'postgres') {
-            orderedFields.push(['connection', {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "type": {
-                        "type": "string",
-                        "endpoint": "/connection_registry/list/?connection_type=source"
-                    },
-                }
-            }]);
-            const connectionType = formData.connection.type.toLowerCase();
-            const specificSchema = schemaReferences[`connections/${connectionType}.json`];
-
-            if (specificSchema?.connectionSpecification?.groups) {
-                return (
-                    <div className="grid grid-cols-3 gap-2">
-                        {orderedFields.map(([fieldName, fieldSchema]) =>
-                            renderField(fieldName, fieldSchema)
+                    {/* Render connection fields */}
+                    <div className="col-span-3">
+                        {connectionFields.map(({ fieldName, fieldSchema }) =>
+                            renderField(fieldName, {
+                                type: "object",
+                                properties: {
+                                    name: connectionSchema.properties.name,
+                                    type: connectionSchema.properties.type,
+                                }
+                            })
                         )}
-                        <div className="col-span-3">
-                            {renderGroupedFields(specificSchema, ['connection'])}
-                        </div>
+                        {specificSchema?.connectionSpecification?.groups &&
+                            renderGroupedFields(specificSchema, ['connection'])}
                     </div>
-                );
-            }
+                </div>
+            );
         }
 
+        // Default rendering for non-grouped fields
         return (
             <div className="grid grid-cols-3 gap-2">
-                {orderedFields.map(([fieldName, fieldSchema]) =>
+                {orderedFields.map(({ fieldName, fieldSchema }) =>
                     renderField(fieldName, fieldSchema)
                 )}
             </div>

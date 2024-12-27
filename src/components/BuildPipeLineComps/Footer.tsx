@@ -22,7 +22,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
     const [drawerHeight, setDrawerHeight]: any = useState('60%');
     const [selectedTab, setSelectedTab] = useState(0);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const { isRun, isDebug,nodesList }: any = useSelector((state: RootState) => state.buildPipeLineApi);
+    const { isRun, isDebug, nodesList }: any = useSelector((state: RootState) => state.buildPipeLineApi);
     const dispatch = useDispatch();
     const toggleDrawer = (newState: boolean) => () => {
         setOpen(newState);
@@ -51,14 +51,14 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                     pipeline_name: "sample",
                     pipeline_json: JSON.stringify(schemaValidation.module),
                     mode: "DEFAULT"
-                })).unwrap(); 
+                })).unwrap();
 
                 console.log(response);
                 if (response) {
                     // Call getTransformationCount only if startPipeLine was successful
                     // var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
                     // console.log(result.payload);
-            dispatch(setIsRun(true));
+                    dispatch(setIsRun(true));
 
                     showToast(response.message, { color: COLORS.green });
                 } else {
@@ -83,26 +83,26 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
             }
         } else {
             dispatch(setIsDebug(!isDebug));
-    const nodes = JSON.parse(nodesList||'[]');
-            const checkedDisplayNames =await nodes?.filter((node:any) => node.data.isCheck).map((node:any) => node.data.display);
+            const nodes = JSON.parse(nodesList || '[]');
+            const checkedDisplayNames = await nodes?.filter((node: any) => node.data.isCheck).map((node: any) => node.data.display);
             console.log(checkedDisplayNames)
-try {
-    let checkPoint=checkedDisplayNames.join(',');
-    console.log(checkPoint)
-    const response = await dispatch(startPipeLine({
-        pipeline_name: "sample",
-        pipeline_json: JSON.stringify(schemaValidation.module),
-        mode: "DEBUG",
-        checkpoints:checkPoint
-    })).unwrap(); 
-    console.log(response)
-    if(response?.message){
-var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
+            try {
+                let checkPoint = checkedDisplayNames.join(',');
+                console.log(checkPoint)
+                const response = await dispatch(startPipeLine({
+                    pipeline_name: "sample",
+                    pipeline_json: JSON.stringify(schemaValidation.module),
+                    mode: "DEBUG",
+                    checkpoints: checkPoint
+                })).unwrap();
+                console.log(response)
+                if (response?.message) {
+                    var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
                     console.log(result.payload);
-    }
-} catch (error) {
-   
-}
+                }
+            } catch (error) {
+
+            }
         }
 
 

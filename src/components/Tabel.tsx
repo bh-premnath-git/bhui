@@ -145,9 +145,9 @@ const TableBodyComponent: React.FC<{
               key={column.key}
               className={cn(
                 column.align === "left" ? "text-left" :
-                column.align === "center" ? "text-center" :
-                column.align === "right" ? "text-right" :
-                column.type === "number" ? "text-center" : "text-justify"
+                  column.align === "center" ? "text-center" :
+                    column.align === "right" ? "text-right" :
+                      column.type === "number" ? "text-center" : "text-justify"
               )}
             >
               {column.render ? (

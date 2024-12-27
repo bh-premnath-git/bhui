@@ -4,25 +4,28 @@
     "type": "object",
     "title": "Source",
     "properties": {
-        "name": {
+        "source_name": {
             "type": "string",
             "description": "Source Name",
-            "minLength": 1
+            "minLength": 1,
+            "order": 1
         },
         "type": {
             "type": "string",
             "enum": [
                 "File",
                 "Relational"
-            ]
+            ],
+            "order": 2
         },
         "connection": {
             "type": "object",
-            "$ref": "Connection.json"
+            "$ref": "Connection.json",
+            "order": 3
         }
     },
     "required": [
-        "name",
+        "source_name",
         "type",
         "connection"
     ],

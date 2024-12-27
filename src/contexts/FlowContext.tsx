@@ -149,6 +149,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
                 ...node,
                 data: {
                   ...node.data,
+                  type: selectedType,
                   selectedData: selectedType,
                 },
               }

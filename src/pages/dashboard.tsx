@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
+
 import {
   Select,
   SelectContent,
@@ -6,7 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -26,9 +37,15 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
+
 const rootStyle = getComputedStyle(document.documentElement);
- 
- 
+
 type DataItem = {
   name: string;
   project: string;
@@ -36,12 +53,17 @@ type DataItem = {
   latency: number;
   cost: number;
   freshness: number;
-  status: "In Progress" | "Completed" | "Failed" | "Did Not Arrive" | "Not Published";
+  status:
+    | "In Progress"
+    | "Completed"
+    | "Failed"
+    | "Did Not Arrive"
+    | "Not Published";
   date: Date;
 };
- 
+
 type FilterOption = "All" | string;
- 
+
 interface CustomizedDotProps {
   cx: number;
   cy: number;
@@ -53,25 +75,25 @@ interface CustomizedDotProps {
   isShow?: boolean;
   key?: string;
 }
- 
-// Define theme colors using CSS variables
+
 const COLORS = [
-  rootStyle.getPropertyValue('--chart-1-color').trim(),
-  rootStyle.getPropertyValue('--chart-2-color').trim(),
-  rootStyle.getPropertyValue('--chart-3-color').trim(),
-  rootStyle.getPropertyValue('--chart-5-color').trim(),
+  rootStyle.getPropertyValue("--chart-1-color").trim(),
+  rootStyle.getPropertyValue("--chart-2-color").trim(),
+  rootStyle.getPropertyValue("--chart-3-color").trim(),
+  rootStyle.getPropertyValue("--chart-5-color").trim(),
 ];
- 
+
 // Create semi-transparent versions for area charts
-const COLORS_WITH_OPACITY = COLORS.map(color => ({
+const COLORS_WITH_OPACITY = COLORS.map((color) => ({
   stroke: color,
-  fill: color
+  fill: color,
 }));
- 
+
 const months = ["Jan", "Feb", "Mar", "Apr", "May"];
 const projects = ["Project1", "Project2", "Project3", "Project4"];
 const pipelines = ["Pipeline1", "Pipeline2", "Pipeline3", "Pipeline4"];
- 
+
+// Generate mock data
 const generateData = (): DataItem[] => {
   return months.flatMap((month, monthIndex) =>
     projects.flatMap((project) =>
@@ -82,18 +104,22 @@ const generateData = (): DataItem[] => {
         latency: Math.floor(Math.random() * 40) + 10,
         cost: Math.floor(Math.random() * 1000) + 500,
         freshness: Math.floor(Math.random() * 20) + 80,
-        status: ["In Progress", "Completed", "Failed", "Did Not Arrive", "Not Published"][
-          Math.floor(Math.random() * 5)
-        ] as DataItem["status"],
+        status: [
+          "In Progress",
+          "Completed",
+          "Failed",
+          "Did Not Arrive",
+          "Not Published",
+        ][Math.floor(Math.random() * 5)] as DataItem["status"],
         date: new Date(2023, monthIndex, 1),
       }))
     )
   );
 };
- 
+
 const CustomLegend: React.FC<any> = (props) => {
   const { payload } = props;
- 
+
   return (
     <ul className="flex flex-wrap justify-center gap-2 text-xs">
       {payload.map((entry: any, index: number) => (
@@ -101,14 +127,14 @@ const CustomLegend: React.FC<any> = (props) => {
           <span
             className="inline-block w-2 h-2 mr-1"
             style={{ backgroundColor: entry.color }}
-          ></span>
+          />
           <span className="text-foreground">{entry.value}</span>
         </li>
       ))}
     </ul>
   );
 };
- 
+
 const computeAverageMetrics = (
   data: DataItem[],
   metric: keyof Pick<DataItem, "latency" | "cost" | "freshness">
@@ -124,7 +150,7 @@ const computeAverageMetrics = (
         const avg =
           projectData.length > 0
             ? projectData.reduce((sum, item) => sum + item[metric], 0) /
-            projectData.length
+              projectData.length
             : 0;
         acc[proj] = avg;
         return acc;
@@ -132,33 +158,26 @@ const computeAverageMetrics = (
     };
   });
 };
- 
+
 const CustomizedDot: React.FC<CustomizedDotProps> = (props) => {
   const { cx, cy, stroke } = props;
   return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={3}
-      stroke={stroke}
-      strokeWidth={2}
-      fill={stroke}
-    />
+    <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={2} fill={stroke} />
   );
 };
- 
+
 const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
   <div role="alert" className="text-destructive">
     <p>Something went wrong:</p>
     <pre>{error.message}</pre>
   </div>
 );
- 
+
 interface ChartCardProps {
   title: string;
   children: React.ReactNode;
 }
- 
+
 const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
   <Card className="col-span-1">
     <CardHeader>
@@ -173,14 +192,14 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
     </CardContent>
   </Card>
 );
- 
+
 interface FilterSelectProps {
   label: string;
   value: FilterOption;
   onChange: (value: FilterOption) => void;
   options: string[];
 }
- 
+
 const FilterSelect: React.FC<FilterSelectProps> = ({
   label,
   value,
@@ -202,239 +221,30 @@ const FilterSelect: React.FC<FilterSelectProps> = ({
     </Select>
   </div>
 );
- 
+
 const setCookie = (name: string, value: string, days: number) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  document.cookie =
+    name + "=" + encodeURIComponent(value) + "; expires=" + expires + "; path=/";
 };
- 
+
 const getCookie = (name: string) => {
-  return document.cookie.split('; ').reduce((r, v) => {
-    const parts = v.split('=');
+  return document.cookie.split("; ").reduce((r, v) => {
+    const parts = v.split("=");
     return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-  }, '');
+  }, "");
 };
- 
-export default function Component() {
-  const [filters, setFilters] = useState({
-    project: "All" as FilterOption,
-    pipeline: "All" as FilterOption,
-    status: "All" as FilterOption,
-    duration: "All" as FilterOption,
-  });
- 
-  useEffect(() => {
-    const savedFilters = getCookie('dashboardFilters');
-    if (savedFilters) {
-      setFilters(JSON.parse(savedFilters));
-    }
-  }, []);
- 
-  const handleFilterChange = useCallback((key: string, value: FilterOption) => {
-    setFilters((prev) => {
-      const newFilters = { ...prev, [key]: value };
-      setCookie('dashboardFilters', JSON.stringify(newFilters), 30); // Save for 30 days
-      return newFilters;
-    });
-  }, []);
- 
-  const allData = useMemo(() => generateData(), []);
- 
-  const filteredData = useMemo(() => {
-    let filtered = allData;
- 
-    if (filters.project !== "All") {
-      filtered = filtered.filter((item) => item.project === filters.project);
-    }
- 
-    if (filters.pipeline !== "All") {
-      filtered = filtered.filter((item) => item.pipeline === filters.pipeline);
-    }
- 
-    if (filters.status !== "All") {
-      filtered = filtered.filter((item) => item.status === filters.status);
-    }
- 
-    if (filters.duration !== "All") {
-      const now = new Date();
-      const startDate = new Date(now);
-      switch (filters.duration) {
-        case "Today":
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case "This Week":
-          startDate.setDate(now.getDate() - now.getDay());
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case "This Month":
-          startDate.setDate(1);
-          startDate.setHours(0, 0, 0, 0);
-          break;
-      }
-      filtered = filtered.filter((item) => item.date >= startDate);
-    }
- 
-    return filtered;
-  }, [allData, filters]);
- 
-  const chartData = useMemo(
-    () => ({
-      latency: computeAverageMetrics(filteredData, "latency"),
-      cost: computeAverageMetrics(filteredData, "cost"),
-      freshness: computeAverageMetrics(filteredData, "freshness"),
-      health: projects.map((proj) => {
-        const projectData = filteredData.filter(
-          (item) => item.project === proj
-        );
-        const total = projectData.length;
-        const success = projectData.filter(
-          (item) => item.status === "Completed"
-        ).length;
-        return {
-          name: proj,
-          success: total > 0 ? (success / total) * 100 : 0,
-          failed: total > 0 ? ((total - success) / total) * 100 : 0,
-        };
-      }),
-      quality: projects.map((proj) => {
-        const projectData = filteredData.filter(
-          (item) => item.project === proj
-        );
-        const total = projectData.length;
-        const success = projectData.filter(
-          (item) => item.freshness > 90
-        ).length;
-        return {
-          name: proj,
-          success: total > 0 ? (success / total) * 100 : 0,
-          failed: total > 0 ? ((total - success) / total) * 100 : 0,
-        };
-      }),
-      incident: projects.map((proj) => {
-        const projectData = filteredData.filter(
-          (item) => item.project === proj
-        );
-        return {
-          name: proj,
-          inProgress: projectData.filter(
-            (item) => item.status === "In Progress"
-          ).length,
-          completed: projectData.filter((item) => item.status === "Completed")
-            .length,
-          failed: projectData.filter((item) => item.status === "Failed").length,
-        };
-      }),
-      ingestion: (() => {
-        const completedOnTime = filteredData.filter(
-          (item) => item.status === "Completed"
-        ).length;
-        const failed = filteredData.filter(
-          (item) => item.status === "Failed"
-        ).length;
-        const delayed = filteredData.filter(
-          (item) => item.status === "In Progress"
-        ).length;
-        const didNotArrive = filteredData.filter(
-          (item) => item.status === "Did Not Arrive"
-        ).length;
-        return [
-          { name: "Completed On Time", value: completedOnTime },
-          { name: "Completed With Delay", value: delayed },
-          { name: "Failed", value: failed },
-          { name: "Did Not Arrive", value: didNotArrive },
-        ];
-      })(),
-      publish: (() => {
-        const publishedOnTime = filteredData.filter(
-          (item) => item.status === "Completed"
-        ).length;
-        const publishedWithDelay = filteredData.filter(
-          (item) => item.status === "In Progress"
-        ).length;
-        const failed = filteredData.filter(
-          (item) => item.status === "Failed"
-        ).length;
-        const notPublished = filteredData.filter(
-          (item) => item.status === "Not Published"
-        ).length;
-        return [
-          { name: "Published On Time", value: publishedOnTime },
-          { name: "Published With Delay", value: publishedWithDelay },
-          { name: "Failed", value: failed },
-          { name: "Not Published", value: notPublished },
-        ];
-      })(),
-    }),
-    [filteredData]
-  );
- 
-  const minValue = useMemo(() => {
-    const freshnessValues = chartData.freshness.flatMap((item) =>
-      Object.values(item).filter((value) => typeof value === "number")
-    );
-    return Math.min(...freshnessValues) - 10;
-  }, [chartData]);
- 
-  const maxValue = useMemo(() => {
-    const freshnessValues = chartData.freshness.flatMap((item) =>
-      Object.values(item).filter((value) => typeof value === "number")
-    );
-    return Math.max(...freshnessValues) + 10;
-  }, [chartData]);
- 
-  const resetFilters = useCallback(() => {
-    const defaultFilters = {
-      project: "All",
-      pipeline: "All",
-      status: "All",
-      duration: "All",
-    };
-    setFilters(defaultFilters);
-    setCookie('dashboardFilters', JSON.stringify(defaultFilters), 30);
-  }, []);
- 
-  if (!allData.length) {
-    return <div className="p-4">No data available. Please check your data source.</div>;
-  }
- 
-  return (
-    <div className="ml-7 p space-y-2">
-      <div className="flex flex-wrap items-end gap-2">
-        <FilterSelect
-          label="Project"
-          value={filters.project}
-          onChange={(value) => handleFilterChange("project", value)}
-          options={["All", ...projects]}
-        />
-        <FilterSelect
-          label="Pipeline"
-          value={filters.pipeline}
-          onChange={(value) => handleFilterChange("pipeline", value)}
-          options={["All", ...pipelines]}
-        />
-        <FilterSelect
-          label="Status"
-          value={filters.status}
-          onChange={(value) => handleFilterChange("status", value)}
-          options={["All", "In Progress", "Completed", "Failed", "Not Published"]}
-        />
-        <FilterSelect
-          label="Duration"
-          value={filters.duration}
-          onChange={(value) => handleFilterChange("duration", value)}
-          options={["All", "Today", "This Week", "This Month"]}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={resetFilters}
-          aria-label="Reset filters"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
- 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+
+// Helper to render each chart by ID
+function renderChart(
+  chartId: string,
+  chartData: any,
+  minValue: number,
+  maxValue: number
+) {
+  switch (chartId) {
+    case "latency":
+      return (
         <ChartCard title="Latency Trend">
           <LineChart
             data={chartData.latency}
@@ -464,14 +274,16 @@ export default function Component() {
                 dot={(props) => {
                   const { key, ...rest } = props;
                   const dotKey = `dot-${proj}-${props.index}`;
-                  return <CustomizedDot key={dotKey} {...rest} isShow={true} />;
+                  return <CustomizedDot key={dotKey} {...rest} isShow />;
                 }}
               />
             ))}
             <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
- 
+      );
+    case "cost":
+      return (
         <ChartCard title="Cost Trend">
           <AreaChart
             data={chartData.cost}
@@ -504,7 +316,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </AreaChart>
         </ChartCard>
- 
+      );
+    case "ingestion":
+      return (
         <ChartCard title="Ingestion Status">
           <PieChart>
             <Pie
@@ -518,7 +332,7 @@ export default function Component() {
               outerRadius={90}
               paddingAngle={2}
             >
-              {chartData.ingestion.map((_entry, index) => (
+              {chartData.ingestion.map((_entry: any, index: number) => (
                 <Cell
                   key={`${_entry}-${index}`}
                   fill={COLORS[index % COLORS.length]}
@@ -530,7 +344,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
- 
+      );
+    case "publish":
+      return (
         <ChartCard title="Publish Status">
           <PieChart>
             <Pie
@@ -544,7 +360,7 @@ export default function Component() {
               outerRadius={90}
               paddingAngle={2}
             >
-              {chartData.publish.map((_entry, index) => (
+              {chartData.publish.map((_entry: any, index: number) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
@@ -556,9 +372,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </PieChart>
         </ChartCard>
-      </div>
- 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+      );
+    case "health":
+      return (
         <ChartCard title="Project Health Status">
           <BarChart
             data={chartData.health}
@@ -585,7 +401,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
- 
+      );
+    case "quality":
+      return (
         <ChartCard title="Project Quality Status">
           <BarChart
             layout="vertical"
@@ -612,7 +430,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
- 
+      );
+    case "incident":
+      return (
         <ChartCard title="Incident Summary">
           <BarChart
             data={chartData.incident}
@@ -636,7 +456,9 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </BarChart>
         </ChartCard>
- 
+      );
+    case "freshness":
+      return (
         <ChartCard title="Freshness">
           <LineChart
             data={chartData.freshness}
@@ -673,7 +495,276 @@ export default function Component() {
             <Legend content={<CustomLegend />} />
           </LineChart>
         </ChartCard>
+      );
+    default:
+      return null;
+  }
+}
+
+export default function Component() {
+  const [filters, setFilters] = useState({
+    project: "All" as FilterOption,
+    pipeline: "All" as FilterOption,
+    status: "All" as FilterOption,
+    duration: "All" as FilterOption,
+  });
+
+  // Keep track of your chart IDs in an array, ensuring these IDs are strings.
+  const [chartOrder, setChartOrder] = useState<string[]>([
+    "latency",
+    "cost",
+    "ingestion",
+    "publish",
+    "health",
+    "quality",
+    "incident",
+    "freshness",
+  ]);
+
+  useEffect(() => {
+    const savedFilters = getCookie("dashboardFilters");
+    if (savedFilters) {
+      setFilters(JSON.parse(savedFilters));
+    }
+  }, []);
+
+  const handleFilterChange = useCallback((key: string, value: FilterOption) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev, [key]: value };
+      setCookie("dashboardFilters", JSON.stringify(newFilters), 30);
+      return newFilters;
+    });
+  }, []);
+
+  const allData = useMemo(() => generateData(), []);
+
+  const filteredData = useMemo(() => {
+    let filtered = allData;
+    if (filters.project !== "All") {
+      filtered = filtered.filter((item) => item.project === filters.project);
+    }
+    if (filters.pipeline !== "All") {
+      filtered = filtered.filter((item) => item.pipeline === filters.pipeline);
+    }
+    if (filters.status !== "All") {
+      filtered = filtered.filter((item) => item.status === filters.status);
+    }
+    if (filters.duration !== "All") {
+      const now = new Date();
+      const startDate = new Date(now);
+      switch (filters.duration) {
+        case "Today":
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case "This Week":
+          startDate.setDate(now.getDate() - now.getDay());
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case "This Month":
+          startDate.setDate(1);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+      }
+      filtered = filtered.filter((item) => item.date >= startDate);
+    }
+    return filtered;
+  }, [allData, filters]);
+
+  const chartData = useMemo(
+    () => ({
+      latency: computeAverageMetrics(filteredData, "latency"),
+      cost: computeAverageMetrics(filteredData, "cost"),
+      freshness: computeAverageMetrics(filteredData, "freshness"),
+      health: projects.map((proj) => {
+        const projectData = filteredData.filter((item) => item.project === proj);
+        const total = projectData.length;
+        const success = projectData.filter((item) => item.status === "Completed")
+          .length;
+        return {
+          name: proj,
+          success: total > 0 ? (success / total) * 100 : 0,
+          failed: total > 0 ? ((total - success) / total) * 100 : 0,
+        };
+      }),
+      quality: projects.map((proj) => {
+        const projectData = filteredData.filter((item) => item.project === proj);
+        const total = projectData.length;
+        const success = projectData.filter((item) => item.freshness > 90).length;
+        return {
+          name: proj,
+          success: total > 0 ? (success / total) * 100 : 0,
+          failed: total > 0 ? ((total - success) / total) * 100 : 0,
+        };
+      }),
+      incident: projects.map((proj) => {
+        const projectData = filteredData.filter((item) => item.project === proj);
+        return {
+          name: proj,
+          inProgress: projectData.filter((item) => item.status === "In Progress")
+            .length,
+          completed: projectData.filter((item) => item.status === "Completed")
+            .length,
+          failed: projectData.filter((item) => item.status === "Failed").length,
+        };
+      }),
+      ingestion: (() => {
+        const completedOnTime = filteredData.filter(
+          (item) => item.status === "Completed"
+        ).length;
+        const failed = filteredData.filter((item) => item.status === "Failed")
+          .length;
+        const delayed = filteredData.filter(
+          (item) => item.status === "In Progress"
+        ).length;
+        const didNotArrive = filteredData.filter(
+          (item) => item.status === "Did Not Arrive"
+        ).length;
+        return [
+          { name: "Completed On Time", value: completedOnTime },
+          { name: "Completed With Delay", value: delayed },
+          { name: "Failed", value: failed },
+          { name: "Did Not Arrive", value: didNotArrive },
+        ];
+      })(),
+      publish: (() => {
+        const publishedOnTime = filteredData.filter(
+          (item) => item.status === "Completed"
+        ).length;
+        const publishedWithDelay = filteredData.filter(
+          (item) => item.status === "In Progress"
+        ).length;
+        const failed = filteredData.filter((item) => item.status === "Failed")
+          .length;
+        const notPublished = filteredData.filter(
+          (item) => item.status === "Not Published"
+        ).length;
+        return [
+          { name: "Published On Time", value: publishedOnTime },
+          { name: "Published With Delay", value: publishedWithDelay },
+          { name: "Failed", value: failed },
+          { name: "Not Published", value: notPublished },
+        ];
+      })(),
+    }),
+    [filteredData]
+  );
+
+  const minValue = useMemo(() => {
+    const freshnessValues = chartData.freshness.flatMap((item: any) =>
+      Object.values(item).filter((value) => typeof value === "number")
+    );
+    return Math.min(...freshnessValues) - 10;
+  }, [chartData]);
+
+  const maxValue = useMemo(() => {
+    const freshnessValues = chartData.freshness.flatMap((item: any) =>
+      Object.values(item).filter((value) => typeof value === "number")
+    );
+    return Math.max(...freshnessValues) + 10;
+  }, [chartData]);
+
+  const resetFilters = useCallback(() => {
+    const defaultFilters = {
+      project: "All",
+      pipeline: "All",
+      status: "All",
+      duration: "All",
+    };
+    setFilters(defaultFilters);
+    setCookie("dashboardFilters", JSON.stringify(defaultFilters), 30);
+  }, []);
+
+  // The function to reorder chartOrder when dragging ends
+  const handleDragEnd = useCallback(
+    (result: DropResult) => {
+      if (!result.destination) return; // dropped outside the list
+
+      const newOrder = Array.from(chartOrder);
+      const [movedItem] = newOrder.splice(result.source.index, 1);
+      newOrder.splice(result.destination.index, 0, movedItem);
+
+      setChartOrder(newOrder);
+    },
+    [chartOrder]
+  );
+
+  if (!allData.length) {
+    return <div className="p-4">No data available. Please check your data source.</div>;
+  }
+
+  return (
+    <div className="ml-7 p space-y-2">
+      {/* Filters row */}
+      <div className="flex flex-wrap items-end gap-2">
+        <FilterSelect
+          label="Project"
+          value={filters.project}
+          onChange={(value) => handleFilterChange("project", value)}
+          options={["All", ...projects]}
+        />
+        <FilterSelect
+          label="Pipeline"
+          value={filters.pipeline}
+          onChange={(value) => handleFilterChange("pipeline", value)}
+          options={["All", ...pipelines]}
+        />
+        <FilterSelect
+          label="Status"
+          value={filters.status}
+          onChange={(value) => handleFilterChange("status", value)}
+          options={["All", "In Progress", "Completed", "Failed", "Not Published"]}
+        />
+        <FilterSelect
+          label="Duration"
+          value={filters.duration}
+          onChange={(value) => handleFilterChange("duration", value)}
+          options={["All", "Today", "This Week", "This Month"]}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={resetFilters}
+          aria-label="Reset filters"
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* DragDropContext + Droppable */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="chartsDroppable">
+          {(provided) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
+            >
+              {chartOrder.map((chartId, index) => {
+                return (
+                  <Draggable
+                    key={chartId}
+                    draggableId={chartId}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        // IMPORTANT: must apply the provided style
+                        style={provided.draggableProps.style}
+                      >
+                        {renderChart(chartId, chartData, minValue, maxValue)}
+                      </div>
+                    )}
+                  </Draggable>
+                );
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }

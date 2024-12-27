@@ -58,12 +58,6 @@ interface CreateFlowParams {
   };
 }
 
-interface DeploymentParams {
-  flow_id: number,
-  bh_env_id: number,
-  cron_expression: any
-}
-
 interface UpdateFlowDefinitionParams {
   flow_id: string;
   flow_json: Record<string, any>;
@@ -82,47 +76,70 @@ interface ListParams {
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
-  {
-    rejectValue: string; // Type of the value passed to rejectWithValue
-  }
+  { rejectValue: string } // Additional ThunkAPI options
 >(
-  'flow/create',
-  async (params, thunkAPI) => {
+  "flow/create",
+  async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService('8011', 'post', '/flow/create/', params);
+      const response = await ApiService(
+        "8011",
+        "post",
+        "/flow/create/",
+        params,
+        null,
+        {},
+        true,
+        signal
+      );
       return response;
     } catch (error: any) {
-      const isDeploymentError = error.message?.includes('deployment failed');
-      const flowError = isDeploymentError ? undefined : error.message;
-      return thunkAPI.rejectWithValue(flowError);
+      // Check if the error is due to a canceled request
+      if (error.name === "AbortError") {
+        console.log("createFlow request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+
+      // Handle other errors
+      const flowError = error.message?.includes("deployment failed")
+        ? undefined
+        : error.message;
+      return rejectWithValue(flowError || "An unknown error occurred");
     }
   }
 );
 
 
-
 export const listFlows = createAsyncThunk<
-  any[], // Return type
+  any[],
   ListParams,
-  {
-    rejectValue: string;
-  }
+  { rejectValue: string }
 >(
-  'flow/list',
-  async (params: any, thunkAPI) => {
+  "flow/list",
+  async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService('8011', 'get', '/flow/list/', null, params);
-      const transformed: any[] = response.map((item: any) => {
-        return ({
-          id: item["flow_id"],
-          Name: item["flow_name"],
-          ...item,
-          CreatedBy: decoded?.name ?? ""
-        })
-      })
+      const response = await ApiService(
+        "8011",
+        "get",
+        "/flow/list/",
+        null,
+        params,
+        {},
+        true,
+        signal
+      );
+      const transformed = response.map((item: any) => ({
+        id: item.flow_id,
+        Name: item.flow_name,
+        ...item,
+        CreatedBy: decoded?.name ?? "",
+      }));
       return transformed;
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
+      if (error.name === "AbortError") {
+        console.log("createFlow request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -230,17 +247,26 @@ export const updateFlowDefinition = createAsyncThunk<
   { rejectValue: string }
 >(
   'flow/updateFlowDefinition',
-  async ({ flow_id, flow_json }, thunkAPI) => {
+  async ({ flow_id, flow_json }, { rejectWithValue, signal }) => {  
+    
     try {
       const response = await ApiService(
         '8011',
         'patch',
         `/flow/flow-definition/update-by-flow-id/${flow_id}`,
-        flow_json
+        flow_json,
+        null,
+        {},
+        true,
+        signal
       );
       return response;
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
+      if (error.name === "AbortError") {
+        console.log("updateFlowDefinition request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+      return rejectWithValue(error.message);
     }
   }
 );

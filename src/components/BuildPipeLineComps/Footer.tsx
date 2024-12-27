@@ -55,6 +55,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                 if (response) {
                     // Call getTransformationCount only if startPipeLine was successful
                     // var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
+                    // console.log(result.payload);
                     dispatch(setIsRun(true));
 
                     showToast(response.message, { color: COLORS.green });
@@ -81,16 +82,20 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
             dispatch(setIsDebug(!isDebug));
             const nodes = JSON.parse(nodesList || '[]');
             const checkedDisplayNames = await nodes?.filter((node: any) => node.data.isCheck).map((node: any) => node.data.display);
+            console.log(checkedDisplayNames)
             try {
                 let checkPoint = checkedDisplayNames.join(',');
+                console.log(checkPoint)
                 const response = await dispatch(startPipeLine({
                     pipeline_name: "sample",
                     pipeline_json: JSON.stringify(schemaValidation.module),
                     mode: "DEBUG",
                     checkpoints: checkPoint
                 })).unwrap();
+                console.log(response)
                 if (response?.message) {
                     var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
+                    console.log(result.payload);
                 }
             } catch (error) {
 

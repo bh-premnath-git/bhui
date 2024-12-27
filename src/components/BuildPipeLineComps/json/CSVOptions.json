@@ -4,130 +4,229 @@
     "title": "CSV Reader Options",
     "properties": {
         "sep": {
-            "type": "string",
+            "enum": [
+                ",",
+                ";",
+                "\t",
+                "|",
+                " "
+            ],
             "description": "Sets a separator for each field and value. This separator can be one or more characters.",
             "default": ","
         },
         "encoding": {
-            "type": "string",
+            "enum": [
+                "UTF-8",
+                "ISO-8859-1",
+                "ASCII",
+                "UTF-16"
+            ],
             "description": "Sets the encoding to be used for CSV files.",
             "default": "UTF-8"
         },
         "quote": {
-            "type": "string",
+            "enum": [
+                "\"",
+                "'"
+            ],
             "description": "Sets a single character used for escaping quoted values where the separator can be part of the value.",
             "default": "\""
         },
         "escape": {
-            "type": "string",
+            "enum": [
+                "\\",
+                "/",
+                "\""
+            ],
             "description": "Sets a single character used for escaping quotes inside an already quoted value.",
             "default": "\\"
         },
         "comment": {
-            "type": "string",
+            "enum": [
+                "#",
+                "//",
+                ";",
+                ""
+            ],
             "description": "Sets a single character used for skipping lines beginning with this character. By default, it is disabled.",
             "default": ""
         },
         "header": {
-            "type": "boolean",
+            "enum": [
+                "true",
+                "false"
+            ],
             "description": "Uses the first line of the CSV file as the names of the columns.",
-            "default": false
+            "default": "false"
         },
         "inferSchema": {
-            "type": "boolean",
+            "enum": [
+                "true",
+                "false"
+            ],
             "description": "Infers the input schema automatically from data. It requires one extra pass over the data. CSV built-in functions ignore this option.",
-            "default": false
+            "default": "false"
         },
         "preferDate": {
-            "type": "boolean",
-            "description": "During schema inference (inferSchema), attempts to infer string columns that contain dates as Date if the values satisfy the dateFormat option or default date format. For columns that contain a mixture of dates and timestamps, try inferring them as TimestampType if timestamp format not specified, otherwise infer them as StringType.",
-            "default": true
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "During schema inference (inferSchema), attempts to infer string columns that contain dates as Date if the values satisfy the dateFormat option or default date format.",
+            "default": "true"
         },
         "enforceSchema": {
-            "type": "boolean",
-            "description": "If it is set to true, the specified or inferred schema will be forcibly applied to datasource files, and headers in CSV files will be ignored. If the option is set to false, the schema will be validated against all headers in CSV files in the case when the header option is set to true. Field names in the schema and column names in CSV headers are checked by their positions taking into account spark.sql.caseSensitive. Though the default value is true, it is recommended to disable the enforceSchema option to avoid incorrect results. CSV built-in functions ignore this option.",
-            "default": false
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "If it is set to true, the specified or inferred schema will be forcibly applied to datasource files, and headers in CSV files will be ignored.",
+            "default": "false"
         },
         "ignoreLeadingWhiteSpace": {
-            "type": "boolean",
+            "enum": [
+                "true",
+                "false"
+            ],
             "description": "Ignores leading whitespaces in CSV fields. By default, it is false.",
-            "default": false
+            "default": "false"
         },
         "ignoreTrailingWhiteSpace": {
-            "type": "boolean",
+            "enum": [
+                "true",
+                "false"
+            ],
             "description": "Ignores trailing whitespaces in CSV fields. By default, it is false.",
-            "default": false
+            "default": "false"
         },
         "nullValue": {
-            "type": "string",
+            "enum": [
+                "null",
+                "NULL",
+                "\\N"
+            ],
             "description": "Sets the string representation of a null value. By default, it is empty string.",
             "default": ""
         },
         "nanValue": {
-            "type": "string",
+            "enum": [
+                "NaN",
+                "nan",
+                "NAN"
+            ],
             "description": "Sets the string representation of a non-number value. By default, it is 'NaN'.",
             "default": "NaN"
         },
         "positiveInf": {
-            "type": "string",
+            "enum": [
+                "Inf",
+                "Infinity",
+                "+Inf",
+                "+Infinity"
+            ],
             "description": "Sets the string representation of a positive infinity value. By default, it is 'Inf'.",
             "default": "Inf"
         },
         "negativeInf": {
-            "type": "string",
+            "enum": [
+                "-Inf",
+                "-Infinity"
+            ],
             "description": "Sets the string representation of a negative infinity value. By default, it is '-Inf'.",
             "default": "-Inf"
         },
         "dateFormat": {
-            "type": "string",
-            "description": "Sets the string that indicates a date format. Custom date formats follow the formats at `java.text.SimpleDateFormat`. This applies to both date type and timestamp type.",
+            "enum": [
+                "yyyy-MM-dd",
+                "MM/dd/yyyy",
+                "dd-MM-yyyy"
+            ],
+            "description": "Sets the string that indicates a date format.",
             "default": "yyyy-MM-dd"
         },
         "timestampFormat": {
-            "type": "string",
-            "description": "Sets the string that indicates a timestamp format. Custom date formats follow the formats at `java.text.SimpleDateFormat`. This applies to both date type and timestamp type.",
+            "enum": [
+                "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                "yyyy-MM-dd HH:mm:ss",
+                "MM/dd/yyyy HH:mm:ss"
+            ],
+            "description": "Sets the string that indicates a timestamp format.",
             "default": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
         },
         "timestampNTZFormat": {
-            "type": "string",
-            "description": "Sets the string that indicates a timestamp format for TIMESTAMP_NTZ type. Custom date formats follow the formats at `java.text.SimpleDateFormat`. This applies to both date type and timestamp type.",
+            "enum": [
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                "MM/dd/yyyy HH:mm:ss"
+            ],
+            "description": "Sets the string that indicates a timestamp format for TIMESTAMP_NTZ type.",
             "default": "yyyy-MM-dd'T'HH:mm:ss.SSS"
         },
         "mode": {
-            "type": "string",
-            "description": "Specifies the behavior when parsing malformed records. It can be PERMISSIVE, DROPMALFORMED, or FAILFAST. mode=PERMISSIVE is the default mode, which sets other fields to null when it meets a corrupted record and puts the malformed string into a new field configured by columnNameOfCorruptRecord. mode=DROPMALFORMED ignores the whole corrupted record. mode=FAILFAST throws an exception when it meets corrupted records.",
+            "enum": [
+                "PERMISSIVE",
+                "DROPMALFORMED",
+                "FAILFAST"
+            ],
+            "description": "Specifies the behavior when parsing malformed records.",
             "default": "PERMISSIVE"
         },
         "columnNameOfCorruptRecord": {
-            "type": "string",
-            "description": "Sets the name of a field in which the malformed string is stored. When set to an empty string, it puts malformed strings into an automatically generated field named _corrupt_record.",
+            "enum": [
+                "_corrupt_record",
+                "error_field"
+            ],
+            "description": "Sets the name of a field in which the malformed string is stored.",
             "default": "_corrupt_record"
         },
         "multiLine": {
-            "type": "boolean",
+            "enum": [
+                "true",
+                "false"
+            ],
             "description": "Parse one record, which may span multiple lines, per file.",
-            "default": false
+            "default": "false"
         },
         "emptyValue": {
-            "type": "string",
+            "enum": [
+                "EMPTY",
+                "null"
+            ],
             "description": "Sets the string representation of an empty value. By default, it is empty string.",
             "default": ""
         },
         "locale": {
-            "type": "string",
-            "description": "Sets the locale of the data when reading CSV files. Refer IETF BCP 47 for language tags.",
+            "enum": [
+                "en-US",
+                "en-GB",
+                "fr-FR",
+                "de-DE"
+            ],
+            "description": "Sets the locale of the data when reading CSV files.",
             "default": "en-US"
         },
         "lineSep": {
-            "type": "string",
+            "enum": [
+                "\n",
+                "\r\n",
+                "\r"
+            ],
             "description": "Sets the line separator for CSV files.",
             "default": "\n"
         },
         "unescapedQuoteHandling": {
-            "type": "string",
-            "description": "Sets the mode for handling unescaped quotes inside CSV fields. By default, it is set to STOP_AT_DELIMITER.Allowed values are STOP_AT_DELIMITER, BACK_TO_DELIMITER, and BACK_TO_CLOSEST_QUOTE. Please refer https://spark.apache.org/docs/3.4.0/sql-data-sources-csv.html for more details.",
+            "enum": [
+                "STOP_AT_DELIMITER",
+                "BACK_TO_DELIMITER",
+                "BACK_TO_CLOSEST_QUOTE"
+            ],
+            "description": "Sets the mode for handling unescaped quotes inside CSV fields.",
             "default": "STOP_AT_DELIMITER"
         }
     },
-    "required": ["sep", "encoding", "header", "inferSchema"]
+    "required": [
+        "sep",
+        "encoding",
+        "header",
+        "inferSchema"
+    ]
 }

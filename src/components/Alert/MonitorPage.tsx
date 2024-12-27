@@ -35,7 +35,6 @@ function MonitorPage() {
         try {
             setIsLoading(true)
             const result = await ApiService('8004', 'get', '/monitor_template_data/');
-            console.log(result);
             setjobDetailList(result)
             setIsLoading(false)
 

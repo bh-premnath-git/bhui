@@ -20,6 +20,8 @@ export interface FlowState {
   environments: any[];
   selectedFlowFromList: any | null;
   selectedEnvironment: any | null;
+  dagParserTime: string | null;
+  dagEunID: any | null
 }
 
 const initialState: FlowState = {
@@ -32,7 +34,9 @@ const initialState: FlowState = {
   flowProjectList: [],
   environments: [],
   selectedFlowFromList: null,
-  selectedEnvironment: null
+  selectedEnvironment: null,
+  dagParserTime: null,
+  dagEunID: null
 };
 
 interface CreateFlowParams {
@@ -54,12 +58,6 @@ interface CreateFlowParams {
   };
 }
 
-interface DeploymentParams {
-  flow_id: number,
-  bh_env_id: number,
-  cron_expression: any
-}
-
 interface UpdateFlowDefinitionParams {
   flow_id: string;
   flow_json: Record<string, any>;
@@ -78,47 +76,70 @@ interface ListParams {
 export const createFlow = createAsyncThunk<
   any, // Return type
   CreateFlowParams | any, // Thunk argument type
-  {
-    rejectValue: string; // Type of the value passed to rejectWithValue
-  }
+  { rejectValue: string } // Additional ThunkAPI options
 >(
-  'flow/create',
-  async (params, thunkAPI) => {
+  "flow/create",
+  async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService('8011', 'post', '/flow/create/', params);
+      const response = await ApiService(
+        "8011",
+        "post",
+        "/flow/create/",
+        params,
+        null,
+        {},
+        true,
+        signal
+      );
       return response;
     } catch (error: any) {
-      const isDeploymentError = error.message?.includes('deployment failed');
-      const flowError = isDeploymentError ? undefined : error.message;
-      return thunkAPI.rejectWithValue(flowError);
+      // Check if the error is due to a canceled request
+      if (error.name === "AbortError") {
+        console.log("createFlow request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+
+      // Handle other errors
+      const flowError = error.message?.includes("deployment failed")
+        ? undefined
+        : error.message;
+      return rejectWithValue(flowError || "An unknown error occurred");
     }
   }
 );
 
 
-
 export const listFlows = createAsyncThunk<
-  any[], // Return type
+  any[],
   ListParams,
-  {
-    rejectValue: string;
-  }
+  { rejectValue: string }
 >(
-  'flow/list',
-  async (params:any, thunkAPI) => {
+  "flow/list",
+  async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService('8011', 'get', '/flow/list/', null, params);
-      const transformed: any[] = response.map((item: any) => {
-        return ({
-          id: item["flow_id"],
-          Name: item["flow_name"],
-          ...item,
-          CreatedBy: decoded?.name ?? ""
-        })
-      })
+      const response = await ApiService(
+        "8011",
+        "get",
+        "/flow/list/",
+        null,
+        params,
+        {},
+        true,
+        signal
+      );
+      const transformed = response.map((item: any) => ({
+        id: item.flow_id,
+        Name: item.flow_name,
+        ...item,
+        CreatedBy: decoded?.name ?? "",
+      }));
       return transformed;
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message);
+      if (error.name === "AbortError") {
+        console.log("createFlow request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -131,7 +152,7 @@ export const getFlowProjectList = createAsyncThunk<
   }
 >(
   'flow/gitproject',
-  async (params= {}, thunkAPI) => {
+  async (params = {}, thunkAPI) => {
     try {
       const response = await ApiService('8011', 'get', '/bh_project/list/', null, params);
 
@@ -159,11 +180,12 @@ export const getEnvironmentList = createAsyncThunk<
   'flow/environmentList',
   async (_, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/environment/environment/list/');
+      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, { offset: 0, limit: 100 });
       const transformed = response.map((item: any) => (
         {
           id: item["bh_env_id"],
           envName: item["bh_env_name"],
+          airflowEnvName: item["airflow_env_name"],
         }
 
       ))
@@ -187,7 +209,7 @@ export const searchFlow: any = createAsyncThunk(
 );
 
 export const patchFlowOperation = createAsyncThunk<
-  any, 
+  any,
   { flow_id: string; data: Record<string, any> },
   { rejectValue: string }
 >(
@@ -225,13 +247,43 @@ export const updateFlowDefinition = createAsyncThunk<
   { rejectValue: string }
 >(
   'flow/updateFlowDefinition',
-  async ({ flow_id, flow_json }, thunkAPI) => {
+  async ({ flow_id, flow_json }, { rejectWithValue, signal }) => {  
+    
     try {
       const response = await ApiService(
-        '8011', 
-        'patch', 
-        `/flow/flow-definition/update-by-flow-id/${flow_id}`, 
-        flow_json
+        '8011',
+        'patch',
+        `/flow/flow-definition/update-by-flow-id/${flow_id}`,
+        flow_json,
+        null,
+        {},
+        true,
+        signal
+      );
+      return response;
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.log("updateFlowDefinition request was canceled");
+        return rejectWithValue("Request canceled");
+      }
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateFlowConfiguration = createAsyncThunk<
+  any,
+  UpdateFlowConfigParams,
+  { rejectValue: string }
+>(
+  'flow/updateFlowConfiguration',
+  async ({ flow_config_id, flow_config }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011',
+        'put',
+        `/flow/flow-config/${flow_config_id}`,
+        { flow_config: flow_config }
       );
       return response;
     } catch (error: any) {
@@ -240,47 +292,44 @@ export const updateFlowDefinition = createAsyncThunk<
   }
 );
 
-export const updateFlowConfiguration = createAsyncThunk<
-any,
-UpdateFlowConfigParams,
-{ rejectValue: string }
->(
-'flow/updateFlowConfiguration',
-async ({ flow_config_id, flow_config }, thunkAPI) => {
-  try {
-    const response = await ApiService(
-      '8011', 
-      'put', 
-      `/flow/flow-config/${flow_config_id}`, 
-      {flow_config: flow_config}
-    );
-    return response;
-  } catch (error: any) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-}
-);
-
 // /api/v1/flow/flow-deployement/{flow_deployment_id} cron_expression
 export const patchCronDeployment = createAsyncThunk<
-any,
-{ flow_deployment_id: string | number; cron_expression: any },
-{ rejectValue: string }
+  any,
+  { flow_deployment_id: string | number; cron_expression: any },
+  { rejectValue: string }
 >(
-'flow/patchCronDeployment',
-async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
-  try {
-    const response = await ApiService(
-      '8011',
-      'patch',
-      `/flow/flow-deployement/${flow_deployment_id}`,
-      { cron_expression: cron_expression }
-    );
-    return response;
-  } catch (error: any) {
-    return thunkAPI.rejectWithValue(error.message);
+  'flow/patchCronDeployment',
+  async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        '8011',
+        'patch',
+        `/flow/flow-deployment/${flow_deployment_id}`,
+        { cron_expression: cron_expression }
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
   }
-}
+);
+
+export const dagParserTimeFunc = createAsyncThunk<
+  string,
+  any,
+  {
+    rejectValue: string;
+  }
+>(
+  'flow/dagParserTime',
+  async (params, thunkAPI) => {
+    try {
+      const response: string = await ApiService('8011', 'get', 'bh_airflow/dag_parse_time', null, params);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
 );
 
 const flowSlice = createSlice({
@@ -292,6 +341,9 @@ const flowSlice = createSlice({
     },
     setSelectedEnv: (state, action: PayloadAction<any | null>) => {
       state.selectedEnvironment = action.payload;
+    },
+    setDagRunId: (state, action: PayloadAction<any | null>) => {
+      state.dagEunID = action.payload;
     },
     clearSearchResults: (state) => {
       state.searchedFlow = null;
@@ -356,7 +408,7 @@ const flowSlice = createSlice({
       })
       // searchFlow
       .addCase(searchFlow.pending, (state) => {
-        state.searchLoading = true; 
+        state.searchLoading = true;
         state.error = null;
       })
       .addCase(
@@ -406,7 +458,7 @@ const flowSlice = createSlice({
         state.loading = false;
         const updatedFlow = action.payload;
         //console.log("updatedFlow def", updatedFlow);
-        
+
       })
       .addCase(updateFlowDefinition.rejected, (state, action) => {
         state.loading = false;
@@ -441,11 +493,23 @@ const flowSlice = createSlice({
       .addCase(patchCronDeployment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'An error occurred while updating deployment schedule';
+      })
+      .addCase(dagParserTimeFunc.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(dagParserTimeFunc.fulfilled, (state, action) => {
+        state.loading = false;
+        state.dagParserTime = action.payload;
+      })
+      .addCase(dagParserTimeFunc.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'An error occurred while fetching DAG parser time';
       });
   },
 });
 
 
 
-export const { setSelectedFlowFromList, setSelectedEnv, clearSearchResults } = flowSlice.actions;
+export const { setSelectedFlowFromList, setSelectedEnv, setDagRunId, clearSearchResults } = flowSlice.actions;
 export default flowSlice.reducer;

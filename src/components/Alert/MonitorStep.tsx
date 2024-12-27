@@ -51,7 +51,6 @@ function MonitorStep(props:any) {
 	const handleSubmit = (value:any) => {
 		props.path(value);
 		// Handle form submission
-		console.log(value);
 	};
 	const [sourceValue, setSourceValue] = useState('');
 	const debouncedSearchProject = debounce((value) => {

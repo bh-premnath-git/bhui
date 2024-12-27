@@ -42,7 +42,6 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
     };
     const handleButtonClick = async (process: string) => {
         if (process === 'start') {
-            console.log(schemaValidation.module);
             // setIsButtonClicked(true);
             // setIsPopupOpen(true);
 
@@ -53,7 +52,6 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                     mode: "DEFAULT"
                 })).unwrap();
 
-                console.log(response);
                 if (response) {
                     // Call getTransformationCount only if startPipeLine was successful
                     // var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
@@ -72,7 +70,6 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
             try {
 
                 const response = await dispatch(stopPipeLine({ pipeline_name: "sample" }))
-                console.log(response?.payload)
                 if (response?.payload?.message) {
                     dispatch(setIsRun(false));
                     showToast(response?.payload?.message, { color: COLORS.red });

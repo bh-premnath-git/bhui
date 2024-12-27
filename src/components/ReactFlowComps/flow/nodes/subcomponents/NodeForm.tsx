@@ -17,7 +17,6 @@ import { createShortUUID } from "@/Utils/uid";
 import { Save } from "lucide-react";
 import useToast from '@/oldcomponents/teast-service';
 
-
 interface NodeFormProps {
     id: string;
     closeTap: () => void;
@@ -26,7 +25,7 @@ interface NodeFormProps {
 type TabType = "property" | "settings";
 
 export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
-    const { selectedNode, nodeFormData, prevNodeFn, updateNodeFormData, updateNodeMeta, updatedSelectedNodeId, getNodeFormData, revertOrSaveData } = useFlow();
+    const { saveFlow, selectedNode, nodeFormData, prevNodeFn, updateNodeFormData, updateNodeMeta, updatedSelectedNodeId, getNodeFormData, revertOrSaveData } = useFlow();
     const [activeTab, setActiveTab] = useState<TabType>("property");
     const [selectedValue, setSelectedValue] = useState<string>("");
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
@@ -54,16 +53,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [prevNodeFn, selectedNode.id]
     );
 
-    const handleInputChange = useCallback((key: string, value: string) => {
-        if (!selectedNode) return;
-        updateNodeFormData(selectedNode.id, {
-            ...currentFormData,
-            type: selectedValue ?? selectedNode.data.type ?? "",
-            task_id: `${selectedNode.data.label}-${selectedValue}-${createShortUUID()}`,
-            dependsOn,
-            [key]: value,
-        });
-    }, [selectedNode, currentFormData, dependsOn, updateNodeFormData]);
+    const taskID = useMemo(() => `${selectedNode.data.label}-${selectedValue}-${createShortUUID()}`, [selectedNode.data.label, selectedValue]);
 
     const isSaveDisabled = useMemo(() => {
         const currentFields = getNodeFormData(selectedNode.id) || {};
@@ -112,6 +102,18 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateNodeMeta(selectedNode.id, { type: value }, { type: value, requiredFields: reqfieldsVal });
         updatedSelectedNodeId(selectedNode.id, value);
     }, [selectedNode?.id, updatedSelectedNodeId]);
+
+    const handleInputChange = useCallback((key: string, value: string) => {
+        if (!selectedNode) return;
+        updateNodeFormData(selectedNode.id, {
+            ...currentFormData,
+            type: selectedValue ?? selectedNode.data.type ?? selectedNode.data.meta.type ?? "",
+            task_id: taskID,
+            dependsOn,
+            [key]: value,
+        });
+        saveFlow()
+    }, [selectedNode, currentFormData, dependsOn, updateNodeFormData]);
 
     // Synchronize selectedValue with selectedNode.data.selectedData
     useEffect(() => {
@@ -164,6 +166,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         <TabsTrigger
                             value="settings"
                             className="data-[state=active]:bg-black data-[state=active]:text-white"
+                            disabled={!groupedProperties['settings']?.length}
                         >
                             Settings
                         </TabsTrigger>
@@ -196,7 +199,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     <Button
                         onClick={handleSave}
                         className={`bg-black hover:bg-black/90 text-white px-8 ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
+                    >
                         <Save className="w-4 h-4" />
                     </Button>
                 </div>

@@ -55,7 +55,6 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
   const initialFormValues = useMemo(() => generateInitialValues(schema), [schema, generateInitialValues]);
 
   const handleSubmit = (values: any) => {
-    console.log('Form submitted with values:', values);
     onSubmit(values);
   };
 

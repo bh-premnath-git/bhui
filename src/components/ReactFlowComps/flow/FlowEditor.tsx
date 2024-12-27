@@ -34,8 +34,6 @@ export function FlowEditor() {
     setReactFlowInstance,
   } = useFlow();
 
-  useEffect(() => { }, [])
-
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { fitView, getViewport } = useReactFlow();
 
@@ -76,14 +74,6 @@ export function FlowEditor() {
     }
   }, [nodes, fitView, getViewport]);
 
-  // Check viewport when nodes are added or changed
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      checkAndFitView();
-    }, 100); // Small delay to ensure nodes are properly rendered
-
-    return () => clearTimeout(timer);
-  }, [nodes, checkAndFitView]);
 
   const onConnect = useCallback(
     (connection: Connection) => {

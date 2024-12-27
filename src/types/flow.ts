@@ -182,5 +182,4 @@ export interface FlowContextType {
   };
   selectedNodeOptimized: (flowId: string) => void;
   fullFlowOptimizzed: () => boolean;
-  hasDeployedValue: (date: string) => boolean;
 }

@@ -1,18 +1,10 @@
 import React from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
+import { Drawer, Box, Typography, IconButton, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { Formik, Form } from 'formik';
 import useToast from '@/oldcomponents/teast-service';
 import CustomField from '@/common/CustomField';
-import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Drawer } from '@mui/material';
 
 interface CostOptimizationFormProps {
     open: boolean;
@@ -25,26 +17,39 @@ const CostOptimizationForm: React.FC<CostOptimizationFormProps> = ({ open, onClo
 
     return (
         <Drawer
-            anchor="right" 
+            anchor="right"
             open={open}
             onClose={onClose}
             sx={{
                 '& .MuiDrawer-paper': {
-                  width: '1000px',
-                  maxWidth: '100%',
+                    width: '1000px',
+                    maxWidth: '100%',
                 },
-              }}
+            }}
         >
-            <DialogTitle className="flex justify-between items-center bg-gray-100">
-                <span className="text-md font-semibold text-black">Cost Optimization</span>
-                <IconButton onClick={onClose} aria-label="close">
-                    <CloseIcon className="text-black" />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <CostOptimization onClose={onClose} showToast={showToast} />
-            </DialogContent>
-            {ToastComponent}
+            <>
+                {/* Header */}
+                <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    bgcolor="grey.100"
+                    p={2}
+                    borderBottom="1px solid #ddd"
+                >
+                    <Typography variant="h6" className="text-black font-semibold">Cost Optimization</Typography>
+                    <IconButton onClick={onClose} aria-label="close">
+                        <CloseIcon className="text-black" />
+                    </IconButton>
+                </Box>
+
+                {/* Content */}
+                <Box p={2} flex="1 1 auto" overflow="auto">
+                    <CostOptimization onClose={onClose} showToast={showToast} />
+                </Box>
+
+                {ToastComponent}
+            </>
         </Drawer>
     );
 };

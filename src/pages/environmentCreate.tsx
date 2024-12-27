@@ -28,8 +28,10 @@ type EnvironmentTabState = {
   secretAccessKey: string;
   airflowUrl: string;
   airflowDagBucket: string;
+  awsPvtKey: string | null;
   privateKeyFile: File | null;
   verification: boolean;
+  selectedMwaaEnv: string | null;
 };
 
 // Constants
@@ -96,6 +98,8 @@ const initialState: State = {
     secretAccessKey: "",
     airflowUrl: "",
     airflowDagBucket: "",
+    selectedMwaaEnv: null,
+    awsPvtKey: null,
     privateKeyFile: null,
     verification: false
   },
@@ -167,7 +171,9 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         secret_access_key: encryptedString,
         init_vector: initVector,
         airflow_url: state.environmentTab.airflowUrl,
-        airflowDagBucket: state.environmentTab.airflowDagBucket,
+        airflow_bucket_name: (state.environmentTab.airflowDagBucket).match(/([^:]+)$/)[1],
+        airflow_env_name: state.environmentTab.selectedMwaaEnv,
+        pvt_key: state.environmentTab.awsPvtKey,
         tags: JSON.stringify({
           tagList: formattedTags
         }),
@@ -309,7 +315,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         </Button>
         <Button className="bg-gray-900 text-white hover:bg-gray-800" onClick={handleNext} disabled={!state.environmentTab.verification}>
           {state.activeTab === TABS[TABS.length - 1] ? <>{
-            isLoading ? <Spinner /> : null
+            isLoading ? <Spinner className="max-h-[10px]" showLoadingTxt={false} /> : null
           }{"Create Environment"}</> : "Next"}
         </Button>
       </div>

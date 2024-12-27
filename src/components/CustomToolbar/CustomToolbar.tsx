@@ -14,11 +14,20 @@ import SchedulePicker from './SchedulePicker';
 import { CommitPart } from './CommitPart';
 import { DeployingPart } from './DeployingPart';
 
+interface EnvNames {
+  bh_env_name: string;
+  airflow_env_name: string;
+}
+
 export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [flowType, setFlowType] = useState(selectedData?.flow_name || "Flow_type 1");
   const [selectedEnvironment, setSelectedEnvironment] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState("none");
+  const [selectedEnvName, setSelectedEnvName] = useState<EnvNames>({
+    bh_env_name: "",
+    airflow_env_name: ""
+  });
   const { autoSave, isSaved, isSaving, isPlaying, toggleAutoSave, togglePlayback, selectedFlowId } = useFlow();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -120,6 +129,7 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
               onValueChange={handleEnvironmentChange}
               environments={environments}
               selectedData={selectedData?.flow_deployment?.[0]}
+              selectedEnv={setSelectedEnvName}
             />
 
             <SchedulePicker
@@ -131,9 +141,9 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
 
           {/* Right group */}
           <div className="flex items-center space-x-4">
-            <DeployingPart selectedData={selectedData} />
+            <DeployingPart selectedData={selectedData} selectedEnvName={selectedEnvName} />
             <CommitPart selectedData={selectedData?.flow_deployment[0]} />
-            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} selectedFlowId={selectedFlowId} selectedData={selectedData?.flow_deployment[0]}/>
+            <PlaybackButton isPlaying={isPlaying} onToggle={togglePlayback} selectedFlowId={selectedFlowId} selectedData={selectedData?.flow_deployment[0]} flowName={selectedData?.flow_name} selectedEnvName={selectedEnvName} />
           </div>
         </div>
 

@@ -148,7 +148,6 @@ export default function AlertTableDtl({ jobDetailList }: any) {
         setPage(0);
     };
     const linkSubmit = (values: any, { setSubmitting }: any) => {
-        console.log('Form values:', values);
         setSubmitting(false);
         setOpenAddLink(false);
 

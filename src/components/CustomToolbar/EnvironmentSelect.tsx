@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { AlertCircle, Check, ChevronDown } from 'lucide-react';
 import {
   Select,
@@ -15,12 +15,13 @@ import {
 } from "@/components/ui/tooltip";
 import useToast from '@/oldcomponents/teast-service';
 
-export const EnvironmentSelect = ({ value, onValueChange, environments, selectedData }) => {
+export const EnvironmentSelect = ({ value, onValueChange, environments, selectedData, selectedEnv }) => {
   const environmentOptions = [
     { value: "select", label: "Select Environment" },
     ...environments.map(env => ({
       value: env.id.toString(),
-      label: env.envName
+      label: env.envName,
+      airflowEnvName: env.airflowEnvName
     }))
   ];
 
@@ -30,27 +31,43 @@ export const EnvironmentSelect = ({ value, onValueChange, environments, selected
 
   const selectedEnvironment = environmentOptions.find(opt => opt.value === value);
 
-  // Set default environment on mount if one is provided in selectedData
   useEffect(() => {
     if (selectedData?.bh_env_id && !value) {
       const defaultEnvId = selectedData.bh_env_id.toString();
       const defaultExists = environments.some(env => env.id.toString() === defaultEnvId);
-      
+
       if (defaultExists) {
         onValueChange(defaultEnvId);
+
+        const chosenEnvironment = environmentOptions.find(env => env.value === defaultEnvId);
+  
+        if (chosenEnvironment) {
+          selectedEnv({
+            bh_env_name: chosenEnvironment.label,
+            airflow_env_name: chosenEnvironment.airflowEnvName});
+        }
       } else {
         showToast('Default environment not found', { color: 'yellow' });
       }
     } else if (showWarning) {
       showToast('No environment selected', { color: 'red' });
+      selectedEnv("");
     }
-  }, [selectedData?.bh_env_id, environments]); // Dependencies updated to include environments
+  }, [selectedData?.bh_env_id, environments]);
 
   const handleValueChange = (newValue) => {
     if (newValue === "select" || !newValue) {
       showToast('No environment selected', { color: 'red' });
+      onValueChange(newValue);
+      selectedEnv("");
+      return;
     }
+
     onValueChange(newValue);
+    const chosenEnvironment = environmentOptions.find(env => env.value === newValue);
+    if (chosenEnvironment) {
+      selectedEnv(chosenEnvironment.airflowEnvName);
+    }
   };
 
   return (

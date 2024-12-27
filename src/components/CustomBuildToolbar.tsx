@@ -14,15 +14,11 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-
-
-
 export function CustomBuildToolbar(props: any) {
   const [isVisual, setIsVisual] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [pipeLineName, setPipeLineName] = useState("Flow_type 1")
   const { buildPipeLineDtl } = props;
-  console.log(buildPipeLineDtl)
   const navigate = useNavigate();
   useEffect(() => {
     if (buildPipeLineDtl && buildPipeLineDtl?.pipeline_name) {

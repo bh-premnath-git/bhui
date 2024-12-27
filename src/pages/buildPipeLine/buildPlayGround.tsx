@@ -18,7 +18,7 @@ import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
 import { FlowControls } from './FlowControls';
 import CreateFormFormik from '@/components/BuildPipeLineComps/CreateForm';
 import NodeDropList from '@/components/BuildPipeLineComps/NodeDropList';
-
+import { ErrorBoundary} from "@/ErrorBoundry"
 
 interface UIProperties {
     color: string;
@@ -531,28 +531,6 @@ const BuildPlayGround: React.FC = () => {
 };
 
 // 4. Add error boundary wrapper
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
-    constructor(props: { children: React.ReactNode }) {
-        super(props);
-        this.state = { hasError: false };
-    }
-
-    static getDerivedStateFromError() {
-        return { hasError: true };
-    }
-
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('Flow Error:', error, errorInfo);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return <div>Something went wrong with the flow editor.</div>;
-        }
-
-        return this.props.children;
-    }
-}
 
 // Wrap the exported component with both providers
 export default React.memo(() => (

@@ -18,7 +18,7 @@ interface NodeContentProps {
 
 export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeContentProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const { renameNode, selectedNodeConnection } = useFlow();
+  const { renameNode, selectedNodeConnection, selectedNodeOptimized } = useFlow();
   const toolbarRef = useRef<NodeToolBarRef>(null);
   const editableRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +30,12 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
   }, [isEditing]);
 
   const [isValid, status] = flowNodeValidator(selectedNodeConnection(id));
+
+  useEffect(() => {
+    if (isValid) {
+      selectedNodeOptimized(id);
+    }
+  }, [isValid, id, selectedNodeOptimized]);
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     const newValue = e.target.textContent || '';
@@ -93,9 +99,9 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
                   <TooltipContent
                     side="top"
                     align="center"
-                    className="bg-red-100 text-red-700 border border-red-200 rounded-md shadow-lg p-2"
+                    className="bg-red-100 text-red-700 border border-red-200 rounded-md shadow-lg p-1 text-[8px]" // reduced font size
                   >
-                    <ul className="text-xs">
+                    <ul className="leading-tight">
                       {Array.isArray(status) && status.length > 0 ? (
                         status.map((item: string, index: number) => (
                           <li key={index}>{item}</li>

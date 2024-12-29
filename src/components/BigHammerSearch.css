@@ -1,0 +1,72 @@
+.bighammer-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 100vh;
+    background-color: #f5f5f5;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.bighammer-chat {
+    width: 60%;
+    max-width: 800px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 80vh;
+}
+
+.bighammer-conversation {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.bighammer-entry {
+    margin-bottom: 20px;
+}
+
+.bighammer-user, .bighammer-response {
+    display: flex;
+    align-items: center;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.bighammer-input-container {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+}
+
+.bighammer-input {
+    flex-grow: 1;
+    height: 50px;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    resize: none;
+}
+
+.bighammer-button {
+    margin-left: 10px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.bighammer-button:hover {
+    background-color: #0056b3;
+} 

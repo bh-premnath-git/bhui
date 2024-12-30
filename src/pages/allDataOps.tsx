@@ -17,9 +17,9 @@ import { dataopsColumn } from "@/components/Dataops/DataOpsColumn";
 interface DataOpItem {
   job_id: string;
   project_name: string;
-  pipeline_name: string;
+  flow_name: string;
   zone_name: string;
-  pipeline_status: string;
+  flow_status: string;
   [key: string]: any;
 }
 
@@ -37,9 +37,9 @@ interface PipelineStatusCounts {
 
 const filterableFields = [
   { key: 'project_name', label: 'Project' },
-  { key: 'pipeline_name', label: 'Pipeline' },
+  { key: 'flow_name', label: 'Flow' },
   { key: 'zone_name', label: 'Target Zone' },
-  { key: 'pipeline_status', label: 'Status' },
+  { key: 'flow_status', label: 'Status' },
 ];
 
 const EmptyState = () => (
@@ -63,11 +63,11 @@ const countPipelineStatuses = (dataArray: DataOpItem[]): PipelineStatusCounts =>
     }
 
     dataArray.forEach(item => {
-      if (!item || typeof item.pipeline_status !== 'string') {
+      if (!item || typeof item.flow_status !== 'string') {
         return;
       }
 
-      const status = item.pipeline_status.trim();
+      const status = item.flow_status.trim();
       if (status === "Success") {
         statusCounts.Success++;
       } else if (status === "Failed") {
@@ -121,7 +121,7 @@ const DataOpsTable: React.FC<DataOpsTableProps> = ({ dataOpsList, loading, error
 
       if (activeStatuses.length > 0) {
         filtered = filtered.filter((item) =>
-          activeStatuses.includes(item.pipeline_status)
+          activeStatuses.includes(item.flow_status)
         );
       }
 

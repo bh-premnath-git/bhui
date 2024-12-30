@@ -41,10 +41,10 @@ export function ToolbarNodes() {
           tempSave: false,
           label: moduleInfo.label,
           selectedData: null,
-          type: selectedData.type,
+          type: "",
           status: "pending",
           meta: {
-            type: selectedData.type,
+            type: "",
             moduleInfo: {
               color: moduleInfo.color,
               icon: moduleInfo.icon,

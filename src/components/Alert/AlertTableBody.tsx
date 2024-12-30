@@ -1,335 +1,322 @@
-import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell, { tableCellClasses } from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import {
-    Box, Typography, Stack, Popover, Button,
-    Dialog, DialogTitle, DialogContent,
-    DialogContentText, DialogActions, TextField, Chip, Divider,
-    hexToRgb
-} from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import IconButton from '@mui/material/IconButton';
-import { useState } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { useEffect } from 'react';
-import {ApiService} from '@/services/apiServices';
-import { formatDate } from '../../Utils/dateFormatter';
+import React, { useState } from 'react';
+import { FlexibleTable } from '../Tabel';
+import { useNavigate } from 'react-router-dom';
+import { Chip } from '@mui/material';
+import { Info, AlertTriangle, AlertCircle } from 'lucide-react'
+import { Button } from '@mui/material';
+import { AddAlert, PersonAddAlt } from '@mui/icons-material'; 
+import { Card } from '../ui/card';
+import { ErrorDisplay } from "@/components/ui/error-display";
+import { Spinner } from '../ui/spinner';
+import AssignUserDialog from './AlertDialog';
+import ResolutionReason from './AlertReason';
 
-interface Column {
-    id: 'project' | 'pipeline' | 'type' | 'details' | 'time' | 'status' | 'runstatus' | 'action';
-    label: string;
-    minWidth?: number;
-    align?: 'left';
-    format?: (value: number) => string;
+interface AlertTable {
+  alert_id: string;
+  alert_description: string;
+  alter_status: string;
+  flow_name: string;
+  project_name: string;
+  assigned_to: string | null;
+  resolution_reason: { preventionPlan: string; correctionPlan: string } | null;
+  created_by: string;
+  updated_by: string;
+  created_on: string;
+  updated_on: string;
+  monitor: {
+    monitor_type: string;
+  };
 }
 
-const columns: readonly Column[] = [
-    { id: 'project', label: 'Project Name', minWidth: 170, },
-    { id: 'pipeline', label: 'Pipeline Name', minWidth: 100 },
-    {
-        id: 'type',
-        label: 'Type',
-        minWidth: 100,
-        align: 'left',
-        // format: (value: number) => value.toLocaleString('en-US'),
+interface AlertTableDtlProps {
+  jobDetailList: AlertTable[];
+  loading?: boolean;
+  error?: { message: string } | null;
+}
+
+type ColumnConfig = {
+  key: keyof AlertTable | string;
+  header: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  type?: 'text' | 'number' | 'date' | 'badge';
+  badgeConfig?: {
+    colorMap: Record<string, string>;
+  };
+  render?: (value: any, rowData: AlertTable) => React.ReactNode;
+  align?: "left" | "center" | "right";
+}
+
+const columns: ColumnConfig[] = [
+  {
+    key: 'flow_name',
+    header: 'Flow Name',
+    type: 'text',
+    sortable: true,
+    filterable: true,
+  },
+  {
+    key: 'project_name',
+    header: 'Project Name',
+    type: 'text',
+    sortable: true,
+    filterable: true,
+  },
+  {
+    key: 'monitor.monitor_type',
+    header: 'Monitor Type',
+    type: 'text',
+    sortable: true,
+    render: (value, rowData) => {
+      const type = rowData.monitor.monitor_type.toLowerCase()
+      return (
+        <div className="flex items-center gap-2">
+          {type === 'information' ? (
+            <Info className="w-4 h-4 text-blue-500" />
+          ) : type === 'action' ? (
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+          ) : null}
+          <span className={`${
+            type === 'information' ? 'text-blue-500' : 
+            type === 'action' ? 'text-red-500' : ''
+          }`}>
+            {rowData.monitor.monitor_type}
+          </span>
+        </div>
+      )
     },
-    {
-        id: 'details',
-        label: 'Details',
-        minWidth: 200,
-        align: 'left',
-        format: (value: number) => value.toLocaleString('en-US'),
+  },
+  {
+    key: 'alert_description',
+    header: 'Alert Description',
+    type: 'text',
+    filterable: true,
+    sortable: false,
+    render: (value) => {
+      const words = value.replace(/[_-]/g, ' ').split(' ');
+      
+      return words.map((word, index) => 
+        index === 0 ? 
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : 
+          word.toLowerCase()
+      ).join(' ');
+    }
+  },
+  {
+    key: 'alter_status',
+    header: 'Alert Status',
+    type: 'badge',
+    sortable: true,
+    badgeConfig: {
+      colorMap: {
+        'open': 'error',
+        'closed': 'success',
+        'in_progress': 'warning',
+      }
     },
-    {
-        id: 'time',
-        label: 'Timestamp',
-        minWidth: 120,
-        align: 'left',
-        // format: (value: number) => value.toFixed(2),
+    render: (value) => (
+      <Chip 
+        label={value} 
+        color={value === 'open' ? 'success' : value === 'closed' ? 'error' : 'warning'} 
+        size="small" 
+      />
+    ),
+  },
+  {
+    key: 'assigned_to',
+    header: 'Assigned To',
+    type: 'text',
+    sortable: true,
+    render: (value, rowData) => {
+      const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+      const handleAssign = async (username: string) => {
+        try {
+          console.log(`Assigning user ${username} to alert ${rowData.alert_id}`);
+        } catch (error) {
+          console.error('Error after assigning user:', error);
+        }
+      };
+
+      if (rowData.monitor.monitor_type.toLowerCase() === 'information') {
+        return <span style={{ color: 'rgba(0, 0, 0, 0.6)' }}>N/A</span>;
+      }
+
+      if (value && value !== 'null') {
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{value}</span>
+            <Button
+              variant="text"
+              size="small"
+              style={{ minWidth: '32px', padding: '4px' }}
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <PersonAddAlt style={{ color: 'black', fontSize: '20px' }} />
+            </Button>
+            <AssignUserDialog
+              open={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              onAssign={handleAssign}
+              alertId={rowData.alert_id}
+              currentAssignee={value}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PersonAddAlt style={{ color: 'black' }} />}
+            style={{ borderColor: 'black', color: 'black' }}
+            onClick={() => setIsDialogOpen(true)}
+          >
+            Assign
+          </Button>
+          <AssignUserDialog
+            open={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+            onAssign={handleAssign}
+            alertId={rowData.alert_id}
+          />
+        </>
+      );
     },
-    {
-        id: 'status',
-        label: 'Status',
-        minWidth: 120,
-        align: 'left',
-        // format: (value: number) => value.toFixed(2),
+  },
+  {
+    key: 'resolution_reason',
+    header: 'Resolution Reason',
+    type: 'text',
+    sortable: true,
+    render: (value, rowData) => {
+      const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  
+      const handleAssign = ({ preventionPlan, correctionPlan }) => {
+        console.log(`Alert ID: ${rowData.alert_id}, Prevention Plan: ${preventionPlan}, Correction Plan: ${correctionPlan}`);
+      };
+  
+      if (rowData.monitor.monitor_type.toLowerCase() === 'information') {
+        return <span style={{ color: 'rgba(0, 0, 0, 0.6)' }}>N/A</span>;
+      }
+      
+      if (!value) {
+        return (
+          <>
+            <Button
+              variant="outlined"
+              size="small"
+              style={{ borderColor: 'black', color: 'black' }}
+              onClick={() => setIsDialogOpen(true)}
+            >
+              Add Reason
+            </Button>
+            <ResolutionReason
+              open={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              onAssign={handleAssign}
+              alertId={rowData.alert_id}
+            />
+          </>
+        );
+      }
+
+      // If value exists, display it
+      return (
+        <div>
+          <Button
+            variant="text"
+            size="small"
+            style={{ minWidth: '32px', padding: '4px' }}
+            onClick={() => setIsDialogOpen(true)}
+          >
+            Edit
+          </Button>
+          <ResolutionReason
+            open={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+            onAssign={handleAssign}
+            alertId={rowData.alert_id}
+            initialValues={value}
+          />
+        </div>
+      );
     },
-    // {
-    //     id: 'runstatus',
-    //     label: 'Run Status',
-    //     minWidth: 250,
-    //     align: 'left',
-    //     // format: (value: number) => value.toFixed(2),
-    // },
-    {
-        id: 'action',
-        label: 'Action',
-        minWidth: 170,
-        align: 'left',
-        // format: (value: number) => value.toFixed(2),
-    },
+  },
+  {
+    key: 'created_on',
+    header: 'Created On',
+    type: 'date',
+    sortable: true,
+    render: (value) => new Date(value).toLocaleString(),
+  },
 ];
 
-interface Data {
-    project: string;
-    pipeline: string;
-    type: number;
-    details: number;
-    time: any;
-    status: any;
-    runstatus: any;
-    action: any;
-}
+const EmptyComponent = () => {
+  return (
+    <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+      <div className="relative p-8 sm:p-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
+          <div className="relative inline-flex mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+            <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+              <AlertCircle className="w-12 h-12 text-gradient" />
+            </div>
+          </div>
 
-const validationSchemaLink = Yup.object({
-    label: Yup.string().required('User Name is required'),
-});
+          <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Welcome to Your Monitor
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+            Ready to monitor the flow when the job is started
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
-export default function AlertTableDtl({ jobDetailList }: any) {
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const [openAddLink, setOpenAddLink] = useState(false);
+const AlertTableDtl: React.FC<AlertTableDtlProps> = ({ jobDetailList, loading, error }) => {
+  const navigate = useNavigate();
 
-    const [jobDetail, setJobDetail] = useState();
-    const [codesDtl, setCodesDtl]: any = useState(localStorage.getItem('codesDtl'));
-
-    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const open = Boolean(anchorEl);
-    const id = open ? 'popup' : undefined;
-    const openLinkDialog = () => {
-        setOpenAddLink(true)
-    };
-    const closeLinkDialog = () => {
-        setOpenAddLink(false)
-    }
-    const colors = [
-        { bgcolor: '#07a260', color: '#ffff' },
-        { bgcolor: '#f7a01f', color: '#ffff' },
-        { bgcolor: '#0198d7', color: '#ffff' },
-        { bgcolor: '#05aaad', color: '#ffff' },
-        { bgcolor: '#c049c0', color: '#ffff' },
-    ];
-    function findValue(value: any) {
-        var data = JSON.parse(codesDtl)
-        if (Array.isArray(data)) {
-            var filteredData: any = data.find(code => code.id.toString() === value.toString());
-            return filteredData?.dtl_desc.toString()
-        } else {
-            console.error('data is not an array.');
-            return ''
-
-        }
-
-    }
-    const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
-
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(+event.target.value);
-        setPage(0);
-    };
-    const linkSubmit = (values: any, { setSubmitting }: any) => {
-        setSubmitting(false);
-        setOpenAddLink(false);
-
-    };
-
+  if (loading) {
     return (
-        <>
-            <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '1px' }}>
-                <TableContainer sx={{ maxHeight: 440 }}>
-                    <Table stickyHeader aria-label="sticky table">
-                        <TableHead >
-                            <TableRow >
-                                {columns.map((column) => (
-                                    <TableCell className='myHeadFont text-bold text-lg'
-                                        key={column.id}
-                                        align={column.align}
-                                        style={{ minWidth: column.minWidth, backgroundColor: '#f2f2f8', fontSize: '16px' }}
-                                    >
-                                        {column.label}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {jobDetailList?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((row: any, index: any) => (
-                                    <TableRow key={index} hover role="checkbox" tabIndex={-1}>
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '3px' }} // Reduced padding
-                                        >
-                                            {row?.project_name}
-                                        </TableCell>
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            {row?.source_name}
-                                        </TableCell>
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            <span
-                                                className="p-2 m-0" // Removed w-10 to set a consistent width using style
-                                                style={{
-                                                    display: 'inline-block', // Ensure it's treated as a block-level element for consistent width
-                                                    width: '200px', // Set the desired consistent width
-                                                    color: colors[index]?.color || '#e82cc8',
-                                                    backgroundColor: colors[index % 6]?.bgcolor || '#2c2c2c', // 
-                                                    textAlign: 'center', // Center the text inside the span
-                                                    borderRadius: '4px', // Optional: Rounded corners for a better look
-                                                }}
-                                            >
-                                                {row?.monitor?.monitor_template_data?.monitor_template_name}
-                                            </span>
-                                        </TableCell>
-
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            {row?.alert_description}
-                                        </TableCell>
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            {formatDate(row?.created_on)}
-                                        </TableCell>
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            <span className="p-2 rounded" style={{ color: row?.monitor?.status == "active" ? 'green' : "gray" }}>{row?.monitor?.status == "active" ? "Open" : "Closed"}</span>
-                                        </TableCell>
-
-                                        <TableCell
-                                            className="myFont"
-                                            sx={{ borderBottom: '1px solid #f2f3f5', padding: '4px' }} // Reduced padding
-                                        >
-                                            <IconButton onClick={handleOpen}>
-                                                <MoreVertIcon  />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                        </TableBody>
-
-                    </Table>
-                </TableContainer>
-                <Popover
-                    elevation={1}
-                    id={id}
-                    open={open}
-                    anchorEl={anchorEl}
-                    onClose={handleClose}
-                    anchorOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
-                    }}
-                // sx={{ width: 300 }}
-                >
-                    <Button sx={{ my: 1, mx: 1 }} onClick={openLinkDialog}>
-                        Acknowledge Alert
-                    </Button><br />
-                    <Button sx={{ mx: 1 }}>Close Alert</Button><br />
-
-                </Popover>
-                <Dialog open={openAddLink} onClose={closeLinkDialog} PaperProps={{ sx: { borderRadius: '2px' } }}>
-                    <DialogTitle px={2}>Acknowledge Alert</DialogTitle>
-                    <DialogContent sx={{ width: '100%', height: '400px' }} >
-                        <Formik
-                            initialValues={{ url: '', label: '' }}
-                            validationSchema={validationSchemaLink}
-                            onSubmit={linkSubmit}
-                        >
-                            {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
-                                <Form style={{ textAlign: 'center' }}>
-                                    <div>
-                                        <div style={{ paddingTop: '2px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '12px' }}>
-                                            <label htmlFor="url">Are you sure you want to acknowledge Alert? If yes,please provide comment below.</label>
-                                        </div>
-                                        <Field type="text" id="comment" name="comment" placeholder="Type your comment here" multiline rows={5} as={TextField} sx={{
-                                            width: '100%',
-                                        }} />
-
-                                    </div>
-
-                                    <div>
-                                        <div style={{ paddingTop: '14px', paddingBottom: '8px', textAlign: 'start', paddingLeft: '3px', fontSize: '14px' }}>
-                                            <label className='py-12 my-12' htmlFor="label">Assign User<span style={{ color: 'red' }}>*</span></label>
-
-                                        </div>
-                                        <Field type="text" id="label" name="label" placeholder="Enter User Name" as={TextField} sx={{ width: '100%' }} />
-                                        <div style={{ color: 'red', textAlign: 'start', paddingLeft: '21px' }}>
-                                            <ErrorMessage name="label" component="div" />
-                                        </div>
-                                    </div>
-                                    <Stack direction={"row"} spacing={1} sx={{ mt: 2 }}>
-                                        <Stack>
-                                            <AddCircleIcon sx={{ color: '#42CD3F', mt: 1 }} />
-                                        </Stack>
-                                        <Stack>
-                                            <Button onClick={openLinkDialog}>
-                                                <Typography variant='subtitle1' fontWeight={"bold"} sx={{ color: '#42CD3F', }} >
-                                                    ADD ATTACHMENTS
-                                                </Typography>
-                                            </Button>
-                                        </Stack>
-                                    </Stack>
-
-
-                                    <DialogActions sx={{ mt: 4, justifyContent: 'center', }} >
-
-                                        <Button onClick={closeLinkDialog} variant="outlined"
-                                            size="large" sx={{ width: '25%', bgcolor: 'white', borderColor: 'black' }}  >Close</Button>
-                                        <Button type='submit' variant="contained"
-                                            color="secondary"
-                                            size="large" sx={{ width: '50%' }}>Acknowledge Alert</Button>
-                                        {/* disabled={!values.tagKey || !values.tagValue} */}
-                                    </DialogActions>
-                                </Form>
-                            )}
-                        </Formik>
-                    </DialogContent>
-                </Dialog>
-
-            </Paper>
-            <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
-                component="div"
-                count={jobDetailList.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-        </>
+      <div className="flex items-center justify-center h-screen">
+        <Spinner />
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="container p-0">
+        <ErrorDisplay message={''} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      {(!jobDetailList || jobDetailList.length === 0) ? (
+        <EmptyComponent />
+      ) : (
+        <FlexibleTable
+          data={jobDetailList}
+          columns={columns}
+          itemsPerPageOptions={[5, 10, 20]}
+          defaultItemsPerPage={10}
+          isAction={false}
+        />
+      )}
+    </div>
+  );
 }
+
+export default AlertTableDtl;
+

@@ -63,7 +63,6 @@ export const routeList = [
   { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
   { path: '/DataOps Hub/Ops Hub', element: <Dataops /> },
   { path: '/DataOps-Hub/Dataops/View-All-Log', element: <ShowingLogs /> },
-  { path: '/Alerts', element: <Alerts /> },
   { path: '/dataops-hub/alerts', element: <Alerts /> },
   { path: '/Alerts/New Monitor', element: <MonitorPage /> },
   { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },

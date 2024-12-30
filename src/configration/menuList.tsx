@@ -57,7 +57,7 @@ export const menuList = [
             },
             { 
                 label: "Alerts Hub", 
-                path: "/alerts",
+                path: "/dataops-hub/alerts",
                 icon: <AlertCircle size={18} />,
                 shortcut: "⌘A"
             },

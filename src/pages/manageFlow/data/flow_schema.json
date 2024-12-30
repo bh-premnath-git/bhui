@@ -349,6 +349,7 @@
                   "ui_type": "text",
                   "order": 4,
                   "spancol": 1,
+                  "default": "httpbin.org",
                   "mandatory": true,
                   "group_key": "property"
                 }

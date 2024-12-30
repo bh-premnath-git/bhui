@@ -673,7 +673,9 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["EMRCreateClusterOperator"],
+                "enum": [
+                  "EMRCreateClusterOperator"
+                ],
                 "description": "Creates an EMR cluster with integrated step monitoring",
                 "ui_properties": {
                   "module_name": "AWS",
@@ -725,16 +727,14 @@
               "pipeline_name": {
                 "type": "string",
                 "description": "The pipeline name",
-                "enum":[
-                  "pipeline1", "pipeline2", "default_pipeline"
-                ],
                 "ui_properties": {
                   "property_name": "Pipeline Name",
                   "property_key": "pipeline_name",
-                  "ui_type": "enum",
+                  "ui_type": "dropdown",
                   "order": 4,
-                  "mandatory": false,
-                  "default": "default_pipeline",
+                  "mandatory": true,
+                  "default": "options[0].value",
+                  "endpoint": "{catalog_base_url}/api/v1/pipeline/list",
                   "group_key": "property"
                 }
               },
@@ -765,7 +765,12 @@
                 }
               }
             },
-            "required": ["type", "task_id", "aws_conn_id", "cluster_config"]
+            "required": [
+              "type",
+              "task_id",
+              "aws_conn_id",
+              "cluster_config"
+            ]
           },
           {
             "type": "object",
@@ -805,9 +810,29 @@
                   "mandatory": true,
                   "group_key": "property"
                 }
+              },
+              "aws_conn_id": {
+                "type": "string",
+                "description": "AWS connection ID",
+                "ui_properties": {
+                  "property_name": "AWS Connection ID",
+                  "property_key": "aws_conn_id",
+                  "ui_type": "dropdown",
+                  "order": 2,
+                  "mandatory": true,
+                  "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
+                  "default": "options[0].value",
+                  "group_key": "property"
+                }
               }
+
             },
-            "required": ["type", "task_id", "job_flow_id"]
+            "required": [
+              "type",
+              "task_id",
+              "job_flow_id",
+              "aws_conn_id"
+            ]
           },
           {
             "type": "object",

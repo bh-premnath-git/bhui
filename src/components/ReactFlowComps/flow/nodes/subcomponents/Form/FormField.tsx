@@ -35,7 +35,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
     const { options, isLoading } = useDropdownOptions(
       endpoint,
-      selectedEnvironment ?? "0"
+      endpoint !=="{catalog_base_url}/api/v1/pipeline/list" ? selectedEnvironment : null
     );
     const defaultValue = property.ui_properties.default
     const description = property.description

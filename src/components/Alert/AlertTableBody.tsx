@@ -271,10 +271,10 @@ const EmptyComponent = () => {
           </div>
 
           <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Welcome to Your Monitor
+            Welcome to Your Alert Monitor !
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-            Ready to monitor the flow when the job is started
+            Ready to monitor your alert for the flow when the job is started.
           </p>
         </div>
       </div>

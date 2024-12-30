@@ -37,7 +37,7 @@ const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround
 const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
-const BigHammerSearch = lazy(() => import('@/components/BigHammerSearch'));
+const BigHammerSearch = lazy(() => import('@/components/BighammerSearch/BighammerSearch'));
 export const routeList = [
   {
     path: "/",
@@ -82,7 +82,7 @@ export const routeList = [
   { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
   { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
   { path: '/ReleaseBundle', element: <ReleaseBundle /> },
-  { path: '/bighammer-search', element: <BigHammerSearch /> },
+  { path: '/bighammer-AI', element: <BigHammerSearch /> },
   // { path: '/source', element: <SourceForm /> },
 ];
 

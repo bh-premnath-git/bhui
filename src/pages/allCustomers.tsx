@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { getCustomerList } from "@/redux/CustomerSlice";
 import { COLORS } from "@/Utils/constants";
-import { FolderPlus, Sparkles } from "lucide-react";
+import { Building2, FolderPlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -124,7 +124,7 @@ const EmptyComponent: React.FC = () => {
                     <div className="relative inline-flex mb-8">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
                         <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
-                        <Sparkles className="w-12 h-12 text-gradient" />
+                        <Building2 className="w-12 h-12 text-gradient" />
                         </div>
                     </div>
 

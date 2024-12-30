@@ -10,9 +10,10 @@ import DataOpsChartHeader from "@/components/Dataops/DataOpsChartHeader";
 import FilterForm from '@/components/Dataops/FilterForm';
 import TaskDetails from '@/components/TaskDetails/TaskDetails';
 import { Stack } from "@mui/material";
-import { FileQuestion } from 'lucide-react';
+import { FileQuestion, Package } from 'lucide-react';
 import { FaFilter } from "react-icons/fa";
 import { dataopsColumn } from "@/components/Dataops/DataOpsColumn";
+import { Card } from '@/components/ui/card';
 
 interface DataOpItem {
   job_id: string;
@@ -43,10 +44,29 @@ const filterableFields = [
 ];
 
 const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center h-full">
-    <FileQuestion size={64} className="text-gray-400 mb-4" />
-    <h2 className="text-2xl font-semibold text-gray-700 mb-2">Data Not Available</h2>
-  </div>
+    <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+      <div className="relative p-8 sm:p-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+          <div className="relative inline-flex mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+            <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+              <Package className="w-12 h-12 text-gradient" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Welcome to Your Job Monitor !
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+            Ready to monitor your job when flow is started.
+          </p>
+        </div>
+      </div>
+    </Card>
 );
 
 const countPipelineStatuses = (dataArray: DataOpItem[]): PipelineStatusCounts => {

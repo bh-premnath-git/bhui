@@ -62,7 +62,6 @@ const ResolutionReason: React.FC<ResolutionReasonProps> = ({
         null,
         false
       );
-
       if (!response || response.status !== 200) {
         throw new Error("Failed to update resolution reason. Unexpected response from server.");
       }

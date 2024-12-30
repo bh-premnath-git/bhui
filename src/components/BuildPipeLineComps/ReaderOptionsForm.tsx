@@ -72,6 +72,8 @@ interface SchemaGroup {
     title?: string;
 }
 
+
+
 // Update the isFieldRequired function to handle nested source properties
 const isFieldRequired = (
     fieldName: string,
@@ -224,7 +226,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     }, [formData]);
 
     const resolveSchema = async () => {
-        let resolvedSchema = { ...readerSchema };
+        let resolvedSchema: any = {
+            properties: {
+                ...sourceSchema.properties,
+                connection: {} // Initialize connection property
+            }
+        };
 
         // Correct check for source.type instead of just type
         if (formData.source?.type) {
@@ -267,7 +274,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
                     if (fileTypeCondition) {
                         if (formData.file_type === 'CSV') {
-                            resolvedSchema= {
+                            resolvedSchema = {
                                 ...resolvedSchema,
                                 properties: {
                                     ...resolvedSchema.properties,
@@ -454,15 +461,15 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                                             {schema.type === "array" && (
                                                                 <Select
                                                                     value={formData.replication_method?.[key] || schema.default?.[0] || ''}
-                                                                    onChange={(e) => {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            replication_method: {
-                                                                                ...prev.replication_method,
-                                                                                [key]: e.target.value
-                                                                            }
-                                                                        }));
-                                                                    }}
+                                                                // onChange={(e) => {
+                                                                //     setFormData(prev => ({
+                                                                //         ...prev,
+                                                                //         replication_method: {
+                                                                //             ...prev.replication_method,
+                                                                //             [key]: e.target.value
+                                                                //         }
+                                                                //     }));
+                                                                // }}
                                                                 >
                                                                     {schema.items?.enum?.map((item: string) => (
                                                                         <option key={item} value={item}>

@@ -3,7 +3,7 @@
     "title": "Connection",
     "type": "object",
     "properties": {
-        "name": {
+        "connection_name": {
             "type": "string",
             "minLength": 1
         },
@@ -14,7 +14,7 @@
     },
     "required": [
         "id",
-        "name",
+        "connection_name",
         "type"
     ],
     "allOf": [
@@ -104,7 +104,7 @@
             "if": {
                 "properties": {
                     "type": {
-                        "const": "PostgreSQL"
+                        "const": "postgres"
                     }
                 }
             },

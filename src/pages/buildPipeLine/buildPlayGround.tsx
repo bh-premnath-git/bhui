@@ -60,7 +60,9 @@ const BuildPlayGround: React.FC = () => {
         console.error('Flow Error:', id);
     }, []);
 
-    const handleNodeClick = useCallback((node: Node) => {
+    const handleNodeClick = useCallback((node: Node, source: { data_src_name: string }) => {
+        console.log(source)
+
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;
@@ -86,9 +88,10 @@ const BuildPlayGround: React.FC = () => {
             type: 'custom',
             position,
             data: {
-                label: `${node.ui_properties.module_name}`,
+                label: `${source?.data_src_name || node.ui_properties.module_name}`,
                 icon: node.ui_properties.icon,
-                ports: node.ui_properties.ports
+                ports: node.ui_properties.ports,
+                source: source
             }
         };
 

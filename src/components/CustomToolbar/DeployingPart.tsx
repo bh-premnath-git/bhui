@@ -7,12 +7,11 @@ export const DeployingPart = ({ selectedData, selectedEnvName }) => {
     const { error, dagParserTime } = useAppSelector((state) => state.flowApi)
 
     useEffect(() => {
-        if ( selectedData && selectedEnvName) {
+        if ( selectedData.flow_name && selectedEnvName.airflow_env_name && selectedEnvName.bh_env_name) {
             const query = {
                 dag_id: selectedData.flow_name,
                 ...selectedEnvName
             }
-
             dispatch(fetchDagParserTime(query));
         }
     }, [dispatch, selectedData, selectedEnvName]);

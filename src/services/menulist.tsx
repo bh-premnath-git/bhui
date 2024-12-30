@@ -34,12 +34,17 @@ export const menuList = [
         subPaths: [
             { label: "Ops Hub", path: "/dataops-hub/ops-hub" },
             { label: "Explorer", path: "/dataops-hub/explorer" },
-            { label: "Alerts", path: "/dataops-hub/alters" },
+            { label: "Alerts2", path: "/dataops-hub/alters" },
         ]
     },
     {
         label: "Admin Console",
         icon: <MdOutlinePerson className='h5' />,
         path: "/admin-console"
+    },
+    {
+        label: "BigHammer Search",
+        icon: <FaRegFile className='h5' />,
+        path: "/bighammer-search"
     },
 ]

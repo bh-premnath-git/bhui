@@ -22,9 +22,9 @@ interface RoleAccess {
 }
 
 const roleAccess: RoleAccess = {
-  'admin-user': ['Data Catalog', 'Admin Console'],
-  'designer-user': ['Data Catalog', 'Designer'],
-  'ops-user': ['Data Catalog', 'DataOps Hub'],
+  'admin-user': ['BigHammer Search','Data Catalog', 'Admin Console'],
+  'designer-user': ['BigHammer Search','Data Catalog', 'Designer'],
+  'ops-user': ['BigHammer Search','Data Catalog', 'DataOps Hub'],
 };
 
 const getUserRoles = () => {

@@ -10,20 +10,18 @@ interface DataPreviewModalProps {
   onClose: () => void;
 }
 
+interface Task {
+  taskid: string;
+  type: string;
+}
+
 const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) => {
   const dagEunID = useAppSelector((state) => state.flowApi.dagEunID);
-  const selectedFlowFromList = useAppSelector((state) => state.flowApi.selectedFlowFromList);
   const [logContent, setLogContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const seletors = Array.from(selectedFlowFromList.flow_definition.flow_json.flowJson ?? []);
-  const tasks = []
-  seletors.map((item: any) => {
-
-    tasks.push({ type: item.type, taskid: item.task_id })
-  })
-  const [selectedTask, setSelectedTask] = useState(tasks[0]?.taskid || '');
-
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<string>('');
 
   async function getData() {
     try {
@@ -32,14 +30,33 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       }
       setIsLoading(true);
       setError(null);
+      
       const result = await ApiService('8011', 'get', `/bh_airflow/get_dag_task_id/`, null, dagEunID);
-      const taskId = result?.task_instances?.[0]?.task_id;
-      if (!taskId) {
-        throw new Error('Task ID not found in the response.');
+      
+      const newTasks = Array.from(result?.task_instances ?? []).map((item: any) => ({
+        taskid: item.task_id,
+        type: item.operator
+      }));
+      
+      setTasks(newTasks);
+      
+      // Set initial selected task
+      if (newTasks.length > 0 && !selectedTask) {
+        setSelectedTask(newTasks[0].taskid);
       }
-      const logResult = await ApiService('8011', 'get', `/bh_airflow/get_dag_logs/`, null, { ...dagEunID, task_id: taskId });
 
-      setLogContent(logResult);
+      // Fetch logs for the selected task
+      if (newTasks.length > 0) {
+        const taskId = selectedTask || newTasks[0].taskid;
+        const logResult = await ApiService(
+          '8011', 
+          'get', 
+          `/bh_airflow/get_dag_logs/`, 
+          null, 
+          { ...dagEunID, task_id: taskId }
+        );
+        setLogContent(logResult);
+      }
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
       console.error("err", error);
@@ -48,11 +65,38 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
     }
   }
 
+  // Fetch data when modal opens
   useEffect(() => {
     if (isOpen && dagEunID) {
       getData();
     }
   }, [isOpen, dagEunID]);
+
+  // Fetch new logs when selected task changes
+  useEffect(() => {
+    async function fetchLogs() {
+      if (!selectedTask || !dagEunID) return;
+      
+      setIsLoading(true);
+      try {
+        const logResult = await ApiService(
+          '8011', 
+          'get', 
+          `/bh_airflow/get_dag_logs/`, 
+          null, 
+          { ...dagEunID, task_id: selectedTask }
+        );
+        setLogContent(logResult);
+      } catch (error) {
+        setError(error.message || 'An unexpected error occurred.');
+        console.error("err", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchLogs();
+  }, [selectedTask, dagEunID]);
 
   if (!isOpen) return null;
 
@@ -62,28 +106,28 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
         <div className="bg-white rounded-t-lg shadow-lg relative">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-gray-700 text-sm">
-                  <Terminal className="h-4 w-4" />
-                  Flow Name: {dagEunID?.dag_id || 'Unknown'}
-                </div>
-                <Select
-                  defaultValue={tasks[0]?.taskid}
-                  onValueChange={(value) => setSelectedTask(value)}
-                >
-                  <SelectTrigger className="w-[280px]">
-                    <SelectValue placeholder="Select a task" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tasks.map((task) => (
-                      <SelectItem
-                        key={task.taskid}
-                        value={task.taskid}
-                      >
-                        {task.type} - {task.taskid}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-2 text-gray-700 text-sm">
+                <Terminal className="h-4 w-4" />
+                Flow Name: {dagEunID?.dag_id || 'Unknown'}
+              </div>
+              <Select
+                value={selectedTask}
+                onValueChange={setSelectedTask}
+              >
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Select a task" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tasks.map((task) => (
+                    <SelectItem
+                      key={task.taskid}
+                      value={task.taskid}
+                    >
+                      {task.type} - {task.taskid}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <button
                 onClick={onClose}
                 className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"

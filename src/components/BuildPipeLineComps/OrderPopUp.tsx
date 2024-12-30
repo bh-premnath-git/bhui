@@ -5,17 +5,18 @@ import {
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import ClearIcon from "@mui/icons-material/Clear";
 import BorderColorIcon from '@mui/icons-material/BorderColor';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SearchIcon from '@mui/icons-material/Search';
 import SchemaTable from "./SchemaTable";
 import OnboardTaggingStep from "./OnboardTaggingStep";
 import PreviewTable from "./PreviewTable";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
+import { ApiService } from "@/services/apiServices";
 
-export default function OrderPopUp({ isOpen, onClose }: any) {
+export default function OrderPopUp({ isOpen, onClose, source }: any) {
     const [selected, setSelected] = React.useState(0);
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
-
+    const [initialData, setInitialData] = useState(null);
     const handleClick1 = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
     };
@@ -23,7 +24,47 @@ export default function OrderPopUp({ isOpen, onClose }: any) {
     const handleClose2 = () => {
         setAnchorEl(null);
     };
+    useEffect(() => {
+        const fetchSchema = async () => {
+            if (source?.connection_config_id) {
+                try {
+                    const params = {
+                        id: source.connection_config_id,
+                        offset: 0,
+                        limit: 10,
+                        order_desc: false
+                    };
 
+                    const response = await ApiService(
+                        '8011',
+                        'get',
+                        '/connection_registry/connection_config/list/',
+                        null,
+                        params,
+                        { 'accept': 'application/json' }
+                    );
+                    if (response && response.length > 0) {
+                        // console.log(source.connection_config_id);
+                        // console.log(response[0]?.custom_metadata)
+                        let initialData = response[0]?.custom_metadata;
+                        initialData.sourceId = source.connection_config_id;
+                        console.log(initialData)
+                        setInitialData(initialData);
+                    } else {
+                        alert()
+                    }
+                } catch (error) {
+                    console.error('Error fetching schema:', error);
+                }
+            } else {
+                if (source?.data_src_id) {
+                    setInitialData({ sourceId: source?.data_src_id })
+                }
+            }
+        };
+
+        fetchSchema();
+    }, [source]);
     const open = Boolean(anchorEl);
     const id = open ? 'simple-popover' : undefined;
 
@@ -93,7 +134,7 @@ export default function OrderPopUp({ isOpen, onClose }: any) {
 
                         <div className="flex justify-between items-center mt-2">
                             <div className="flex">
-                                {['Reader Options', 'Schema', 'Tag', 'Preview', 'Connection'].map((label, index) => (
+                                {['Reader Options', 'Schema', 'Tag', 'Preview'].map((label, index) => (
                                     <button
                                         key={label}
                                         onClick={() => handleClick(index)}
@@ -144,11 +185,11 @@ export default function OrderPopUp({ isOpen, onClose }: any) {
 
                         {/* Content Section */}
                         <div className="">
-                            {selected === 0 && <ReaderOptionsForm onSubmit={() => { }} onChange={() => { }} />}
-                            {selected === 1 && <SchemaTable />}
+                            {selected === 0 && <ReaderOptionsForm onSubmit={() => { }} onClose={onClose} initialData={initialData} />}
+                            {selected === 1 && <SchemaTable initialData={initialData} />}
                             {selected === 2 && <OnboardTaggingStep />}
                             {selected === 3 && <PreviewTable />}
-                            {selected === 4 && <PreviewTable />}
+                            {/* {selected === 4 && <PreviewTable />} */}
                         </div>
                     </div>
                 </Container>

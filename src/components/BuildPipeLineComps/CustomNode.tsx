@@ -53,6 +53,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [validationStatus, setValidationStatus] = useState<'none' | 'valid' | 'warning' | 'error'>('none');
     const [validationMessages, setValidationMessages] = useState<string[]>([]);
     const [showValidationTooltip, setShowValidationTooltip] = useState(false);
+    const [selectedSourceLabel, setSelectedSourceLabel] = useState(null);
     const [selectedSource, setSelectedSource] = useState(null);
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
@@ -174,53 +175,78 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }));
             setIsFormOpen(true);
         } else {
-            if (data.label === 'Source') {
-                console.log(data.label)
-                setSelectedSource(data.label)
+            if (data?.source || data?.label === "Source") {
+                console.log(data?.source)
+                setSelectedSourceLabel("Source");
+                setSelectedSource(data?.source)
             }
         }
     }, [data.label, formStates, setSelectedSchema, setFormStates, setIsFormOpen, id]);
 
     const handleRunClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        if (formStates[id]) {
-            const allNodes = reactFlowInstance.getNodes();
-            const getOrderedNodes = (nodeId: string): string[] => {
-                const visited = new Set<string>();
-                const ordered: string[] = [];
+        const allNodes = reactFlowInstance.getNodes();
+        const getOrderedNodes = (nodeId: string): string[] => {
+            const visited = new Set<string>();
+            const ordered: string[] = [];
 
-                const visit = (currentId: string) => {
-                    if (visited.has(currentId)) return;
-                    visited.add(currentId);
+            const visit = (currentId: string) => {
+                if (visited.has(currentId)) return;
+                visited.add(currentId);
 
-                    // First process all incoming nodes
-                    const incomingEdges = edges.filter(edge => edge.target === currentId);
-                    for (const edge of incomingEdges) {
-                        visit(edge.source);
-                    }
-                    ordered.push(currentId);
-                };
-
-                visit(nodeId);
-                return ordered;
+                const incomingEdges = edges.filter(edge => edge.target === currentId);
+                for (const edge of incomingEdges) {
+                    visit(edge.source);
+                }
+                ordered.push(currentId);
             };
 
-            const orderedNodeIds = getOrderedNodes(id);
+            visit(nodeId);
+            return ordered;
+        };
 
-            // Create formatted states in topological order
-            const cumulativeStates = orderedNodeIds
-                .filter(nodeId => formStates[nodeId])
+        const orderedNodeIds = getOrderedNodes(id);
+
+        // Create the pipeline configuration object
+        const pipelineConfig = {
+            mode: "DEBUG",
+            name: "sample",
+            description: "Sample pipeline",
+            transformations: orderedNodeIds
                 .map(nodeId => {
                     const node = allNodes.find(n => n.id === nodeId);
                     if (!node) return null;
 
+                    // Handle Source nodes
+                    if (node.data.label.toLowerCase().includes("source")) {
+                        return {
+                            name: "read_input_data",
+                            dependent_on: [],
+                            transformation: "Reader",
+                            // Include source information from node.data.source
+                            ...(node.data.source && {
+                                source_config: node.data.source,
+                                data_src_name: node.data.source.data_src_name,
+                                data_src_key: node.data.source.data_src_key
+                            }),
+                            // Include any form state if it exists
+                            ...(formStates[nodeId] || {})
+                        };
+                    }
+
+                    // Skip nodes without form states
+                    if (!formStates[nodeId]) return null;
+
+                    // Regular node handling
                     const moduleName = node.data.label.split(' ')[0].toLowerCase();
                     const incomingEdges = edges.filter(edge => edge.target === nodeId);
 
                     const dependentOn = incomingEdges.map(edge => {
                         const sourceNode = allNodes.find(n => n.id === edge.source);
                         const sourceLabel = sourceNode?.data?.label || '';
-                        return `${sourceLabel.split(' ')[0].toLowerCase()}_transformation`;
+                        return sourceLabel.toLowerCase().includes("source") ?
+                            "read_input_data" :
+                            `${sourceLabel.split(' ')[0].toLowerCase()}_transformation`;
                     });
 
                     return {
@@ -230,12 +256,13 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                         ...formStates[nodeId]
                     };
                 })
-                .filter(Boolean);
+                .filter(Boolean)
+        };
 
-            setSelectedFormState(cumulativeStates);
-            setRunDialogOpen(true);
-        }
-    }, [formStates, id, data.label, edges, reactFlowInstance]);
+        console.log('Pipeline Configuration:', pipelineConfig);
+        setSelectedFormState(pipelineConfig);
+        setRunDialogOpen(true);
+    }, [formStates, id, edges, reactFlowInstance]);
 
     const handleDebug = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -509,7 +536,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             >
                 <DialogContent sx={{ width: '800px' }}>
                     {selectedSource} */}
-            {selectedSource == "Source" ? <OrderPopUp isOpen={true} onClose={() => setSelectedSource(null)} /> : null}
+            {selectedSourceLabel == "Source" ? <OrderPopUp isOpen={true} onClose={() => setSelectedSourceLabel(null)} source={selectedSource} /> : null}
             {/* </DialogContent>
 
             </Dialog> */}

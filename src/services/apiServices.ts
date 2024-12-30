@@ -1,10 +1,12 @@
 import axios, { AxiosRequestConfig } from "axios";
+
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
 const PRIFIX_URL = import.meta.env.VITE_API_PREFIX_URL;
+
 interface HeadersWithAuthorization extends AxiosRequestConfig {
   headers: {
     Authorization?: string;
-    'Content-Type'?: string;
+    "Content-Type"?: string;
     [key: string]: any;
   };
 }
@@ -17,6 +19,7 @@ const ApiService = async (
   params: any = null,
   additionalHeaders: Record<string, string> = {},
   usePrefix: boolean = true,
+  signal?: AbortSignal
 ) => {
   const BASE_URL = usePrefix
     ? `${DOMAIN}:${PORT_NUMBER}${PRIFIX_URL}`
@@ -25,32 +28,30 @@ const ApiService = async (
     let headers: HeadersWithAuthorization = { headers: {} };
     const token = sessionStorage?.getItem("token");
 
-    // Add the token to Authorization header if it exists
+    // Add Authorization header if token exists
     if (token) {
       headers.headers.Authorization = `Bearer ${JSON.parse(token)}`;
     }
 
-    // Merge any additional headers
+    // Merge additional headers
     headers.headers = { ...headers.headers, ...additionalHeaders };
 
-    // Determine content type if necessary
+    // Set Content-Type header
     if (data instanceof FormData) {
-      headers.headers['Content-Type'] = 'multipart/form-data';
-    } else if (data && typeof data === 'object' && !(data instanceof FormData)) {
-      headers.headers['Content-Type'] = 'application/json';
+      headers.headers["Content-Type"] = "multipart/form-data";
+    } else if (data && typeof data === "object" && !(data instanceof FormData)) {
+      headers.headers["Content-Type"] = "application/json";
     }
 
-    // Create axios instance with the base URL and headers
     const axiosInstance = axios.create({
       baseURL: BASE_URL,
       timeout: 100000,
-      headers: headers.headers,  // Use only the headers part, not the full object
+      headers: headers.headers,
     });
 
-    let response;
-    const config: AxiosRequestConfig = { params };
+    const config: AxiosRequestConfig = { params, signal }; // Include signal
 
-    // Make request based on the method type
+    let response;
     switch (method.toLowerCase()) {
       case "get":
         response = await axiosInstance.get(url, config);
@@ -62,7 +63,7 @@ const ApiService = async (
         response = await axiosInstance.put(url, data, config);
         break;
       case "patch":
-        response = await axiosInstance.patch(url, data, config)
+        response = await axiosInstance.patch(url, data, config);
         break;
       case "delete":
         response = await axiosInstance.delete(url, config);
@@ -73,12 +74,13 @@ const ApiService = async (
 
     return response.data;
   } catch (error: any) {
-    
-    console.error(
-      `Error in setup for ${url}:`,
-      JSON.stringify(error)
-    );
+    if (axios.isCancel(error)) {
+      console.log("Request canceled");
+    } else {
+      console.error(`Error in ${url}:`, error.message);
+    }
     throw error;
   }
 };
+
 export { ApiService };

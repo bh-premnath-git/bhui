@@ -3,7 +3,7 @@ const DECRYPTION_KEY = import.meta.env.VITE_DECRYPTION_KEY;
 
 // Configuration placeholder
 const Config = {
-    DECRYPTION_KEY:`${DECRYPTION_KEY}`  // Replace with your actual key
+    DECRYPTION_KEY: `${DECRYPTION_KEY}`  // Replace with your actual key
 };
 
 class AESEncryptionError extends Error {
@@ -125,5 +125,5 @@ function decrypt_string(
     }
 }
 
-export { encrypt_string };
+export { encrypt_string, decrypt_string };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Node } from './types/formTypes';
 import { X } from 'lucide-react';
 import { Menu, MenuItem } from '@mui/material';
@@ -6,9 +6,11 @@ import { Button } from '../ui/button';
 import Dialog from '@mui/material/Dialog';
 // import CustomForm from './SourceForm';
 import schema from './json/Source.json';
-import { SourceForm } from './SourceForm';
+// import { SourceForm } from './SourceForm';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
+import { ApiService } from '../../services/apiServices';
+
 const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
     // Track the currently opened dropdown
     const [dropdownVisible, setDropdownVisible] = useState<string | null>(null);
@@ -31,12 +33,56 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
         setAnchorEl(null);
     };
     const [formData, setFormData] = useState<Record<string, any>>({});
+    const [dataSources, setDataSources] = useState<any[]>([]);
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const ITEMS_PER_PAGE = 10;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredSources, setFilteredSources] = useState<any[]>([]);
+    // Add new state to track if dropdown is being interacted with
+    const [isInteractingWithDropdown, setIsInteractingWithDropdown] = useState(false);
 
-    // const handleFormSubmit = () => {
-    //     console.log("Form submitted:", formData);
+    // Update the fetchDataSources function
+    const fetchDataSources = useCallback(async (pageNum: number) => {
+        try {
+            setLoading(true);
+            const response = await ApiService(
+                '8011',
+                'get',
+                '/data_source/list/',
+                null,
+                {
+                    offset: (pageNum - 1) * ITEMS_PER_PAGE,
+                    limit: ITEMS_PER_PAGE,
+                    order_desc: false
+                }
+            );
+            if (pageNum === 1) {
+                setDataSources(response || []);
+            } else {
+                setDataSources(prev => [...prev, ...(response || [])]);
+            }
+        } catch (error) {
+            console.error('Error fetching data sources:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    //     // You can handle the form data here, e.g., send it to an API
-    // };
+    // Update useEffect to use the new fetch function
+    useEffect(() => {
+        fetchDataSources(1);
+    }, [fetchDataSources]);
+
+    // Add scroll handler for infinite scroll
+    const handleScroll = useCallback((event: React.UIEvent<HTMLUListElement>) => {
+        const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
+        if (scrollHeight - scrollTop <= clientHeight * 1.5 && !loading) {
+            setPage(prev => prev + 1);
+            fetchDataSources(page + 1);
+        }
+    }, [fetchDataSources, loading, page]);
+
     // Function to handle clicking outside to close the dropdown
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -69,82 +115,112 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
         }
     };
 
+    // Update useEffect to filter sources when search term or dataSources change
+    useEffect(() => {
+        const filtered = dataSources.filter(source =>
+            source.data_src_name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredSources(filtered);
+    }, [searchTerm, dataSources]);
+
+    // Update the hover logic
+    const handleNodeHover = (nodeName: string | null) => {
+        if (!isInteractingWithDropdown) {
+            setHoveredNode(nodeName);
+        }
+    };
+
     return (
         <div className="flex justify-center gap-4 mb-4">
             {filteredNodes.slice(0, 8).map((node: Node) => (
                 <div key={node.ui_properties.module_name}
-                    onMouseEnter={() => setHoveredNode(node.ui_properties.module_name)}
-                    onMouseLeave={() => setHoveredNode(null)} className="relative">
+                    onMouseEnter={() => handleNodeHover(node.ui_properties.module_name)}
+                    onMouseLeave={() => handleNodeHover(null)}
+                    className="relative">
                     {/* Node Button */}
                     <button
                         onClick={() => handleButtonClick(node)}
-                        className="node-button rounded text-white flex items-center transition-all duration-500 ease-in-out"
+                        className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out"
                         style={{
                             backgroundColor: node.ui_properties.color,
-                            padding: dropdownVisible === node.ui_properties.module_name ? '1px' : '1px',
                         }}
                     >
-                        {hoveredNode === node.ui_properties.module_name ? (
-                            <div className="flex items-center transition-all duration-500 ease-in-out rounded-lg">
-                                <img
-                                    src={node.ui_properties.icon}
-                                    alt={node.ui_properties.module_name}
-                                    className="w-9 h-9"
-                                />
-                                <div className="ml-2 opacity-100 transition-opacity duration-500 ease-in-out text-sm">
+                        <div className={`
+                            flex items-center rounded-lg
+                            transition-all duration-300 ease-in-out
+                            ${hoveredNode === node.ui_properties.module_name ? 'w-auto' : 'w-9'}
+                        `}>
+                            <img
+                                src={node.ui_properties.icon}
+                                alt={node.ui_properties.module_name}
+                                className="w-9 h-9 rounded"
+                            />
+                            {hoveredNode === node.ui_properties.module_name && (
+                                <div className="ml-2 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out text-sm">
                                     {node.ui_properties.module_name}
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center transition-all duration-300 rounded-lg ease-in-out">
-                                <img
-                                    src={node.ui_properties.icon}
-                                    alt={node.ui_properties.module_name}
-                                    className="w-9 h-9 rounded"
-                                />
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </button>
 
-                    {/* Dropdown for "Source" */}
+                    {/* Dropdown for "Source" - Updated with mouse event handlers */}
                     {node.ui_properties.module_name === 'Source' && dropdownVisible === node.ui_properties.module_name && (
-                        <div className="dropdown absolute bg-white shadow-lg rounded-lg mt-2 p-2 w-80" style={{ left: '-30vh' }}>
-
+                        <div
+                            className="dropdown absolute bg-white shadow-lg rounded-lg mt-2 p-2 w-80"
+                            style={{ left: '-30vh' }}
+                            onMouseEnter={() => setIsInteractingWithDropdown(true)}
+                            onMouseLeave={() => setIsInteractingWithDropdown(false)}
+                        >
                             <div className="flex justify-between">
-                                <Label className='text-black font-medium'>Add Source</Label><br></br>
-                                <div className='bg-white text-gray-700 font-medium  cursor-pointer' onClick={() => setDropdownVisible(null)}><X size={16} /></div>
+                                <Label className='text-black font-medium'>Add Source</Label>
+                                <div className='bg-white text-gray-700 font-medium cursor-pointer' onClick={() => setDropdownVisible(null)}>
+                                    <X size={16} />
+                                </div>
                             </div>
-                            <Input className='my-2' placeholder='Source Name' />
-                            <ul className="space-y-3 position-relative z-10">
-                                {[1, 2, 3, 4, 5].map((index: number) => (
-                                    <span key={index}>
-                                        <li onClick={() => {
-                                            handleNodeClick(node)
-                                            setDropdownVisible(null)
-                                        }}
-
-                                            className="cursor-pointer text-sm text-gray-700 flex items-center gap-2"
-                                        >
-                                            <img
-                                                src={node.ui_properties.icon}
-                                                alt={node.ui_properties.module_name}
-                                                className="w-9 h-9 rounded"
-                                            />
-                                            Source {index}
-                                        </li>
-                                        <hr className="border-gray-200 my-2" />
-                                    </span>
-                                ))}
-
-                                <div className='flex justify-center'>
+                            <div className='position-relative z-10'>
+                                <Input
+                                    className='my-2'
+                                    placeholder='Search sources...'
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                <ul
+                                    className="space-y-3  max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-200"
+                                    onScroll={handleScroll}
+                                >
+                                    {filteredSources.map((source: any, index: number) => (
+                                        <span key={`${source.id || index}`}>
+                                            <li onClick={() => {
+                                                handleNodeClick(node, source)
+                                                setDropdownVisible(null)
+                                            }}
+                                                className="cursor-pointer text-sm text-gray-700 flex items-center gap-2"
+                                            >
+                                                <img
+                                                    src={node.ui_properties.icon}
+                                                    alt={node.ui_properties.module_name}
+                                                    className="w-9 h-9 rounded"
+                                                />
+                                                {source.data_src_name}
+                                            </li>
+                                            <hr className="border-gray-200 my-2" />
+                                        </span>
+                                    ))}
+                                    {loading && (
+                                        <div className="text-center py-2 text-gray-500">
+                                            Loading...
+                                        </div>
+                                    )}
+                                </ul>
+                                <div className='flex justify-center mt-2'>
                                     <Button className='bg-black hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400'
-                                        onClick={handleClickOpen}
+                                        onClick={() => handleNodeClick(node)}
                                     >
                                         Add Source
                                     </Button>
-
                                 </div>
-                            </ul>
+                            </div>
+
                         </div>
                     )}
 
@@ -197,28 +273,7 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
                 </>
             )}
 
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth={'xl'}
-                style={{ width: '100%', maxWidth: '1400px', margin: 'auto' }}
-            >
-                <div className='flex justify-between px-4 pt-4'>
-                    <div>
-                        <Label className='text-black font-medium'>Configure A New Source</Label><br></br>
-                        <Label className='text-gray-600 text-sm font-normal'>Select the type of source you want to add to your pipeline.</Label>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        <Input placeholder='Source Name' />
-                        <div className='bg-white text-gray-700 font-medium  cursor-pointer' onClick={handleClose} ><X size={16} /></div>
 
-                    </div>
-                </div>
-                <SourceForm onSubmit={() => { }} />
-
-            </Dialog>
         </div>
 
     );

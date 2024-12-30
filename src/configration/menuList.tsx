@@ -18,6 +18,12 @@ import {
 
 export const menuList = [
     {
+        label: "BigHammer Search",
+        icon: <Database size={20} />,
+        path: "/bighammer-search",
+        shortcut: "⌘B"
+    },
+    {
         label: "Data Catalog",
         icon: <Database size={20} />,
         path: "/data-catalog",
@@ -100,5 +106,6 @@ export const menuList = [
                 shortcut: "⌘M"
             },
         ]
-    },
+    }
+    
 ]

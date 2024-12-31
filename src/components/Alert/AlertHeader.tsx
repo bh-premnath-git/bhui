@@ -111,23 +111,11 @@ function AlertHeader() {
                             <Typography  sx={{ fontSize: "30px" }}>
                                 Alert Summary
                             </Typography>
-                            <div style={{ position: 'absolute', top: 20, right: 100 }}>
+                            {/* <div style={{ position: 'absolute', top: 20, right: 100 }}>
                                 <img src="/assets/designer/Bg design.png" alt="" width={'200px'} />
-                            </div>
+                            </div> */}
                         </Stack>
-                        <Stack direction={'row'} spacing={4} mt={1} px={2}> {/* Reduced spacing and padding */}
-                            {renderPieChartWithLabels('Freshness', pieChartData.freshness)}
-                            <Divider orientation="vertical" flexItem />
-                            {renderPieChartWithLabels('Health', pieChartData.health)}
-                            <Divider orientation="vertical" flexItem />
-                            {renderPieChartWithLabels('Volume', pieChartData.volume)}
-                            <Divider orientation="vertical" flexItem />
-                            {renderPieChartWithLabels('Security', pieChartData.security)}
-                            <Divider orientation="vertical" flexItem />
-                            {renderPieChartWithLabels('Cost', pieChartData.cost)}
-                            <Divider orientation="vertical" flexItem />
-                            {renderPieChartWithLabels('Platform', pieChartData.platform)}
-                        </Stack>
+
                     </Item>
                 </Grid>
             </Grid>

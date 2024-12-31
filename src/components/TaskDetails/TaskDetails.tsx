@@ -52,7 +52,7 @@ interface TaskDetailsProps {
     onClose: () => void;
     selectedRowData: {
         project_name: string;
-        pipeline_name: string;
+        flow_name: string;
         [key: string]: any;
     };
 }
@@ -250,7 +250,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ jobId, onClose, selectedRowDa
                             </Grid>
                             <Grid item xs={6} style={{ display: 'flex', justifyContent: 'flex-start' }}>
                                 <Typography variant="body1">
-                                    Pipeline Name: <span className="font-bold">{selectedRowData.pipeline_name}</span>
+                                    Flow Name: <span className="font-bold">{selectedRowData.flow_name}</span>
                                 </Typography>
                             </Grid>
                         </Grid>

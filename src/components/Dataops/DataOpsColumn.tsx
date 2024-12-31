@@ -55,7 +55,7 @@ const formatDuration = (start: string, end: string): string => {
 
 export const dataopsColumn: ColumnConfig[] = [
     {
-        key: 'pipeline_name',
+        key: 'flow_name',
         header: 'Flow',
         type: 'number',
         sortable: false,
@@ -119,7 +119,7 @@ export const dataopsColumn: ColumnConfig[] = [
         align: "left",
     },
     {
-        key: 'pipeline_status',
+        key: 'flow_status',
         header: 'Status',
         type: 'number',
         filterable: false,
@@ -198,7 +198,7 @@ export const dataopsColumn: ColumnConfig[] = [
             
             return (
                 <div className="text-white" onClick={(e) => e.stopPropagation()}>
-                    {row?.pipeline_status === 'Success' && (
+                    {row?.flow_status === 'Success' && (
                         <Stack direction={'row'}>
                             <DoneIcon style={{ 
                                 color: 'green', 
@@ -207,7 +207,7 @@ export const dataopsColumn: ColumnConfig[] = [
                             }} />
                         </Stack>
                     )}
-                    {row?.pipeline_status === 'Failed' && (
+                    {row?.flow_status === 'Failed' && (
                         <Stack direction={'row'} spacing={2}>
                             <Tooltip title="Skip Job">
                                 <div
@@ -241,7 +241,7 @@ export const dataopsColumn: ColumnConfig[] = [
                             </Tooltip>
                         </Stack>
                     )}
-                    {row?.pipeline_status === 'In Progress' && (
+                    {row?.flow_status === 'In Progress' && (
                         <Stack direction={'row'} spacing={2}>
                             <Tooltip title="Stop Job">
                                 <div

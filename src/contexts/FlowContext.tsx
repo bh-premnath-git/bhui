@@ -283,7 +283,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         setIsDirty(false);
       }
     },
-    6000,
+    36000,
     [autoSave, selectedFlowId, isDirty]
   );
 

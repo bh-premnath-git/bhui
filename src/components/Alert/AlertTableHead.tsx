@@ -21,7 +21,6 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }: any) {
     const [showPopup, setShowPopup] = useState(false);
     const [selectedFilters, setSelectedFilters] = useState({});
     const projectList = filterOption?.projectData;
-    const pipeLineList = filterOption?.pipeLineData;
     const navigate = useNavigate();
 
     const handleOpenPopup = () => {
@@ -88,21 +87,6 @@ function AlertTableHead({ filterOption, status, fetchJobDetails }: any) {
                                                     <TextField
                                                         {...params}
                                                         placeholder="Select Project"
-                                                        sx={{ width: 250 }}
-                                                    />
-                                                )}
-                                            />
-                                        </Stack>
-                                        <Stack direction="column" spacing={1}>
-                                            <Label>Pipeline</Label>
-                                            <Autocomplete size='small'
-                                                options={pipeLineList || []}
-                                                getOptionLabel={(option: any) => option.source_name}
-                                                onChange={(event, newValue) => setFieldValue('source_id', newValue ? newValue.source_id : '')}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        placeholder="Select Pipeline"
                                                         sx={{ width: 250 }}
                                                     />
                                                 )}

@@ -43,8 +43,8 @@ export const menuList = [
         path: "/admin-console"
     },
     {
-        label: "BigHammer Search",
+        label: "BigHammer AI",
         icon: <FaRegFile className='h5' />,
-        path: "/bighammer-search"
+        path: "/bighammer-ai"
     },
 ]

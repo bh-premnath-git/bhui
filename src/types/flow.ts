@@ -78,7 +78,7 @@ export interface GroupedProperties {
 export interface FormValues {
   [key: string]: any;
 }
-/**  */\
+/**  */
 
 export interface ModuleInfo {
   color: string;

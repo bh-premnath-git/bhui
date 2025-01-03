@@ -29,7 +29,25 @@ interface ApiResponse {
     message?: string;
   };
   flow_definition?: string;
+  operators?: string[];
+  pipelines?: string[];
 }
+
+interface ParsedFlowDefinition {
+  dag_id: string;
+  operators: Array<{
+    type: string;
+    task_id: string;
+    [key: string]: any;
+  }>;
+}
+
+interface ProcessedResponse {
+  flowDefinition: ParsedFlowDefinition;
+  operators: string[];
+  pipelines: string[];
+}
+
 
 const MAX_PREVIEW_LENGTH = 500;
 
@@ -92,55 +110,92 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const ResponseContent: React.FC<{ response: string; isExpanded?: boolean; onClick: () => void; id: number }> = ({ 
-    response, 
-    isExpanded = false, 
+  const extractResponseMessage = (data: ApiResponse): string => {
+    try {
+      // If the response is a string, clean it up
+      const responseString = typeof data === 'string' ? data : JSON.stringify(data);
+  
+      // Replace invalid JSON elements
+      const sanitizedResponse = responseString
+        .replace(/'([a-zA-Z0-9_]+)':/g, '"$1":') // Replace single-quoted keys
+        .replace(/: True/g, ': true')            // Replace Python-style booleans
+        .replace(/: False/g, ': false')
+        .replace(/: None/g, ': null');           // Replace Python-style nulls
+  
+      // Parse the cleaned response
+      const responseObj = JSON.parse(sanitizedResponse);
+  
+      // Extract the relevant information
+      if (responseObj.flow_definition) {
+        const cleanFlowDef = responseObj.flow_definition
+          .replace(/```json\n?/g, '')
+          .replace(/```/g, '');
+  
+        const flowDefinition: ParsedFlowDefinition = JSON.parse(cleanFlowDef);
+        return JSON.stringify(flowDefinition, null, 2);
+      }
+  
+      // Fallbacks
+      if (responseObj.answer) return responseObj.answer;
+      if (responseObj.message) return responseObj.message;
+      if (responseObj.data?.response) return responseObj.data.response;
+      if (responseObj.data?.message) return responseObj.data.message;
+  
+      return 'Response received but in an unexpected format';
+    } catch (error) {
+      console.error('Error parsing response:', error);
+      return `Error parsing response: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
+  };
+  
+
+  const ResponseContent: React.FC<{
+    response: string;
+    isExpanded?: boolean;
+    onClick: () => void;
+    id: number
+  }> = ({
+    response,
+    isExpanded = false,
     onClick,
     id
   }) => {
-    let formattedResponse = response;
-    try {
-      // Remove \`\`\`json \`\`\` markers if they exist
-      const cleanResponse = response.replace('json', '').replace('```', '').replace('```', '');
-      const parsedResponse = JSON.parse(cleanResponse);
-      formattedResponse = JSON.stringify(parsedResponse, null, 2);
-    } catch (e) {
-      // If parsing fails, use the original response without \`\`\`json \`\`\` markers
-      formattedResponse = response.replace(/^\`\`\`json\s*/, '').replace(/\s*\`\`\`$/, '');
-    }
+      let formattedResponse = response;
+      try {
+        // If the response is already formatted JSON, parse and re-stringify it
+        const parsedResponse = JSON.parse(response);
+        formattedResponse = JSON.stringify(parsedResponse, null, 2);
+      } catch (e) {
+        // If parsing fails, use the original response
+        formattedResponse = response;
+      }
 
-    return (
-      <div className="relative">
-        <pre className="text-gray-700 whitespace-pre-wrap overflow-x-auto">
-          {isExpanded ? formattedResponse : `${formattedResponse.slice(0, MAX_PREVIEW_LENGTH)}...`}
-        </pre>
-        <button
-          onClick={onClick}
-          className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium"
-        >
-          {isExpanded ? 'Show less' : 'Show more'}
-        </button>
-        <button
-          onClick={() => handleCopy(id, formattedResponse)}
-          className="absolute top-0 right-0 p-2 text-gray-500 hover:text-gray-700"
-        >
-          {copiedId === id ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-        </button>
-      </div>
-    );
-  };
+      const displayContent = isExpanded
+        ? formattedResponse
+        : `${formattedResponse.slice(0, MAX_PREVIEW_LENGTH)}...`;
 
-  const extractResponseMessage = (data: ApiResponse): string => {
-    if (data.status === "success" && data.flow_definition) {
-      return data.flow_definition;
-    }
-    if (data.answer) return data.answer;
-    if (data.message) return data.message;
-    if (data.data?.response) return data.data.response;
-    if (data.data?.message) return data.data.message;
-    if (typeof data === 'string') return data;
-    return 'Response received but in an unexpected format';
-  };
+      return (
+        <div className="relative">
+          <pre className="text-gray-700 whitespace-pre-wrap overflow-x-auto">
+            {displayContent}
+          </pre>
+          {formattedResponse.length > MAX_PREVIEW_LENGTH && (
+            <button
+              onClick={onClick}
+              className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium"
+            >
+              {isExpanded ? 'Show less' : 'Show more'}
+            </button>
+          )}
+          <button
+            onClick={() => handleCopy(id, formattedResponse)}
+            className="absolute top-0 right-0 p-2 text-gray-500 hover:text-gray-700"
+          >
+            {copiedId === id ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+          </button>
+        </div>
+      );
+    };
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -178,7 +233,6 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
 
       const responseData: ApiResponse = await res.json();
       const responseMessage = extractResponseMessage(responseData);
-
       setConversation(prev =>
         prev.map(entry =>
           entry.id === newEntry.id
@@ -186,10 +240,11 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
             : entry
         )
       );
+
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      
+
       setConversation(prev =>
         prev.map(entry =>
           entry.id === prev[prev.length - 1].id
@@ -228,7 +283,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
             </button>
 
             <div className="h-full flex flex-col">
-              <div 
+              <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
                 className="flex-grow overflow-auto px-6 pt-8 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
@@ -291,11 +346,10 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleSend}
                     disabled={!selectedFlow || !inputValue.trim() || isLoading}
-                    className={`p-2 rounded-full transition-colors flex-shrink-0 ${
-                      !selectedFlow || !inputValue.trim() || isLoading
+                    className={`p-2 rounded-full transition-colors flex-shrink-0 ${!selectedFlow || !inputValue.trim() || isLoading
                         ? 'cursor-not-allowed opacity-50'
                         : 'hover:bg-purple-800 cursor-pointer'
-                    }`}
+                      }`}
                   >
                     <SendRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
                   </button>
@@ -310,4 +364,3 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose }) => {
 };
 
 export default Dialog;
-

@@ -15,6 +15,7 @@ import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
 import { jwtDecode } from 'jwt-decode';
+import useToast from '@/oldcomponents/teast-service';
 
 
 // Types
@@ -322,6 +323,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
   const [showNotes, setShowNotes] = useState(false);
   const [tags, setTags] = useState<Tag>({ tagList: [] });
   const [flowExistsModalOpen, setFlowExistsModalOpen] = useState(false);
+  const [ToastComponent, showToast] = useToast();
   const { environments, flowProjectList: projects, searchedFlow, searchLoading } = useAppSelector(
     (state) => state.flowApi
   );

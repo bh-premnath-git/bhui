@@ -20,6 +20,7 @@ import { CustomControls } from '@/components/ReactFlowComps/flow/flow/CustomCont
 import { nodeTypes } from '@/lib/nodeTypes';
 import { edgeTypes } from '@/lib/edgeTypes';
 import 'reactflow/dist/style.css';
+import SparkleButton from './flowAi/aibutton';
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
@@ -74,7 +75,6 @@ export function FlowEditor() {
     }
   }, [nodes, fitView, getViewport]);
 
-
   const onConnect = useCallback(
     (connection: Connection) => {
       const edge = {
@@ -95,31 +95,21 @@ export function FlowEditor() {
           orient: 'auto-start',
         },
       };
-      setEdges((eds) => {
-        const newEdges = addEdge(edge, eds);
-        return newEdges;
-      });
+      setEdges((eds) => addEdge(edge, eds));
     },
     [setEdges]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      setEdges((eds) => {
-        const newEdges = applyEdgeChanges(changes, eds);
-        return newEdges;
-      });
+      setEdges((eds) => applyEdgeChanges(changes, eds));
     },
     [setEdges]
   );
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => {
-        const newNodes = applyNodeChanges(changes, nds);
-        return newNodes;
-      });
-
+      setNodes((nds) => applyNodeChanges(changes, nds));
       // Add small delay before checking viewport after node changes
       setTimeout(checkAndFitView, 50);
     },
@@ -242,7 +232,10 @@ export function FlowEditor() {
             snapGrid={snapGrid}
           >
             <Panel position="top-center" className="w-full z-40">
-              <ToolbarNodes />
+              <div className="flex justify-between items-start w-full px-4 pt-4">
+                <ToolbarNodes />
+                <SparkleButton />
+              </div>
             </Panel>
             <CustomControls />
           </ReactFlow>
@@ -258,3 +251,4 @@ const rectanglesOverlap = (rect1: any, rect2: any) => !(
   rect1.y + rect1.height < rect2.y ||
   rect1.y > rect2.y + rect2.height
 );
+

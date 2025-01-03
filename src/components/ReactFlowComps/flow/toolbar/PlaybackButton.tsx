@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -37,12 +37,14 @@ export function PlaybackButton({
 }: PlaybackButtonProps) {
   const dispatch = useAppDispatch();
   const location = useLocation(); 
-  const { isDirty } = useFlow();
+  const { isDirty, formdataNum } = useFlow();
   const { dagParserTime } = useAppSelector((state) => state.flowApi);
 
   const [prevPathname, setPrevPathname] = useState(location.pathname);
-
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // A ref to track the "last known" formdataNum
+  const formdataNumRef = useRef<number>(formdataNum);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,32 +61,33 @@ export function PlaybackButton({
   };
 
   const asyncUpdateFlowDef = async () => {
-    if (!isPlaying && selectedFlowId) {
-      try {
-        abortControllerRef.current = new AbortController();
+    // If currently "playing," skip
+    if (isPlaying || !selectedFlowId) return;
 
-        const flowStructure = LocalStorageService.getItem(`flow-${selectedFlowId}`);
-        const flowJson = flowStructure?.nodeFormData?.map((item: any) => item.formData);
+    try {
+      abortControllerRef.current = new AbortController();
 
-        await dispatch(
-          updateFlowDefinition({
+      const flowStructure = LocalStorageService.getItem(`flow-${selectedFlowId}`);
+      const flowJson = flowStructure?.nodeFormData?.map((item: any) => item.formData);
+
+      await dispatch(
+        updateFlowDefinition({
+          flow_id: selectedFlowId,
+          flow_json: {
+            flow_deployment_id: selectedData?.flow_deployment_id,
             flow_id: selectedFlowId,
-            flow_json: {
-              flow_deployment_id: selectedData?.flow_deployment_id,
-              flow_id: selectedFlowId,
-              flow_json: { flowJson, flowStructure }
-            }
-          })
-        );
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          console.log('Flow definition update was aborted due to route change.');
-        } else {
-          console.error('Error updating flow definition:', error);
-        }
-      } finally {
-        abortControllerRef.current = null;
+            flow_json: { flowJson, flowStructure }
+          }
+        })
+      );
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        console.log('Flow definition update was aborted due to route change.');
+      } else {
+        console.error('Error updating flow definition:', error);
       }
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -123,12 +126,18 @@ export function PlaybackButton({
     }
   };
 
+  // Use effect to watch for changes in formdataNum
   useEffect(() => {
+    // Example condition: not "dirty", valid flow, and new formdataNum
     if (!isDirty && selectedFlowId) {
-      asyncUpdateFlowDef();
+      if (formdataNumRef.current !== formdataNum) {
+        // Update the ref to the new value
+        formdataNumRef.current = formdataNum;
+        // Dispatch the async update
+        asyncUpdateFlowDef();
+      }
     }
-  }, [isDirty, selectedFlowId]);
-
+  }, [formdataNum, isDirty, selectedFlowId]);
 
   useEffect(() => {
     if (location.pathname !== prevPathname && abortControllerRef.current) {
@@ -136,7 +145,6 @@ export function PlaybackButton({
     }
     setPrevPathname(location.pathname);
   }, [location.pathname, prevPathname]);
-
 
   const handleClick = async () => {
     setIsLoading(true);

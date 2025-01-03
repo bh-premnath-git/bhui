@@ -25,7 +25,7 @@ interface NodeFormProps {
 type TabType = "property" | "settings";
 
 export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
-    const { saveFlow, selectedNode, nodeFormData, prevNodeFn, updateNodeFormData, updateNodeMeta, updatedSelectedNodeId, getNodeFormData, revertOrSaveData } = useFlow();
+    const { saveFlow, selectedNode, setFormDataNum, nodeFormData, prevNodeFn, updateNodeFormData, updateNodeMeta, updatedSelectedNodeId, getNodeFormData, revertOrSaveData } = useFlow();
     const [activeTab, setActiveTab] = useState<TabType>("property");
     const [selectedValue, setSelectedValue] = useState<string>("");
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
@@ -63,7 +63,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [getNodeFormData, requiredFieldsState, selectedNode.id]);
 
     const handleSave = useCallback(() => {
-
         if (!selectedNode) return;
 
         const currentFields = getNodeFormData(selectedNode.id);
@@ -84,6 +83,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             });
             return;
         }
+        setFormDataNum(prev => prev + 1);
         closeTap();
         revertOrSaveData(id, true);
     }, [closeTap, id, getNodeFormData, revertOrSaveData]);
@@ -107,11 +107,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         if (!selectedNode) return;
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
-            type: selectedValue ?? selectedNode.data.type ?? selectedNode.data.meta.type ?? "",
+            type: selectedValue !== "" ? selectedValue : selectedNode.data.type ?? selectedNode.data.meta.type ?? "",
             task_id: taskID,
             dependsOn,
             [key]: value,
         });
+        
         saveFlow()
     }, [selectedNode, currentFormData, dependsOn, updateNodeFormData]);
 

@@ -15,7 +15,6 @@ import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { clearSearchResults, searchFlow } from '@/redux/FlowSlice';
 import { jwtDecode } from 'jwt-decode';
-import useToast from '@/oldcomponents/teast-service';
 
 
 // Types
@@ -323,10 +322,44 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
   const [showNotes, setShowNotes] = useState(false);
   const [tags, setTags] = useState<Tag>({ tagList: [] });
   const [flowExistsModalOpen, setFlowExistsModalOpen] = useState(false);
-  const [ToastComponent, showToast] = useToast();
+  const [errorMsg, setErrorMsg] = useState('');
   const { environments, flowProjectList: projects, searchedFlow, searchLoading } = useAppSelector(
     (state) => state.flowApi
   );
+
+  const handleSubmit = async (values: FormValues, { setSubmitting }) => {
+    try {
+      const selectedProjectObject = projects.find(
+        (project) => project.ProjectId.toString() === values.selectedProject
+      );
+      const payload: CreateFlowPayload = {
+        flow_name: values.name,
+        bh_project_id: Number(values.selectedProject),
+        bh_env_id: Number(values.selectedEnvironment),
+        notes: values.notes,
+        recipient_email: { email: values.recipientEmails },
+        tags: tags,
+        alert_settings: {
+          ...values.alert_settings,
+        },
+        flow_json: {},
+        projectName: selectedProjectObject?.Name,
+      };
+
+      const result: any = await onCreateFlow(payload);
+      
+      if (result instanceof Error) {
+        setErrorMsg(result.message);
+      } else {
+      }
+    } catch (error) {
+      setErrorMsg(error);
+      console.log(error);
+      
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Accordion state
   const [openSections, setOpenSections] = useState({
@@ -412,31 +445,12 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
         <p className="text-gray-500 mt-0">
           Configure your flow settings and notifications
         </p>
+        {errorMsg && <p className="text-red-500 mt-2">{errorMsg}</p>}
       </div>
-
-      <Formik
+       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
-          const selectedProjectObject = projects.find(
-            (project) => project.ProjectId.toString() === values.selectedProject
-          );
-          const payload: CreateFlowPayload = {
-            flow_name: values.name,
-            bh_project_id: Number(values.selectedProject),
-            bh_env_id: Number(values.selectedEnvironment),
-            notes: values.notes,
-            recipient_email: { email: values.recipientEmails },
-            tags: tags,
-            alert_settings: {
-              ...values.alert_settings,
-            },
-            flow_json: {},
-            projectName: selectedProjectObject?.Name,
-          };
-          onCreateFlow(payload);
-          setSubmitting(false);
-        }}
+        onSubmit={handleSubmit}
       >
         {({ values, setFieldValue, errors, isValid, isSubmitting }) => {
           const hasError = (errorFields: string[]) => {

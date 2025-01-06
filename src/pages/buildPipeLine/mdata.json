@@ -8,7 +8,7 @@
       "ui_type": "normal",
       "properties": {
         "condition": {
-          "type": "string",
+          "type": "expression",
           "minLength": 1
         }
       },
@@ -80,7 +80,7 @@
               "minLength": 1
             },
             "expression": {
-              "type": "string",
+              "type": "expression",
               "minLength": 1
             }
           }
@@ -100,33 +100,40 @@
         "aggregations": {
           "type": "array",
           "items": {
-              "aggregate_column": {
-                "type": "string",
-                "minLength": 1
-              },
-              "alias": {
-                "type": "string",
-                "minLength": 1
-              },
-              "expression": {
-                "type": "string",
-                "minLength": 1,
-                "ui-hint": "expression"
-              }
+            "target_column": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
           }
         },
         "group_by": {
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "group_by": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         },
         "pivot_by": {
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "pivot_column": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pivot_values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       },
@@ -224,30 +231,23 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
-      "ui_type": "tab-container",
       "title": "Sort",
+      "ui_type": "array-container",
       "properties": {
         "sort_columns": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "column": {
-                "type": "string"
-              },
-              "order": {
-                "type": "string",
-                "enum": [
-                  "asc",
-                  "desc"
-                ],
-                "default": "asc"
-              }
+            "column": {
+              "type": "string"
             },
-            "required": [
-              "column",
-              "order"
-            ]
+            "order": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
           },
           "minItems": 1
         }
@@ -342,7 +342,9 @@
             }
           },
           "then": {
-            "required": ["dedup_by"]
+            "required": [
+              "dedup_by"
+            ]
           }
         },
         {
@@ -354,7 +356,9 @@
             }
           },
           "then": {
-            "required": ["dedup_by"]
+            "required": [
+              "dedup_by"
+            ]
           }
         },
         {
@@ -366,7 +370,10 @@
             }
           },
           "then": {
-            "required": ["dedup_by", "order_by"]
+            "required": [
+              "dedup_by",
+              "order_by"
+            ]
           }
         },
         {
@@ -378,7 +385,10 @@
             }
           },
           "then": {
-            "required": ["dedup_by", "order_by"]
+            "required": [
+              "dedup_by",
+              "order_by"
+            ]
           }
         },
         {
@@ -390,13 +400,15 @@
             }
           },
           "then": {
-            "required": ["dedup_by"]
+            "required": [
+              "dedup_by"
+            ]
           }
         }
       ]
     },
     {
-      "id" : "file://repartition_schema.json",
+      "id": "file://repartition_schema.json",
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
@@ -461,50 +473,74 @@
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "repartition" }
+              "repartition_type": {
+                "const": "repartition"
+              }
             },
-            "required": ["repartition_type"]
+            "required": [
+              "repartition_type"
+            ]
           },
           "then": {
-            "required": ["repartition_value"]
+            "required": [
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "coalesce" }
+              "repartition_type": {
+                "const": "coalesce"
+              }
             },
-            "required": ["repartition_type"]
+            "required": [
+              "repartition_type"
+            ]
           },
           "then": {
-            "required": ["repartition_value"]
+            "required": [
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "hash_repartition" }
+              "repartition_type": {
+                "const": "hash_repartition"
+              }
             },
-            "required": ["repartition_type"]
+            "required": [
+              "repartition_type"
+            ]
           },
           "then": {
-            "required": ["repartition_expression", "repartition_value"]
+            "required": [
+              "repartition_expression",
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "repartition_by_range" }
+              "repartition_type": {
+                "const": "repartition_by_range"
+              }
             },
-            "required": ["repartition_type"]
+            "required": [
+              "repartition_type"
+            ]
           },
           "then": {
-            "required": ["repartition_expression", "repartition_value"]
+            "required": [
+              "repartition_expression",
+              "repartition_value"
+            ]
           }
         }
       ]
     }
-    
-    
   ]
 }

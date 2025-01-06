@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
     useNodesState,
     useEdgesState,
@@ -18,7 +18,11 @@ import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
 import { FlowControls } from './FlowControls';
 import CreateFormFormik from '@/components/BuildPipeLineComps/CreateForm';
 import NodeDropList from '@/components/BuildPipeLineComps/NodeDropList';
-import { ErrorBoundary} from "@/ErrorBoundry"
+import { ErrorBoundary } from "@/ErrorBoundry"
+import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
+import { connect } from 'http2';
 
 interface UIProperties {
     color: string;
@@ -40,6 +44,7 @@ interface Schema {
 
 const BuildPlayGround: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [pipelineDtl, setPipelineDtl] = useState<any>(null);
     const [selectedSchema, setSelectedSchema]: any = useState<Schema | null>(null);
     const [formStates, setFormStates] = useState<{ [key: string]: any }>({});
     const [runDialogOpen, setRunDialogOpen] = useState(false);
@@ -55,6 +60,88 @@ const BuildPlayGround: React.FC = () => {
     const [debuggedNodesList, setDebuggedNodesList] = useState<Array<{ id: string, title: string }>>([]);
     const [isPipelineRunning, setIsPipelineRunning] = useState(false);
     const [transformationCounts, setTransformationCounts] = useState<Array<{ transformationName: string, rowCount: string }>>([]);
+    const { id } = useParams();
+    const dispatch = useDispatch();
+    const saveStatus = useSelector((state: any) => state.autoSave);
+    const time = import.meta.env.VITE_AUTO_SAVE_TIME;
+    const autoSaveInterval = parseInt(time, 10) || 30000;
+    const [history, setHistory] = useState<{ nodes: any[], edges: any[] }[]>([]);
+    const [redoStack, setRedoStack] = useState<{ nodes: any[], edges: any[] }[]>([]);
+
+    useEffect(() => {
+        const fetchPipelineDetails = async () => {
+            try {
+                const response = await ApiService(
+                    "8011",
+                    "get",
+                    `/pipeline/${id}`,
+                    null
+                );
+                console.log(response);
+                setPipelineDtl(response);
+
+                // Set the nodes and edges from the response if they exist
+                if (response?.pipeline_json?.nodes) {
+                    setNodes(response.pipeline_json.nodes);
+                }
+                if (response?.pipeline_json?.edges) {
+                    setEdges(response.pipeline_json.edges);
+                }
+
+                // Update node counters based on existing nodes
+                if (response?.pipeline_json?.nodes) {
+                    const counters: { [key: string]: number } = {};
+                    response.pipeline_json.nodes.forEach((node: any) => {
+                        const moduleName = node.data.label;
+                        counters[moduleName] = (counters[moduleName] || 0) + 1;
+                    });
+                    setNodeCounters(counters);
+                }
+            } catch (error) {
+                console.error("Error fetching pipeline details:", error);
+            }
+        };
+
+        fetchPipelineDetails();
+    }, []);
+
+    const handleNodesChange = useCallback((changes: any) => {
+        onNodesChange(changes);
+        dispatch(setUnsavedChanges());
+    }, [onNodesChange, dispatch]);
+
+    const handleEdgesChange = useCallback((changes: any) => {
+        onEdgesChange(changes);
+        dispatch(setUnsavedChanges());
+    }, [onEdgesChange, dispatch]);
+
+    useEffect(() => {
+        const intervalId = setInterval(async () => {
+            if (saveStatus.hasUnsavedChanges) {  // Only save if there are changes
+                try {
+                    dispatch(setSaving());
+                    const pipeline_json = {
+                        pipeline_json: {
+                            nodes: nodes,
+                            edges: edges
+                        }
+                    };
+                    await ApiService(
+                        "8011",
+                        "patch",
+                        `/pipeline/${id}`,
+                        pipeline_json
+                    );
+                    dispatch(setSaved());
+                } catch (error) {
+                    console.error('Error saving pipeline state:', error);
+                    dispatch(setSaveError());
+                }
+            }
+        }, autoSaveInterval);
+
+        return () => clearInterval(intervalId);
+    }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval]);
 
     const onError = useCallback((id: string) => {
         console.error('Flow Error:', id);
@@ -117,6 +204,167 @@ const BuildPlayGround: React.FC = () => {
         setIsFormOpen(false);
     }, []);
 
+    const handleRunClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        const allNodes = reactFlowInstance.getNodes();
+
+        // Get source nodes (nodes that have source data)
+        const sourceNodes = allNodes.filter(node =>
+            node.data.label.toLowerCase().includes("source") || node.data.source
+        );
+
+        // Get target nodes (nodes with no outgoing edges)
+        const targetNodes = allNodes.filter(node =>
+            !edges.some(edge => edge.source === node.id)
+        );
+
+        // Create sources array
+        const sources = sourceNodes.map(node => ({
+            name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
+            source_type: "File",
+            file_name: `${node.data.source?.file_name || "input.csv"}`,
+            connection: {
+                name: node.data.source?.connection_name || "local_connection",
+                connection_type: node.data.source?.connection_type || "Local",
+                file_path_prefix: node.data.source?.file_path_prefix || "examples/"
+            }
+        }));
+
+        // Create targets array
+        const targets = targetNodes.map(node => ({
+            name: "output_data",
+            type: "File",
+            connection: {
+                type: "File",
+                file_path: "examples/output.csv"
+            },
+            load_mode: "overwrite"
+        }));
+
+        // Modified getOrderedNodes function for transformations
+        const getOrderedNodes = () => {
+            const orderedNodes: any[] = [];
+            const visited = new Set<string>();
+
+            const processNode = (nodeId: string) => {
+                if (visited.has(nodeId)) return;
+                visited.add(nodeId);
+
+                const incomingEdges = edges.filter(edge => edge.target === nodeId);
+                incomingEdges.forEach(edge => {
+                    if (!visited.has(edge.source)) {
+                        processNode(edge.source);
+                    }
+                });
+
+                const node = allNodes.find(n => n.id === nodeId);
+                if (node) {
+                    orderedNodes.push(node);
+                }
+            };
+
+            targetNodes.forEach(node => {
+                processNode(node.id);
+            });
+
+            return orderedNodes;
+        };
+
+        // Get ordered nodes and create transformations
+        const orderedNodes = getOrderedNodes();
+        const transformations = orderedNodes.map(node => {
+            console.log(node.data)
+            if (node.data.label.toLowerCase().includes("source") || node.data.source) {
+                return {
+                    name: "read_" + node?.data?.title || node.data?.source?.data_src_name || "input_data",
+                    dependent_on: [],
+                    transformation: "Reader",
+                    source: {
+                        name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
+                        source_type: "File",
+                        file_name: node.data.source?.file_name || "input.csv",
+                        connection: {
+                            name: node.data.source?.connection_name || "local_connection",
+                            connection_type: node.data.source?.connection_type || "Local",
+                            file_path_prefix: node.data.source?.file_path_prefix || "examples/"
+                        }
+                    },
+                    read_options: {
+                        header: true
+                    }
+                };
+            }
+
+            const moduleName = node.data.label.split(' ')[0].toLowerCase();
+            const incomingEdges = edges.filter(edge => edge.target === node.id);
+            const dependentOn = incomingEdges.map(edge => {
+                const sourceNode = allNodes.find(n => n.id === edge.source);
+                console.log(sourceNode?.data);
+
+                if (sourceNode?.data?.source) {
+                    return "read_" + (sourceNode.data.title || sourceNode.data.source.data_src_name || "input_data");
+                } else if (sourceNode?.data?.label) {
+                    return `${sourceNode.data.label.split(' ')[0].toLowerCase()}_transformation`;
+                }
+                return null;
+            }).filter(Boolean);
+
+            // Special handling for join transformations
+            if (moduleName === 'join' || moduleName === 'joiner') {
+                const formState = formStates[node.id] || {};
+                return {
+                    name: `${moduleName}_transformation`,
+                    dependent_on: dependentOn,
+                    transformation: "Joiner",
+                    conditions: [
+                        {
+                            join_input: formState.join_input || "read_lookup_data",
+                            join_condition: formState.join_condition || "",
+                            join_type: formState.join_type || "left"
+                        }
+                    ],
+                    expressions: formState.expressions || [
+                        {
+                            target_column: formState.target_column || "",
+                            expression: formState.expression || ""
+                        }
+                    ],
+                    advanced: {
+                        hints: [
+                            {
+                                join_input: formState.hint_input || "read_input_data",
+                                hint_type: formState.hint_type || "broadcast"
+                            }
+                        ]
+                    }
+                };
+            }
+
+            // Handle other transformations
+            return {
+                name: `${moduleName}_transformation`,
+                dependent_on: dependentOn,
+                transformation: node.data.label,
+                ...(formStates[node.id] || {})
+            };
+        }).filter(Boolean);
+
+        const pipelineConfig = {
+            name: "sample_pipeline",
+            description: "Sample pipeline abiding by the schemas defined",
+            version: "1.0",
+            mode: "DEBUG",
+            parameters: [],
+            sources,
+            targets,
+            transformations
+        };
+
+        console.log('Pipeline Configuration:', pipelineConfig);
+        setSelectedFormState(pipelineConfig);
+        setRunDialogOpen(true);
+        return pipelineConfig;
+    }, [edges, formStates, reactFlowInstance]);
 
     const handleRunPipelineClick = useCallback(() => {
         // Helper function to perform topological sort
@@ -311,6 +559,7 @@ const BuildPlayGround: React.FC = () => {
                 setSelectedFormState={setSelectedFormState}
                 onDebugToggle={handleDebugToggle}
                 debuggedNodes={debuggedNodes}
+                handleRunClick={handleRun}
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
@@ -436,8 +685,57 @@ const BuildPlayGround: React.FC = () => {
     // Add defaultViewport configuration
     const defaultViewport = { x: 0, y: 0, zoom: 0.7 }; // Adjust zoom value as needed (0.7 = 70% zoom)
 
+    const addNodeToHistory = useCallback(() => {
+        setHistory((prev) => [...prev, { nodes, edges }]);
+        setRedoStack([]); // Clear redo stack on new action
+    }, [nodes, edges]);
+
+    const handleCut = useCallback(() => {
+        addNodeToHistory();
+        setNodes((nds) => nds.filter((node) => !node.selected));
+        setEdges((eds) => eds.filter((edge) => !edge.selected));
+    }, [nodes, edges, addNodeToHistory]);
+
+    const handleRedo = useCallback(() => {
+        if (redoStack.length > 0) {
+            const lastState = redoStack[redoStack.length - 1];
+            setRedoStack((prev) => prev.slice(0, -1));
+            setHistory((prev) => [...prev, { nodes, edges }]);
+            setNodes(lastState.nodes);
+            setEdges(lastState.edges);
+        }
+    }, [redoStack, nodes, edges]);
+
+    const handleUndo = useCallback(() => {
+        if (history.length > 0) {
+            const lastState = history[history.length - 1];
+            setHistory((prev) => prev.slice(0, -1));
+            setRedoStack((prev) => [...prev, { nodes, edges }]);
+            setNodes(lastState.nodes);
+            setEdges(lastState.edges);
+        }
+    }, [history, nodes, edges]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.key === 'x') {
+                handleCut();
+            } else if (event.ctrlKey && event.key === 'y') {
+                handleRedo();
+            } else if (event.ctrlKey && event.key === 'z') {
+                handleUndo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleCut, handleRedo, handleUndo]);
+
     return (
         <div className="p-1 ml-8">
+
             {debuggedNodesList.length > 0 && (
                 <div className="mb-4 p-2 bg-blue-50 rounded-lg">
                     <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
@@ -462,15 +760,19 @@ const BuildPlayGround: React.FC = () => {
                 </div>
             )}
             <div className="flex justify-center gap-4 mb-4">
-                <NodeDropList filteredNodes={filteredNodes} handleNodeClick={handleNodeClick} />
+                <NodeDropList
+                    filteredNodes={filteredNodes}
+                    handleNodeClick={handleNodeClick}
+                    addNodeToHistory={addNodeToHistory}
+                />
 
             </div>
             <div style={{ height: '69vh', width: '100%', }}>
                 <ReactFlow
                     nodes={nodes || []}
                     edges={edges || []}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
+                    onNodesChange={handleNodesChange}
+                    onEdgesChange={handleEdgesChange}
                     onConnect={onConnect}
                     nodeTypes={memoizedNodeTypes}
                     edgeTypes={edgeTypes}
@@ -488,11 +790,12 @@ const BuildPlayGround: React.FC = () => {
                     onZoomIn={handleZoomIn}
                     onZoomOut={handleZoomOut}
                     onCenter={handleCenter}
-                    onRun={handleRun}
+                    handleRunClick={handleRun}
                     onStop={handleStop}
                     onNext={handleNext}
                     isPipelineRunning={isPipelineRunning}
                     isLoading={false}
+                    pipelineConfig={handleRunClick}
                 />
             </div>
 
@@ -501,7 +804,7 @@ const BuildPlayGround: React.FC = () => {
                 onClose={handleDialogClose}
                 maxWidth={false}
             >
-                <DialogContent sx={{ width: '800px' }}>
+                <DialogContent sx={{ width: '1000px' }}>
                     {selectedSchema && (
                         <CreateFormFormik
                             schema={selectedSchema}

@@ -31,10 +31,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
           [key]: createDefaultValue(value)
         }), {});
       }
-      
+
       if (schema.type === 'array') {
         const emptyItem = createDefaultValue(schema.items);
-        return Array(schema.minItems || 1).fill(null).map(() => ({...emptyItem}));
+        return Array(schema.minItems || 1).fill(null).map(() => ({ ...emptyItem }));
       }
 
       if (schema.enum && schema.enum.length > 0) {
@@ -46,7 +46,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       }
 
       return schema.type === 'boolean' ? false :
-             schema.type === 'number' ? 0 : '';
+        schema.type === 'number' ? 0 : '';
     };
 
     return createDefaultValue(schema) as FormValues;
@@ -72,18 +72,34 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 };
 
 const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section: string) => {
+  console.log(arraySchema);
   return (
     <FieldArray
       name={section}
       render={arrayHelpers => (
         <Box>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            {Object.entries(arraySchema.items).map(([fieldKey, fieldSchema]: [string, any]) => (
+              <Box key={fieldKey} sx={{ flex: 1 }}>
+                <Box sx={{ mb: 1, fontWeight: 'bold' }}>
+                  {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' ')}
+                </Box>
+              </Box>
+            ))}
+            <Box sx={{ width: 40 }} />
+          </Box>
+
           {(values[section] || [])?.map((field: any, index: number) => (
             <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
               {Object.entries(arraySchema.items).map(([fieldKey, fieldSchema]: [string, any]) => {
-                const defaultValue = fieldSchema.enum ? fieldSchema.enum[0] : 
-                                   fieldSchema.type === 'boolean' ? false :
-                                   fieldSchema.type === 'number' ? 0 : '';
-                
+                const defaultValue = fieldSchema.enum ? fieldSchema.enum[0] :
+                  fieldSchema.type === 'boolean' ? false :
+                    fieldSchema.type === 'number' ? 0 : '';
+
+                const isExpression = fieldSchema.type === 'expression';
+
                 return (
                   <Box key={fieldKey} sx={{ flex: 1 }}>
                     <FormField
@@ -92,6 +108,7 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
                       fieldKey={fieldKey}
                       enumValues={fieldSchema.enum}
                       value={field[fieldKey] ?? defaultValue}
+                      isExpression={isExpression}
                     />
                   </Box>
                 );
@@ -110,9 +127,9 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
               const emptyItem = Object.keys(arraySchema.items).reduce(
                 (acc, key) => ({
                   ...acc,
-                  [key]: arraySchema.items[key].enum ? 
-                         (arraySchema.items[key].default || arraySchema.items[key].enum[0]) :
-                         arraySchema.items[key].type === 'boolean' ? false : ''
+                  [key]: arraySchema.items[key].enum ?
+                    (arraySchema.items[key].default || arraySchema.items[key].enum[0]) :
+                    arraySchema.items[key].type === 'boolean' ? false : ''
                 }),
                 {}
               );
@@ -142,8 +159,8 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
       <Box sx={{ width: '100%' }}>
         {schema.ui_type === 'tab-container' ? (
           <>
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onChange={(_, newValue) => setActiveTab(newValue)}
               sx={{
                 '& .MuiTabs-indicator': {
@@ -155,12 +172,12 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
               }}
             >
               {Object.keys(schema.properties).map((key) => (
-                <Tab 
-                  sx={{ textTransform: 'none' }} 
-                  key={key} 
-                  label={key.replace(/_/g, ' ').split(' ').map(word => 
+                <Tab
+                  sx={{ textTransform: 'none' }}
+                  key={key}
+                  label={key.replace(/_/g, ' ').split(' ').map(word =>
                     word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')} 
+                  ).join(' ')}
                 />
               ))}
             </Tabs>
@@ -174,7 +191,7 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
         ) : schema.ui_type === 'array-container' ? (
           <Stack spacing={2}>
             <Box>
-              {renderArrayFields(schema.properties.derived_fields, values, 'derived_fields')}
+              {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, values, 'derived_fields') : renderArrayFields(schema.properties?.sort_columns, values, 'sort_columns')}
             </Box>
           </Stack>
         ) : (
@@ -182,11 +199,12 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
             {Object.entries(schema.properties).map(([key, value]: [string, any]) => (
               <Box key={key}>
                 <h3>{key.replace(/_/g, ' ').toUpperCase()}</h3>
-                <FormField 
-                  fieldSchema={value} 
-                  name={key} 
+                <FormField
+                  fieldSchema={value}
+                  name={key}
                   fieldKey={key}
                   value={values[key]}
+                  isExpression={value.type === 'expression'}
                 />
               </Box>
             ))}
@@ -194,9 +212,9 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
         )}
 
         <Box sx={{ mt: 3 }}>
-          <Button 
-            sx={buttonStyles.submitButton} 
-            type="submit" 
+          <Button
+            sx={buttonStyles.submitButton}
+            type="submit"
             variant="contained"
           >
             Save

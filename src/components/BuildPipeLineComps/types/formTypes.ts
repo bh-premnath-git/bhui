@@ -59,3 +59,9 @@ export interface Schema {
   nodeId?: string;
   [key: string]: any;
 }
+
+export type ArraySchema = {
+  type: string;
+  items: Record<string, any>;
+  minItems?: number;
+};

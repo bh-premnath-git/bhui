@@ -1,5 +1,5 @@
 // Footer.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Divider, IconButton, Stack, Button, Tooltip, Tabs, Tab, Typography, Drawer, TextField, InputAdornment } from '@mui/material';
 import { PiAlignCenterHorizontalLight } from 'react-icons/pi';
 import { CiZoomIn, CiZoomOut } from 'react-icons/ci';
@@ -15,15 +15,19 @@ import schemaValidation from '@/pages/buildPipeLine/json_schema_validators.json'
 import { getTransformationCount, setIsDebug, setIsRun, startPipeLine, stopPipeLine } from '@/redux/BuildPipeLineSlice';
 import { LuZoomIn, LuZoomOut } from 'react-icons/lu';
 import { FaAutoprefixer } from 'react-icons/fa';
+import { useReactFlow } from 'reactflow';
 
-export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView, showToast }: any) {
+export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView, showToast, formStates }: any) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [open, setOpen] = useState(false);
     const [drawerHeight, setDrawerHeight]: any = useState('60%');
     const [selectedTab, setSelectedTab] = useState(0);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [selectedFormState, setSelectedFormState] = useState<any>(null);
+    const [runDialogOpen, setRunDialogOpen] = useState(false);
     const { isRun, isDebug, nodesList }: any = useSelector((state: RootState) => state.buildPipeLineApi);
     const dispatch = useDispatch();
+    const reactFlowInstance = useReactFlow();
     const toggleDrawer = (newState: boolean) => () => {
         setOpen(newState);
     };
@@ -105,6 +109,91 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
 
     };
 
+    const handlePipelineRun = useCallback(() => {
+        const allNodes = reactFlowInstance.getNodes();
+        const edges = reactFlowInstance.getEdges();
+
+        // Get all connected nodes in the pipeline
+        const getAllConnectedNodes = (): string[] => {
+            const visited = new Set<string>();
+            const ordered: string[] = [];
+
+            const visit = (currentId: string) => {
+                if (visited.has(currentId)) return;
+                visited.add(currentId);
+
+                // Get both incoming and outgoing edges
+                const connectedEdges = edges.filter(edge =>
+                    edge.target === currentId || edge.source === currentId
+                );
+
+                for (const edge of connectedEdges) {
+                    if (edge.source !== currentId) visit(edge.source);
+                    if (edge.target !== currentId) visit(edge.target);
+                }
+                ordered.push(currentId);
+            };
+
+            // Start from any source node
+            const sourceNode = allNodes.find(node => node.data.label.toLowerCase().includes("source"));
+            if (sourceNode) {
+                visit(sourceNode.id);
+            }
+            return ordered;
+        };
+
+        const pipelineNodeIds = getAllConnectedNodes();
+
+        // Create pipeline configuration
+        const pipelineConfig = {
+            mode: "DEBUG",
+            name: "sample",
+            description: "Complete pipeline",
+            transformations: pipelineNodeIds
+                .map(nodeId => {
+                    const node = allNodes.find(n => n.id === nodeId);
+                    if (!node) return null;
+
+                    // Handle Source nodes
+                    if (node.data.source) {
+                        return {
+                            name: node.data.source?.data_src_desc ?? "read_input_data",
+                            dependent_on: [],
+                            transformation: "Reader",
+                            file_path: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
+                            read_options: {
+                                header: true
+                            }
+                        };
+                    }
+
+                    if (!formStates[nodeId]) return null;
+
+                    const moduleName = node.data.label.split(' ')[0].toLowerCase();
+                    const incomingEdges = edges.filter(edge => edge.target === nodeId);
+                    const dependentOn = incomingEdges.map(edge => {
+                        const sourceNode = allNodes.find(n => n.id === edge.source);
+                        const sourceLabel = sourceNode?.data?.label || '';
+                        return sourceLabel.toLowerCase().includes("source") ?
+                            "read_input_data" :
+                            `${sourceLabel.split(' ')[0].toLowerCase()}_transformation`;
+                    });
+
+                    return {
+                        name: `${moduleName}_transformation`,
+                        dependent_on: dependentOn.length > 0 ? dependentOn : ['read_input_data'],
+                        transformation: node.data.label,
+                        ...formStates[nodeId]
+                    };
+                })
+                .filter(Boolean)
+        };
+
+        console.log('Complete Pipeline Configuration:', pipelineConfig);
+        setSelectedFormState(pipelineConfig);
+        setRunDialogOpen(true);
+    }, [reactFlowInstance, formStates]);
+
     return (
         <>
             <Stack
@@ -120,7 +209,11 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                 <Stack>
                     {com}
                 </Stack>
-
+                <Tooltip title="Run Pipeline" placement="bottom">
+                    <IconButton onClick={handlePipelineRun} className='shadow-sm rounded'>
+                        <IoPlay size={20} color={"black"} />
+                    </IconButton>
+                </Tooltip>
                 <Tooltip title="Run" placement="bottom">
                     <IconButton onClick={() => handleButtonClick('start')} className='shadow-sm rounded'>
                         <IoPlay size={20} style={{ color: 'black' }} />
@@ -141,11 +234,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                     </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Next" placement="bottom" className='shadow-sm rounded'>
-                    <IconButton onClick={() => isDebug ? handleButtonClick('debug') : null} >
-                        <VscDebugCoverage size={20} color={"black"} />
-                    </IconButton>
-                </Tooltip>
+
 
                 <Tooltip title="Auto Align" placement="bottom" className='shadow-sm rounded'>
                     <IconButton onClick={handleFitView}>

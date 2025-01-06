@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useState, useCallback } from "react";
 import { FlexibleTable } from "@/components/Tabel";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
@@ -272,6 +272,66 @@ interface ColumnMetadata {
   valueDistribution: Record<string, ValueDistribution>;
   totalCount: number;
 }
+
+// Add new interfaces for API requests
+interface CreateDataSourceRequest {
+  data_src_name: string;
+  data_src_desc: string;
+  data_src_tags: Record<string, any>;
+  lake_zone_id: number;
+  data_src_key: string;
+  connection_config_id: number;
+  bh_project_id: number;
+  data_src_quality: string;
+  data_src_status_cd: number;
+}
+
+interface CreateDataSourceLayoutRequest {
+  data_src_lyt_name: string;
+  data_src_lyt_fmt_cd: number;
+  data_src_lyt_delimiter_cd: number;
+  data_src_lyt_cust_delimiter: string;
+  data_src_lyt_header: boolean;
+  data_src_lyt_encoding_cd: number;
+  data_src_lyt_quote_chars_cd: number;
+  data_src_lyt_escape_chars_cd: number;
+  data_src_lyt_pk: boolean;
+  data_src_lyt_type_cd: number;
+  data_src_lyt_is_mandatory: boolean;
+  data_src_file_type: string;
+  data_src_id: number;
+  data_src_lyt_key: string;
+}
+
+interface LayoutField {
+  lyt_fld_name: string;
+  lyt_fld_desc: string;
+  lyt_fld_order: number;
+  lyt_fld_is_pk: boolean;
+  lyt_fld_data_type_cd: number;
+  lyt_fld_tags: Record<string, any>;
+  lyt_id: number;
+  lyt_fld_key: string;
+}
+
+// Add helper function to get headers with token
+const getAuthHeaders = () => {
+  // Try different possible token storage keys
+  const token = sessionStorage.getItem('token');
+
+  if (!token) {
+    console.error('No authentication token found');
+    throw new Error('Authentication token is missing');
+  }
+
+  // Remove any surrounding quotes from the token
+  const cleanToken = token.replace(/^["'](.+)["']$/, '$1');
+
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${cleanToken}`
+  };
+};
 
 function DataCatalogTable({
   catalogList,
@@ -691,6 +751,140 @@ function DataCatalogTable({
     );
   };
 
+  const createDataSource = async (fileName: string) => {
+    try {
+      const request: CreateDataSourceRequest = {
+        data_src_name: fileName,
+        data_src_desc: `Imported from ${fileName}`,
+        data_src_tags: {},
+        lake_zone_id: 1,
+        data_src_key: fileName.toLowerCase().replace(/\s+/g, '_'),
+        connection_config_id: 1,
+        bh_project_id: 1,
+        data_src_quality: "100",
+        data_src_status_cd: 1
+      };
+
+      const response = await fetch('http://localhost:8011/api/v1/data_source/', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) throw new Error('Failed to create data source');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating data source:', error);
+      throw error;
+    }
+  };
+
+  const createDataSourceLayout = async (dataSourceId: number, fileName: string) => {
+    try {
+      const request: CreateDataSourceLayoutRequest = {
+        data_src_lyt_name: fileName,
+        data_src_lyt_fmt_cd: 1,
+        data_src_lyt_delimiter_cd: delimiter === ',' ? 1 : delimiter === ';' ? 2 : 3,
+        data_src_lyt_cust_delimiter: delimiter,
+        data_src_lyt_header: true,
+        data_src_lyt_encoding_cd: encoding === 'UTF-8' ? 1 : 2,
+        data_src_lyt_quote_chars_cd: quoteChar === '"' ? 1 : 2,
+        data_src_lyt_escape_chars_cd: 1,
+        data_src_lyt_pk: true,
+        data_src_lyt_type_cd: 1,
+        data_src_lyt_is_mandatory: true,
+        data_src_file_type: 'csv',
+        data_src_id: dataSourceId,
+        data_src_lyt_key: `${fileName.toLowerCase().replace(/\s+/g, '_')}_layout`
+      };
+
+      const response = await fetch('http://localhost:8011/api/v1/data_source_layout/', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) throw new Error('Failed to create data source layout');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating data source layout:', error);
+      throw error;
+    }
+  };
+
+  const createLayoutFields = async (layoutId: number) => {
+    try {
+      const layoutFields: LayoutField[] = columnMetadata.map((meta, index) => ({
+        lyt_fld_name: meta.name,
+        lyt_fld_desc: meta.name,
+        lyt_fld_order: index + 1,
+        lyt_fld_is_pk: meta.isPrimaryKey,
+        lyt_fld_data_type_cd: getDataTypeCode(meta.dataType),
+        lyt_fld_tags: {},
+        lyt_id: layoutId,
+        lyt_fld_key: meta.name.toLowerCase().replace(/\s+/g, '_')
+      }));
+
+      const response = await fetch('http://localhost:8011/api/v1/layout_fields/bulk/', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(layoutFields)
+      });
+
+      if (!response.ok) throw new Error('Failed to create layout fields');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating layout fields:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to convert data type to code
+  const getDataTypeCode = (dataType: string): number => {
+    switch (dataType) {
+      case 'integer': return 1;
+      case 'decimal': return 2;
+      case 'string': return 3;
+      case 'date': return 4;
+      case 'boolean': return 5;
+      default: return 3;
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      if (!sessionStorage?.getItem("token")) {
+        throw new Error('Please login to import data sources');
+      }
+
+      // Step 1: Create data source
+      const fileName = (document.getElementById('file-upload') as HTMLInputElement)?.files?.[0]?.name || 'Unknown';
+      const dataSource = await createDataSource(fileName);
+      
+      // Step 2: Create data source layout
+      const layout = await createDataSourceLayout(dataSource.data_src_id, fileName);
+      
+      // Step 3: Create layout fields
+      await createLayoutFields(layout.data_src_lyt_id);
+      
+      // Close import section and refresh data
+      setShowImportSection(false);
+      dispatch(getdataSourceList({offset: 0, limit: 1000}));
+    } catch (error: any) {
+      console.error('Error during import process:', error);
+      // Show error to user
+      if (error.message.includes('token')) {
+        // Handle authentication error
+        alert('Please login again to continue');
+        // Optionally redirect to login page
+        // navigate('/login');
+      } else {
+        // Handle other errors
+        alert(error.message || 'Failed to import data source');
+      }
+    }
+  };
+
   return (
     <Box sx={{ 
       maxWidth: '100%',
@@ -839,10 +1033,7 @@ function DataCatalogTable({
                   <Button 
                     variant="contained" 
                     color="primary"
-                    onClick={() => {
-                      // Handle import logic here
-                      setShowImportSection(false);
-                    }}
+                    onClick={handleImport}
                   >
                     Import
                   </Button>

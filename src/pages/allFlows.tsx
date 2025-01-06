@@ -199,11 +199,13 @@ const AllFlows: React.FC = () => {
             navigate('/designers/manage-flow/' + result.payload.flow_id);
           }, 1000);
         }
+        return result.payload;
       } else {
-        throw new Error('Flow creation failed');
+        return result.payload ?? new Error('Flow creation failed');
       }
     } catch (err) {
       console.error("Error creating flow:", err);
+      return new Error('Flow creation failed');
       // You might want to show an error notification here
     } finally {
       setIsCreatingFlow(false);

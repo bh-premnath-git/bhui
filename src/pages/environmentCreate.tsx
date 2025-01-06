@@ -37,9 +37,9 @@ type EnvironmentTabState = {
 // Constants
 const TABS = [
   "environment",
-  "configure-lake",
+  /* "configure-lake",
   "preconfigure-zones",
-  "configure-lifecycle",
+  "configure-lifecycle", */
 ] as const;
 type TabType = (typeof TABS)[number];
 

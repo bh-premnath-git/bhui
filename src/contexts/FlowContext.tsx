@@ -28,6 +28,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [editingNode, setEditingNode] = useState<EditingNode | null>(null);
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [formdataNum, setFormDataNum] = useState(0);
 
   // NEW: track how many times we’ve triggered auto-save
   const [changeTriggerCount, setChangeTriggerCount] = useState(0);
@@ -380,7 +381,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     selectedNodeConnection,
     selectedNodeOptimized,
     fullFlowOptimizzed,
-    isDirty
+    isDirty,
+    formdataNum,
+    setFormDataNum
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

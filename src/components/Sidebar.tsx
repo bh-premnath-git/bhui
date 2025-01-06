@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
 import { Tooltip, Typography } from '@mui/material';
@@ -8,12 +8,10 @@ interface NavItem {
   icon: React.ReactNode;
   path: string;
   label: string;
-  shortcut?: string;
   subPaths?: { 
     path: string; 
     label: string;
     icon: React.ReactNode;
-    shortcut?: string;
   }[];
 }
 
@@ -22,9 +20,9 @@ interface RoleAccess {
 }
 
 const roleAccess: RoleAccess = {
-  'admin-user': ['BigHammer Search','Data Catalog', 'Admin Console'],
-  'designer-user': ['BigHammer Search','Data Catalog', 'Designer'],
-  'ops-user': ['BigHammer Search','Data Catalog', 'DataOps Hub'],
+  'admin-user': ['BigHammer AI','Data Catalog', 'Admin Console'],
+  'designer-user': ['BigHammer AI','Data Catalog', 'Designer'],
+  'ops-user': ['BigHammer AI','Data Catalog', 'DataOps Hub'],
 };
 
 const getUserRoles = () => {
@@ -33,13 +31,12 @@ const getUserRoles = () => {
 
   return decoded?.realm_access?.roles;
 };
+
 export function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [shouldCollapse, setShouldCollapse] = useState(false);
   const { pathname } = useLocation();
   const userRoles = getUserRoles();
-  const navigate = useNavigate();
 
   const allowedItems = Array.from(
     new Set(userRoles?.flatMap((role:any) => roleAccess[role] || []))
@@ -54,28 +51,6 @@ export function Sidebar() {
     setIsMounted(!isDesignerFlowWithId && pathname !== '/login');
   }, [pathname]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey) { // Command or Ctrl key
-        const allItems = menuList.flatMap(item => 
-          [item, ...(item.subPaths || [])]
-        );
-        
-        const matchingItem = allItems.find(item => 
-          item.shortcut?.toLowerCase().includes(event.key.toLowerCase())
-        );
-
-        if (matchingItem) {
-          event.preventDefault();
-          navigate(matchingItem.path);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
-
   if (!isMounted) {
     return null;
   }
@@ -85,15 +60,8 @@ export function Sidebar() {
       className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
         isExpanded ? 'w-60' : 'w-16'
       }`}
-      onMouseEnter={() => {
-        if (!shouldCollapse) {
-          setIsExpanded(true);
-        }
-      }}
-      onMouseLeave={() => {
-        setIsExpanded(false);
-        setShouldCollapse(false);
-      }}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
       role="navigation"
       aria-label="Main Navigation"
     >
@@ -122,22 +90,6 @@ export function Sidebar() {
                       {item.label}
                     </span>
                   </div>
-                  {isExpanded && item.shortcut && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                        bgcolor: 'action.hover',
-                        color: 'text.secondary',
-                        fontSize: '0.6875rem',
-                        fontFamily: 'monospace'
-                      }}
-                    >
-                      {item.shortcut}
-                    </Typography>
-                  )}
                 </Link>
 
                 {item.subPaths && (
@@ -145,7 +97,7 @@ export function Sidebar() {
                     {item.subPaths.map((subPath) => (
                       <li key={subPath.path}>
                         <Tooltip 
-                          title={!isExpanded ? `${subPath.label} ${subPath.shortcut}` : ""}
+                          title={!isExpanded ? subPath.label : ""}
                           placement="right"
                           arrow
                         >
@@ -171,22 +123,6 @@ export function Sidebar() {
                                 {subPath.label}
                               </span>
                             </div>
-                            {isExpanded && subPath.shortcut && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  px: 1,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  bgcolor: 'action.hover',
-                                  color: 'text.secondary',
-                                  fontSize: '0.6875rem',
-                                  fontFamily: 'monospace'
-                                }}
-                              >
-                                {subPath.shortcut}
-                              </Typography>
-                            )}
                           </Link>
                         </Tooltip>
                       </li>

@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { listEnvironments, setEditEnvironmentData } from '@/redux/EnvironmentSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display"
-import { FolderPlus, Sparkles } from "lucide-react";
+import { FolderPlus, Settings2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -128,7 +128,7 @@ const AllEnvironments: React.FC = () => {
             <div className="relative inline-flex mb-8">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
               <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
-                <Sparkles className="w-12 h-12 text-gradient" />
+                <Settings2 className="w-12 h-12 text-gradient" />
               </div>
             </div>
 

@@ -772,7 +772,6 @@ function DataCatalogTable({
         data_src_tags: {},
         lake_zone_id: 1,
         data_src_key: (dataSourceName || fileName).toLowerCase().replace(/\s+/g, '_'),
-        connection_config_id: 1,
         bh_project_id: 1,
         data_src_quality: "100",
         data_src_status_cd: 1
@@ -902,31 +901,24 @@ function DataCatalogTable({
     <Box sx={{ 
       maxWidth: '100%',
       backgroundColor: 'background.default',
-      p: 3
+      p: 2
     }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleImportClick}
-          sx={{ mr: 1 }}
-        >
-          Import Source
-        </Button>
-      </Box>
-
-      {showImportSection && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {showImportSection ? (
+        <Paper sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              mb: 1
+              mb: 2
             }}>
               <Typography variant="h6">Import Data Source</Typography>
               <IconButton 
-                onClick={() => setShowImportSection(false)}
+                onClick={() => {
+                  setShowImportSection(false);
+                  setPreviewData([]);
+                  setFileData(null);
+                }}
                 sx={{ 
                   '&:hover': { 
                     backgroundColor: 'action.hover' 
@@ -937,7 +929,7 @@ function DataCatalogTable({
               </IconButton>
             </Box>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <input
                 type="file"
                 accept=".csv, .txt, .json, .xml"
@@ -960,22 +952,19 @@ function DataCatalogTable({
               )}
             </Box>
 
-            {/* Show options only when data is loaded */}
             {fileData && (
               <>
-                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                  <TextField
-                    label="Data Source Name"
-                    value={dataSourceName}
-                    onChange={(e) => setDataSourceName(e.target.value)}
-                    fullWidth
-                    size="small"
-                    sx={{ mb: 2 }}
-                    helperText="Override the data source name (defaults to file name)"
-                  />
-                </Box>
+                <TextField
+                  label="Data Source Name"
+                  value={dataSourceName}
+                  onChange={(e) => setDataSourceName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 2 }}
+                  helperText="Override the data source name (defaults to file name)"
+                />
 
-                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <Select
                     value={layoutType}
                     onChange={(e) => setLayoutType(e.target.value as 'delimiter' | 'json' | 'xml')}
@@ -987,7 +976,6 @@ function DataCatalogTable({
                     <MenuItem value="xml">XML</MenuItem>
                   </Select>
 
-                  {/* Show delimiter options only for delimited files */}
                   {layoutType === 'delimiter' && (
                     <>
                       <Select
@@ -1012,7 +1000,6 @@ function DataCatalogTable({
                     </>
                   )}
                   
-                  {/* Encoding is relevant for all file types */}
                   <Select
                     value={encoding}
                     onChange={(e) => handleSettingChange('encoding', e.target.value)}
@@ -1024,53 +1011,51 @@ function DataCatalogTable({
                   </Select>
                 </Box>
 
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle1" sx={{ mb: 1 }}>Preview Data</Typography>
-                  <TableContainer sx={{ maxHeight: 400 }}>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {editableHeaders.map((header, index) => {
-                            const meta = columnMetadata[index];
-                            return (
-                              <TableCell 
-                                key={index}
-                                sx={{
-                                  position: 'relative',
-                                  minWidth: '200px',
-                                  padding: '16px',
-                                  verticalAlign: 'top',
-                                  '& .MuiInputBase-root': {
-                                    margin: 0
-                                  }
-                                }}
-                              >
-                                {meta && (
-                                  <ColumnHeader
-                                    header={header}
-                                    meta={meta}
-                                    onChange={(value) => handleHeaderChange(index, value)}
-                                  />
-                                )}
-                              </TableCell>
-                            );
-                          })}
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>Preview Data</Typography>
+                <TableContainer sx={{ maxHeight: 400 }}>
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow>
+                        {editableHeaders.map((header, index) => {
+                          const meta = columnMetadata[index];
+                          return (
+                            <TableCell 
+                              key={index}
+                              sx={{
+                                position: 'relative',
+                                minWidth: '200px',
+                                padding: '16px',
+                                verticalAlign: 'top',
+                                '& .MuiInputBase-root': {
+                                  margin: 0
+                                }
+                              }}
+                            >
+                              {meta && (
+                                <ColumnHeader
+                                  header={header}
+                                  meta={meta}
+                                  onChange={(value) => handleHeaderChange(index, value)}
+                                />
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {previewData.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {editableHeaders.map((header, colIndex) => (
+                            <TableCell key={`${rowIndex}-${colIndex}`}>
+                              {row[originalHeaders[colIndex]]}
+                            </TableCell>
+                          ))}
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {previewData.map((row, rowIndex) => (
-                          <TableRow key={rowIndex}>
-                            {editableHeaders.map((header, colIndex) => (
-                              <TableCell key={`${rowIndex}-${colIndex}`}>
-                                {row[originalHeaders[colIndex]]}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                   <Button 
@@ -1085,30 +1070,31 @@ function DataCatalogTable({
             )}
           </Box>
         </Paper>
+      ) : (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleImportClick}
+            >
+              Import Source
+            </Button>
+          </Box>
+          
+          <FlexibleTable 
+            data={catalogList}
+            columns={columns}
+            itemsPerPageOptions={[10, 25, 50]}
+            defaultItemsPerPage={10}
+            tableName="Xplore"
+            createNewFn={createNewFn}
+            playRowFn={playRowFn}
+            playRow={true}
+            background="bg-black"
+          />
+        </Box>
       )}
-
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          overflow: 'hidden',
-          backgroundColor: 'background.paper',
-          '& .MuiTableContainer-root': {
-            boxShadow: 'none'
-          }
-        }}
-      >
-        <FlexibleTable 
-          data={catalogList}
-          columns={columns}
-          itemsPerPageOptions={[10, 25, 50]}
-          defaultItemsPerPage={10}
-          tableName="Xplore"
-          createNewFn={createNewFn}
-          playRowFn={playRowFn}
-          playRow={true}
-          background="bg-black"
-        />
-      </Paper>
 
       <Drawer
         anchor="right"

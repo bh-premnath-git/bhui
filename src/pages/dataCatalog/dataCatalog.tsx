@@ -352,6 +352,8 @@ function DataCatalogTable({
   const [originalHeaders, setOriginalHeaders] = useState<string[]>([]);
   const [rawFileContent, setRawFileContent] = useState<string>("");
   const [columnMetadata, setColumnMetadata] = useState<ColumnMetadata[]>([]);
+  const [dataSourceName, setDataSourceName] = useState<string>('');
+  const [layoutType, setLayoutType] = useState<'delimiter' | 'json' | 'xml'>('delimiter');
 
   useLayoutEffect(() => {
     dispatch(getGitProject());
@@ -380,6 +382,17 @@ function DataCatalogTable({
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setDataSourceName(file.name);
+      
+      // Set layout type based on file type
+      if (file.type === "application/json") {
+        setLayoutType('json');
+      } else if (file.type === "text/xml") {
+        setLayoutType('xml');
+      } else {
+        setLayoutType('delimiter');
+      }
+      
       const reader = new FileReader();
       reader.onload = async (e) => {
         const text = e.target?.result as string;
@@ -754,11 +767,11 @@ function DataCatalogTable({
   const createDataSource = async (fileName: string) => {
     try {
       const request: CreateDataSourceRequest = {
-        data_src_name: fileName,
+        data_src_name: dataSourceName || fileName,
         data_src_desc: `Imported from ${fileName}`,
         data_src_tags: {},
         lake_zone_id: 1,
-        data_src_key: fileName.toLowerCase().replace(/\s+/g, '_'),
+        data_src_key: (dataSourceName || fileName).toLowerCase().replace(/\s+/g, '_'),
         connection_config_id: 1,
         bh_project_id: 1,
         data_src_quality: "100",
@@ -783,17 +796,17 @@ function DataCatalogTable({
     try {
       const request: CreateDataSourceLayoutRequest = {
         data_src_lyt_name: fileName,
-        data_src_lyt_fmt_cd: 1,
-        data_src_lyt_delimiter_cd: delimiter === ',' ? 1 : delimiter === ';' ? 2 : 3,
-        data_src_lyt_cust_delimiter: delimiter,
+        data_src_lyt_fmt_cd: layoutType === 'json' ? 2 : layoutType === 'xml' ? 3 : 1, // 1: delimiter, 2: json, 3: xml
+        data_src_lyt_delimiter_cd: layoutType === 'delimiter' ? (delimiter === ',' ? 1 : delimiter === ';' ? 2 : 3) : 1,
+        data_src_lyt_cust_delimiter: layoutType === 'delimiter' ? delimiter : '',
         data_src_lyt_header: true,
         data_src_lyt_encoding_cd: encoding === 'UTF-8' ? 1 : 2,
-        data_src_lyt_quote_chars_cd: quoteChar === '"' ? 1 : 2,
+        data_src_lyt_quote_chars_cd: layoutType === 'delimiter' ? (quoteChar === '"' ? 1 : 2) : 1,
         data_src_lyt_escape_chars_cd: 1,
         data_src_lyt_pk: true,
         data_src_lyt_type_cd: 1,
         data_src_lyt_is_mandatory: true,
-        data_src_file_type: 'csv',
+        data_src_file_type: layoutType,
         data_src_id: dataSourceId,
         data_src_lyt_key: `${fileName.toLowerCase().replace(/\s+/g, '_')}_layout`
       };
@@ -951,25 +964,55 @@ function DataCatalogTable({
             {fileData && (
               <>
                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                  <Select
-                    value={delimiter}
-                    onChange={(e) => handleSettingChange('delimiter', e.target.value)}
-                    displayEmpty
+                  <TextField
+                    label="Data Source Name"
+                    value={dataSourceName}
+                    onChange={(e) => setDataSourceName(e.target.value)}
+                    fullWidth
                     size="small"
-                  >
-                    <MenuItem value=",">Comma (,)</MenuItem>
-                    <MenuItem value=";">Semicolon (;)</MenuItem>
-                    <MenuItem value="\t">Tab</MenuItem>
-                  </Select>
+                    sx={{ mb: 2 }}
+                    helperText="Override the data source name (defaults to file name)"
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                   <Select
-                    value={quoteChar}
-                    onChange={(e) => handleSettingChange('quoteChar', e.target.value)}
-                    displayEmpty
+                    value={layoutType}
+                    onChange={(e) => setLayoutType(e.target.value as 'delimiter' | 'json' | 'xml')}
                     size="small"
+                    sx={{ minWidth: 150 }}
                   >
-                    <MenuItem value='"'>Double Quote (")</MenuItem>
-                    <MenuItem value="'">Single Quote (')</MenuItem>
+                    <MenuItem value="delimiter">Delimited File</MenuItem>
+                    <MenuItem value="json">JSON</MenuItem>
+                    <MenuItem value="xml">XML</MenuItem>
                   </Select>
+
+                  {/* Show delimiter options only for delimited files */}
+                  {layoutType === 'delimiter' && (
+                    <>
+                      <Select
+                        value={delimiter}
+                        onChange={(e) => handleSettingChange('delimiter', e.target.value)}
+                        displayEmpty
+                        size="small"
+                      >
+                        <MenuItem value=",">Comma (,)</MenuItem>
+                        <MenuItem value=";">Semicolon (;)</MenuItem>
+                        <MenuItem value="\t">Tab</MenuItem>
+                      </Select>
+                      <Select
+                        value={quoteChar}
+                        onChange={(e) => handleSettingChange('quoteChar', e.target.value)}
+                        displayEmpty
+                        size="small"
+                      >
+                        <MenuItem value='"'>Double Quote (")</MenuItem>
+                        <MenuItem value="'">Single Quote (')</MenuItem>
+                      </Select>
+                    </>
+                  )}
+                  
+                  {/* Encoding is relevant for all file types */}
                   <Select
                     value={encoding}
                     onChange={(e) => handleSettingChange('encoding', e.target.value)}

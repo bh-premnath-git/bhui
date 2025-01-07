@@ -184,5 +184,6 @@ export interface FlowContextType {
   fullFlowOptimizzed: () => boolean;
   formdataNum: number;
   setFormDataNum: React.Dispatch<React.SetStateAction<number>>;
-
+  setAiflowStrructre: (data: any) => void;
+  setConsequentTaskDetail: (task: any, detail: any) => void;
 }

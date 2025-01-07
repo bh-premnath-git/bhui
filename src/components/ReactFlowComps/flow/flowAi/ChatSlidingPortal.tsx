@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X } from 'lucide-react'
 import { ChatHeader } from './ChatHeader'
 import { ChatConversation } from './ChatConversation'
 import { ChatInput } from './ChatInput'
 import { useConversation } from './UseConversation'
-import { ConversationEntry } from './types'
 
 interface ChatSlidingPortalProps {
   isOpen: boolean

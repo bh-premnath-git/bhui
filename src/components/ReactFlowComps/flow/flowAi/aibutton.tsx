@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
 import { ChatSlidingPortal } from './ChatSlidingPortal'
 
 const SparkleButton = () => {

@@ -109,8 +109,12 @@ export function FlowEditor() {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-      // Add small delay before checking viewport after node changes
+      setNodes((nds) => applyNodeChanges(changes, nds).map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+        },
+      })));
       setTimeout(checkAndFitView, 50);
     },
     [setNodes, checkAndFitView]

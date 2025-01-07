@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Copy, Check } from 'lucide-react'
+import { useFlow } from '@/contexts/FlowContext'
 
 interface ResponseContentProps {
   response: string
@@ -9,7 +10,7 @@ interface ResponseContentProps {
 export const ResponseContent: React.FC<ResponseContentProps> = ({ response, id }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
-
+  const { setAiflowStrructre } = useFlow()
   const MAX_PREVIEW_LENGTH = 500
 
   let formattedResponse = response
@@ -29,6 +30,10 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({ response, id }
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
+
+  useEffect(() => {
+    setAiflowStrructre(formattedResponse)
+  }, [formattedResponse])
 
   return (
     <div className="relative">

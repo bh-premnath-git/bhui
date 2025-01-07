@@ -192,6 +192,7 @@ const AllFlows: React.FC = () => {
         dispatch(setSelectedFlowFromList(null));
         dispatch(setSelectedFlowFromList(result.payload));
         dispatch(setDagRunId(null));
+        setSelectedFlowId(result.payload.flow_id);
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
@@ -213,6 +214,7 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
+    console.log("Playground >>>", data);
     const details = LocalStorageService.getItem(`flow-${data.flow_id}`)
     setSelectedFlowId(data.flow_id);
     dispatch(setSelectedFlowFromList(null));

@@ -10,6 +10,8 @@ import kc from './configration/keycloak';
 import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { ThemeProvider } from '@mui/material';
+import { ThemeProvider as ThemesProvides } from "@/contexts/ThemeContext";
+
 import { routeList, theme } from '@/router/route';
 import { ErrorBoundary } from "@/ErrorBoundry"
 
@@ -112,25 +114,26 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <ErrorBoundary>
-        <FlowProvider>
-          <Provider store={store}>
-            <BrowserRouter>
-              <Suspense fallback={<Loading />}>
-                <Routes>
-                  <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                    {routeList.map((route, index) => (
-                      <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                    ))}
-                  </Route>
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </Provider>
-        </FlowProvider>
-        <ToastContainer />
-      </ErrorBoundary>
-
+      <ThemesProvides>
+        <ErrorBoundary>
+          <FlowProvider>
+            <Provider store={store}>
+              <BrowserRouter>
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                      {routeList.map((route, index) => (
+                        <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                      ))}
+                    </Route>
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </Provider>
+          </FlowProvider>
+          <ToastContainer />
+        </ErrorBoundary>
+      </ThemesProvides>
     </ThemeProvider>
   );
 }

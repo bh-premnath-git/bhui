@@ -42,8 +42,8 @@ export function useFlowOperations(
         edges,
         nodeFormData,
       };
-      await new Promise((resolve) => setTimeout(resolve, 0));
       LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
+      await new Promise((resolve) => setTimeout(resolve, 0));
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving flow:", error);

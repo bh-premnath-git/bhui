@@ -61,6 +61,7 @@ export function Header(props: HeaderProps) {
       <div className="flex-grow">
         {renderHeaderContent(renderingHeadContent(pathname))}
       </div>
+      <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">

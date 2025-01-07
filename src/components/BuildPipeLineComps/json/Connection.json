@@ -22,7 +22,7 @@
             "if": {
                 "properties": {
                     "type": {
-                        "const": "Local"
+                        "const": "local"
                     }
                 }
             },

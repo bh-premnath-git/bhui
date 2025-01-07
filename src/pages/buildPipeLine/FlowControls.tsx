@@ -1,48 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     BiZoomIn,
     BiZoomOut
 } from "react-icons/bi";
 import {
     MdOutlineCenterFocusStrong,
-    // MdOutlineFitScreen,
     MdOutlineSkipNext,
     MdOutlineStop,
+    MdSettings,
 } from "react-icons/md";
 import { HiOutlinePlay } from 'react-icons/hi';
 import { CircularProgress } from '@mui/material';
+// import SettingsModal from '@/components/CustomToolbar/SettingsModal';
 
 interface FlowControlsProps {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onCenter: () => void;
-    // onFit: () => void;
-    onRun: () => void;
+    handleRunClick: () => void;
     onStop: () => void;
     onNext: () => void;
     isPipelineRunning: boolean;
     isLoading: boolean;
+    pipelineConfig: any;
 }
 
 export const FlowControls: React.FC<FlowControlsProps> = ({
     onZoomIn,
     onZoomOut,
     onCenter,
-    // onFit,
-    onRun,
+    handleRunClick,
     onStop,
     onNext,
     isPipelineRunning,
-    isLoading
+    isLoading,
+    pipelineConfig
 }) => {
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    const handleSettingsClick = () => {
+        setIsSettingsOpen(true);
+    };
+
+    const handleCloseSettings = () => {
+        setIsSettingsOpen(false);
+    };
+
     const actions = [
         { key: 'zoom-in', icon: BiZoomIn, handler: onZoomIn },
         { key: 'zoom-out', icon: BiZoomOut, handler: onZoomOut },
         { key: 'center', icon: MdOutlineCenterFocusStrong, handler: onCenter },
-        // { key: 'fit', icon: MdOutlineFitScreen, handler: onFit },
-        { key: 'run', icon: HiOutlinePlay, handler: onRun },
+        { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
         { key: 'stop', icon: MdOutlineStop, handler: onStop },
         { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
+        { key: 'settings', icon: MdSettings, handler: pipelineConfig },
     ];
 
     return (
@@ -71,6 +82,12 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
                     </button>
                 </React.Fragment>
             ))}
+
+            {/* <SettingsModal
+                open={isSettingsOpen}
+                onClose={handleCloseSettings}
+                pipelineConfig={pipelineConfig}
+            /> */}
         </div>
     );
 };

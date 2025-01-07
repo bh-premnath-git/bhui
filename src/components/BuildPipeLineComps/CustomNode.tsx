@@ -10,11 +10,32 @@ interface Schema {
 }
 
 // Add new helper function to validate form data against schema
-const validateFormData = (formData: any, schema: any): { isValid: boolean; warnings: string[] } => {
+const validateFormData = (formData: any, schema: any, isSource: boolean, sourceData: any): { isValid: boolean; warnings: string[] } => {
     const warnings: string[] = [];
     let isValid = true;
 
-    // Check required fields
+    // Special validation for source nodes
+    if (isSource) {
+        if (!sourceData) {
+            isValid = false;
+            warnings.push("Source configuration is missing");
+            return { isValid, warnings };
+        }
+
+        // Check for required source fields
+        if (!sourceData.data_src_desc) {
+            warnings.push("Source description is missing");
+            isValid = false;
+        }
+        if (!sourceData.connection_config_id) {
+            warnings.push("Connection configuration ID is missing");
+            isValid = false;
+        }
+
+        return { isValid, warnings };
+    }
+
+    // Regular node validation
     if (schema?.required) {
         schema.required.forEach((field: string) => {
             if (!formData || !formData[field]) {
@@ -23,9 +44,6 @@ const validateFormData = (formData: any, schema: any): { isValid: boolean; warni
             }
         });
     }
-
-    // Add additional validation logic here if needed
-    // For example, checking field types, patterns, etc.
 
     return { isValid, warnings };
 };
@@ -59,6 +77,22 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     useEffect(() => {
         const formData = formStates[id];
         const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
+        const isSource = data.label.toLowerCase().includes("source");
+
+        if (isSource) {
+            const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
+            if (isValid) {
+                setValidationStatus('valid');
+                setValidationMessages([]);
+            } else if (warnings.length === 1 && warnings[0] === "Source configuration is missing") {
+                setValidationStatus('error');
+                setValidationMessages(warnings);
+            } else {
+                setValidationStatus('warning');
+                setValidationMessages(warnings);
+            }
+            return;
+        }
 
         if (!formData) {
             setValidationStatus('error');
@@ -67,7 +101,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         }
 
         if (nodeSchema) {
-            const { isValid, warnings } = validateFormData(formData, nodeSchema);
+            const { isValid, warnings } = validateFormData(formData, nodeSchema, false, null);
             if (isValid) {
                 setValidationStatus('valid');
                 setValidationMessages([]);
@@ -76,7 +110,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 setValidationMessages(warnings);
             }
         }
-    }, [formStates, id, data.label]);
+    }, [formStates, id, data.label, data.source]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -216,6 +250,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 .map(nodeId => {
                     const node = allNodes.find(n => n.id === nodeId);
                     if (!node) return null;
+                    console.log(node.data.label)
 
                     // Handle Source nodes
                     if (node.data.label.toLowerCase().includes("source")) {
@@ -269,6 +304,88 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         onDebugToggle(id, titleValue);
     }, [id, titleValue, onDebugToggle]);
 
+    // Add new handler for pipeline run
+    const handlePipelineRun = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        const allNodes = reactFlowInstance.getNodes();
+        console.log(allNodes)
+        // Get all nodes in the pipeline
+        const getAllConnectedNodes = (): string[] => {
+            const visited = new Set<string>();
+            const ordered: string[] = [];
+
+            const visit = (currentId: string) => {
+                if (visited.has(currentId)) return;
+                visited.add(currentId);
+
+                // Get both incoming and outgoing edges
+                const connectedEdges = edges.filter(edge =>
+                    edge.target === currentId || edge.source === currentId
+                );
+
+                for (const edge of connectedEdges) {
+                    if (edge.source !== currentId) visit(edge.source);
+                    if (edge.target !== currentId) visit(edge.target);
+                }
+                ordered.push(currentId);
+            };
+
+            // Start from current node
+            visit(id);
+            return ordered;
+        };
+
+        const pipelineNodeIds = getAllConnectedNodes();
+
+        // Create pipeline configuration
+        const pipelineConfig = {
+            mode: "DEBUG",
+            name: "sample",
+            description: "Complete pipeline",
+            transformations: pipelineNodeIds
+                .map(nodeId => {
+                    const node = allNodes.find(n => n.id === nodeId);
+                    if (!node) return null;
+                    // Handle Source nodes
+                    if (node.data.source) {
+                        return {
+                            name: node.data.source?.data_src_desc ?? "read_input_data",
+                            dependent_on: [],
+                            transformation: "Reader",
+                            file_path: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
+                            read_options: {
+                                header: true
+                            }
+                        };
+                    }
+
+                    if (!formStates[nodeId]) return null;
+
+                    const moduleName = node.data.label.split(' ')[0].toLowerCase();
+                    const incomingEdges = edges.filter(edge => edge.target === nodeId);
+                    const dependentOn = incomingEdges.map(edge => {
+                        const sourceNode = allNodes.find(n => n.id === edge.source);
+                        const sourceLabel = sourceNode?.data?.label || '';
+                        return sourceLabel.toLowerCase().includes("source") ?
+                            "read_input_data" :
+                            `${sourceLabel.split(' ')[0].toLowerCase()}_transformation`;
+                    });
+
+                    return {
+                        name: `${moduleName}_transformation`,
+                        dependent_on: dependentOn.length > 0 ? dependentOn : ['read_input_data'],
+                        transformation: node.data.label,
+                        ...formStates[nodeId]
+                    };
+                })
+                .filter(Boolean)
+        };
+
+        console.log('Complete Pipeline Configuration:', pipelineConfig);
+        setSelectedFormState(pipelineConfig);
+        setRunDialogOpen(true);
+    }, [id, edges, reactFlowInstance, formStates, setSelectedFormState, setRunDialogOpen]);
+
     return (
         <div className="relative group" style={{ minWidth: 50 }}>
             {showToolbar && (
@@ -313,6 +430,12 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                             />
                         </svg>
                     </button>
+                    <button className="p-0.5 hover:bg-gray-100 rounded" title="Run Pipeline" onClick={handlePipelineRun}>
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
                 </div>
             )}
             {debuggedNodes.has(id) && (
@@ -355,26 +478,33 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     </div>
 
                     <div className="flex">
-
-                        <div className=" flex items-center justify-center"
+                        {/* {JSON.stringify(data)} */}
+                        {/* Only show validation indicator if not a source node */}
+                        <div className="flex items-center justify-center"
                             onMouseEnter={() => setShowValidationTooltip(true)}
                             onMouseLeave={() => setShowValidationTooltip(false)}>
-                            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${validationStatus === 'valid' ? 'bg-green-500' :
-                                validationStatus === 'warning' ? 'bg-yellow-500' :
-                                    validationStatus === 'error' ? 'bg-red-500' :
-                                        'bg-gray-300'
+                            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${data.label == "Source" || data.source ? (
+                                !data.source ? 'bg-red-500' :  // Show red if source data is undefined
+                                    (data?.source?.data_src_desc && data?.source?.connection_config_id) ? 'bg-green-500' :  // Show green if both fields exist
+                                        (data?.source?.data_src_desc || data?.source?.connection_config_id) ? 'bg-yellow-500' :  // Show yellow if only one field exists
+                                            'bg-red-500'  // Show red as fallback
+                            ) : (
+                                // Existing non-source validation logic
+                                validationStatus === 'valid' ? 'bg-green-500' :
+                                    validationStatus === 'warning' ? 'bg-yellow-500' :
+                                        validationStatus === 'error' ? 'bg-red-500' :
+                                            'bg-gray-300'
+                            )
                                 }`} />
 
                             {/* Validation tooltip */}
-                            {showValidationTooltip && validationMessages.length > 0 && (
+                            {showValidationTooltip && (
                                 <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
-                                              bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
-                                              text-xs w-max max-w-[280px] animate-fadeIn">
-                                    {/* Glass-morphism Tooltip Arrow */}
+                                                  bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
+                                                  text-xs w-max max-w-[280px] animate-fadeIn">
                                     <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 
-                                                    w-5 h-5 bg-white/95 backdrop-blur-sm rotate-45 border-r border-b border-gray-100"></div>
+                                                        w-5 h-5 bg-white/95 backdrop-blur-sm rotate-45 border-r border-b border-gray-100"></div>
 
-                                    {/* Status Header */}
                                     <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
                                         <div className={`p-1.5 rounded-lg ${validationStatus === 'error' ? 'bg-red-50' :
                                             validationStatus === 'warning' ? 'bg-amber-50' :
@@ -407,17 +537,42 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                                         </div>
                                     </div>
 
-                                    {/* Messages List */}
                                     <ul className="space-y-2">
-                                        {validationMessages.map((msg, idx) => (
-                                            <li key={idx} className="flex items-start gap-2.5 group">
-                                                <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
-                                                    validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
-                                                        'bg-emerald-300 group-hover:bg-emerald-400'
-                                                    }`}></span>
-                                                <span className="text-gray-600 leading-relaxed">{msg}</span>
-                                            </li>
-                                        ))}
+                                        {data.label.toLowerCase().includes('source') ? (
+                                            // Source-specific validation messages
+                                            !data.source ? (
+                                                <li className="flex items-start gap-2.5 group">
+                                                    <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-red-300 group-hover:bg-red-400"></span>
+                                                    <span className="text-gray-600 leading-relaxed">Source configuration is missing</span>
+                                                </li>
+                                            ) : (
+                                                <>
+                                                    {!data.source.data_src_desc && (
+                                                        <li className="flex items-start gap-2.5 group">
+                                                            <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
+                                                            <span className="text-gray-600 leading-relaxed">Source description is missing</span>
+                                                        </li>
+                                                    )}
+                                                    {!data.source.connection_config_id && (
+                                                        <li className="flex items-start gap-2.5 group">
+                                                            <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
+                                                            <span className="text-gray-600 leading-relaxed">Connection configuration ID is missing</span>
+                                                        </li>
+                                                    )}
+                                                </>
+                                            )
+                                        ) : (
+                                            // Existing non-source validation messages
+                                            validationMessages.map((msg, idx) => (
+                                                <li key={idx} className="flex items-start gap-2.5 group">
+                                                    <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
+                                                        validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
+                                                            'bg-emerald-300 group-hover:bg-emerald-400'
+                                                        }`}></span>
+                                                    <span className="text-gray-600 leading-relaxed">{msg}</span>
+                                                </li>
+                                            ))
+                                        )}
                                     </ul>
                                 </div>
                             )}

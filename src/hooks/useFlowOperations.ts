@@ -10,7 +10,8 @@ export function useFlowOperations(
   nodeFormData: NodeFormData[],
   selectedFlowId: string | null,
   setIsSaving: (value: boolean) => void,
-  setIsSaved: (value: boolean) => void
+  setIsSaved: (value: boolean) => void,
+  prevNodeFn: (nodeId: string) => string[] | undefined
 ) {
   const zoomIn = useCallback(() => {
     if (reactFlowInstance) {
@@ -37,10 +38,27 @@ export function useFlowOperations(
     }
     setIsSaving(true);
     try {
+      const sortedNodes = [...nodes].sort((a, b) => a.position.x - b.position.x);
+      const sortedNodeFormData = sortedNodes.map((node) => {
+        const matchFormData =
+          nodeFormData.find((f) => f.nodeId === node.id) ||
+          { nodeId: node.id, formData: {} };
+        const updatedFormData = { ...matchFormData.formData };
+        const task_id = node.data.meta.renameType ?? updatedFormData.task_id;
+        updatedFormData.task_id = task_id;
+
+        const type = node.data.selectedData;
+        updatedFormData.type = type
+
+        const dependsOn = prevNodeFn(matchFormData.nodeId)?.map(node => node) ?? [];
+        updatedFormData.dependsOn = dependsOn;
+
+        return { ...matchFormData, formData: updatedFormData };
+      });
       const flowData = {
-        nodes,
+        nodes: sortedNodes,
         edges,
-        nodeFormData,
+        nodeFormData: sortedNodeFormData,
       };
       LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
       await new Promise((resolve) => setTimeout(resolve, 0));

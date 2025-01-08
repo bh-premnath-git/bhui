@@ -11,6 +11,7 @@ import { useNodeOperations } from '@/hooks/useNodeOperations';
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
 import { useModules } from "@/hooks/useModules";
+import { LocalStorageService } from '@/services/localStorageServices';
 
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
@@ -36,6 +37,24 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const [changeTriggerCount, setChangeTriggerCount] = useState(0);
 
+  const prevNodeFn = useCallback(
+    (nodeId: string): string[] | undefined => {
+      const incomingEdges = edges.filter((edge) => edge.target === nodeId);
+      if (incomingEdges.length === 0) return undefined;
+      const sourceNodeIds = incomingEdges.map((edge) => edge.source);
+      const currentNodeformData = LocalStorageService.getItem(`flow-${selectedFlowId}`).nodeFormData;
+
+      const previousNodesFormData = currentNodeformData.filter((formData) =>
+        sourceNodeIds.includes(formData.nodeId)
+      );
+      if (previousNodesFormData.length === 0) return undefined;
+
+      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
+      return taskIds;
+    },
+    [edges, nodeFormData]
+  );
+
   const {
     deleteNode,
     deleteSelectedNodes,
@@ -58,7 +77,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     nodeFormData,
     selectedFlowId,
     setIsSaving,
-    setIsSaved
+    setIsSaved,
+    prevNodeFn
   );
 
   const {
@@ -101,23 +121,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode(node || null);
     },
     [nodes]
-  );
-
-  const prevNodeFn = useCallback(
-    (nodeId: string): string[] | undefined => {
-      const incomingEdges = edges.filter((edge) => edge.target === nodeId);
-      if (incomingEdges.length === 0) return undefined;
-      const sourceNodeIds = incomingEdges.map((edge) => edge.source);
-
-      const previousNodesFormData = nodeFormData.filter((formData) =>
-        sourceNodeIds.includes(formData.nodeId)
-      );
-      if (previousNodesFormData.length === 0) return undefined;
-
-      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
-      return taskIds;
-    },
-    [edges, nodeFormData]
   );
 
   const toggleAutoSave = useCallback(() => {
@@ -317,10 +320,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
             tempSave: false,
             label: matchedModule.label,
             selectedData: null,
-            type: matchedoperator.type,
+            type: "",
             status: "pending",
             meta: {
-              type: matchedoperator.type,
+              type: "",
               moduleInfo: {
                 color: matchedModule.color,
                 icon: matchedModule.icon,
@@ -339,8 +342,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }
 
   const setConsequentTaskDetail = (task: any, detail: any) => {
-    console.log(">>", task, detail);
-
   }
 
 

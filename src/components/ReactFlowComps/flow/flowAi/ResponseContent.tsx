@@ -33,7 +33,7 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({ response, id }
 
   useEffect(() => {
     setAiflowStrructre(formattedResponse)
-  }, [formattedResponse])
+  }, [])
 
   return (
     <div className="relative">

@@ -196,9 +196,7 @@ const AllFlows: React.FC = () => {
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
-          setTimeout(() => {
-            navigate('/designers/manage-flow/' + result.payload.flow_id);
-          }, 1000);
+          navigate('/designers/manage-flow/' + result.payload.flow_id);
         }
         return result.payload;
       } else {

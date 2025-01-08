@@ -13,7 +13,7 @@ interface NodeContentProps {
     color: string;
     icon: string;
   };
-  isHovered: React.SetStateAction<boolean>;
+  isHovered: boolean;
 }
 
 export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeContentProps) => {
@@ -22,21 +22,31 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
   const toolbarRef = useRef<NodeToolBarRef>(null);
   const editableRef = useRef<HTMLDivElement>(null);
 
-
+  // Try placing cursor at end when editing becomes true
   useEffect(() => {
     if (isEditing && editableRef.current) {
       editableRef.current.focus();
+
+      // Place cursor at the end of content
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editableRef.current);
+      // Collapse range at the end (false)
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
     }
   }, [isEditing]);
 
+  // Validation
   const [isValid, status] = flowNodeValidator(selectedNodeConnection(id));
-
   useEffect(() => {
     if (isValid) {
       selectedNodeOptimized(id);
     }
   }, [isValid, id, selectedNodeOptimized]);
 
+  // Handle blur
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     const newValue = e.target.textContent || '';
     if (newValue !== type) {
@@ -46,6 +56,7 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
     toolbarRef.current?.setEditing(false);
   };
 
+  // End editing on Enter or Escape
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === 'Escape') {
       e.preventDefault();
@@ -62,7 +73,6 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
         onStartEdit={() => setIsEditing(true)}
       />
       <div className="flex flex-col items-center gap-1 px-0">
-        {/* Icon Section */}
         <div
           className="rounded-xl w-15 h-15 flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: moduleInfo.color }}
@@ -73,11 +83,12 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
           <div className="absolute bottom-[-10px] text-[10px] font-medium text-gray-700">
             {label}
           </div>
-          {/* Container for the type with tooltip */}
           <div className="relative w-full flex justify-center items-center">
             <div
               ref={editableRef}
-              className="absolute w-17 bottom-[-22px] text-[8px] text-gray-500 text-center"
+              className="absolute bottom-[-22px] text-[8px] text-gray-500
+                         inline-block whitespace-nowrap min-w-[60px] 
+                         text-center outline-none cursor-text"
               contentEditable={isEditing}
               suppressContentEditableWarning
               onBlur={handleBlur}
@@ -87,19 +98,20 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="relative inline-flex items-center cursor-pointer">
+                    <div className="relative inline-flex items-center">
                       <div
-                        className={`absolute left-[-10px] bottom-[-4px] transform -translate-y-1/2 w-2 h-2 rounded-full ${isValid ? 'bg-green-500' : 'bg-red-500'
-                          }`}
-                      ></div>
+                        className={`absolute left-[-10px] bottom-[-4px]
+                                    transform -translate-y-1/2 w-2 h-2 rounded-full 
+                                    ${isValid ? 'bg-green-500' : 'bg-red-500'}`}
+                      />
                       <span>{type ?? "SelectType"}</span>
                     </div>
                   </TooltipTrigger>
-                  {/* Tooltip Content with Reddish Background */}
                   <TooltipContent
                     side="top"
                     align="center"
-                    className="bg-red-100 text-red-700 border border-red-200 rounded-md shadow-lg p-1 text-[8px]" // reduced font size
+                    className="bg-red-100 text-red-700 border border-red-200 
+                               rounded-md shadow-lg p-1 text-[8px]"
                   >
                     <ul className="leading-tight">
                       {Array.isArray(status) && status.length > 0 ? (

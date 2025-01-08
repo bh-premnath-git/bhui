@@ -43,7 +43,7 @@ export function FlowEditor() {
     if (!reactFlowWrapper.current || nodes.length === 0) return;
 
     const { width, height } = reactFlowWrapper.current.getBoundingClientRect();
-    const bounds = getNodesBounds(nodes);
+    getNodesBounds(nodes);
     const viewport = getViewport();
 
     // Calculate visible area boundaries
@@ -102,7 +102,10 @@ export function FlowEditor() {
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      setEdges((eds) => applyEdgeChanges(changes, eds));
+      setEdges((eds) => applyEdgeChanges(changes, eds).map((edge) => ({
+        ...edge,
+      }))
+      );
     },
     [setEdges]
   );
@@ -125,7 +128,7 @@ export function FlowEditor() {
       setReactFlowInstance(instance);
       setTimeout(() => {
         fitView({ padding: 0.2, duration: 0 });
-      }, 100);
+      }, 0);
     },
     [setReactFlowInstance, fitView]
   );

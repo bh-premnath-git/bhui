@@ -107,12 +107,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         if (!selectedNode) return;
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
-            type: selectedValue !== "" ? selectedValue : selectedNode.data.type ?? selectedNode.data.meta.type ?? "",
             task_id: taskID,
-            dependsOn,
+            /*type: selectedValue !== "" ? selectedValue : selectedNode.data.type ?? selectedNode.data.meta.type ?? "",
+              dependsOn, */
             [key]: value,
         });
-        
+
         saveFlow()
     }, [selectedNode, currentFormData, dependsOn, updateNodeFormData]);
 

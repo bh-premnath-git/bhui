@@ -47,7 +47,7 @@ export default function BigHammerSearch() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:9090/platform_search', {
+      const res = await fetch('http://localhost:8090/api/v1/platform_search/platform_search', {
         method: 'POST',
         headers: {
           Accept: 'application/json',

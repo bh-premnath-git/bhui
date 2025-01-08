@@ -222,7 +222,7 @@ const BuildPlayGround: React.FC = () => {
         const sources = sourceNodes.map(node => ({
             name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
             source_type: "File",
-            file_name: `${node.data.source?.file_name || "input.csv"}`,
+            file_name: `${node.data.source?.file_path_prefix || "examples/"}${node.data.source?.file_name || "NaN"}`,
             connection: {
                 name: node.data.source?.connection_name || "local_connection",
                 connection_type: node.data.source?.connection_type || "Local",
@@ -276,17 +276,17 @@ const BuildPlayGround: React.FC = () => {
             console.log(node.data)
             if (node.data.label.toLowerCase().includes("source") || node.data.source) {
                 return {
-                    name: "read_" + node?.data?.title || node.data?.source?.data_src_name || "input_data",
+                    name: "read_" + node?.data?.title || node.data?.source?.data_src_name || null,
                     dependent_on: [],
                     transformation: "Reader",
                     source: {
-                        name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
+                        name: node?.data?.title || node.data?.source?.data_src_name || null,
                         source_type: "File",
-                        file_name: node.data.source?.file_name || "input.csv",
+                        file_name: node.data.source?.file_name || null,
                         connection: {
-                            name: node.data.source?.connection_name || "local_connection",
-                            connection_type: node.data.source?.connection_type || "Local",
-                            file_path_prefix: node.data.source?.file_path_prefix || "examples/"
+                            name: node.data.source?.connection_name || null,
+                            connection_type: node.data.source?.connection_type || null,
+                            file_path_prefix: node.data.source?.file_path_prefix || null
                         }
                     },
                     read_options: {

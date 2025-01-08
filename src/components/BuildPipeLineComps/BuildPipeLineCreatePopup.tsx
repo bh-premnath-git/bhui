@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Stack, Typography, Modal, Link } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Field, Form, Formik, useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +10,6 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { insertPipeline, setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
 import CustomField from '@/common/CustomField';
 import { ApiService } from '@/services/apiServices';
-import useToast from '@/oldcomponents/teast-service';
 import { COLORS } from '@/Utils/constants';
 
 const style = {
@@ -87,24 +85,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                             navigate('/designers/build-playground/');
                         }
 
-                        // setSubmitting(false);
-                        // if (result && result?.payload) {
-                        // await handleClose(result);
-
-                        //     setIsLoading(false)
-                        //     await navigate('/designers/build-playground/');
-                        // } else {
-                        //     toast.success("Success Notification !", {
-                        //         position: 'top-center' as ToastPosition,
-                        //         progress: undefined,
-                        //         hideProgressBar: true,
-                        //         style: {
-                        //             marginTop: '50px',
-                        //             fontWeight: 'bold',
-                        //             fontSize: '14px' // Adjust the margin-top value as needed
-                        //         },
-                        //     });
-                        // }
                     }}
                 >
                     {({ isSubmitting }) => (
@@ -123,16 +103,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                                         placeholder="Select Project"
                                     />
                                 </Stack>
-                                {/* <Stack className='w-100'>
-                                    <CustomField
-                                        name="git_branch"
-                                        label="Branch"
-                                        controlName="input"
-                                        placeholder="Enter branch"
-                                        size="small"
-                                    />
 
-                                </Stack> */}
                                 <Stack className='w-100'>
                                     <CustomField
                                         name="pipeline_name"

@@ -144,6 +144,9 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [ToastComponent, showToast] = useToast();
   const navigate = useNavigate();
+
+  const disabledPlatforms = ["google-cloud"];
+
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
     if (currentIndex > 0) {
@@ -217,17 +220,22 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
       <Tabs value={state.activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex-1 flex justify-center">
-            <TabsList aria-label="Environment Console Tabs" className="bg-transparent">
-              {TABS.map((tab) => (
-                <TabsTrigger
-                  key={tab}
-                  value={tab}
-                  className="px-2 py-2 rounded-md transition-colors duration-200 data-[state=active]:bg-black data-[state=active]:text-white"
-                >
-                  {tab.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {TABS.length > 1 && (
+              <TabsList aria-label="Environment Console Tabs" className="bg-transparent">
+                {TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className="px-2 py-2 rounded-md transition-colors duration-200 data-[state=active]:bg-black data-[state=active]:text-white"
+                  >
+                    {tab
+                      .split("-")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
           </div>
           <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700" onClick={() => navigate('/admin-console/environment')}>
             View All Environments
@@ -260,6 +268,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
                   airflowDagBucket={state.environmentTab.airflowDagBucket}
                   privateKeyFile={state.environmentTab.privateKeyFile}
                   changeVerification={handleChangeVerification}
+                  disabledPlatforms={disabledPlatforms}
                 />
               </TabsContent>
               <TabsContent value="configure-lake">

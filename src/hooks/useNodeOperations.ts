@@ -1,12 +1,13 @@
 import { useCallback, useEffect } from 'react';
 import { Node, Edge } from 'reactflow';
-import { CustomNodeData, MetaData } from '@/types/flow';
+import { CustomNodeData, MetaData, NodeFormData } from '@/types/flow';
 
 export function useNodeOperations(
   nodes: Node<CustomNodeData>[],
   setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>,
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>,
   setSelectedNode?: (node: Node<CustomNodeData> | null) => void,
+  setNodeFormData?: React.Dispatch<React.SetStateAction<NodeFormData[]>>,
   setIsSaved?: (saved: boolean) => void
 ) {
   const deleteNode = useCallback((nodeId: string) => {
@@ -15,6 +16,9 @@ export function useNodeOperations(
       prevEdges.filter(
         (edge) => edge.source !== nodeId && edge.target !== nodeId
       )
+    );
+    setNodeFormData((prevFormData) =>
+      prevFormData.filter((formData) => formData.nodeId !== nodeId)
     );
     // Clear selected node if it was deleted
     setSelectedNode?.(null);

@@ -212,8 +212,7 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
-    console.log("Playground >>>", data);
-    const details = LocalStorageService.getItem(`flow-${data.flow_id}`)
+    LocalStorageService.getItem(`flow-${data.flow_id}`)
     setSelectedFlowId(data.flow_id);
     dispatch(setSelectedFlowFromList(null));
     dispatch(setSelectedFlowFromList(data));

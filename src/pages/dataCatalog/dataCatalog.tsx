@@ -1127,7 +1127,7 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
       ) : (
         <Box>
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-            <Button variant="contained" color="primary" onClick={handleImportClick}>
+            <Button variant="outlined" color="primary" onClick={handleImportClick}>
               Import Source
             </Button>
           </Box>

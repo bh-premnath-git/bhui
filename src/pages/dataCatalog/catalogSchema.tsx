@@ -74,7 +74,6 @@ function CatalogSchema({ selectedSource }) {
             centered
             TabIndicatorProps={{
               style: {
-                // Removed textTransform since it doesn't apply to the indicator bar
                 backgroundColor: '#000',
                 height: 5,
                 width: '30px',

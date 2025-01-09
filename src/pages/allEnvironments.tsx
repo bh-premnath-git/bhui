@@ -63,15 +63,6 @@ const AllEnvironments: React.FC = () => {
       type: 'text',
       render: (value: string, rowData: Environment) => (
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-            {(() => {
-              const parts = value?.split(/[-_]/);
-              const initials = parts?.length > 1
-                ? (parts[0][0] + parts[1][0]).toUpperCase()
-                : value?.slice(0, 2).toUpperCase();
-              return <span className="font-bold">{initials}</span>;
-            })()}
-          </div>
           <span onClick={() => handleEnvClick(rowData)} className="cursor-pointer">
             {value}
           </span>

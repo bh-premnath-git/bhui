@@ -31,7 +31,6 @@ export default function AddFilterPopUp({ openFilter, handleFilterClose }:any) {
 
                     onSubmit={(values, { setSubmitting }) => {
                         setTimeout(() => {
-                            alert(JSON.stringify(values, null, 2));
                             setSubmitting(false);
                         }, 400);
                     }}

@@ -74,7 +74,7 @@ function CatalogSchema({ selectedSource }) {
             TabIndicatorProps={{
               style: {
                 backgroundColor: '#000',
-                height: 5,
+                height: 3,
                 width: '30px',
                 marginLeft: 'calc((100% / 1.5) / 2)',
                 borderRadius: '10px 10px 0px 0px',
@@ -102,6 +102,7 @@ function CatalogSchema({ selectedSource }) {
                 '&.Mui-selected': {
                   color: 'black',
                   fontWeight: 'bold',
+                  fontSize: '1.2rem',
                 },
               }}
               label="Schema"

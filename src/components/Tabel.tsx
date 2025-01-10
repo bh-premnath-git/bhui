@@ -84,6 +84,7 @@ interface TableProps {
   createNewFn?: () => void;
   handleAIgenFn?: () => void;
   handleAIsaveFn?: () => void;
+  importSrcFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
@@ -109,6 +110,8 @@ const TABLE_NAME_RESTRICTED_ACTIONS = ["Create New Flow", "Add Pipeline"];
 const TABLE_NAME_ACTIONS_AI = ["Catalog Table"];
 
 const TABLE_AI_COLS = ["Description"];
+
+const EXTRA_BUTTON_TABLE = ["Xplore"]
 
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
@@ -186,7 +189,7 @@ const CustomTableHeader: React.FC<{
                       <Button
                         variant="outline"
                         className={cn(
-                          "ml-2", 
+                          "ml-2",
                           saveStatus === "Success" ? "bg-green-500 text-white" : "",
                           saveStatus === "Failed" ? "bg-red-500 text-white" : "",
                           saveStatus === null || saveLoading ? " text-black" : ""
@@ -485,6 +488,7 @@ export function FlexibleTable({
   createNewFn,
   handleAIgenFn,
   handleAIsaveFn,
+  importSrcFn,
   actionFn,
   playRow = false,
   playRowFn,
@@ -602,6 +606,10 @@ export function FlexibleTable({
     if (handleAIsaveFn) handleAIsaveFn();
   }, [handleAIsaveFn]);
 
+  const handleImportSRC = useCallback(() => {
+    if (importSrcFn) importSrcFn();
+  }, [importSrcFn])
+
   return (
     <div className="container mx-auto p-1">
       <div className="flex justify-between items-center mb-4">
@@ -623,6 +631,21 @@ export function FlexibleTable({
               onChange={handleSearchChange}
             />
           )}
+          {
+            tableName && EXTRA_BUTTON_TABLE.includes(tableName) && (
+              <Button
+                variant="default"
+                className={cn(
+                  TABLE_NAME_CHECK_LIST.includes(tableName)
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : `${background} hover:${background} text-white`
+                )}
+                onClick={handleImportSRC}
+              >
+                Import Source
+              </Button>
+            )
+          }
           {tableName && !TABLE_NAME_ACTIONS_AI.includes(tableName) && (
             <Button
               variant="default"

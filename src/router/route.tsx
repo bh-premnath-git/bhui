@@ -87,45 +87,77 @@ export const routeList = [
 ];
 
 export const theme = createTheme({
-  typography: {
-    fontFamily: 'Inter ',
-  },
-  components: {
-
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          fontFamily: 'Inter',
-          textTransform: 'none',
-        },
-      }
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#000000',
+      contrastText: '#ffffff',
     },
+    secondary: {
+      main: '#ffffff',
+      contrastText: '#000000',
+    },
+    text: {
+      primary: '#000000', 
+      secondary: '#555555' 
+    },
+    background: {
+      default: '#ffffff',
+      paper: '#ffffff',
+    },
+    divider: '#000000',
+    action: {
+      active: '#000000',
+      hover: '#efefef', 
+      selected: '#f7f7f7',
+      disabled: '#bfbfbf',
+      disabledBackground: '#f2f2f2',
+    },
+  },
+
+  typography: {
+    fontFamily: 'Inter',
+  },
+
+  components: {
     MuiTypography: {
       styleOverrides: {
         root: {
           fontFamily: 'Inter',
-        }
-      }
+          color: '#000',
+        },
+      },
     },
+
+    // ----- Select -----
     MuiSelect: {
       styleOverrides: {
         root: {
           fontFamily: 'Inter',
           fontSize: '15px',
-          fontWeight: 'normal'
+          fontWeight: 'normal',
+          color: '#000',
+          backgroundColor: '#fff',
         },
       },
     },
+
+    // ----- MenuItem -----
     MuiMenuItem: {
       styleOverrides: {
         root: {
           fontFamily: 'Inter',
-          fontSize: '15px'
-
+          fontSize: '15px',
+          color: '#000',
+          '&.Mui-selected': {
+            backgroundColor: '#f2f2f2',
+            color: '#000',
+          },
+          '&:hover': {
+            backgroundColor: '#efefef',
+          },
         },
       },
     },
-
-  }
-
+  },
 });

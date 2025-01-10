@@ -312,6 +312,7 @@ const AlertTableDtl: React.FC<AlertTableDtlProps> = ({ jobDetailList, loading, e
           itemsPerPageOptions={[5, 10, 20]}
           defaultItemsPerPage={10}
           isAction={false}
+          rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
         />
       )}
     </div>

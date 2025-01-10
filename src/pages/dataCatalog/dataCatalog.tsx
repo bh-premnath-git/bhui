@@ -1142,6 +1142,7 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
             playRowFn={playRowFn}
             playRow={true}
             background="bg-black"
+            rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
           />
         </Box>
       )}

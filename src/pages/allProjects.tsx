@@ -200,6 +200,7 @@ const EmptyComponent: React.FC = () => {
         createNewFn={createNewFn}
         actionFn={actionFn}
         background="bg-black"
+        rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
       />
     </div>
   );

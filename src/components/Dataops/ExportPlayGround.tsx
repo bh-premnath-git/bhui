@@ -222,6 +222,7 @@ const TabContent = ({ tabs, tabIndex, handleContentChange }: any) => {
                             background="bg-black"
                             isAction={false}
                             isSearch={false}
+                            rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
                         />
                     </Stack>)}
                 </TabPanel>

@@ -59,7 +59,6 @@ function CatalogSchema({ selectedSource }) {
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
-      {/* Tabs Header */}
       <Stack
         direction="row"
         spacing={2}
@@ -98,7 +97,6 @@ function CatalogSchema({ selectedSource }) {
           >
             <Tab
               sx={{
-                // Place textTransform here, since it applies to the tab label
                 textTransform: 'none',
                 color: 'black',
                 '&.Mui-selected': {
@@ -112,8 +110,6 @@ function CatalogSchema({ selectedSource }) {
           </Tabs>
         </Stack>
       </Stack>
-
-      {/* Tab Content */}
       <Box sx={{ height: 'calc(100% - 64px)', overflow: 'auto' }}>
         <CustomTabPanel value={value} index={0}>
           <CatalogsBody selectedSource={selectedSource} />

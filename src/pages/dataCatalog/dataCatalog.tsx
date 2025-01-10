@@ -1203,13 +1203,13 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
 }
 
 const DataCatalog: React.FC = () => {
-  const { dataSourceList, loading, error: apiError } = useAppSelector(
+  const { dataSourceList, listLoading, error: apiError } = useAppSelector(
     (state: RootState) => state.catalogApi
   );
   const error = apiError ? { message: apiError } : null;
 
   return (
-    <DataCatalogTable catalogList={dataSourceList} loading={loading} error={error} />
+    <DataCatalogTable catalogList={dataSourceList} loading={listLoading} error={error} />
   );
 };
 

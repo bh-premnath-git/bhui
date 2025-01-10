@@ -27,7 +27,7 @@ import {
   ArrowRightCircle,
   Loader2,
   Save,
-  Bot
+  Gavel
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -179,7 +179,7 @@ const CustomTableHeader: React.FC<{
                       {aiLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Bot className="h-4 w-4" />
+                        <Gavel className="h-4 w-4" />
                       )}
                     </Button>
                     {isAIGenerated && (

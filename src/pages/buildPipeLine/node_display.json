@@ -126,9 +126,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/3.svg",
         "ports": {
-          "inputs": 1,
+          "inputs": 2,
           "outputs": 1,
-          "maxInputs": 1
+          "maxInputs": 2
         }
       }
     },

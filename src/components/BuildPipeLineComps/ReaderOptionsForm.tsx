@@ -973,6 +973,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
 
             console.log(initialData)
+            console.log(submitValue)
             if (initialData?.connectionConfigId && submitValue === 'final') {
                 const transformedData = {
                     connection_name: connectionTypeMatch.connection_name,

@@ -210,7 +210,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }));
             setIsFormOpen(true);
         } else {
-            if (data?.source || data?.label === "Source") {
+            console.log('Schema not found for:', data);
+            if (data?.source || data?.label === "Reader") {
                 console.log(data?.source)
                 setSelectedSourceLabel("Source");
                 setSelectedSource(data?.source)

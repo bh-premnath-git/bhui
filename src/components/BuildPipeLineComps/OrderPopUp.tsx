@@ -13,13 +13,11 @@ import PreviewTable from "./PreviewTable";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
 import { ApiService } from "@/services/apiServices";
 
-export default function OrderPopUp({ isOpen, onClose, source }: any) {
+export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
     const [selected, setSelected] = React.useState(0);
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
     const [initialData, setInitialData] = useState(null);
-    const handleClick1 = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
+
 
     const handleClose2 = () => {
         setAnchorEl(null);
@@ -29,7 +27,7 @@ export default function OrderPopUp({ isOpen, onClose, source }: any) {
             if (source?.connection_config_id) {
                 try {
                     const params = {
-                        id: source.connection_config_id,
+                        id: source?.connection_config_id,
                         offset: 0,
                         limit: 10,
                         order_desc: false
@@ -43,11 +41,12 @@ export default function OrderPopUp({ isOpen, onClose, source }: any) {
                         params,
                         { 'accept': 'application/json' }
                     );
+                    console.log(response)
                     if (response && response.length > 0) {
-                        // console.log(source.connection_config_id);
-                        // console.log(response[0]?.custom_metadata)
+                        console.log(response)
                         let initialData = response[0]?.custom_metadata;
-                        initialData.sourceId = source.connection_config_id;
+                        initialData.sourceId = source?.data_src_id;
+                        initialData.connectionConfigId = source?.connection_config_id;
                         console.log(initialData)
                         setInitialData(initialData);
                     } else {
@@ -185,7 +184,15 @@ export default function OrderPopUp({ isOpen, onClose, source }: any) {
 
                         {/* Content Section */}
                         <div className="">
-                            {selected === 0 && <ReaderOptionsForm onSubmit={() => { }} onClose={onClose} initialData={initialData} />}
+                            {selected === 0 && (
+                                <ReaderOptionsForm
+                                    onSubmit={() => { }}
+                                    onClose={onClose}
+                                    initialData={initialData}
+                                    nodeId={nodeId}
+                                    onSourceUpdate={onSourceUpdate}
+                                />
+                            )}
                             {selected === 1 && <SchemaTable initialData={initialData} />}
                             {selected === 2 && <OnboardTaggingStep />}
                             {selected === 3 && <PreviewTable />}

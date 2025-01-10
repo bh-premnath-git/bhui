@@ -77,12 +77,13 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                         body.tags = {};
                         // setIsLoading(true)
                         const response = await ApiService('8011', 'post', '/pipeline', body);
+                        console.log(response);
                         if (response?.error) {
                             showToast(response?.error, { color: COLORS.red });
                         } else {
                             dispatch(setBuildPipeLineDtl(response));
                             showToast("Pipe Line created successfully", { color: COLORS.green });
-                            navigate('/designers/build-playground/');
+                            navigate(`/designers/build-playground/${response?.pipeline_id}`);
                         }
 
                     }}

@@ -23,6 +23,7 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
 import { connect } from 'http2';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface UIProperties {
     color: string;
@@ -67,6 +68,9 @@ const BuildPlayGround: React.FC = () => {
     const autoSaveInterval = parseInt(time, 10) || 30000;
     const [history, setHistory] = useState<{ nodes: any[], edges: any[] }[]>([]);
     const [redoStack, setRedoStack] = useState<{ nodes: any[], edges: any[] }[]>([]);
+    const [showLeavePrompt, setShowLeavePrompt] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const fetchPipelineDetails = async () => {
@@ -147,9 +151,26 @@ const BuildPlayGround: React.FC = () => {
         console.error('Flow Error:', id);
     }, []);
 
-    const handleNodeClick = useCallback((node: Node, source: { data_src_name: string }) => {
-        console.log(source)
+    const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
+        setNodes(prevNodes =>
+            prevNodes.map(node => {
+                if (node.id === nodeId) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: updatedData.data.label,
+                            source: updatedData.data.source
+                        }
+                    };
+                }
+                return node;
+            })
+        );
+        dispatch(setUnsavedChanges());
+    }, [setNodes, dispatch]);
 
+    const handleNodeClick = useCallback((node: Node, source: any) => {
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;
@@ -170,24 +191,27 @@ const BuildPlayGround: React.FC = () => {
 
         const uniqueId = `${node.ui_properties.module_name}_${newCount}`;
 
+        // Create a more detailed node data structure
         const newNode = {
             id: uniqueId,
             type: 'custom',
             position,
             data: {
-                label: `${source?.data_src_name || node.ui_properties.module_name}`,
+                label: source?.data_src_name || node.ui_properties.module_name,
                 icon: node.ui_properties.icon,
                 ports: node.ui_properties.ports,
-                source: source
+                source: source,
+                onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
 
         setNodes((prevNodes) => [...prevNodes, newNode]);
+        dispatch(setUnsavedChanges());
 
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setNodes, nodeCounters, reactFlowInstance]);
+    }, [nodes, setNodes, nodeCounters, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleFormSubmit = useCallback((data: any) => {
         console.log('Form data:', data);
@@ -207,30 +231,22 @@ const BuildPlayGround: React.FC = () => {
     const handleRunClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         const allNodes = reactFlowInstance.getNodes();
-
-        // Get source nodes (nodes that have source data)
         const sourceNodes = allNodes.filter(node =>
             node.data.label.toLowerCase().includes("source") || node.data.source
         );
-
-        // Get target nodes (nodes with no outgoing edges)
         const targetNodes = allNodes.filter(node =>
             !edges.some(edge => edge.source === node.id)
         );
-
-        // Create sources array
         const sources = sourceNodes.map(node => ({
             name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
             source_type: "File",
-            file_name: `${node.data.source?.file_path_prefix || "examples/"}${node.data.source?.file_name || "NaN"}`,
+            file_name: `${node.data.source?.file_path_prefix || "examples"}/${node.data.source?.file_name || "NaN"}`,
             connection: {
                 name: node.data.source?.connection_name || "local_connection",
                 connection_type: node.data.source?.connection_type || "Local",
-                file_path_prefix: node.data.source?.file_path_prefix || "examples/"
+                file_path_prefix: `${node.data.source?.file_path_prefix || "examples"}/`
             }
         }));
-
-        // Create targets array
         const targets = targetNodes.map(node => ({
             name: "output_data",
             type: "File",
@@ -241,7 +257,6 @@ const BuildPlayGround: React.FC = () => {
             load_mode: "overwrite"
         }));
 
-        // Modified getOrderedNodes function for transformations
         const getOrderedNodes = () => {
             const orderedNodes: any[] = [];
             const visited = new Set<string>();
@@ -350,8 +365,8 @@ const BuildPlayGround: React.FC = () => {
         }).filter(Boolean);
 
         const pipelineConfig = {
-            name: "sample_pipeline",
-            description: "Sample pipeline abiding by the schemas defined",
+            name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
+            description: `${pipelineDtl?.pipeline_description || " "}`,
             version: "1.0",
             mode: "DEBUG",
             parameters: [],
@@ -362,81 +377,10 @@ const BuildPlayGround: React.FC = () => {
 
         console.log('Pipeline Configuration:', pipelineConfig);
         setSelectedFormState(pipelineConfig);
-        setRunDialogOpen(true);
+        // setRunDialogOpen(true);
         return pipelineConfig;
     }, [edges, formStates, reactFlowInstance]);
 
-    const handleRunPipelineClick = useCallback(() => {
-        // Helper function to perform topological sort
-        const getOrderedNodes = (nodes: any[], edges: any[]): string[] => {
-            const graph: { [key: string]: string[] } = {};
-            const visited = new Set<string>();
-            const ordered: string[] = [];
-
-            // Build adjacency list
-            nodes.forEach(node => {
-                graph[node.id] = [];
-            });
-            edges.forEach(edge => {
-                if (graph[edge.source]) {
-                    graph[edge.source].push(edge.target);
-                }
-            });
-
-            // DFS function for topological sort
-            const visit = (nodeId: string) => {
-                if (visited.has(nodeId)) return;
-                visited.add(nodeId);
-
-                // Visit all dependencies first
-                if (graph[nodeId]) {
-                    graph[nodeId].forEach(dependentId => visit(dependentId));
-                }
-
-                ordered.unshift(nodeId);
-            };
-
-            // Start DFS from each node
-            nodes.forEach(node => {
-                if (!visited.has(node.id)) {
-                    visit(node.id);
-                }
-            });
-
-            return ordered;
-        };
-
-        // Get ordered node IDs
-        const orderedNodeIds = getOrderedNodes(nodes, edges);
-
-        // Create pipeline steps in correct order
-        const pipelineSteps = orderedNodeIds
-            .map(nodeId => {
-                const node = nodes.find(n => n.id === nodeId);
-                const state = formStates[nodeId];
-                if (!node || !state) return null;
-
-                const incomingEdges = edges.filter(edge => edge.target === nodeId);
-                const dependentOn = incomingEdges.map(edge => {
-                    const sourceNode = nodes.find(n => n.id === edge.source);
-                    return sourceNode ? `${sourceNode.data.label.toLowerCase()}_transformation` : null;
-                }).filter(Boolean);
-
-                return {
-                    name: `${node.data.label.toLowerCase()}_transformation`,
-                    dependent_on: dependentOn.length > 0 ? dependentOn : ['read_input_data'],
-                    transformation: node.data.label,
-                    ...state
-                };
-            })
-            .filter(Boolean);
-
-        setPipelineConfig(pipelineSteps);
-        setSelectedFormState(pipelineSteps);
-        // setRunDialogOpen(true);
-        // console.log(pipelineSteps)
-        return pipelineSteps;
-    }, [formStates, nodes, edges]);
 
     const filteredNodes = useMemo(() => nodeData.nodes, []);
 
@@ -545,6 +489,25 @@ const BuildPlayGround: React.FC = () => {
         });
     }, []);
 
+    const handleSourceUpdate = useCallback(({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
+        setNodes(prevNodes =>
+            prevNodes.map(node => {
+                if (node.id === nodeId) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: sourceData.data.label,
+                            source: sourceData.data.source,
+                        }
+                    };
+                }
+                return node;
+            })
+        );
+        dispatch(setUnsavedChanges());
+    }, [setNodes, dispatch]);
+
     // Update memoizedNodeTypes to include debug props
     const memoizedNodeTypes = useMemo(() => ({
         custom: (props: any) => (
@@ -560,10 +523,11 @@ const BuildPlayGround: React.FC = () => {
                 onDebugToggle={handleDebugToggle}
                 debuggedNodes={debuggedNodes}
                 handleRunClick={handleRun}
+                onSourceUpdate={handleSourceUpdate}
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
-        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes]);
+        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes, handleSourceUpdate]);
 
 
 
@@ -588,23 +552,31 @@ const BuildPlayGround: React.FC = () => {
     const handleRun = useCallback(async () => {
         try {
             setIsPipelineRunning(true);
+
+            // Call handleRunClick to get the pipeline configuration
+            const pipelineConfig = handleRunClick(new Event('click') as any);
+
             const params = new URLSearchParams({
                 pipeline_name: 'sample',
-                pipeline_json: JSON.stringify(schemaValidation),
+                pipeline_json: JSON.stringify(pipelineConfig), // Use the actual config object
                 mode: 'DEBUG',
             });
+
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title);
             });
+
             const response = await ApiService(
                 "8011",
                 "post",
                 `/pipeline/debug/start_pipeline?${params.toString()}`,
                 null
             );
+
             if (response.error) {
                 throw new Error(response.error);
             }
+
             const countsResponse = await ApiService(
                 "8011",
                 "get",
@@ -623,7 +595,7 @@ const BuildPlayGround: React.FC = () => {
         } catch (error) {
             console.error('Error starting pipeline:', error);
         }
-    }, [handleRunPipelineClick, debuggedNodes]);
+    }, [handleRunClick, debuggedNodesList]);
 
     const handleStop = useCallback(async () => {
         const response = await ApiService(
@@ -733,102 +705,239 @@ const BuildPlayGround: React.FC = () => {
         };
     }, [handleCut, handleRedo, handleUndo]);
 
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (saveStatus.hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [saveStatus.hasUnsavedChanges]);
+
+    useEffect(() => {
+        // Handle browser back button
+        const handlePopState = (event: PopStateEvent) => {
+            if (saveStatus.hasUnsavedChanges) {
+                event.preventDefault();
+                setShowLeavePrompt(true);
+                // Push the current state back to maintain the current URL
+                window.history.pushState(null, '', location.pathname);
+            }
+        };
+
+        // Push initial state
+        window.history.pushState(null, '', location.pathname);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [saveStatus.hasUnsavedChanges, location.pathname]);
+
+    const handleLeavePage = useCallback(async () => {
+        try {
+            dispatch(setSaving());
+            const pipeline_json = {
+                pipeline_json: {
+                    nodes: nodes,
+                    edges: edges
+                }
+            };
+            await ApiService("8011", "patch", `/pipeline/${id}`, pipeline_json);
+            dispatch(setSaved());
+            dispatch(setUnsavedChanges());
+            setShowLeavePrompt(false);
+
+            navigate("/designers/build-datapipeline/", { replace: true });
+
+        } catch (error) {
+            console.error('Error saving pipeline state:', error);
+            dispatch(setSaveError());
+            setShowLeavePrompt(false);
+            navigate("/designers/build-datapipeline/", { replace: true });
+        }
+    }, [nodes, edges, id, dispatch, navigate]);
+
     return (
-        <div className="p-1 ml-8">
+        <div>
 
-            {debuggedNodesList.length > 0 && (
-                <div className="mb-4 p-2 bg-blue-50 rounded-lg">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {debuggedNodesList.map(({ id, title }) => (
-                            <div
-                                key={id}
-                                className="flex items-center gap-2 bg-white px-3 py-1 rounded-full text-sm text-blue-700 border border-blue-200"
-                            >
-                                <span>{title}</span>
-                                <button
-                                    onClick={() => handleDebugToggle(id, title)}
-                                    className="hover:text-blue-900"
+            <div className="p-1 ml-8">
+                {debuggedNodesList.length > 0 && (
+                    <div className="mb-4 p-2 bg-blue-50 rounded-lg">
+                        <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {debuggedNodesList.map(({ id, title }) => (
+                                <div
+                                    key={id}
+                                    className="flex items-center gap-2 bg-white px-3 py-1 rounded-full text-sm text-blue-700 border border-blue-200"
                                 >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        ))}
+                                    <span>{title}</span>
+                                    <button
+                                        onClick={() => handleDebugToggle(id, title)}
+                                        className="hover:text-blue-900"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
+                )}
+                <div className="flex justify-center gap-4 mb-4">
+                    <NodeDropList
+                        filteredNodes={filteredNodes}
+                        handleNodeClick={handleNodeClick}
+                        addNodeToHistory={addNodeToHistory}
+                    />
+
                 </div>
-            )}
-            <div className="flex justify-center gap-4 mb-4">
-                <NodeDropList
-                    filteredNodes={filteredNodes}
-                    handleNodeClick={handleNodeClick}
-                    addNodeToHistory={addNodeToHistory}
-                />
+                <div style={{ height: '69vh', width: '100%', }}>
+                    <ReactFlow
+                        nodes={nodes || []}
+                        edges={edges || []}
+                        onNodesChange={handleNodesChange}
+                        onEdgesChange={handleEdgesChange}
+                        onConnect={onConnect}
+                        nodeTypes={memoizedNodeTypes}
+                        edgeTypes={edgeTypes}
+                        onError={onError}
+                        defaultViewport={defaultViewport}
+                        minZoom={0.2}  // Minimum zoom level
+                        maxZoom={1.5}  // Maximum zoom level
+                        fitView
+                        fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }} // Adjust fitView zoom
+                        proOptions={{ hideAttribution: true }}
+                    />
+                </div>
+                <div className="flex items-center justify-end gap-4 mt-4">
+                    <FlowControls
+                        onZoomIn={handleZoomIn}
+                        onZoomOut={handleZoomOut}
+                        onCenter={handleCenter}
+                        handleRunClick={handleRun}
+                        onStop={handleStop}
+                        onNext={handleNext}
+                        isPipelineRunning={isPipelineRunning}
+                        isLoading={false}
+                        pipelineConfig={handleRunClick}
+                    />
+                </div>
 
-            </div>
-            <div style={{ height: '69vh', width: '100%', }}>
-                <ReactFlow
-                    nodes={nodes || []}
-                    edges={edges || []}
-                    onNodesChange={handleNodesChange}
-                    onEdgesChange={handleEdgesChange}
-                    onConnect={onConnect}
-                    nodeTypes={memoizedNodeTypes}
-                    edgeTypes={edgeTypes}
-                    onError={onError}
-                    defaultViewport={defaultViewport}
-                    minZoom={0.2}  // Minimum zoom level
-                    maxZoom={1.5}  // Maximum zoom level
-                    fitView
-                    fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }} // Adjust fitView zoom
-                    proOptions={{ hideAttribution: true }}
-                />
-            </div>
-            <div className="flex items-center justify-end gap-4 mt-4">
-                <FlowControls
-                    onZoomIn={handleZoomIn}
-                    onZoomOut={handleZoomOut}
-                    onCenter={handleCenter}
-                    handleRunClick={handleRun}
-                    onStop={handleStop}
-                    onNext={handleNext}
-                    isPipelineRunning={isPipelineRunning}
-                    isLoading={false}
-                    pipelineConfig={handleRunClick}
-                />
-            </div>
+                <Dialog
+                    open={isFormOpen}
+                    onClose={handleDialogClose}
+                    maxWidth={false}
+                >
+                    <DialogContent sx={{ width: '1000px' }}>
+                        {selectedSchema && (
+                            <CreateFormFormik
+                                schema={selectedSchema}
+                                onSubmit={handleFormSubmit}
+                                initialValues={formStates[selectedSchema.nodeId]}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
 
-            <Dialog
-                open={isFormOpen}
-                onClose={handleDialogClose}
-                maxWidth={false}
-            >
-                <DialogContent sx={{ width: '1000px' }}>
-                    {selectedSchema && (
-                        <CreateFormFormik
-                            schema={selectedSchema}
-                            onSubmit={handleFormSubmit}
-                            initialValues={formStates[selectedSchema.nodeId]}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
+                <Dialog
+                    open={runDialogOpen}
+                    onClose={() => setRunDialogOpen(false)}
+                    maxWidth={false}
+                >
+                    <DialogContent sx={{ width: '800px' }}>
+                        <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">
+                            {JSON.stringify(selectedFormState, null, 2)}
+                        </pre>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button sx={{ backgroundColor: '#000', color: 'white', textTransform: 'none' }} onClick={() => setRunDialogOpen(false)}>Execute</Button>
+                    </DialogActions>
+                </Dialog>
 
-            <Dialog
-                open={runDialogOpen}
-                onClose={() => setRunDialogOpen(false)}
-                maxWidth={false}
-            >
-                <DialogContent sx={{ width: '800px' }}>
-                    <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">
-                        {JSON.stringify(selectedFormState, null, 2)}
-                    </pre>
-                </DialogContent>
-                <DialogActions>
-                    <Button sx={{ backgroundColor: '#000', color: 'white', textTransform: 'none' }} onClick={() => setRunDialogOpen(false)}>Execute</Button>
-                </DialogActions>
-            </Dialog>
+                <Dialog
+                    open={showLeavePrompt}
+                    onClose={handleLeavePage}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: '12px',
+                            padding: '8px',
+                            maxWidth: '450px',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                        }
+                    }}
+                >
+                    <DialogContent sx={{ padding: '24px' }}>
+                        <div className="flex flex-col items-center text-center">
+                            {/* Warning Icon */}
+                            <div className="mb-4 p-3 rounded-full bg-amber-50">
+                                <svg
+                                    className="w-8 h-8 text-amber-500"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                    />
+                                </svg>
+                            </div>
+
+                            {/* Title and Description */}
+                            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                                Unsaved Changes
+                            </h2>
+                            <p className="text-gray-600 mb-6">
+                                You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
+                            </p>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 w-full">
+                                <Button
+                                    fullWidth
+                                    onClick={() => setShowLeavePrompt(false)}
+                                    sx={{
+                                        textTransform: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px',
+                                        backgroundColor: '#f3f4f6',
+                                        color: '#374151',
+                                        '&:hover': {
+                                            backgroundColor: '#e5e7eb'
+                                        }
+                                    }}
+                                >
+                                    Stay
+                                </Button>
+                                <Button
+                                    fullWidth
+                                    onClick={handleLeavePage}
+                                    sx={{
+                                        textTransform: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px',
+                                        backgroundColor: '#dc2626',
+                                        color: 'white',
+                                        '&:hover': {
+                                            backgroundColor: '#b91c1c'
+                                        }
+                                    }}
+                                >
+                                    Leave Page
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
     );
 };

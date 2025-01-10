@@ -9,6 +9,7 @@ import UserSlice from '@/redux/UserSlice';
 import CustomerSlice from '@/redux/CustomerSlice';
 import DataOpsSlice from '@/redux/DataOpsSlice';
 import autoSaveSlice from '@/redux/features/autoSaveSlice';
+
 export const store = configureStore({
   reducer: {
     buildPipeLineApi: BuildPipeLineSlice,
@@ -23,6 +24,7 @@ export const store = configureStore({
     autoSave: autoSaveSlice,
   },
 });
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export default store;

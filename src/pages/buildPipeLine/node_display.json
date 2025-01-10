@@ -2,7 +2,7 @@
   "nodes": [
     {
       "ui_properties": {
-        "module_name": "Source",
+        "module_name": "Reader",
         "color": "#f7a01f",
         "icon": "/assets/buildPipeline/6.svg",
         "ports": {
@@ -38,7 +38,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Join",
+        "module_name": "Joiner",
         "color": "#ff7396",
         "icon": "/assets/buildPipeline/display/join.svg",
         "ports": {

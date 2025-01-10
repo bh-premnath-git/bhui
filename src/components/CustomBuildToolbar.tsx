@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -21,13 +21,12 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-export function CustomBuildToolbar(props: any) {
+export const CustomBuildToolbar = React.memo(({ buildPipeLineDtl, showLeavePrompt, setShowLeavePrompt }: any) => {
   const [isVisual, setIsVisual] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [pipeLineName, setPipeLineName] = useState("Flow_type 1")
-  const { buildPipeLineDtl } = props;
   const navigate = useNavigate();
-  const { isSaving, lastSaved } = useSelector((state: RootState) => state.autoSave);
+  const { isSaving, lastSaved, hasUnsavedChanges } = useSelector((state: RootState) => state.autoSave);
 
   const formatLastSaved = (dateString: string | null) => {
     if (!dateString) return '';
@@ -113,6 +112,14 @@ export function CustomBuildToolbar(props: any) {
     );
   };
 
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setShowLeavePrompt(true);
+    } else {
+      navigate("/designers/build-datapipeline/");
+    }
+  };
+
   useEffect(() => {
     if (buildPipeLineDtl && buildPipeLineDtl?.pipeline_name) {
       setPipeLineName(() => buildPipeLineDtl?.pipeline_name);
@@ -125,7 +132,7 @@ export function CustomBuildToolbar(props: any) {
           <div className="flex items-center space-x-3 w-full sm:w-auto">
             <Button
               className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate("designers/build-datapipeline/")}>
+              variant="ghost" size="icon" aria-label="Go back" onClick={handleBackClick}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
@@ -168,4 +175,4 @@ export function CustomBuildToolbar(props: any) {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   )
-} 1
+}) 

@@ -108,7 +108,7 @@ const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any)
     // Handle button click to toggle dropdown visibility for "Source"
     const handleButtonClick = (node: Node) => {
         dispatch(setUnsavedChanges());
-        if (node.ui_properties.module_name === 'Source') {
+        if (node.ui_properties.module_name === 'Reader') {
             setDropdownVisible((prevState) =>
                 prevState === node.ui_properties.module_name ? null : node.ui_properties.module_name
             );
@@ -167,7 +167,7 @@ const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any)
                     </button>
 
                     {/* Dropdown for "Source" - Updated with mouse event handlers */}
-                    {node.ui_properties.module_name === 'Source' && dropdownVisible === node.ui_properties.module_name && (
+                    {node.ui_properties.module_name === 'Reader' && dropdownVisible === node.ui_properties.module_name && (
                         <div
                             className="dropdown absolute bg-white shadow-lg rounded-lg mt-2 p-2 w-80"
                             style={{ left: '-30vh' }}

@@ -22,6 +22,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDispatch } from 'react-redux';
 
 const schemaReferences: Record<string, any> = {
     "schemas/Source.json": sourceSchema,
@@ -70,6 +71,8 @@ interface ReaderOptionsFormProps {
     onSubmit?: (data: FormData) => void;
     onClose?: () => void;
     initialData?: FormData;
+    onSourceUpdate?: (updatedSource: any) => void;
+    nodeId?: string;
 }
 
 // Add this interface to type the groups
@@ -151,17 +154,6 @@ const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
     </div>
 );
 
-// Add helper function to safely get auth type
-const getAuthType = (option: any) => {
-    return option.properties?.auth_type?.const ||
-        option.properties?.method?.const ||
-        option.title || '';
-};
-
-// Add this helper function to check if a field is required in CSV options
-const isCSVFieldRequired = (fieldName: string) => {
-    return csvOptionsSchema.required?.includes(fieldName);
-};
 
 // Add this helper function to get source type specific fields
 const getSourceTypeFields = (sourceType: string) => {
@@ -204,14 +196,17 @@ const EmptyStateMessage = ({
 export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     onSubmit,
     onClose,
-    initialData
+    initialData,
+    onSourceUpdate,
+    nodeId
 }) => {
+    const dispatch = useDispatch();
     const [formData, setFormData] = useState<FormData>({});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(readerSchema);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [connectionTypes, setConnectionTypes] = useState<ConnectionType[]>([]);
     const [activeSection, setActiveSection] = useState(0);
-
+    const [submitValue, setSubmitValue] = useState('')
     // Add effect to fetch connection types
     useEffect(() => {
         fetchConnectionTypes();
@@ -234,7 +229,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     // Define resolveFileTypeSchema function
     const resolveFileTypeSchema = (schema: any) => {
         const fileTypeCondition = readerSchema.allOf?.find(
-            (condition) => condition.if.properties.file_type?.const === formData.file_type
+            (condition: any) => condition.if.properties.file_type?.const === formData.file_type
         );
 
         if (fileTypeCondition) {
@@ -497,7 +492,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                                             {schema.type === "array" && (
                                                                 <Select
                                                                     value={formData.replication_method?.[key] || schema.default?.[0] || ''}
-                                                                    onChange={(e) => {
+                                                                    onValueChange={(e: any) => {
                                                                         setFormData(prev => ({
                                                                             ...prev,
                                                                             replication_method: {
@@ -834,8 +829,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             );
         }
 
-        // Rest of your existing renderField code for handling primitive types
-        const fieldPath = path.length > 0 ? [...path, fieldName] : [fieldName];
         const fieldValue = path.reduce(
             (obj, key) => (obj?.[key] || {}),
             formData
@@ -972,27 +965,46 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             console.log(connectionTypes);
             console.log(formData.source?.connection?.type)
             // Transform data for connection config
-            const connectionTypeMatch = connectionTypes.find(type => type?.connection_name === formData?.source?.connection?.type);
+            const connectionTypeMatch = connectionTypes.find(type =>
+                type?.connection_name === formData?.source?.connection?.type
+            );
             console.log(connectionTypeMatch)
 
 
-            const transformedData = {
-                connection_config_name: formData.source?.connection?.connection_name || "default_name",
-                custom_metadata: formData,
-                connection_id: connectionTypeMatch.id,
-                connection_name: connectionTypeMatch.connection_name,
-                connection_type: "source",
-                connection_status: "active",
-                data_residency: "auto",
-                config: encryptedString,
-                init_vector: initVector
-            };
-            if (sections.length - 1) {
+
+            console.log(initialData)
+            if (initialData?.connectionConfigId && submitValue === 'final') {
+                const transformedData = {
+                    connection_name: connectionTypeMatch.connection_name,
+                    connection_description: '',
+                    connection_type: "source",
+                    connection_status: "active",
+                    data_residency: "auto",
+                    custom_metadata: formData,
+                    config: encryptedString,
+                    init_vector: initVector
+                };
+                const response = await ApiService('8011', 'put', `/connection_registry/connection_config/${initialData.connectionConfigId}`, transformedData);
+                console.log(response)
+            }
+            if (submitValue === 'final' && !initialData) {
+                const transformedData = {
+                    connection_config_name: formData.source?.connection?.connection_name || "default_name",
+                    custom_metadata: formData,
+                    connection_id: connectionTypeMatch.id,
+                    connection_name: connectionTypeMatch.connection_name,
+                    connection_type: "source",
+                    connection_status: "active",
+                    data_residency: "auto",
+                    config: encryptedString,
+                    init_vector: initVector
+                };
                 const response = await ApiService('8011', 'POST', '/connection_registry/connection_config', transformedData);
 
                 if (!response || !response.id) {
                     throw new Error('Failed to create connection configuration');
                 }
+
                 const dataSourcePayload = {
                     "connection_config_id": response.id,
                     "data_src_name": formData.source?.source_name,
@@ -1005,12 +1017,33 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     "file_path_prefix": formData?.source?.connection?.file_path_prefix ?? "",
                     "connection_type": formData?.source?.connection?.type,
                     "file_name": formData?.source?.file_name ?? '',
-
                 };
+
                 const dataSourceResponse = await ApiService('8011', 'POST', '/data_source/', dataSourcePayload);
 
                 if (dataSourceResponse) {
-                    onClose();
+                    // Create source data structure
+                    const sourceData = {
+                        data: {
+                            label: formData.source?.source_name || dataSourceResponse.data_src_name,
+                            source: {
+                                data_src_id: dataSourceResponse.id,
+                                connection_config_id: response.id,
+                                data_src_name: dataSourceResponse.data_src_name,
+                                connection_type: formData.source?.connection?.type,
+                                custom_metadata: formData,
+                                file_path_prefix: dataSourceResponse.file_path_prefix,
+                                file_name: dataSourceResponse.file_name
+                            }
+                        }
+                    };
+
+                    // Call onSourceUpdate with the nodeId and updated data
+                    if (onSourceUpdate && nodeId) {
+                        onSourceUpdate({ nodeId, sourceData });
+                    }
+
+                    onClose?.();
                     toast.success("Reader configuration saved successfully");
                 }
             }
@@ -1025,55 +1058,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             console.error('Error during form submission:', error);
             toast.error('An error occurred while saving the configuration.');
         }
-    };
-
-    const renderFields = () => {
-        const orderedFields = [];
-
-        // Always render reader_name first
-        if (currentSchema.properties.reader_name) {
-            orderedFields.push(['reader_name', currentSchema.properties.reader_name]);
-        }
-
-        // Then render name
-        if (currentSchema.properties.name) {
-            orderedFields.push(['name', currentSchema.properties.name]);
-        }
-
-        // Then render source object
-        if (currentSchema.properties.source) {
-            orderedFields.push(['source', currentSchema.properties.source]);
-        }
-
-        // If File type is selected, show file_type
-        if (formData.source?.type === 'File' && currentSchema.properties.file_type) {
-            orderedFields.push(['file_type', currentSchema.properties.file_type]);
-        }
-
-        // If Relational type is selected, show query field
-        if (formData.source?.type === 'Relational' && currentSchema.properties.query) {
-            orderedFields.push(['query', currentSchema.properties.query]);
-        }
-
-        // If CSV file type is selected, show read_options
-        if (formData.file_type === 'CSV' && currentSchema.properties.read_options) {
-            orderedFields.push(['read_options', currentSchema.properties.read_options]);
-        }
-
-        // Add remaining fields
-        Object.entries(currentSchema.properties).forEach(([fieldName, fieldSchema]) => {
-            if (!orderedFields.some(([name]) => name === fieldName)) {
-                orderedFields.push([fieldName, fieldSchema]);
-            }
-        });
-
-        return (
-            <div className="grid grid-cols-3 gap-2">
-                {orderedFields.map(([fieldName, fieldSchema]) =>
-                    renderField(fieldName, fieldSchema)
-                )}
-            </div>
-        );
     };
 
     // Update renderConnectionFields to be more dynamic
@@ -1183,24 +1167,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         );
     };
 
-    // Define renderObjectField function
-    const renderObjectField = (fieldName: string, fieldSchema: SchemaField, path: string[] = []) => {
-        return (
-            <div key={fieldName} className="mb-4">
-                <Label>
-                    {formatFieldName(fieldName)}
-                    {isRequired(fieldName, fieldSchema, path) && (
-                        <span className="text-red-500 ml-1">*</span>
-                    )}
-                </Label>
-                <div className="grid grid-cols-3 gap-2">
-                    {Object.entries(fieldSchema.properties || {}).map(([name, schema]) =>
-                        renderField(name, schema, [...path, fieldName])
-                    )}
-                </div>
-            </div>
-        );
-    };
+
 
     // Define form sections
     const sections = [
@@ -1487,6 +1454,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         {activeSection === sections.length - 1 ? (
                             <Button
                                 type="submit"
+                                onClick={() => {
+                                    setSubmitValue('final')
+                                }}
                                 className="flex items-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 text-white"
                             >
                                 Save Configuration

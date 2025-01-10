@@ -55,15 +55,6 @@ const columns: ColumnConfig[] = [
     type: 'text',
     render: (value: string, rowData: Flow) => (
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-          {(() => {
-            const parts = value?.split(/[-_]/);
-            const initials = parts?.length > 1
-              ? (parts[0][0] + parts[1][0]).toUpperCase()
-              : value?.slice(0, 2).toUpperCase();
-            return <span className="font-bold">{initials}</span>;
-          })()}
-        </div>
         <span>
           {value}
         </span>
@@ -192,18 +183,19 @@ const AllFlows: React.FC = () => {
         dispatch(setSelectedFlowFromList(null));
         dispatch(setSelectedFlowFromList(result.payload));
         dispatch(setDagRunId(null));
+        setSelectedFlowId(result.payload.flow_id);
         closeModal();
         // Only navigate if flow_id exists
         if (result.payload.flow_id) {
-          setTimeout(() => {
-            navigate('/designers/manage-flow/' + result.payload.flow_id);
-          }, 1000);
+          navigate('/designers/manage-flow/' + result.payload.flow_id);
         }
+        return result.payload;
       } else {
-        throw new Error('Flow creation failed');
+        return result.payload ?? new Error('Flow creation failed');
       }
     } catch (err) {
       console.error("Error creating flow:", err);
+      return new Error('Flow creation failed');
       // You might want to show an error notification here
     } finally {
       setIsCreatingFlow(false);
@@ -211,7 +203,7 @@ const AllFlows: React.FC = () => {
   }, [dispatch, navigate, closeModal]);
 
   const playground = useCallback((data: any) => {
-    const details = LocalStorageService.getItem(`flow-${data.flow_id}`)
+    LocalStorageService.getItem(`flow-${data.flow_id}`)
     setSelectedFlowId(data.flow_id);
     dispatch(setSelectedFlowFromList(null));
     dispatch(setSelectedFlowFromList(data));

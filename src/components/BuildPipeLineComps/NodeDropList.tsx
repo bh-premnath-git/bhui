@@ -10,8 +10,11 @@ import schema from './json/Source.json';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { ApiService } from '../../services/apiServices';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { setUnsavedChanges } from '@/redux/features/autoSaveSlice';
 
-const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
+const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any) => {
     // Track the currently opened dropdown
     const [dropdownVisible, setDropdownVisible] = useState<string | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -21,9 +24,6 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
         setOpen(true);
     };
 
-    const handleClose = () => {
-        setOpen(false);
-    };
 
     const handleMoreClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -41,7 +41,8 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
     const [filteredSources, setFilteredSources] = useState<any[]>([]);
     // Add new state to track if dropdown is being interacted with
     const [isInteractingWithDropdown, setIsInteractingWithDropdown] = useState(false);
-
+    const dispatch = useDispatch();
+    const { hasUnsavedChanges } = useSelector((state: RootState) => state.autoSave);
     // Update the fetchDataSources function
     const fetchDataSources = useCallback(async (pageNum: number) => {
         try {
@@ -106,11 +107,13 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
 
     // Handle button click to toggle dropdown visibility for "Source"
     const handleButtonClick = (node: Node) => {
-        if (node.ui_properties.module_name === 'Source') {
+        dispatch(setUnsavedChanges());
+        if (node.ui_properties.module_name === 'Reader') {
             setDropdownVisible((prevState) =>
                 prevState === node.ui_properties.module_name ? null : node.ui_properties.module_name
             );
         } else {
+            addNodeToHistory(); // Save current state before adding a new node
             handleNodeClick(node); // Handle click for other nodes
         }
     };
@@ -164,7 +167,7 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
                     </button>
 
                     {/* Dropdown for "Source" - Updated with mouse event handlers */}
-                    {node.ui_properties.module_name === 'Source' && dropdownVisible === node.ui_properties.module_name && (
+                    {node.ui_properties.module_name === 'Reader' && dropdownVisible === node.ui_properties.module_name && (
                         <div
                             className="dropdown absolute bg-white shadow-lg rounded-lg mt-2 p-2 w-80"
                             style={{ left: '-30vh' }}
@@ -197,8 +200,11 @@ const NodeDropList = ({ filteredNodes, handleNodeClick }: any) => {
                                                 className="cursor-pointer text-sm text-gray-700 flex items-center gap-2"
                                             >
                                                 <img
-                                                    src={node.ui_properties.icon}
-                                                    alt={node.ui_properties.module_name}
+                                                    src={source.connection_type === 'postgres' ? '/assets/buildPipeline/connection/postgres.png' :
+                                                        source.connection_type === 'snowflake' ? '/assets/buildPipeline/connection/snowflake.png' :
+                                                            source.connection_type === 'local' ? '/assets/buildPipeline/connection/bigquery.png' :
+                                                                node.ui_properties.icon}
+                                                    alt={source.connection_type || node.ui_properties.module_name}
                                                     className="w-9 h-9 rounded"
                                                 />
                                                 {source.data_src_name}

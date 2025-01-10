@@ -10,6 +10,9 @@ import { useDebouncedCallback } from '@/hooks/useDebounce';
 import { useNodeOperations } from '@/hooks/useNodeOperations';
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
+import { useModules } from "@/hooks/useModules";
+import { LocalStorageService } from '@/services/localStorageServices';
+
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
@@ -28,9 +31,29 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [editingNode, setEditingNode] = useState<EditingNode | null>(null);
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [formdataNum, setFormDataNum] = useState(0);
 
-  // NEW: track how many times we’ve triggered auto-save
+  const [moduleTypes] = useModules();
+
   const [changeTriggerCount, setChangeTriggerCount] = useState(0);
+
+  const prevNodeFn = useCallback(
+    (nodeId: string): string[] | undefined => {
+      const incomingEdges = edges.filter((edge) => edge.target === nodeId);
+      if (incomingEdges.length === 0) return undefined;
+      const sourceNodeIds = incomingEdges.map((edge) => edge.source);
+      const currentNodeformData = LocalStorageService.getItem(`flow-${selectedFlowId}`).nodeFormData;
+
+      const previousNodesFormData = currentNodeformData.filter((formData) =>
+        sourceNodeIds.includes(formData.nodeId)
+      );
+      if (previousNodesFormData.length === 0) return undefined;
+
+      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
+      return taskIds;
+    },
+    [edges, nodeFormData]
+  );
 
   const {
     deleteNode,
@@ -39,7 +62,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     updateNodeMeta,
     renameNode,
     updateNodeDimensions
-  } = useNodeOperations(nodes, setNodes, setEdges, setSelectedNode, setIsSaved);
+  } = useNodeOperations(nodes, setNodes, setEdges, setSelectedNode, setNodeFormData, setIsSaved);
 
   const {
     zoomIn,
@@ -54,7 +77,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     nodeFormData,
     selectedFlowId,
     setIsSaving,
-    setIsSaved
+    setIsSaved,
+    prevNodeFn
   );
 
   const {
@@ -85,7 +109,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     (nodeId: string) => {
       const node = nodes.find((n) => n.id === nodeId);
       if (node) {
-        // console.log("Node Info:", node.data.meta);
+
       }
     },
     [nodes]
@@ -97,23 +121,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode(node || null);
     },
     [nodes]
-  );
-
-  const prevNodeFn = useCallback(
-    (nodeId: string): string[] | undefined => {
-      const incomingEdges = edges.filter((edge) => edge.target === nodeId);
-      if (incomingEdges.length === 0) return undefined;
-      const sourceNodeIds = incomingEdges.map((edge) => edge.source);
-
-      const previousNodesFormData = nodeFormData.filter((formData) =>
-        sourceNodeIds.includes(formData.nodeId)
-      );
-      if (previousNodesFormData.length === 0) return undefined;
-
-      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
-      return taskIds;
-    },
-    [edges, nodeFormData]
   );
 
   const toggleAutoSave = useCallback(() => {
@@ -128,6 +135,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       tempSave: boolean;
       data: CustomNodeData;
     }) => {
+      console.log("nodes >>", nodes);
       const newNode: Node<CustomNodeData> = {
         id: data.id,
         type: data.type,
@@ -146,13 +154,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
           const selectionId = node.id === nodeId;
           return selectionId
             ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  type: selectedType,
-                  selectedData: selectedType,
-                },
-              }
+              ...node,
+              data: {
+                ...node.data,
+                type: selectedType,
+                selectedData: selectedType,
+              },
+            }
             : node;
         })
       );
@@ -166,15 +174,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         setNodes((prevNodes) =>
           prevNodes.map((node) => {
             const selectionId = node.id === nodeId;
-            if (node.data.tempSave) return node; // Return unchanged node if tempSave is true
+            if (node.data.tempSave) return node;
             return selectionId
               ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedData: null,
-                  },
-                }
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedData: null,
+                },
+              }
               : node;
           })
         );
@@ -184,12 +192,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
             const selectionId = node.id === nodeId;
             return selectionId
               ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    tempSave: true,
-                  },
-                }
+                ...node,
+                data: {
+                  ...node.data,
+                  tempSave: true,
+                },
+              }
               : node;
           })
         );
@@ -252,15 +260,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         prevNodes.map((node) =>
           node.id === nodeId
             ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  meta: {
-                    ...node.data.meta,
-                    fullyOptimized: true,
-                  },
+              ...node,
+              data: {
+                ...node.data,
+                meta: {
+                  ...node.data.meta,
+                  fullyOptimized: true,
                 },
-              }
+              },
+            }
             : node
         )
       );
@@ -286,6 +294,56 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     6000,
     [autoSave, selectedFlowId, isDirty]
   );
+
+  const setAiflowStrructre = (data: any) => {
+    const valData = JSON.parse(data);
+    if (Array.isArray(valData.tasks)) {
+      valData.tasks.forEach((task: any, index: number) => {
+        const matchedModule = moduleTypes.find((module: any) => {
+          return task.module_name === module.label;
+        })
+        const matchedoperator = matchedModule?.operators.find((operator: any) => {
+          return task.type === operator.type;
+        })
+        const id = (index + 1).toString();
+        const lastNode = nodes[nodes.length - 1];
+        const position = {
+          x: (lastNode?.position?.x ?? 100) + 140,
+          y: 150,
+        };
+        const requiredFields = matchedoperator.requiredFields;
+        addNode({
+          id,
+          type: "custom",
+          position,
+          data: {
+            tempSave: false,
+            label: matchedModule.label,
+            selectedData: null,
+            type: "",
+            status: "pending",
+            meta: {
+              type: "",
+              moduleInfo: {
+                color: matchedModule.color,
+                icon: matchedModule.icon,
+                label: matchedModule.label,
+              },
+              properties: matchedoperator.properties,
+              description: matchedoperator.description,
+              fullyOptimized: false,
+            },
+            requiredFields,
+          },
+          tempSave: false
+        });
+      })
+    }
+  }
+
+  const setConsequentTaskDetail = (task: any, detail: any) => {
+  }
+
 
   // Effect to load flow when selectedFlowId changes
   useEffect(() => {
@@ -380,7 +438,11 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     selectedNodeConnection,
     selectedNodeOptimized,
     fullFlowOptimizzed,
-    isDirty
+    isDirty,
+    formdataNum,
+    setFormDataNum,
+    setAiflowStrructre,
+    setConsequentTaskDetail
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

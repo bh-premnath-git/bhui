@@ -208,7 +208,7 @@ const TableBodyComponent: React.FC<{
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" sideOffset={-15}>
-                  {tableName !== "Create New Flow" ? (
+                  {!["Create New Flow", "Add Pipeline"].includes(tableName) ? (
                     <>
                       <DropdownMenuItem onClick={() => actionFn?.(row, "edit")}>
                         Edit

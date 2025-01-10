@@ -182,4 +182,8 @@ export interface FlowContextType {
   };
   selectedNodeOptimized: (flowId: string) => void;
   fullFlowOptimizzed: () => boolean;
+  formdataNum: number;
+  setFormDataNum: React.Dispatch<React.SetStateAction<number>>;
+  setAiflowStrructre: (data: any) => void;
+  setConsequentTaskDetail: (task: any, detail: any) => void;
 }

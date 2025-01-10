@@ -2,7 +2,7 @@
   "nodes": [
     {
       "ui_properties": {
-        "module_name": "Source",
+        "module_name": "Reader",
         "color": "#f7a01f",
         "icon": "/assets/buildPipeline/6.svg",
         "ports": {
@@ -38,7 +38,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Join",
+        "module_name": "Joiner",
         "color": "#ff7396",
         "icon": "/assets/buildPipeline/display/join.svg",
         "ports": {
@@ -114,9 +114,9 @@
         "color": "#d43faa",
         "icon": "/assets/buildPipeline/squre/2.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -126,9 +126,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/3.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -138,9 +138,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/4.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -150,9 +150,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/5.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -162,9 +162,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/6.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -174,9 +174,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/7.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -186,9 +186,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/8.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -198,9 +198,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/9.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     },
@@ -210,9 +210,9 @@
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/10.svg",
         "ports": {
-          "inputs": 0,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": 0
+          "maxInputs": 1
         }
       }
     }

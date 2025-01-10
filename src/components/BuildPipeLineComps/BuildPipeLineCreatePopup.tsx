@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Stack, Typography, Modal, Link } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Field, Form, Formik, useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +10,6 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { insertPipeline, setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
 import CustomField from '@/common/CustomField';
 import { ApiService } from '@/services/apiServices';
-import useToast from '@/oldcomponents/teast-service';
 import { COLORS } from '@/Utils/constants';
 
 const style = {
@@ -79,32 +77,15 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                         body.tags = {};
                         // setIsLoading(true)
                         const response = await ApiService('8011', 'post', '/pipeline', body);
+                        console.log(response);
                         if (response?.error) {
                             showToast(response?.error, { color: COLORS.red });
                         } else {
                             dispatch(setBuildPipeLineDtl(response));
                             showToast("Pipe Line created successfully", { color: COLORS.green });
-                            navigate('/designers/build-playground/');
+                            navigate(`/designers/build-playground/${response?.pipeline_id}`);
                         }
 
-                        // setSubmitting(false);
-                        // if (result && result?.payload) {
-                        // await handleClose(result);
-
-                        //     setIsLoading(false)
-                        //     await navigate('/designers/build-playground/');
-                        // } else {
-                        //     toast.success("Success Notification !", {
-                        //         position: 'top-center' as ToastPosition,
-                        //         progress: undefined,
-                        //         hideProgressBar: true,
-                        //         style: {
-                        //             marginTop: '50px',
-                        //             fontWeight: 'bold',
-                        //             fontSize: '14px' // Adjust the margin-top value as needed
-                        //         },
-                        //     });
-                        // }
                     }}
                 >
                     {({ isSubmitting }) => (
@@ -123,16 +104,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                                         placeholder="Select Project"
                                     />
                                 </Stack>
-                                {/* <Stack className='w-100'>
-                                    <CustomField
-                                        name="git_branch"
-                                        label="Branch"
-                                        controlName="input"
-                                        placeholder="Enter branch"
-                                        size="small"
-                                    />
 
-                                </Stack> */}
                                 <Stack className='w-100'>
                                     <CustomField
                                         name="pipeline_name"

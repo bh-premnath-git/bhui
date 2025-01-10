@@ -8,6 +8,8 @@ import CatalogSlice from '@/redux/CatalogSlice';
 import UserSlice from '@/redux/UserSlice';
 import CustomerSlice from '@/redux/CustomerSlice';
 import DataOpsSlice from '@/redux/DataOpsSlice';
+import autoSaveSlice from '@/redux/features/autoSaveSlice';
+
 export const store = configureStore({
   reducer: {
     buildPipeLineApi: BuildPipeLineSlice,
@@ -15,13 +17,14 @@ export const store = configureStore({
     environmentApi: Environment,
     toggle: toggleReducer,
     flowApi: FlowSlice,
-    catalogApi:CatalogSlice,
-    userApi:UserSlice,
-    customerApi:CustomerSlice,
-    dataopsApi:DataOpsSlice,
-
+    catalogApi: CatalogSlice,
+    userApi: UserSlice,
+    customerApi: CustomerSlice,
+    dataopsApi: DataOpsSlice,
+    autoSave: autoSaveSlice,
   },
 });
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export default store;

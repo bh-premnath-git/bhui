@@ -67,7 +67,7 @@ export const routeList = [
   { path: '/Alerts/New Monitor', element: <MonitorPage /> },
   { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
   { path: '/data-catalog', element: <DataCatalog /> },
-  { path: '/DataCatalog/schema', element: <CatalogsSchema /> },
+  { path: '/DataCatalog/schema', element: <CatalogsSchema selectedSource={undefined} /> },
   { path: '/admin-console/users', element: <AllUsers /> },
   { path: '/admin-console/users/new', element: <AddUser /> },
   { path: '/admin-console/users/:id', element: <EditUser /> },

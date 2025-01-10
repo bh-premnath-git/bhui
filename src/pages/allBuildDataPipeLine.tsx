@@ -185,7 +185,6 @@ function BuildDataPipeLineTable({
     return (
         <div className="container mx-auto p-4">
             <ToastComponent />
-
             <FlexibleTable
                 data={pipelineList}
                 columns={columns}
@@ -197,6 +196,7 @@ function BuildDataPipeLineTable({
                 actionFn={actionFn}
                 playRow={true}
                 playRowFn={editFn}
+                rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
             />
             {open && (<BuildPipeLineCreatePopup handleClose={() => setOpen(false)} open={open} showToast={showToast} />)}
 

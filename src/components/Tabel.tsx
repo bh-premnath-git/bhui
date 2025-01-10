@@ -1,11 +1,17 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+  ChangeEvent,
+} from "react";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +24,10 @@ import {
   ChevronDown,
   MoreVertical,
   ArrowLeftCircle,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Loader2,
+  Save,
+  Bot
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,17 +44,18 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// Utility functions
-const getValidPageNumber = (current: number, total: number): number =>
-  Math.max(1, Math.min(current, total || 1));
+const getValidPageNumber = (current: number, total: number): number => {
+  return Math.max(1, Math.min(current, total || 1));
+};
 
-const getSafeString = (value: any): string =>
-  value?.toString?.() || '';
+const getSafeString = (value: any): string => {
+  return value?.toString?.() || "";
+};
 
-const getSafeNumber = (value: any): number =>
-  Number(value) || 0;
+const getSafeNumber = (value: any): number => {
+  return Number(value) || 0;
+};
 
-// Types and Interfaces
 interface ColumnConfig {
   key: string;
   header: string;
@@ -67,12 +77,19 @@ interface TableProps {
   tableName?: string;
   isSearch?: boolean;
   isAction?: boolean;
+  aiLoading?: boolean;
+  saveLoading?: boolean;
+  aiStatus?: string;
+  saveStatus?: string;
   createNewFn?: () => void;
+  handleAIgenFn?: () => void;
+  handleAIsaveFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
   background?: string;
   rowColorFn?: (rowData: any, index: number) => string;
+  isAIGenerated?: boolean;
 }
 
 interface SortConfig {
@@ -84,45 +101,118 @@ const TABLE_NAME_CHECK_LIST = [
   "Create New Flow",
   "Create New Project",
   "Create New Environment",
-  "Create New Bundle"
+  "Create New Bundle",
 ];
 
-// Custom Table Header Component
+const TABLE_NAME_RESTRICTED_ACTIONS = ["Create New Flow", "Add Pipeline"];
+
+const TABLE_NAME_ACTIONS_AI = ["Catalog Table"];
+
+const TABLE_AI_COLS = ["Description"];
+
 const CustomTableHeader: React.FC<{
   columns: ColumnConfig[];
+  tableName?: string;
   sortConfig: SortConfig;
   requestSort: (key: string) => void;
   className?: string;
   isAction?: boolean;
-}> = React.memo(({ columns, sortConfig, requestSort, className, isAction }) => {
-  const getSortIcon = useCallback((key: string) => {
-    if (sortConfig.key !== key) return null;
-    return sortConfig.direction === "asc" ? (
-      <ChevronUp className="inline ml-1 h-4 w-4" />
-    ) : sortConfig.direction === "desc" ? (
-      <ChevronDown className="inline ml-1 h-4 w-4" />
-    ) : null;
-  }, [sortConfig]);
+  aiLoading?: boolean;
+  saveLoading?: boolean;
+  aiStatus?: string;
+  saveStatus?: string;
+  isAIGenerated?: boolean;
+  handleAIgen: () => void;
+  handleAISave: () => void;
+}> = React.memo(
+  ({
+    columns,
+    tableName,
+    sortConfig,
+    requestSort,
+    className,
+    isAction,
+    isAIGenerated,
+    aiLoading,
+    saveLoading,
+    aiStatus,
+    saveStatus,
+    handleAIgen,
+    handleAISave,
+  }) => {
+    const getSortIcon = useCallback(
+      (key: string) => {
+        if (sortConfig.key !== key) return null;
+        return sortConfig.direction === "asc" ? (
+          <ChevronUp className="inline ml-1 h-4 w-4" />
+        ) : sortConfig.direction === "desc" ? (
+          <ChevronDown className="inline ml-1 h-4 w-4" />
+        ) : null;
+      },
+      [sortConfig]
+    );
+    return (
+      <TableHeader className={cn("bg-gray-200 text-black font-bold", className)}>
+        <TableRow>
+          {columns.map((column) => (
+            <TableHead
+              key={column.key}
+              onClick={() => column.sortable && requestSort(column.key)}
+              className={cn(column.sortable ? "cursor-pointer" : "")}
+            >
+              {column.header} {column.sortable && getSortIcon(column.key)}
+              {TABLE_NAME_ACTIONS_AI.includes(tableName ?? "") &&
+                TABLE_AI_COLS.includes(column.header) && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "ml-2",
+                        aiStatus === "Success" ? "bg-green-500 text-white" : "",
+                        aiStatus === "Failed" ? "bg-red-500 text-white" : "",
+                        aiStatus === null || aiLoading ? " text-black" : ""
+                      )}
+                      size="sm"
+                      onClick={() => handleAIgen()}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Bot className="h-4 w-4" />
+                      )}
+                    </Button>
+                    {isAIGenerated && (
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "ml-2", 
+                          saveStatus === "Success" ? "bg-green-500 text-white" : "",
+                          saveStatus === "Failed" ? "bg-red-500 text-white" : "",
+                          saveStatus === null || saveLoading ? " text-black" : ""
+                        )}
+                        size="sm"
+                        onClick={() => handleAISave()}
+                        disabled={saveLoading}
+                      >
+                        {saveLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+                  </>
+                )}
+            </TableHead>
+          ))}
+          {isAction && <TableHead>Action</TableHead>}
+        </TableRow>
+      </TableHeader>
+    );
+  }
+);
 
-  return (
-    <TableHeader className={cn("bg-gray-200 text-black font-bold", className)}>
-      <TableRow>
-        {columns.map((column) => (
-          <TableHead
-            key={column.key}
-            onClick={() => column.sortable && requestSort(column.key)}
-            className={cn(column.sortable ? "cursor-pointer" : "")}
-          >
-            {column.header} {column.sortable && getSortIcon(column.key)}
-          </TableHead>
-        ))}
-        {isAction && <TableHead>Action</TableHead>}
-      </TableRow>
-    </TableHeader>
-  );
-});
-
-// Table Body Component
 const TableBodyComponent: React.FC<{
   tableName?: string;
   data: any[];
@@ -132,107 +222,119 @@ const TableBodyComponent: React.FC<{
   playRowFn?: (rowData: any) => void;
   isAction?: boolean;
   rowColorFn?: (rowData: any, index: number) => string;
-}> = React.memo(({
-  tableName,
-  data,
-  columns,
-  actionFn,
-  playRow,
-  playRowFn,
-  isAction,
-  rowColorFn
-}) => {
-  if (!data?.length) {
+}> = React.memo(
+  ({
+    tableName,
+    data,
+    columns,
+    actionFn,
+    playRow,
+    playRowFn,
+    isAction,
+    rowColorFn,
+  }) => {
+    if (!data?.length) {
+      return (
+        <TableBody>
+          <TableRow>
+            <TableCell
+              colSpan={columns.length + (isAction ? 1 : 0)}
+              className="text-center py-4"
+            >
+              No data available
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+
     return (
       <TableBody>
-        <TableRow>
-          <TableCell
-            colSpan={columns.length + (isAction ? 1 : 0)}
-            className="text-center py-4"
+        {data.map((row, index) => (
+          <TableRow
+            key={index}
+            onClick={playRow && playRowFn ? () => playRowFn(row) : undefined}
+            className={cn(
+              playRow ? "cursor-pointer" : "",
+              rowColorFn ? rowColorFn(row, index) : ""
+            )}
           >
-            No data available
-          </TableCell>
-        </TableRow>
+            {columns.map((column) => {
+              const value = row[column.key];
+              return (
+                <TableCell
+                  key={column.key}
+                  className={cn(
+                    column.align === "left"
+                      ? "text-left"
+                      : column.align === "center"
+                        ? "text-center"
+                        : column.align === "right"
+                          ? "text-right"
+                          : column.type === "number"
+                            ? "text-center"
+                            : "text-justify"
+                  )}
+                >
+                  {column.render ? (
+                    column.render(value, row)
+                  ) : column.type === "image" ? (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={value} alt={value} />
+                      <AvatarFallback>
+                        {value ? value[0] : <PlusCircle className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : column.type === "badge" && column.badgeConfig ? (
+                    <Badge
+                      className={`${column.badgeConfig.colorMap[value]} text-white p-1`}
+                    >
+                      {value}
+                    </Badge>
+                  ) : (
+                    value
+                  )}
+                </TableCell>
+              );
+            })}
+            {isAction && (
+              <TableCell
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="start" sideOffset={-15}>
+                    {!TABLE_NAME_RESTRICTED_ACTIONS.includes(tableName ?? "") ? (
+                      <>
+                        <DropdownMenuItem onClick={() => actionFn?.(row, "edit")}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => actionFn?.(row, "changeStatus")}
+                        >
+                          Change Status
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <DropdownMenuItem onClick={() => actionFn?.(row, "delete")}>
+                        Delete
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            )}
+          </TableRow>
+        ))}
       </TableBody>
     );
   }
+);
 
-  return (
-    <TableBody>
-      {data.map((row, index) => (
-        <TableRow
-          key={index}
-          onClick={playRow && playRowFn ? () => playRowFn(row) : undefined}
-          className={cn(
-            playRow ? "cursor-pointer" : "",
-            rowColorFn ? rowColorFn(row, index) : ""
-          )}
-        >
-          {columns.map((column) => {
-            const value = row[column.key];
-            return (
-              <TableCell
-                key={column.key}
-                className={cn(
-                  column.align === "left" ? "text-left" :
-                    column.align === "center" ? "text-center" :
-                      column.align === "right" ? "text-right" :
-                        column.type === "number" ? "text-center" : "text-justify"
-                )}
-              >
-                {column.render ? (
-                  column.render(value, row)
-                ) : column.type === "image" ? (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={value} alt={value} />
-                    <AvatarFallback>
-                      {value ? value[0] : <PlusCircle className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : column.type === "badge" && column.badgeConfig ? (
-                  <Badge className={`${column.badgeConfig.colorMap[value]} text-white p-1`}>
-                    {value}
-                  </Badge>
-                ) : (
-                  value
-                )}
-              </TableCell>
-            );
-          })}
-          {isAction && (
-            <TableCell onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" sideOffset={-15}>
-                  {!["Create New Flow", "Add Pipeline"].includes(tableName) ? (
-                    <>
-                      <DropdownMenuItem onClick={() => actionFn?.(row, "edit")}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => actionFn?.(row, "changeStatus")}>
-                        Change Status
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <DropdownMenuItem onClick={() => actionFn?.(row, "delete")}>
-                      Delete
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          )}
-        </TableRow>
-      ))}
-    </TableBody>
-  );
-});
-
-// Table Filters Component
 const TableFilters: React.FC<{
   columns: ColumnConfig[];
   data: any[];
@@ -240,12 +342,15 @@ const TableFilters: React.FC<{
   setFilters: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
 }> = React.memo(({ columns, data, filters, setFilters, setCurrentPage }) => {
-  const handleFilter = useCallback((key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1); // Reset to first page when filter changes
-  }, [setFilters, setCurrentPage]);
+  const handleFilter = useCallback(
+    (key: string, value: string) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+      setCurrentPage(1);
+    },
+    [setFilters, setCurrentPage]
+  );
 
-  const filterableColumns = columns.filter(col => col.filterable);
+  const filterableColumns = columns.filter((col) => col.filterable);
   if (!filterableColumns.length) return null;
 
   return (
@@ -253,16 +358,16 @@ const TableFilters: React.FC<{
       {filterableColumns.map((column) => {
         const uniqueValues = new Set(
           data
-            .map(item => item[column.key])
-            .filter(value => value !== undefined)
+            .map((item) => item[column.key])
+            .filter((value) => value !== undefined)
         );
 
         return (
           <DropdownMenu key={column.key}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
-                <Filter className="mr-2 h-2 w-2" /> {column.header} /{" "}
-                {filters[column.key] || "All"}
+                <Filter className="mr-2 h-2 w-2" />
+                {column.header} / {filters[column.key] || "All"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -271,10 +376,10 @@ const TableFilters: React.FC<{
               </DropdownMenuItem>
               {Array.from(uniqueValues).map((value) => (
                 <DropdownMenuItem
-                  key={value}
-                  onClick={() => handleFilter(column.key, value)}
+                  key={String(value)}
+                  onClick={() => handleFilter(column.key, String(value))}
                 >
-                  {value}
+                  {String(value)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -285,7 +390,6 @@ const TableFilters: React.FC<{
   );
 });
 
-// Table Pagination Controls Component
 const TablePaginationControls: React.FC<{
   currentPage: number;
   totalPages: number;
@@ -295,70 +399,81 @@ const TablePaginationControls: React.FC<{
   itemsPerPageOptions: number[];
   showPagination: boolean;
   totalItems: number;
-}> = React.memo(({
-  currentPage,
-  totalPages,
-  setCurrentPage,
-  itemsPerPage,
-  setItemsPerPage,
-  itemsPerPageOptions,
-  showPagination,
-  totalItems
-}) => {
+}> = React.memo(
+  ({
+    currentPage,
+    totalPages,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    itemsPerPageOptions,
+    showPagination,
+    totalItems,
+  }) => {
+    const validCurrentPage = getValidPageNumber(currentPage, totalPages);
 
-  const validCurrentPage = getValidPageNumber(currentPage, totalPages);
+    if (validCurrentPage !== currentPage) {
+      setCurrentPage(validCurrentPage);
+    }
 
-  if (validCurrentPage !== currentPage) {
-    setCurrentPage(validCurrentPage);
-  }
+    if (!showPagination) return null;
 
-  return showPagination ? (
-    <div className="flex justify-between items-center mt-4">
-      <div className="flex items-center space-x-2">
-        <ArrowLeftCircle
-          className={cn(
-            "text-gray-900",
-            validCurrentPage === 1 ? "opacity-50" : "hover:text-gray-800 cursor-pointer"
-          )}
-          onClick={() => validCurrentPage > 1 && setCurrentPage(validCurrentPage - 1)}
-          style={{ fontSize: '1.5rem' }}
-        />
-        <span>
-          Page {validCurrentPage} of {Math.max(1, totalPages)} ({totalItems} items)
-        </span>
-        <ArrowRightCircle
-          className={cn(
-            "text-gray-900",
-            validCurrentPage === totalPages ? "opacity-50" : "hover:text-gray-800 cursor-pointer"
-          )}
-          onClick={() => validCurrentPage < totalPages && setCurrentPage(validCurrentPage + 1)}
-          style={{ fontSize: '1.5rem' }}
-        />
+    return (
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex items-center space-x-2">
+          <ArrowLeftCircle
+            className={cn(
+              "text-gray-900",
+              validCurrentPage === 1
+                ? "opacity-50"
+                : "hover:text-gray-800 cursor-pointer"
+            )}
+            onClick={() =>
+              validCurrentPage > 1 && setCurrentPage(validCurrentPage - 1)
+            }
+            style={{ fontSize: "1.5rem" }}
+          />
+          <span>
+            Page {validCurrentPage} of {Math.max(1, totalPages)} (
+            {totalItems} items)
+          </span>
+          <ArrowRightCircle
+            className={cn(
+              "text-gray-900",
+              validCurrentPage === totalPages
+                ? "opacity-50"
+                : "hover:text-gray-800 cursor-pointer"
+            )}
+            onClick={() =>
+              validCurrentPage < totalPages && setCurrentPage(validCurrentPage + 1)
+            }
+            style={{ fontSize: "1.5rem" }}
+          />
+        </div>
+        <Select
+          value={itemsPerPage.toString()}
+          onValueChange={(value) => {
+            const newItemsPerPage = getSafeNumber(value);
+            setItemsPerPage(newItemsPerPage);
+            setCurrentPage(1);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select items per page" />
+          </SelectTrigger>
+          <SelectContent>
+            {itemsPerPageOptions.map((num) => (
+              <SelectItem key={num} value={num.toString()}>
+                {num} per page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <Select
-        value={itemsPerPage.toString()}
-        onValueChange={(value) => {
-          const newItemsPerPage = getSafeNumber(value);
-          setItemsPerPage(newItemsPerPage);
-          setCurrentPage(1); // Reset to first page when changing items per page
-        }}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select items per page" />
-        </SelectTrigger>
-        <SelectContent>
-          {itemsPerPageOptions.map((num) => (
-            <SelectItem key={num} value={num.toString()}>
-              {num} per page
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  ) : null;
-});
+    );
+  }
+);
 
-// Main FlexibleTable Component
 export function FlexibleTable({
   data = [],
   columns,
@@ -368,29 +483,33 @@ export function FlexibleTable({
   isSearch = true,
   isAction = true,
   createNewFn,
+  handleAIgenFn,
+  handleAIsaveFn,
   actionFn,
   playRow = false,
   playRowFn,
-  background = 'gray',
+  background = "gray",
   rowColorFn,
+  isAIGenerated = false,
+  aiLoading = false,
+  saveLoading = false,
+  aiStatus = "",
+  saveStatus = "",
 }: TableProps) {
-  // debugger
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: columns[0].key,
+    key: columns[0]?.key || "",
     direction: null,
   });
   const [filters, setFilters] = useState<{ [key: string]: string }>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Reset page when filters, search, or items per page changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, searchTerm, itemsPerPage]);
 
   const requestSort = useCallback((key: string) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig((prevConfig) => ({
       key,
       direction:
         prevConfig.key === key
@@ -406,13 +525,14 @@ export function FlexibleTable({
   const filteredData = useMemo(() => {
     if (!Array.isArray(data)) return [];
 
-    return data.filter(item => {
-      const matchesFilters = Object.entries(filters).every(
-        ([key, value]) => value === "All" || getSafeString(item[key]) === value
-      );
+    return data.filter((item) => {
+      const matchesFilters = Object.entries(filters).every(([key, value]) => {
+        if (value === "All") return true;
+        return getSafeString(item[key]) === value;
+      });
 
       const matchesSearch = searchTerm
-        ? Object.values(item).some(val =>
+        ? Object.values(item).some((val) =>
           getSafeString(val).toLowerCase().includes(searchTerm.toLowerCase())
         )
         : true;
@@ -425,13 +545,14 @@ export function FlexibleTable({
     if (!sortConfig.direction) return filteredData;
 
     const { key, direction } = sortConfig;
-    const column = columns.find(col => col.key === key);
+    const column = columns.find((col) => col.key === key);
 
     return [...filteredData].sort((a, b) => {
       try {
         let aValue = a[key];
         let bValue = b[key];
         let compare = 0;
+
         if (column?.type === "date") {
           aValue = new Date(aValue).getTime();
           bValue = new Date(bValue).getTime();
@@ -441,21 +562,22 @@ export function FlexibleTable({
         } else {
           compare = getSafeString(aValue).localeCompare(getSafeString(bValue));
         }
-
         return direction === "asc" ? compare : -compare;
       } catch (error) {
-        console.error('Sorting error:', error);
+        console.error("Sorting error:", error);
         return 0;
       }
     });
   }, [filteredData, sortConfig, columns]);
 
-  const validTotalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
+  const validTotalPages = Math.max(
+    1,
+    Math.ceil(sortedData.length / itemsPerPage)
+  );
   const validCurrentPage = getValidPageNumber(currentPage, validTotalPages);
 
   const paginatedData = useMemo(() => {
     if (!Array.isArray(sortedData)) return [];
-
     const startIndex = (validCurrentPage - 1) * itemsPerPage;
     return sortedData.slice(
       startIndex,
@@ -463,14 +585,22 @@ export function FlexibleTable({
     );
   }, [sortedData, validCurrentPage, itemsPerPage]);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value || '');
-    setCurrentPage(1); // Reset to first page on search
+  const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value || "");
+    setCurrentPage(1);
   }, []);
 
   const handleCreateNew = useCallback(() => {
     if (createNewFn) createNewFn();
   }, [createNewFn]);
+
+  const handleAIgen = useCallback(() => {
+    if (handleAIgenFn) handleAIgenFn();
+  }, [handleAIgenFn]);
+
+  const handleAISave = useCallback(() => {
+    if (handleAIsaveFn) handleAIsaveFn();
+  }, [handleAIsaveFn]);
 
   return (
     <div className="container mx-auto p-1">
@@ -484,7 +614,6 @@ export function FlexibleTable({
             setCurrentPage={setCurrentPage}
           />
         </div>
-
         <div className="flex space-x-2">
           {isSearch && (
             <Input
@@ -494,7 +623,7 @@ export function FlexibleTable({
               onChange={handleSearchChange}
             />
           )}
-          {tableName && (
+          {tableName && !TABLE_NAME_ACTIONS_AI.includes(tableName) && (
             <Button
               variant="default"
               className={cn(
@@ -509,14 +638,21 @@ export function FlexibleTable({
           )}
         </div>
       </div>
-
       <Table>
         <CustomTableHeader
           className="text-black"
+          tableName={tableName}
           columns={columns}
           sortConfig={sortConfig}
           requestSort={requestSort}
           isAction={isAction}
+          isAIGenerated={isAIGenerated}
+          handleAIgen={handleAIgen}
+          handleAISave={handleAISave}
+          aiLoading={aiLoading}
+          saveLoading={saveLoading}
+          aiStatus={aiStatus}
+          saveStatus={saveStatus}
         />
         <TableBodyComponent
           tableName={tableName}
@@ -529,7 +665,6 @@ export function FlexibleTable({
           rowColorFn={rowColorFn}
         />
       </Table>
-
       <TablePaginationControls
         currentPage={validCurrentPage}
         totalPages={validTotalPages}

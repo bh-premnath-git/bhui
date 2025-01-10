@@ -268,6 +268,7 @@ const AllFlows: React.FC = () => {
           playRow={true}
           playRowFn={playground}
           actionFn={actionFn}
+          rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
         />
       )}
       {isModalOpen && (

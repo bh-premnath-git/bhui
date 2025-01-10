@@ -12,7 +12,6 @@ import {
   TextField,
   Chip,
   IconButton,
-  CircularProgress
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -21,9 +20,6 @@ import About from '@/components/Catalog/About';
 import { ApiService } from '@/services/apiServices';
 import { Plus, X } from 'lucide-react';
 
-/**
- * 1) Define Interfaces for clarity and type-safety
- */
 interface FieldData {
   field_id: number;
   field_name: string;
@@ -66,17 +62,14 @@ interface TagManagerProps {
 }
 
 interface CatalogsBodyProps {
-  selectedSource: SelectedSource; // Defined interface
+  selectedSource: SelectedSource;
 }
 
 interface SelectedSource {
   data_src_name: string;
-  // Add other relevant properties if necessary
+  data_src_desc: string;
 }
 
-/**
- * 2) EditableField Sub-component
- */
 const EditableField: React.FC<EditableFieldProps> = ({
   value,
   isEditing,
@@ -93,7 +86,6 @@ const EditableField: React.FC<EditableFieldProps> = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      // Press Enter to commit changes (unless SHIFT+Enter on 'description').
       if (e.key === 'Enter' && (fieldKey !== 'description' || !e.shiftKey)) {
         e.preventDefault();
         onSaveEdit(e.currentTarget.value);
@@ -145,9 +137,6 @@ const EditableField: React.FC<EditableFieldProps> = ({
   );
 };
 
-/**
- * 3) TagManager Sub-component
- */
 const TagManager: React.FC<TagManagerProps> = ({
   tags,
   isEditing,
@@ -179,7 +168,7 @@ const TagManager: React.FC<TagManagerProps> = ({
           onDelete={() => onRemoveTag(tag)}
           sx={{
             borderRadius: '4px',
-            backgroundColor: 'primary.lighter', // Restored to original
+            backgroundColor: 'primary.lighter',
             color: '#20405f',
             height: '24px',
             fontSize: '0.75rem',
@@ -223,36 +212,31 @@ const TagManager: React.FC<TagManagerProps> = ({
   );
 };
 
-/**
- * 4) Main CatalogsBody Component
- */
 const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
   const { layoutList } = useSelector((state: RootState) => state.catalogApi);
   const [fields, setFields] = useState<FieldData[]>([]);
   const [types, setTypes] = useState<CodeType[]>([]);
   const [passValues, setPassValues] = useState<PassValueItem[]>([]);
   const [loadingDescriptions, setLoadingDescriptions] = useState<boolean>(false);
+  const [descriptionLoaded, setDescriptionLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState<boolean>(false);
 
-  // Fetch and map data from layoutList
   const dataSourceLayout = useCallback(async (): Promise<FieldData[]> => {
     if (!layoutList || layoutList.length === 0) {
-      console.warn('layoutList is empty or undefined.');
       return [];
     }
 
     try {
       const result = layoutList[0].layout_fields;
-
-      // Create a minimal array for passValues
       const resultantVal = result.map((item: any) => ({
         name: item.lyt_fld_name,
         data_type: item.lyt_fld_data_type_cd,
         description: item.lyt_fld_desc
       }));
       setPassValues(resultantVal);
-
-      // Return the array for fields
       return result.map((item: any) => ({
         field_id: item.lyt_fld_id,
         field_name: item.lyt_fld_name,
@@ -266,15 +250,11 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     }
   }, [layoutList]);
 
-  // Load fields and types on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1) Get data types
         const { codes_dtl } = await ApiService('8011', 'get', '/codes_hdr/13');
         setTypes(codes_dtl);
-
-        // 2) Get fields from layout
         const fetchedFields = await dataSourceLayout();
         setFields(fetchedFields);
       } catch (err) {
@@ -285,7 +265,6 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     fetchData();
   }, [dataSourceLayout]);
 
-  // Transform passValues -> passValuesWithDesc
   const passValuesWithDesc = useMemo(() => {
     return passValues.map((item) => {
       const matchedType = types.find((t) => t.id === item.data_type);
@@ -296,62 +275,74 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     });
   }, [passValues, types]);
 
-  // Fetch new descriptions based on selectedSource and passValuesWithDesc
-  useEffect(() => {
-    const fetchDescriptions = async () => {
-      if (!selectedSource || passValuesWithDesc.length === 0) return;
+  const fetchDescriptions = async () => {
+    if (!selectedSource || passValuesWithDesc.length === 0) return;
 
-      setLoadingDescriptions(true);
-      setError(null);
+    setLoadingDescriptions(true);
+    setError(null);
 
-      const body = {
-        operation_type: 'column_description',
-        thread_id: 'desc_123',
-        params: {
-          source_name: selectedSource.data_src_name,
-          columns: passValuesWithDesc,
-        },
-      };
-
-      try {
-        const dresponse = await ApiService(
-          '8090',
-          'post',
-          '/pipeline_agent/generate',
-          body
-        );
-        const descriptionResponse = (JSON.parse(dresponse.result)).descriptions
-        if (Array.isArray(descriptionResponse)) {
-          setFields((prevFields) =>
-            prevFields.map((field, index) => ({
-              ...field,
-              description: descriptionResponse[index]?.description || field.description
-            }))
-          );
-        } else if (typeof descriptionResponse === 'object' && descriptionResponse !== null) {
-          setFields((prevFields) =>
-            prevFields.map((field) => ({
-              ...field,
-              description:
-                descriptionResponse[field.field_id]?.description || field.description
-            }))
-          );
-        } else {
-          console.warn('Unexpected description response format:', descriptionResponse);
-          setError('Unexpected response format from description API.');
-        }
-      } catch (err) {
-        console.error('Error fetching descriptions:', err);
-        setError('Failed to load descriptions.');
-      } finally {
-        setLoadingDescriptions(false);
-      }
+    const body = {
+      operation_type: 'column_description',
+      thread_id: 'desc_123',
+      params: {
+        source_name: selectedSource.data_src_name,
+        columns: passValuesWithDesc,
+      },
     };
 
-    fetchDescriptions();
-  }, [selectedSource, passValuesWithDesc]);
+    try {
+      const dresponse = await ApiService(
+        '8090',
+        'post',
+        '/pipeline_agent/generate',
+        body
+      );
+      const descriptionResponse = (JSON.parse(dresponse.result)).descriptions
+      if (Array.isArray(descriptionResponse)) {
+        setFields((prevFields) =>
+          prevFields.map((field, index) => ({
+            ...field,
+            description: descriptionResponse[index]?.description || field.description
+          }))
+        );
+        setDescriptionLoaded(true);
+        setAiStatus("Success");
+      } else {
+        console.warn('Unexpected description response format:', descriptionResponse);
+        setError('Unexpected response format from description API.');
+      }
+    } catch (err) {
+      console.error('Error fetching descriptions:', err);
+      setAiStatus("Failed");
+    } finally {
+      setLoadingDescriptions(false);
+    }
+  };
 
-  // Table cell editing
+  const saveDesField = async () => {
+    const descriptions = fields.map((field) => ({
+      lyt_fld_id: field.field_id,
+      lyt_fld_desc: field.description,
+    }))
+
+    setSaveLoading(true);
+    setSaveStatus(null);
+    try {
+      await ApiService(
+        '8011',
+        'patch',
+        `/layout_fields/descriptions/${layoutList[0].data_src_lyt_id}`,
+        { descriptions }
+      );
+      setSaveStatus('Success');
+    } catch (err) {
+      console.error('Error saving descriptions:', err);
+      setSaveStatus('Failed');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   const handleEditField = useCallback(
     (fieldId: number, key: keyof FieldData, value: any) => {
       setFields((prev) =>
@@ -369,7 +360,6 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     []
   );
 
-  // Define columns for FlexibleTable
   const columns = useMemo(
     () => [
       {
@@ -417,8 +407,10 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
                 )
               )
             }
-            onSaveEdit={(newValue) =>
+            onSaveEdit={(newValue) => {
               handleEditField(row.field_id, 'description', newValue)
+              setDescriptionLoaded(true)
+            }
             }
             fieldKey="description"
           />
@@ -463,10 +455,8 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     [handleEditField]
   );
 
-  // Render
   return (
     <Stack direction="row" spacing={2} sx={{ height: '100%' }}>
-      {/* Main Table */}
       <Paper
         sx={{
           width: '75%',
@@ -475,23 +465,6 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
         }}
       >
         <Stack sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight="bold">
-            {layoutList && layoutList.length > 0
-              ? layoutList[0].data_src_lyt_name
-              : 'Employee Data Schema'}
-          </Typography>
-
-          {/* Loading Indicator */}
-          {loadingDescriptions && (
-            <Stack direction="row" alignItems="center" spacing={1} my={2}>
-              <CircularProgress size={20} />
-              <Typography variant="body2" color="textSecondary">
-                Loading descriptions...
-              </Typography>
-            </Stack>
-          )}
-
-          {/* Error Message */}
           {error && (
             <Typography variant="body2" color="error" mb={2}>
               {error}
@@ -502,11 +475,18 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
             <FlexibleTable
               data={fields}
               columns={columns}
+              tableName="Catalog Table"
               itemsPerPageOptions={[5, 10, 20]}
               defaultItemsPerPage={10}
-              rowColorFn={(_, index) =>
-                index % 2 === 0 ? 'background.paper' : 'grey.100'
-              }
+              handleAIgenFn={fetchDescriptions}
+              handleAIsaveFn={saveDesField}
+              isAIGenerated={descriptionLoaded}
+              aiLoading={loadingDescriptions}
+              aiStatus={aiStatus}
+              saveLoading={saveLoading}
+              saveStatus={saveStatus}
+              isAction={false}
+              rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
             />
           </TableContainer>
         </Stack>
@@ -520,10 +500,11 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
           border: '1px solid lightgrey'
         }}
       >
-        {/* Pass data_type desc along to About */}
         <About
           sourceName={selectedSource?.data_src_name || 'Unknown Source'}
           passValues={passValuesWithDesc}
+          dataSource={layoutList[0]}
+          description={selectedSource?.data_src_desc}
         />
       </Paper>
     </Stack>

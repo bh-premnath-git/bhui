@@ -34,11 +34,16 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     if (!selectedNode) {
         return null;
     }
-
-    const selectedProperties = useMemo(() =>
-        selectedNode.data.meta.properties.find(
-            (item: any) => item.type === selectedValue || item.type === selectedNode.data.selectedData
-        ),
+    
+    const selectedProperties = useMemo(() => {
+        if (Array.isArray(selectedNode.data.meta.properties) && selectedValue) {
+            return selectedNode.data.meta.properties.find(
+                (item: any) => item.type === selectedValue || item.type === selectedNode.data.selectedData
+            )
+        } else {
+            return selectedNode.data.meta.properties
+        }
+    },
         [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
     );
 

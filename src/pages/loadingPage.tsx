@@ -1,3 +1,4 @@
+import loaderLogo from "/assets/logo/loaderLogo.svg";
 const LoadingScreen = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
@@ -12,11 +13,11 @@ const LoadingScreen = () => {
                 transform: `rotate(${i * 60}deg)`,
               }}
             >
-              <div 
+              <div
                 className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2"
               >
-                <div 
-                  className="w-full h-full rounded-full bg-blue-500/70 blur-[2px] animate-pulse-scale"
+                <div
+                  className="w-full h-full rounded-full bg-black/70 blur-[2px] animate-pulse-scale"
                   style={{
                     animationDelay: `${i * 0.15}s`,
                   }}
@@ -27,8 +28,8 @@ const LoadingScreen = () => {
         </div>
 
         {/* Outer rotating ring */}
-        <svg 
-          className="absolute inset-0 animate-reverse-spin" 
+        <svg
+          className="absolute inset-0 animate-reverse-spin"
           viewBox="0 0 100 100"
         >
           <circle
@@ -43,32 +44,21 @@ const LoadingScreen = () => {
           />
           <defs>
             <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#2563EB" />
-              <stop offset="100%" stopColor="#3B82F6" />
+              <stop offset="0%" stopColor="#000000" />
+              <stop offset="100%" stopColor="#333333" />
             </linearGradient>
           </defs>
         </svg>
 
         {/* Middle ring */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 rounded-full border-2 border-blue-500/20 animate-pulse" />
+          <div className="w-24 h-24 rounded-full border-2 border-black/20 animate-pulse" />
         </div>
 
-        {/* Center element */}
+        {/* Center element with SVG */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-3 h-3 bg-blue-600 rounded-full animate-center-pulse"
-                style={{
-                  top: i === 0 ? 0 : i === 2 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
-                  left: i === 3 ? 0 : i === 1 ? 'calc(100% - 0.75rem)' : 'calc(50% - 0.375rem)',
-                  animationDelay: `${i * 0.2}s`,
-                }}
-              />
-            ))}
-          </div>
+          <img src={loaderLogo} width={58}
+            height={58} alt="loaderlogo" />
         </div>
       </div>
 
@@ -76,7 +66,8 @@ const LoadingScreen = () => {
         Loading
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes stroke-dash {
           to {
             stroke-dashoffset: -40;

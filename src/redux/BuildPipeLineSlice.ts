@@ -1,5 +1,9 @@
 import { ApiService } from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { jwtDecode } from "jwt-decode";
+
+const token: any = sessionStorage?.getItem("token");
+const decoded: any = token ? jwtDecode(token) : null;
 
 export interface ApiState {
   dataSource: any;
@@ -106,7 +110,11 @@ export const getAllPipeline: any = createAsyncThunk(
     // alert(JSON.stringify(params))
     try {
       const response = await ApiService('8011', 'get', '/pipeline/list/', null, params);
-      return response;
+      const transformed = response.map((item: any) => ({
+        ...item,
+        updated_by: decoded?.name ?? ""
+      }));
+      return transformed;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }

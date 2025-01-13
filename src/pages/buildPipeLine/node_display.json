@@ -86,7 +86,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Schema Transformation",
+        "module_name": "SchemaTransformation",
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/28.svg",
         "ports": {
@@ -98,7 +98,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Sort",
+        "module_name": "Sorter",
         "color": "#219fe7",
         "icon": "/assets/buildPipeline/squre/1.svg",
         "ports": {
@@ -110,7 +110,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Aggregate",
+        "module_name": "Aggregator",
         "color": "#d43faa",
         "icon": "/assets/buildPipeline/squre/2.svg",
         "ports": {

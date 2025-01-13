@@ -76,11 +76,11 @@ function CatalogsHead(props:any) {
                     <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered
                         TabIndicatorProps={{
                             style: {
-                                backgroundColor: '#000', // Customize the background color of the indicator
+                                backgroundColor: '#000',
                                 height: 5,
-                                width: '30px', // Set the width of the indicator based on the number of tabs
+                                width: '30px',
                                 marginLeft: 'calc((100% / 2 - 45%) / 2)',
-                                borderRadius: '10px 10px 0px 0px' // Center the indicator within each tab
+                                borderRadius: '10px 10px 0px 0px'
                             },
                         }}
                         TabScrollButtonProps={{
@@ -137,7 +137,7 @@ function CatalogsHead(props:any) {
 
 
             <CustomTabPanel value={value} index={0}>
-                <CatalogsBody />
+                <CatalogsBody selectedSource={undefined} />
             </CustomTabPanel>
             <CustomTabPanel value={value} index={1}>
                 {/* <Lineage data={props.data} /> */}

@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { getGitProject } from "@/redux/ProjectSlice";
-import { 
-  getDataSourceLayout, 
-  getdataSourceList, 
-  setSelectedDataSource 
+import {
+  getDataSourceLayout,
+  getdataSourceList,
+  setSelectedDataSource
 } from "@/redux/CatalogSlice";
 import { formatedDate } from "@/Utils/dateFormatter";
 
@@ -840,8 +840,8 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
             ? delimiter === ","
               ? 1
               : delimiter === ";"
-              ? 2
-              : 3
+                ? 2
+                : 3
             : 1,
         data_src_lyt_cust_delimiter: layoutType === "delimiter" ? delimiter : "",
         data_src_lyt_header: true,
@@ -950,7 +950,7 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
       }}
     >
       {showImportSection ? (
-        <Paper sx={{ p: 2 }}>
+        <Paper sx={{ m: 4, p: 6 }}>
           <Box sx={{ display: "flex", flexDirection: "column" }}>
             {/* Import Data Source Header */}
             <Box
@@ -988,7 +988,18 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
                 id="file-upload"
               />
               <label htmlFor="file-upload">
-                <Button variant="outlined" component="span">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  sx={{
+                    color: "black",
+                    borderColor: "black",
+                    '&:hover': {
+                      backgroundColor: "black",
+                      color: "white",
+                    },
+                  }}
+                >
                   Choose File
                 </Button>
               </label>
@@ -1126,12 +1137,6 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
         </Paper>
       ) : (
         <Box>
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-            <Button variant="outlined" color="primary" onClick={handleImportClick}>
-              Import Source
-            </Button>
-          </Box>
-
           <FlexibleTable
             data={catalogList}
             columns={columns}
@@ -1142,6 +1147,8 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
             playRowFn={playRowFn}
             playRow={true}
             background="bg-black"
+            importSrcFn={handleImportClick}
+            rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
           />
         </Box>
       )}
@@ -1202,13 +1209,13 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
 }
 
 const DataCatalog: React.FC = () => {
-  const { dataSourceList, loading, error: apiError } = useAppSelector(
+  const { dataSourceList, listLoading, error: apiError } = useAppSelector(
     (state: RootState) => state.catalogApi
   );
   const error = apiError ? { message: apiError } : null;
 
   return (
-    <DataCatalogTable catalogList={dataSourceList} loading={loading} error={error} />
+    <DataCatalogTable catalogList={dataSourceList} loading={listLoading} error={error} />
   );
 };
 

@@ -297,49 +297,71 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const setAiflowStrructre = (data: any) => {
     const valData = JSON.parse(data);
+
     if (Array.isArray(valData.tasks)) {
+      const newEdges: Edge[] = [];
+
       valData.tasks.forEach((task: any, index: number) => {
         const matchedModule = moduleTypes.find((module: any) => {
           return task.module_name === module.label;
-        })
-        const matchedoperator = matchedModule?.operators.find((operator: any) => {
+        });
+
+        const matchedOperator = matchedModule?.operators.find((operator: any) => {
           return task.type === operator.type;
-        })
+        });
+
         const id = (index + 1).toString();
         const lastNode = nodes[nodes.length - 1];
+
+        // Dynamically calculate position
         const position = {
-          x: (lastNode?.position?.x ?? 100) + 140,
+          x: (lastNode?.position?.x ?? 160) + index * 100,
           y: 150,
         };
-        const requiredFields = matchedoperator.requiredFields;
+
+        const requiredFields = matchedOperator?.requiredFields || [];
+       // debugger
+        // Add the node
         addNode({
           id,
           type: "custom",
           position,
           data: {
             tempSave: false,
-            label: matchedModule.label,
-            selectedData: null,
+            label: matchedModule?.label,
+            selectedData: matchedOperator.type,
             type: "",
             status: "pending",
             meta: {
               type: "",
               moduleInfo: {
-                color: matchedModule.color,
-                icon: matchedModule.icon,
-                label: matchedModule.label,
+                color: matchedModule?.color,
+                icon: matchedModule?.icon,
+                label: matchedModule?.label,
               },
-              properties: matchedoperator.properties,
-              description: matchedoperator.description,
+              properties: matchedOperator?.properties || [],
+              description: matchedOperator?.description,
               fullyOptimized: false,
             },
             requiredFields,
           },
-          tempSave: false
+          tempSave: false,
         });
-      })
+
+        if (index > 0) {
+          newEdges.push({
+            id: `e${index}-${index + 1}`,
+            source: (index).toString(),
+            target: id,
+            type: "smoothstep",
+          });
+        }
+      });
+
+      setEdges((prevEdges) => [...prevEdges, ...newEdges]);
     }
-  }
+  };
+
 
   const setConsequentTaskDetail = (task: any, detail: any) => {
   }
@@ -368,26 +390,16 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedFlowId, loadFlow]);
 
-  /**
-   * Effect for auto-save (only triggers *twice* per node/edge change).
-   * After two triggers, it waits for the debounce interval (6s) 
-   * before resetting so that future changes can be saved again.
-   */
   useEffect(() => {
     if (selectedFlowId && changeTriggerCount < 2) {
-      // Mark as dirty
       setIsDirty(true);
-      // Increase count
       setChangeTriggerCount((prev) => prev + 1);
-      // Trigger the debounced save
       debouncedSave();
     }
   }, [nodes, edges, selectedFlowId, debouncedSave, changeTriggerCount]);
 
-  // Reset the trigger count after the second time (waits for debounce interval).
   useEffect(() => {
     if (changeTriggerCount >= 2) {
-      // After 6s, reset the count so that further changes can trigger 2 new saves.
       const timer = setTimeout(() => setChangeTriggerCount(0), 6000);
       return () => clearTimeout(timer);
     }

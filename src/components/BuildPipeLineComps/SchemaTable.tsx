@@ -193,6 +193,8 @@ function SchemaTable({ initialData }: any) {
                         isSearch={false}
                         isAction={false}
                         background="bg-black"
+                        rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
+
                     />
 
                     {/* Checkboxes Section */}

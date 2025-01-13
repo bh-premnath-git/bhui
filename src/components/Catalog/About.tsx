@@ -1,11 +1,31 @@
 import React, { useState } from 'react';
 import {
-  Box, Typography, Button, Stack, Avatar, Chip, TextField,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Box,
+  Typography,
+  Button,
+  Stack,
+  Avatar,
+  Chip,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   IconButton,
-  MenuItem
+  MenuItem,
+  Card,
+  CardHeader,
+  CardContent,
+  Grid,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemSecondaryAction,
+  Tooltip,
 } from '@mui/material';
-import { Link as LinkIcon, Plus, Save, X } from 'lucide-react';
+import { Gavel, Plus, Link, Users, Tag, Save, X } from 'lucide-react';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -13,8 +33,9 @@ import { ApiService } from '@/services/apiServices';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Mock API call
 const mockApiCall = async (data: any) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   return { success: true };
 };
 
@@ -31,32 +52,67 @@ interface OwnerData {
   avatar?: string;
 }
 
+/** ---------- Description Section ---------- **/
 function DescriptionSection({
   description,
   isEditingDesc,
   onDescriptionChange,
-  onStartEdit,
+  onGenerateWithBot,
+  onManualEdit,
+  onManualSave,
   onSaveEdit,
   onCancelEdit,
+  botStatus,
+  hasChanges,
 }: {
   description: string;
   isEditingDesc: boolean;
   onDescriptionChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onStartEdit: () => void;
+  onGenerateWithBot: () => void;
+  onManualEdit: () => void;
+  onManualSave: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
+  botStatus: 'idle' | 'loading' | 'success' | 'error';
+  hasChanges: boolean;
 }) {
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          About
-        </Typography>
-      </Stack>
-
       {isEditingDesc ? (
-        <Box sx={{ mb: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            value={description}
+            onChange={onDescriptionChange}
+            size="small"
+            placeholder="Write your description here..."
+            sx={{ mb: 1 }}
+          />
+
+          <Stack direction="row" spacing={1}>
+            {/* Conditionally render "Save" icon only if changes exist */}
+            {hasChanges && (
+              <Button
+                size="small"
+                variant="text"
+                onClick={onSaveEdit}
+                sx={{
+                  textTransform: 'none',
+                  p: 0,
+                  minWidth: 'auto',
+                  '&:hover': {
+                    color: 'primary.main',
+                    backgroundColor: 'transparent',
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                <SaveIcon sx={{ fontSize: 20, color: 'black' }} />
+              </Button>
+            )}
+
             <Button
               size="small"
               variant="text"
@@ -73,66 +129,95 @@ function DescriptionSection({
             >
               <CloseIcon sx={{ fontSize: 20, color: 'error.main' }} />
             </Button>
-          </Box>
-          <Box sx={{ position: 'relative' }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              value={description}
-              onChange={onDescriptionChange}
-              size="small"
-              sx={{ mb: 1 }}
-            />
-          </Box>
-          <Stack direction="row" spacing={1}>
-            <Button
-              size="small"
-              variant="text"
-              onClick={onSaveEdit}
-              sx={{
-                textTransform: 'none',
-                p: 0,
-                minWidth: 'auto',
-                '&:hover': {
-                  color: 'primary.main',
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              <SaveIcon sx={{ fontSize: 20, color: 'black' }} />
-            </Button>
           </Stack>
-        </Box>
+        </>
       ) : (
         <>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             {description}
           </Typography>
-          <Button
-            size="small"
-            variant="text"
-            onClick={onStartEdit}
-            sx={{
-              color: 'primary.main',
-              textTransform: 'none',
-              p: 0,
-              minWidth: 'auto',
-              '&:hover': {
-                backgroundColor: 'transparent',
-                textDecoration: 'underline',
-              },
-            }}
-          >
-            <EditIcon sx={{ fontSize: 16, color: 'black' }} />
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Tooltip title="Generate Description with Bot">
+              <Button
+                size="small"
+                variant="text"
+                onClick={onGenerateWithBot}
+                disabled={botStatus === 'loading'}
+                sx={{
+                  textTransform: 'none',
+                  p: 0,
+                  minWidth: 'auto',
+                  color:
+                    botStatus === 'error'
+                      ? 'error.main'
+                      : botStatus === 'success'
+                        ? 'success.main'
+                        : 'primary.main',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                {botStatus === 'loading' ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <Gavel className="h-4 w-4" />
+                )}
+              </Button>
+            </Tooltip>
+
+            {/* Manual Edit */}
+            <Tooltip title="Switch to Manual Edit Mode">
+              <Button
+                size="small"
+                variant="text"
+                onClick={onManualEdit}
+                startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  textTransform: 'none',
+                  p: 0,
+                  minWidth: 'auto',
+                  color: 'primary.main',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+              </Button>
+            </Tooltip>
+
+            {/* Direct "Save" button (optional quick save) */}
+            {hasChanges && (
+              <Tooltip title="Save Current Description">
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={onManualSave}
+                  startIcon={<SaveIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    textTransform: 'none',
+                    p: 0,
+                    minWidth: 'auto',
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                </Button>
+              </Tooltip>
+            )}
+          </Stack>
         </>
       )}
     </Box>
   );
 }
 
+/** ---------- Links Section (using List) ---------- **/
 function LinksSection({
   links,
   onRemoveLink,
@@ -140,37 +225,51 @@ function LinksSection({
   links: LinkData[];
   onRemoveLink: (index: number) => void;
 }) {
-  if (!links.length) return null;
-  return (
-    <Box>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Links
+  if (!links.length) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        No links added yet.
       </Typography>
-      <Stack spacing={1}>
-        {links.map((link, index) => (
-          <Box
-            key={index}
-            sx={{
-              p: 1,
-              borderRadius: 1,
-              bgcolor: 'background.default',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              variant="body2"
-              component="a"
-              href={link.url}
-              target="_blank"
-              sx={{ color: 'black', '&:hover': { color: 'primary.main' } }}
-            >
-              {link.title}
-            </Typography>
+    );
+  }
+
+  return (
+    <List dense sx={{ mt: 1 }}>
+      {links.map((link, index) => (
+        <ListItem
+          key={index}
+          sx={{
+            bgcolor: 'background.default',
+            mb: 1,
+            borderRadius: 1,
+          }}
+        >
+          <ListItemText
+            primary={
+              <Typography
+                variant="body2"
+                component="a"
+                href={link.url}
+                target="_blank"
+                style={{ color: 'inherit', textDecoration: 'none' }}
+              >
+                {link.title}
+              </Typography>
+            }
+            secondary={
+              <Typography variant="caption" color="text.secondary">
+                {link.url}
+              </Typography>
+            }
+          />
+          <ListItemSecondaryAction>
             <IconButton
               size="small"
-              onClick={() => onRemoveLink(index)}
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this link?')) {
+                  onRemoveLink(index);
+                }
+              }}
               sx={{
                 color: 'text.secondary',
                 '&:hover': {
@@ -180,52 +279,36 @@ function LinksSection({
             >
               <X size={14} />
             </IconButton>
-          </Box>
-        ))}
-      </Stack>
-    </Box>
+          </ListItemSecondaryAction>
+        </ListItem>
+      ))}
+    </List>
   );
 }
 
-function OwnersSection({
-  owners,
-  onOpenOwnerDialog,
-}: {
-  owners: OwnerData[];
-  onOpenOwnerDialog: () => void;
-}) {
+/** ---------- Owners Section (using List) ---------- **/
+function OwnersSection({ owners }: { owners: OwnerData[] }) {
+  if (!owners.length) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        No owners have been added.
+      </Typography>
+    );
+  }
+
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          Owners
-        </Typography>
-        <Button
-          startIcon={<Plus size={14} />}
-          variant="outlined"
-          size="small"
-          onClick={onOpenOwnerDialog}
+    <List dense sx={{ mt: 1 }}>
+      {owners.map((owner) => (
+        <ListItem
+          key={owner.id}
           sx={{
-            textTransform: 'none',
+            bgcolor: 'background.default',
+            mb: 1,
             borderRadius: 1,
-            width: '125px',
           }}
         >
-          Add Owner
-        </Button>
-      </Stack>
-      <Stack spacing={1}>
-        {owners.map((owner) => (
-          <Stack key={owner.id} direction="row" spacing={1} alignItems="center">
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: 'grey.200',
-                color: '#1a1732',
-                fontSize: '0.875rem',
-              }}
-            >
+          <ListItemAvatar>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.200', color: '#1a1732' }}>
               {owner.name.split(' ').length > 1
                 ? owner.name
                   .split(' ')
@@ -234,60 +317,70 @@ function OwnersSection({
                 : owner.name.charAt(0).toUpperCase() +
                 owner.name.charAt(owner.name.length - 1).toUpperCase()}
             </Avatar>
-            <Box>
+          </ListItemAvatar>
+          <ListItemText
+            primary={
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {owner.name}
               </Typography>
-              <Typography variant="subtitle2" color="text.secondary">
-                {owner.role}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {owner.email}
-              </Typography>
-            </Box>
-          </Stack>
-        ))}
-      </Stack>
-    </Box>
+            }
+            secondary={
+              <>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {owner.role}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {owner.email}
+                </Typography>
+              </>
+            }
+          />
+          {/* If you want remove owners, replicate the X IconButton logic here */}
+        </ListItem>
+      ))}
+    </List>
   );
 }
 
+/** ---------- Tags Section (List + Chips) ---------- **/
 function TagsSection({
   tags,
-  onOpenTagDialog,
   onDeleteTag,
 }: {
   tags: string[];
-  onOpenTagDialog: () => void;
   onDeleteTag: (index: number) => void;
 }) {
+  if (!tags.length) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        No tags have been added.
+      </Typography>
+    );
+  }
+
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          Tags
-        </Typography>
-        <Button
-          startIcon={<Plus size={14} />}
-          variant="outlined"
-          size="small"
-          onClick={onOpenTagDialog}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 1,
-            width: '125px',
-          }}
-        >
-          Add Tags
-        </Button>
-      </Stack>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+    <List dense sx={{ mt: 1 }}>
+      <ListItem
+        disablePadding
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1,
+          bgcolor: 'background.default',
+          p: 1,
+          borderRadius: 1,
+        }}
+      >
         {tags.map((tag, index) => (
           <Chip
             key={index}
             label={tag}
             size="small"
-            onDelete={() => onDeleteTag(index)}
+            onDelete={() => {
+              if (window.confirm('Are you sure you want to remove this tag?')) {
+                onDeleteTag(index);
+              }
+            }}
             sx={{
               borderRadius: '4px',
               backgroundColor: 'primary.lighter',
@@ -302,23 +395,26 @@ function TagsSection({
             }}
           />
         ))}
-      </Stack>
-    </Box>
+      </ListItem>
+    </List>
   );
 }
 
+/** ---------- Dialogs ---------- **/
 function AddLinkDialog({
   open,
   onClose,
   newLink,
   onChangeNewLink,
   onAddLink,
+  loading,
 }: {
   open: boolean;
   onClose: () => void;
   newLink: LinkData;
   onChangeNewLink: (field: keyof LinkData, value: string) => void;
   onAddLink: () => void;
+  loading: boolean;
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -338,9 +434,11 @@ function AddLinkDialog({
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             label="Title"
+            placeholder="e.g. My Personal Website"
             fullWidth
             value={newLink.title}
             onChange={(e) => onChangeNewLink('title', e.target.value)}
+            helperText="Enter a title for your link."
             sx={{
               '& .MuiInputLabel-root': {
                 color: '#1a1a1a',
@@ -352,9 +450,11 @@ function AddLinkDialog({
           />
           <TextField
             label="URL"
+            placeholder="https://example.com"
             fullWidth
             value={newLink.url}
             onChange={(e) => onChangeNewLink('url', e.target.value)}
+            helperText="Enter a valid URL."
             sx={{
               '& .MuiInputLabel-root': {
                 color: '#1a1a1a',
@@ -366,13 +466,21 @@ function AddLinkDialog({
           />
         </Stack>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: 'black' }}>
+          Cancel
+        </Button>
         <Button
           onClick={onAddLink}
           variant="contained"
           sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}
+          disabled={loading}
         >
-          <Save className="h-5 w-5" />
+          {loading ? (
+            <CircularProgress size={20} sx={{ color: '#fff' }} />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
         </Button>
       </DialogActions>
     </Dialog>
@@ -386,6 +494,7 @@ function AddOwnerDialog({
   onChangeNewOwner,
   roles,
   onAddOwner,
+  loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -393,6 +502,7 @@ function AddOwnerDialog({
   onChangeNewOwner: (field: 'name' | 'role' | 'email', value: string) => void;
   roles: string[];
   onAddOwner: () => void;
+  loading: boolean;
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -412,9 +522,11 @@ function AddOwnerDialog({
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             label="Name"
+            placeholder="e.g. John Doe"
             fullWidth
             value={newOwner.name}
             onChange={(e) => onChangeNewOwner('name', e.target.value)}
+            helperText="Enter the owner's full name."
             sx={{
               '& .MuiInputLabel-root': {
                 color: '#1a1a1a',
@@ -427,9 +539,11 @@ function AddOwnerDialog({
           <TextField
             select
             label="Role"
+            placeholder="e.g. admin-user"
             fullWidth
             value={newOwner.role}
             onChange={(e) => onChangeNewOwner('role', e.target.value)}
+            helperText="Select the owner's role."
             sx={{
               '& .MuiInputLabel-root': {
                 color: '#1a1a1a',
@@ -447,9 +561,11 @@ function AddOwnerDialog({
           </TextField>
           <TextField
             label="Email"
+            placeholder="john@doe.com"
             fullWidth
             value={newOwner.email}
             onChange={(e) => onChangeNewOwner('email', e.target.value)}
+            helperText="Enter a valid email address."
             sx={{
               '& .MuiInputLabel-root': {
                 color: '#1a1a1a',
@@ -461,7 +577,7 @@ function AddOwnerDialog({
           />
         </Stack>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ color: 'black' }}>
           Cancel
         </Button>
@@ -469,11 +585,17 @@ function AddOwnerDialog({
           onClick={onAddOwner}
           variant="contained"
           sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}
+          disabled={loading}
         >
-          <Save className="h-5 w-5" />
+          {loading ? (
+            <CircularProgress size={20} sx={{ color: '#fff' }} />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
         </Button>
       </DialogActions>
-    </Dialog>)
+    </Dialog>
+  );
 }
 
 function AddTagDialog({
@@ -482,12 +604,14 @@ function AddTagDialog({
   newTag,
   onChangeNewTag,
   onAddTag,
+  loading,
 }: {
   open: boolean;
   onClose: () => void;
   newTag: string;
   onChangeNewTag: (value: string) => void;
   onAddTag: () => void;
+  loading: boolean;
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -506,9 +630,11 @@ function AddTagDialog({
       <DialogContent>
         <TextField
           label="Tag"
+          placeholder="e.g. sales, marketing..."
           fullWidth
           value={newTag}
           onChange={(e) => onChangeNewTag(e.target.value)}
+          helperText="Enter a new tag."
           sx={{
             mt: 1,
             '& .MuiInputLabel-root': {
@@ -520,41 +646,83 @@ function AddTagDialog({
           }}
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: 'black' }}>
+          Cancel
+        </Button>
         <Button
           onClick={onAddTag}
           variant="contained"
           sx={{ backgroundColor: 'black', '&:hover': { backgroundColor: 'black' } }}
+          disabled={loading}
         >
-          <Save className="h-5 w-5" />
+          {loading ? (
+            <CircularProgress size={20} sx={{ color: '#fff' }} />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
         </Button>
       </DialogActions>
-    </Dialog>)
+    </Dialog>
+  );
 }
 
+/** ---------- Main Component ---------- **/
 export default function About(data: any) {
   const roles = ['admin-user', 'ops-user', 'designer-user'];
+
   const [description, setDescription] = useState(
-    'Sample Description about the data source. This needs to be updated by the user.'
+    data.description ?? 'Sample Description about the data source. This needs to be updated by the user.'
   );
+
+  // Track the original (last saved) description:
+  const [originalDescription, setOriginalDescription] = useState(description);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
+
+  const [botStatus, setBotStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
   const [links, setLinks] = useState<LinkData[]>([]);
   const [owners, setOwners] = useState<OwnerData[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
-  // Dialog states
   const [linkDialog, setLinkDialog] = useState(false);
   const [ownerDialog, setOwnerDialog] = useState(false);
   const [tagDialog, setTagDialog] = useState(false);
 
-  // Form states
   const [newLink, setNewLink] = useState<LinkData>({ url: '', title: '' });
   const [newOwner, setNewOwner] = useState({ name: '', role: '', email: '' });
   const [newTag, setNewTag] = useState('');
 
-  const handleClickEdit = async () => {
-    try {
+  const [addLinkLoading, setAddLinkLoading] = useState(false);
+  const [addOwnerLoading, setAddOwnerLoading] = useState(false);
+  const [addTagLoading, setAddTagLoading] = useState(false);
 
+  const hasChanges = description !== originalDescription;
+
+  const handleSaveDescriptionRemote = async () => {
+    try {
+      await ApiService(
+        '8011',
+        'patch',
+        `/data_source/${data.dataSource.data_src_id}`,
+        { data_src_desc: description }
+      );
+      toast.success('Description saved to the remote server!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } catch (err) {
+      toast.error('Failed to save description remotely.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // Generate description via Bot
+  const handleGenerateWithBot = async () => {
+    setBotStatus('loading');
+    try {
       const body = {
         operation_type: 'datasource_description',
         thread_id: 'desc_123',
@@ -564,161 +732,279 @@ export default function About(data: any) {
         },
       };
       const descriptionResponse = await ApiService('8090', 'post', '/pipeline_agent/generate', body);
-      const desContent = (JSON.parse(descriptionResponse.result)).description
-      setDescription(desContent)
-      setIsEditingDesc(true);
-      toast.success('Description updated successfully', {
+      const desContent = JSON.parse(descriptionResponse.result).description;
+      setDescription(desContent);
+
+      setBotStatus('success');
+      toast.success('Description updated by Bot.', {
         position: 'top-right',
         autoClose: 3000,
       });
     } catch (error) {
       console.error('API Error:', error);
-
-      toast.error('Failed to update description', {
+      setBotStatus('error');
+      toast.error('Failed to generate description', {
         position: 'top-right',
         autoClose: 3000,
       });
     }
   };
 
-  const handleDescriptionSave = () => {
-    setIsEditingDesc(false);
-    toast.success('Description saved locally', {
+  // Manual edit mode
+  const handleManualEdit = () => {
+    setIsEditingDesc(true);
+  };
+
+  // Manual "quick save"
+  const handleManualSave = async () => {
+    toast.success('Description saved (quick save).', {
       position: 'top-right',
       autoClose: 3000,
     });
+    await handleSaveDescriptionRemote();
+    // Optionally reset originalDescription, so "hasChanges" updates
+    setOriginalDescription(description);
   };
 
+  // Finalize manual edit
+  const handleDescriptionSave = async () => {
+    // Update original description, so the "Save" button disappears
+    setOriginalDescription(description);
+    setIsEditingDesc(false);
+
+    toast.success('Description saved (after editing).', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+
+    // Also save to remote
+    await handleSaveDescriptionRemote();
+  };
+
+  // Cancel manual edit
+  const handleCancelEdit = () => {
+    // Revert to original description
+    setDescription(originalDescription);
+    setIsEditingDesc(false);
+  };
+
+  // Add Link
   const handleAddLink = async () => {
+    if (!newLink.title.trim() || !newLink.url.trim()) {
+      toast.error('Please enter both a link title and a valid URL.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+    setAddLinkLoading(true);
     try {
-      const body = { link: newLink };
-      await mockApiCall({ body });
+      await mockApiCall({ link: newLink });
       setLinks([...links, newLink]);
-      setLinkDialog(false);
-      setNewLink({ url: '', title: '' });
-      toast.success('Link added successfully', {
+      toast.success('Link added successfully.', {
         position: 'top-right',
         autoClose: 3000,
       });
     } catch (error) {
-      toast.error('Failed to add link', {
+      toast.error('Failed to add link.', {
         position: 'top-right',
         autoClose: 3000,
       });
+    } finally {
+      setAddLinkLoading(false);
+      setLinkDialog(false);
+      setNewLink({ url: '', title: '' });
     }
   };
 
+  // Add Owner
   const handleAddOwner = async () => {
+    if (!newOwner.name.trim() || !newOwner.role.trim() || !newOwner.email.trim()) {
+      toast.error('Please fill out the name, role, and email.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+    setAddOwnerLoading(true);
     try {
       const owner = {
         id: Math.random().toString(36).substr(2, 9),
         ...newOwner,
       };
-
-      const body = { owner };
-      await mockApiCall({ body });
+      await mockApiCall({ owner });
       setOwners([...owners, owner]);
+      toast.success('Owner added successfully.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } catch (error) {
+      toast.error('Failed to add owner.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } finally {
+      setAddOwnerLoading(false);
       setOwnerDialog(false);
       setNewOwner({ name: '', role: '', email: '' });
-      toast.success('Owner added successfully', {
+    }
+  };
+
+  // Add Tag
+  const handleAddTag = async () => {
+    if (!newTag.trim()) {
+      toast.error('Please enter a tag name.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+    setAddTagLoading(true);
+    try {
+      await mockApiCall({ tag: newTag });
+      setTags([...tags, newTag]);
+      toast.success('Tag added successfully.', {
         position: 'top-right',
         autoClose: 3000,
       });
     } catch (error) {
-      toast.error('Failed to add owner', {
+      toast.error('Failed to add tag.', {
         position: 'top-right',
         autoClose: 3000,
       });
-    }
-  };
-
-  // Handle tag add
-  const handleAddTag = async () => {
-    try {
-      const body = { tag: newTag };
-      await mockApiCall({ body });
-      setTags([...tags, newTag]);
+    } finally {
+      setAddTagLoading(false);
       setTagDialog(false);
       setNewTag('');
-      toast.success('Tag added successfully', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    } catch (error) {
-      toast.error('Failed to add tag', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
     }
   };
 
-  /** RENDER */
-
   return (
-    <Box
-      sx={{
-        p: 2.5,
-        height: '100%',
-        backgroundColor: 'background.paper',
-      }}
-    >
-      <Stack spacing={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <DescriptionSection
-            description={description}
-            isEditingDesc={isEditingDesc}
-            onDescriptionChange={(e) => setDescription(e.target.value)}
-            onStartEdit={handleClickEdit}
-            onSaveEdit={handleDescriptionSave}
-            onCancelEdit={() => setIsEditingDesc(false)}
-          />
-          <Box>
-            {!isEditingDesc && (
-              <Button
-                startIcon={<LinkIcon size={14} />}
-                variant="outlined"
-                size="small"
-                onClick={() => setLinkDialog(true)}
-                sx={{
-                  textTransform: 'none',
-                  borderRadius: 1,
-                  width: '125px',
-                  ml: 2,
+    <Box sx={{ p: 2.5, backgroundColor: (theme) => theme.palette.grey[50] }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardHeader
+              title={
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  About
+                </Typography>
+              }
+            />
+            <CardContent>
+              <DescriptionSection
+                description={description}
+                isEditingDesc={isEditingDesc}
+                onDescriptionChange={(e) => setDescription(e.target.value)}
+                onGenerateWithBot={handleGenerateWithBot}
+                onManualEdit={handleManualEdit}
+                onManualSave={handleManualSave}
+                onSaveEdit={handleDescriptionSave}
+                onCancelEdit={handleCancelEdit}
+                botStatus={botStatus}
+                hasChanges={hasChanges}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardHeader
+              title={
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Links
+                </Typography>
+              }
+              action={
+                <Button
+                  startIcon={<Plus size={14} />}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setLinkDialog(true)}
+                  sx={{ textTransform: 'none', borderRadius: 1 }}
+                >
+                  <Link className="w-4 h-4" />
+                </Button>
+              }
+            />
+            <CardContent>
+              <LinksSection
+                links={links}
+                onRemoveLink={(index) => {
+                  setLinks(links.filter((_, i) => i !== index));
                 }}
-              >
-                Add Link
-              </Button>
-            )}
-          </Box>
-        </Stack>
+              />
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Links Section */}
-        <LinksSection
-          links={links}
-          onRemoveLink={(index) => setLinks(links.filter((_, i) => i !== index))}
-        />
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardHeader
+              title={
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Owners
+                </Typography>
+              }
+              action={
+                <Button
+                  startIcon={<Plus size={14} />}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setOwnerDialog(true)}
+                  sx={{ textTransform: 'none', borderRadius: 1 }}
+                >
+                  <Users className="w-4 h-4" />
+                </Button>
+              }
+            />
+            <CardContent>
+              <OwnersSection owners={owners} />
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Owners Section */}
-        <OwnersSection owners={owners} onOpenOwnerDialog={() => setOwnerDialog(true)} />
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardHeader
+              title={
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Tags
+                </Typography>
+              }
+              action={
+                <Button
+                  startIcon={<Plus size={14} />}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setTagDialog(true)}
+                  sx={{ textTransform: 'none', borderRadius: 1 }}
+                >
+                  <Tag className="w-4 h-4" />
+                </Button>
+              }
+            />
+            <CardContent>
+              <TagsSection
+                tags={tags}
+                onDeleteTag={(index) => setTags(tags.filter((_, i) => i !== index))}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-        {/* Tags Section */}
-        <TagsSection
-          tags={tags}
-          onOpenTagDialog={() => setTagDialog(true)}
-          onDeleteTag={(index) => setTags(tags.filter((_, i) => i !== index))}
-        />
-      </Stack>
-
-      {/* Add Link Dialog */}
+      {/* Dialogs */}
       <AddLinkDialog
         open={linkDialog}
         onClose={() => setLinkDialog(false)}
         newLink={newLink}
         onChangeNewLink={(field, value) => setNewLink({ ...newLink, [field]: value })}
         onAddLink={handleAddLink}
+        loading={addLinkLoading}
       />
 
-      {/* Add Owner Dialog */}
       <AddOwnerDialog
         open={ownerDialog}
         onClose={() => setOwnerDialog(false)}
@@ -726,18 +1012,18 @@ export default function About(data: any) {
         onChangeNewOwner={(field, value) => setNewOwner({ ...newOwner, [field]: value })}
         roles={roles}
         onAddOwner={handleAddOwner}
+        loading={addOwnerLoading}
       />
 
-      {/* Add Tag Dialog */}
       <AddTagDialog
         open={tagDialog}
         onClose={() => setTagDialog(false)}
         newTag={newTag}
         onChangeNewTag={(value) => setNewTag(value)}
         onAddTag={handleAddTag}
+        loading={addTagLoading}
       />
 
-      {/* Last Updated Info */}
       <Typography
         variant="caption"
         color="text.secondary"
@@ -747,6 +1033,7 @@ export default function About(data: any) {
           pt: 2,
           borderTop: '1px dashed',
           borderColor: 'divider',
+          textAlign: 'right',
         }}
       >
         Last Updated On: {new Date().toLocaleString()}

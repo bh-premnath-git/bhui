@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
-import { FlexibleTable } from "@/components/Tabel";
+import { FlexibleTable } from "@/components/Table";
 import Modal from "@/portal/ModalPortal"
 import CreateFlowForm from "@/components/CreateFlowForm/CreateFlowForm";
 import { useNavigate } from "react-router-dom";

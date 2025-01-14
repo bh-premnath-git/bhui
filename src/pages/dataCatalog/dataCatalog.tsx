@@ -11,7 +11,7 @@ import {
 import { formatedDate } from "@/Utils/dateFormatter";
 
 // Components
-import { FlexibleTable } from "@/components/Tabel";
+import { FlexibleTable } from "@/components/Table";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import CatalogSchema from "./catalogSchema";
@@ -25,16 +25,7 @@ import {
   Tooltip,
   Drawer,
   IconButton,
-  Button,
   TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Select,
-  MenuItem,
   Popover
 } from "@mui/material";
 
@@ -56,6 +47,8 @@ import {
 
 import Papa from "papaparse";
 import xml2js from "xml2js";
+import ImportDataSource from "./ImportDataSourceWizard";
+import { ApiService } from "@/services/apiServices";
 
 /* ----------------------------------------------------------------------
   Interfaces & Types
@@ -600,7 +593,6 @@ const columns: ColumnConfig[] = [
 
 function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps) {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<any>(null);
@@ -637,8 +629,6 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
 
   /* Handlers */
   const createNewFn = () => {
-    // Example function for table "create new" button
-    // navigate("/all-projects/new");
   };
 
   const playRowFn = async (rowData: any) => {
@@ -938,9 +928,12 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
     }
   };
 
-  /* ------------------------------------------------------------------
-     Render
-  ------------------------------------------------------------------ */
+  const closeImportSection = () => {
+    setShowImportSection(false);
+    setPreviewData([]);
+    setFileData(null);
+  };
+
   return (
     <Box
       sx={{
@@ -950,198 +943,16 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
       }}
     >
       {showImportSection ? (
-        <Paper sx={{ m: 4, p: 6 }}>
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            {/* Import Data Source Header */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="h6">Import Data Source</Typography>
-              <IconButton
-                onClick={() => {
-                  setShowImportSection(false);
-                  setPreviewData([]);
-                  setFileData(null);
-                }}
-                sx={{
-                  "&:hover": {
-                    backgroundColor: "action.hover",
-                  },
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-
-            {/* File Upload */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              <input
-                type="file"
-                accept=".csv, .txt, .json, .xml"
-                onChange={handleFileUpload}
-                style={{ display: "none" }}
-                id="file-upload"
-              />
-              <label htmlFor="file-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  sx={{
-                    color: "black",
-                    borderColor: "black",
-                    '&:hover': {
-                      backgroundColor: "black",
-                      color: "white",
-                    },
-                  }}
-                >
-                  Choose File
-                </Button>
-              </label>
-              {fileData && (
-                <Typography variant="body2">File loaded successfully</Typography>
-              )}
-            </Box>
-
-            {/* Parsing and Preview */}
-            {fileData && (
-              <>
-                <TextField
-                  label="Data Source Name"
-                  value={dataSourceName}
-                  onChange={(e) => setDataSourceName(e.target.value)}
-                  fullWidth
-                  size="small"
-                  sx={{ mb: 2 }}
-                  helperText="Override the data source name (defaults to file name)"
-                />
-
-                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-                  <Select
-                    value={layoutType}
-                    onChange={(e) =>
-                      setLayoutType(e.target.value as "delimiter" | "json" | "xml")
-                    }
-                    size="small"
-                    sx={{ minWidth: 150 }}
-                  >
-                    <MenuItem value="delimiter">Delimited File</MenuItem>
-                    <MenuItem value="json">JSON</MenuItem>
-                    <MenuItem value="xml">XML</MenuItem>
-                  </Select>
-
-                  {layoutType === "delimiter" && (
-                    <>
-                      <Select
-                        value={delimiter}
-                        onChange={(e) =>
-                          handleSettingChange("delimiter", e.target.value)
-                        }
-                        displayEmpty
-                        size="small"
-                      >
-                        <MenuItem value=",">Comma (,)</MenuItem>
-                        <MenuItem value=";">Semicolon (;)</MenuItem>
-                        <MenuItem value="\t">Tab</MenuItem>
-                      </Select>
-                      <Select
-                        value={quoteChar}
-                        onChange={(e) =>
-                          handleSettingChange("quoteChar", e.target.value)
-                        }
-                        displayEmpty
-                        size="small"
-                      >
-                        <MenuItem value='"'>Double Quote (")</MenuItem>
-                        <MenuItem value="'">Single Quote (')</MenuItem>
-                      </Select>
-                    </>
-                  )}
-
-                  <Select
-                    value={encoding}
-                    onChange={(e) =>
-                      handleSettingChange("encoding", e.target.value)
-                    }
-                    displayEmpty
-                    size="small"
-                  >
-                    <MenuItem value="UTF-8">UTF-8</MenuItem>
-                    <MenuItem value="ISO-8859-1">ISO-8859-1</MenuItem>
-                  </Select>
-                </Box>
-
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                  Preview Data
-                </Typography>
-                <TableContainer sx={{ maxHeight: 400 }}>
-                  <Table stickyHeader size="small">
-                    <TableHead>
-                      <TableRow>
-                        {editableHeaders.map((header, index) => {
-                          const meta = columnMetadata[index];
-                          return (
-                            <TableCell
-                              key={index}
-                              sx={{
-                                position: "relative",
-                                minWidth: "200px",
-                                padding: "16px",
-                                verticalAlign: "top",
-                                "& .MuiInputBase-root": {
-                                  margin: 0,
-                                },
-                              }}
-                            >
-                              {meta && (
-                                <ColumnHeader
-                                  header={header}
-                                  meta={meta}
-                                  onChange={(value) =>
-                                    handleHeaderChange(index, value)
-                                  }
-                                />
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {previewData.map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {editableHeaders.map((header, colIndex) => (
-                            <TableCell key={`${rowIndex}-${colIndex}`}>
-                              {row[originalHeaders[colIndex]]}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-                  <Button variant="contained" color="primary" onClick={handleImport}>
-                    Import
-                  </Button>
-                </Box>
-              </>
-            )}
-          </Box>
-        </Paper>
+        <>
+          <ImportDataSource closeImportSection={closeImportSection} />
+        </>
       ) : (
         <Box>
           <FlexibleTable
             data={catalogList}
             columns={columns}
-            itemsPerPageOptions={[10, 25, 50]}
-            defaultItemsPerPage={10}
+            itemsPerPageOptions={[5, 15, 20]}
+            defaultItemsPerPage={5}
             tableName="Xplore"
             createNewFn={createNewFn}
             playRowFn={playRowFn}
@@ -1152,8 +963,6 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
           />
         </Box>
       )}
-
-      {/* Drawer for selected data source details */}
       <Drawer
         anchor="right"
         open={isDrawerOpen}

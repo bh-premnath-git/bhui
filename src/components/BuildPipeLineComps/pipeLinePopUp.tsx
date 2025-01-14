@@ -9,9 +9,9 @@ import CustomTable, { generateColumnsFromData } from '@/common/CustomTable';
 import LogsPage from './LogsPage';
 import AddFilterPopUp from './AddFilterPopUp';
 import AddSortPopUp from './AddSortPopUp';
-import { FlexibleTable } from '../Tabel'; 
+import { FlexibleTable } from '../Table';
 import { downloadCSV } from '@/lib/utils';
-export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
+export default function PipeLinePopUp({ open, handleClose, transformData }: any) {
     const [isExpanded, setIsExpanded] = React.useState(false);
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [openFilter, setOpenFilter] = React.useState(false);
@@ -35,9 +35,9 @@ export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
     useEffect(() => {
         console.log(transformData)
     }, [transformData]);
-    
 
-    
+
+
     const columns: any = generateColumnsFromData(transformData, ['']);
 
     const handleClick = () => {
@@ -70,7 +70,7 @@ export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
                                 <Stack onClick={handleFilterOpen} sx={{ my: 2, fontWeight: 600 }} color={'black'} direction={'row'} spacing={2} alignItems={'center'}><FiFilter className='mx-2' size={18} color='black' /> Filter</Stack>
                                 <Stack onClick={handleSortOpen} sx={{ my: 2, fontWeight: 600 }} color={'black'} direction={'row'} spacing={2} alignItems={'center'}><IoFilterSharp className='mx-2' size={18} color='black' /> Sort</Stack>
                             </Stack>
-                            <div className="dropdown" onClick={()=>downloadCSV(transformData)}>
+                            <div className="dropdown" onClick={() => downloadCSV(transformData)}>
                                 <img src="/assets/buildPipeline/downArrow.png" alt="" />
                             </div>
                         </Stack>
@@ -101,7 +101,7 @@ export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
 
                     </>
                 </DialogActions> */}
-            </>)} 
+            </>)}
 
             <AddFilterPopUp handleFilterClose={handleFilterClose} openFilter={openFilter} />
             <AddSortPopUp handleSortClose={handleSortClose} openSort={openSort} />
@@ -129,7 +129,7 @@ export default function PipeLinePopUp({ open, handleClose,transformData }:any) {
                             <div className="dropdown">
                                 <img className="dropdown-toggle" src="/assets/buildPipeline/downArrow.png" alt=""
                                     width={30} />
-                                
+
                             </div>
                             <Stack onClick={handleClose}><IoClose /></Stack>
                         </Stack>

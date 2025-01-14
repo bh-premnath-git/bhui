@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { FlexibleTable } from '@/components/Tabel';
+import { FlexibleTable } from '@/components/Table';
 import Checkbox from '@mui/material/Checkbox';
 import { Button, Stack, Typography, Dialog, DialogTitle, DialogContent, TextField, CircularProgress } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';

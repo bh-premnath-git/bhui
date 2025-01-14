@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from "react";
-import { FlexibleTable } from "@/components/Tabel";
+import { FlexibleTable } from "@/components/Table";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";

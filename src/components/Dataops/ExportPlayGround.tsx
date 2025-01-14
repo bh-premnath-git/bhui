@@ -5,27 +5,27 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { IoClose } from 'react-icons/io5';
-import { FlexibleTable } from '../Tabel';
+import { FlexibleTable } from '../Table';
 import { Editor } from '@monaco-editor/react';
 import { tap } from 'lodash';
 
 
 function ExportPlayGround() {
     const [tabIndex, setTabIndex] = useState(0);
-    const [tabs, setTabs] = useState([{ id: 0, label: 'Dataset 1', content: '',isExecute:false }]);
+    const [tabs, setTabs] = useState([{ id: 0, label: 'Dataset 1', content: '', isExecute: false }]);
 
     const handleAddTab = () => {
         setTabs((prevTabs) => {
             const newTabId = prevTabs.length;
-            const updatedTabs = [...prevTabs, { id: newTabId, label: `Dataset ${newTabId + 1}`, content: '' ,isExecute:false }];
+            const updatedTabs = [...prevTabs, { id: newTabId, label: `Dataset ${newTabId + 1}`, content: '', isExecute: false }];
             setTabIndex(newTabId + 1); // Set focus to the new tab
             return updatedTabs;
         });
     };
 
     const handleRun = () => {
-        setTabs(prevTabs => 
-            prevTabs.map(tab => 
+        setTabs(prevTabs =>
+            prevTabs.map(tab =>
                 tab.id === prevTabs[tabIndex].id ? { ...tab, isExecute: true } : tab
             ))
     };
@@ -47,7 +47,7 @@ function ExportPlayGround() {
             if (newTabs.length === 0) {
                 // If all tabs are removed, reset to a default tab
                 setTabIndex(0);
-                return [{ id: 0, label: "Dataset 1", content: "",isExecute:false }];
+                return [{ id: 0, label: "Dataset 1", content: "", isExecute: false }];
             }
             if (index === tabIndex) {
                 // Adjust the selected tab if the current one is removed
@@ -213,7 +213,7 @@ const TabContent = ({ tabs, tabIndex, handleContentChange }: any) => {
 
                     </div>
 
-                    {tab.isExecute&&(<Stack className=' rounded-sm'>
+                    {tab.isExecute && (<Stack className=' rounded-sm'>
                         <FlexibleTable
                             data={userList}
                             columns={columns}

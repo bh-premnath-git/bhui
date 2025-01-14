@@ -976,7 +976,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             console.log(submitValue)
             if (initialData?.connectionConfigId && submitValue === 'final') {
                 const transformedData = {
-                    connection_name: connectionTypeMatch.connection_name,
+                    connection_name: connectionTypeMatch.connection_name.toLowerCase(),
                     connection_description: '',
                     connection_type: "source",
                     connection_status: "active",
@@ -993,7 +993,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     connection_config_name: formData.source?.connection?.connection_name || "default_name",
                     custom_metadata: formData,
                     connection_id: connectionTypeMatch.id,
-                    connection_name: connectionTypeMatch.connection_name,
+                    connection_name: connectionTypeMatch.connection_name.toLowerCase(),
                     connection_type: "source",
                     connection_status: "active",
                     data_residency: "auto",

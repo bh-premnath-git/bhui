@@ -50,8 +50,6 @@ const BuildPlayGround: React.FC = () => {
     const [formStates, setFormStates] = useState<{ [key: string]: any }>({});
     const [runDialogOpen, setRunDialogOpen] = useState(false);
     const [selectedFormState, setSelectedFormState] = useState<any>(null);
-    const [pipelineConfig, setPipelineConfig] = useState<any[]>([]);
-    const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
@@ -121,7 +119,7 @@ const BuildPlayGround: React.FC = () => {
 
     useEffect(() => {
         const intervalId = setInterval(async () => {
-            if (saveStatus.hasUnsavedChanges) {  // Only save if there are changes
+            if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
                     const pipeline_json = {
@@ -237,13 +235,15 @@ const BuildPlayGround: React.FC = () => {
         const targetNodes = allNodes.filter(node =>
             !edges.some(edge => edge.source === node.id)
         );
+        console.log(sourceNodes)
         const sources = sourceNodes.map(node => ({
             name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
             source_type: "File",
             file_name: `${node.data.source?.file_path_prefix || "examples"}/${node.data.source?.file_name || "NaN"}`,
             connection: {
                 name: node.data.source?.connection_name || "local_connection",
-                connection_type: node.data.source?.connection_type || "Local",
+                connection_type: (node.data.source?.connection_type || "local").charAt(0).toUpperCase() +
+                    (node.data.source?.connection_type || "local").slice(1),
                 file_path_prefix: `${node.data.source?.file_path_prefix || "examples"}/`
             }
         }));
@@ -271,7 +271,6 @@ const BuildPlayGround: React.FC = () => {
                         processNode(edge.source);
                     }
                 });
-
                 const node = allNodes.find(n => n.id === nodeId);
                 if (node) {
                     orderedNodes.push(node);
@@ -287,11 +286,18 @@ const BuildPlayGround: React.FC = () => {
 
         // Get ordered nodes and create transformations
         const orderedNodes = getOrderedNodes();
+        console.log(orderedNodes)
         const transformations = orderedNodes.map(node => {
-            console.log(node.data)
+            const isTargetNode = !edges.some(edge => edge.source === node.id);
+            if (isTargetNode) {
+                return null;
+            }
+
             if (node.data.label.toLowerCase().includes("source") || node.data.source) {
+                console.log(node.data)
+
                 return {
-                    name: "read_" + node?.data?.title || node.data?.source?.data_src_name || null,
+                    name: "read_" + (node?.data?.title || node?.data?.source?.custom_metadata?.reader_name || node?.data?.source?.data_src_name || "input_data"),
                     dependent_on: [],
                     transformation: "Reader",
                     source: {
@@ -299,8 +305,9 @@ const BuildPlayGround: React.FC = () => {
                         source_type: "File",
                         file_name: node.data.source?.file_name || null,
                         connection: {
-                            name: node.data.source?.connection_name || null,
-                            connection_type: node.data.source?.connection_type || null,
+                            name: node.data.source?.custom_metadata?.source?.connection?.connection_name || node.data.source?.connection_type + "_connection" || "local_connection",
+                            connection_type: (node.data.source?.connection_type || "local").charAt(0).toUpperCase() +
+                                (node.data.source?.connection_type || "local").slice(1),
                             file_path_prefix: node.data.source?.file_path_prefix || null
                         }
                     },
@@ -314,17 +321,15 @@ const BuildPlayGround: React.FC = () => {
             const incomingEdges = edges.filter(edge => edge.target === node.id);
             const dependentOn = incomingEdges.map(edge => {
                 const sourceNode = allNodes.find(n => n.id === edge.source);
-                console.log(sourceNode?.data);
-
                 if (sourceNode?.data?.source) {
                     return "read_" + (sourceNode.data.title || sourceNode.data.source.data_src_name || "input_data");
                 } else if (sourceNode?.data?.label) {
-                    return `${sourceNode.data.label.split(' ')[0].toLowerCase()}_transformation`;
+                    const moduleName = sourceNode.data.label.split(' ')[0].toLowerCase();
+                    return getTransformationName(moduleName);
                 }
                 return null;
             }).filter(Boolean);
 
-            // Special handling for join transformations
             if (moduleName === 'join' || moduleName === 'joiner') {
                 const formState = formStates[node.id] || {};
                 return {
@@ -334,37 +339,36 @@ const BuildPlayGround: React.FC = () => {
                     conditions: [
                         {
                             join_input: formState.join_input || "read_lookup_data",
-                            join_condition: formState.join_condition || "",
+                            join_condition: formState.join_condition || "read_input_data.id = read_lookup_data.id",
                             join_type: formState.join_type || "left"
                         }
                     ],
-                    expressions: formState.expressions || [
+                    expressions: [
                         {
-                            target_column: formState.target_column || "",
-                            expression: formState.expression || ""
+                            name: formState.expressions?.[0]?.name || "full_name",
+                            expression: formState.expressions?.[0]?.expression || "concat(read_input_data.name, ' ', read_input_data.city)"
                         }
                     ],
-                    advanced: {
-                        hints: [
-                            {
-                                join_input: formState.hint_input || "read_input_data",
-                                hint_type: formState.hint_type || "broadcast"
-                            }
-                        ]
-                    }
+                    advanced: [
+                        {
+                            join_input: formState.advanced?.[0]?.join_input || "read_input_data",
+                            hint_type: formState.advanced?.[0]?.hint_type || "broadcast"
+                        }
+                    ]
                 };
             }
 
             // Handle other transformations
             return {
-                name: `${moduleName}_transformation`,
+                name: getTransformationName(moduleName),
                 dependent_on: dependentOn,
                 transformation: node.data.label,
                 ...(formStates[node.id] || {})
             };
-        }).filter(Boolean);
+        }).filter(Boolean); // This will remove any null values (including skipped target nodes)
 
         const pipelineConfig = {
+            "$schema": "https://json-schema.org/draft-07/schema#",
             name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
             description: `${pipelineDtl?.pipeline_description || " "}`,
             version: "1.0",
@@ -761,6 +765,22 @@ const BuildPlayGround: React.FC = () => {
             navigate("/designers/build-datapipeline/", { replace: true });
         }
     }, [nodes, edges, id, dispatch, navigate]);
+
+    const getTransformationName = (moduleName: string): string => {
+        const lowerModuleName = moduleName.toLowerCase();
+        switch (lowerModuleName) {
+            case 'joiner':
+                return 'join_transformation';
+            case 'schematransformation':
+                return 'schema_transformation';
+            case 'sorter':
+                return 'sort_transformation';
+            case 'aggregator':
+                return 'aggregate_transformation';
+            default:
+                return `${lowerModuleName}_transformation`;
+        }
+    };
 
     return (
         <div>

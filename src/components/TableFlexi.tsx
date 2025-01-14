@@ -28,12 +28,16 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onFilterClick: () => void
+  playRow?: boolean;
+  playRowFn?: (rowData: any) => void
 }
 
 export function TableFlexi<TData, TValue>({
   columns,
   data,
   onFilterClick,
+  playRow = false,
+  playRowFn,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -111,6 +115,11 @@ export function TableFlexi<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => {
+                    if (playRow && playRowFn) {
+                      playRowFn(row.original)
+                    }
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

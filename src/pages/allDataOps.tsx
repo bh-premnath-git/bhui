@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
+import { Card } from "@/components/ui/card"
 import { TableFlexi } from "@/components/TableFlexi"
 import { TableFlexiStatusCard } from "@/components/TableFlexiStatusCard"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +8,8 @@ import { TableData, FilterValues } from "@/types/dashboard"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import { RootState } from "@/store/store"
 import { getDataOps } from "@/redux/DataOpsSlice"
+import TaskDetails from '@/components/TaskDetails/TaskDetails';
+import { Package } from "lucide-react"
 
 interface DemoPageProps {
   data: TableData[];
@@ -70,18 +73,40 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
   }
 
   if (!data.length) {
-    return <div>No Data Available.</div>;
+    return <Card className="relative overflow-hidden w-full max-w-2xl mx-auto mt-20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gradient/5 via-primary/2 to-background" />
+      <div className="relative p-8 sm:p-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+          <div className="relative inline-flex mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/0 blur-2xl" />
+            <div className="relative bg-gradient-to-br from-background to-muted p-4 rounded-2xl border border-gradient/10">
+              <Package className="w-12 h-12 text-gradient" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Welcome to Your Job Monitor !
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+            Ready to monitor your job when flow is started.
+          </p>
+        </div>
+      </div>
+    </Card>;
   }
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
   const [appliedFilters, setAppliedFilters] = useState<FilterValues | null>(null)
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [selectedRowData, setSelectedRowData] = useState<any | null>(null)
   const filteredData = useMemo(() => {
     let filtered = data
 
     if (selectedStatuses.length > 0) {
-      console.log("selectedStatuses", selectedStatuses);
-      
       filtered = filtered.filter(item => selectedStatuses.includes(item.status.toLowerCase()))
     }
 
@@ -135,6 +160,13 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
     ],
   }), [data])
 
+  const handleRowClick = useCallback((item: any) => {
+    if (item && item.job_id) {
+      setSelectedJobId(item.job_id);
+      setSelectedRowData(item);
+    }
+  }, [])
+
   return (
     <div className="container mx-auto py-10 space-y-8 px-4">
       <TableFlexiStatusCard
@@ -145,6 +177,8 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
       <TableFlexi
         columns={columns}
         data={filteredData}
+        playRow={true}
+        playRowFn={handleRowClick}
         onFilterClick={() => setFilterDialogOpen(true)}
       />
       <TableFiexiFilterDialog
@@ -153,6 +187,16 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
         onApplyFilters={handleApplyFilters}
         filterOptions={filterOptions}
       />
+      {selectedJobId && selectedRowData && (
+        <TaskDetails
+          jobId={selectedJobId}
+          selectedRowData={selectedRowData}
+          onClose={() => {
+            setSelectedJobId(null)
+            setSelectedRowData(null)
+          }}
+        />
+      )}
     </div>
   )
 }

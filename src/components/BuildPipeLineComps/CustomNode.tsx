@@ -356,147 +356,137 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             {debuggedNodes.has(id) && (
                 <div className="absolute -top-2 -right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             )}
+            <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center font-medium mb-1"
+                onDoubleClick={handleDoubleClick}>
+                {isEditingTitle ? (
+                    <input type="text" value={titleValue} onChange={handleTitleChange} onBlur={handleTitleBlur}
+                        className="min-w-0 w-auto text-center text-[8px] border border-gray-200 rounded-sm px-1 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 shadow-sm hover:border-gray-300"
+                        style={{ width: `${Math.min(Math.max(titleValue.length * 10.5, 20), 200)}px` }}
+                        autoFocus spellCheck="false" />
+                ) : (
+                    <span className="cursor-pointer select-none truncate max-w-[100px]" title={titleValue || data.label}>
+                        {titleValue || data.label}
+                    </span>
+                )}
+            </div>
+            <div className="relative rounded-lg border-0 border-gray-100 transition-all duration-300 group-hover:border-indigo-200 group-hover:shadow-md bg-white"
+                style={{ position: 'relative', zIndex: 10, padding: '0', margin: '0' }}>
+                <div className="relative group" onMouseEnter={handleImageHover} onMouseLeave={handleImageLeave}>
+                    <img src={data.icon}
+                        alt={data.label}
+                        className="w-14 h-14 object-contain cursor-pointer"
+                        onClick={handleImageClick}
+                        style={{ display: 'block' }} />
+                    {formStates[id] && (
+                        <button onClick={handleRunClick}
+                            className="absolute -bottom-2 -right-2 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full shadow-lg opacity-100 transition-all duration-300 ease-in-out transform scale-90 hover:scale-100 flex items-center justify-center border-2 border-white z-10"
+                            title="Run Configuration">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path fillRule="evenodd" clipRule="evenodd" d="M8.5 8.84V15.16c0 1.52 1.63 2.48 2.93 1.73l5.5-3.16c1.3-.75 1.3-2.71 0-3.46l-5.5-3.16c-1.3-.75-2.93.21-2.93 1.73z" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+            </div>
 
-            <div className="relative p-2 rounded-lg border-1 border-gray-100 transition-all duration-300 group-hover:border-indigo-200 group-hover:shadow-md bg-white"
-                style={{ position: 'relative', zIndex: 10, border: '1px solid #ccc' }}>
-                <div className="flex flex-col items-center gap-0">
-                    <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center font-medium mb-1"
-                        onDoubleClick={handleDoubleClick}>
-                        {isEditingTitle ? (
-                            <input type="text" value={titleValue} onChange={handleTitleChange} onBlur={handleTitleBlur}
-                                className="min-w-0 w-auto text-center text-[8px] border border-gray-200 rounded-sm px-1 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 shadow-sm hover:border-gray-300"
-                                style={{ width: `${Math.min(Math.max(titleValue.length * 4.5, 20), 100)}px` }}
-                                autoFocus spellCheck="false" />
+            {/* Moved indicator and label outside the node border */}
+            <div className="absolute -bottom-6 left-0 right-0 flex flex-col items-center">
+                <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center"
+                        onMouseEnter={() => setShowValidationTooltip(true)}
+                        onMouseLeave={() => setShowValidationTooltip(false)}>
+                        <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${data.label == "Source" || data.source ? (
+                            !data.source ? 'bg-red-500' :
+                                (data?.source?.data_src_desc && data?.source?.connection_config_id) ? 'bg-green-500' :
+                                    (data?.source?.data_src_desc || data?.source?.connection_config_id) ? 'bg-yellow-500' :
+                                        'bg-red-500'
                         ) : (
-                            <span className="cursor-pointer select-none truncate max-w-[100px]" title={titleValue || data.label}>
-                                {titleValue || data.label}
-                            </span>
+                            validationStatus === 'valid' ? 'bg-green-500' :
+                                validationStatus === 'warning' ? 'bg-yellow-500' :
+                                    validationStatus === 'error' ? 'bg-red-500' :
+                                        'bg-gray-300'
+                        )
+                            }`} />
+                        {showValidationTooltip && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
+                                      bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
+                                      text-xs w-max max-w-[280px] animate-fadeIn">
+                                <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 
+                                                    w-5 h-5 bg-white/95 backdrop-blur-sm rotate-45 border-r border-b border-gray-100"></div>
+
+                                <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
+                                    <div className={`p-1.5 rounded-lg ${validationStatus === 'error' ? 'bg-red-50' :
+                                        validationStatus === 'warning' ? 'bg-amber-50' :
+                                            'bg-emerald-50'
+                                        }`}>
+                                        <svg className={`w-4 h-4 ${validationStatus === 'error' ? 'text-red-500' :
+                                            validationStatus === 'warning' ? 'text-amber-500' :
+                                                'text-emerald-500'
+                                            }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            {validationStatus === 'error' ? (
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            ) : validationStatus === 'warning' ? (
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            ) : (
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                    d="M5 13l4 4L19 7" />
+                                            )}
+                                        </svg>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`font-semibold ${validationStatus === 'error' ? 'text-red-600' :
+                                            validationStatus === 'warning' ? 'text-amber-600' :
+                                                'text-emerald-600'
+                                            }`}>
+                                            {validationStatus.charAt(0).toUpperCase() + validationStatus.slice(1)}
+                                        </span>
+                                        <span className="text-gray-400 text-[10px]">Validation Status</span>
+                                    </div>
+                                </div>
+
+                                <ul className="space-y-2">
+                                    {data.label.toLowerCase().includes('source') ? (
+                                        // Source-specific validation messages
+                                        !data.source ? (
+                                            <li className="flex items-start gap-2.5 group">
+                                                <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-red-300 group-hover:bg-red-400"></span>
+                                                <span className="text-gray-600 leading-relaxed">Source configuration is missing</span>
+                                            </li>
+                                        ) : (
+                                            <>
+                                                {!data.source.data_src_desc && (
+                                                    <li className="flex items-start gap-2.5 group">
+                                                        <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
+                                                        <span className="text-gray-600 leading-relaxed">Source description is missing</span>
+                                                    </li>
+                                                )}
+                                                {!data.source.connection_config_id && (
+                                                    <li className="flex items-start gap-2.5 group">
+                                                        <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
+                                                        <span className="text-gray-600 leading-relaxed">Connection configuration ID is missing</span>
+                                                    </li>
+                                                )}
+                                            </>
+                                        )
+                                    ) : (
+                                        // Existing non-source validation messages
+                                        validationMessages.map((msg, idx) => (
+                                            <li key={idx} className="flex items-start gap-2.5 group">
+                                                <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
+                                                    validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
+                                                        'bg-emerald-300 group-hover:bg-emerald-400'
+                                                    }`}></span>
+                                                <span className="text-gray-600 leading-relaxed">{msg}</span>
+                                            </li>
+                                        ))
+                                    )}
+                                </ul>
+                            </div>
                         )}
                     </div>
-
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="relative group" onMouseEnter={handleImageHover} onMouseLeave={handleImageLeave}>
-                            <img src={data.icon} alt={data.label} className="w-8 h-8 object-contain cursor-pointer"
-                                onClick={handleImageClick} />
-                            {formStates[id] && (
-                                <button onClick={handleRunClick}
-                                    className="absolute -bottom-2 -right-2 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full shadow-lg opacity-100 transition-all duration-300 ease-in-out transform scale-90 hover:scale-100 flex items-center justify-center border-2 border-white z-10"
-                                    title="Run Configuration">
-                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path fillRule="evenodd" clipRule="evenodd" d="M8.5 8.84V15.16c0 1.52 1.63 2.48 2.93 1.73l5.5-3.16c1.3-.75 1.3-2.71 0-3.46l-5.5-3.16c-1.3-.75-2.93.21-2.93 1.73z" />
-                                    </svg>
-                                </button>
-                            )}
-                        </div>
-
-
-                    </div>
-
-                    <div className="flex">
-                        {/* {JSON.stringify(data)} */}
-                        {/* Only show validation indicator if not a source node */}
-                        <div className="flex items-center justify-center"
-                            onMouseEnter={() => setShowValidationTooltip(true)}
-                            onMouseLeave={() => setShowValidationTooltip(false)}>
-                            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${data.label == "Source" || data.source ? (
-                                !data.source ? 'bg-red-500' :  // Show red if source data is undefined
-                                    (data?.source?.data_src_desc && data?.source?.connection_config_id) ? 'bg-green-500' :  // Show green if both fields exist
-                                        (data?.source?.data_src_desc || data?.source?.connection_config_id) ? 'bg-yellow-500' :  // Show yellow if only one field exists
-                                            'bg-red-500'  // Show red as fallback
-                            ) : (
-                                // Existing non-source validation logic
-                                validationStatus === 'valid' ? 'bg-green-500' :
-                                    validationStatus === 'warning' ? 'bg-yellow-500' :
-                                        validationStatus === 'error' ? 'bg-red-500' :
-                                            'bg-gray-300'
-                            )
-                                }`} />
-
-                            {/* Validation tooltip */}
-                            {showValidationTooltip && (
-                                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
-                                                  bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
-                                                  text-xs w-max max-w-[280px] animate-fadeIn">
-                                    <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 
-                                                        w-5 h-5 bg-white/95 backdrop-blur-sm rotate-45 border-r border-b border-gray-100"></div>
-
-                                    <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
-                                        <div className={`p-1.5 rounded-lg ${validationStatus === 'error' ? 'bg-red-50' :
-                                            validationStatus === 'warning' ? 'bg-amber-50' :
-                                                'bg-emerald-50'
-                                            }`}>
-                                            <svg className={`w-4 h-4 ${validationStatus === 'error' ? 'text-red-500' :
-                                                validationStatus === 'warning' ? 'text-amber-500' :
-                                                    'text-emerald-500'
-                                                }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                {validationStatus === 'error' ? (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                ) : validationStatus === 'warning' ? (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                ) : (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                        d="M5 13l4 4L19 7" />
-                                                )}
-                                            </svg>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className={`font-semibold ${validationStatus === 'error' ? 'text-red-600' :
-                                                validationStatus === 'warning' ? 'text-amber-600' :
-                                                    'text-emerald-600'
-                                                }`}>
-                                                {validationStatus.charAt(0).toUpperCase() + validationStatus.slice(1)}
-                                            </span>
-                                            <span className="text-gray-400 text-[10px]">Validation Status</span>
-                                        </div>
-                                    </div>
-
-                                    <ul className="space-y-2">
-                                        {data.label.toLowerCase().includes('source') ? (
-                                            // Source-specific validation messages
-                                            !data.source ? (
-                                                <li className="flex items-start gap-2.5 group">
-                                                    <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-red-300 group-hover:bg-red-400"></span>
-                                                    <span className="text-gray-600 leading-relaxed">Source configuration is missing</span>
-                                                </li>
-                                            ) : (
-                                                <>
-                                                    {!data.source.data_src_desc && (
-                                                        <li className="flex items-start gap-2.5 group">
-                                                            <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
-                                                            <span className="text-gray-600 leading-relaxed">Source description is missing</span>
-                                                        </li>
-                                                    )}
-                                                    {!data.source.connection_config_id && (
-                                                        <li className="flex items-start gap-2.5 group">
-                                                            <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-amber-300 group-hover:bg-amber-400"></span>
-                                                            <span className="text-gray-600 leading-relaxed">Connection configuration ID is missing</span>
-                                                        </li>
-                                                    )}
-                                                </>
-                                            )
-                                        ) : (
-                                            // Existing non-source validation messages
-                                            validationMessages.map((msg, idx) => (
-                                                <li key={idx} className="flex items-start gap-2.5 group">
-                                                    <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${validationStatus === 'error' ? 'bg-red-300 group-hover:bg-red-400' :
-                                                        validationStatus === 'warning' ? 'bg-amber-300 group-hover:bg-amber-400' :
-                                                            'bg-emerald-300 group-hover:bg-emerald-400'
-                                                        }`}></span>
-                                                    <span className="text-gray-600 leading-relaxed">{msg}</span>
-                                                </li>
-                                            ))
-                                        )}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex justify-center text-black text-[8px] w-9 m-auto text-center mt-1">
-                            {data.label}
-                        </div>
-                    </div>
-
+                    <span className="text-black text-[8px]">{data.label}</span>
                 </div>
             </div>
 
@@ -508,11 +498,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     position={Position.Right}
                     id={`output-${index}`}
                     style={{
-                        top: data.ports.outputs === 1 ? '35%' : `${(index + 1) * (100 / (data.ports.outputs + 1))}%`,
+                        top: '50%',
                         opacity: 1,
                         width: 0,
                         height: 0,
-                        transform: 'translateX(50%)',
+                        transform: 'translateX(50%) translateY(-50%)',
                         cursor: 'pointer',
                         border: '6px solid transparent',
                         borderLeft: '8px solid #000000',
@@ -532,7 +522,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     position={Position.Left}
                     id={`input-${index}`}
                     style={{
-                        top: data.ports.inputs === 1 ? '35%' : `${(index + 1) * (100 / (data.ports.inputs + 1))}%`,
+                        top: '50%',
                         opacity: 1,
                         width: '8px',
                         height: '8px',
@@ -544,6 +534,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         zIndex: 5,
                         left: '-4px',
+                        transform: 'translateY(-50%)',
                     }}
                     className="hover:scale-110 hover:border-gray-600 hover:shadow-md"
                 />

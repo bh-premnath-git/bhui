@@ -14,6 +14,7 @@ import { ThemeProvider as ThemesProvides } from "@/contexts/ThemeContext";
 
 import { routeList, theme } from '@/router/route';
 import { ErrorBoundary } from "@/ErrorBoundry"
+import 'react-toastify/dist/ReactToastify.css';
 
 interface LayoutProps {
   isAuthenticated: boolean;
@@ -131,7 +132,18 @@ function App() {
               </BrowserRouter>
             </Provider>
           </FlowProvider>
-          <ToastContainer />
+          <ToastContainer
+            position="top-left"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={true}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            style={{ top: '20px', left: '20px', zIndex: 9999 }}
+          />
         </ErrorBoundary>
       </ThemesProvides>
     </ThemeProvider>

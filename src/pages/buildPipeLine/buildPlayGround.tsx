@@ -11,7 +11,6 @@ import 'reactflow/dist/style.css';
 import nodeData from '../../pages/buildPipeLine/node_display.json';
 import schemaData from '../../pages/buildPipeLine/mdata.json';
 import { Button, Dialog, DialogActions, DialogContent, Menu, MenuItem } from '@mui/material';
-import schemaValidation from '../../pages/buildPipeLine/sample_validation.json';
 import { CustomNode } from '@/components/BuildPipeLineComps/CustomNode';
 import { ApiService } from '@/services/apiServices';
 import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
@@ -22,7 +21,6 @@ import { ErrorBoundary } from "@/ErrorBoundry"
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
-import { connect } from 'http2';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface UIProperties {
@@ -606,7 +604,7 @@ const BuildPlayGround: React.FC = () => {
             "8011",
             "post",
             `/pipeline/debug/stop_pipeline`,
-            null, { pipeline_name: 'sample' }
+            null, { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
         );
         console.log(response)
         if (response.message) {
@@ -623,7 +621,7 @@ const BuildPlayGround: React.FC = () => {
                 "post",
                 `/pipeline/run-next-checkpoint`,
                 null,
-                { pipeline_name: 'sample' }
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
             );
 
             // Only proceed if first API call was successful

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FlexibleTable } from "@/components/Tabel";
+import { FlexibleTable } from "@/components/Table";
 import { FileQuestion } from "lucide-react";
 import { formatedDate } from "@/Utils/dateFormatter";
 import { useNavigate } from "react-router-dom";

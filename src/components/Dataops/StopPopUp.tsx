@@ -9,7 +9,7 @@ import { Typography } from '@mui/material';
 import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
-import useToast from '../../oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 import {ApiService} from '@/services/apiServices';
 import { Label } from '@/components/ui/label';
 

@@ -315,7 +315,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
         // Dynamically calculate position
         const position = {
-          x: (lastNode?.position?.x ?? 160) + index * 80,
+          x: (lastNode?.position?.x ?? 160) + index * 100,
           y: 150,
         };
 

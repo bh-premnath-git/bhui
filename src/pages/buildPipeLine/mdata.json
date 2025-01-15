@@ -67,7 +67,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
       "type": "object",
-      "title": "Schema Transformation",
+      "title": "SchemaTransformation",
       "ui_type": "array-container",
       "properties": {
         "derived_fields": {
@@ -94,7 +94,7 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
-      "title": "Aggregate",
+      "title": "Aggregator",
       "ui_type": "tab-container",
       "properties": {
         "aggregations": {
@@ -146,7 +146,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
       "type": "object",
-      "title": "Join",
+      "title": "Joiner",
       "ui_type": "tab-container",
       "properties": {
         "conditions": {
@@ -231,7 +231,7 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
-      "title": "Sort",
+      "title": "Sorter",
       "ui_type": "array-container",
       "properties": {
         "sort_columns": {

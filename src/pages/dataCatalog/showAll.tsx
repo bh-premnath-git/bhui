@@ -9,7 +9,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { LuCalendarDays } from "react-icons/lu";
 import { BsChatDots } from "react-icons/bs";
 import { AnyNode } from 'postcss';
-import { FlexibleTable } from '@/components/Tabel';
+import { FlexibleTable } from '@/components/Table';
 import { catalogColumns } from '@/features/catalogColumn';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -68,7 +68,7 @@ const ShowAll: React.FC<ShowAllProps> = ({ open2, handleClose1 }) => {
         handleClose1();
 
     };
-   
+
     const actionFn = () => {
     }
     const createNewFn = () => {

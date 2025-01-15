@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ApiService } from "@/services/apiServices";
+import { duration } from "@mui/material";
 
 export interface ApiState {
   getDataOpsList: any;
@@ -25,7 +26,17 @@ export const getDataOps: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await ApiService('8003', 'get', '/job_details/list/', null, params);
-      return response;
+      const transformed = response.map((item: any, index: number) => ({
+        ...item,
+        id: (index).toString(),
+        flow: item.flow_name,
+        project: item.project_name,
+        status: item.flow_status,
+        startTime: item.job_start_time,
+        duration: (new Date(item.job_end_time)).getTime() - (new Date(item.job_start_time)).getTime(),
+        owner: item.updated_by
+      }))
+      return transformed;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -38,12 +49,12 @@ const DataOpsSlice = createSlice({
   reducers: {
     setFilterData: (state, action) => {
       console.log(action.payload); // Log the entire payload for debugging
-    
+
       if (action.payload?.dataOpsList && action.payload?.value) {
         console.log(action.payload.dataOpsList)
-        const filteredData=action.payload.dataOpsList.filter((item: any) =>
+        const filteredData = action.payload.dataOpsList.filter((item: any) =>
           item.pipeline_name.toLowerCase().includes(action.payload.value.toLowerCase())
-        )    
+        )
         console.log(filteredData); // Log the filtered results for debugging
         state.getDataOpsList = filteredData;
       } else {

@@ -25,7 +25,7 @@ import {
   ListItemSecondaryAction,
   Tooltip,
 } from '@mui/material';
-import { Bot, Plus, Link, Users, Tag, Save, X } from 'lucide-react';
+import { Gavel, Plus, Link, Users, Tag, Save, X } from 'lucide-react';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -151,8 +151,8 @@ function DescriptionSection({
                     botStatus === 'error'
                       ? 'error.main'
                       : botStatus === 'success'
-                      ? 'success.main'
-                      : 'primary.main',
+                        ? 'success.main'
+                        : 'primary.main',
                   '&:hover': {
                     backgroundColor: 'transparent',
                     textDecoration: 'underline',
@@ -162,7 +162,7 @@ function DescriptionSection({
                 {botStatus === 'loading' ? (
                   <CircularProgress size={16} color="inherit" />
                 ) : (
-                  <Bot className="h-4 w-4" />
+                  <Gavel className="h-4 w-4" />
                 )}
               </Button>
             </Tooltip>
@@ -185,7 +185,6 @@ function DescriptionSection({
                   },
                 }}
               >
-                Edit
               </Button>
             </Tooltip>
 
@@ -208,7 +207,6 @@ function DescriptionSection({
                     },
                   }}
                 >
-                  Save
                 </Button>
               </Tooltip>
             )}
@@ -313,11 +311,11 @@ function OwnersSection({ owners }: { owners: OwnerData[] }) {
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.200', color: '#1a1732' }}>
               {owner.name.split(' ').length > 1
                 ? owner.name
-                    .split(' ')
-                    .map((namePart) => namePart.charAt(0).toUpperCase())
-                    .join('')
+                  .split(' ')
+                  .map((namePart) => namePart.charAt(0).toUpperCase())
+                  .join('')
                 : owner.name.charAt(0).toUpperCase() +
-                  owner.name.charAt(owner.name.length - 1).toUpperCase()}
+                owner.name.charAt(owner.name.length - 1).toUpperCase()}
             </Avatar>
           </ListItemAvatar>
           <ListItemText

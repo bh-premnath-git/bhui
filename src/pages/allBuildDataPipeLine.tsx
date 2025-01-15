@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from "react";
-import { FlexibleTable } from "@/components/Tabel";
+import { FlexibleTable } from "@/components/Table";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { RootState } from "@/store/store";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +9,7 @@ import { getAllPipeline } from "@/redux/BuildPipeLineSlice";
 import { formatedDate } from "@/Utils/dateFormatter";
 import { getGitProject } from "@/redux/ProjectSlice";
 import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
-import useToast from "@/oldcomponents/teast-service";
+import useToast from "@/components/teast-service";
 import { FolderPlus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

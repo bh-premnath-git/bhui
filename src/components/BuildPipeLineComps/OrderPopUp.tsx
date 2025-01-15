@@ -50,7 +50,6 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
                         console.log(initialData)
                         setInitialData(initialData);
                     } else {
-                        alert()
                     }
                 } catch (error) {
                     console.error('Error fetching schema:', error);

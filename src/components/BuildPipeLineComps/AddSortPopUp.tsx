@@ -32,7 +32,6 @@ export default function AddSortPopUp({ openSort, handleSortClose }:any) {
                     initialValues={{ column: '' }}
                     onSubmit={(values, { setSubmitting }) => {
                         setTimeout(() => {
-                            alert(JSON.stringify(values, null, 2));
                             setSubmitting(false);
                         }, 400);
                     }}

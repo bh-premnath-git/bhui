@@ -27,8 +27,8 @@ const ExpandableButton = ({ icon, text, className, style, title, addNode, dataSe
         setShowText(!showText);
         if (text === 'Filter') {
             addNode('/assets/buildPipeline/display/filter.svg', title, 'Filter');
-        } else if (text === 'Join') {
-            addNode('/assets/buildPipeline/display/join.svg', title, 'Join');
+        } else if (text === 'Join' || text === 'Joiner') {
+            addNode('/assets/buildPipeline/display/join.svg', title, 'Joiner');
         } else if (text === 'Router') {
             addNode('/assets/buildPipeline/display/route.svg', title, 'Router');
         } else if (text === 'Transform') {

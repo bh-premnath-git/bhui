@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 
 export const EnvironmentSelect = ({ value, onValueChange, environments, selectedData, selectedEnv }) => {
   const environmentOptions = [

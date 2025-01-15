@@ -7,7 +7,7 @@ import { ApiService } from '@/services/apiServices';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';
-import useToast from '@/oldcomponents/teast-service'
+import useToast from '@/components/teast-service'
 
 interface ErrorResponse {
     detail: string;

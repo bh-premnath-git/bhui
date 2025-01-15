@@ -13,7 +13,7 @@ import { debounce, } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from "react-router-dom";
-import CommonDialog from "../../oldcomponents/common-dialoge";
+import CommonDialog from "@/components/common-dialoge";
 import MonitorStep from "./MonitorStep";
 import SourceStep from "./SourceStep";
 import CriteriaStep from "./CriteriaStep";

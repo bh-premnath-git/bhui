@@ -1,5 +1,3 @@
-// ImportDataSourceStepper.tsx
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +34,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { mapFileTypeToLayoutType } from "@/Utils/utils"
+import { ApiService } from "@/services/apiServices"
 
 const ROWS_PER_PAGE = 10
 
@@ -46,7 +45,6 @@ interface ColumnMetadata {
     minValue?: number | string;
     maxValue?: number | string;
 }
-
 export default function ImportDataSourceStepper(props: { closeImportSection: () => void }) {
     const [currentStep, setCurrentStep] = useState(1)
     const [file, setFile] = useState<File | null>(null)
@@ -65,7 +63,7 @@ export default function ImportDataSourceStepper(props: { closeImportSection: () 
     const [rootElement, setRootElement] = useState<string>("")
     const [headerRow, setHeaderRow] = useState<number>(1)
     const [repeatingElement, setRepeatingElement] = useState<string>("")
-    const [repeatingElementPath, setRepeatingElementPath] = useState<string>("") // Optional for path
+    const [repeatingElementPath, setRepeatingElementPath] = useState<string>("")
 
     const { closeImportSection } = props
 
@@ -502,9 +500,7 @@ export default function ImportDataSourceStepper(props: { closeImportSection: () 
                         <div className="flex space-x-2">
                             <Button variant="outline" onClick={() => setCurrentStep(3)}>Back</Button>
                             <Button onClick={() => {
-                                // Implement final import logic here
                                 console.log("Data imported successfully")
-                                // Optionally reset state or close the stepper
                                 closeImportSection()
                             }} className="bg-black hover:bg-gray-800 text-white">
                                 Confirm Import

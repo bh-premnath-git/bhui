@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { CircleUserRound, Loader2, Menu, PlusCircle, Trash2 } from 'lucide-react';
+import {  Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import InputField from './InputField';
 import ChatHistory from './ChatHistory';
 import ConversationView from '@/components/BighammerSearch/ConversationView';
 import './BigHammerSearch.css';
 import { jwtDecode } from 'jwt-decode';
+import { ApiService } from '@/services/apiServices';
 
 export default function BigHammerSearch() {
   const [question, setQuestion] = useState('');
@@ -45,19 +46,12 @@ export default function BigHammerSearch() {
     setConversation([...conversation, newEntry]);
     setQuestion('');
     setIsLoading(true);
-
+    const body = {
+      question,
+      thread_id: 'thread_123456',
+    }
     try {
-      const res = await fetch('http://localhost:8090/api/v1/platform_search/platform_search', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question,
-          thread_id: 'thread_123456',
-        }),
-      });
+      const res =  await ApiService('8090', 'post', '/platform_search/platform_search', body);
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);

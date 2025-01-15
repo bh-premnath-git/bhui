@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormFieldWrapper } from '@/components/FormFieldWrapper';
 import { Autocomplete, TextField } from '@mui/material';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { debounce } from 'lodash';
 import { createUserDeployment } from '@/redux/UserSlice';

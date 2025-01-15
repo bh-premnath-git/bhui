@@ -62,10 +62,13 @@ export function TableFlexiStatusCard({ data, selectedStatuses, onStatusSelect }:
             key={stat.title} 
             className={cn(
               "p-4 cursor-pointer transition-all duration-200 flex items-center gap-3 relative w-[200px]",
-              isSelected && "ring-2 ring-primary"
+              isSelected 
+                ? "ring-2 ring-primary shadow-lg" // Added shadow when selected
+                : "shadow-none" // No shadow when not selected
             )}
             onClick={() => {
-              onStatusSelect(stat.status)}}
+              onStatusSelect(stat.status)
+            }}
           >
             <div className="relative h-16 w-16 flex-shrink-0">
               <svg className="h-full w-full" viewBox="0 0 36 36">

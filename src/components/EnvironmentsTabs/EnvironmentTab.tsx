@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Check, PlusCircle, X } from 'lucide-react';
 import { FileUpload } from '@/components/FileUploadComp';
 import { ApiService } from '@/services/apiServices';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 import ValidationComponent from '@/components/validation-component';
 import { Badge } from "@/components/ui/badge";
 import RequiredLabel from '@/components/RequiredFieldLabel';

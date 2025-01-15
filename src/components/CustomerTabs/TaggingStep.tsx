@@ -6,7 +6,7 @@ import { useLocation } from 'react-router';
 import {ApiService} from '@/services/apiServices';
 import TagDialog from '@/common/TagDialog';
 import { COLORS } from '@/Utils/constants';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 
 type Tag = {
     tagKey: string;

@@ -529,11 +529,6 @@ export function FlexibleTable({
   saveStatus = "",
 }: TableProps) {
 
-  useEffect(() => {
-    console.log(data, defaultItemsPerPage);
-    
-  }, [data])
-
   const initialItemsPerPage = itemsPerPageOptions.includes(defaultItemsPerPage)
     ? defaultItemsPerPage
     : itemsPerPageOptions[0];

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiService } from '@/services/apiServices';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 
 interface CommitPayload {
     id: string;

@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { PlusCircle, X, AlertTriangle, CheckCircle } from 'lucide-react';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { createProject, searchProject } from '@/redux/ProjectSlice';
 import { ApiService } from '@/services/apiServices';

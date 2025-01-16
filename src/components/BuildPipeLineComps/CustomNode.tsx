@@ -48,7 +48,7 @@ const validateFormData = (formData: any, schema: any, isSource: boolean, sourceD
     return { isValid, warnings };
 };
 
-export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate }: {
+export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl }: {
     data: any;
     id: string;
     setNodes: any;
@@ -61,6 +61,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     onDebugToggle: (nodeId: string, title: string) => void;
     debuggedNodes: Set<string>;
     onSourceUpdate: (updatedSource: any) => void;
+    pipelineDtl: any;
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -246,7 +247,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         // Create the pipeline configuration object
         const pipelineConfig = {
             mode: "DEBUG",
-            name: "sample",
+            name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
             description: "Sample pipeline",
             transformations: orderedNodeIds
                 .map(nodeId => {
@@ -515,14 +516,18 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             ))}
 
             {/* Input Handles - Enhanced Circle style */}
-            {data.ports?.inputs > 0 && Array.from({ length: data.ports.inputs }).map((_, index) => (
+            {data.ports?.inputs > 0 && Array.from({
+                length: data.ports.maxInputs === "unlimited" ? 2 : data.ports.inputs
+            }).map((_, index) => (
                 <Handle
                     key={`input-${index}`}
                     type="target"
                     position={Position.Left}
                     id={`input-${index}`}
                     style={{
-                        top: '50%',
+                        top: data.label.toLowerCase().includes('join') || data.ports.maxInputs === "unlimited"
+                            ? `calc(50% ${index === 0 ? '- 5px' : '+ 10px'})`
+                            : '50%',
                         opacity: 1,
                         width: '8px',
                         height: '8px',
@@ -533,12 +538,30 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                         transition: 'all 0.2s ease',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         zIndex: 5,
-                        left: '-4px',
-                        transform: 'translateY(-50%)',
+                        left: 0,
+                        transform: 'translate(-50%, -50%)',
                     }}
                     className="hover:scale-110 hover:border-gray-600 hover:shadow-md"
                 />
             ))}
+
+            {data.ports.inputs > 0 && (
+                <Handle
+                    type="target"
+                    position={Position.Left}
+                    id="input-0"
+                    style={{ background: '#555' }}
+                />
+            )}
+
+            {data.ports.outputs > 0 && (
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="output-0"
+                    style={{ background: '#555' }}
+                />
+            )}
 
             {showInfo && (
                 <div

@@ -22,6 +22,7 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/utils/pipelineJsonConverter';
 
 interface UIProperties {
     color: string;
@@ -77,24 +78,23 @@ const BuildPlayGround: React.FC = () => {
                     `/pipeline/${id}`,
                     null
                 );
-                console.log(response);
                 setPipelineDtl(response);
 
-                // Set the nodes and edges from the response if they exist
-                if (response?.pipeline_json?.nodes) {
-                    setNodes(response.pipeline_json.nodes);
-                }
-                if (response?.pipeline_json?.edges) {
-                    setEdges(response.pipeline_json.edges);
-                }
+                if (response?.pipeline_json) {
+                    // Convert pipeline JSON to UI format
+                    console.log(response.pipeline_json)
+                    const uiJson = convertPipelineToUIJson(response.pipeline_json);
+                    console.log((await uiJson).edges);
+                    // console.log(uiEdges);
+                    setNodes((await uiJson).nodes);
+                    setEdges((await uiJson).edges);
 
-                // Update node counters based on existing nodes
-                if (response?.pipeline_json?.nodes) {
+                    // Update node counters
                     const counters: { [key: string]: number } = {};
-                    response.pipeline_json.nodes.forEach((node: any) => {
-                        const moduleName = node.data.label;
-                        counters[moduleName] = (counters[moduleName] || 0) + 1;
-                    });
+                    // uiNodes.forEach((node: any) => {
+                    //     const moduleName = node.data.label;
+                    //     counters[moduleName] = (counters[moduleName] || 0) + 1;
+                    // });
                     setNodeCounters(counters);
                 }
             } catch (error) {
@@ -120,17 +120,12 @@ const BuildPlayGround: React.FC = () => {
             if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
-                    const pipeline_json = {
-                        pipeline_json: {
-                            nodes: nodes,
-                            edges: edges
-                        }
-                    };
+                    const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
                     await ApiService(
                         "8011",
                         "patch",
                         `/pipeline/${id}`,
-                        pipeline_json
+                        { pipeline_json }
                     );
                     dispatch(setSaved());
                 } catch (error) {
@@ -141,7 +136,7 @@ const BuildPlayGround: React.FC = () => {
         }, autoSaveInterval);
 
         return () => clearInterval(intervalId);
-    }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval]);
+    }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval, pipelineDtl]);
 
     const onError = useCallback((id: string) => {
         console.error('Flow Error:', id);
@@ -377,7 +372,10 @@ const BuildPlayGround: React.FC = () => {
             transformations
         };
 
+        console.log(nodes);
+        console.log(edges)
         console.log('Pipeline Configuration:', pipelineConfig);
+
         setSelectedFormState(pipelineConfig);
         // setRunDialogOpen(true);
         return pipelineConfig;
@@ -515,6 +513,7 @@ const BuildPlayGround: React.FC = () => {
         custom: (props: any) => (
             <CustomNode
                 {...props}
+                pipelineDtl={pipelineDtl}
                 setNodes={setNodes}
                 setSelectedSchema={setSelectedSchema}
                 setFormStates={setFormStates}
@@ -529,7 +528,7 @@ const BuildPlayGround: React.FC = () => {
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
-        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes, handleSourceUpdate]);
+        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes, handleSourceUpdate, pipelineDtl]);
 
 
 
@@ -559,7 +558,7 @@ const BuildPlayGround: React.FC = () => {
             const pipelineConfig = handleRunClick(new Event('click') as any);
 
             const params = new URLSearchParams({
-                pipeline_name: 'sample',
+                pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
                 pipeline_json: JSON.stringify(pipelineConfig), // Use the actual config object
                 mode: 'DEBUG',
             });
@@ -584,7 +583,7 @@ const BuildPlayGround: React.FC = () => {
                 "get",
                 `/pipeline/debug/get_transformation_count`,
                 null,
-                { pipeline_name: 'sample' }
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
             );
 
             if (countsResponse.error) {
@@ -631,7 +630,7 @@ const BuildPlayGround: React.FC = () => {
                     "get",
                     `/pipeline/debug/get_transformation_count`,
                     null,
-                    { pipeline_name: 'sample' }
+                    { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
                 );
 
                 if (countsResponse.error) {

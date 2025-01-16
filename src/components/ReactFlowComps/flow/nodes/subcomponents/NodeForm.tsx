@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { createShortUUID } from "@/Utils/uid";
 import { Save } from "lucide-react";
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 
 interface NodeFormProps {
     id: string;

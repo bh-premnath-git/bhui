@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { FlexibleTable } from '../Tabel';
+import { FlexibleTable } from '../Table';
 import { useNavigate } from 'react-router-dom';
 import { Chip } from '@mui/material';
 import { Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { Button } from '@mui/material';
-import { AddAlert, PersonAddAlt } from '@mui/icons-material'; 
+import { AddAlert, PersonAddAlt } from '@mui/icons-material';
 import { Card } from '../ui/card';
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { Spinner } from '../ui/spinner';
@@ -76,10 +76,9 @@ const columns: ColumnConfig[] = [
           ) : type === 'action' ? (
             <AlertTriangle className="w-4 h-4 text-red-500" />
           ) : null}
-          <span className={`${
-            type === 'information' ? 'text-blue-500' : 
-            type === 'action' ? 'text-red-500' : ''
-          }`}>
+          <span className={`${type === 'information' ? 'text-blue-500' :
+              type === 'action' ? 'text-red-500' : ''
+            }`}>
             {rowData.monitor.monitor_type}
           </span>
         </div>
@@ -94,10 +93,10 @@ const columns: ColumnConfig[] = [
     sortable: false,
     render: (value) => {
       const words = value.replace(/[_-]/g, ' ').split(' ');
-      
-      return words.map((word, index) => 
-        index === 0 ? 
-          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : 
+
+      return words.map((word, index) =>
+        index === 0 ?
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() :
           word.toLowerCase()
       ).join(' ');
     }
@@ -115,10 +114,10 @@ const columns: ColumnConfig[] = [
       }
     },
     render: (value) => (
-      <Chip 
-        label={value} 
-        color={value === 'open' ? 'success' : value === 'closed' ? 'error' : 'warning'} 
-        size="small" 
+      <Chip
+        label={value}
+        color={value === 'open' ? 'success' : value === 'closed' ? 'error' : 'warning'}
+        size="small"
       />
     ),
   },
@@ -193,15 +192,15 @@ const columns: ColumnConfig[] = [
     sortable: true,
     render: (value, rowData) => {
       const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  
+
       const handleAssign = ({ preventionPlan, correctionPlan }) => {
         console.log(`Alert ID: ${rowData.alert_id}, Prevention Plan: ${preventionPlan}, Correction Plan: ${correctionPlan}`);
       };
-  
+
       if (rowData.monitor.monitor_type.toLowerCase() === 'information') {
         return <span style={{ color: 'rgba(0, 0, 0, 0.6)' }}>N/A</span>;
       }
-      
+
       if (!value) {
         return (
           <>

@@ -11,7 +11,7 @@ import TableRow from '@mui/material/TableRow';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BiSortAlt2 } from "react-icons/bi";
-import CommonDialog from '../../oldcomponents/common-dialoge';
+import CommonDialog from '@/components/common-dialoge';
 
 // import CatalogsHead from './tabs/CatalogsHead';
 

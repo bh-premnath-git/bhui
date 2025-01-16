@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlexibleTable } from '@/components/Tabel';
+import { FlexibleTable } from '@/components/Table';
 
 interface PreviewTableData {
     orderid: string;

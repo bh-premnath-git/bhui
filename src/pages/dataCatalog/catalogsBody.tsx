@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { FlexibleTable } from '@/components/Tabel';
+import { FlexibleTable } from '@/components/Table';
 import About from '@/components/Catalog/About';
 import { ApiService } from '@/services/apiServices';
 import { Plus, X } from 'lucide-react';

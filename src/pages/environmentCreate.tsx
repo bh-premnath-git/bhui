@@ -11,7 +11,7 @@ import { createEnvironment } from '@/redux/EnvironmentSlice';
 import { useAppDispatch } from '@/redux/hooks';
 import { Spinner } from "@/components/ui/spinner";
 import { encrypt_string } from '@/services/encryption';
-import useToast from '@/oldcomponents/teast-service';
+import useToast from '@/components/teast-service';
 
 // Types
 type Tag = {

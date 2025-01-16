@@ -113,23 +113,23 @@ function App() {
       <ThemesProvides>
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
-          <DashboardProvider>
-            <FlowProvider>
-              <Provider store={store}>
-                <BrowserRouter>
-                  <Suspense fallback={<Loading />}>
-                    <Routes>
-                      <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                        {routeList.map((route, index) => (
-                          <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                        ))}
-                      </Route>
-                    </Routes>
-                  </Suspense>
-                </BrowserRouter>
-              </Provider>
-            </FlowProvider>
-            <ToastContainer />
+            <DashboardProvider>
+              <FlowProvider>
+                <Provider store={store}>
+                  <BrowserRouter>
+                    <Suspense fallback={<Loading />}>
+                      <Routes>
+                        <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                          {routeList.map((route, index) => (
+                            <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                          ))}
+                        </Route>
+                      </Routes>
+                    </Suspense>
+                  </BrowserRouter>
+                </Provider>
+              </FlowProvider>
+              <ToastContainer />
             </DashboardProvider>
           </QueryClientProvider>
         </ErrorBoundary>

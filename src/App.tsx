@@ -1,5 +1,6 @@
-import { useState, Suspense, lazy, useEffect, useRef } from 'react';
+import { useState, Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from 'react-redux';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
@@ -11,6 +12,7 @@ import { httpClient } from './configration/HttpClient';
 import store from './store/store';
 import { ThemeProvider } from '@mui/material';
 import { ThemeProvider as ThemesProvides } from "@/contexts/ThemeContext";
+import { DashboardProvider } from "./contexts/DashboardContext";
 
 import { routeList, theme } from '@/router/route';
 import { ErrorBoundary } from "@/ErrorBoundry"
@@ -75,10 +77,9 @@ function App() {
     };
   }, []);
 
-  // Function to start token refresh process
   const startTokenRefresh = () => {
     kc.onTokenExpired = () => {
-      kc.updateToken(30) // Refresh token if it expires in the next 30 seconds
+      kc.updateToken(30)
         .then((refreshed) => {
           if (refreshed) {
             sessionStorage.setItem('token', JSON.stringify(kc.token));
@@ -93,8 +94,6 @@ function App() {
         });
     };
   };
-
-  // Function to stop token refresh process
   const stopTokenRefresh = () => {
     kc.clearToken();
   };
@@ -103,35 +102,35 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('authenticated');
     kc.logout({
-      // redirectUri: 'http://54.157.234.126:5000/landing',
-      // redirectUri: 'http://localhost:5000/dashboard',
       redirectUri: import.meta.env.VITE_KEYCLOAK_REDIRECT_URI + 'login',
     });
   }
 
-
-
-
+  const queryClient = new QueryClient();
   return (
     <ThemeProvider theme={theme}>
       <ThemesProvides>
         <ErrorBoundary>
-          <FlowProvider>
-            <Provider store={store}>
-              <BrowserRouter>
-                <Suspense fallback={<Loading />}>
-                  <Routes>
-                    <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                      {routeList.map((route, index) => (
-                        <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                      ))}
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </BrowserRouter>
-            </Provider>
-          </FlowProvider>
-          <ToastContainer />
+          <QueryClientProvider client={queryClient}>
+          <DashboardProvider>
+            <FlowProvider>
+              <Provider store={store}>
+                <BrowserRouter>
+                  <Suspense fallback={<Loading />}>
+                    <Routes>
+                      <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                        {routeList.map((route, index) => (
+                          <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                        ))}
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+              </Provider>
+            </FlowProvider>
+            <ToastContainer />
+            </DashboardProvider>
+          </QueryClientProvider>
         </ErrorBoundary>
       </ThemesProvides>
     </ThemeProvider>

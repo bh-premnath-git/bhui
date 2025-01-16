@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
+import { toast } from 'react-toastify';
 
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
 const PRIFIX_URL = import.meta.env.VITE_API_PREFIX_URL;
@@ -78,6 +79,18 @@ const ApiService = async (
       console.log("Request canceled");
     } else {
       console.error(`Error in ${url}:`, error.message);
+
+      // Handle API error response
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        const errorMessage = errorData.message || 'An unexpected error occurred';
+
+        // You can also include error_code in the toast if needed
+        toast.error(errorMessage);
+      } else {
+        // Generic error message for network/other errors
+        toast.error('An error occurred while processing your request');
+      }
     }
     throw error;
   }

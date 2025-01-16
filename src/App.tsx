@@ -16,6 +16,7 @@ import { DashboardProvider } from "./contexts/DashboardContext";
 
 import { routeList, theme } from '@/router/route';
 import { ErrorBoundary } from "@/ErrorBoundry"
+import 'react-toastify/dist/ReactToastify.css';
 
 interface LayoutProps {
   isAuthenticated: boolean;

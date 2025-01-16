@@ -120,12 +120,14 @@ const BuildPlayGround: React.FC = () => {
             if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
-                    const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+                    const pipelineConfig = handleRunClick(new Event('click') as any);
+
+                    console.log(pipelineConfig)
                     await ApiService(
                         "8011",
                         "patch",
                         `/pipeline/${id}`,
-                        { pipeline_json }
+                        { pipeline_json: pipelineConfig }
                     );
                     dispatch(setSaved());
                 } catch (error) {
@@ -233,6 +235,7 @@ const BuildPlayGround: React.FC = () => {
             name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
             source_type: "File",
             file_name: `${node.data.source?.file_path_prefix || "examples"}/${node.data.source?.file_name || "NaN"}`,
+            data_src_id: node.data.source?.data_src_id || "NaN",
             connection: {
                 name: node.data.source?.connection_name || "local_connection",
                 connection_type: (node.data.source?.connection_type || "local").charAt(0).toUpperCase() +

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import InputField from './InputField';
@@ -13,6 +13,7 @@ export default function BigHammerSearch() {
   const [conversation, setConversation] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [threadId, setThreadId] = useState('');
   const token = sessionStorage?.getItem('token');
   const decoded = token ? jwtDecode(token) : null;
 
@@ -21,7 +22,11 @@ export default function BigHammerSearch() {
     { id: 2, title: 'Previous Chat 2', timestamp: new Date().toISOString() },
   ]);
 
-  const handleNewChat = () => {
+  const generateThreadId = useCallback(() => {
+    return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
+  const handleNewChat = useCallback(() => {
     const newChatId = Date.now();
     const newChat = {
       id: newChatId,
@@ -31,18 +36,14 @@ export default function BigHammerSearch() {
     setChatHistory([newChat, ...chatHistory]);
     setConversation([]);
     setQuestion('');
-  };
+    setThreadId(generateThreadId());
+  }, [chatHistory, generateThreadId]);
 
   const handleDeleteChat = (id) => {
     setChatHistory(chatHistory.filter((chat) => chat.id !== id));
   };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-  const generateThreadId = () => {
-    return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
-
 
   const handleSearch = async () => {
     if (!question.trim()) return;
@@ -52,18 +53,21 @@ export default function BigHammerSearch() {
     setQuestion('');
     setIsLoading(true);
 
+    // If there's no threadId, generate a new one
+    if (!threadId) {
+      setThreadId(generateThreadId());
+    }
+
     try {
       const response = await ApiService('8090', 'post', '/platform_search/platform_search', {
         question,
-        thread_id: generateThreadId(),
+        thread_id: threadId,
       });
 
-      // Check if response exists and has the expected structure
       if (!response || typeof response.answer !== 'string') {
         throw new Error('Invalid response format');
       }
 
-      // Update conversation with the answer
       setConversation((prev) =>
         prev.map((entry) =>
           entry.id === newEntry.id
@@ -94,7 +98,6 @@ export default function BigHammerSearch() {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="flex h-full relative bg-gradient-to-b from-gray-100 to-gray-300">

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import InputField from './InputField';
@@ -14,33 +14,43 @@ export default function BigHammerSearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [threadId, setThreadId] = useState('');
+  const [chatHistory, setChatHistory] = useState([]);
   const token = sessionStorage?.getItem('token');
   const decoded = token ? jwtDecode(token) : null;
-
-  const [chatHistory, setChatHistory] = useState([
-    { id: 1, title: 'Previous Chat 1', timestamp: new Date().toISOString() },
-    { id: 2, title: 'Previous Chat 2', timestamp: new Date().toISOString() },
-  ]);
 
   const generateThreadId = useCallback(() => {
     return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }, []);
 
-  const handleNewChat = useCallback(() => {
+  const createNewChat = useCallback(() => {
     const newChatId = Date.now();
     const newChat = {
       id: newChatId,
       title: `New Chat ${newChatId}`,
       timestamp: new Date().toISOString(),
     };
-    setChatHistory([newChat, ...chatHistory]);
+    setChatHistory(prevHistory => [newChat, ...prevHistory]);
     setConversation([]);
     setQuestion('');
     setThreadId(generateThreadId());
-  }, [chatHistory, generateThreadId]);
+    return newChat;
+  }, [generateThreadId]);
+
+  useEffect(() => {
+    // Create a new chat when the component mounts
+    createNewChat();
+  }, [createNewChat]);
+
+  const handleNewChat = () => {
+    createNewChat();
+  };
 
   const handleDeleteChat = (id) => {
-    setChatHistory(chatHistory.filter((chat) => chat.id !== id));
+    setChatHistory(prevHistory => prevHistory.filter((chat) => chat.id !== id));
+    if (chatHistory.length === 1) {
+      // If deleting the last chat, create a new one
+      createNewChat();
+    }
   };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -49,14 +59,9 @@ export default function BigHammerSearch() {
     if (!question.trim()) return;
 
     const newEntry = { question, response: null, id: Date.now() };
-    setConversation([...conversation, newEntry]);
+    setConversation(prevConversation => [...prevConversation, newEntry]);
     setQuestion('');
     setIsLoading(true);
-
-    // If there's no threadId, generate a new one
-    if (!threadId) {
-      setThreadId(generateThreadId());
-    }
 
     try {
       const response = await ApiService('8090', 'post', '/platform_search/platform_search', {
@@ -68,8 +73,8 @@ export default function BigHammerSearch() {
         throw new Error('Invalid response format');
       }
 
-      setConversation((prev) =>
-        prev.map((entry) =>
+      setConversation(prevConversation =>
+        prevConversation.map((entry) =>
           entry.id === newEntry.id
             ? {
                 ...entry,
@@ -78,13 +83,24 @@ export default function BigHammerSearch() {
             : entry
         )
       );
+
+      // Update the chat title with the first question
+      if (conversation.length === 0) {
+        setChatHistory(prevHistory =>
+          prevHistory.map(chat =>
+            chat.id === chatHistory[0].id
+              ? { ...chat, title: question.substring(0, 30) + (question.length > 30 ? '...' : '') }
+              : chat
+          )
+        );
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       
       const errorMessage = error.message || 'An error occurred. Please try again.';
 
-      setConversation((prev) =>
-        prev.map((entry) =>
+      setConversation(prevConversation =>
+        prevConversation.map((entry) =>
           entry.id === newEntry.id
             ? {
                 ...entry,

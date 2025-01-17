@@ -295,73 +295,160 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     [autoSave, selectedFlowId, isDirty]
   );
 
-  const setAiflowStrructre = (data: any) => {
-    const valData = JSON.parse(data);
-
-    if (Array.isArray(valData.tasks)) {
-      const newEdges: Edge[] = [];
-
+ /*  const setAiflowStrructre = useCallback(
+    (data: string) => {
+      const valData = JSON.parse(data);
+        if (!Array.isArray(valData.tasks)) return;
+        const edgesToAdd: Edge[] = [];
+  
       valData.tasks.forEach((task: any, index: number) => {
-        const matchedModule = moduleTypes.find((module: any) => {
-          return task.module_name === module.label;
-        });
-
-        const matchedOperator = matchedModule?.operators.find((operator: any) => {
-          return task.type === operator.type;
-        });
-
-        const id = (index + 1).toString();
-        const lastNode = nodes[nodes.length - 1];
-
-        // Dynamically calculate position
-        const position = {
-          x: (lastNode?.position?.x ?? 160) + index * 100,
-          y: 150,
-        };
-
-        const requiredFields = matchedOperator?.requiredFields || [];
-       // debugger
-        // Add the node
-        addNode({
-          id,
-          type: "custom",
-          position,
-          data: {
-            tempSave: false,
-            label: matchedModule?.label,
-            selectedData: matchedOperator.type,
-            type: "",
-            status: "pending",
-            meta: {
-              type: "",
-              moduleInfo: {
-                color: matchedModule?.color,
-                icon: matchedModule?.icon,
-                label: matchedModule?.label,
+        const matchedModule = moduleTypes.find(
+          (module) => module.label === task.module_name
+        );
+        const matchedOperator = matchedModule?.operators.find(
+          (op) => op.type === task.type
+        );
+  
+        const nodeId = `task-${task.id ?? index}`;
+          const existingNode = nodes.find((n) => n.id === nodeId);
+        if (!existingNode) {
+          const position = {
+            x: 160 + index * 100,
+            y: 150,
+          };
+  
+          addNode({
+            id: nodeId,
+            type: 'custom',
+            position,
+            data: {
+              tempSave: false,
+              label: matchedModule?.label,
+              selectedData: matchedOperator?.type,
+              type: '',
+              status: 'pending',
+              meta: {
+                type: '',
+                moduleInfo: {
+                  color: matchedModule?.color,
+                  icon: matchedModule?.icon,
+                  label: matchedModule?.label,
+                },
+                properties: matchedOperator?.properties || [],
+                description: matchedOperator?.description,
+                fullyOptimized: false,
               },
-              properties: matchedOperator?.properties || [],
-              description: matchedOperator?.description,
-              fullyOptimized: false,
+              requiredFields: matchedOperator?.requiredFields || [],
             },
-            requiredFields,
-          },
-          tempSave: false,
-        });
-
-        if (index > 0) {
-          newEdges.push({
-            id: `e${index}-${index + 1}`,
-            source: (index).toString(),
-            target: id,
-            type: "smoothstep",
+            tempSave: false,
           });
+        } else {
+          // Node already exists in `nodes`. Optionally update it if you want:
+          // updateNodeMeta(nodeId, { ... });
+        }
+  
+        if (index > 0) {
+          const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
+          const targetId = nodeId;
+            const edgeExists = edges.some(
+            (e) => e.source === sourceId && e.target === targetId
+          );
+          if (!edgeExists) {
+            edgesToAdd.push({
+              id: `e${sourceId}-${targetId}`,
+              source: sourceId,
+              target: targetId,
+              type: 'smoothstep',
+            });
+          }
         }
       });
+  
+      setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+    },
+    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
+  ); */
 
-      setEdges((prevEdges) => [...prevEdges, ...newEdges]);
-    }
-  };
-
+  const setAiflowStrructre = useCallback(
+    (data: string) => {
+      const valData = JSON.parse(data);
+      if (!Array.isArray(valData.tasks)) return;
+  
+      const edgesToAdd: Edge[] = [];
+  
+      valData.tasks.forEach((task: any, index: number) => {
+        const matchedModule = moduleTypes.find(
+          (module) => module.label === task.module_name
+        );
+        const matchedOperator = matchedModule?.operators.find(
+          (op) => op.type === task.type
+        );
+  
+        const nodeId = `task-${task.id ?? index}`;
+        const existingNode = nodes.find((n) => n.id === nodeId);
+  
+        if (!existingNode) {
+          const position = {
+            x: 160 + index * 100,
+            y: 150,
+          };
+  
+          addNode({
+            id: nodeId,
+            type: 'custom',
+            position,
+            data: {
+              tempSave: false,
+              label: matchedModule?.label,
+              selectedData: matchedOperator?.type,
+              type: '',
+              status: 'pending',
+              meta: {
+                type: '',
+                moduleInfo: {
+                  color: matchedModule?.color,
+                  icon: matchedModule?.icon,
+                  label: matchedModule?.label,
+                },
+                properties: matchedOperator?.properties || [],
+                description: matchedOperator?.description,
+                fullyOptimized: false,
+              },
+              requiredFields: matchedOperator?.requiredFields || [],
+            },
+            tempSave: false,
+          });
+        } else {
+          updateNodeMeta(nodeId, {
+            properties: matchedOperator?.properties || [],
+            description: matchedOperator?.description,
+            fullyOptimized: false,
+          });
+        }
+  
+        if (index > 0) {
+          const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
+          const targetId = nodeId;
+          const edgeExists = edges.some(
+            (e) => e.source === sourceId && e.target === targetId
+          );
+          if (!edgeExists) {
+            edgesToAdd.push({
+              id: `e${sourceId}-${targetId}`,
+              source: sourceId,
+              target: targetId,
+              type: 'smoothstep',
+            });
+          }
+        }
+      });
+  
+      setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+    },
+    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
+  );
+  
+  
 
   const setConsequentTaskDetail = (task: any, detail: any) => {
   }

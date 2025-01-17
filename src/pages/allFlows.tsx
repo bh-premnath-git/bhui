@@ -147,6 +147,10 @@ const AllFlows: React.FC = () => {
   );
 
   useEffect(() => {
+    setSelectedFlowId(null);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         await Promise.all([

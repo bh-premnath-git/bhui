@@ -13,7 +13,7 @@ export default function ConversationView({ conversation, isLoading, decoded }) {
           conversation.map((entry) => (
             <div key={entry.id} className="space-y-6">
               <div className="flex items-start gap-4">
-                <CircleUserRound className="text-gray-700 w-8 h-8" />
+                <CircleUserRound className="text-gray-700 w-5 h-5" />
                 <div className="flex-1 bg-white p-4 rounded-lg shadow-md border border-gray-200">
                   <p className="text-gray-800">{entry.question}</p>
                 </div>

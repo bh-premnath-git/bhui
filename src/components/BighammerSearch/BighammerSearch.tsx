@@ -24,33 +24,49 @@ export default function BigHammerSearch() {
 
   const createNewChat = useCallback(() => {
     const newChatId = Date.now();
+    const newThreadId = generateThreadId();
     const newChat = {
       id: newChatId,
-      title: `New Chat ${newChatId}`,
+      title: 'New Chat',
       timestamp: new Date().toISOString(),
+      threadId: newThreadId,
     };
+    
     setChatHistory(prevHistory => [newChat, ...prevHistory]);
     setConversation([]);
     setQuestion('');
-    setThreadId(generateThreadId());
+    setThreadId(newThreadId);
     return newChat;
   }, [generateThreadId]);
 
   useEffect(() => {
-    // Create a new chat when the component mounts
-    createNewChat();
-  }, [createNewChat]);
+    if (chatHistory.length === 0) {
+      const initialThreadId = generateThreadId();
+      const initialChat = {
+        id: Date.now(),
+        title: 'New Chat',
+        timestamp: new Date().toISOString(),
+        threadId: initialThreadId,
+      };
+      setChatHistory([initialChat]);
+      setThreadId(initialThreadId);
+    }
+  }, []);
 
   const handleNewChat = () => {
     createNewChat();
   };
 
   const handleDeleteChat = (id) => {
-    setChatHistory(prevHistory => prevHistory.filter((chat) => chat.id !== id));
-    if (chatHistory.length === 1) {
+    setChatHistory(prevHistory => {
+      const updatedHistory = prevHistory.filter(chat => chat.id !== id);
       // If deleting the last chat, create a new one
-      createNewChat();
-    }
+      if (updatedHistory.length === 0) {
+        const newChat = createNewChat();
+        return [newChat];
+      }
+      return updatedHistory;
+    });
   };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -74,12 +90,9 @@ export default function BigHammerSearch() {
       }
 
       setConversation(prevConversation =>
-        prevConversation.map((entry) =>
+        prevConversation.map(entry =>
           entry.id === newEntry.id
-            ? {
-                ...entry,
-                response: response.answer,
-              }
+            ? { ...entry, response: response.answer }
             : entry
         )
       );
@@ -88,25 +101,23 @@ export default function BigHammerSearch() {
       if (conversation.length === 0) {
         setChatHistory(prevHistory =>
           prevHistory.map(chat =>
-            chat.id === chatHistory[0].id
-              ? { ...chat, title: question.substring(0, 30) + (question.length > 30 ? '...' : '') }
+            chat.id === chatHistory[0]?.id
+              ? {
+                  ...chat,
+                  title: question.substring(0, 30) + (question.length > 30 ? '...' : ''),
+                }
               : chat
           )
         );
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      
       const errorMessage = error.message || 'An error occurred. Please try again.';
 
       setConversation(prevConversation =>
-        prevConversation.map((entry) =>
+        prevConversation.map(entry =>
           entry.id === newEntry.id
-            ? {
-                ...entry,
-                response: `Error: ${errorMessage}`,
-                error: true
-              }
+            ? { ...entry, response: `Error: ${errorMessage}`, error: true }
             : entry
         )
       );
@@ -148,4 +159,3 @@ export default function BigHammerSearch() {
     </div>
   );
 }
-

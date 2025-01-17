@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import {  Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import InputField from './InputField';
 import ChatHistory from './ChatHistory';
@@ -39,6 +39,11 @@ export default function BigHammerSearch() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  const generateThreadId = () => {
+    return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+
   const handleSearch = async () => {
     if (!question.trim()) return;
 
@@ -46,31 +51,42 @@ export default function BigHammerSearch() {
     setConversation([...conversation, newEntry]);
     setQuestion('');
     setIsLoading(true);
-    const body = {
-      question,
-      thread_id: 'thread_123456',
-    }
-    try {
-      const res =  await ApiService('8090', 'post', '/platform_search/platform_search', body);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+    try {
+      const response = await ApiService('8090', 'post', '/platform_search/platform_search', {
+        question,
+        thread_id: generateThreadId(),
+      });
+
+      // Check if response exists and has the expected structure
+      if (!response || typeof response.answer !== 'string') {
+        throw new Error('Invalid response format');
       }
 
-      const data = await res.json();
+      // Update conversation with the answer
       setConversation((prev) =>
         prev.map((entry) =>
           entry.id === newEntry.id
-            ? { ...entry, response: data.answer }
+            ? {
+                ...entry,
+                response: response.answer,
+              }
             : entry
         )
       );
     } catch (error) {
       console.error('Error fetching data:', error);
+      
+      const errorMessage = error.message || 'An error occurred. Please try again.';
+
       setConversation((prev) =>
         prev.map((entry) =>
           entry.id === newEntry.id
-            ? { ...entry, response: 'Error fetching response. Please try again.' }
+            ? {
+                ...entry,
+                response: `Error: ${errorMessage}`,
+                error: true
+              }
             : entry
         )
       );
@@ -78,6 +94,7 @@ export default function BigHammerSearch() {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="flex h-full relative bg-gradient-to-b from-gray-100 to-gray-300">
@@ -98,7 +115,7 @@ export default function BigHammerSearch() {
         size="icon"
         onClick={toggleMenu}
         className="absolute top-4 right-4 z-50 text-gray-700 hover:text-gray-900"
-        >
+      >
         <Menu className="h-6 w-6" />
       </Button>
 
@@ -112,3 +129,4 @@ export default function BigHammerSearch() {
     </div>
   );
 }
+

@@ -20,19 +20,19 @@ interface EdgeMetricsDialogProps {
     isLoading: boolean;
 }
 
-const EdgeMetricsDialog: React.FC<EdgeMetricsDialogProps> = ({ 
-    isOpen, 
-    onClose, 
-    metricsData, 
+const EdgeMetricsDialog: React.FC<EdgeMetricsDialogProps> = ({
+    isOpen,
+    onClose,
+    metricsData,
 }) => {
 
-   
+
 
     return (
-        <PipeLinePopUp 
-            open={isOpen} 
-            handleClose={onClose} 
-            transformData={metricsData?.[0]?.rows ?? []} 
+        <PipeLinePopUp
+            open={isOpen}
+            handleClose={onClose}
+            transformData={metricsData?.[0]?.rows ?? []}
         />
     );
 };
@@ -50,13 +50,13 @@ interface CustomEdgeProps {
     selected?: boolean;
 }
 
-export const CustomEdge = memo(({ 
-    id, 
-    sourceX, 
-    sourceY, 
-    targetX, 
-    targetY, 
-    style = {}, 
+export const CustomEdge = memo(({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    style = {},
     source,
     transformationCounts,
     interactionWidth = 1,
@@ -90,9 +90,9 @@ export const CustomEdge = memo(({
     const handleMetricsClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsMetricsOpen(true);
-        dispatch(fetchTransformationOutput({ 
-            pipelineName: 'sample', 
-            transformationName: sourceNode?.data.title 
+        dispatch(fetchTransformationOutput({
+            pipelineName: 'sample',
+            transformationName: sourceNode?.data.title
         }));
     };
 
@@ -113,11 +113,11 @@ export const CustomEdge = memo(({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             />
-            
+
             <path
                 id={id}
-                style={{ 
-                    ...edgeStyles, 
+                style={{
+                    ...edgeStyles,
                     ...style,
                     strokeWidth: selected || isHovered ? 1 : 1,
                     stroke: selected || isHovered ? '#666' : '#b1b1b7',
@@ -125,7 +125,7 @@ export const CustomEdge = memo(({
                 className="react-flow__edge-path"
                 d={path}
             />
-            
+
             {/* Edge Controls */}
             <EdgeControls
                 edgeCenter={edgeCenter}
@@ -196,7 +196,7 @@ const MetricsButton: React.FC<MetricsButtonProps> = ({ rowCount, onClick }) => (
                 >
                     <HiChartBar className="w-3 h-3 text-emerald-600" />
                 </button>
-                <span style={{fontSize:'6px'}} className="font-medium text-gray-700 min-w-[24px] text-center">
+                <span style={{ fontSize: '6px' }} className="font-medium text-gray-700 min-w-[24px] text-center">
                     {rowCount} rows
                 </span>
             </div>

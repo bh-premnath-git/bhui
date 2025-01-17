@@ -17,7 +17,7 @@ import { LuZoomIn, LuZoomOut } from 'react-icons/lu';
 import { FaAutoprefixer } from 'react-icons/fa';
 import { useReactFlow } from 'reactflow';
 
-export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView, showToast, formStates }: any) {
+export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView, showToast, formStates, pipelineDtl }: any) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [open, setOpen] = useState(false);
     const [drawerHeight, setDrawerHeight]: any = useState('60%');
@@ -51,7 +51,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
 
             try {
                 const response = await dispatch(startPipeLine({
-                    pipeline_name: "sample",
+                    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
                     pipeline_json: JSON.stringify(schemaValidation.module),
                     mode: "DEFAULT"
                 })).unwrap();
@@ -67,7 +67,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                     showToast('Sample Pipeline Failed to Start', { color: COLORS.red });
                 }
             } catch (error) {
-                showToast('Sample Pipeline Failed to Start', { color: COLORS.red });
+                showToast(`${pipelineDtl?.pipeline_name || "sample_pipeline"} Pipeline Failed to Start`, { color: COLORS.red });
                 console.error('Error starting pipeline:', error);
             }
         } else if (process === 'stop') {
@@ -79,7 +79,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                     showToast(response?.payload?.message, { color: COLORS.red });
                 }
             } catch (error) {
-                showToast('Sample Pipeline Failed to Stop', { color: COLORS.red });
+                showToast(`${pipelineDtl?.pipeline_name || "sample_pipeline"} Pipeline Failed to Stop`, { color: COLORS.red });
                 console.error('Error starting pipeline:', error);
             }
         } else {
@@ -91,14 +91,14 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
                 let checkPoint = checkedDisplayNames.join(',');
                 console.log(checkPoint)
                 const response = await dispatch(startPipeLine({
-                    pipeline_name: "sample",
+                    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
                     pipeline_json: JSON.stringify(schemaValidation.module),
                     mode: "DEBUG",
                     checkpoints: checkPoint
                 })).unwrap();
                 console.log(response)
                 if (response?.message) {
-                    var result = await dispatch(getTransformationCount({ pipeline_name: 'sample' })).unwrap();
+                    var result = await dispatch(getTransformationCount({ pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` })).unwrap();
                     console.log(result.payload);
                 }
             } catch (error) {
@@ -147,7 +147,7 @@ export default function Footer({ com, handleZoomIn, handleZoomOut, handleFitView
         // Create pipeline configuration
         const pipelineConfig = {
             mode: "DEBUG",
-            name: "sample",
+            name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
             description: "Complete pipeline",
             transformations: pipelineNodeIds
                 .map(nodeId => {

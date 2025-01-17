@@ -24,7 +24,10 @@ export default function ConversationView({ conversation, isLoading, decoded }) {
                   </div>
                 ) : (
                   <div className="flex items-start gap-4">
-                    <div className="flex-1 bg-gray-100 p-4 rounded-lg shadow-md">{entry.response}</div>
+                    <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" className="w-10 h-10" />
+                    <div className="flex-1 bg-gray-100 p-4 rounded-lg shadow-md">
+                      {typeof entry.response === 'string' ? entry.response : entry.response.answer}
+                    </div>
                   </div>
                 )}
               </div>

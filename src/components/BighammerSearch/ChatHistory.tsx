@@ -17,14 +17,14 @@ export default function ChatHistory({ chatHistory, handleNewChat, handleDeleteCh
           {chatHistory.map((chat) => (
             <div
               key={chat.id}
-              className="flex items-center justify-between p-3 bg-gray-100 rounded-lg shadow-md hover:bg-gray-200"
+              className="flex items-center justify-between p-2 bg-gray-100 rounded-lg shadow-md hover:bg-gray-200"
             >
               <span className="truncate text-gray-800">{chat.title}</span>
               <button
                 onClick={() => handleDeleteChat(chat.id)}
-                className="h-8 w-8 text-gray-400 hover:text-red-500"
+                className="h-5 w-5 text-gray-400 hover:text-red-500"
               >
-                <Trash2 className="h-5 w-5" />
+                <Trash2 className="h-3 w-3" />
               </button>
             </div>
           ))}

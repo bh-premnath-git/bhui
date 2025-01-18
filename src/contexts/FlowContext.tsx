@@ -12,7 +12,7 @@ import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
 import { useModules } from "@/hooks/useModules";
 import { LocalStorageService } from '@/services/localStorageServices';
-
+import { isStringifiedJson } from '@/utils/object';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
@@ -135,7 +135,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       tempSave: boolean;
       data: CustomNodeData;
     }) => {
-      console.log("nodes >>", nodes);
       const newNode: Node<CustomNodeData> = {
         id: data.id,
         type: data.type,
@@ -295,160 +294,91 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     [autoSave, selectedFlowId, isDirty]
   );
 
- /*  const setAiflowStrructre = useCallback(
-    (data: string) => {
-      const valData = JSON.parse(data);
-        if (!Array.isArray(valData.tasks)) return;
-        const edgesToAdd: Edge[] = [];
-  
-      valData.tasks.forEach((task: any, index: number) => {
-        const matchedModule = moduleTypes.find(
-          (module) => module.label === task.module_name
-        );
-        const matchedOperator = matchedModule?.operators.find(
-          (op) => op.type === task.type
-        );
-  
-        const nodeId = `task-${task.id ?? index}`;
-          const existingNode = nodes.find((n) => n.id === nodeId);
-        if (!existingNode) {
-          const position = {
-            x: 160 + index * 100,
-            y: 150,
-          };
-  
-          addNode({
-            id: nodeId,
-            type: 'custom',
-            position,
-            data: {
-              tempSave: false,
-              label: matchedModule?.label,
-              selectedData: matchedOperator?.type,
-              type: '',
-              status: 'pending',
-              meta: {
-                type: '',
-                moduleInfo: {
-                  color: matchedModule?.color,
-                  icon: matchedModule?.icon,
-                  label: matchedModule?.label,
-                },
-                properties: matchedOperator?.properties || [],
-                description: matchedOperator?.description,
-                fullyOptimized: false,
-              },
-              requiredFields: matchedOperator?.requiredFields || [],
-            },
-            tempSave: false,
-          });
-        } else {
-          // Node already exists in `nodes`. Optionally update it if you want:
-          // updateNodeMeta(nodeId, { ... });
-        }
-  
-        if (index > 0) {
-          const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
-          const targetId = nodeId;
-            const edgeExists = edges.some(
-            (e) => e.source === sourceId && e.target === targetId
-          );
-          if (!edgeExists) {
-            edgesToAdd.push({
-              id: `e${sourceId}-${targetId}`,
-              source: sourceId,
-              target: targetId,
-              type: 'smoothstep',
-            });
-          }
-        }
-      });
-  
-      setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
-    },
-    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
-  ); */
+
+
 
   const setAiflowStrructre = useCallback(
     (data: string) => {
-      const valData = JSON.parse(data);
-      if (!Array.isArray(valData.tasks)) return;
-  
-      const edgesToAdd: Edge[] = [];
-  
-      valData.tasks.forEach((task: any, index: number) => {
-        const matchedModule = moduleTypes.find(
-          (module) => module.label === task.module_name
-        );
-        const matchedOperator = matchedModule?.operators.find(
-          (op) => op.type === task.type
-        );
-  
-        const nodeId = `task-${task.id ?? index}`;
-        const existingNode = nodes.find((n) => n.id === nodeId);
-  
-        if (!existingNode) {
-          const position = {
-            x: 160 + index * 100,
-            y: 150,
-          };
-  
-          addNode({
-            id: nodeId,
-            type: 'custom',
-            position,
-            data: {
-              tempSave: false,
-              label: matchedModule?.label,
-              selectedData: matchedOperator?.type,
-              type: '',
-              status: 'pending',
-              meta: {
-                type: '',
-                moduleInfo: {
-                  color: matchedModule?.color,
-                  icon: matchedModule?.icon,
+      try {
+        if (isStringifiedJson(data)) {
+          const valData = JSON.parse(data);
+          if (!Array.isArray(valData.tasks)) return;
+
+          const edgesToAdd: Edge[] = [];
+
+          valData.tasks.forEach((task: any, index: number) => {
+            const matchedModule = moduleTypes.find(
+              (module) => module.label === task.module_name
+            );
+            const matchedOperator = matchedModule?.operators.find(
+              (op) => op.type === task.type
+            );
+
+            const nodeId = `task-${task.id ?? index}`;
+            const existingNode = nodes.find((n) => n.id === nodeId);
+
+            if (!existingNode) {
+              const position = {
+                x: 160 + index * 100,
+                y: 150,
+              };
+
+              addNode({
+                id: nodeId,
+                type: 'custom',
+                position,
+                data: {
+                  tempSave: false,
                   label: matchedModule?.label,
+                  selectedData: matchedOperator?.type,
+                  type: '',
+                  status: 'pending',
+                  meta: {
+                    type: '',
+                    moduleInfo: {
+                      color: matchedModule?.color,
+                      icon: matchedModule?.icon,
+                      label: matchedModule?.label,
+                    },
+                    properties: matchedOperator?.properties || [],
+                    description: matchedOperator?.description,
+                    fullyOptimized: false,
+                  },
+                  requiredFields: matchedOperator?.requiredFields || [],
                 },
-                properties: matchedOperator?.properties || [],
-                description: matchedOperator?.description,
-                fullyOptimized: false,
-              },
-              requiredFields: matchedOperator?.requiredFields || [],
-            },
-            tempSave: false,
+                tempSave: false,
+              });
+            } else {
+
+            }
+
+            if (index > 0) {
+              const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
+              const targetId = nodeId;
+              const edgeExists = edges.some(
+                (e) => e.source === sourceId && e.target === targetId
+              );
+              if (!edgeExists) {
+                edgesToAdd.push({
+                  id: `e${sourceId}-${targetId}`,
+                  source: sourceId,
+                  target: targetId,
+                  type: 'smoothstep',
+                });
+              }
+            }
           });
-        } else {
-          updateNodeMeta(nodeId, {
-            properties: matchedOperator?.properties || [],
-            description: matchedOperator?.description,
-            fullyOptimized: false,
-          });
+
+          setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
         }
-  
-        if (index > 0) {
-          const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
-          const targetId = nodeId;
-          const edgeExists = edges.some(
-            (e) => e.source === sourceId && e.target === targetId
-          );
-          if (!edgeExists) {
-            edgesToAdd.push({
-              id: `e${sourceId}-${targetId}`,
-              source: sourceId,
-              target: targetId,
-              type: 'smoothstep',
-            });
-          }
-        }
-      });
-  
-      setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+      } catch (err) {
+        return
+      }
     },
     [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
   );
-  
-  
+
+
 
   const setConsequentTaskDetail = (task: any, detail: any) => {
   }

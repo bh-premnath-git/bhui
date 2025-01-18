@@ -10,7 +10,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { insertPipeline, setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
 import CustomField from '@/common/CustomField';
 import { ApiService } from '@/services/apiServices';
-import { COLORS } from '@/Utils/constants';
+import { COLORS } from '@/utils/constants';
 
 const style = {
     position: 'absolute' as 'absolute',

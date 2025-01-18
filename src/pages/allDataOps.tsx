@@ -10,6 +10,7 @@ import { RootState } from "@/store/store"
 import { getDataOps } from "@/redux/DataOpsSlice"
 import TaskDetails from '@/components/TaskDetails/TaskDetails';
 import { Package } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
 interface DemoPageProps {
   data: TableData[];
@@ -65,7 +66,7 @@ const columns = [
 
 function DataOPsTable({ data, loading, error }: DemoPageProps) {
   if (loading) {
-    return <div className="flex justify-center items-center">Loading...</div>;
+    return <Spinner />;
   }
 
   if (error) {

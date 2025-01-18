@@ -7,7 +7,7 @@ import {
   getdataSourceList,
   setSelectedDataSource
 } from "@/redux/CatalogSlice";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { FlexibleTable } from "@/components/Table";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";

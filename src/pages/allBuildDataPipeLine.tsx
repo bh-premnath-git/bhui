@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { getAllPipeline, deletePipelineById } from "@/redux/BuildPipeLineSlice";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { getGitProject } from "@/redux/ProjectSlice";
 import BuildPipeLineCreatePopup from "@/components/BuildPipeLineComps/BuildPipeLineCreatePopup";
 import useToast from "@/components/teast-service";
@@ -14,14 +14,14 @@ import { FolderPlus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DeleteDialog } from "@/components/DeleteDialog";
-import { COLORS } from "@/Utils/constants";
+import { COLORS } from "@/utils/constants";
 
 interface PipelineData {
     pipeline_id: number;
     pipeline_name: string;
     git_branch: string;
     bh_project_id: number;
-    bh_project_name?: string; 
+    bh_project_name?: string;
     created_at: string;
     updated_at: string;
     updated_by: string;
@@ -49,7 +49,7 @@ const columns: ColumnConfig[] = [
     {
         key: 'pipeline_name',
         header: 'Pipeline Name',
-        type: 'text', 
+        type: 'text',
         sortable: false,
         filterable: true,
         render: (value: string) => (
@@ -69,7 +69,7 @@ const columns: ColumnConfig[] = [
     {
         key: 'updated_by',
         header: 'Last Updated By',
-        type: 'text', 
+        type: 'text',
         sortable: false,
         render: (value: string) => <div>{value}</div>
     },
@@ -77,7 +77,7 @@ const columns: ColumnConfig[] = [
         key: 'updated_at',
         header: 'Last Executed On',
         type: 'date',
-        sortable: true, 
+        sortable: true,
         filterable: true,
         render: (value: string | null) => formatedDate(value) || 'Never',
     },

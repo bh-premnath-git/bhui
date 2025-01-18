@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import { ConversationEntry } from './types'
 import { ResponseContent } from './ResponseContent'
 import { CircleUserRound } from 'lucide-react'
-
+import { Spinner } from '@/components/ui/spinner'
 interface ChatConversationProps {
   conversation: ConversationEntry[]
   isLoading: boolean
@@ -36,9 +36,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({ conversation
               </div>
             </div>
             {entry.response === null ? (
-              <div className="flex items-center gap-2 pl-3 text-gray-400">
-                <div className="animate-pulse">Loading...</div>
-              </div>
+              <Spinner />
             ) : (
               <div className="ml-10 bg-purple-50 p-4 rounded-lg shadow-sm">
                 <ResponseContent response={entry.response} id={entry.id} />

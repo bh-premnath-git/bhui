@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import * as React from 'react';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useLocation } from 'react-router';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import TagDialog from '@/common/TagDialog';
-import { COLORS } from '@/Utils/constants';
+import { COLORS } from '@/utils/constants';
 import useToast from '@/components/teast-service';
 
 type Tag = {
@@ -59,9 +59,9 @@ function TaggingStep(props: any) {
                 const result = await ApiService('8011', 'put', `/customer/${props.data}`, customerData);
                 if (result) {
                     setOpen(true);
-                    if (userData){
+                    if (userData) {
                         showToast('Customer Updated successfully', { color: '#4caf50' });
-                    } else{
+                    } else {
                         showToast('Customer created successfully', { color: '#4caf50' });
                     }
                     const toastTimer = setTimeout(() => {
@@ -70,7 +70,7 @@ function TaggingStep(props: any) {
                     const redirectTimer = setTimeout(() => {
                         navigate('/admin-console/customers');
                     }, 1000);
-                    return () => {clearTimeout(toastTimer); clearTimeout(redirectTimer);};
+                    return () => { clearTimeout(toastTimer); clearTimeout(redirectTimer); };
                 }
             } catch (error) {
                 showToast('Failed to create user. Please try again.', { color: '#f44336' });

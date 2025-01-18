@@ -10,7 +10,7 @@ import PipelineDrawer from './PipeLineDrawer';
 import { VscDebugCoverage, VscDebugReverseContinue } from 'react-icons/vsc';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { COLORS } from '@/Utils/constants';
+import { COLORS } from '@/utils/constants';
 import schemaValidation from '@/pages/buildPipeLine/json_schema_validators.json';
 import { getTransformationCount, setIsDebug, setIsRun, startPipeLine, stopPipeLine } from '@/redux/BuildPipeLineSlice';
 import { LuZoomIn, LuZoomOut } from 'react-icons/lu';

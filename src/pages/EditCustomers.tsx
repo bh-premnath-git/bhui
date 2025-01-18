@@ -11,7 +11,7 @@ import CustomerDetailsStep from '@/components/CustomerTabs/CustomerDetailsStep';
 import ConnectionStep from '@/components/CustomerTabs/ConnectionStep';
 import AlertProfileStep from '@/components/CustomerTabs/AlertProfileStep';
 import TaggingStep from '@/components/CustomerTabs/TaggingStep';
-import { COLORS } from '@/Utils/constants';
+import { COLORS } from '@/utils/constants';
 
 /**
  * Form Validation Schema
@@ -113,21 +113,21 @@ function EditCustomer() {
 			<div className="container shadow p-4 rounded w-10/12  m-auto mt-4">
 				<Grid item xs={12} container justifyContent="flex-end">
 					<Button
-					sx={{
-						backgroundColor: 'black',
-						color: 'white',
-						'&:hover': {
-						backgroundColor: 'black',
-						},
-					}}
-					className="mt-1"
-					onClick={() => navigate('/admin-console/customers')}
+						sx={{
+							backgroundColor: 'black',
+							color: 'white',
+							'&:hover': {
+								backgroundColor: 'black',
+							},
+						}}
+						className="mt-1"
+						onClick={() => navigate('/admin-console/customers')}
 					>
-					View All Customers
+						View All Customers
 					</Button>
 				</Grid>
 				<br></br>
-				
+
 				<Box sx={{ width: '75%', m: 'auto', paddingTop: '30px' }}>
 					<Stepper activeStep={activeStep} alternativeLabel>
 						{steps.map((label, index) => (

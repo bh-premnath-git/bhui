@@ -16,7 +16,7 @@ import {
 } from '@/redux/FlowSlice';
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { FolderPlus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

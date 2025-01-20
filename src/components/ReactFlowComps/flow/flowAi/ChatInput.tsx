@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { debounce } from 'lodash'
 
 interface ChatInputProps {
@@ -66,6 +67,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
           }`}
         >
           <SendRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
+        </button>
+        <button
+          onClick={()=>{}}
+          disabled={!inputValue.trim() || isLoading}
+          className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+            !inputValue.trim() || isLoading
+              ? 'cursor-not-allowed opacity-50'
+              : 'hover:bg-purple-800 cursor-pointer'
+          }`}
+        >
+          <DeleteRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
         </button>
       </div>
     </div>

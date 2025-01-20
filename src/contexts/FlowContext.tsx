@@ -32,6 +32,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [formdataNum, setFormDataNum] = useState(0);
+  const [aiMissingData, setAiMissingData] = useState({});
 
   const [moduleTypes] = useModules();
 
@@ -294,12 +295,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     [autoSave, selectedFlowId, isDirty]
   );
 
-
-
-
   const setAiflowStrructre = useCallback(
     (data: string) => {
+      console.log("setAiflowStrructre : ","started");
       try {
+        setNodes([]);
+        setEdges([]);
+        setNodeFormData([]);
         if (isStringifiedJson(data)) {
           const valData = JSON.parse(data);
           if (!Array.isArray(valData.tasks)) return;
@@ -384,7 +386,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }
 
 
-  // Effect to load flow when selectedFlowId changes
   useEffect(() => {
     if (selectedFlowId) {
       const savedFlow = loadFlow(selectedFlowId);
@@ -396,7 +397,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaving(false);
       setIsDirty(false);
     } else {
-      // If no flow is selected, reset the state
       setNodes([]);
       setEdges([]);
       setNodeFormData([]);
@@ -471,7 +471,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     formdataNum,
     setFormDataNum,
     setAiflowStrructre,
-    setConsequentTaskDetail
+    setConsequentTaskDetail,
+    aiMissingData,
+    setAiMissingData
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

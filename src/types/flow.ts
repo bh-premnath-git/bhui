@@ -186,4 +186,6 @@ export interface FlowContextType {
   setFormDataNum: React.Dispatch<React.SetStateAction<number>>;
   setAiflowStrructre: (data: any) => void;
   setConsequentTaskDetail: (task: any, detail: any) => void;
+  aiMissingData?: any;
+  setAiMissingData?: React.Dispatch<React.SetStateAction<any>>;
 }

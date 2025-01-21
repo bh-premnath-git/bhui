@@ -28,7 +28,6 @@ export const useConversation = () => {
         .replace(/\bNone\b/g, 'null');
 
       const responseObj = JSON.parse(sanitizedResponse);
-
       if (responseObj.status === 'success' && responseObj.flow_definition) {
         const flowDefRaw = responseObj.flow_definition
           .replace(/```json\n?/g, '')
@@ -44,7 +43,18 @@ export const useConversation = () => {
         result.missingOperators = responseObj.flow_definition
         result.flowDefinition = null
       } else {
-        result.message = 'No flow definition found in the response.';
+        const flowDefRaw = responseObj.flow_definition
+          .replace(/```json\n?/g, '')
+          .replace(/```/g, '');
+        try {
+          result.flowDefinition = flowDefRaw
+          result.missingOperators = null
+
+        } catch (flowerr) {
+
+          result.message = 'No flow definition found in the response.';
+        }
+
       }
       return JSON.stringify(result, null, 2);
     } catch (error) {

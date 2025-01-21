@@ -1,23 +1,16 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import loaderLogo from "/assets/logo/loaderLogo.svg"; // Adjust path as needed
+import loaderLogo from "/assets/logo/loaderLogo.svg";
 
 interface SpinnerProps {
   className?: string;
   showLoadingTxt?: boolean;
 }
 
-export const Spinner: React.FC<SpinnerProps> = ({
-  className,
-  showLoadingTxt = true,
-}) => {
+export  function Spinner({ className, showLoadingTxt = true }: SpinnerProps) {
   return (
-    <div
-      className={cn("flex flex-col items-center justify-center bg-white", className)}
-    >
-      {/* Outer container for the spinner */}
-      <div className="relative w-40 h-40">
-        {/* Inner spinning circles */}
+    <div className={cn("flex flex-col items-center justify-center bg-white w-40 h-40", className)}>
+      <div className="relative w-full aspect-square">
         <div className="absolute inset-0">
           {[...Array(6)].map((_, i) => (
             <div
@@ -27,9 +20,9 @@ export const Spinner: React.FC<SpinnerProps> = ({
                 transform: `rotate(${i * 60}deg)`,
               }}
             >
-              <div className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute top-0 left-1/2 w-[10%] aspect-square -translate-x-1/2 -translate-y-1/2">
                 <div
-                  className="w-full h-full rounded-full bg-black/70 blur-[2px] animate-pulse-scale"
+                  className="w-full h-full rounded-full bg-black/70 blur-[1px] animate-pulse-scale"
                   style={{
                     animationDelay: `${i * 0.15}s`,
                   }}
@@ -39,7 +32,6 @@ export const Spinner: React.FC<SpinnerProps> = ({
           ))}
         </div>
 
-        {/* Outer rotating ring */}
         <svg className="absolute inset-0 animate-reverse-spin" viewBox="0 0 100 100">
           <circle
             cx="50"
@@ -59,25 +51,27 @@ export const Spinner: React.FC<SpinnerProps> = ({
           </defs>
         </svg>
 
-        {/* Middle ring */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 rounded-full border-2 border-black/20 animate-pulse" />
+          <div className="w-3/5 aspect-square rounded-full border-2 border-black/20 animate-pulse" />
         </div>
 
-        {/* Center element (logo) */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <img src={loaderLogo} width={58} height={58} alt="loaderlogo" />
+          <div className="w-[35%] aspect-square flex items-center justify-center">
+            <img 
+              src={loaderLogo} 
+              className="w-full h-full object-contain"
+              alt="loaderlogo" 
+            />
+          </div>
         </div>
       </div>
 
-      {/* Conditionally display the "Loading" text */}
       {showLoadingTxt && (
         <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
           Loading
         </div>
       )}
 
-      {/* Inline styles for custom animations */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -108,4 +102,4 @@ export const Spinner: React.FC<SpinnerProps> = ({
       />
     </div>
   );
-};
+}

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { getUserDataList } from "@/redux/UserSlice";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { UserPlus, Search, MoreHorizontal, Filter, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -112,7 +112,7 @@ const AllUsers: React.FC = () => {
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
-            <Spinner  />
+            <Spinner />
         </div>
     );
     if (apiError) return <ErrorDisplay message={apiError} />;

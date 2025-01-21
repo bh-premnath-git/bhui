@@ -12,7 +12,7 @@ import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
 import { useModules } from "@/hooks/useModules";
 import { LocalStorageService } from '@/services/localStorageServices';
-
+import { isStringifiedJson } from '@/utils/object';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
@@ -32,6 +32,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [temporaryEdgeId, setTemporaryEdgeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [formdataNum, setFormDataNum] = useState(0);
+  const [aiMissingData, setAiMissingData] = useState({});
 
   const [moduleTypes] = useModules();
 
@@ -135,7 +136,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       tempSave: boolean;
       data: CustomNodeData;
     }) => {
-      console.log("nodes >>", nodes);
       const newNode: Node<CustomNodeData> = {
         id: data.id,
         type: data.type,
@@ -295,79 +295,97 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     [autoSave, selectedFlowId, isDirty]
   );
 
-  const setAiflowStrructre = (data: any) => {
-    const valData = JSON.parse(data);
+  const setAiflowStrructre = useCallback(
+    (data: string) => {
+      console.log("setAiflowStrructre : ","started");
+      try {
+        setNodes([]);
+        setEdges([]);
+        setNodeFormData([]);
+        if (isStringifiedJson(data)) {
+          const valData = JSON.parse(data);
+          if (!Array.isArray(valData.tasks)) return;
 
-    if (Array.isArray(valData.tasks)) {
-      const newEdges: Edge[] = [];
+          const edgesToAdd: Edge[] = [];
 
-      valData.tasks.forEach((task: any, index: number) => {
-        const matchedModule = moduleTypes.find((module: any) => {
-          return task.module_name === module.label;
-        });
+          valData.tasks.forEach((task: any, index: number) => {
+            const matchedModule = moduleTypes.find(
+              (module) => module.label === task.module_name
+            );
+            const matchedOperator = matchedModule?.operators.find(
+              (op) => op.type === task.type
+            );
 
-        const matchedOperator = matchedModule?.operators.find((operator: any) => {
-          return task.type === operator.type;
-        });
+            const nodeId = `task-${task.id ?? index}`;
+            const existingNode = nodes.find((n) => n.id === nodeId);
 
-        const id = (index + 1).toString();
-        const lastNode = nodes[nodes.length - 1];
+            if (!existingNode) {
+              const position = {
+                x: 160 + index * 100,
+                y: 150,
+              };
 
-        // Dynamically calculate position
-        const position = {
-          x: (lastNode?.position?.x ?? 160) + index * 100,
-          y: 150,
-        };
+              addNode({
+                id: nodeId,
+                type: 'custom',
+                position,
+                data: {
+                  tempSave: false,
+                  label: matchedModule?.label,
+                  selectedData: matchedOperator?.type,
+                  type: '',
+                  status: 'pending',
+                  meta: {
+                    type: '',
+                    moduleInfo: {
+                      color: matchedModule?.color,
+                      icon: matchedModule?.icon,
+                      label: matchedModule?.label,
+                    },
+                    properties: matchedOperator?.properties || [],
+                    description: matchedOperator?.description,
+                    fullyOptimized: false,
+                  },
+                  requiredFields: matchedOperator?.requiredFields || [],
+                },
+                tempSave: false,
+              });
+            } else {
 
-        const requiredFields = matchedOperator?.requiredFields || [];
-       // debugger
-        // Add the node
-        addNode({
-          id,
-          type: "custom",
-          position,
-          data: {
-            tempSave: false,
-            label: matchedModule?.label,
-            selectedData: matchedOperator.type,
-            type: "",
-            status: "pending",
-            meta: {
-              type: "",
-              moduleInfo: {
-                color: matchedModule?.color,
-                icon: matchedModule?.icon,
-                label: matchedModule?.label,
-              },
-              properties: matchedOperator?.properties || [],
-              description: matchedOperator?.description,
-              fullyOptimized: false,
-            },
-            requiredFields,
-          },
-          tempSave: false,
-        });
+            }
 
-        if (index > 0) {
-          newEdges.push({
-            id: `e${index}-${index + 1}`,
-            source: (index).toString(),
-            target: id,
-            type: "smoothstep",
+            if (index > 0) {
+              const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
+              const targetId = nodeId;
+              const edgeExists = edges.some(
+                (e) => e.source === sourceId && e.target === targetId
+              );
+              if (!edgeExists) {
+                edgesToAdd.push({
+                  id: `e${sourceId}-${targetId}`,
+                  source: sourceId,
+                  target: targetId,
+                  type: 'smoothstep',
+                });
+              }
+            }
           });
-        }
-      });
 
-      setEdges((prevEdges) => [...prevEdges, ...newEdges]);
-    }
-  };
+          setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+        }
+      } catch (err) {
+        return
+      }
+    },
+    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
+  );
+
 
 
   const setConsequentTaskDetail = (task: any, detail: any) => {
   }
 
 
-  // Effect to load flow when selectedFlowId changes
   useEffect(() => {
     if (selectedFlowId) {
       const savedFlow = loadFlow(selectedFlowId);
@@ -379,7 +397,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaving(false);
       setIsDirty(false);
     } else {
-      // If no flow is selected, reset the state
       setNodes([]);
       setEdges([]);
       setNodeFormData([]);
@@ -454,7 +471,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     formdataNum,
     setFormDataNum,
     setAiflowStrructre,
-    setConsequentTaskDetail
+    setConsequentTaskDetail,
+    aiMissingData,
+    setAiMissingData
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

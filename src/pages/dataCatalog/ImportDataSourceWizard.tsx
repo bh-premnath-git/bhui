@@ -38,7 +38,7 @@ import {
     BarChart2,
     ChevronsLeftRightEllipsis,
 } from "lucide-react";
-import { parseFile, FileData, ParseOptions } from "@/Utils/fileParser";
+import { parseFile, FileData, ParseOptions } from "@/utils/fileParser";
 import {
     Select,
     SelectContent,
@@ -46,7 +46,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { mapFileTypeToLayoutType } from "@/Utils/utils";
+import { mapFileTypeToLayoutType } from "@/utils/utils";
 import { ApiService } from "@/services/apiServices";
 import { Modal } from "@/components/ui/modal";
 import { Histogram } from "@/components/ui/Histogram";
@@ -464,9 +464,9 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
                                                 <SelectContent>
                                                     {props.gitProjectList && props.gitProjectList.length > 0 ? (
                                                         props.gitProjectList.map((project: any) => (
-                                                                    <SelectItem key={project.ProjectId} value={project.ProjectId.toString()}>
-                                                                        {project.Project_Name}
-                                                                    </SelectItem>
+                                                            <SelectItem key={project.ProjectId} value={project.ProjectId.toString()}>
+                                                                {project.Project_Name}
+                                                            </SelectItem>
                                                         ))
                                                     ) : (
                                                         <SelectItem value="" disabled>

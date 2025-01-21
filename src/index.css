@@ -42,11 +42,11 @@ body {
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --chart-1-color: #6FCF97; /* completed (mint green) */
-    --chart-2-color: #F2994A; /* complete with delay (soft amber orange) */
-    --chart-3-color: #56CCF2; /* failed (sky blue) */
-    --chart-4-color: #BDBDBD; /* neutral (light gray) */
-    --chart-5-color: #ff250dbc; /* not arrived (soft red) */
+    --chart-1-color: #003f5c;
+    --chart-2-color: #2f4b7c;
+    --chart-3-color: #665191;
+    --chart-4-color: #a05195;
+    --chart-5-color: #d45087;
     --radius: 0.5rem;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;

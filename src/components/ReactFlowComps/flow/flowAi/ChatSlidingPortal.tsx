@@ -44,7 +44,7 @@ export const ChatSlidingPortal: React.FC<ChatSlidingPortalProps> = ({
         >
           <motion.div
             key="sliding-panel"
-            className="absolute top-0 right-0 h-full w-full max-w-2xl bg-white shadow-lg"
+            className="absolute top-0 right-0 h-full w-full max-w-3xl bg-white shadow-lg"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

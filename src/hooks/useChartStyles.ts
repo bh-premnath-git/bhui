@@ -13,7 +13,7 @@ interface ChartStyleStore {
 export const useChartStyles = create<ChartStyleStore>((set) => ({
   styles: {
     height: 400,
-    colorScheme: 'default',
+    colorScheme: 'monochrome',
   },
   setStyles: (newStyles) =>
     set((state) => ({

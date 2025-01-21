@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { getCustomerList } from "@/redux/CustomerSlice";
-import { COLORS } from "@/Utils/constants";
+import { COLORS } from "@/utils/constants";
 import { Building2, FolderPlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

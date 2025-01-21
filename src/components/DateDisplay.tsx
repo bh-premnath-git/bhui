@@ -1,6 +1,6 @@
 // components/DateDisplay.tsx
 import React from 'react';
-import { formatDate } from '../Utils/dateFormatter';
+import { formatDate } from '../utils/dateFormatter';
 
 interface DateDisplayProps {
     dateString: string;

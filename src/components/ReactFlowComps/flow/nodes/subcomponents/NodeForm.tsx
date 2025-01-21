@@ -13,7 +13,7 @@ import { FormLayout } from "./Form/FormLayout";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { createShortUUID } from "@/Utils/uid";
+import { createShortUUID } from "@/utils/uid";
 import { Save } from "lucide-react";
 import useToast from '@/components/teast-service';
 
@@ -34,7 +34,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     if (!selectedNode) {
         return null;
     }
-    
+
     const selectedProperties = useMemo(() => {
         if (Array.isArray(selectedNode.data.meta.properties) && selectedValue) {
             return selectedNode.data.meta.properties.find(

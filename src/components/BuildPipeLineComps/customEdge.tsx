@@ -48,6 +48,7 @@ interface CustomEdgeProps {
     transformationCounts: Array<{ transformationName: string; rowCount: number }>;
     interactionWidth?: number;
     selected?: boolean;
+    pipelineDtl: any;
 }
 
 export const CustomEdge = memo(({
@@ -61,6 +62,7 @@ export const CustomEdge = memo(({
     transformationCounts,
     interactionWidth = 1,
     selected,
+    pipelineDtl
 }: CustomEdgeProps) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isMetricsOpen, setIsMetricsOpen] = useState(false);
@@ -70,8 +72,10 @@ export const CustomEdge = memo(({
     const { metricsData, isMetricsLoading } = useSelector((state: RootState) => state.buildPipeLineApi);
 
     const sourceNode = getNode(source);
+    console.log(sourceNode)
+    console.log(transformationCounts)
     const rowCount = transformationCounts.find(
-        (t) => t.transformationName === sourceNode?.data.title
+        (t) => t.transformationName === sourceNode?.data.label?.toLowerCase()
     )?.rowCount;
 
     const edgeCenter = useMemo(() => ({
@@ -91,7 +95,7 @@ export const CustomEdge = memo(({
         e.stopPropagation();
         setIsMetricsOpen(true);
         dispatch(fetchTransformationOutput({
-            pipelineName: 'sample',
+            pipelineName: pipelineDtl?.pipeline_name,
             transformationName: sourceNode?.data.title
         }));
     };

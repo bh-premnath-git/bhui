@@ -82,20 +82,71 @@ const BuildPlayGround: React.FC = () => {
 
                 if (response?.pipeline_json) {
                     // Convert pipeline JSON to UI format
-                    console.log(response.pipeline_json)
                     const uiJson = convertPipelineToUIJson(response.pipeline_json);
-                    console.log((await uiJson).edges);
-                    // console.log(uiEdges);
                     setNodes((await uiJson).nodes);
                     setEdges((await uiJson).edges);
 
-                    // Update node counters
-                    const counters: { [key: string]: number } = {};
-                    // uiNodes.forEach((node: any) => {
-                    //     const moduleName = node.data.label;
-                    //     counters[moduleName] = (counters[moduleName] || 0) + 1;
-                    // });
-                    setNodeCounters(counters);
+                    // Initialize form states from pipeline JSON transformations
+                    const initialFormStates = {};
+                    response.pipeline_json.transformations.forEach((transformation: any) => {
+                        console.log(transformation)
+                        switch (transformation.transformation) {
+                            case 'Joiner':
+                                initialFormStates[`${transformation.transformation}`] = {
+                                    conditions: transformation.conditions || [{
+                                        join_input: '',
+                                        join_condition: '',
+                                        join_type: 'left'
+                                    }],
+                                    expressions: transformation.expressions?.map((expr: any) => ({
+                                        target_column: expr.target_column,
+                                        expression: expr.expression
+                                    })) || [],
+                                    advanced: transformation.advanced?.hints?.map((hint: any) => ({
+                                        join_input: hint.join_input,
+                                        hint_type: hint.hint_type
+                                    })) || []
+                                };
+                                break;
+                            case 'SchemaTransformation':
+                                initialFormStates[`${transformation.transformation}`] = {
+                                    derived_fields: transformation.derived_fields?.map((field: any) => ({
+                                        name: field.name,
+                                        expression: field.expression
+                                    })) || []
+                                };
+                                break;
+                            case 'Sorter':
+                                initialFormStates[`${transformation.transformation}`] = {
+                                    sort_columns: transformation.sort_columns?.map((col: any) => ({
+                                        column: col.column,
+                                        order: col.order
+                                    })) || []
+                                };
+                                break;
+                            case 'Aggregator':
+                                initialFormStates[`${transformation.transformation}`] = {
+                                    group_by: transformation.group_by || [],
+                                    aggregate: transformation.aggregate?.map((agg: any) => ({
+                                        expression: agg.expression,
+                                        target_column: agg.target_column
+                                    })) || [],
+                                    pivot: transformation.pivot?.map((piv: any) => ({
+                                        pivot_column: piv.pivot_column,
+                                        pivot_values: piv.pivot_values
+                                    })) || []
+                                };
+                                break;
+                            case 'Filter':
+                                initialFormStates[`${transformation.transformation}`] = {
+                                    condition: transformation.condition || ''
+                                };
+                                break;
+                        }
+                    });
+                    console.log('Initial Form States:', initialFormStates);
+                    console.log(formStates[selectedSchema?.nodeId])
+                    setFormStates(initialFormStates);
                 }
             } catch (error) {
                 console.error("Error fetching pipeline details:", error);
@@ -141,7 +192,7 @@ const BuildPlayGround: React.FC = () => {
     }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval, pipelineDtl]);
 
     const onError = useCallback((id: string) => {
-        console.error('Flow Error:', id);
+        // console.log('Flow Error:', id);
     }, []);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
@@ -224,6 +275,7 @@ const BuildPlayGround: React.FC = () => {
     const handleRunClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         const allNodes = reactFlowInstance.getNodes();
+        console.log(allNodes)
         const sourceNodes = allNodes.filter(node =>
             node.data.label.toLowerCase().includes("source") || node.data.source
         );
@@ -402,11 +454,20 @@ const BuildPlayGround: React.FC = () => {
             const moduleSchema = schemaArray.find((schema: any) => schema.title === moduleName);
 
             if (moduleSchema) {
-                setSelectedSchema({ ...moduleSchema, nodeId: targetNodeId });
+                // Find the corresponding form state based on node type and ID
+                const existingFormState = formStates[targetNodeId] ||
+                    Object.entries(formStates).find(([key]) =>
+                        key.toLowerCase().includes(moduleName.toLowerCase()))?.[1];
+
+                setSelectedSchema({
+                    ...moduleSchema,
+                    nodeId: targetNodeId,
+                    initialValues: existingFormState // Pass the existing form state
+                });
                 setIsFormOpen(true);
             }
         }
-    }, [nodes]);
+    }, [nodes, formStates]);
 
 
 
@@ -602,11 +663,12 @@ const BuildPlayGround: React.FC = () => {
     }, [handleRunClick, debuggedNodesList]);
 
     const handleStop = useCallback(async () => {
+        console.log(pipelineDtl)
         const response = await ApiService(
             "8011",
             "post",
             `/pipeline/debug/stop_pipeline`,
-            null, { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
+            null, { pipeline_name: `${pipelineDtl?.pipeline_name}` }
         );
         console.log(response)
         if (response.message) {
@@ -654,7 +716,7 @@ const BuildPlayGround: React.FC = () => {
 
     const edgeTypes = useMemo(() => ({
         default: (props: any) => (
-            <CustomEdge {...props} transformationCounts={transformationCounts} />
+            <CustomEdge {...props} transformationCounts={transformationCounts} pipelineDtl={pipelineDtl} />
         )
     }), [transformationCounts]);
 
@@ -768,18 +830,7 @@ const BuildPlayGround: React.FC = () => {
 
     const getTransformationName = (moduleName: string): string => {
         const lowerModuleName = moduleName.toLowerCase();
-        switch (lowerModuleName) {
-            case 'joiner':
-                return 'join_transformation';
-            case 'schematransformation':
-                return 'schema_transformation';
-            case 'sorter':
-                return 'sort_transformation';
-            case 'aggregator':
-                return 'aggregate_transformation';
-            default:
-                return `${lowerModuleName}_transformation`;
-        }
+        return `${lowerModuleName}`;
     };
 
     return (
@@ -855,30 +906,21 @@ const BuildPlayGround: React.FC = () => {
                     maxWidth={false}
                 >
                     <DialogContent sx={{ width: '1000px' }}>
-                        {selectedSchema && (
-                            <CreateFormFormik
-                                schema={selectedSchema}
-                                onSubmit={handleFormSubmit}
-                                initialValues={formStates[selectedSchema.nodeId]}
-                            />
-                        )}
+                        {/* {selectedSchema && ( */}
+                        <CreateFormFormik
+                            schema={selectedSchema}
+                            onSubmit={handleFormSubmit}
+
+                            initialValues={
+                                Object.entries(formStates).find(([key]) =>
+                                    key.toLowerCase().includes(selectedSchema?.title?.toLowerCase()))?.[1] || formStates[selectedSchema?.nodeId]}
+
+                        />
+                        {/* )} */}
                     </DialogContent>
                 </Dialog>
 
-                <Dialog
-                    open={runDialogOpen}
-                    onClose={() => setRunDialogOpen(false)}
-                    maxWidth={false}
-                >
-                    <DialogContent sx={{ width: '800px' }}>
-                        <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">
-                            {JSON.stringify(selectedFormState, null, 2)}
-                        </pre>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button sx={{ backgroundColor: '#000', color: 'white', textTransform: 'none' }} onClick={() => setRunDialogOpen(false)}>Execute</Button>
-                    </DialogActions>
-                </Dialog>
+
 
                 <Dialog
                     open={showLeavePrompt}

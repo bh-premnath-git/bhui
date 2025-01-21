@@ -39,12 +39,12 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         </div>
       ) : (
         conversation.map((entry) => {
-          console.log("entry>>", entry);
+          console.log("ENTRY >>> ", entry);
           return (
             <div key={entry.id} className="space-y-3">
               <div className="flex justify-end">
                 <div className="flex items-end gap-2 max-w-[80%]">
-                  <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-br-none shadow-sm">
+                  <div className="bg-black text-white px-4 py-2 rounded-2xl rounded-br-none shadow-sm">
                     {entry.question}
                   </div>
                   <CircleUserRound className="text-gray-600 w-6 h-6 flex-shrink-0 mb-1" />
@@ -52,7 +52,6 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
               </div>
 
               {entry.response === null ? (
-                /* If the assistant has not responded yet, show a spinner */
                 <div className="flex gap-2 items-end max-w-[80%]">
                   <img
                     src="/assets/buildPipeline/bighammer.png"
@@ -64,15 +63,14 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                   </div>
                 </div>
               ) : (
-                /* If aiMissingData is null, render the normal response content */
                 <div className="flex gap-2 items-start max-w-[80%]">
                   <img
                     src="/assets/buildPipeline/bighammer.png"
                     alt="Assistant"
                     className="w-6 h-6 flex-shrink-0 mt-1"
                   />
-                  <div className="bg-white px-4 py-2 rounded-2xl rounded-bl-none shadow-sm">
-                    <ResponseContent response={entry.response} missing={entry.missing} aimissingData={aiMissingData} id={entry.id} />
+                  <div className="bg-white px py rounded-xl rounded-bl-none shadow-sm">
+                    <ResponseContent sender="assistant" response={entry.response} missing={entry.missing} aimissingData={aiMissingData} id={entry.id} />
                   </div>
                 </div>
               )}

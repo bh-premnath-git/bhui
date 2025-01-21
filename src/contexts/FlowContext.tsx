@@ -298,6 +298,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const setAiflowStrructre = useCallback(
     (data: string) => {
       console.log("setAiflowStrructre : ","started");
+      debugger
       try {
         setNodes([]);
         setEdges([]);

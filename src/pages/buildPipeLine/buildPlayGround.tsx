@@ -898,6 +898,11 @@ const BuildPlayGround: React.FC = () => {
                     open={isFormOpen}
                     onClose={handleDialogClose}
                     maxWidth={false}
+                    BackdropProps={{
+                        sx: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)' // Reduce opacity here (0.2 = 20% opacity)
+                        }
+                    }}
                 >
                     <DialogContent sx={{ width: '1000px' }}>
                         {/* {selectedSchema && ( */}

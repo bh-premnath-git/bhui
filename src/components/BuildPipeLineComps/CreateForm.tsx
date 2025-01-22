@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Formik, Form, FieldArray, useFormikContext } from 'formik';
-import { Tabs, Tab, Box, Button, Stack, IconButton } from '@mui/material';
+import { Tabs, Tab, Box, Button, Stack, IconButton, Dialog, DialogContent } from '@mui/material';
 import { commonTextFieldStyles, buttonStyles } from './styles/formStyles';
 import { Schema, CreateFormProps, TabPanelProps } from './types/formTypes';
 import { FormField } from './FormField';
@@ -82,7 +82,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
               name: '',
               expression: ''
             }],
-            advanced: initialValues.advanced || [{
+            advanced: initialValues.advanced.hints || [{
               join_input: '',
               hint_type: 'broadcast'
             }]
@@ -269,7 +269,10 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
                   fieldSchema.type === 'boolean' ? false :
                     fieldSchema.type === 'number' ? 0 : '';
 
-                const isExpression = fieldSchema.type === 'expression';
+                const isExpression = fieldSchema.type === 'expression' ||
+                  (fieldSchema['ui-hint'] === 'expression') ||
+                  (section === 'expressions' && fieldKey === 'expression') ||
+                  (fieldKey === 'join_condition');
 
                 return (
                   <Box key={fieldKey} sx={{ flex: 1 }}>

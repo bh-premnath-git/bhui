@@ -19,11 +19,42 @@ interface HistoryState {
   future: FormValues[];
 }
 
+interface TransformationFormValues {
+  conditions?: Array<{
+    join_input: string;
+    join_condition: string;
+    join_type: string;
+  }>;
+  expressions?: Array<{
+    target_column: string;
+    expression: string;
+  }>;
+  derived_fields?: Array<{
+    name: string;
+    expression: string;
+  }>;
+  sort_columns?: Array<{
+    column: string;
+    order: string;
+  }>;
+  group_by?: string[];
+  aggregate?: Array<{
+    expression: string;
+    target_column: string;
+  }>;
+  pivot?: Array<{
+    pivot_column: string;
+    pivot_values: string[];
+  }>;
+}
+
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => (
   <div hidden={value !== index} {...other}>
     {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
   </div>
 );
+
+const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues }) => {
   console.log('initialValues', initialValues);
@@ -136,7 +167,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
   console.log('Initial values:', initialValues);
   console.log('Generated form values:', initialFormValues);
 
-  // Add state for undo/redo history
+  // Add state for undo/redo
   const [history, setHistory] = useState<HistoryState>({
     past: [],
     present: initialFormValues,
@@ -231,7 +262,7 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
             <Box sx={{ width: 40 }} />
           </Box>
 
-          {(values[section] || [])?.map((field: any, index: number) => (
+          {safeArray(values[section]).map((field: any, index: number) => (
             <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
               {Object.entries(arraySchema.items).map(([fieldKey, fieldSchema]: [string, any]) => {
                 const defaultValue = fieldSchema.enum ? fieldSchema.enum[0] :

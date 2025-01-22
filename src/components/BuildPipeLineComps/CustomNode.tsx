@@ -11,7 +11,7 @@ interface Schema {
 
 // Add new helper function to validate form data against schema
 const validateFormData = (formData: any, schema: any, isSource: boolean, sourceData: any): { isValid: boolean; warnings: string[] } => {
-    const warnings: string[] = [];
+    let warnings: string[] = [];
     let isValid = true;
 
     // Special validation for source nodes
@@ -22,27 +22,30 @@ const validateFormData = (formData: any, schema: any, isSource: boolean, sourceD
             return { isValid, warnings };
         }
 
-        // Check for required source fields
-        if (!sourceData.data_src_desc) {
-            warnings.push("Source description is missing");
-            isValid = false;
-        }
-        if (!sourceData.connection_config_id) {
-            warnings.push("Connection configuration ID is missing");
-            isValid = false;
-        }
-
-        return { isValid, warnings };
+        // Source nodes are valid if they have source data
+        return { isValid: true, warnings: [] };
     }
 
-    // Regular node validation
+    // For non-source nodes, check if formData exists and has required fields
+    if (!formData) {
+        return { isValid: false, warnings: ['Form not filled'] };
+    }
+
+    // Check schema requirements if they exist
     if (schema?.required) {
         schema.required.forEach((field: string) => {
-            if (!formData || !formData[field]) {
+            if (!formData[field] ||
+                (Array.isArray(formData[field]) && formData[field].length === 0)) {
                 warnings.push(`Required field "${field}" is missing`);
                 isValid = false;
             }
         });
+    }
+
+    // If formData exists and has values, consider it valid even without schema
+    if (Object.keys(formData).length > 0) {
+        isValid = true;
+        warnings = [];
     }
 
     return { isValid, warnings };
@@ -81,39 +84,36 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const formData = formStates[id];
         const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
         const isSource = data.label.toLowerCase().includes("source");
+        console.log(schemaData.schema)
+        // Set initial title from data.label if it exists
+        if (data.label) {
+            setTitleValue(data.label);
+            setNodes((nodes: any[]) =>
+                nodes.map(node =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, title: data.label } }
+                        : node
+                )
+            );
+        }
 
+        // Validation logic
         if (isSource) {
             const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
-            if (isValid) {
-                setValidationStatus('valid');
-                setValidationMessages([]);
-            } else if (warnings.length === 1 && warnings[0] === "Source configuration is missing") {
-                setValidationStatus('error');
-                setValidationMessages(warnings);
-            } else {
-                setValidationStatus('warning');
-                setValidationMessages(warnings);
-            }
+            setValidationStatus(isValid ? 'valid' : 'error');
+            setValidationMessages(warnings);
             return;
         }
 
-        if (!formData) {
+        if (formData) {
+            const { isValid, warnings } = validateFormData(formData, nodeSchema, false, null);
+            setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
+            setValidationMessages(warnings);
+        } else {
             setValidationStatus('error');
             setValidationMessages(['Form not filled']);
-            return;
         }
-
-        if (nodeSchema) {
-            const { isValid, warnings } = validateFormData(formData, nodeSchema, false, null);
-            if (isValid) {
-                setValidationStatus('valid');
-                setValidationMessages([]);
-            } else {
-                setValidationStatus('warning');
-                setValidationMessages(warnings);
-            }
-        }
-    }, [formStates, id, data.label, data.source]);
+    }, [formStates, id, data.label, data.source, setNodes]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();

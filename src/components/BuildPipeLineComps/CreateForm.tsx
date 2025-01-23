@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Formik, Form, FieldArray, useFormikContext } from 'formik';
+import { Formik, Form, FieldArray, useFormikContext, Field } from 'formik';
 import { Tabs, Tab, Box, Button, Stack, IconButton, Dialog, DialogContent } from '@mui/material';
 import { commonTextFieldStyles, buttonStyles } from './styles/formStyles';
-import { Schema, CreateFormProps, TabPanelProps } from './types/formTypes';
+import { Schema, TabPanelProps } from './types/formTypes';
 import { FormField } from './FormField';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { ApiService } from '@/services/apiServices';
 
 type ArraySchema = {
   items: Record<string, any>;
@@ -19,33 +20,17 @@ interface HistoryState {
   future: FormValues[];
 }
 
-interface TransformationFormValues {
-  conditions?: Array<{
-    join_input: string;
-    join_condition: string;
-    join_type: string;
-  }>;
-  expressions?: Array<{
-    target_column: string;
-    expression: string;
-  }>;
-  derived_fields?: Array<{
-    name: string;
-    expression: string;
-  }>;
-  sort_columns?: Array<{
-    column: string;
-    order: string;
-  }>;
-  group_by?: string[];
-  aggregate?: Array<{
-    expression: string;
-    target_column: string;
-  }>;
-  pivot?: Array<{
-    pivot_column: string;
-    pivot_values: string[];
-  }>;
+interface CreateFormProps {
+  schema: Schema;
+  onSubmit: (values: any) => void;
+  initialValues?: any;
+  nodes: any[];
+  sourceColumns: SourceColumn[];
+}
+
+interface SourceColumn {
+  name: string;
+  dataType: string;
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => (
@@ -56,10 +41,11 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
-const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues }) => {
+const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns }) => {
   console.log('initialValues', initialValues);
   console.log('schema', schema);
   console.log('initialValues', initialValues?.expressions);
+
   const generateInitialValues = useCallback((schema: Schema): FormValues => {
     if (initialValues) {
       switch (schema.title) {
@@ -216,6 +202,43 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     handleRedo();
   });
 
+  // Function to handle expression field click
+  const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
+    try {
+      const schemaString = sourceColumns
+        .map(column =>
+          `${column.name}: ${column.dataType}`
+        )
+        .join(',');
+      const response = await ApiService(
+        "8090",
+        "post",
+        "/api/v1/pipeline_agent/generate",
+        {
+          operation_type: "spark_expression",
+          params: {
+            schema: schemaString,
+            target_column: targetColumn
+          },
+          thread_id: "spark_123"
+        },
+        null,
+        {},
+        false
+      );
+
+      if (response?.result) {
+        const parsedResult = JSON.parse(response.result);
+        const expression = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+
+        setFieldValue(fieldName, expression);
+      }
+    } catch (error) {
+      console.error('Error generating expression:', error);
+      setFieldValue(fieldName, '');
+    }
+  }, [sourceColumns]);
+
   return (
     <Formik
       initialValues={history.present}
@@ -236,13 +259,23 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
           }
         }, [values]);
 
-        return <FormContent schema={schema} />;
+        return <FormContent
+          schema={schema}
+          onExpressionClick={handleExpressionClick}
+          sourceColumns={sourceColumns}
+        />;
       }}
     </Formik>
   );
 };
 
-const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section: string) => {
+const renderArrayFields = (
+  arraySchema: ArraySchema,
+  values: FormValues,
+  section: string,
+  onExpressionClick: (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => void,
+  sourceColumns: SourceColumn[]
+) => {
   console.log(arraySchema);
   return (
     <FieldArray
@@ -275,16 +308,26 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
                   (fieldKey === 'join_condition');
 
                 return (
-                  <Box key={fieldKey} sx={{ flex: 1 }}>
-                    <FormField
-                      fieldSchema={fieldSchema}
-                      name={`${section}.${index}.${fieldKey}`}
-                      fieldKey={fieldKey}
-                      enumValues={fieldSchema.enum}
-                      value={field[fieldKey] ?? defaultValue}
-                      isExpression={isExpression}
-                    />
-                  </Box>
+                  <Field name={`${section}.${index}.${fieldKey}`}>
+                    {({ form }) => (
+                      <Box key={fieldKey} sx={{ flex: 1 }}>
+                        <FormField
+                          fieldSchema={fieldSchema}
+                          name={`${section}.${index}.${fieldKey}`}
+                          fieldKey={fieldKey}
+                          enumValues={fieldSchema.enum}
+                          value={field[fieldKey] ?? defaultValue}
+                          isExpression={isExpression}
+                          sourceColumns={sourceColumns}
+                          onExpressionClick={() => {
+                            if (isExpression) {
+                              onExpressionClick(field.name || fieldKey, form.setFieldValue, `${section}.${index}.${fieldKey}`);
+                            }
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Field>
                 );
               })}
               <IconButton
@@ -320,12 +363,16 @@ const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section
   );
 };
 
-const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
-  const { values } = useFormikContext<FormValues>();
+const FormContent: React.FC<{
+  schema: Schema,
+  onExpressionClick: (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => void,
+  sourceColumns: SourceColumn[]
+}> = ({ schema, onExpressionClick, sourceColumns }) => {
+  const { values, setValues } = useFormikContext<FormValues>();
   const [activeTab, setActiveTab] = useState(0);
 
   const renderTabContent = (section: string, sectionSchema: any) => {
-    return renderArrayFields(sectionSchema, values, section);
+    return renderArrayFields(sectionSchema, values, section, onExpressionClick, sourceColumns);
   };
 
   return (
@@ -365,7 +412,7 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
         ) : schema.ui_type === 'array-container' ? (
           <Stack spacing={2}>
             <Box>
-              {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, values, 'derived_fields') : renderArrayFields(schema.properties?.sort_columns, values, 'sort_columns')}
+              {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, values, 'derived_fields', onExpressionClick, sourceColumns) : renderArrayFields(schema.properties?.sort_columns, values, 'sort_columns', onExpressionClick, sourceColumns)}
             </Box>
           </Stack>
         ) : (
@@ -373,13 +420,22 @@ const FormContent: React.FC<{ schema: Schema }> = ({ schema }) => {
             {Object.entries(schema.properties).map(([key, value]: [string, any]) => (
               <Box key={key}>
                 <h3>{key.replace(/_/g, ' ').toUpperCase()}</h3>
-                <FormField
-                  fieldSchema={value}
-                  name={key}
-                  fieldKey={key}
-                  value={values[key]}
-                  isExpression={value.type === 'expression'}
-                />
+                <Field name={key}>
+                  {({ form }) => (
+                    <FormField
+                      fieldSchema={value}
+                      name={key}
+                      fieldKey={key}
+                      value={values[key]}
+                      isExpression={value.type === 'expression'}
+                      onExpressionClick={() => {
+                        if (value.type === 'expression') {
+                          onExpressionClick(key, form.setFieldValue, key);
+                        }
+                      }}
+                    />
+                  )}
+                </Field>
               </Box>
             ))}
           </Stack>

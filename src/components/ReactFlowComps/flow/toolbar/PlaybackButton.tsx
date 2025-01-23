@@ -43,7 +43,6 @@ export function PlaybackButton({
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  // A ref to track the "last known" formdataNum
   const formdataNumRef = useRef<number>(formdataNum);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -126,14 +125,12 @@ export function PlaybackButton({
     }
   };
 
-  // Use effect to watch for changes in formdataNum
   useEffect(() => {
-    // Example condition: not "dirty", valid flow, and new formdataNum
     if (!isDirty && selectedFlowId) {
       if (formdataNumRef.current !== formdataNum) {
-        // Update the ref to the new value
+        
         formdataNumRef.current = formdataNum;
-        // Dispatch the async update
+        
         asyncUpdateFlowDef();
       }
     }

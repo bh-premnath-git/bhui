@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), '');
-  
+
   return {
     server: {
       host: '0.0.0.0',
@@ -28,7 +28,12 @@ export default defineConfig(({ mode }) => {
       include: [
         '@emotion/react',
         '@emotion/styled',
-        '@mui/material/Tooltip'
+        '@mui/material/Tooltip',
+        'react-flow-renderer',
+        'reactflow',
+        '@emotion/cache',
+        '@emotion/utils',
+        '@emotion/serialize'
       ],
     },
     plugins: [

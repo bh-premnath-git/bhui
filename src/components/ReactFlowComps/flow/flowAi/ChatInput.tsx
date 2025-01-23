@@ -6,10 +6,11 @@ import { debounce } from 'lodash'
 
 interface ChatInputProps {
   onSend: (message: string) => void
+  deleteCon: () => Promise<void>
   isLoading: boolean
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, deleteCon, isLoading }) => {
   const [inputValue, setInputValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -41,6 +42,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
     }
   }
 
+  const deleteConnversation = async () => {
+    await deleteCon()
+  }
+
   return (
     <div className="flex-shrink-0 py-6 px-6 bg-white border-t">
       <div className="flex items-end space-x-3">
@@ -49,9 +54,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
           placeholder="Ask BigHammer AI"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           disabled={isLoading}
-          className="flex-grow px-3 text-base rounded-2xl bg-gray-50 border resize-none placeholder:text-gray-400"
+          className="flex-grow px text-base rounded-xl bg-gray-50 border resize-none placeholder:text-gray-400"
           style={{
             minHeight: '52px',
             maxHeight: '200px'
@@ -60,22 +65,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
         <button
           onClick={handleSend}
           disabled={!inputValue.trim() || isLoading}
-          className={`p-2 rounded-full transition-colors flex-shrink-0 ${
-            !inputValue.trim() || isLoading
-              ? 'cursor-not-allowed opacity-50'
-              : 'hover:bg-purple-800 cursor-pointer'
-          }`}
+          className={`p rounded-full transition-colors flex-shrink-0 ${!inputValue.trim() || isLoading
+            ? 'cursor-not-allowed opacity-50'
+            : 'hover:bg-purple-800 cursor-pointer'
+            }`}
         >
           <SendRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
         </button>
         <button
-          onClick={()=>{}}
-          disabled={!inputValue.trim() || isLoading}
-          className={`p-2 rounded-full transition-colors flex-shrink-0 ${
-            !inputValue.trim() || isLoading
-              ? 'cursor-not-allowed opacity-50'
-              : 'hover:bg-purple-800 cursor-pointer'
-          }`}
+          onClick={() => { deleteConnversation() }}
+          className={`p rounded-full transition-colors flex-shrink-0 ${!inputValue.trim() || isLoading
+            ? 'cursor-not-allowed opacity-50'
+            : 'hover:bg-purple-800 cursor-pointer'
+            }`}
         >
           <DeleteRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
         </button>

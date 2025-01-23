@@ -44,8 +44,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             return selectedNode.data.meta.properties
         }
     },
-        [selectedNode.data.meta.properties, selectedNode.data.selectedData, selectedValue]
+        [selectedNode.data.meta.properties, selectedValue]
     );
+    
+
+    //debugger
 
     const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? { properties: { property: [], settings: [] } };
     const currentFormData = useMemo(() =>
@@ -152,7 +155,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                             <SelectValue placeholder="Select a type" />
                         </SelectTrigger>
                         <SelectContent>
-                            {selectedNode.data.meta.properties.map((prop: any) => (
+                            {Array.isArray(selectedNode.data.meta.properties) && selectedNode.data.meta.properties.map((prop: any) => (
                                 <SelectItem key={prop.type} value={prop.type}>
                                     {prop.type}
                                 </SelectItem>

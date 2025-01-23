@@ -109,5 +109,18 @@ export const useConversation = () => {
     }
   }
 
-  return { conversation, isLoading, handleSend }
+  const deleteConversation = async () => {
+    setIsLoading(true)
+    try {
+      await ApiService('8090', 'delete', `/flow_agent/delete_conversation/flow_${selectedFlowId}`)
+      setConversation([])
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+      console.error('Error deleting conversation:', errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { conversation, isLoading, handleSend, deleteConversation }
 }

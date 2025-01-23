@@ -62,7 +62,7 @@ const BuildPlayGround: React.FC = () => {
     const dispatch = useDispatch();
     const saveStatus = useSelector((state: any) => state.autoSave);
     const time = import.meta.env.VITE_AUTO_SAVE_TIME;
-    const autoSaveInterval = parseInt(time, 10) || 30000;
+    const autoSaveInterval = parseInt(time, 10) || 10000;
     const [history, setHistory] = useState<{ nodes: any[], edges: any[] }[]>([]);
     const [redoStack, setRedoStack] = useState<{ nodes: any[], edges: any[] }[]>([]);
     const [showLeavePrompt, setShowLeavePrompt] = useState(false);
@@ -79,73 +79,71 @@ const BuildPlayGround: React.FC = () => {
                     null
                 );
                 setPipelineDtl(response);
-
+                console.log(response)
                 if (response?.pipeline_json) {
                     // Convert pipeline JSON to UI format
                     const uiJson = convertPipelineToUIJson(response.pipeline_json);
-                    setNodes((await uiJson).nodes);
-                    setEdges((await uiJson).edges);
+                    const convertedJson = await uiJson;
+
+                    // Update nodes with titles from transformations
+                    const nodesWithTitles = convertedJson.nodes.map(node => {
+                        const transformation = response.pipeline_json.transformations.find(
+                            (t: any) => t.transformation === node.data.label
+                        );
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                title: transformation?.name || node.data.label // Set title from transformation name
+                            }
+                        };
+                    });
+
+                    setNodes(nodesWithTitles);
+                    setEdges(convertedJson.edges);
 
                     // Initialize form states from pipeline JSON transformations
                     const initialFormStates = {};
                     response.pipeline_json.transformations.forEach((transformation: any) => {
-                        console.log(transformation)
-                        switch (transformation.transformation) {
-                            case 'Joiner':
-                                initialFormStates[`${transformation.transformation}`] = {
-                                    conditions: transformation.conditions || [{
-                                        join_input: '',
-                                        join_condition: '',
-                                        join_type: 'left'
-                                    }],
-                                    expressions: transformation.expressions?.map((expr: any) => ({
-                                        target_column: expr.target_column,
-                                        expression: expr.expression
-                                    })) || [],
-                                    advanced: transformation.advanced?.hints?.map((hint: any) => ({
-                                        join_input: hint.join_input,
-                                        hint_type: hint.hint_type
-                                    })) || []
-                                };
-                                break;
-                            case 'SchemaTransformation':
-                                initialFormStates[`${transformation.transformation}`] = {
-                                    derived_fields: transformation.derived_fields?.map((field: any) => ({
-                                        name: field.name,
-                                        expression: field.expression
-                                    })) || []
-                                };
-                                break;
-                            case 'Sorter':
-                                initialFormStates[`${transformation.transformation}`] = {
-                                    sort_columns: transformation.sort_columns?.map((col: any) => ({
-                                        column: col.column,
-                                        order: col.order
-                                    })) || []
-                                };
-                                break;
-                            case 'Aggregator':
-                                initialFormStates[`${transformation.transformation}`] = {
-                                    group_by: transformation.group_by || [],
-                                    aggregate: transformation.aggregate?.map((agg: any) => ({
-                                        expression: agg.expression,
-                                        target_column: agg.target_column
-                                    })) || [],
-                                    pivot: transformation.pivot?.map((piv: any) => ({
-                                        pivot_column: piv.pivot_column,
-                                        pivot_values: piv.pivot_values
-                                    })) || []
-                                };
-                                break;
-                            case 'Filter':
-                                initialFormStates[`${transformation.transformation}`] = {
-                                    condition: transformation.condition || ''
-                                };
-                                break;
+                        const nodeId = nodesWithTitles.find(
+                            (node: any) => node.data.label === transformation.transformation
+                        )?.id;
+
+                        if (nodeId) {
+                            switch (transformation.transformation) {
+                                case 'Joiner':
+                                    initialFormStates[nodeId] = {
+                                        conditions: transformation.conditions || [],
+                                        expressions: transformation.expressions || [],
+                                        advanced: transformation.advanced || []
+                                    };
+                                    break;
+                                case 'SchemaTransformation':
+                                    initialFormStates[nodeId] = {
+                                        derived_fields: transformation.derived_fields || []
+                                    };
+                                    break;
+                                case 'Sorter':
+                                    initialFormStates[nodeId] = {
+                                        sort_columns: transformation.sort_columns || []
+                                    };
+                                    break;
+                                case 'Aggregator':
+                                    initialFormStates[nodeId] = {
+                                        group_by: transformation.group_by || [],
+                                        aggregate: transformation.aggregate || [],
+                                        pivot: transformation.pivot || []
+                                    };
+                                    break;
+                                case 'Filter':
+                                    initialFormStates[nodeId] = {
+                                        condition: transformation.condition || ''
+                                    };
+                                    break;
+                            }
                         }
                     });
                     console.log('Initial Form States:', initialFormStates);
-                    console.log(formStates[selectedSchema?.nodeId])
                     setFormStates(initialFormStates);
                 }
             } catch (error) {
@@ -154,7 +152,7 @@ const BuildPlayGround: React.FC = () => {
         };
 
         fetchPipelineDetails();
-    }, []);
+    }, [id]);
 
     const handleNodesChange = useCallback((changes: any) => {
         onNodesChange(changes);
@@ -171,14 +169,13 @@ const BuildPlayGround: React.FC = () => {
             if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
-                    const pipelineConfig = handleRunClick(new Event('click') as any);
-
-                    console.log(pipelineConfig)
+                    const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+                    console.log(pipeline_json)
                     await ApiService(
                         "8011",
                         "patch",
                         `/pipeline/${id}`,
-                        { pipeline_json: pipelineConfig }
+                        pipeline_json
                     );
                     dispatch(setSaved());
                 } catch (error) {
@@ -663,20 +660,22 @@ const BuildPlayGround: React.FC = () => {
     }, [handleRunClick, debuggedNodesList]);
 
     const handleStop = useCallback(async () => {
-        console.log(pipelineDtl)
-        const response = await ApiService(
-            "8011",
-            "post",
-            `/pipeline/debug/stop_pipeline`,
-            null, { pipeline_name: `${pipelineDtl?.pipeline_name}` }
-        );
-        console.log(response)
-        if (response.message) {
-            setIsPipelineRunning(false);
-            console.log('Stop pipeline clicked');
-        }
+        try {
+            const response = await ApiService(
+                "8011",
+                "post",
+                `/pipeline/debug/stop_pipeline`,
+                null,
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
+            );
 
-    }, []);
+            if (response.message) {
+                setIsPipelineRunning(false);
+            }
+        } catch (error) {
+            console.error('Error stopping pipeline:', error);
+        }
+    }, [pipelineDtl?.pipeline_name]);
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
@@ -807,13 +806,8 @@ const BuildPlayGround: React.FC = () => {
     const handleLeavePage = useCallback(async () => {
         try {
             dispatch(setSaving());
-            const pipeline_json = {
-                pipeline_json: {
-                    nodes: nodes,
-                    edges: edges
-                }
-            };
-            await ApiService("8011", "patch", `/pipeline/${id}`, pipeline_json);
+            const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+            await ApiService("8011", "patch", `/pipeline/${id}`, { pipeline_json: pipeline_json });
             dispatch(setSaved());
             dispatch(setUnsavedChanges());
             setShowLeavePrompt(false);
@@ -904,6 +898,11 @@ const BuildPlayGround: React.FC = () => {
                     open={isFormOpen}
                     onClose={handleDialogClose}
                     maxWidth={false}
+                    BackdropProps={{
+                        sx: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)' // Reduce opacity here (0.2 = 20% opacity)
+                        }
+                    }}
                 >
                     <DialogContent sx={{ width: '1000px' }}>
                         {/* {selectedSchema && ( */}

@@ -79,7 +79,7 @@ const ResolutionReason: React.FC<ResolutionReasonProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Resolution Reason</DialogTitle>
+          <DialogTitle>Root Cause</DialogTitle>
         </DialogHeader>
         
         <div className="py-4 space-y-4">

@@ -2,6 +2,7 @@ import { CircleUserRound, Database, Code2, FileOutput, Loader2 } from "lucide-re
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState, useEffect, useRef } from "react"
 import { Spinner } from "@/components/ui/spinner"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 const StreamingText = ({ text = "", isLoading, onComplete }) => {
   const [displayText, setDisplayText] = useState("")
@@ -44,8 +45,8 @@ const ResponseSection = ({
   content,
   isLoading,
   onComplete,
-  rawData,
-  shouldShowRaw,
+  // rawData,
+  // shouldShowRaw,
   colorScheme,
 }) => {
   const [isVisible, setIsVisible] = useState(false)
@@ -59,15 +60,46 @@ const ResponseSection = ({
   if (!content && !isLoading) return null
 
   const colorClasses = {
-    tables: "text-blue-600",
-    query: "text-green-600",
-    result: "text-purple-600",
+    tables: "text-gray-600",
+    query: "text-gray-600",
+    result: "text-gray-600",
   }
 
   const iconColorClasses = {
-    tables: "text-blue-500",
-    query: "text-green-500",
-    result: "text-purple-500",
+    tables: "text-gray-500",
+    query: "text-gray-500",
+    result: "text-gray-500",
+  }
+
+  const renderContent = () => {
+    if (colorScheme === "result" && content.includes("|")) {
+      const rows = content.trim().split("\n").slice(2) // Skip header and separator
+      const headers = rows[0].split("|").map((header) => header.trim())
+      const data = rows.slice(1).map((row) => row.split("|").map((cell) => cell.trim()))
+
+      return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {headers.map((header, index) => (
+                <TableHead key={index}>{header}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <TableCell key={cellIndex}>{cell}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )
+    }
+
+    return <StreamingText text={content} isLoading={isLoading} onComplete={onComplete} />
   }
 
   return (
@@ -79,9 +111,7 @@ const ResponseSection = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        <div className="rounded-lg border border-zinc-100 bg-white p-4">
-          <StreamingText text={content} isLoading={isLoading} onComplete={onComplete} />
-        </div>
+        <div className="rounded-lg border border-zinc-100 bg-white p-4">{renderContent()}</div>
       </CardContent>
     </div>
   )
@@ -124,8 +154,8 @@ const StreamingResponse = ({ streamData, isLoading }) => {
           content={tablesData?.content}
           isLoading={isLoading}
           onComplete={() => handleSectionComplete("tables")}
-          rawData={tablesData?.raw_data}
-          shouldShowRaw={false}
+          // rawData={tablesData?.raw_data}
+          // shouldShowRaw={false}
           colorScheme="tables"
         />
 
@@ -136,8 +166,8 @@ const StreamingResponse = ({ streamData, isLoading }) => {
             content={queryData?.content}
             isLoading={isLoading}
             onComplete={() => handleSectionComplete("query")}
-            rawData={queryData?.raw_data}
-            shouldShowRaw={false}
+            // rawData={queryData?.raw_data}
+            // shouldShowRaw={false}
             colorScheme="query"
           />
         )}
@@ -149,8 +179,6 @@ const StreamingResponse = ({ streamData, isLoading }) => {
             content={resultData?.content}
             isLoading={isLoading}
             onComplete={() => handleSectionComplete("result")}
-            rawData={resultData?.raw_data}
-            shouldShowRaw={sectionsCompleted.result}
             colorScheme="result"
           />
         )}

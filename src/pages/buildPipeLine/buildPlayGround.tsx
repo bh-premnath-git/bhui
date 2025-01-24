@@ -42,6 +42,11 @@ interface Schema {
     [key: string]: any;
 }
 
+interface SourceColumn {
+    name: string;
+    dataType: string;
+}
+
 const BuildPlayGround: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [pipelineDtl, setPipelineDtl] = useState<any>(null);
@@ -68,6 +73,7 @@ const BuildPlayGround: React.FC = () => {
     const [showLeavePrompt, setShowLeavePrompt] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const [sourceColumns, setSourceColumns] = useState<SourceColumn[]>([]);
 
     useEffect(() => {
         const fetchPipelineDetails = async () => {
@@ -827,6 +833,42 @@ const BuildPlayGround: React.FC = () => {
         return `${lowerModuleName}`;
     };
 
+    // Add this function to fetch source columns
+    const fetchSourceColumns = useCallback(async (nodes: any[]) => {
+        try {
+            const sourceNodes = nodes.filter(node =>
+                node.data.label.toLowerCase().includes("source") || node.data.source
+            );
+
+            const columnsPromises = sourceNodes.map(async (node) => {
+                const dataSrcId = node.data.source?.data_src_id;
+                if (!dataSrcId) return [];
+
+                const response = await ApiService(
+                    "8011",
+                    "get",
+                    `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+                    null
+                );
+
+                return response[0]?.layout_fields?.map((field: any) => ({
+                    name: field.lyt_fld_name,
+                    dataType: field.lyt_fld_data_type_cd
+                })) || [];
+            });
+
+            const allColumns = (await Promise.all(columnsPromises)).flat();
+            console.log('Fetched columns:', allColumns);
+            setSourceColumns(allColumns);
+        } catch (error) {
+            console.error('Error fetching columns:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSourceColumns(nodes);
+    }, [nodes, fetchSourceColumns]);
+
     return (
         <div>
 
@@ -900,22 +942,18 @@ const BuildPlayGround: React.FC = () => {
                     maxWidth={false}
                     BackdropProps={{
                         sx: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.1)' // Reduce opacity here (0.2 = 20% opacity)
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)'
                         }
                     }}
                 >
                     <DialogContent sx={{ width: '1000px' }}>
-                        {/* {selectedSchema && ( */}
                         <CreateFormFormik
                             schema={selectedSchema}
                             onSubmit={handleFormSubmit}
-
-                            initialValues={
-                                Object.entries(formStates).find(([key]) =>
-                                    key.toLowerCase().includes(selectedSchema?.title?.toLowerCase()))?.[1] || formStates[selectedSchema?.nodeId]}
-
+                            initialValues={formStates[selectedSchema?.nodeId]}
+                            nodes={nodes}
+                            sourceColumns={sourceColumns}
                         />
-                        {/* )} */}
                     </DialogContent>
                 </Dialog>
 

@@ -95,7 +95,6 @@ export const createFlow = createAsyncThunk<
     } catch (error: any) {
       // Check if the error is due to a canceled request
       if (error.name === "AbortError") {
-        console.log("createFlow request was canceled");
         return rejectWithValue("Request canceled");
       }
 
@@ -136,7 +135,6 @@ export const listFlows = createAsyncThunk<
       return transformed;
     } catch (error: any) {
       if (error.name === "AbortError") {
-        console.log("createFlow request was canceled");
         return rejectWithValue("Request canceled");
       }
       return rejectWithValue(error.message);
@@ -263,7 +261,6 @@ export const updateFlowDefinition = createAsyncThunk<
       return response;
     } catch (error: any) {
       if (error.name === "AbortError") {
-        console.log("updateFlowDefinition request was canceled");
         return rejectWithValue("Request canceled");
       }
       return rejectWithValue(error.message);

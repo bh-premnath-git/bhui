@@ -1,14 +1,16 @@
-export const parseStringifiedJson = (
-  value: string
-): [boolean, unknown] => {
+export const parseStringifiedJson = (value: string): [boolean, unknown] => {
   try {
     let parsedValue = JSON.parse(value);
-    if (typeof parsedValue === 'string') {
-      parsedValue = JSON.parse(parsedValue);
+    if (typeof parsedValue === "string") {
+      try {
+        parsedValue = JSON.parse(parsedValue);
+      } catch (innerError) {
+        return [false, null];
+      }
     }
+
     return [true, parsedValue];
   } catch (error) {
-    console.error("ERROR", error);
     return [false, null];
   }
 };

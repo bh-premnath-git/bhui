@@ -149,9 +149,9 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   const initialFormValues = useMemo(() => generateInitialValues(schema), [schema, generateInitialValues]);
 
-  console.log('Schema:', schema);
+  /* console.log('Schema:', schema);
   console.log('Initial values:', initialValues);
-  console.log('Generated form values:', initialFormValues);
+  console.log('Generated form values:', initialFormValues); */
 
   // Add state for undo/redo
   const [history, setHistory] = useState<HistoryState>({

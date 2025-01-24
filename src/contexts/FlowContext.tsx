@@ -351,13 +351,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               (module) => module.label === task.module_name
             );
             const matchedOperator = matchedModule?.operators.find(
-              (op) => op.type === task.type
+              (op: any) => op.type === task.type
             );
 
-            console.log("Matched Operator", matchedOperator.properties, task);
-            
+            // console.log("Matched Operator", matchedOperator.properties, task);
 
-            const nodeId = `task-${task.id ?? index}`;
+
+            const nodeId = `task-${task.task_id ?? index}`;
             const existingNode = nodes.find((n) => n.id === nodeId);
 
             if (!existingNode) {
@@ -385,8 +385,14 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
                 },
                 tempSave: true,
               });
-            } else {
 
+              updateNodeFormData(nodeId, {
+                ...task,
+              });
+            } else {
+              updateNodeFormData(nodeId, {
+                ...task,
+              });
             }
 
             if (index > 0) {

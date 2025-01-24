@@ -335,7 +335,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                   showInlineDetails: true,
                   filterGraceful: true,
                   selectionMode: 'always',
-                  maxVisibleSuggestions: 12,
                 },
                 bracketPairColorization: { enabled: true },
                 matchBrackets: 'always',

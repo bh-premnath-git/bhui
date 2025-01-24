@@ -48,14 +48,11 @@ const DataOpsSlice = createSlice({
   initialState,
   reducers: {
     setFilterData: (state, action) => {
-      console.log(action.payload); // Log the entire payload for debugging
 
       if (action.payload?.dataOpsList && action.payload?.value) {
-        console.log(action.payload.dataOpsList)
         const filteredData = action.payload.dataOpsList.filter((item: any) =>
           item.pipeline_name.toLowerCase().includes(action.payload.value.toLowerCase())
         )
-        console.log(filteredData); // Log the filtered results for debugging
         state.getDataOpsList = filteredData;
       } else {
         console.warn('Invalid payload structure:', action.payload);

@@ -57,9 +57,9 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues }) => {
-  console.log('initialValues', initialValues);
+  /* console.log('initialValues', initialValues);
   console.log('schema', schema);
-  console.log('initialValues', initialValues?.expressions);
+  console.log('initialValues', initialValues?.expressions); */
   const generateInitialValues = useCallback((schema: Schema): FormValues => {
     if (initialValues) {
       switch (schema.title) {
@@ -163,9 +163,9 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   const initialFormValues = useMemo(() => generateInitialValues(schema), [schema, generateInitialValues]);
 
-  console.log('Schema:', schema);
+  /* console.log('Schema:', schema);
   console.log('Initial values:', initialValues);
-  console.log('Generated form values:', initialFormValues);
+  console.log('Generated form values:', initialFormValues); */
 
   // Add state for undo/redo
   const [history, setHistory] = useState<HistoryState>({
@@ -243,7 +243,6 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 };
 
 const renderArrayFields = (arraySchema: ArraySchema, values: FormValues, section: string) => {
-  console.log(arraySchema);
   return (
     <FieldArray
       name={section}

@@ -22,7 +22,7 @@ export const ChatSlidingPortal: React.FC<ChatSlidingPortalProps> = ({
   imageSrc,
 }) => {
   const [portalElement, setPortalElement] = useState<HTMLElement | null>(null)
-  const { conversation, isLoading, handleSend } = useConversation()
+  const { conversation, isLoading, handleSend, deleteConversation } = useConversation()
 
   useEffect(() => {
     setPortalElement(document.getElementById('slide-portal-root'))
@@ -53,8 +53,8 @@ export const ChatSlidingPortal: React.FC<ChatSlidingPortalProps> = ({
           >
             <div className="h-full flex flex-col">
               <ChatHeader onClose={onClose} title={title} type={type} imageSrc={imageSrc}/>
-              <ChatConversation conversation={conversation} isLoading={isLoading} />
-              <ChatInput onSend={handleSend} isLoading={isLoading} />
+              <ChatConversation onSend={handleSend}  conversation={conversation} isLoading={isLoading} />
+              <ChatInput onSend={handleSend} deleteCon={deleteConversation} isLoading={isLoading} />
             </div>
           </motion.div>
         </motion.div>

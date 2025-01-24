@@ -113,7 +113,7 @@ export default function BigHammerSearch() {
           }
         },
         onclose() {
-          console.log("Connection closed by the server");
+         // console.log("Connection closed by the server");
           setIsLoading(false);
         },
         onerror(err) {

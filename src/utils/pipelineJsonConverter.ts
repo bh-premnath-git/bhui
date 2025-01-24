@@ -14,13 +14,191 @@ export interface UINode extends Node {
         };
         transformationType: string;
         transformationData: any;
+        source?: any;
+        title?: string;
     };
 }
 
 export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any) => {
     const uiNodes = nodes as UINode[];
-    // ... conversion logic
-    return { pipeline_json: { nodes: uiNodes, edges } };
+
+    // Extract sources from Reader nodes
+    const sources = uiNodes
+        .filter(node => node.id.startsWith('Reader_'))
+        .map(node => ({
+            name: node.data.label,
+            source_type: "File",
+            file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
+            data_src_id: node.data.source.data_src_id,
+            connection: {
+                name: node.data.source.connection?.name || "local_connection",
+                connection_type: capitalizeFirstLetter(node.data.source.connection_type),
+                file_path_prefix: `${node.data.source.file_path_prefix}/`
+            }
+        }));
+
+    // Create a map of node IDs to their transformation names
+    const nodeToTransformationName = new Map();
+    uiNodes.forEach(node => {
+        if (node.id.startsWith('Reader_')) {
+            nodeToTransformationName.set(node.id, `read_${node.data.label}`);
+        } else {
+            const type = node.id.split('_')[0];
+            nodeToTransformationName.set(node.id, getTransformationName(type, node.data.title));
+        }
+    });
+
+    // Create transformations array following the flow order
+    const transformations = [];
+
+    // Helper function to get transformation config based on type and data
+    const getTransformationConfig = (node: UINode, dependent_on: string[]) => {
+        const baseConfig = {
+            name: nodeToTransformationName.get(node.id),  // Use the mapped name
+            dependent_on,
+            transformation: node.id.split('_')[0]
+        };
+
+        switch (node.id.split('_')[0]) {
+            case 'Filter':
+                return {
+                    ...baseConfig,
+                    condition: node.data.transformationData?.condition || "age >= 18" // Default or from data
+                };
+
+            case 'Joiner':
+                return {
+                    ...baseConfig,
+                    conditions: node.data.transformationData?.conditions || [{
+                        join_input: "read_lookup_data",
+                        join_condition: "read_input_data.id = read_lookup_data.id",
+                        join_type: "left"
+                    }],
+                    expressions: node.data.transformationData?.expressions || [{
+                        target_column: "full_name",
+                        expression: "concat(read_input_data.name, ' ', read_input_data.city)"
+                    }],
+                    advanced: {
+                        hints: node.data.transformationData?.hints || [{
+                            join_input: "read_input_data",
+                            hint_type: "broadcast"
+                        }]
+                    }
+                };
+
+            case 'SchemaTransformation':
+                return {
+                    ...baseConfig,
+                    derived_fields: node.data.transformationData?.derived_fields || [{
+                        name: "full_address",
+                        expression: "concat(address, ' ', city, ' ', state, ' ', zip)"
+                    }, {
+                        name: "is_adult",
+                        expression: "case when age >= 18 then 'Yes' else 'No' end"
+                    }]
+                };
+
+            case 'Sorter':
+                return {
+                    ...baseConfig,
+                    sort_columns: node.data.transformationData?.sort_columns || [{
+                        column: "city",
+                        order: "asc"
+                    }]
+                };
+
+            case 'Aggregator':
+                return {
+                    ...baseConfig,
+                    group_by: node.data.transformationData?.group_by || ["city"],
+                    aggregate: node.data.transformationData?.aggregate || [{
+                        expression: "avg(age)",
+                        target_column: "average_age"
+                    }],
+                    pivot: node.data.transformationData?.pivot || [{
+                        pivot_column: "city",
+                        pivot_values: ["New York", "Los Angeles", "Chicago"]
+                    }]
+                };
+
+            default:
+                return baseConfig;
+        }
+    };
+
+    // Process Reader transformations
+    uiNodes
+        .filter(node => node.id.startsWith('Reader_'))
+        .forEach(node => {
+            transformations.push({
+                name: `read_${node.data.label}`,
+                dependent_on: [],
+                transformation: "Reader",
+                source: {
+                    name: node.data.label,
+                    source_type: "File",
+                    file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
+                    connection: {
+                        name: node.data.source.connection?.name || "local_connection",
+                        connection_type: capitalizeFirstLetter(node.data.source.connection_type),
+                        file_path_prefix: `${node.data.source.file_path_prefix}/`
+                    }
+                },
+                read_options: {
+                    header: true
+                }
+            });
+        });
+
+    // Process other transformations
+    const processedNodes = new Set(uiNodes.filter(node => node.id.startsWith('Reader_')).map(n => n.id));
+    const remainingNodes = new Set(uiNodes.filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_')).map(n => n.id));
+
+    while (remainingNodes.size > 0) {
+        for (const nodeId of remainingNodes) {
+            const incomingEdges = edges.filter(edge => edge.target === nodeId);
+            const dependentNodes = incomingEdges.map(edge => edge.source);
+
+            if (dependentNodes.every(depNode => processedNodes.has(depNode))) {
+                const node = uiNodes.find(n => n.id === nodeId)!;
+                const dependent_on = incomingEdges.map(edge => nodeToTransformationName.get(edge.source));
+
+                // Get transformation config with all required fields
+                const transformationConfig = getTransformationConfig(node, dependent_on);
+                transformations.push(transformationConfig);
+
+                processedNodes.add(nodeId);
+                remainingNodes.delete(nodeId);
+            }
+        }
+    }
+
+    // Create target configuration
+    const targets = uiNodes
+        .filter(node => node.id.startsWith('Target_'))
+        .map(() => ({
+            name: "output_data",
+            type: "File",
+            connection: {
+                type: "File",
+                file_path: "examples/output.csv"
+            },
+            load_mode: "overwrite"
+        }));
+
+    return {
+        pipeline_json: {
+            $schema: "https://json-schema.org/draft-07/schema#",
+            name: pipelineDtl?.pipeline_name,
+            description: pipelineDtl?.pipeline_description,
+            version: "1.0",
+            mode: "DEBUG",
+            parameters: [],
+            sources,
+            targets,
+            transformations
+        }
+    };
 };
 
 interface Source {
@@ -185,4 +363,21 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     }
 
     return { nodes, edges };
+};
+
+function capitalizeFirstLetter(str: string): string {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+}
+
+// Update the transformation name mapping
+const getTransformationName = (type: string, title: string): string => {
+    const baseName = title?.toLowerCase() || type.toLowerCase();
+    switch (type) {
+        case 'SchemaTransformation':
+            return 'schema_transformation';
+        case 'Joiner':
+            return 'join_transformation';
+        default:
+            return `${baseName}_transformation`;
+    }
 }; 

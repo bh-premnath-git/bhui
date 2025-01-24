@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useFlow } from '@/contexts/FlowContext'
 
 interface ResponseContentProps {
+  onSend: (message: string) => void
   response: string
   missing: string
   id: number
@@ -18,16 +19,14 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
   aimissingData,
   id,
   sender,
+  onSend
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
 
   const { setAiflowStrructre, setAiMissingData } = useFlow()
 
-  const containerClass =
-    sender === 'assistant'
-      ? 'bg-gray-900 text-white p-4 rounded-lg relative space-y-4'
-      : 'bg-gray-700 text-white p-4 rounded-lg relative space-y-4'
+  const containerClass = 'bg-gray-100 text-black p-2 rounded-lg relative space-y-4'
 
   const chatMissingData: MissingData | null = missing ? JSON.parse(missing) : null
   const currentMissingData: MissingData | null = aimissingData || null
@@ -37,7 +36,7 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
     const parsedResponse = JSON.parse(response)
     formattedResponse = JSON.stringify(parsedResponse, null, 2)
   } catch {
-    formattedResponse = response
+    // if not valid JSON, just use the raw response
   }
 
   const MAX_PREVIEW_LENGTH = 500
@@ -47,30 +46,38 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
       ? truncatedContent + '...'
       : formattedResponse
 
-  const allMissingData: MissingData = {
-    ...(chatMissingData || {}),
-    ...(currentMissingData || {}),
-  }
+  const allMissingData: MissingData = useMemo(() => {
+    return {
+      ...(chatMissingData || {}),
+      ...(currentMissingData || {}),
+    }
+  }, [chatMissingData, currentMissingData])
 
   const [operatorFields, setOperatorFields] = useState<{
     [operator: string]: { [field: string]: string }
   }>({})
 
   useEffect(() => {
-    const newState: {
-      [operator: string]: { [field: string]: string }
-    } = { ...operatorFields } 
-    for (const operator in allMissingData) {
-      if (!newState[operator]) newState[operator] = {}
+    setOperatorFields((prev) => {
+      const newState = { ...prev }
+      let changed = false
 
-      allMissingData[operator].forEach((field) => {
-        if (!newState[operator][field]) {
-          newState[operator][field] = ''
+      for (const operator in allMissingData) {
+        if (!newState[operator]) {
+          newState[operator] = {}
+          changed = true
         }
-      })
-    }
 
-    setOperatorFields(newState)
+        allMissingData[operator].forEach((field) => {
+          if (!newState[operator][field]) {
+            newState[operator][field] = ''
+            changed = true
+          }
+        })
+      }
+
+      return changed ? newState : prev
+    })
   }, [allMissingData])
 
   const handleCopy = () => {
@@ -80,43 +87,41 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
   }
 
   const handleSubmitAll = () => {
-    console.log('User has provided missing fields:', operatorFields)
+    onSend(JSON.stringify(operatorFields))
   }
 
   useEffect(() => {
     try {
       const parsed = JSON.parse(formattedResponse)
-      if (parsed.flowDefinition) {
+
+      if (parsed) {
         setAiflowStrructre(formattedResponse)
         setAiMissingData(null)
-      }
-      if (parsed.missingOperators) {
-        setAiMissingData(parsed.missingOperators)
       }
     } catch {
       // no-op
     }
-  }, [formattedResponse, setAiflowStrructre, setAiMissingData])
+  }, [])
 
   const hasMissingData = Object.keys(allMissingData).length > 0
 
   return (
     <div className={containerClass}>
       {hasMissingData ? (
-        <div className="p-4 border border-gray-700 bg-gray-800 rounded shadow-sm space-y-6">
-          <h3 className="mb-2 font-semibold text-gray-100 text-lg">
+        <>
+          <h3 className="mb-2 font-semibold text-black text-lg">
             Missing Fields
           </h3>
           {Object.entries(allMissingData).map(([operator, fields]) => (
             <div key={operator} className="mb-4">
-              <h4 className="mb-2 font-semibold text-gray-100">
-                Operator: <span className="font-bold">{operator}</span>
+              <h4 className="mb-2 font-semibold text-black">
+                <span className="font-bold">{operator}</span>
               </h4>
               <div className="flex flex-wrap gap-3">
                 {fields.map((field) => (
                   <div
                     key={field}
-                    className="flex items-center rounded-full bg-gray-700 border border-gray-600 px-3 py-1"
+                    className="flex items-center rounded-full bg-gray-700 border border-gray-600 px-1 py-2"
                   >
                     <label className="mr-2 font-medium text-sm text-gray-200">
                       {field}:
@@ -124,7 +129,11 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
                     <input
                       type="text"
                       placeholder="Enter value"
-                      className="w-36 bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-400"
+                      className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-400"
+                      style={{
+                        width: `calc(${Math.max((operatorFields[operator]?.[field] || '').length, 10)}ch + 1rem)`,
+                        maxWidth: '30ch',
+                      }}
                       value={operatorFields[operator]?.[field] || ''}
                       onChange={(e) => {
                         const value = e.target.value
@@ -144,11 +153,11 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
           ))}
           <button
             onClick={handleSubmitAll}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm"
+            className="px-2 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm"
           >
-            Submit All
+            Submit
           </button>
-        </div>
+        </>
       ) : (
         <>
           <pre className="text-gray-100 whitespace-pre-wrap overflow-x-auto bg-gray-800 p rounded border border-gray-700">

@@ -131,7 +131,7 @@ const columns: ColumnConfig[] = [
 
       const handleAssign = async (username: string) => {
         try {
-          console.log(`Assigning user ${username} to alert ${rowData.alert_id}`);
+         // console.log(`Assigning user ${username} to alert ${rowData.alert_id}`);
         } catch (error) {
           console.error('Error after assigning user:', error);
         }
@@ -194,7 +194,7 @@ const columns: ColumnConfig[] = [
       const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
       const handleAssign = ({ preventionPlan, correctionPlan }) => {
-        console.log(`Alert ID: ${rowData.alert_id}, Prevention Plan: ${preventionPlan}, Correction Plan: ${correctionPlan}`);
+       // console.log(`Alert ID: ${rowData.alert_id}, Prevention Plan: ${preventionPlan}, Correction Plan: ${correctionPlan}`);
       };
 
       if (rowData.monitor.monitor_type.toLowerCase() === 'information') {

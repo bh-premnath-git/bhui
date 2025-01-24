@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Node, Edge, ReactFlowInstance } from 'reactflow';
+import {
+  Node, Edge,
+  NodeChange,
+  EdgeChange,
+  applyNodeChanges,
+  applyEdgeChanges, ReactFlowInstance
+} from 'reactflow';
 import {
   FlowContextType,
   CustomNodeData,
@@ -12,9 +18,12 @@ import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
 import { useModules } from "@/hooks/useModules";
 import { LocalStorageService } from '@/services/localStorageServices';
-import { isStringifiedJson } from '@/utils/object';
+import { parseStringifiedJson } from '@/utils/object';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
+
+const NODE_SPACING = 120;
+const INITIAL_POSITION = { x: 50, y: 140 };
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(null);
@@ -82,6 +91,30 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     prevNodeFn
   );
 
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds).map((edge) => ({
+        ...edge,
+      }))
+      );
+    },
+    [setEdges]
+  );
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      setNodes((nds) => applyNodeChanges(changes, nds).map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+        },
+      })));
+    },
+    [setNodes]
+  );
+
+
   const {
     updateNodeFormData,
     getNodeFormData
@@ -132,20 +165,26 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     (data: {
       id: string;
       type: string;
-      position: { x: number; y: number };
       tempSave: boolean;
       data: CustomNodeData;
     }) => {
-      const newNode: Node<CustomNodeData> = {
-        id: data.id,
-        type: data.type,
-        position: data.position,
-        data: data.data,
-      };
-      setNodes((prev) => [...prev, newNode]);
+      setNodes((prevNodes) => {
+        const newNode: Node<CustomNodeData> = {
+          id: data.id,
+          type: data.type,
+          position: {
+            x: INITIAL_POSITION.x + prevNodes.length * NODE_SPACING,
+            y: INITIAL_POSITION.y,
+          },
+          data: data.data,
+        };
+
+        return [...prevNodes, newNode];
+      });
     },
     []
   );
+
 
   const updatedSelectedNodeId = useCallback(
     (nodeId: string, selectedType: string) => {
@@ -297,13 +336,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const setAiflowStrructre = useCallback(
     (data: string) => {
-      console.log("setAiflowStrructre : ","started");
       try {
         setNodes([]);
         setEdges([]);
         setNodeFormData([]);
-        if (isStringifiedJson(data)) {
-          const valData = JSON.parse(data);
+        if (parseStringifiedJson(data)[0]) {
+          const valData: any = parseStringifiedJson(data)[1];
           if (!Array.isArray(valData.tasks)) return;
 
           const edgesToAdd: Edge[] = [];
@@ -313,45 +351,48 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               (module) => module.label === task.module_name
             );
             const matchedOperator = matchedModule?.operators.find(
-              (op) => op.type === task.type
+              (op: any) => op.type === task.type
             );
 
-            const nodeId = `task-${task.id ?? index}`;
+            // console.log("Matched Operator", matchedOperator.properties, task);
+
+
+            const nodeId = `task-${task.task_id ?? index}`;
             const existingNode = nodes.find((n) => n.id === nodeId);
 
             if (!existingNode) {
-              const position = {
-                x: 160 + index * 100,
-                y: 150,
-              };
-
               addNode({
                 id: nodeId,
                 type: 'custom',
-                position,
                 data: {
-                  tempSave: false,
+                  tempSave: true,
                   label: matchedModule?.label,
                   selectedData: matchedOperator?.type,
-                  type: '',
+                  type: matchedOperator?.type,
                   status: 'pending',
                   meta: {
-                    type: '',
+                    type: matchedOperator?.type,
                     moduleInfo: {
                       color: matchedModule?.color,
                       icon: matchedModule?.icon,
                       label: matchedModule?.label,
                     },
-                    properties: matchedOperator?.properties || [],
+                    properties: matchedOperator?.properties,
                     description: matchedOperator?.description,
                     fullyOptimized: false,
                   },
                   requiredFields: matchedOperator?.requiredFields || [],
                 },
-                tempSave: false,
+                tempSave: true,
+              });
+
+              updateNodeFormData(nodeId, {
+                ...task,
               });
             } else {
-
+              updateNodeFormData(nodeId, {
+                ...task,
+              });
             }
 
             if (index > 0) {
@@ -372,8 +413,11 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
           });
 
           setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+
         }
       } catch (err) {
+        console.error("err", err);
+
         return
       }
     },
@@ -428,6 +472,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     edges,
     setNodes,
     setEdges,
+    onNodesChange,
+    onEdgesChange,
     isPlaying,
     togglePlayback,
     updateNodeDimensions,

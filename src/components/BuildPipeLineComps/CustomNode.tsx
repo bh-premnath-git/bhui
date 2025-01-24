@@ -11,7 +11,7 @@ interface Schema {
 
 // Add new helper function to validate form data against schema
 const validateFormData = (formData: any, schema: any, isSource: boolean, sourceData: any): { isValid: boolean; warnings: string[] } => {
-    const warnings: string[] = [];
+    let warnings: string[] = [];
     let isValid = true;
 
     // Special validation for source nodes
@@ -22,33 +22,36 @@ const validateFormData = (formData: any, schema: any, isSource: boolean, sourceD
             return { isValid, warnings };
         }
 
-        // Check for required source fields
-        if (!sourceData.data_src_desc) {
-            warnings.push("Source description is missing");
-            isValid = false;
-        }
-        if (!sourceData.connection_config_id) {
-            warnings.push("Connection configuration ID is missing");
-            isValid = false;
-        }
-
-        return { isValid, warnings };
+        // Source nodes are valid if they have source data
+        return { isValid: true, warnings: [] };
     }
 
-    // Regular node validation
+    // For non-source nodes, check if formData exists and has required fields
+    if (!formData) {
+        return { isValid: false, warnings: ['Form not filled'] };
+    }
+
+    // Check schema requirements if they exist
     if (schema?.required) {
         schema.required.forEach((field: string) => {
-            if (!formData || !formData[field]) {
+            if (!formData[field] ||
+                (Array.isArray(formData[field]) && formData[field].length === 0)) {
                 warnings.push(`Required field "${field}" is missing`);
                 isValid = false;
             }
         });
     }
 
+    // If formData exists and has values, consider it valid even without schema
+    if (Object.keys(formData).length > 0) {
+        isValid = true;
+        warnings = [];
+    }
+
     return { isValid, warnings };
 };
 
-export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl }: {
+export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl, setEdges }: {
     data: any;
     id: string;
     setNodes: any;
@@ -62,6 +65,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     debuggedNodes: Set<string>;
     onSourceUpdate: (updatedSource: any) => void;
     pipelineDtl: any;
+    setEdges: any;
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -80,39 +84,36 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const formData = formStates[id];
         const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
         const isSource = data.label.toLowerCase().includes("source");
+        console.log(schemaData.schema)
+        // Set initial title from data.label if it exists
+        if (data.label) {
+            setTitleValue(data.label);
+            setNodes((nodes: any[]) =>
+                nodes.map(node =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, title: data.label } }
+                        : node
+                )
+            );
+        }
 
+        // Validation logic
         if (isSource) {
             const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
-            if (isValid) {
-                setValidationStatus('valid');
-                setValidationMessages([]);
-            } else if (warnings.length === 1 && warnings[0] === "Source configuration is missing") {
-                setValidationStatus('error');
-                setValidationMessages(warnings);
-            } else {
-                setValidationStatus('warning');
-                setValidationMessages(warnings);
-            }
+            setValidationStatus(isValid ? 'valid' : 'error');
+            setValidationMessages(warnings);
             return;
         }
 
-        if (!formData) {
+        if (formData) {
+            const { isValid, warnings } = validateFormData(formData, nodeSchema, false, null);
+            setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
+            setValidationMessages(warnings);
+        } else {
             setValidationStatus('error');
             setValidationMessages(['Form not filled']);
-            return;
         }
-
-        if (nodeSchema) {
-            const { isValid, warnings } = validateFormData(formData, nodeSchema, false, null);
-            if (isValid) {
-                setValidationStatus('valid');
-                setValidationMessages([]);
-            } else {
-                setValidationStatus('warning');
-                setValidationMessages(warnings);
-            }
-        }
-    }, [formStates, id, data.label, data.source]);
+    }, [formStates, id, data.label, data.source, setNodes]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -147,8 +148,16 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     const handleDelete = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
+        const { setEdges, getEdges } = reactFlowInstance;
+
+        // Remove the node
         setNodes((nodes: any[]) => nodes.filter(node => node.id !== id));
-    }, [id, setNodes]);
+
+        // Remove all edges connected to this node (both incoming and outgoing)
+        setEdges((edges: any[]) => edges.filter(edge =>
+            edge.source !== id && edge.target !== id
+        ));
+    }, [id, setNodes, reactFlowInstance]);
 
     const handleClone = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -491,33 +500,9 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 </div>
             </div>
 
-            {/* Output Handles - Triangle style */}
-            {data.ports?.outputs > 0 && Array.from({ length: data.ports.outputs }).map((_, index) => (
-                <Handle
-                    key={`output-${index}`}
-                    type="source"
-                    position={Position.Right}
-                    id={`output-${index}`}
-                    style={{
-                        top: '50%',
-                        opacity: 1,
-                        width: 0,
-                        height: 0,
-                        transform: 'translateX(50%) translateY(-50%)',
-                        cursor: 'pointer',
-                        border: '6px solid transparent',
-                        borderLeft: '8px solid #000000',
-                        background: 'transparent',
-                        transition: 'all 0.2s ease',
-                        zIndex: 5,
-                    }}
-                    className="hover:scale-110 hover:border-l-gray-600"
-                />
-            ))}
-
             {/* Input Handles - Enhanced Circle style */}
             {data.ports?.inputs > 0 && Array.from({
-                length: data.ports.maxInputs === "unlimited" ? 2 : data.ports.inputs
+                length: data.ports.maxInputs === "unlimited" ? 2 : (data.ports.inputs || 1)
             }).map((_, index) => (
                 <Handle
                     key={`input-${index}`}
@@ -525,8 +510,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     position={Position.Left}
                     id={`input-${index}`}
                     style={{
-                        top: data.label.toLowerCase().includes('join') || data.ports.maxInputs === "unlimited"
-                            ? `calc(50% ${index === 0 ? '- 5px' : '+ 10px'})`
+                        top: data.ports.maxInputs === "unlimited"
+                            ? `calc(40% + ${index * 20}px)`
                             : '50%',
                         opacity: 1,
                         width: '8px',
@@ -545,23 +530,31 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 />
             ))}
 
-            {data.ports.inputs > 0 && (
+            {/* Output Handles - Triangle style */}
+            {data.ports?.outputs > 0 && Array.from({
+                length: data.ports.maxOutputs || data.ports.outputs || 1
+            }).map((_, index) => (
                 <Handle
-                    type="target"
-                    position={Position.Left}
-                    id="input-0"
-                    style={{ background: '#555' }}
-                />
-            )}
-
-            {data.ports.outputs > 0 && (
-                <Handle
+                    key={`output-${index}`}
                     type="source"
                     position={Position.Right}
-                    id="output-0"
-                    style={{ background: '#555' }}
+                    id={`output-${index}`}
+                    style={{
+                        top: data.ports.outputs > 1 ? `calc(33% + ${index * 15}px)` : '50%',
+                        opacity: 1,
+                        width: 0,
+                        height: 0,
+                        transform: 'translateX(50%) translateY(-50%)',
+                        cursor: 'pointer',
+                        border: '6px solid transparent',
+                        borderLeft: '8px solid #000000',
+                        background: 'transparent',
+                        transition: 'all 0.2s ease',
+                        zIndex: 5,
+                    }}
+                    className="hover:scale-110 hover:border-l-gray-600"
                 />
-            )}
+            ))}
 
             {showInfo && (
                 <div

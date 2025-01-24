@@ -187,7 +187,7 @@ const columns: ColumnConfig[] = [
   },
   {
     key: 'resolution_reason',
-    header: 'Resolution Reason',
+    header: 'Root Cause',
     type: 'text',
     sortable: true,
     render: (value, rowData) => {

@@ -7,7 +7,7 @@ import {
   getdataSourceList,
   setSelectedDataSource
 } from "@/redux/CatalogSlice";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { FlexibleTable } from "@/components/Table";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -30,6 +30,7 @@ import {
   FileQuestion,
 } from "lucide-react";
 import ImportDataSource from "./ImportDataSourceWizard";
+import { useNavigate } from "react-router-dom";
 interface CatalogInter {
   data_src_name: string;
   data_src_desc: string;
@@ -42,6 +43,7 @@ interface CatalogInter {
 }
 interface DataCatalogTableProps {
   catalogList: CatalogInter[];
+  gitProjectList: any[];
   loading: boolean;
   error: { message: string } | null;
 }
@@ -202,9 +204,9 @@ const columns: ColumnConfig[] = [
   },
 ];
 
-function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps) {
+function DataCatalogTable({ catalogList, gitProjectList, loading, error }: DataCatalogTableProps) {
   const dispatch = useAppDispatch();
-
+  const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<any>(null);
 
@@ -237,6 +239,10 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
     setShowImportSection(!showImportSection);
   };
 
+  const handleXplore = () => {
+    navigate("/data-catalog/xplore");
+  }
+
   const closeImportSection = () => {
     setShowImportSection(false);
   };
@@ -251,7 +257,7 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
     >
       {showImportSection ? (
         <>
-          <ImportDataSource closeImportSection={closeImportSection} />
+          <ImportDataSource gitProjectList={gitProjectList} closeImportSection={closeImportSection} />
         </>
       ) : (
         <Box>
@@ -265,6 +271,7 @@ function DataCatalogTable({ catalogList, loading, error }: DataCatalogTableProps
             playRow={true}
             background="bg-black"
             importSrcFn={handleImportClick}
+            clickXploreFn={handleXplore}
             rowColorFn={(row, index) => (index % 2 === 0 ? "bg-white" : "bg-gray-100")}
           />
         </Box>
@@ -365,9 +372,10 @@ const DataCatalog: React.FC = () => {
   const { dataSourceList, listLoading, error: apiError } = useAppSelector(
     (state: RootState) => state.catalogApi
   );
+  const { gitProjectList } = useAppSelector((state: RootState) => state.projectApi);
   const error = apiError ? { message: apiError } : null;
   return (
-    <DataCatalogTable catalogList={dataSourceList} loading={listLoading} error={error} />
+    <DataCatalogTable catalogList={dataSourceList} gitProjectList={gitProjectList} loading={listLoading} error={error} />
   );
 };
 

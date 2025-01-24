@@ -44,6 +44,7 @@ export const getGitProject: any = createAsyncThunk(
       const transformed: any[] = response.map((item: any) => {
         return {
           Project_Name: item.bh_project_name,
+          ProjectId: item["bh_project_id"],
           ["YTD_Cost ($)"]: item.ytd_cost,
           ["Current_Month_Cost ($)"]: item.current_month_cost,
           ["Total Storage (GB)"]: item.total_storage,

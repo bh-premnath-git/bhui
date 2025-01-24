@@ -42,7 +42,7 @@ import {
   Droppable,
   Draggable,
   DropResult,
-} from "react-beautiful-dnd";
+} from "@hello-pangea/dnd";
 
 const rootStyle = getComputedStyle(document.documentElement);
 

@@ -1,18 +1,13 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Panel,
   Connection,
   addEdge,
   ReactFlowInstance,
-  NodeChange,
-  EdgeChange,
   MarkerType,
-  applyNodeChanges,
-  applyEdgeChanges,
   useReactFlow,
   getOutgoers,
-  getNodesBounds,
 } from 'reactflow';
 import { useFlow } from '@/contexts/FlowContext';
 import { ToolbarNodes } from '@/components/ReactFlowComps/flow/toolbar/ToolbarNodes';
@@ -24,56 +19,20 @@ import SparkleButton from './flowAi/aibutton';
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
-const defaultViewport = { x: -180, y: 0, zoom: 1.5 };
+const defaultViewport = { x: 0, y: 0, zoom: 1.8 };
 
 export function FlowEditor() {
   const {
     nodes,
     edges,
-    setNodes,
     setEdges,
+    onNodesChange,
+    onEdgesChange,
     setReactFlowInstance,
   } = useFlow();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { fitView, getViewport } = useReactFlow();
-
-  // Improved viewport check function
-  const checkAndFitView = useCallback(() => {
-    if (!reactFlowWrapper.current || nodes.length === 0) return;
-
-    const { width, height } = reactFlowWrapper.current.getBoundingClientRect();
-    getNodesBounds(nodes);
-    const viewport = getViewport();
-
-    // Calculate visible area boundaries
-    const visibleLeft = viewport.x;
-    const visibleRight = viewport.x + (width / viewport.zoom);
-    const visibleTop = viewport.y;
-    const visibleBottom = viewport.y + (height / viewport.zoom);
-
-    // Check if any node is outside the visible area
-    const nodesOutOfView = nodes.some(node => {
-      const nodeRight = node.position.x + (node.width || 0);
-      const nodeBottom = node.position.y + (node.height || 0);
-
-      return (
-        node.position.x < visibleLeft ||
-        nodeRight > visibleRight ||
-        node.position.y < visibleTop ||
-        nodeBottom > visibleBottom
-      );
-    });
-
-    if (nodesOutOfView) {
-      fitView({
-        padding: 0.2,
-        duration: 800,
-        maxZoom: 1.5,
-        minZoom: 0.5,
-      });
-    }
-  }, [nodes, fitView, getViewport]);
+  const { fitView } = useReactFlow();
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -98,29 +57,6 @@ export function FlowEditor() {
       setEdges((eds) => addEdge(edge, eds));
     },
     [setEdges]
-  );
-
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      setEdges((eds) => applyEdgeChanges(changes, eds).map((edge) => ({
-        ...edge,
-      }))
-      );
-    },
-    [setEdges]
-  );
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds).map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-        },
-      })));
-      setTimeout(checkAndFitView, 50);
-    },
-    [setNodes, checkAndFitView]
   );
 
   const onInit = useCallback(
@@ -187,14 +123,12 @@ export function FlowEditor() {
       setEdges((eds) => [...eds, ...newEdges]);
     }
 
-    // Check viewport after connecting nodes with a small delay
-    setTimeout(checkAndFitView, 50);
-  }, [nodes, edges, setEdges, checkAndFitView]);
+  }, [nodes, edges, setEdges]);
 
   const isValidConnection = useCallback(
-    (connection) => {
+    (connection: any) => {
       const target = nodes.find((node) => node.id === connection.target);
-      const hasCycle = (node, visited = new Set()) => {
+      const hasCycle = (node: any, visited = new Set()) => {
         if (visited.has(node.id)) return false;
         visited.add(node.id);
         for (const outgoer of getOutgoers(node, nodes, edges)) {
@@ -231,6 +165,8 @@ export function FlowEditor() {
             panOnScroll
             selectionOnDrag
             defaultViewport={defaultViewport}
+            minZoom={0.3}
+            maxZoom={2}
             panOnDrag={true}
             zoomOnScroll={false}
             nodesDraggable

@@ -1,8 +1,7 @@
 // import SourceForm from '@/components/BuildPipeLineComps/SourceForm';
+import SavedDashboardView from '@/pages/SavedDashboardView';
 import { createTheme } from '@mui/material';
-import path from 'path';
 import { lazy } from 'react';
-const Catalog = lazy(() => import('@/pages/catalog'));
 const Catalogs = lazy(() => import('@/components/Catalog/Catalogs'));
 const Designer = lazy(() => import('@/pages/designer'));
 const DataOpsHub = lazy(() => import('@/pages/allDataOps'));
@@ -38,6 +37,7 @@ const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
 const BigHammerSearch = lazy(() => import('@/components/BighammerSearch/BighammerSearch'));
+const Xplorer = lazy(() => import('@/pages/XplorePage'));
 export const routeList = [
   {
     path: "/",
@@ -57,7 +57,6 @@ export const routeList = [
   { path: "/designers/manage-flow", element: <AllFlows /> },
   { path: '/designers/manage-flow/:id', element: <ManageFlow /> },
   { path: "*", element: <PageNotFound /> },
-  { path: '/data-catalogs', element: <Catalog /> },
   { path: '/Catalog/Catalogs', element: <Catalogs /> },
   { path: '/designers', element: <Designer /> },
   { path: '/DataOps Hub/Dashboard', element: <DataOpsHub /> },
@@ -67,6 +66,7 @@ export const routeList = [
   { path: '/Alerts/New Monitor', element: <MonitorPage /> },
   { path: '/Alerts/New Monitor/Monitor', element: <Configure /> },
   { path: '/data-catalog', element: <DataCatalog /> },
+  { path: '/data-catalog/xplore', element: <Xplorer /> },
   { path: '/DataCatalog/schema', element: <CatalogsSchema selectedSource={undefined} /> },
   { path: '/admin-console/users', element: <AllUsers /> },
   { path: '/admin-console/users/new', element: <AddUser /> },
@@ -83,8 +83,9 @@ export const routeList = [
   { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
   { path: '/ReleaseBundle', element: <ReleaseBundle /> },
   { path: '/bighammer-AI', element: <BigHammerSearch /> },
-  // { path: '/source', element: <SourceForm /> },
+  { path: '/saved-dashboard/:id', element: <SavedDashboardView /> },
 ];
+
 
 export const theme = createTheme({
   palette: {

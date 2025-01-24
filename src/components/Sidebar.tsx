@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
-import { Tooltip, Typography } from '@mui/material';
+import { Tooltip } from '@mui/material';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -38,8 +38,9 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const userRoles = getUserRoles();
 
+  // Determine allowed items based on user role
   const allowedItems = Array.from(
-    new Set(userRoles?.flatMap((role:any) => roleAccess[role] || []))
+    new Set(userRoles?.flatMap((role: any) => roleAccess[role] || []))
   );
 
   const filteredNavItems: NavItem[] = menuList.filter((item) =>
@@ -57,9 +58,17 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-18 left-0 h-screen bg-custom-bg text-black transition-all duration-300 ease-in-out overflow-hidden z-20 ${
-        isExpanded ? 'w-60' : 'w-16'
-      }`}
+      className={`
+        fixed top-18 left-0 h-screen
+        z-20
+        transition-all duration-300 ease-in-out
+        overflow-hidden
+        ${isExpanded ? 'w-60' : 'w-16'}
+
+        /* Sidebar background & text color 
+           Use a light gray background to match the screenshot */
+        bg-[#F6F6F7] text-[#1F1F1F]
+      `}
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
       role="navigation"
@@ -72,20 +81,28 @@ export function Sidebar() {
               <li key={item.path} className="relative">
                 <Link
                   to={item.path}
-                  className={`flex items-center justify-between p-2 rounded-lg text-black transition-colors duration-200
-                    ${pathname === item.path
-                      ? 'bg-gray-100 text-primary-600 font-semibold'
-                      : 'hover:bg-gray-50'
+                  className={`
+                    flex items-center justify-between p-2 rounded-lg
+                    transition-colors duration-200
+
+                    /* Active state */
+                    ${
+                      pathname === item.path
+                        ? 'bg-[#EBEBEC] text-[#000] font-semibold'
+                        : 'hover:bg-[#EBEBEC]'
                     }
                     ${item.subPaths ? 'font-semibold' : ''}
                   `}
                 >
                   <div className="flex items-center">
-                    <span className="flex items-center min-w-[22px]">{item.icon}</span>
+                    <span className="flex items-center min-w-[22px]">
+                      {item.icon}
+                    </span>
                     <span
-                      className={`ml-3 whitespace-nowrap transition-all duration-300 ${
-                        isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                      }`}
+                      className={`
+                        ml-3 whitespace-nowrap transition-all duration-300
+                        ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
+                      `}
                     >
                       {item.label}
                     </span>
@@ -103,20 +120,30 @@ export function Sidebar() {
                         >
                           <Link
                             to={subPath.path}
-                            className={`flex items-center justify-between p-2 text-sm transition-colors duration-200
+                            className={`
+                              flex items-center justify-between p-2 text-sm
+                              transition-colors duration-200
                               relative group rounded-lg font-normal
-                              ${pathname === subPath.path
-                                ? 'bg-primary-50 text-primary-600'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+
+                              /* Active/hover for sub-items */
+                              ${
+                                pathname === subPath.path
+                                  ? 'bg-[#EBEBEC] text-[#000]'
+                                  : 'text-[#4A4A4A] hover:bg-[#EBEBEC] hover:text-[#1F1F1F]'
                               }
                             `}
                           >
                             <div className="flex items-center">
-                              <span className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''}`}>
+                              <span
+                                className={`flex items-center min-w-[22px] ${
+                                  !isExpanded ? 'mx-0' : ''
+                                }`}
+                              >
                                 {subPath.icon}
                               </span>
-                              <span 
-                                className={`whitespace-nowrap transition-all duration-300 ml-3
+                              <span
+                                className={`
+                                  whitespace-nowrap transition-all duration-300 ml-3
                                   ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
                                 `}
                               >

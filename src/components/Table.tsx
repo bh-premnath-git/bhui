@@ -85,6 +85,7 @@ interface TableProps {
   handleAIgenFn?: () => void;
   handleAIsaveFn?: () => void;
   importSrcFn?: () => void;
+  clickXploreFn?: () => void;
   actionFn?: (rowData: any, action: string) => void;
   playRow?: boolean;
   playRowFn?: (rowData: any) => void;
@@ -104,10 +105,11 @@ const TABLE_NAME_CHECK_LIST = [
   "Create New Project",
   "Create New Environment",
   "Create New Bundle",
+  "Add Pipeline",
 ];
 
 const TABLE_NAME_RESTRICTED_ACTIONS = ["Create New Flow", "Add Pipeline"];
-const TABLE_NAME_ACTIONS_AI = ["Catalog Table", "DataOps", "Xplore"];
+const TABLE_NAME_ACTIONS_AI = ["Catalog Table", "DataOps"];
 const TABLE_AI_COLS = ["Description"];
 const EXTRA_BUTTON_TABLE = ["Xplore"];
 
@@ -517,6 +519,7 @@ export function FlexibleTable({
   handleAIgenFn,
   handleAIsaveFn,
   importSrcFn,
+  clickXploreFn,
   actionFn,
   playRow = false,
   playRowFn,
@@ -567,7 +570,6 @@ export function FlexibleTable({
     }));
   }, []);
 
-  // Filtered Data based on search and filters
   const filteredData = useMemo(() => {
     if (!Array.isArray(data)) return [];
 
@@ -672,6 +674,10 @@ export function FlexibleTable({
     if (importSrcFn) importSrcFn();
   }, [importSrcFn]);
 
+  const handleClickXplore = useCallback(() => {
+    if (clickXploreFn) clickXploreFn();
+  }, [clickXploreFn]);
+
   return (
     <div className="container mx-auto p-1">
       {/* Top Controls: Filters and Action Buttons */}
@@ -715,7 +721,9 @@ export function FlexibleTable({
                   ? "bg-gray-900 text-white hover:bg-gray-800"
                   : `${background} hover:${background} text-white`
               )}
-              onClick={handleCreateNew}
+              onClick={
+                tableName === "Xplore" ? handleClickXplore : handleCreateNew
+              } 
               aria-label={`Create New ${tableName}`}
             >
               {tableName} <PlusCircle className="ml-2 h-4 w-4" />

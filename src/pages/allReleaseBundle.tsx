@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FlexibleTable } from "@/components/Table";
 import { FileQuestion } from "lucide-react";
-import { formatedDate } from "@/Utils/dateFormatter";
+import { formatedDate } from "@/utils/dateFormatter";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/ui/error-display";

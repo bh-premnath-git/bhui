@@ -10,10 +10,11 @@ import { CodeEditor } from "./UiElements/MonocoEditor";
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { parseStringifiedJson } from "@/utils/object";
 
 interface FormFieldProps {
   property: Property;
-  value: string;
+  value: any;
   onChange: (key: string, value: string) => void;
   dependsOn?: string[];
 }
@@ -35,7 +36,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
     const { options, isLoading } = useDropdownOptions(
       endpoint,
-      endpoint !=="{catalog_base_url}/api/v1/pipeline/list" ? selectedEnvironment : null
+      endpoint !== "{catalog_base_url}/api/v1/pipeline/list" ? selectedEnvironment : null
     );
     const defaultValue = property.ui_properties.default
     const description = property.description
@@ -56,16 +57,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
             />
           );
         case 'list[string]':
+        case 'list[emailids]':
           let parsedValues: string[] = [];
-          try {
-            parsedValues = value ? JSON.parse(value) : [];
-            if (!Array.isArray(parsedValues)) {
-              console.warn(`Expected an array for property_key "${property_key}", but got:`, parsedValues);
-              parsedValues = [];
+          if (value) {
+            const [isParsed, parsedResult] = parseStringifiedJson(value);
+            if (isParsed && Array.isArray(parsedResult)) {
+              parsedValues = parsedResult as string[];
+            } else {
+             parsedValues = value as string[];
             }
-          } catch (error) {
-            console.error(`Invalid JSON string for property_key "${property_key}":`, error);
-            parsedValues = [];
           }
 
           return (

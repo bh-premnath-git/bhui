@@ -3,7 +3,7 @@ import { NodeToolBar } from './NodeToolBar';
 import { useFlow } from "@/contexts/FlowContext";
 import { NodeToolBarRef } from "@/types/flow";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { flowNodeValidator } from '@/Utils/flowNodeValidator';
+import { flowNodeValidator } from '@/utils/flowNodeValidator';
 
 interface NodeContentProps {
   id: string;

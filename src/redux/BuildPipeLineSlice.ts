@@ -24,6 +24,7 @@ export interface ApiState {
   isDebug: boolean;
   metricsData: any;
   isMetricsLoading: boolean;
+  listedContentTpes: any
 }
 
 const initialState: ApiState = {
@@ -45,6 +46,7 @@ const initialState: ApiState = {
   isDebug: false,
   metricsData: null,
   isMetricsLoading: false,
+  listedContentTpes: {}
 };
 
 interface ApiResponse {
@@ -55,7 +57,6 @@ interface ApiResponse {
 export const getSource: any = createAsyncThunk(
   'build-pipline/detasource',
   async (params: any, thunkAPI) => {
-    // alert(JSON.stringify(params))
     try {
       const response = await ApiService('8011', 'get', '/data_source/list/', null, params);
       return response;
@@ -124,7 +125,7 @@ export const getCodesValue: any = createAsyncThunk(
   'build-pipline/getCodesValue',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
+      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -221,6 +222,18 @@ export const fetchTransformationOutput = createAsyncThunk(
   }
 );
 
+export const deletePipelineById = createAsyncThunk(
+  'build-pipline/deletePipelineById',
+  async (params: any, thunkAPI) => {
+    try {
+      await ApiService('8011', 'delete', `/pipeline/${params.pipeline_id}`, null, {});
+      return params.pipeline_id;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to delete pipeline.');
+    }
+  }
+);
+
 const buildPipeLineSlice = createSlice({
   name: "api/buildDataPipeline",
   initialState,
@@ -262,9 +275,7 @@ const buildPipeLineSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.dataSource = action.payload;
-          // if (state.searchProjectList?.length === 0) {
-          //   state.searchProjectList = action.payload;
-          // }
+
         }
       )
       .addCase(
@@ -283,9 +294,7 @@ const buildPipeLineSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.dataConfig = action.payload;
-          // if (state.searchProjectList?.length === 0) {
-          //   state.searchProjectList = action.payload;
-          // }
+
         }
       )
       .addCase(
@@ -304,9 +313,7 @@ const buildPipeLineSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.dynamicConData = action.payload;
-          // if (state.searchProjectList?.length === 0) {
-          //   state.searchProjectList = action.payload;
-          // }
+
         }
       )
       .addCase(
@@ -326,9 +333,7 @@ const buildPipeLineSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.createPipeLineDtl = action.payload;
-          // if (state.searchProjectList?.length === 0) {
-          //   state.searchProjectList = action.payload;
-          // }
+
         }
       )
       .addCase(
@@ -348,9 +353,7 @@ const buildPipeLineSlice = createSlice({
         (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
           state.pipelineList = action.payload;
-          // if (state.searchProjectList?.length === 0) {
-          //   state.searchProjectList = action.payload;
-          // }
+
         }
       )
       .addCase(
@@ -468,8 +471,31 @@ const buildPipeLineSlice = createSlice({
         state.isMetricsLoading = false;
         state.error = action.error.message || 'Failed to fetch metrics';
       })
-
-  },
+      .addCase(deletePipelineById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deletePipelineById.fulfilled, (state, action: any) => {
+        state.loading = false;
+        state.pipelineList = state.pipelineList.filter(p => p.pipeline_id !== action.payload.pipeline_id);
+      })
+      .addCase(deletePipelineById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch metrics';
+      })
+      .addCase(getCodesValue.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getCodesValue.fulfilled, (state, action: any) => {
+        state.loading = false;
+        state.listedContentTpes = action.payload;
+      })
+      .addCase(getCodesValue.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch metrics';
+      })
+  }
 });
 
 export default buildPipeLineSlice.reducer;

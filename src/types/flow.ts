@@ -1,4 +1,4 @@
-import { Node, Edge, ReactFlowInstance } from "reactflow";
+import { Node, Edge, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
 
 export type TriggerRule =
   | "all_success"
@@ -124,6 +124,8 @@ export interface FlowContextType {
   edges: Edge[];
   isPlaying: boolean;
   isDataPreviewOpen: boolean;
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
   selectedNode: Node<CustomNodeData> | null;
   nodeFormData: NodeFormData[];
   isSaving: boolean;
@@ -159,7 +161,6 @@ export interface FlowContextType {
   addNode: (data: {
     id: string;
     type: string;
-    position: { x: number; y: number };
     data: CustomNodeData;
   }) => void;
   updateNodeMeta: (nodeId: string, newMeta: Partial<MetaData>, newData?: any) => void;
@@ -186,4 +187,6 @@ export interface FlowContextType {
   setFormDataNum: React.Dispatch<React.SetStateAction<number>>;
   setAiflowStrructre: (data: any) => void;
   setConsequentTaskDetail: (task: any, detail: any) => void;
+  aiMissingData?: any;
+  setAiMissingData?: React.Dispatch<React.SetStateAction<any>>;
 }

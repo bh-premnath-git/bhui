@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
-import { COLORS } from '@/Utils/constants';
+import { COLORS } from '@/utils/constants';
 
 
 

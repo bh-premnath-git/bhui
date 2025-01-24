@@ -14,7 +14,7 @@ import useToast from '@/components/teast-service';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { searchProject, updateProject } from '@/redux/ProjectSlice';
 import { ApiService } from '@/services/apiServices';
-import { isEmpty } from '@/Utils/isObjectEmpty';
+import { isEmpty } from '@/utils/isObjectEmpty';
 import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';
 import ValidationComponent from '@/components/validation-component';

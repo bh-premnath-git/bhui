@@ -2,11 +2,11 @@ import { ApiService } from "@/services/apiServices";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
-  dataSourceList: any[];      // list of all data sources
-  layoutList: any[];          // layout details for a specific data source
-  selectedDataSource: object; // whichever data source you’ve clicked on
-  listLoading: boolean;       // loading flag for the data source list
-  layoutLoading: boolean;     // loading flag for the layout
+  dataSourceList: any[];
+  layoutList: any[];
+  selectedDataSource: object
+  listLoading: boolean;
+  layoutLoading: boolean;
   error: string | null;
 }
 

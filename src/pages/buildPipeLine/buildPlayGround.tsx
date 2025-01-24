@@ -11,7 +11,6 @@ import 'reactflow/dist/style.css';
 import nodeData from '../../pages/buildPipeLine/node_display.json';
 import schemaData from '../../pages/buildPipeLine/mdata.json';
 import { Button, Dialog, DialogActions, DialogContent, Menu, MenuItem } from '@mui/material';
-import schemaValidation from '../../pages/buildPipeLine/sample_validation.json';
 import { CustomNode } from '@/components/BuildPipeLineComps/CustomNode';
 import { ApiService } from '@/services/apiServices';
 import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
@@ -22,8 +21,8 @@ import { ErrorBoundary } from "@/ErrorBoundry"
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
-import { connect } from 'http2';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/utils/pipelineJsonConverter';
 
 interface UIProperties {
     color: string;
@@ -41,6 +40,11 @@ interface Schema {
     title: string;
     nodeId?: string;
     [key: string]: any;
+}
+
+interface SourceColumn {
+    name: string;
+    dataType: string;
 }
 
 const BuildPlayGround: React.FC = () => {
@@ -63,12 +67,13 @@ const BuildPlayGround: React.FC = () => {
     const dispatch = useDispatch();
     const saveStatus = useSelector((state: any) => state.autoSave);
     const time = import.meta.env.VITE_AUTO_SAVE_TIME;
-    const autoSaveInterval = parseInt(time, 10) || 30000;
+    const autoSaveInterval = parseInt(time, 10) || 10000;
     const [history, setHistory] = useState<{ nodes: any[], edges: any[] }[]>([]);
     const [redoStack, setRedoStack] = useState<{ nodes: any[], edges: any[] }[]>([]);
     const [showLeavePrompt, setShowLeavePrompt] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const [sourceColumns, setSourceColumns] = useState<SourceColumn[]>([]);
 
     useEffect(() => {
         const fetchPipelineDetails = async () => {
@@ -79,25 +84,73 @@ const BuildPlayGround: React.FC = () => {
                     `/pipeline/${id}`,
                     null
                 );
-                console.log(response);
                 setPipelineDtl(response);
+                console.log(response)
+                if (response?.pipeline_json) {
+                    // Convert pipeline JSON to UI format
+                    const uiJson = convertPipelineToUIJson(response.pipeline_json);
+                    const convertedJson = await uiJson;
 
-                // Set the nodes and edges from the response if they exist
-                if (response?.pipeline_json?.nodes) {
-                    setNodes(response.pipeline_json.nodes);
-                }
-                if (response?.pipeline_json?.edges) {
-                    setEdges(response.pipeline_json.edges);
-                }
-
-                // Update node counters based on existing nodes
-                if (response?.pipeline_json?.nodes) {
-                    const counters: { [key: string]: number } = {};
-                    response.pipeline_json.nodes.forEach((node: any) => {
-                        const moduleName = node.data.label;
-                        counters[moduleName] = (counters[moduleName] || 0) + 1;
+                    // Update nodes with titles from transformations
+                    const nodesWithTitles = convertedJson.nodes.map(node => {
+                        const transformation = response.pipeline_json.transformations.find(
+                            (t: any) => t.transformation === node.data.label
+                        );
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                title: transformation?.name || node.data.label // Set title from transformation name
+                            }
+                        };
                     });
-                    setNodeCounters(counters);
+
+                    setNodes(nodesWithTitles);
+                    setEdges(convertedJson.edges);
+
+                    // Initialize form states from pipeline JSON transformations
+                    const initialFormStates = {};
+                    response.pipeline_json.transformations.forEach((transformation: any) => {
+                        const nodeId = nodesWithTitles.find(
+                            (node: any) => node.data.label === transformation.transformation
+                        )?.id;
+
+                        if (nodeId) {
+                            switch (transformation.transformation) {
+                                case 'Joiner':
+                                    initialFormStates[nodeId] = {
+                                        conditions: transformation.conditions || [],
+                                        expressions: transformation.expressions || [],
+                                        advanced: transformation.advanced || []
+                                    };
+                                    break;
+                                case 'SchemaTransformation':
+                                    initialFormStates[nodeId] = {
+                                        derived_fields: transformation.derived_fields || []
+                                    };
+                                    break;
+                                case 'Sorter':
+                                    initialFormStates[nodeId] = {
+                                        sort_columns: transformation.sort_columns || []
+                                    };
+                                    break;
+                                case 'Aggregator':
+                                    initialFormStates[nodeId] = {
+                                        group_by: transformation.group_by || [],
+                                        aggregate: transformation.aggregate || [],
+                                        pivot: transformation.pivot || []
+                                    };
+                                    break;
+                                case 'Filter':
+                                    initialFormStates[nodeId] = {
+                                        condition: transformation.condition || ''
+                                    };
+                                    break;
+                            }
+                        }
+                    });
+                    console.log('Initial Form States:', initialFormStates);
+                    setFormStates(initialFormStates);
                 }
             } catch (error) {
                 console.error("Error fetching pipeline details:", error);
@@ -105,7 +158,7 @@ const BuildPlayGround: React.FC = () => {
         };
 
         fetchPipelineDetails();
-    }, []);
+    }, [id]);
 
     const handleNodesChange = useCallback((changes: any) => {
         onNodesChange(changes);
@@ -122,12 +175,8 @@ const BuildPlayGround: React.FC = () => {
             if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
-                    const pipeline_json = {
-                        pipeline_json: {
-                            nodes: nodes,
-                            edges: edges
-                        }
-                    };
+                    const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+                    console.log(pipeline_json)
                     await ApiService(
                         "8011",
                         "patch",
@@ -143,10 +192,10 @@ const BuildPlayGround: React.FC = () => {
         }, autoSaveInterval);
 
         return () => clearInterval(intervalId);
-    }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval]);
+    }, [nodes, edges, id, dispatch, saveStatus.hasUnsavedChanges, autoSaveInterval, pipelineDtl]);
 
     const onError = useCallback((id: string) => {
-        console.error('Flow Error:', id);
+        // console.log('Flow Error:', id);
     }, []);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
@@ -229,6 +278,7 @@ const BuildPlayGround: React.FC = () => {
     const handleRunClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         const allNodes = reactFlowInstance.getNodes();
+        console.log(allNodes)
         const sourceNodes = allNodes.filter(node =>
             node.data.label.toLowerCase().includes("source") || node.data.source
         );
@@ -240,6 +290,7 @@ const BuildPlayGround: React.FC = () => {
             name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
             source_type: "File",
             file_name: `${node.data.source?.file_path_prefix || "examples"}/${node.data.source?.file_name || "NaN"}`,
+            data_src_id: node.data.source?.data_src_id || "NaN",
             connection: {
                 name: node.data.source?.connection_name || "local_connection",
                 connection_type: (node.data.source?.connection_type || "local").charAt(0).toUpperCase() +
@@ -379,7 +430,10 @@ const BuildPlayGround: React.FC = () => {
             transformations
         };
 
+        console.log(nodes);
+        console.log(edges)
         console.log('Pipeline Configuration:', pipelineConfig);
+
         setSelectedFormState(pipelineConfig);
         // setRunDialogOpen(true);
         return pipelineConfig;
@@ -403,11 +457,20 @@ const BuildPlayGround: React.FC = () => {
             const moduleSchema = schemaArray.find((schema: any) => schema.title === moduleName);
 
             if (moduleSchema) {
-                setSelectedSchema({ ...moduleSchema, nodeId: targetNodeId });
+                // Find the corresponding form state based on node type and ID
+                const existingFormState = formStates[targetNodeId] ||
+                    Object.entries(formStates).find(([key]) =>
+                        key.toLowerCase().includes(moduleName.toLowerCase()))?.[1];
+
+                setSelectedSchema({
+                    ...moduleSchema,
+                    nodeId: targetNodeId,
+                    initialValues: existingFormState // Pass the existing form state
+                });
                 setIsFormOpen(true);
             }
         }
-    }, [nodes]);
+    }, [nodes, formStates]);
 
 
 
@@ -517,6 +580,7 @@ const BuildPlayGround: React.FC = () => {
         custom: (props: any) => (
             <CustomNode
                 {...props}
+                pipelineDtl={pipelineDtl}
                 setNodes={setNodes}
                 setSelectedSchema={setSelectedSchema}
                 setFormStates={setFormStates}
@@ -531,7 +595,7 @@ const BuildPlayGround: React.FC = () => {
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
-        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes, handleSourceUpdate]);
+        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodes, handleSourceUpdate, pipelineDtl]);
 
 
 
@@ -561,7 +625,7 @@ const BuildPlayGround: React.FC = () => {
             const pipelineConfig = handleRunClick(new Event('click') as any);
 
             const params = new URLSearchParams({
-                pipeline_name: 'sample',
+                pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
                 pipeline_json: JSON.stringify(pipelineConfig), // Use the actual config object
                 mode: 'DEBUG',
             });
@@ -586,7 +650,7 @@ const BuildPlayGround: React.FC = () => {
                 "get",
                 `/pipeline/debug/get_transformation_count`,
                 null,
-                { pipeline_name: 'sample' }
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
             );
 
             if (countsResponse.error) {
@@ -602,19 +666,22 @@ const BuildPlayGround: React.FC = () => {
     }, [handleRunClick, debuggedNodesList]);
 
     const handleStop = useCallback(async () => {
-        const response = await ApiService(
-            "8011",
-            "post",
-            `/pipeline/debug/stop_pipeline`,
-            null, { pipeline_name: 'sample' }
-        );
-        console.log(response)
-        if (response.message) {
-            setIsPipelineRunning(false);
-            console.log('Stop pipeline clicked');
-        }
+        try {
+            const response = await ApiService(
+                "8011",
+                "post",
+                `/pipeline/debug/stop_pipeline`,
+                null,
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
+            );
 
-    }, []);
+            if (response.message) {
+                setIsPipelineRunning(false);
+            }
+        } catch (error) {
+            console.error('Error stopping pipeline:', error);
+        }
+    }, [pipelineDtl?.pipeline_name]);
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
@@ -623,7 +690,7 @@ const BuildPlayGround: React.FC = () => {
                 "post",
                 `/pipeline/run-next-checkpoint`,
                 null,
-                { pipeline_name: 'sample' }
+                { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
             );
 
             // Only proceed if first API call was successful
@@ -633,7 +700,7 @@ const BuildPlayGround: React.FC = () => {
                     "get",
                     `/pipeline/debug/get_transformation_count`,
                     null,
-                    { pipeline_name: 'sample' }
+                    { pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}` }
                 );
 
                 if (countsResponse.error) {
@@ -654,7 +721,7 @@ const BuildPlayGround: React.FC = () => {
 
     const edgeTypes = useMemo(() => ({
         default: (props: any) => (
-            <CustomEdge {...props} transformationCounts={transformationCounts} />
+            <CustomEdge {...props} transformationCounts={transformationCounts} pipelineDtl={pipelineDtl} />
         )
     }), [transformationCounts]);
 
@@ -745,13 +812,8 @@ const BuildPlayGround: React.FC = () => {
     const handleLeavePage = useCallback(async () => {
         try {
             dispatch(setSaving());
-            const pipeline_json = {
-                pipeline_json: {
-                    nodes: nodes,
-                    edges: edges
-                }
-            };
-            await ApiService("8011", "patch", `/pipeline/${id}`, pipeline_json);
+            const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+            await ApiService("8011", "patch", `/pipeline/${id}`, { pipeline_json: pipeline_json });
             dispatch(setSaved());
             dispatch(setUnsavedChanges());
             setShowLeavePrompt(false);
@@ -768,19 +830,44 @@ const BuildPlayGround: React.FC = () => {
 
     const getTransformationName = (moduleName: string): string => {
         const lowerModuleName = moduleName.toLowerCase();
-        switch (lowerModuleName) {
-            case 'joiner':
-                return 'join_transformation';
-            case 'schematransformation':
-                return 'schema_transformation';
-            case 'sorter':
-                return 'sort_transformation';
-            case 'aggregator':
-                return 'aggregate_transformation';
-            default:
-                return `${lowerModuleName}_transformation`;
-        }
+        return `${lowerModuleName}`;
     };
+
+    // Add this function to fetch source columns
+    const fetchSourceColumns = useCallback(async (nodes: any[]) => {
+        try {
+            const sourceNodes = nodes.filter(node =>
+                node.data.label.toLowerCase().includes("source") || node.data.source
+            );
+
+            const columnsPromises = sourceNodes.map(async (node) => {
+                const dataSrcId = node.data.source?.data_src_id;
+                if (!dataSrcId) return [];
+
+                const response = await ApiService(
+                    "8011",
+                    "get",
+                    `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+                    null
+                );
+
+                return response[0]?.layout_fields?.map((field: any) => ({
+                    name: field.lyt_fld_name,
+                    dataType: field.lyt_fld_data_type_cd
+                })) || [];
+            });
+
+            const allColumns = (await Promise.all(columnsPromises)).flat();
+            console.log('Fetched columns:', allColumns);
+            setSourceColumns(allColumns);
+        } catch (error) {
+            console.error('Error fetching columns:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSourceColumns(nodes);
+    }, [nodes, fetchSourceColumns]);
 
     return (
         <div>
@@ -853,32 +940,24 @@ const BuildPlayGround: React.FC = () => {
                     open={isFormOpen}
                     onClose={handleDialogClose}
                     maxWidth={false}
+                    BackdropProps={{
+                        sx: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }}
                 >
                     <DialogContent sx={{ width: '1000px' }}>
-                        {selectedSchema && (
-                            <CreateFormFormik
-                                schema={selectedSchema}
-                                onSubmit={handleFormSubmit}
-                                initialValues={formStates[selectedSchema.nodeId]}
-                            />
-                        )}
+                        <CreateFormFormik
+                            schema={selectedSchema}
+                            onSubmit={handleFormSubmit}
+                            initialValues={formStates[selectedSchema?.nodeId]}
+                            nodes={nodes}
+                            sourceColumns={sourceColumns}
+                        />
                     </DialogContent>
                 </Dialog>
 
-                <Dialog
-                    open={runDialogOpen}
-                    onClose={() => setRunDialogOpen(false)}
-                    maxWidth={false}
-                >
-                    <DialogContent sx={{ width: '800px' }}>
-                        <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">
-                            {JSON.stringify(selectedFormState, null, 2)}
-                        </pre>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button sx={{ backgroundColor: '#000', color: 'white', textTransform: 'none' }} onClick={() => setRunDialogOpen(false)}>Execute</Button>
-                    </DialogActions>
-                </Dialog>
+
 
                 <Dialog
                     open={showLeavePrompt}

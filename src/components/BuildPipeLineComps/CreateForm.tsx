@@ -204,39 +204,39 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   // Function to handle expression field click
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    try {
-      const schemaString = sourceColumns
-        .map(column =>
-          `${column.name}: ${column.dataType}`
-        )
-        .join(',');
-      const response = await ApiService(
-        "8090",
-        "post",
-        "/api/v1/pipeline_agent/generate",
-        {
-          operation_type: "spark_expression",
-          params: {
-            schema: schemaString,
-            target_column: targetColumn
-          },
-          thread_id: "spark_123"
-        },
-        null,
-        {},
-        false
-      );
+    // try {
+    //   const schemaString = sourceColumns
+    //     .map(column =>
+    //       `${column.name}: ${column.dataType}`
+    //     )
+    //     .join(',');
+    //   const response = await ApiService(
+    //     "8090",
+    //     "post",
+    //     "/api/v1/pipeline_agent/generate",
+    //     {
+    //       operation_type: "spark_expression",
+    //       params: {
+    //         schema: schemaString,
+    //         target_column: targetColumn
+    //       },
+    //       thread_id: "spark_123"
+    //     },
+    //     null,
+    //     {},
+    //     false
+    //   );
 
-      if (response?.result) {
-        const parsedResult = JSON.parse(response.result);
-        const expression = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+    //   if (response?.result) {
+    //     const parsedResult = JSON.parse(response.result);
+    //     const expression = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
 
-        setFieldValue(fieldName, expression);
-      }
-    } catch (error) {
-      console.error('Error generating expression:', error);
-      setFieldValue(fieldName, '');
-    }
+    //     setFieldValue(fieldName, expression);
+    //   }
+    // } catch (error) {
+    //   console.error('Error generating expression:', error);
+    //   setFieldValue(fieldName, '');
+    // }
   }, [sourceColumns]);
 
   return (

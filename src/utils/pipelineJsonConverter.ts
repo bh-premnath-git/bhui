@@ -63,62 +63,37 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             case 'Filter':
                 return {
                     ...baseConfig,
-                    condition: node.data.transformationData?.condition || "age >= 18" // Default or from data
+                    condition: node.data.transformationData?.condition // Default or from data
                 };
 
             case 'Joiner':
                 return {
                     ...baseConfig,
-                    conditions: node.data.transformationData?.conditions || [{
-                        join_input: "read_lookup_data",
-                        join_condition: "read_input_data.id = read_lookup_data.id",
-                        join_type: "left"
-                    }],
-                    expressions: node.data.transformationData?.expressions || [{
-                        target_column: "full_name",
-                        expression: "concat(read_input_data.name, ' ', read_input_data.city)"
-                    }],
+                    conditions: node.data.transformationData?.conditions ,
+                    expressions: node.data.transformationData?.expressions ,
                     advanced: {
-                        hints: node.data.transformationData?.hints || [{
-                            join_input: "read_input_data",
-                            hint_type: "broadcast"
-                        }]
+                        hints: node.data.transformationData?.hints 
                     }
                 };
 
             case 'SchemaTransformation':
                 return {
                     ...baseConfig,
-                    derived_fields: node.data.transformationData?.derived_fields || [{
-                        name: "full_address",
-                        expression: "concat(address, ' ', city, ' ', state, ' ', zip)"
-                    }, {
-                        name: "is_adult",
-                        expression: "case when age >= 18 then 'Yes' else 'No' end"
-                    }]
+                    derived_fields: node.data.transformationData?.derived_fields
                 };
 
             case 'Sorter':
                 return {
                     ...baseConfig,
-                    sort_columns: node.data.transformationData?.sort_columns || [{
-                        column: "city",
-                        order: "asc"
-                    }]
+                    sort_columns: node.data.transformationData?.sort_columns 
                 };
 
             case 'Aggregator':
                 return {
                     ...baseConfig,
-                    group_by: node.data.transformationData?.group_by || ["city"],
-                    aggregate: node.data.transformationData?.aggregate || [{
-                        expression: "avg(age)",
-                        target_column: "average_age"
-                    }],
-                    pivot: node.data.transformationData?.pivot || [{
-                        pivot_column: "city",
-                        pivot_values: ["New York", "Los Angeles", "Chicago"]
-                    }]
+                    group_by: node.data.transformationData?.group_by ,
+                    aggregate: node.data.transformationData?.aggregate ,
+                    pivot: node.data.transformationData?.pivot 
                 };
 
             default:

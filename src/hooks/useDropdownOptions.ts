@@ -28,7 +28,6 @@ export const useDropdownOptions = (endpoint: string, id: string | null) => {
                 const path = urlParts.slice(0, -1).join('/');
                 const connections = urlParts[urlParts.length - 1];
 
-                // Construct the URL conditionally based on the presence of `id`
                 let url = '';
                 if (id && path !== 'pipeline') {
                     url = `${path}/${id}/${connections}`;
@@ -37,13 +36,11 @@ export const useDropdownOptions = (endpoint: string, id: string | null) => {
                     url = `${path}/${connections}/`;
                     data = await ApiService("8011", "get", url);
 
-                    // Map the result to extract pipeline_name
                     data = Array.isArray(data)
                         ? data.map((item: any) => item.pipeline_name || '')
                         : [];
                 }
 
-                // Set the mapped options
                 setOptions(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching options:', error);

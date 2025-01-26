@@ -61,24 +61,26 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
               join_condition: '',
               join_type: 'left'
             }],
-            expressions: initialValues.expressions ? initialValues.expressions.map((expr: any) => ({
-              name: expr.target_column || '',
-              expression: expr.expression || ''
-            })) : [{
+            expressions: initialValues.expressions?.map((expr: any) => ({
+              name: expr?.target_column || '',
+              expression: expr?.expression || ''
+            })) || [{
               name: '',
               expression: ''
             }],
-            advanced: initialValues.advanced.hints || [{
-              join_input: '',
-              hint_type: 'broadcast'
-            }]
+            advanced: {
+              hints: initialValues.advanced?.hints || [{
+                join_input: '',
+                hint_type: 'broadcast'
+              }]
+            }
           };
 
         case 'SchemaTransformation':
           return {
             derived_fields: initialValues.derived_fields?.map((field: any) => ({
-              name: field.name,
-              expression: field.expression
+              name: field?.name || '',
+              expression: field?.expression || ''
             })) || [{
               name: '',
               expression: ''
@@ -88,8 +90,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         case 'Sorter':
           return {
             sort_columns: initialValues.sort_columns?.map((col: any) => ({
-              column: col.column,
-              order: col.order
+              column: col?.column || '',
+              order: col?.order || 'asc'
             })) || [{
               column: '',
               order: 'asc'
@@ -98,19 +100,19 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
         case 'Aggregator':
           return {
-            group_by: initialValues.group_by.map((col: any) => ({
-              group_by: col
+            group_by: initialValues.group_by?.map((col: any) => ({
+              group_by: col || ''
             })) || [{ group_by: '' }],
             aggregations: initialValues.aggregate?.map((agg: any) => ({
-              target_column: agg.target_column,
-              expression: agg.expression
+              target_column: agg?.target_column || '',
+              expression: agg?.expression || ''
             })) || [{
               target_column: '',
               expression: ''
             }],
             pivot_by: initialValues.pivot?.map((piv: any) => ({
-              pivot_column: piv.pivot_column,
-              pivot_values: Array.isArray(piv.pivot_values) ? piv.pivot_values : []
+              pivot_column: piv?.pivot_column || '',
+              pivot_values: Array.isArray(piv?.pivot_values) ? piv.pivot_values : []
             })) || [{
               pivot_column: '',
               pivot_values: []
@@ -276,14 +278,19 @@ const renderArrayFields = (
   onExpressionClick: (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => void,
   sourceColumns: SourceColumn[]
 ) => {
-  console.log(arraySchema);
+  // Add null check for arraySchema and its items
+  if (!arraySchema?.items) {
+    console.warn(`Array schema or items is undefined for section: ${section}`);
+    return null;
+  }
+
   return (
     <FieldArray
       name={section}
       render={arrayHelpers => (
         <Box>
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            {Object.entries(arraySchema.items).map(([fieldKey, fieldSchema]: [string, any]) => (
+            {Object.entries(arraySchema.items || {}).map(([fieldKey, fieldSchema]: [string, any]) => (
               <Box key={fieldKey} sx={{ flex: 1 }}>
                 <Box sx={{ mb: 1, fontWeight: 'bold' }}>
                   {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
@@ -297,31 +304,31 @@ const renderArrayFields = (
 
           {safeArray(values[section]).map((field: any, index: number) => (
             <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-              {Object.entries(arraySchema.items).map(([fieldKey, fieldSchema]: [string, any]) => {
-                const defaultValue = fieldSchema.enum ? fieldSchema.enum[0] :
-                  fieldSchema.type === 'boolean' ? false :
-                    fieldSchema.type === 'number' ? 0 : '';
+              {Object.entries(arraySchema.items || {}).map(([fieldKey, fieldSchema]: [string, any]) => {
+                const defaultValue = fieldSchema?.enum ? fieldSchema.enum[0] :
+                  fieldSchema?.type === 'boolean' ? false :
+                    fieldSchema?.type === 'number' ? 0 : '';
 
-                const isExpression = fieldSchema.type === 'expression' ||
-                  (fieldSchema['ui-hint'] === 'expression') ||
+                const isExpression = fieldSchema?.type === 'expression' ||
+                  (fieldSchema?.['ui-hint'] === 'expression') ||
                   (section === 'expressions' && fieldKey === 'expression') ||
                   (fieldKey === 'join_condition');
 
                 return (
-                  <Field name={`${section}.${index}.${fieldKey}`}>
+                  <Field name={`${section}.${index}.${fieldKey}`} key={fieldKey}>
                     {({ form }) => (
-                      <Box key={fieldKey} sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 1 }}>
                         <FormField
                           fieldSchema={fieldSchema}
                           name={`${section}.${index}.${fieldKey}`}
                           fieldKey={fieldKey}
-                          enumValues={fieldSchema.enum}
-                          value={field[fieldKey] ?? defaultValue}
+                          enumValues={fieldSchema?.enum}
+                          value={field?.[fieldKey] ?? defaultValue}
                           isExpression={isExpression}
                           sourceColumns={sourceColumns}
                           onExpressionClick={() => {
                             if (isExpression) {
-                              onExpressionClick(field.name || fieldKey, form.setFieldValue, `${section}.${index}.${fieldKey}`);
+                              onExpressionClick(field?.name || fieldKey, form.setFieldValue, `${section}.${index}.${fieldKey}`);
                             }
                           }}
                         />
@@ -341,12 +348,12 @@ const renderArrayFields = (
           ))}
           <Button
             onClick={() => {
-              const emptyItem = Object.keys(arraySchema.items).reduce(
-                (acc, key) => ({
+              const emptyItem = Object.entries(arraySchema.items || {}).reduce(
+                (acc, [key, value]: [string, any]) => ({
                   ...acc,
-                  [key]: arraySchema.items[key].enum ?
-                    (arraySchema.items[key].default || arraySchema.items[key].enum[0]) :
-                    arraySchema.items[key].type === 'boolean' ? false : ''
+                  [key]: value?.enum ?
+                    (value.default || value.enum[0]) :
+                    value?.type === 'boolean' ? false : ''
                 }),
                 {}
               );

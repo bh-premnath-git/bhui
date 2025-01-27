@@ -19,6 +19,7 @@ import { FlexibleTable } from '@/components/Table';
 import About from '@/components/Catalog/About';
 import { ApiService } from '@/services/apiServices';
 import { Plus, X } from 'lucide-react';
+import { CATALOG_API_PORT, AGENT_PORT } from '@/configration/environment';
 
 interface FieldData {
   field_id: number;
@@ -253,7 +254,7 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { codes_dtl } = await ApiService('8011', 'get', '/codes_hdr/13');
+        const { codes_dtl } = await ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/13');
         setTypes(codes_dtl);
         const fetchedFields = await dataSourceLayout();
         setFields(fetchedFields);
@@ -292,7 +293,7 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
 
     try {
       const dresponse = await ApiService(
-        '8090',
+        AGENT_PORT,
         'post',
         '/pipeline_agent/generate',
         body
@@ -329,7 +330,7 @@ const CatalogsBody: React.FC<CatalogsBodyProps> = ({ selectedSource }) => {
     setSaveStatus(null);
     try {
       await ApiService(
-        '8011',
+        CATALOG_API_PORT,
         'patch',
         `/layout_fields/descriptions/${layoutList[0].data_src_lyt_id}`,
         { descriptions }

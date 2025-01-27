@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, Terminal, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/redux/hooks';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 interface DataPreviewModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       setIsLoading(true);
       setError(null);
       
-      const result = await ApiService('8011', 'get', `/bh_airflow/get_dag_task_id/`, null, dagEunID);
+      const result = await ApiService(CATALOG_API_PORT, 'get', `/bh_airflow/get_dag_task_id/`, null, dagEunID);
       
       const newTasks = Array.from(result?.task_instances ?? []).map((item: any) => ({
         taskid: item.task_id,
@@ -49,7 +50,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       if (newTasks.length > 0) {
         const taskId = selectedTask || newTasks[0].taskid;
         const logResult = await ApiService(
-          '8011', 
+          CATALOG_API_PORT, 
           'get', 
           `/bh_airflow/get_dag_logs/`, 
           null, 
@@ -80,7 +81,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       setIsLoading(true);
       try {
         const logResult = await ApiService(
-          '8011', 
+          CATALOG_API_PORT, 
           'get', 
           `/bh_airflow/get_dag_logs/`, 
           null, 

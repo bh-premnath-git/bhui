@@ -5,6 +5,7 @@ import Paper from '@mui/material/Paper';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { JSXElementConstructor, ReactElement, ReactNode, useEffect, useState } from 'react';
 import {ApiService} from '@/services/apiServices';
+import { MONITOR_PORT } from '@/configration/environment';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -59,7 +60,7 @@ function AlertHeader() {
         const params = { "skip": 0, 'limit': 3 };
         try {
             setIsLoading(true);
-            const result = await ApiService('8004', 'post', '/monitor_template_data/count', params);
+            const result = await ApiService(MONITOR_PORT, 'post', '/monitor_template_data/count', params);
             if (result && result.length > 0 && result[0]?.get_monitor_template_data) {
                 setTemplateCountList(result[0]?.get_monitor_template_data);
             }

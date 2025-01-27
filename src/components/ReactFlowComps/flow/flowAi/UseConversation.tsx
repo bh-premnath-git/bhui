@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ConversationEntry } from './types'
 import { ApiService } from '@/services/apiServices'
 import { useFlow } from '@/contexts/FlowContext'
+import { AGENT_PORT } from '@/configration/environment'
 
 export const useConversation = () => {
   const [conversation, setConversation] = useState<ConversationEntry[]>([])
@@ -84,7 +85,7 @@ export const useConversation = () => {
         thread_id: `flow_${selectedFlowId}`,
       }
 
-      const responseData = await ApiService('8090', 'post', '/flow_agent/create_flow', body)
+      const responseData = await ApiService(AGENT_PORT, 'post', '/flow_agent/create_flow', body)
       const extractedData = JSON.parse(extractResponseMessage(responseData))
 
       setConversation(prev =>
@@ -112,7 +113,7 @@ export const useConversation = () => {
   const deleteConversation = async () => {
     setIsLoading(true)
     try {
-      await ApiService('8090', 'delete', `/flow_agent/delete_conversation/flow_${selectedFlowId}`)
+      await ApiService(AGENT_PORT, 'delete', `/flow_agent/delete_conversation/flow_${selectedFlowId}`)
       setConversation([])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'

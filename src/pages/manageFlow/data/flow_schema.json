@@ -724,6 +724,19 @@
                   "group_key": "property"
                 }
               },
+              "monitor_steps": {
+                "type": "boolean",
+                "description": "Enable step monitoring (handled by backend)",
+                "ui_properties": {
+                  "property_name": "Monitor Steps",
+                  "property_key": "monitor_steps",
+                  "ui_type": "checkbox",
+                  "order": 5,
+                  "mandatory": false,
+                  "default": true,
+                  "group_key": "settings"
+                }
+              },
               "poke_interval": {
                 "type": "integer",
                 "description": "Interval for polling the step status",
@@ -750,14 +763,15 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["EMRStepOperator"],
-                "description": "Operator for submitting Spark jobs to EMR",
+                "enum": [
+                  "EmrAddStepsOperator"
+                ],
+                "description": "Submit Jobs to the EMR cluster",
                 "ui_properties": {
                   "module_name": "AWS",
                   "color": "#0FBAEF",
-                  "icon": "/assets/flow/EMRStep.svg"
-                },
-                "default": "EMRStepOperator"
+                  "icon": "/assets/flow/EMR.svg"
+                }
               },
               "task_id": {
                 "type": "string",
@@ -770,21 +784,7 @@
                   "mandatory": true,
                   "group_key": "property"
                 },
-                "default": "submit_spark_job"
-              },
-              "pipeline_name": {
-                "type": "string",
-                "description": "Pipeline associated with the Spark job",
-                "ui_properties": {
-                  "property_name": "Pipeline Name",
-                  "property_key": "pipeline_name",
-                  "ui_type": "dropdown",
-                  "order": 2,
-                  "mandatory": true,
-                  "endpoint": "{catalog_base_url}/api/v1/pipeline/list",
-                  "group_key": "property"
-                },
-                "default": "options[0].value"
+                "default": "create_emr_cluster"
               },
               "aws_conn_id": {
                 "type": "string",
@@ -793,12 +793,27 @@
                   "property_name": "AWS Connection ID",
                   "property_key": "aws_conn_id",
                   "ui_type": "dropdown",
-                  "order": 3,
-                  "mandatory": false,
+                  "order": 2,
+                  "mandatory": true,
                   "endpoint": "{catalog_base_url}/api/v1/environment/connections/{env_id}/aws_connections",
+                  "default": "options[0].value",
                   "group_key": "property"
                 },
                 "default": "aws_default"
+              },
+              "pipeline_name": {
+                "type": "string",
+                "description": "The pipeline name",
+                "ui_properties": {
+                  "property_name": "Pipeline Name",
+                  "property_key": "pipeline_name",
+                  "ui_type": "dropdown",
+                  "order": 4,
+                  "mandatory": true,
+                  "default": "options[0].value",
+                  "endpoint": "{catalog_base_url}/api/v1/pipeline/list",
+                  "group_key": "property"
+                }
               },
               "monitor_steps": {
                 "type": "boolean",
@@ -807,12 +822,11 @@
                   "property_name": "Monitor Steps",
                   "property_key": "monitor_steps",
                   "ui_type": "checkbox",
-                  "order": 4,
+                  "order": 5,
                   "mandatory": false,
                   "default": true,
                   "group_key": "settings"
-                },
-                "default": true
+                }
               },
               "poke_interval": {
                 "type": "integer",
@@ -821,16 +835,20 @@
                   "property_name": "Poke Interval",
                   "property_key": "poke_interval",
                   "ui_type": "number",
-                  "order": 5,
+                  "order": 6,
                   "mandatory": false,
+                  "default": 30,
                   "group_key": "settings"
-                },
-                "default": 30
+                }
               }
             },
-            "required": ["type", "task_id", "pipeline_name"]
-          },  
-
+            "required": [
+              "type",
+              "task_id",
+              "aws_conn_id",
+              "pipeline_name"
+            ]
+          },
           {
             "type": "object",
             "properties": {

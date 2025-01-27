@@ -13,6 +13,7 @@ import { updateFlowDefinition, setDagRunId } from '@/redux/FlowSlice';
 import { LocalStorageService } from '@/services/localStorageServices';
 import { useFlow } from '@/contexts/FlowContext';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 interface PlaybackButtonProps {
   selectedFlowId: string;
@@ -95,7 +96,7 @@ export function PlaybackButton({
       abortControllerRef.current = new AbortController();
 
       const result = await ApiService(
-        '8011',
+        CATALOG_API_PORT,
         'post',
         '/bh_airflow/trigger_dag',
         null,

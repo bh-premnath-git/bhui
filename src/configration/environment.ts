@@ -1,0 +1,7 @@
+const CATALOG_API_PORT = import.meta.env.VITE_CATALOG_API_PORT;
+const AGENT_PORT = import.meta.env.VITE_AGENT_PORT;
+const AUDIT_PORT = import.meta.env.VITE_AUDIT_PORT;
+const MONITOR_PORT = import.meta.env.VITE_MONITOR_PORT;
+const KEYCLOAK_API_PORT = import.meta.env.VITE_KEYCLOAK_API_PORT;
+
+export { CATALOG_API_PORT, AGENT_PORT, AUDIT_PORT, MONITOR_PORT, KEYCLOAK_API_PORT };

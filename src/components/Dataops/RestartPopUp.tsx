@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import { Typography } from '@mui/material';
 import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '@/components/teast-service';
 import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
+import { AUDIT_PORT } from '@/configration/environment';
 
 interface RestartPopUpProps {
     open: boolean;
@@ -65,7 +63,7 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open, onClose, jobDetail })
         console.log('Body:', body);
         try {
             const url = '/event_details';
-            const result = await ApiService('8003', 'post', url, body);
+            const result = await ApiService(AUDIT_PORT, 'post', url, body);
             console.log('Response:', result);
             if (result) {
                 showToast('Restart request has been submitted successfully', { vertical: 'top', horizontal: 'center' });
@@ -102,7 +100,7 @@ const RestartPopUp: React.FC<RestartPopUpProps> = ({ open, onClose, jobDetail })
         console.log(data)
         try {
             const url = `/job_details/${jobDetail.job_id}`;
-            const result = await ApiService('8003', 'put', url, data);
+            const result = await ApiService(AUDIT_PORT, 'put', url, data);
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }

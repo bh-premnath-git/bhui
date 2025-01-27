@@ -1,4 +1,3 @@
-import TextField from '@mui/material/TextField';
 import { Button, MenuItem, Select, Typography, Stack } from '@mui/material';
 import * as yup from 'yup';
 import { Formik, Form, FieldArray, Field, ErrorMessage } from 'formik';
@@ -7,11 +6,12 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { color } from 'framer-motion';
 import {ApiService} from '@/services/apiServices';
 import useToast from '@/components/teast-service';
 import CustomField from '@/common/CustomField';
 import { Label } from '@/components/ui/label';
+import { CATALOG_API_PORT } from '@/configration/environment';
+
 
 const validationSchema = yup.object().shape({
 	connections: yup.array().of(
@@ -46,7 +46,7 @@ function ConnectionStep(props: any) {
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
-				const result = await ApiService('8011', 'get', '/codes_hdr/10');
+				const result = await ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/10');
 				setTragetPlatformList(result.codes_dtl);
 			} catch (error) {
 				console.error('Error fetching data:', error);
@@ -58,7 +58,7 @@ function ConnectionStep(props: any) {
 		if (props.data) {
 			const fetchConnection = async () => {
 				try {
-					const result = await ApiService('8011', 'get', `/customer/${props.data}`);
+					const result = await ApiService(CATALOG_API_PORT, 'get', `/customer/${props.data}`);
 					if (result.connection_dtl?.length) {
 						setIsUpdate(true);
 						setInitialValue({ connections: result.connection_dtl });
@@ -73,7 +73,7 @@ function ConnectionStep(props: any) {
 
 	const fetchConnectionField = async (id: any, index: any) => {
 		try {
-			const result = await ApiService('8011', 'get', `/codes_hdr/${id}`);
+			const result = await ApiService(CATALOG_API_PORT, 'get', `/codes_hdr/${id}`);
 			setDynamicFields((prevFields: any) => ({
 				...prevFields,
 				[index]: result.codes_dtl
@@ -89,7 +89,7 @@ function ConnectionStep(props: any) {
 			"aws_secret_access_key": values.connections[index]?.connection_details?.secret_access_key,
 		}
 		try {
-			const result = await ApiService('8011', 'post', `/aws/test_connection`, body);
+			const result = await ApiService(CATALOG_API_PORT, 'post', `/aws/test_connection`, body);
 			if (result.status) {
 				setIsTestConnection(true)
 				showToast('Successfully able to connect', { color: '#00b060' });
@@ -110,9 +110,9 @@ function ConnectionStep(props: any) {
 			for (let connection of values.connections) {
 				connection.customer_id = props.data;
 				if (isUpdate && connection.connection_dtl_id) {
-					await ApiService('8011', 'put', `/customer/connection_dtl/${connection.connection_dtl_id}`, connection);
+					await ApiService(CATALOG_API_PORT, 'put', `/customer/connection_dtl/${connection.connection_dtl_id}`, connection);
 				} else {
-					await ApiService('8011', 'post', `/customer/connection_dtl`, connection);
+					await ApiService(CATALOG_API_PORT, 'post', `/customer/connection_dtl`, connection);
 				}
 			}
 			onNext(values);

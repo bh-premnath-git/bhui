@@ -3,16 +3,13 @@ import { Node } from './types/formTypes';
 import { X } from 'lucide-react';
 import { Menu, MenuItem } from '@mui/material';
 import { Button } from '../ui/button';
-import Dialog from '@mui/material/Dialog';
-// import CustomForm from './SourceForm';
-import schema from './json/Source.json';
-// import { SourceForm } from './SourceForm';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { ApiService } from '../../services/apiServices';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setUnsavedChanges } from '@/redux/features/autoSaveSlice';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any) => {
     // Track the currently opened dropdown
@@ -32,7 +29,6 @@ const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any)
     const handleMoreClose = () => {
         setAnchorEl(null);
     };
-    const [formData, setFormData] = useState<Record<string, any>>({});
     const [dataSources, setDataSources] = useState<any[]>([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -48,7 +44,7 @@ const NodeDropList = ({ filteredNodes, handleNodeClick, addNodeToHistory }: any)
         try {
             setLoading(true);
             const response = await ApiService(
-                '8011',
+                CATALOG_API_PORT,
                 'get',
                 '/data_source/list/',
                 null,

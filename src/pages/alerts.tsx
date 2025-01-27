@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from '@mui/material';
 import { ApiService } from '@/services/apiServices';
-import AlertHeader from '@/components/Alert/AlertHeader';
-import AlertTableHead from '@/components/Alert/AlertTableHead';
 import AlertTableDtl from '@/components/Alert/AlertTableBody';
+import { CATALOG_API_PORT } from '@/configration/environment';
+import { MONITOR_PORT } from '@/configration/environment';
 
 function Alerts() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ function Alerts() {
   const fetchJobDetails = async (params = {}) => {
     try {
       setIsLoading(true);
-      const result = await ApiService('8004', 'get', '/alert/search/alerts', null, params);
+      const result = await ApiService(MONITOR_PORT, 'get', '/alert/search/alerts', null, params);
       setJobDetailList(result);
     } catch (error) {
       setError(error.message);
@@ -31,7 +31,7 @@ function Alerts() {
 
   const fetchData = async () => {
     try {
-      const result = await ApiService('8011', 'get', '/codes_hdr/29');
+      const result = await ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/29');
       setStatusList(result.codes_dtl);
       setFilterOption(prevState => ({ ...prevState, statusList: result.codes_dtl }));
     } catch (error) {
@@ -42,12 +42,6 @@ function Alerts() {
   return (
     <Stack>
       <Stack className='container'>
-        {/* <AlertHeader />
-        <AlertTableHead 
-          filterOption={filterOption} 
-          status={statusList} 
-          fetchJobDetails={fetchJobDetails}
-        /> */}
         <AlertTableDtl 
           jobDetailList={jobDetailList} 
           loading={isLoading}

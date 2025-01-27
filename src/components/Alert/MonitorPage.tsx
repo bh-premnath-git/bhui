@@ -6,9 +6,7 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import { useNavigate, Link } from 'react-router-dom';
 import {ApiService} from '@/services/apiServices';
-
-
-
+import { MONITOR_PORT } from '@/configration/environment';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -34,7 +32,7 @@ function MonitorPage() {
     const fetchJobDetails = async () => {
         try {
             setIsLoading(true)
-            const result = await ApiService('8004', 'get', '/monitor_template_data/');
+            const result = await ApiService(MONITOR_PORT, 'get', '/monitor_template_data/');
             setjobDetailList(result)
             setIsLoading(false)
 

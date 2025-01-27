@@ -13,6 +13,7 @@ import { debounce } from 'lodash';
 import { createUserDeployment } from '@/redux/UserSlice';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 interface ErrorResponse {
     detail: string;
@@ -106,7 +107,7 @@ const AddUser = () => {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const projectsRes = await ApiService('8011', 'get', '/bh_project/search');
+                const projectsRes = await ApiService(CATALOG_API_PORT, 'get', '/bh_project/search');
                 const formattedProjects = projectsRes.map((proj: any) => ({
                     value: proj.bh_project_id.toString(),
                     label: proj.bh_project_name

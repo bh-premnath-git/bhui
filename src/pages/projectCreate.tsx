@@ -18,6 +18,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { encrypt_string } from '@/services/encryption';
 import ValidationComponent from '@/components/validation-component';
 import RequiredLabel from '@/components/RequiredFieldLabel';
+import { CATALOG_API_PORT } from '@/configration/environment';
+
 
 interface GithubProvider {
   id: string;
@@ -80,7 +82,7 @@ export default function ProjectCreationComponent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await ApiService('8011', 'get', '/codes_hdr/30');
+        const result = await ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/30');
         setGithubProviderList(result.codes_dtl);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -149,7 +151,7 @@ export default function ProjectCreationComponent() {
         init_vector: initVector,
       };
 
-      const result = await ApiService('8011', 'post', 'bh_project/validate-token/', body);
+      const result = await ApiService(CATALOG_API_PORT, 'post', 'bh_project/validate-token/', body);
       if (result.status >= 200 && result.status < 300) {
         setIsTokenValid('valid');
         showToast('Token Validated Successfully', { color: '#4caf50' });

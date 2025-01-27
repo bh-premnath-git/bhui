@@ -1,3 +1,4 @@
+import { CATALOG_API_PORT } from '@/configration/environment';
 import {ApiService} from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
@@ -25,7 +26,7 @@ export const getCustomerList: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/customer/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/customer/list/', null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -64,4 +65,3 @@ const CustomerSlice = createSlice({
 });
 
 export default CustomerSlice.reducer;
-// export const { setSelectedDataSource } = CustomerSlice.actions;

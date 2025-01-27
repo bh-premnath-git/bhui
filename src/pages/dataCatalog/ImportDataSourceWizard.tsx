@@ -52,6 +52,7 @@ import { Modal } from "@/components/ui/modal";
 import { Histogram } from "@/components/ui/Histogram";
 import { getCodesValue } from "@/redux/BuildPipeLineSlice";
 import { useAppDispatch } from "@/redux/hooks";
+import { CATALOG_API_PORT } from "@/configration/environment";
 
 const ROWS_PER_PAGE = 10;
 
@@ -137,7 +138,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
 
     const createDataSource = async (data: any) => {
         try {
-            return await ApiService('8011', 'post', '/data_source', data);
+            return await ApiService(CATALOG_API_PORT, 'post', '/data_source', data);
         } catch (error) {
             console.error("Error creating data source:", error);
             return null
@@ -146,7 +147,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
 
     const createDataSourceLayout = async (data: any) => {
         try {
-            return await ApiService('8011', 'post', '/data_source_layout', data);
+            return await ApiService(CATALOG_API_PORT, 'post', '/data_source_layout', data);
 
         } catch (error) {
             console.error("Error creating data source layout:", error);
@@ -156,7 +157,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
 
     const createLayoutFields = async (data: any) => {
         try {
-            return await ApiService('8011', 'post', '/layout_fields/bulk', data);
+            return await ApiService(CATALOG_API_PORT, 'post', '/layout_fields/bulk', data);
         } catch (error) {
             console.error("Error creating layout fields:", error);
             return null

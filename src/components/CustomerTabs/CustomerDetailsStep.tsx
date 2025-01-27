@@ -1,20 +1,14 @@
 import * as React from 'react';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import { Controller, useFormContext, useForm } from 'react-hook-form';
-
 import {
-	Typography,
 	Button, Stack,
 	Grid
 } from '@mui/material';
 import * as yup from 'yup';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form } from 'formik';
 import { useLocation } from 'react-router';
 import {ApiService} from '@/services/apiServices';
 import CustomField from '@/common/CustomField';
-
-
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 const schema = yup.object().shape({
 	relation_ship_owner: yup.string().required('Owner name is required'),
@@ -40,7 +34,7 @@ function CustomerDetailsStep(props: any) {
 		if (customerData) {
 			const fetchConnection = async () => {
 				try {
-					const result = await ApiService('8011', 'get', `/customer/${customerData.customer_id}`);
+					const result = await ApiService(CATALOG_API_PORT, 'get', `/customer/${customerData.customer_id}`);
 					if (result) {
 						setInitialValue(result)
 					}
@@ -62,7 +56,7 @@ function CustomerDetailsStep(props: any) {
 			customerData.technology_owner_email = values.technology_owner_email;
 			try {
 				const url = `/customer/${customerData.customer_id}`;
-				const result = await ApiService('8011', 'put', url, customerData);
+				const result = await ApiService(CATALOG_API_PORT, 'put', url, customerData);
 				onNext(result)
 			}
 			catch (error) {
@@ -71,7 +65,7 @@ function CustomerDetailsStep(props: any) {
 		} else {
 			try {
 				const url = '/customer';
-				const result = await ApiService('8011', 'post', url, values);
+				const result = await ApiService(CATALOG_API_PORT, 'post', url, values);
 				onNext(result)
 			}
 			catch (error) {

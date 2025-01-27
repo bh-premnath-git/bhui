@@ -1,19 +1,13 @@
-import InputAdornment from '@mui/material/InputAdornment';
 import {
-	FormControl, FormControlLabel, TextField, InputLabel, MenuItem, Radio,
-	RadioGroup, Select, Checkbox, FormGroup, Typography, Grid, Button, Stack
+	TextField, Checkbox, Typography, Grid, Button, Stack
 } from '@mui/material';
-import { Controller, useForm, useFormContext } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-// import { Button } from '@mui/base';
 import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
 import { COLORS } from '@/utils/constants';
-
-
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 
 const schema = yup.object().shape({
@@ -47,7 +41,7 @@ function AlertProfileStep(props: any) {
 		if (props.data) {
 			const fetchConnection = async () => {
 				try {
-					const result = await ApiService('8011', 'get', `/customer/${props.data}`);
+					const result = await ApiService(CATALOG_API_PORT, 'get', `/customer/${props.data}`);
 					setCustomerData(result)
 					if (result?.alert_setting) {
 						setInitialValue(result?.alert_setting)
@@ -64,7 +58,7 @@ function AlertProfileStep(props: any) {
 	const saveData = async (values: any, { setSubmitting }: any) => {
 		customerData.alert_setting = values;
 		try {
-			const result = await ApiService('8011', 'put', `/customer/${props.data}`, customerData);
+			const result = await ApiService(CATALOG_API_PORT, 'put', `/customer/${props.data}`, customerData);
 			onNext(result)
 		}
 		catch (error) {

@@ -4,26 +4,16 @@ import {
     Settings, 
     PenTool,
     GitBranch,
-    Bell,
     Package,
-    TableProperties,
     GitPullRequest,
     AlertCircle,
     Share2,
     Users,
-    Building2,
     FolderGit2,
     Settings2,
-    Sparkles
 } from "lucide-react";
 
 export const menuList = [
-    {
-        label: "BigHammer AI",
-        icon: <Sparkles size={20} />,
-        path: "/bighammer-ai",
-        // shortcut: "⌘B"
-    },
     {
         label: "Data Catalog",
         icon: <Database size={20} />,
@@ -77,11 +67,6 @@ export const menuList = [
                 label: "Manage Users", 
                 path: "/admin-console/users",
                 icon: <Users size={18} />,
-            },
-            { 
-                label: "Manage Customers", 
-                path: "/admin-console/customers",
-                icon: <Building2 size={18} />,
             },
             { 
                 label: "Manage Projects", 

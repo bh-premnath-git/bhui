@@ -1,21 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Autocomplete, Box, Button, FormControl, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, OutlinedInput, Select, Stack, TextField } from '@mui/material';
+import {Box, Button, FormControl, IconButton, MenuItem, Select, Stack } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { debounce } from 'lodash';
 import { styled, alpha } from '@mui/material/styles';
 import InputBase from '@mui/material/InputBase';
 import WebhookOutlinedIcon from '@mui/icons-material/WebhookOutlined';
-import SwapVertIcon from '@mui/icons-material/SwapVert';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
 import { motion } from 'framer-motion';
 import { Typography } from 'antd';
 import CloseIcon from '@mui/icons-material/Close';
 import { AiOutlineCheckCircle } from "react-icons/ai";
 import {ApiService} from '@/services/apiServices';
-
-
-
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
     color: 'inherit',
@@ -68,7 +63,6 @@ function CatalogHead(props: any) {
     const [selectedConsumer, setSelectedConsumer]: any = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [selectedTag, setSelectedTag] = useState({ data_src_id: '', data_src_name: '' });
-    console.log(props.dataSourceList)
     const status: any = [
         { 'id': 1, 'status': 'Active' },
         { 'id': 2, 'status': 'Inactive' }
@@ -79,11 +73,7 @@ function CatalogHead(props: any) {
         { 'id': 2, 'consumer': 'Consumer2' }
 
     ]
-    // const tagList = [
-    //     { 'id': 1, 'tagkey': 'key1', 'tagvalue': 'value1' },
-    //     { 'id': 2, 'tagkey': 'key2', 'tagvalue': 'value2' },
-
-    // ]
+    
     const handleChange = (value:any) => {
         setSelectedValue1(value);
     };
@@ -130,22 +120,16 @@ function CatalogHead(props: any) {
 
     const fetchProject = async () => {
         const params = { ...projects }
-        console.log(params)
-        console.log(projects)
-
         try {
-            const result = await ApiService('8011', 'get', '/bh_project/search', null, params);
+            const result = await ApiService(CATALOG_API_PORT, 'get', '/bh_project/search', null, params);
             console.log(result)
             var tempList: any = [];
             for (let i = 0; i < result.length; i++) {
                 var data = { value: result[i]?.bh_project_id, label: result[i]?.bh_project_name }
                 tempList.push(data);
             }
-            console.log(tempList)
             setProjects(tempList)
-            // if(!params.data_src_name){
-            // 	setSearchList(result)
-            // }
+            
         }
         catch (error) {
             console.error('Error fetching Status', error);
@@ -153,44 +137,13 @@ function CatalogHead(props: any) {
         }
     }
     useEffect(() => {
-
         fetchProject();
-        // fetchDataSourceTag()
-
     }, []);
-    // const fetchDataSourceTag = async () => {
-    //     const params = {}
-    //     try {
-    //         const result = await ApiService('8011', 'get', '/data_source/list/?offset=0&limit=10&order_desc=false', null, params);
-    //         setSelectedTag(result)
-    //         console.log(result)
-    //     }
-    //     catch (error) {
-    //         console.error('Error fetching Status', error);
-
-    //     }
-
-    //     }
-    // console.log(selectedTag)
-    // const handleSearch1 = (value, selectedRow) => {
-    //     setSelectedValue(value);
-    //     console.log(value)
-    //     setSelectedRow(selectedRow);
-    // };
-    // const handleSearchData = (value, selectedRow) => {
-    //     setSelectedTag(value);
-    //     console.log(value)
-    //     setSelectedRow(selectedRow);
-    // };
-
-    // const handleSearch = () => {
-    //     const selectedRow = projects.find(job => job.bh_project_name === selectedValue.bh_project_name);
-    //     handleSearch1(selectedValue, selectedRow); // Pass the selected value and row to the parent component
-    // };
+    
     const handleSearchDatasource = () => {
         console.log(selectedTag)
         const selectedRow = props.dataSourceList.find((data:any) => data.data_src_name === selectedTag.data_src_name);
-        props.onSearch(selectedTag, selectedRow); // Pass the selected value and row to the parent component
+        props.onSearch(selectedTag, selectedRow);
     };
     return (
         <>
@@ -315,8 +268,8 @@ function CatalogHead(props: any) {
                                 my: 2,
                                 backgroundColor: '#000',
                                 color: 'white',
-                                whiteSpace: 'nowrap',  // Ensure the text does not break into multiple lines
-                                textTransform: 'none', // Preserve the button text casing
+                                whiteSpace: 'nowrap',
+                                textTransform: 'none',
                             }}
 
                             variant="contained"

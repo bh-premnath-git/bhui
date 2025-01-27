@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import {ApiService} from "@/services/apiServices";
-import { update } from "lodash";
+import { CATALOG_API_PORT } from "@/configration/environment";
+
 
 export interface Environment {
   id: string;
@@ -72,7 +73,7 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
           }
         });
       
-      const response = await ApiService('8011', 'post', '/environment/environment', data, null, headers);
+      const response = await ApiService(CATALOG_API_PORT, 'post', '/environment/environment', data, null, headers);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -84,7 +85,7 @@ export const listEnvironments = createAsyncThunk<Environment[], ListParams, { re
   'environment/list',
   async (params:any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/environment/environment/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/environment/environment/list/', null, params);
       const transformed = response.map((item: any) => {
         return ({
           Environment_Id: item["bh_env_id"],
@@ -106,7 +107,7 @@ export const fetchEnvironmentData = createAsyncThunk<Environment, string | numbe
   'environment/fetchById',
   async (id, thunkAPI) => {
     try {
-      const data = await ApiService('8011', 'get', `/environment/environment/${id}`);
+      const data = await ApiService(CATALOG_API_PORT, 'get', `/environment/environment/${id}`);
       return data;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -119,7 +120,7 @@ export const editEnvironment = createAsyncThunk<Environment, any, { rejectValue:
   async (environmentData, thunkAPI) => {
     try {
       const { id, ...updateData } = environmentData;
-      const response = await ApiService('8011', 'put', `/environment/environment/${id}`, updateData);
+      const response = await ApiService(CATALOG_API_PORT, 'put', `/environment/environment/${id}`, updateData);
       
       return {
         Environment_Id: response.bh_env_id,

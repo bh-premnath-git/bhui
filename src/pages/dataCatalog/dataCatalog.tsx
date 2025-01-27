@@ -130,19 +130,6 @@ const columns: ColumnConfig[] = [
     type: "text",
   },
   {
-    key: "total_customer",
-    header: "Total Consumers",
-    sortable: true,
-    filterable: true,
-    type: "text",
-    render: (value: string) => (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Users size={16} className="text-gray-500" />
-        <Typography>{value || "0"}</Typography>
-      </Box>
-    ),
-  },
-  {
     key: "total_records",
     header: "Total Records",
     sortable: true,

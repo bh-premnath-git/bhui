@@ -354,13 +354,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               (op: any) => op.type === task.type
             );
 
-            // console.log("Matched Operator", matchedOperator.properties, task);
-
-
             const nodeId = `task-${task.task_id ?? index}`;
-            const existingNode = nodes.find((n) => n.id === nodeId);
-
-            if (!existingNode) {
+            
               addNode({
                 id: nodeId,
                 type: 'custom',
@@ -389,14 +384,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               updateNodeFormData(nodeId, {
                 ...task,
               });
-            } else {
-              updateNodeFormData(nodeId, {
-                ...task,
-              });
-            }
 
             if (index > 0) {
               const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
+              console.log("sourceId", sourceId);
               const targetId = nodeId;
               const edgeExists = edges.some(
                 (e) => e.source === sourceId && e.target === targetId

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ApiService } from '@/services/apiServices';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from 'lucide-react';
+import { MONITOR_PORT } from '@/configration/environment';
 
 interface ResolutionReasonProps {
   open: boolean;
@@ -54,7 +55,7 @@ const ResolutionReason: React.FC<ResolutionReasonProps> = ({
       };
 
       const response = await ApiService(
-        '8004',
+        MONITOR_PORT,
         'patch',
         `/api/v1/alert/${alertId}`,
         { resolution_reason: resolutionReason },  // Send as an object, not a JSON string

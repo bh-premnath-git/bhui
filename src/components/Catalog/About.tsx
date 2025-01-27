@@ -32,8 +32,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import { ApiService } from '@/services/apiServices';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { CATALOG_API_PORT, AGENT_PORT } from '@/configration/environment';
 
-// Mock API call
 const mockApiCall = async (data: any) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return { success: true };
@@ -52,7 +52,6 @@ interface OwnerData {
   avatar?: string;
 }
 
-/** ---------- Description Section ---------- **/
 function DescriptionSection({
   description,
   isEditingDesc,
@@ -92,7 +91,6 @@ function DescriptionSection({
           />
 
           <Stack direction="row" spacing={1}>
-            {/* Conditionally render "Save" icon only if changes exist */}
             {hasChanges && (
               <Button
                 size="small"
@@ -166,8 +164,6 @@ function DescriptionSection({
                 )}
               </Button>
             </Tooltip>
-
-            {/* Manual Edit */}
             <Tooltip title="Switch to Manual Edit Mode">
               <Button
                 size="small"
@@ -187,8 +183,6 @@ function DescriptionSection({
               >
               </Button>
             </Tooltip>
-
-            {/* Direct "Save" button (optional quick save) */}
             {hasChanges && (
               <Tooltip title="Save Current Description">
                 <Button
@@ -217,7 +211,6 @@ function DescriptionSection({
   );
 }
 
-/** ---------- Links Section (using List) ---------- **/
 function LinksSection({
   links,
   onRemoveLink,
@@ -286,7 +279,6 @@ function LinksSection({
   );
 }
 
-/** ---------- Owners Section (using List) ---------- **/
 function OwnersSection({ owners }: { owners: OwnerData[] }) {
   if (!owners.length) {
     return (
@@ -335,14 +327,12 @@ function OwnersSection({ owners }: { owners: OwnerData[] }) {
               </>
             }
           />
-          {/* If you want remove owners, replicate the X IconButton logic here */}
         </ListItem>
       ))}
     </List>
   );
 }
 
-/** ---------- Tags Section (List + Chips) ---------- **/
 function TagsSection({
   tags,
   onDeleteTag,
@@ -400,7 +390,6 @@ function TagsSection({
   );
 }
 
-/** ---------- Dialogs ---------- **/
 function AddLinkDialog({
   open,
   onClose,
@@ -667,7 +656,6 @@ function AddTagDialog({
   );
 }
 
-/** ---------- Main Component ---------- **/
 export default function About(data: any) {
   const roles = ['admin-user', 'ops-user', 'designer-user'];
 
@@ -675,7 +663,6 @@ export default function About(data: any) {
     data.description ?? 'Sample Description about the data source. This needs to be updated by the user.'
   );
 
-  // Track the original (last saved) description:
   const [originalDescription, setOriginalDescription] = useState(description);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
 
@@ -702,7 +689,7 @@ export default function About(data: any) {
   const handleSaveDescriptionRemote = async () => {
     try {
       await ApiService(
-        '8011',
+        CATALOG_API_PORT,
         'patch',
         `/data_source/${data.dataSource.data_src_id}`,
         { data_src_desc: description }
@@ -719,7 +706,6 @@ export default function About(data: any) {
     }
   };
 
-  // Generate description via Bot
   const handleGenerateWithBot = async () => {
     setBotStatus('loading');
     try {
@@ -731,7 +717,7 @@ export default function About(data: any) {
           fields: data.passValues,
         },
       };
-      const descriptionResponse = await ApiService('8090', 'post', '/pipeline_agent/generate', body);
+      const descriptionResponse = await ApiService(AGENT_PORT, 'post', '/pipeline_agent/generate', body);
       const desContent = JSON.parse(descriptionResponse.result).description;
       setDescription(desContent);
 
@@ -762,13 +748,10 @@ export default function About(data: any) {
       autoClose: 3000,
     });
     await handleSaveDescriptionRemote();
-    // Optionally reset originalDescription, so "hasChanges" updates
     setOriginalDescription(description);
   };
 
-  // Finalize manual edit
   const handleDescriptionSave = async () => {
-    // Update original description, so the "Save" button disappears
     setOriginalDescription(description);
     setIsEditingDesc(false);
 
@@ -777,18 +760,14 @@ export default function About(data: any) {
       autoClose: 3000,
     });
 
-    // Also save to remote
     await handleSaveDescriptionRemote();
   };
 
-  // Cancel manual edit
   const handleCancelEdit = () => {
-    // Revert to original description
     setDescription(originalDescription);
     setIsEditingDesc(false);
   };
 
-  // Add Link
   const handleAddLink = async () => {
     if (!newLink.title.trim() || !newLink.url.trim()) {
       toast.error('Please enter both a link title and a valid URL.', {
@@ -817,7 +796,6 @@ export default function About(data: any) {
     }
   };
 
-  // Add Owner
   const handleAddOwner = async () => {
     if (!newOwner.name.trim() || !newOwner.role.trim() || !newOwner.email.trim()) {
       toast.error('Please fill out the name, role, and email.', {

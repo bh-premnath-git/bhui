@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 export const useDropdownOptions = (endpoint: string, id: string | null) => {
     const [options, setOptions] = useState<string[]>([]);
@@ -31,10 +32,10 @@ export const useDropdownOptions = (endpoint: string, id: string | null) => {
                 let url = '';
                 if (id && path !== 'pipeline') {
                     url = `${path}/${id}/${connections}`;
-                    data = await ApiService("8011", "get", url);
+                    data = await ApiService(CATALOG_API_PORT, "get", url);
                 } else {
                     url = `${path}/${connections}/`;
-                    data = await ApiService("8011", "get", url);
+                    data = await ApiService(CATALOG_API_PORT, "get", url);
 
                     data = Array.isArray(data)
                         ? data.map((item: any) => item.pipeline_name || '')

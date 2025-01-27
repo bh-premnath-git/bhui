@@ -9,6 +9,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { Label } from '../ui/label';
 import { useEffect } from 'react';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 function SchemaTable({ initialData }: any) {
     const [openDialog, setOpenDialog] = React.useState(false);
@@ -21,7 +22,7 @@ function SchemaTable({ initialData }: any) {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const response = await ApiService('8011', 'get', `/data_source_layout/list_full/?data_src_id=${initialData?.sourceId}`);
+                const response = await ApiService(CATALOG_API_PORT, 'get', `/data_source_layout/list_full/?data_src_id=${initialData?.sourceId}`);
                 if (response[0]?.layout_fields) {
                     const transformedData = response[0].layout_fields.map((field: any) => ({
                         name: field.lyt_fld_name,

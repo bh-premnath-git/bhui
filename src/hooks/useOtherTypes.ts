@@ -12,3 +12,15 @@ export function useOtherTypes(type: string) {
         return allTypesInModule;
     }, [type]);
 }
+
+export function useSelectedType(op: string, type: string) {    
+    return useMemo(() => {
+        const operators = schema.properties.tasks.items.oneOf;
+        const operator = operators.find((item: any) => item.properties.type.enum[0].toLowerCase() === op);
+        if (!op) return null;
+        if (!operator) return null;
+        const propType = operator.properties[type];
+        if (!propType) return null
+        return {ui_properties: propType.ui_properties, enum: propType?.enum || []};
+    }, [op, type]);
+}

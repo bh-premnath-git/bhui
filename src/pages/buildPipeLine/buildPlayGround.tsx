@@ -631,7 +631,7 @@ const BuildPlayGround: React.FC = () => {
             });
 
             debuggedNodesList.forEach(checkpoint => {
-                params.append('checkpoints', checkpoint?.title);
+                params.append('checkpoints', checkpoint?.title?.toLowerCase());
             });
 
             const response = await ApiService(
@@ -717,7 +717,7 @@ const BuildPlayGround: React.FC = () => {
             console.error('Error in handleNext:', error);
             // Handle error appropriately (e.g., show error message to user)
         }
-    }, []);
+    }, [pipelineDtl?.pipeline_name]);
 
     const edgeTypes = useMemo(() => ({
         default: (props: any) => (

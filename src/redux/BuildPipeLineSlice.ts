@@ -207,10 +207,10 @@ export const fetchTransformationOutput = createAsyncThunk(
       null,
       {
         pipeline_name: pipelineName,
-        transformation_name: transformationName,
+        transformation_name: transformationName?.toLowerCase(),
         page: 1,
         page_size: 50,
-        sort_columns: 'id',
+        // sort_columns: 'id',
       }
     );
 

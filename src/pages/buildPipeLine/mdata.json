@@ -316,8 +316,8 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
       "type": "object",
-      "ui_type": "tab-container",
       "title": "Dedupe",
+      "ui_type": "object",
       "properties": {
         "rows_to_keep": {
           "type": "string",
@@ -325,42 +325,48 @@
           "enum": [
             "any",
             "first",
-            "last"
-          ]
+            "last",
+            "distinct",
+            "unique_only"
+          ],
+          "default": "any"
+        },
+        "dedup_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "order_by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "order_column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sort": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ]
+              }
+            },
+            "required": [
+              "order_column",
+              "sort"
+            ]
+          }
         }
       },
       "required": [
-        "rows_to_keep"
+        "rows_to_keep",
+        "dedup_by"
       ],
       "allOf": [
-        {
-          "if": {
-            "properties": {
-              "rows_to_keep": {
-                "const": "distinct"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "dedup_by"
-            ]
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "rows_to_keep": {
-                "const": "any"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "dedup_by"
-            ]
-          }
-        },
         {
           "if": {
             "properties": {
@@ -370,10 +376,7 @@
             }
           },
           "then": {
-            "required": [
-              "dedup_by",
-              "order_by"
-            ]
+            "required": ["order_by"]
           }
         },
         {
@@ -385,47 +388,29 @@
             }
           },
           "then": {
-            "required": [
-              "dedup_by",
-              "order_by"
-            ]
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "rows_to_keep": {
-                "const": "unique"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "dedup_by"
-            ]
+            "required": ["order_by"]
           }
         }
       ]
     },
     {
-      "id": "file://repartition_schema.json",
+      "id" : "file://repartition_schema.json",
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
-      "ui_type": "tab-container",
       "title": "Repartition",
+      "ui_type": "object",
       "properties": {
-        "transformation": {
-          "type": "string",
-          "minLength": 1
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
         "repartition_type": {
-          "type": "string",
-          "minLength": 1
+          "type": "select",
+          "minLength": 1,
+          "enum": [
+            "repartition",
+            "coalesce",
+            "hash_repartition",
+            "repartition_by_range"
+          ],
+          "default": "repartition"
         },
         "repartition_value": {
           "type": "number"
@@ -435,7 +420,7 @@
           "minLength": 1
         },
         "repartition_expression": {
-          "type": "array",
+          "type": "array-container",
           "uniqueItems": true,
           "minItems": 1,
           "items": {
@@ -446,7 +431,7 @@
             ],
             "properties": {
               "expression": {
-                "type": "string",
+                "type": "expression",
                 "minLength": 1
               },
               "sort_order": {
@@ -454,7 +439,13 @@
                 "minLength": 1
               },
               "order": {
-                "type": "number"
+                "type": "select",
+                "minLength": 1,
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
               }
             }
           }
@@ -464,8 +455,6 @@
         }
       },
       "required": [
-        "transformation",
-        "name",
         "repartition_type",
         "override_partition"
       ],
@@ -473,73 +462,131 @@
         {
           "if": {
             "properties": {
-              "repartition_type": {
-                "const": "repartition"
-              }
+              "repartition_type": { "const": "repartition" }
             },
-            "required": [
-              "repartition_type"
-            ]
+            "required": ["repartition_type"]
           },
           "then": {
-            "required": [
-              "repartition_value"
-            ]
+            "required": ["repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": {
-                "const": "coalesce"
-              }
+              "repartition_type": { "const": "coalesce" }
             },
-            "required": [
-              "repartition_type"
-            ]
+            "required": ["repartition_type"]
           },
           "then": {
-            "required": [
-              "repartition_value"
-            ]
+            "required": ["repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": {
-                "const": "hash_repartition"
-              }
+              "repartition_type": { "const": "hash_repartition" }
             },
-            "required": [
-              "repartition_type"
-            ]
+            "required": ["repartition_type"]
           },
           "then": {
-            "required": [
-              "repartition_expression",
-              "repartition_value"
-            ]
+            "required": ["repartition_expression", "repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": {
-                "const": "repartition_by_range"
-              }
+              "repartition_type": { "const": "repartition_by_range" }
             },
-            "required": [
-              "repartition_type"
-            ]
+            "required": ["repartition_type"]
           },
           "then": {
-            "required": [
-              "repartition_expression",
-              "repartition_value"
-            ]
+            "required": ["repartition_expression", "repartition_value"]
           }
         }
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Lookup",
+      "ui_type": "tab-container",
+      "properties": {
+        "lookup_columns": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "out_column_name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "column",
+              "out_column_name"
+            ]
+          }
+        },
+        "lookup_condition": {
+          "type": "object",
+          "properties": {
+            "column_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "lookup_with": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "column_name",
+            "lookup_with"
+          ]
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "lookup_columns",
+        "lookup_condition"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Union",
+      "ui_type": "object",
+      "properties": {
+        "operation_type": {
+          "type": "string",
+          "enum": [
+            "union",
+            "intersect_all",
+            "except_all",
+            "union_all",
+            "union_by_name"
+          ],
+          "description": "The type of operation to perform",
+          "default": "union"
+        },
+        "allow_missing_columns": {
+          "type": "boolean",
+          "description": "If true, missing columns in the input dataframes will be filled with nulls",
+          "default": false
+        }
+      },
+      "required": [
+        "operation_type"
       ]
     }
   ]

@@ -953,6 +953,7 @@ const BuildPlayGround: React.FC = () => {
                             initialValues={formStates[selectedSchema?.nodeId]}
                             nodes={nodes}
                             sourceColumns={sourceColumns}
+                            onClose={handleDialogClose}
                         />
                     </DialogContent>
                 </Dialog>

@@ -72,7 +72,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
             fullWidth
             value={value}
             required={required}
-            label={label}
+            // label={label}
             variant="outlined"
             disabled={disabled}
             error={Boolean(meta.error || error)}
@@ -335,7 +335,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                   showInlineDetails: true,
                   filterGraceful: true,
                   selectionMode: 'always',
-                  maxVisibleSuggestions: 12,
                 },
                 bracketPairColorization: { enabled: true },
                 matchBrackets: 'always',

@@ -60,18 +60,7 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "Transform",
-        "color": "#06babd",
-        "icon": "/assets/buildPipeline/display/transform.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "Ship",
@@ -185,30 +174,6 @@
         "module_name": "Union",
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/8.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
-    {
-      "ui_properties": {
-        "module_name": "Limit",
-        "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/9.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
-    {
-      "ui_properties": {
-        "module_name": "Change Detection",
-        "color": "#32D1A4",
-        "icon": "/assets/buildPipeline/squre/10.svg",
         "ports": {
           "inputs": 1,
           "outputs": 1,

@@ -111,6 +111,7 @@ const getIcon = (type: string): string => {
         Sorter: '/assets/buildPipeline/squre/1.svg',
         Aggregator: '/assets/buildPipeline/squre/2.svg',
         Target: '/assets/buildPipeline/7.svg',
+
         // Add other mappings as needed
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';

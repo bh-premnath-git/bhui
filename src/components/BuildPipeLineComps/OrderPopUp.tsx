@@ -1,10 +1,7 @@
 import {
-    Box, Button, ButtonGroup, Container, Paper, Grid, Stack, Typography, Modal,
-    Dialog, DialogActions, DialogContent, TextField, IconButton, Popover,
+     Container, Typography, Modal, Popover,
 } from "@mui/material";
-import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import ClearIcon from "@mui/icons-material/Clear";
-import BorderColorIcon from '@mui/icons-material/BorderColor';
 import React, { useState, useEffect } from "react";
 import SearchIcon from '@mui/icons-material/Search';
 import SchemaTable from "./SchemaTable";
@@ -12,6 +9,8 @@ import OnboardTaggingStep from "./OnboardTaggingStep";
 import PreviewTable from "./PreviewTable";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
 import { ApiService } from "@/services/apiServices";
+import { CATALOG_API_PORT } from '@/configration/environment';
+
 
 export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
     const [selected, setSelected] = React.useState(0);
@@ -34,14 +33,13 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
                     };
 
                     const response = await ApiService(
-                        '8011',
+                        CATALOG_API_PORT,
                         'get',
                         '/connection_registry/connection_config/list/',
                         null,
                         params,
                         { 'accept': 'application/json' }
                     );
-                    console.log(response)
                     if (response && response.length > 0) {
                         console.log(response)
                         let initialData = response[0]?.custom_metadata;
@@ -85,17 +83,14 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     };
     const handleSchemaClick = () => {
         console.log("Schema button clicked");
-        // Add your logic for the Schema button here
     };
 
     const handleTagClick = () => {
         console.log("Tag button clicked");
-        // Add your logic for the Tag button here
     };
 
     const handlePreviewClick = () => {
         console.log("Preview button clicked");
-        // Add your logic for the Preview button here
     };
     const handleClose = () => {
         onClose();
@@ -195,7 +190,6 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
                             {selected === 1 && <SchemaTable initialData={initialData} />}
                             {selected === 2 && <OnboardTaggingStep />}
                             {selected === 3 && <PreviewTable />}
-                            {/* {selected === 4 && <PreviewTable />} */}
                         </div>
                     </div>
                 </Container>

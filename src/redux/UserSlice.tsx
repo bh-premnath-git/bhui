@@ -1,7 +1,7 @@
 // redux/UserSlice.ts
 
+import { KEYCLOAK_API_PORT } from '@/configration/environment';
 import { ApiService } from '@/services/apiServices';
-import { LocalStorageService } from "@/services/localStorageServices";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
@@ -34,7 +34,7 @@ export const getUserDataList = createAsyncThunk<
   'user/getUserDataList',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8005', 'get', '/users', null, params, null, false);
+      const response = await ApiService(KEYCLOAK_API_PORT, 'get', '/users', null, params, null, false);
       return response.users;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -53,7 +53,7 @@ export const createUserDeployment = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService(
-        '8005',
+        KEYCLOAK_API_PORT,
         'post',
         '/users',
         params, null, {}, false
@@ -64,6 +64,28 @@ export const createUserDeployment = createAsyncThunk<
     }
   }
 );
+
+export const editUserDeployment = createAsyncThunk<
+  any,
+  { id: any; params: any },
+  { rejectValue: string }
+>(
+  'user/deployment/edit',
+  async ({ id, params }, thunkAPI) => {
+    try {
+      const response = await ApiService(
+        KEYCLOAK_API_PORT,
+        'put',
+        `/users/${id}`,
+        params, null, {}, false
+      );
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 
 const UserSlice = createSlice({
   name: "api/buildDataPipeline",
@@ -76,7 +98,6 @@ const UserSlice = createSlice({
     resetState: () => initialState,
   },
   extraReducers: (builder) => {
-    // Handle getUserDataList
     builder
       .addCase(getUserDataList.pending, (state) => {
         state.loadingUsers = true;
@@ -96,8 +117,6 @@ const UserSlice = createSlice({
           state.errorUsers = action.payload;
         }
       );
-
-    // Handle createUserDeployment
     builder
       .addCase(createUserDeployment.pending, (state) => {
         state.loadingDeployment = true;
@@ -107,12 +126,34 @@ const UserSlice = createSlice({
         createUserDeployment.fulfilled,
         (state, action: PayloadAction<any>) => {
           state.loadingDeployment = false;
-          // Assuming the response contains the newly created user
           state.userDataList.push(action.payload);
         }
       )
       .addCase(
         createUserDeployment.rejected,
+        (state, action: PayloadAction<string>) => {
+          state.loadingDeployment = false;
+          state.errorDeployment = action.payload;
+        }
+      )
+      .addCase(editUserDeployment.pending, (state) => {
+        state.loadingDeployment = true;
+        state.errorDeployment = null;
+      })
+      .addCase(
+        editUserDeployment.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.loadingDeployment = false;
+          const index = state.userDataList.findIndex(
+            (user: ApiResponse) => user.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.userDataList[index] = { ...state.userDataList[index], ...action.payload };
+          }
+        }
+      )
+      .addCase(
+        editUserDeployment.rejected,
         (state, action: PayloadAction<string>) => {
           state.loadingDeployment = false;
           state.errorDeployment = action.payload;

@@ -1,6 +1,7 @@
 import { ApiService } from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
+import { CATALOG_API_PORT } from "@/configration/environment";
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;
@@ -58,7 +59,7 @@ export const getSource: any = createAsyncThunk(
   'build-pipline/detasource',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/data_source/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/data_source/list/', null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -71,7 +72,7 @@ export const getConfig: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/connection_registry/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/connection_registry/list/', null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -85,7 +86,7 @@ export const getDynamicCon: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/connection_registry/connections_json/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/connection_registry/connections_json/list/', null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -98,7 +99,7 @@ export const insertPipeline: any = createAsyncThunk(
   async (body: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'post', '/pipeline', body);
+      const response = await ApiService(CATALOG_API_PORT, 'post', '/pipeline', body);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -110,7 +111,7 @@ export const getAllPipeline: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService('8011', 'get', '/pipeline/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/pipeline/list/', null, params);
       const transformed = response.map((item: any) => ({
         ...item,
         updated_by: decoded?.name ?? ""
@@ -125,7 +126,7 @@ export const getCodesValue: any = createAsyncThunk(
   'build-pipline/getCodesValue',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null);
+      const response = await ApiService(CATALOG_API_PORT, 'get', `/codes_hdr/${params.value}`, null);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -137,7 +138,7 @@ export const getOrderBy: any = createAsyncThunk(
   'build-pipline/getOrderBy',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/codes_hdr/${params.value}`, null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', `/codes_hdr/${params.value}`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -150,7 +151,7 @@ export const getTransformationCount: any = createAsyncThunk(
   'build-pipline/getTransformationCount',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/pipeline/debug/get_transformation_count`, null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', `/pipeline/debug/get_transformation_count`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -163,7 +164,7 @@ export const getTransformationOutput: any = createAsyncThunk(
   'build-pipline/getTransformationOutput',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/pipeline/debug/get_transformation_output`, null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', `/pipeline/debug/get_transformation_output`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -176,7 +177,7 @@ export const startPipeLine: any = createAsyncThunk(
   'build-pipline/startPipeLine',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'post', `/pipeline/debug/start_pipeline`, null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'post', `/pipeline/debug/start_pipeline`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -189,7 +190,7 @@ export const stopPipeLine: any = createAsyncThunk(
   'build-pipline/stopPipeLine',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'post', `/pipeline/debug/stop_pipeline`, null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'post', `/pipeline/debug/stop_pipeline`, null, params);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -201,16 +202,16 @@ export const fetchTransformationOutput = createAsyncThunk(
   'pipeline/fetchTransformationOutput',
   async ({ pipelineName, transformationName }: { pipelineName: string, transformationName: string }) => {
     const response = await ApiService(
-      "8011",
+      CATALOG_API_PORT,
       "get",
       `/pipeline/debug/get_transformation_output`,
       null,
       {
         pipeline_name: pipelineName,
-        transformation_name: transformationName,
+        transformation_name: transformationName?.toLowerCase(),
         page: 1,
         page_size: 50,
-        sort_columns: 'id',
+        // sort_columns: 'id',
       }
     );
 
@@ -226,7 +227,7 @@ export const deletePipelineById = createAsyncThunk(
   'build-pipline/deletePipelineById',
   async (params: any, thunkAPI) => {
     try {
-      await ApiService('8011', 'delete', `/pipeline/${params.pipeline_id}`, null, {});
+      await ApiService(CATALOG_API_PORT, 'delete', `/pipeline/${params.pipeline_id}`, null, {});
       return params.pipeline_id;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to delete pipeline.');

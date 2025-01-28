@@ -77,10 +77,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
               join_condition: '',
               join_type: 'left'
             }],
-            expressions: initialValues.expressions ? initialValues.expressions.map((expr: any) => ({
-              name: expr.target_column || '',
-              expression: expr.expression || ''
-            })) : [{
+            expressions: initialValues.expressions?.map((expr: any) => ({
+              name: expr?.target_column || '',
+              expression: expr?.expression || ''
+            })) || [{
               name: '',
               expression: ''
             }],
@@ -93,8 +93,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         case 'SchemaTransformation':
           return {
             derived_fields: initialValues.derived_fields?.map((field: any) => ({
-              name: field.name,
-              expression: field.expression
+              name: field?.name || '',
+              expression: field?.expression || ''
             })) || [{
               name: '',
               expression: ''
@@ -104,8 +104,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         case 'Sorter':
           return {
             sort_columns: initialValues.sort_columns?.map((col: any) => ({
-              column: col.column,
-              order: col.order
+              column: col?.column || '',
+              order: col?.order || 'asc'
             })) || [{
               column: '',
               order: 'asc'
@@ -114,19 +114,19 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
         case 'Aggregator':
           return {
-            group_by: initialValues.group_by.map((col: any) => ({
-              group_by: col
+            group_by: initialValues.group_by?.map((col: any) => ({
+              group_by: col || ''
             })) || [{ group_by: '' }],
             aggregations: initialValues.aggregate?.map((agg: any) => ({
-              target_column: agg.target_column,
-              expression: agg.expression
+              target_column: agg?.target_column || '',
+              expression: agg?.expression || ''
             })) || [{
               target_column: '',
               expression: ''
             }],
             pivot_by: initialValues.pivot?.map((piv: any) => ({
-              pivot_column: piv.pivot_column,
-              pivot_values: Array.isArray(piv.pivot_values) ? piv.pivot_values : []
+              pivot_column: piv?.pivot_column || '',
+              pivot_values: Array.isArray(piv?.pivot_values) ? piv.pivot_values : []
             })) || [{
               pivot_column: '',
               pivot_values: []
@@ -195,9 +195,9 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   const initialFormValues = useMemo(() => generateInitialValues(schema), [schema, generateInitialValues]);
 
-  console.log('Schema:', schema);
+  /* console.log('Schema:', schema);
   console.log('Initial values:', initialValues);
-  console.log('Generated form values:', initialFormValues);
+  console.log('Generated form values:', initialFormValues); */
 
   // Add state for undo/redo
   const [history, setHistory] = useState<HistoryState>({
@@ -250,39 +250,39 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   // Function to handle expression field click
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    try {
-      const schemaString = sourceColumns
-        .map(column =>
-          `${column.name}: ${column.dataType}`
-        )
-        .join(',');
-      const response = await ApiService(
-        "8090",
-        "post",
-        "/api/v1/pipeline_agent/generate",
-        {
-          operation_type: "spark_expression",
-          params: {
-            schema: schemaString,
-            target_column: targetColumn
-          },
-          thread_id: "spark_123"
-        },
-        null,
-        {},
-        false
-      );
+    // try {
+    //   const schemaString = sourceColumns
+    //     .map(column =>
+    //       `${column.name}: ${column.dataType}`
+    //     )
+    //     .join(',');
+    //   const response = await ApiService(
+    //     "8090",
+    //     "post",
+    //     "/api/v1/pipeline_agent/generate",
+    //     {
+    //       operation_type: "spark_expression",
+    //       params: {
+    //         schema: schemaString,
+    //         target_column: targetColumn
+    //       },
+    //       thread_id: "spark_123"
+    //     },
+    //     null,
+    //     {},
+    //     false
+    //   );
 
-      if (response?.result) {
-        const parsedResult = JSON.parse(response.result);
-        const expression = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+    //   if (response?.result) {
+    //     const parsedResult = JSON.parse(response.result);
+    //     const expression = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
 
-        setFieldValue(fieldName, expression);
-      }
-    } catch (error) {
-      console.error('Error generating expression:', error);
-      setFieldValue(fieldName, '');
-    }
+    //     setFieldValue(fieldName, expression);
+    //   }
+    // } catch (error) {
+    //   console.error('Error generating expression:', error);
+    //   setFieldValue(fieldName, '');
+    // }
   }, [sourceColumns]);
 
   return (
@@ -360,15 +360,15 @@ const renderArrayFields = (
                   fieldSchema.type === 'boolean' ? false :
                     fieldSchema.type === 'number' ? 0 : '';
 
-                const isExpression = fieldSchema.type === 'expression' ||
-                  (fieldSchema['ui-hint'] === 'expression') ||
+                const isExpression = fieldSchema?.type === 'expression' ||
+                  (fieldSchema?.['ui-hint'] === 'expression') ||
                   (section === 'expressions' && fieldKey === 'expression') ||
                   (fieldKey === 'join_condition');
 
                 return (
-                  <Field name={`${section}.${index}.${fieldKey}`}>
+                  <Field name={`${section}.${index}.${fieldKey}`} key={fieldKey}>
                     {({ form }) => (
-                      <Box key={fieldKey} sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 1 }}>
                         <FormField
                           fieldSchema={{ 
                             type: fieldSchema.type || 'select',
@@ -384,7 +384,7 @@ const renderArrayFields = (
                           required={requiredFields.includes(fieldKey)}
                           onExpressionClick={() => {
                             if (isExpression) {
-                              onExpressionClick(field.name || fieldKey, form.setFieldValue, `${section}.${index}.${fieldKey}`);
+                              onExpressionClick(field?.name || fieldKey, form.setFieldValue, `${section}.${index}.${fieldKey}`);
                             }
                           }}
                         />

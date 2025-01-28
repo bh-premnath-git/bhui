@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ApiService } from "@/services/apiServices";
+import { CATALOG_API_PORT, KEYCLOAK_API_PORT } from "@/configration/environment";
 
 export interface ApiState {
   gitProjectList: any;
@@ -40,7 +41,7 @@ export const getGitProject: any = createAsyncThunk(
   'admin-console/gitproject',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', '/bh_project/list/', null, params);
+      const response = await ApiService(CATALOG_API_PORT, 'get', '/bh_project/list/', null, params);
       const transformed: any[] = response.map((item: any) => {
         return {
           Project_Name: item.bh_project_name,
@@ -72,7 +73,7 @@ export const updateProject: any = createAsyncThunk(
         ["Total Storage (GB)"]: ____,
         ...remain
       } = updateData;
-      const response = await ApiService('8011', 'put', `/bh_project/${bh_project_id}/`, remain);
+      const response = await ApiService(CATALOG_API_PORT, 'put', `/bh_project/${bh_project_id}/`, remain);
       const transformed = {
         Project_Name: response.bh_project_name,
         ["YTD_Cost ($)"]: response.ytd_cost,
@@ -101,7 +102,7 @@ const createProjectDeployment = createAsyncThunk<
   async (params, thunkAPI) => {
     try {
       const response = await ApiService(
-        '8005',
+        KEYCLOAK_API_PORT,
         'post',
         '/projects',
         params, null, {}, false
@@ -117,7 +118,7 @@ export const createProject: any = createAsyncThunk(
   'All Projects/New',
   async (projectData: CreateProjectData, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'post', '/bh_project/', projectData);
+      const response = await ApiService(CATALOG_API_PORT, 'post', '/bh_project/', projectData);
       const deployPayload = {
         name: response.bh_project_name,
         description: `${response.bh_project_name} deployment`,
@@ -137,7 +138,7 @@ export const searchProject: any = createAsyncThunk(
   'prjects/searchProject',
   async (value: string, thunkAPI) => {
     try {
-      const response = await ApiService('8011', 'get', `/bh_project/search?bh_project_name=${value}`);
+      const response = await ApiService(CATALOG_API_PORT, 'get', `/bh_project/search?bh_project_name=${value}`);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

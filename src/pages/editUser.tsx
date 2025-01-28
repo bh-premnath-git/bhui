@@ -1,370 +1,401 @@
 import React, { useEffect, useState } from 'react';
-import { Formik, Field, Form, FieldArray, ErrorMessage } from 'formik';
-import { TextField, Button, Grid, Typography, Switch, Box } from '@mui/material';
+import { Formik, Form, Field, FieldArray } from 'formik';
 import * as Yup from 'yup';
-import Autocomplete from '@mui/material/Autocomplete';
-import { ApiService } from '@/services/apiServices';
 import { useNavigate, useLocation } from 'react-router-dom';
-import CustomField from '@/common/CustomField';
+import { Autocomplete, Switch, TextField } from '@mui/material';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormFieldWrapper } from '@/components/FormFieldWrapper';
+import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
-import useToast from '@/components/teast-service'
+import useToast from '@/components/teast-service';
+import { ApiService } from '@/services/apiServices';
+import { editUserDeployment } from '@/redux/UserSlice';
+import { useAppDispatch } from '@/redux/hooks';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
-interface ErrorResponse {
-    detail: string;
+interface RoleType {
+  dtl_code: string;
+  dtl_desc: string;
 }
 
+interface ProjectType {
+  value: string;
+  label: string;
+}
+
+interface ProjectDetail {
+  project: Array<ProjectType>;
+  projectRole: Array<RoleType>;
+}
+
+interface UserFormValues {
+  bh_user_first_name: string;
+  bh_user_middle_name: string;
+  bh_user_last_name: string;
+  user_email_id: string;
+  user_status_cd: string;
+  user_admin_status_cd: string;
+  project_details: ProjectDetail[];
+}
+
+// ------------------ Validation Schema ------------------
 const schema = Yup.object().shape({
-    bh_user_first_name: Yup.string().required('First Name is required'),
-    bh_user_last_name: Yup.string().required('Last Name is required'),
-    user_email_id: Yup.string().email('Invalid email address').required('Email is required'),
-    user_status_cd: Yup.string().required('Please select status'),
-    user_admin_status_cd: Yup.string().required('Please select admin status'),
-    project_details: Yup.array().of(
-        Yup.object().shape({
-            project: Yup.array().of(Yup.object().required('Project is required')),
-            projectRole: Yup.array().of(Yup.object().required('Role is required')),
-        })
-    )
+  bh_user_first_name: Yup.string().required('First Name is required'),
+  bh_user_last_name: Yup.string().required('Last Name is required'),
+  user_email_id: Yup.string().email('Invalid email address').required('Email is required'),
+  user_status_cd: Yup.string().required('Please select status'),
+  user_admin_status_cd: Yup.string().required('Please select admin status'),
+  project_details: Yup.array().of(
+    Yup.object().shape({
+      project: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required('Project value is required'),
+            label: Yup.string().required('Project label is required'),
+          })
+        )
+        .min(1, 'At least one project is required'),
+      projectRole: Yup.array()
+        .of(
+          Yup.object().shape({
+            dtl_code: Yup.string().required('Role code is required'),
+            dtl_desc: Yup.string().required('Role description is required'),
+          })
+        )
+        .min(1, 'At least one role is required'),
+    })
+  ),
 });
 
-const AddUser = () => {
-    const [roles, setRoles] = useState([]);
-    const [projects, setProjects] = useState([]);
-    const [initialValue, setInitialValue] = useState({
-        bh_user_first_name: '',
-        bh_user_middle_name: '',
-        bh_user_last_name: '',
-        user_email_id: '',
-        user_status_cd: '601',
-        user_admin_status_cd: '2102',
-        project_details: [{ project: [], projectRole: [] }]
-    });
-    const [ToastComponent, showToast] = useToast();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [status, setStatus] = useState(true); // true = Active, false = Inactive
+const EditUser: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const handleToggle = () => {
-        setStatus((prevStatus) => !prevStatus); // Toggle between true and false
-    };
-    const userData = location.state?.rowData;
+  const [ToastComponent, showToast] = useToast();
 
-    useEffect(() => {
+  const [roles, setRoles] = useState<RoleType[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [statusToggle, setStatusToggle] = useState(true);
 
-        const fetchData = async () => {
-            try {
-                const [rolesRes, projectsRes] = await Promise.all([
-                    ApiService('8011', 'get', '/codes_hdr/1'),
-                    ApiService('8011', 'get', '/bh_project/search')
-                ]);
+  const userData = location.state?.rowData || null;
 
-                setRoles(rolesRes.codes_dtl);
+  const [initialValues, setInitialValues] = useState<UserFormValues>({
+    bh_user_first_name: '',
+    bh_user_middle_name: '',
+    bh_user_last_name: '',
+    user_email_id: '',
+    user_status_cd: '601',
+    user_admin_status_cd: '2102',
+    project_details: [
+      {
+        project: [],
+        projectRole: [],
+      },
+    ],
+  });
 
-                const tempProjects = projectsRes.map((proj: any) => ({
-                    value: proj.bh_project_id,
-                    label: proj.bh_project_name
-                }));
-                setProjects(tempProjects);
-                if (userData) setInitialValue(userData);
+  const handleStatusToggle = () => {
+    setStatusToggle((prev) => !prev);
+  };
 
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
+  useEffect(() => {
+    if (!userData) return;
 
-        fetchData();
-    }, [userData]);
+    const fetchData = async () => {
+      try {
+        const [rolesRes, projectsRes] = await Promise.all([
+          ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/1'),
+          ApiService(CATALOG_API_PORT, 'get', '/bh_project/search'),
+        ]);
 
+        setRoles(rolesRes.codes_dtl || []);
 
+        const formattedProjects = projectsRes.map((proj: any) => ({
+          value: proj.bh_project_id.toString(),
+          label: proj.bh_project_name,
+        }));
+        setProjects(formattedProjects);
 
-    const addUser = async (values: any, { setSubmitting }: any) => {
-        try {
-            if (userData) {
-                await ApiService('8011', 'put', `/bh_user/${userData.bh_user_id}`, values);
-                showToast('User update successfully', { color: '#4caf50' });
-                setTimeout(() => {
-                    navigate('/admin-console/users');
-                }, 1000);
-            } else {
-                createKeyCloakUser(values);
-            }
-        } catch (error) {
-            console.error('Error submitting form:', error);
-        } finally {
-            setSubmitting(false);
-        }
-    };
+        const isActive = userData.enabled;
+        setStatusToggle(isActive);
 
-    const createKeyCloakUser = async (value: any) => {
-        //fetch('http://54.157.234.126:8005/create-user', {
-        fetch('http://localhost:8005/create-user', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user: {
-                    username: `${value?.bh_user_first_name}`,
-                    email: value?.user_email_id,
-                    password: 'Bighammer@123',
-                    first_name: `${value?.bh_user_first_name}`,
-                    last_name: `${value?.bh_user_last_name}`,
-                    enabled: true,
-                    email_verified: true,
-                    credentials: [
-                        {
-                            type: 'password',
-                            value: 'password',
-                            temporary: false
-                        }
-                    ]
-                },
-                token_data: {
-                    server_url: 'http://keycloak:8080',
-                    username: 'admin',
-                    password: 'password',
-                    grant_type: 'password',
-                    realm_name: 'master',
-                    client_id: 'admin-cli'
-                }
-            })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    response.json().then((errorData: ErrorResponse) => {
-                        let errorMessage = 'An error occurred while creating the user';
-                        
-                        if (errorData?.detail) {
-                            if (errorData.detail.includes('User exists with same email')) {
-                                errorMessage = 'User exists with same email';
-                            } else if (errorData.detail.includes('User with this username already exists')) {
-                                errorMessage = 'User with this username already exists';
-                            }
-                        }
-                    });
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                add(value)
-            })
-            .catch(error => {
-            });
+        setInitialValues({
+          bh_user_first_name: userData.firstName || '',
+          bh_user_middle_name: userData.middleName || '',
+          bh_user_last_name: userData.lastName || '',
+          user_email_id: userData.email || '',
+          user_status_cd: userData.enabled ? '601' : '602',
+          user_admin_status_cd: userData.user_admin_status_cd || '2102',
+          project_details: [
+            { project: [...userData.projects], projectRole: [...userData.realm_roles] },
+          ],
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        showToast('Error fetching data', { color: '#FF0000' });
+      }
     };
 
-    async function add(value: any) {
-        const url = '/bh_user'; 
-        try {
-            const result = await ApiService('8011', 'post', url, value);
-    
-            if (result) {
-                handleNext1();
-            } else {
-                showToast('Failed to update user. Please try again.', { color: '#f44336' });
-            }
-        } catch (error: any) {
-            console.error('Error adding user:', error);
-            showToast(error.message || 'An unexpected error occurred.', { color: '#f44336' });
-        }
-    }
-    
-    const handleNext1 = () => {
-        showToast('User update successfully', { color: '#4caf50' });
+    fetchData();
+
+  }, [userData]);
+
+  const handleEditUser = async (
+    values: UserFormValues,
+    { setSubmitting }: { setSubmitting: (loading: boolean) => void }
+  ) => {
+    try {
+      if (userData?.bh_user_id) {
+        values.user_status_cd = statusToggle ? '601' : '602';
+
+        await dispatch(
+          editUserDeployment({
+            id: userData.bh_user_id,
+            params: values,
+          })
+        );
+
+        showToast('User updated successfully', { color: '#4caf50' });
         setTimeout(() => {
-            navigate('/admin-console/users');
+          navigate('/admin-console/users');
         }, 1000);
-    };
-    return (
-            <div className="container shadow p-4 rounded w-8/12  m-auto mt-4">
-                <Formik
-                    initialValues={initialValue}
-                    validationSchema={schema}
-                    onSubmit={addUser}
-                    enableReinitialize
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      showToast('Error updating user', { color: 'red' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-3 space-y-6 rounded border bg-white text-black shadow w-full mt-8">
+      <div className="border-b pb-2 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Edit User</h2>
+          <p className="text-sm text-gray-700 mt-1">
+            Update user details and configure their access permissions
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="text-xs font-medium px-3 py-1 border-gray-300 hover:bg-gray-100"
+          onClick={() => navigate('/admin-console/users')}
+        >
+          View All Users
+        </Button>
+      </div>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={schema}
+        onSubmit={handleEditUser}
+        enableReinitialize
+      >
+        {({ values, isSubmitting, setFieldValue }) => (
+          <Form className="space-y-6">
+            {/* User Details */}
+            <div className="p-1 rounded bg-white border space-y-2">
+              <h3 className="text-base font-medium text-black border-b pb-2">
+                User Details
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <FormFieldWrapper
+                  name="bh_user_first_name"
+                  label="First Name"
+                  required
                 >
-                    {({ values, isSubmitting, isValid, dirty }) => (
-                        <Form className='w-full m-auto'>
+                  <Field
+                    as={Input}
+                    name="bh_user_first_name"
+                    placeholder="Enter first name"
+                    className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                  />
+                </FormFieldWrapper>
 
-                            <Grid container justifyContent="flex-end">
-                                    <Button
-                                        sx={{
-                                            backgroundColor: 'black',
-                                            color: 'white',
-                                            alignItems: 'right',
-                                            marginRight:'10px',
-                                            '&:hover': {
-                                            backgroundColor: 'black',
-                                            },
-                                        }}
-                                        className="mt-1 align-right"
-                                        onClick={() => navigate('/admin-console/users')}
-                                    >
-                                        View All User
-                                    </Button>
-                             </Grid>
-                            <Grid container spacing={2} className='m-1'>
-                                <Grid item xs={2.5}>
-                                    <CustomField
-                                        name="bh_user_first_name"
-                                        label="First Name"
-                                        placeholder='Enter First name'
-                                        required={true}
-                                    />
-                                </Grid>
-                                <Grid item xs={2.5}>
-                                    <CustomField
-                                        name="bh_user_middle_name"
-                                        label="Middle Name"
-                                        placeholder='Enter Middle name '
-                                    />
-                                </Grid>
-                                <Grid item xs={2.5}>
-                                    <CustomField
-                                        required={true}
-                                        name="bh_user_last_name"
-                                        label="Last Name"
-                                        placeholder='Enter Last name '
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Grid container spacing={2} className='m-1'>
-                                <Grid item xs={5}>
-                                    <CustomField
-                                        name="user_email_id"
-                                        label="Email"
-                                        placeholder='Enter Email ' required={true}
-                                    />
-                                </Grid>
-                                
-                                <Grid item xs={5} gap={1}>
-                                    
-                                    <Label>
-                                        Status <span style={{ color: 'red' }}>*</span>
-                                    </Label>
-                                    <Grid item xs={5} sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Switch
-                                            checked={status}
-                                            onChange={handleToggle}  
-                                            sx={{
-                                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                                    color: '#76b947',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                                    }
-                                                },
-                                                '& .MuiSwitch-switchBase': {
-                                                    color: '#bc4749',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                                    }
-                                                },
-                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                    backgroundColor: '#b1d8b7'
-                                                },
-                                                '& .MuiSwitch-track': {
-                                                    backgroundColor: '#f7bec0'
-                                                }
-                                            }}
-                                            inputProps={{ 'aria-label': 'status toggle' }}
-                                        />
-                                    <Box display="flex" alignItems="center">
-                                        <Typography>
-                                            {status ? 'Active' : 'Inactive'}
-                                        </Typography>
-                                    </Box>
-                                    </Grid>
-                                </Grid>
-                            </Grid>
+                <FormFieldWrapper
+                  name="bh_user_middle_name"
+                  label="Middle Name"
+                >
+                  <Field
+                    as={Input}
+                    name="bh_user_middle_name"
+                    placeholder="Enter middle name"
+                    className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                  />
+                </FormFieldWrapper>
 
-                           
-                            <FieldArray name="project_details">
-                                {({ push }) => (
-                                    <>
-                                    {values?.project_details?.map((project: any, index: number) => (
-                                        <Grid container spacing={2} key={index} className='m-1'>
-                                        <Grid item xs={5}>
-                                            <Label className='font-normal'>Project <span style={{ color: 'red' }}>*</span></Label>
-                                            <Field
-                                            name={`project_details.${index}.project`}
-                                            render={({ field, form }: any) => (
-                                                <Autocomplete
-                                                size='small'
-                                                className='shadow-sm rounded'
-                                                multiple
-                                                {...field}
-                                                options={projects.filter((option) => 
-                                                    !field.value.some((selected) => selected.label === option.label)
-                                                )}
-                                                getOptionLabel={(option: any) => option.label}
-                                                value={field.value || []}
-                                                onChange={(event, value) =>
-                                                    form.setFieldValue(`project_details.${index}.project`, value)
-                                                }
-                                                renderOption={(props, option: any, { selected }) => (
-                                                    <li {...props} key={option.label}>
-                                                    {option.label}
-                                                    </li>
-                                                )}
-                                                renderInput={(params) => (
-                                                    <TextField {...params} placeholder="Select Project" variant="outlined" />
-                                                )}
-                                                />
-                                            )}
-                                            />
-                                            <ErrorMessage name={`project_details.${index}.project`} component="div" />
-                                        </Grid>
-                                        <Grid item xs={5}>
-                                            <Label className="font-normal">
-                                            Role <span style={{ color: 'red' }}>*</span>
-                                            </Label>
-                                            <Field
-                                            name={`project_details.${index}.projectRole`}
-                                            render={({ field, form }: any) => (
-                                                <Autocomplete
-                                                multiple
-                                                size="small"
-                                                className="shadow-sm rounded"
-                                                {...field}
-                                                options={roles.filter((option) => 
-                                                    !field.value.some((selected) => selected.dtl_desc === option.dtl_desc)
-                                                )}
-                                                getOptionLabel={(option: any) => option.dtl_desc || ""}
-                                                value={field.value || []}
-                                                onChange={(event, value) => 
-                                                    form.setFieldValue(`project_details.${index}.projectRole`, value)
-                                                }
-                                                renderOption={(props, option: any, { selected }) => (
-                                                    <li {...props} key={option.dtl_desc}>
-                                                        {option.dtl_desc}
-                                                    </li>
-                                                )}
-                                                renderInput={(params) => (
-                                                    <TextField {...params} placeholder="Select Roles" variant="outlined" />
-                                                )}
-                                                />
-                                            )}
-                                            />
-                                            <ErrorMessage name={`project_details.${index}.projectRole`} component="div" />
-                                        </Grid>
-                                        </Grid>
-                                    ))}
-                                    </>
-                                )}
-                            </FieldArray>
+                <FormFieldWrapper
+                  name="bh_user_last_name"
+                  label="Last Name"
+                  required
+                >
+                  <Field
+                    as={Input}
+                    name="bh_user_last_name"
+                    placeholder="Enter last name"
+                    className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400"
+                  />
+                </FormFieldWrapper>
+              </div>
 
-                            <div className='text-center mt-6'>
-                                <Button type="submit" variant="contained" sx={{ textTransform: 'none' }} className='bg-black text-white px-5 my-3' disabled={isSubmitting || !(isValid && dirty)}>
-                                    Update User
-                                </Button>
-                            </div>
-                        </Form>
-                    )}
-                </Formik>
-                <ToastComponent />
+              <div className="grid grid-cols-3 gap-4 mt-2">
+                <FormFieldWrapper
+                  name="user_email_id"
+                  label="Email Address"
+                  required
+                  className="col-span-1"
+                >
+                  <Field
+                    as={Input}
+                    name="user_email_id"
+                    placeholder="Enter email address"
+                    type="email"
+                    className="h-8 border-gray-300 text-sm focus:ring-blue-200 focus:border-blue-400 w-full"
+                  />
+                </FormFieldWrapper>
+
+                <div className="col-span-2 flex items-center pt-4">
+                  <Label className="mr-2">Status</Label>
+                  <Switch
+                    checked={statusToggle}
+                    onChange={handleStatusToggle}
+                    color="primary"
+                  />
+                  <span className="ml-2 text-sm">
+                    {statusToggle ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
             </div>
-    );
+            <div className="p-3 rounded bg-white border space-y-4">
+              <h3 className="text-base font-medium text-black border-b pb-2">
+                Project Access
+              </h3>
+
+              <FieldArray name="project_details">
+                {() => (
+                  <>
+                    {values.project_details.map((detail, index) => (
+                      <div key={index} className="grid grid-cols-2 gap-4">
+                        <FormFieldWrapper
+                          name={`project_details.${index}.project`}
+                          label="Projects"
+                          required
+                        >
+                          <Autocomplete
+                            multiple
+                            size="small"
+                            options={
+                              projects.filter(
+                                (proj) =>
+                                  !values.project_details[index].project.some(
+                                    (selected) => selected.value === proj.value
+                                  )
+                              )
+                            }
+                            getOptionLabel={(option) => option.label || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.value === value.value
+                            }
+                            value={values.project_details[index].project}
+                            onChange={(_, newValue) => {
+                              setFieldValue(
+                                `project_details.${index}.project`,
+                                newValue
+                              );
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Select projects"
+                                variant="outlined"
+                                className="bg-white"
+                              />
+                            )}
+                          />
+                        </FormFieldWrapper>
+
+                        <FormFieldWrapper
+                          name={`project_details.${index}.projectRole`}
+                          label="Roles"
+                          required
+                        >
+                          <Autocomplete
+                            multiple
+                            size="small"
+                            options={
+                              roles.filter(
+                                (role) =>
+                                  !values.project_details[index].projectRole.some(
+                                    (selected) =>
+                                      selected.dtl_code === role.dtl_code
+                                  )
+                              )
+                            }
+                            getOptionLabel={(option) => option.dtl_desc || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.dtl_code === value.dtl_code
+                            }
+                            value={values.project_details[index].projectRole}
+                            onChange={(_, newValue) => {
+                              setFieldValue(
+                                `project_details.${index}.projectRole`,
+                                newValue
+                              );
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Select roles"
+                                variant="outlined"
+                                className="bg-white"
+                              />
+                            )}
+                          />
+                        </FormFieldWrapper>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </FieldArray>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-center pt-2">
+              <Button
+                type="submit"
+                className="w-1/4 h-8 bg-black hover:bg-gray-800 text-white font-medium text-sm focus:ring focus:ring-blue-200"
+                disabled={
+                  isSubmitting ||
+                  !values.bh_user_first_name ||
+                  !values.bh_user_last_name ||
+                  !values.user_email_id ||
+                  values.project_details.some(
+                    (detail) =>
+                      detail.project.length === 0 ||
+                      detail.projectRole.length === 0
+                  )
+                }
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <Spinner />
+                    Updating...
+                  </div>
+                ) : (
+                  'Update User'
+                )}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
+
+      <ToastComponent />
+    </div>
+  );
 };
 
-export default AddUser;
+export default EditUser;

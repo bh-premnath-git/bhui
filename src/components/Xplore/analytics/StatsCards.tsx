@@ -4,7 +4,7 @@ interface StatsCardsProps {
   data: any[];
   activeFilter: string | null;
   onFilterClick: (brand: string) => void;
-  formatCurrency: (value: number) => string;
+  formatCurrency: (value: number | undefined) => string;
 }
 
 export default function StatsCards({ 
@@ -15,13 +15,24 @@ export default function StatsCards({
 }: StatsCardsProps) {
   const brands = ["Dole", "Frieda's", "Goya", "Chiquita"];
   
+  const isSelected = (brand: string) => {
+    if (!activeFilter) return false;
+    return activeFilter.includes(brand);
+  };
+
+  const getLatestValue = (brand: string): number => {
+    if (!data || data.length === 0) return 0;
+    const latestData = data[0];
+    return latestData[brand] || 0;
+  };
+  
   return (
     <div className="grid grid-cols-4 gap-4">
       {brands.map((brand) => (
         <Card 
           key={brand}
           className={`cursor-pointer transition-all hover:shadow-md ${
-            activeFilter === brand ? 'ring-2 ring-primary' : ''
+            isSelected(brand) ? 'ring-2 ring-primary' : ''
           }`}
           onClick={() => onFilterClick(brand)}
         >
@@ -30,7 +41,7 @@ export default function StatsCards({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(data[0]?.[brand as keyof typeof data[0]] || 0)}
+              {formatCurrency(getLatestValue(brand))}
             </div>
           </CardContent>
         </Card>

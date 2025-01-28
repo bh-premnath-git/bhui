@@ -1,4 +1,4 @@
-import * as React from "react"
+import {useState, useCallback} from "react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,7 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronsUpDown, Filter } from 'lucide-react'
+import { ChevronsUpDown, Filter, PlusCircle } from 'lucide-react'
 
 import {
   Table,
@@ -23,6 +23,7 @@ import {
 import { TableFlexiPagination } from "./TableFlexiPagination"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -30,7 +31,12 @@ interface DataTableProps<TData, TValue> {
   onFilterClick: () => void
   playRow?: boolean;
   playRowFn?: (rowData: any) => void
+  tableName?: string;
+  clickXploreFn?: () => void;
 }
+
+const SHOWONL_XPLORER = ["dataopshubb"];
+
 
 export function TableFlexi<TData, TValue>({
   columns,
@@ -38,10 +44,12 @@ export function TableFlexi<TData, TValue>({
   onFilterClick,
   playRow = false,
   playRowFn,
+  tableName,
+  clickXploreFn
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState("")
 
   const table = useReactTable({
     data,
@@ -60,6 +68,10 @@ export function TableFlexi<TData, TValue>({
     },
   })
 
+  const handleClickXplore = useCallback(() => {
+    if (clickXploreFn) clickXploreFn();
+  }, [clickXploreFn]);
+
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-end mb-2 gap-2">
@@ -71,7 +83,7 @@ export function TableFlexi<TData, TValue>({
             className="pl-10 py-1 text-sm h-8 w-full"
           />
         </div>
-        <Button
+        {!SHOWONL_XPLORER.includes(tableName) && <Button
           variant="outline"
           size="sm"
           className="h-8 w-8 p-0"
@@ -79,7 +91,23 @@ export function TableFlexi<TData, TValue>({
         >
           <Filter className="h-4 w-4" />
           <span className="sr-only">Open filter dialog</span>
-        </Button>
+        </Button>}
+
+        {tableName && SHOWONL_XPLORER.includes(tableName) && (
+            <Button
+              variant="default"
+              className={cn(
+                SHOWONL_XPLORER.includes(tableName)
+                  ? "bg-gray-900 text-white hover:bg-gray-800"
+                  : ``
+              )}
+              onClick={handleClickXplore}
+              aria-label={`Explorer${tableName}`}
+            >
+              Xplore <PlusCircle className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+
       </div>
       <div className="rounded-md border">
         <Table>

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ApiService } from '@/services/apiServices';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { MONITOR_PORT, KEYCLOAK_API_PORT } from '@/configration/environment';
 
 interface User {
   id: string;
@@ -62,7 +63,7 @@ const AssignUserDialog: React.FC<AssignUserDialogProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await ApiService('8005', 'get', '/users', null, null, null, false);
+      const response = await ApiService(KEYCLOAK_API_PORT, 'get', '/users', null, null, null, false);
       const filteredUsers = response.users.filter((user: User) => 
         user.realm_roles.includes('ops-user')
       );
@@ -82,7 +83,7 @@ const AssignUserDialog: React.FC<AssignUserDialogProps> = ({
 
     try {
       await ApiService(
-        '8004',
+        MONITOR_PORT,
         'patch',
         `/api/v1/alert/${alertId}`,
         { assigned_to: username },

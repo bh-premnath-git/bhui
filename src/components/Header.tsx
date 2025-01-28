@@ -5,9 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "/assets/logo/fixLogo.svg";
@@ -16,10 +14,9 @@ import { CustomBuildToolbar } from "./CustomBuildToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
-import {ThemeToggle } from "@/components/ThemeToogle";
+
 interface HeaderProps {
   isAuthenticated?: boolean;
-  logout?: () => void;
 }
 
 export function Header(props: HeaderProps) {
@@ -61,7 +58,6 @@ export function Header(props: HeaderProps) {
       <div className="flex-grow">
         {renderHeaderContent(renderingHeadContent(pathname))}
       </div>
-      <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">
@@ -83,8 +79,6 @@ export function Header(props: HeaderProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={props.logout}>Log out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

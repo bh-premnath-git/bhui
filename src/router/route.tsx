@@ -1,5 +1,3 @@
-// import SourceForm from '@/components/BuildPipeLineComps/SourceForm';
-import SavedDashboardView from '@/pages/SavedDashboardView';
 import { createTheme } from '@mui/material';
 import { lazy } from 'react';
 const Catalogs = lazy(() => import('@/components/Catalog/Catalogs'));
@@ -36,8 +34,8 @@ const BuildPlayGround = lazy(() => import('@/pages/buildPipeLine/buildPlayGround
 const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
-const BigHammerSearch = lazy(() => import('@/components/BighammerSearch/BighammerSearch'));
 const Xplorer = lazy(() => import('@/pages/XplorePage'));
+import SavedDashboardView from '@/pages/SavedDashboardView';
 export const routeList = [
   {
     path: "/",
@@ -82,7 +80,6 @@ export const routeList = [
   { path: '/dataops-hub/release-bundle', element: <AllReleaseBundle /> },
   { path: '/dataops-hub/release-bundle/new', element: <CreateBundle /> },
   { path: '/ReleaseBundle', element: <ReleaseBundle /> },
-  { path: '/bighammer-AI', element: <BigHammerSearch /> },
   { path: '/saved-dashboard/:id', element: <SavedDashboardView /> },
 ];
 

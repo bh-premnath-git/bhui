@@ -1,3 +1,4 @@
+import { CATALOG_API_PORT } from "@/configration/environment";
 import { ApiService } from "@/services/apiServices";
 
 interface PendingSync {
@@ -67,17 +68,17 @@ class DatabaseSyncService {
         if (!deploymentId) return;
 
         try {
-
+            
             // /api/v1/flow/flow-deployement/{flow_deployment_id}
             const resp = await ApiService(
-                '8011',
+                CATALOG_API_PORT,
                 'get',
                 `/flow/flow-deployement/${deploymentId}`,
             )
             const syncData = ({ ...resp, ...sync.value });
             if(syncData){
             const response = await ApiService(
-                '8011',
+                CATALOG_API_PORT,
                 'put',
                 `/flow/flow-deployement/${deploymentId}`,
                 syncData
@@ -108,7 +109,7 @@ class DatabaseSyncService {
             };
 
             const response = await ApiService(
-                '8011',
+                CATALOG_API_PORT,
                 'put',
                 `/api/v1/flow/flow-deployement/${deploymentId}`,
                 syncData

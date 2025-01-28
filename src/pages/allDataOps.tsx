@@ -11,6 +11,7 @@ import { getDataOps } from "@/redux/DataOpsSlice"
 import TaskDetails from '@/components/TaskDetails/TaskDetails';
 import { Package } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
+import { useNavigate } from 'react-router-dom';
 
 interface DemoPageProps {
   data: TableData[];
@@ -104,6 +105,7 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
   const [appliedFilters, setAppliedFilters] = useState<FilterValues | null>(null)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [selectedRowData, setSelectedRowData] = useState<any | null>(null)
+  const navigate = useNavigate();
   const filteredData = useMemo(() => {
     let filtered = data
 
@@ -168,6 +170,9 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
     }
   }, [])
 
+  const handleXplore = () => {
+    navigate("/data-catalog/xplore");
+  }
   return (
     <div className="container mx-auto py-10 space-y-8 px-4">
       <TableFlexiStatusCard
@@ -180,6 +185,8 @@ function DataOPsTable({ data, loading, error }: DemoPageProps) {
         data={filteredData}
         playRow={true}
         playRowFn={handleRowClick}
+        tableName="dataopshubb"
+          clickXploreFn={handleXplore}
         onFilterClick={() => setFilterDialogOpen(true)}
       />
       <TableFiexiFilterDialog

@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       host: '0.0.0.0',
-      port: 5000,
+      port: env.VITE_KEYCLOAK_PORT,
     },
     proxy: {
       '/superset': {
@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        'date-fn': 'date-fn/esm',
+        
       },
     },
     test: {

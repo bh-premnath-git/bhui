@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiService } from '@/services/apiServices';
 import useToast from '@/components/teast-service';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 interface CommitPayload {
     id: string;
@@ -22,7 +23,7 @@ export const CommitPart = ({ selectedData }: { selectedData: any }) => {
     async function commitApi({ id, message }: CommitPayload) {
         try {
             const payload = { "flow_deployment_id": id, "comment": message };
-            await ApiService('8011', 'post', '/flow/flow-version', payload);
+            await ApiService(CATALOG_API_PORT, 'post', '/flow/flow-version', payload);
             showToast('Successfully able to commited', { color: '#00b060' });
         } catch (error) {
             showToast('Error committing data. Please try again.', { color: '#f44336' });

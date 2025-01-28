@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
-import { ChartStyles } from '@/hooks/useChartStyles';
+import React, { createContext, useContext, useState } from "react";
+import type { ChartStyles } from "@/types/chart";
 
 export interface SavedDashboard {
   id: string;

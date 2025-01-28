@@ -2,8 +2,22 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { menuList } from '@/configration/menuList';
 import { jwtDecode } from 'jwt-decode';
-import { Tooltip } from '@mui/material';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from './ui/tooltip';
+import { Moon, Sun, LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -26,24 +40,23 @@ const roleAccess: RoleAccess = {
   'ops-user': ['BigHammer AI', 'Data Catalog', 'DataOps Hub'],
 };
 
-const getUserRoles = () => {
-  const token: any = sessionStorage?.getItem("token");
+const getUserRoles = (): [any[], any] | undefined => {
+  const token: string | null = sessionStorage?.getItem('token');
   const decoded: any = token ? jwtDecode(token) : null;
-
-  return decoded?.realm_access?.roles;
+  return [decoded?.realm_access?.roles, decoded];
 };
 
 export function Sidebar({ logout }: { logout: () => void }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const { pathname } = useLocation();
-  const userRoles = getUserRoles();
-  const { toggleTheme } = useTheme();
+  const [userRoles, userDecoded] = getUserRoles();
+  const { theme, toggleTheme } = useTheme();
 
-
-  // Determine allowed items based on user role
   const allowedItems = Array.from(
-    new Set(userRoles?.flatMap((role: any) => roleAccess[role] || []))
+    new Set(userRoles?.flatMap((role: string) => roleAccess[role] || []) || [])
   );
 
   const filteredNavItems: NavItem[] = menuList.filter((item) =>
@@ -58,7 +71,7 @@ export function Sidebar({ logout }: { logout: () => void }) {
   if (!isMounted) {
     return null;
   }
-
+  
   return (
     <aside
       className={`
@@ -67,18 +80,23 @@ export function Sidebar({ logout }: { logout: () => void }) {
         transition-all duration-300 ease-in-out
         overflow-hidden
         ${isExpanded ? 'w-60' : 'w-16'}
-
-        /* Sidebar background & text color 
-           Use a light gray background to match the screenshot */
         bg-[#F6F6F7] text-[#1F1F1F]
       `}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
+      onMouseEnter={() => {
+        if (!userDropdownOpen) {
+          setIsExpanded(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (!userDropdownOpen) {
+          setIsExpanded(false);
+        }
+      }}
       role="navigation"
       aria-label="Main Navigation"
     >
       <div className="flex flex-col h-full p-2">
-        <nav className="flex-1 mt-1 overflow-y-auto">
+        <nav className="mb-3 overflow-y-auto">
           <ul className="space-y-1">
             {filteredNavItems.map((item) => (
               <li key={item.path} className="relative">
@@ -87,8 +105,6 @@ export function Sidebar({ logout }: { logout: () => void }) {
                   className={`
                     flex items-center justify-between p-2 rounded-lg
                     transition-colors duration-200
-
-                    /* Active state */
                     ${pathname === item.path
                       ? 'bg-[#EBEBEC] text-[#000] font-semibold'
                       : 'hover:bg-[#EBEBEC]'
@@ -115,43 +131,43 @@ export function Sidebar({ logout }: { logout: () => void }) {
                   <ul className="mt-1 space-y-1">
                     {item.subPaths.map((subPath) => (
                       <li key={subPath.path}>
-                        <Tooltip
-                          title={!isExpanded ? subPath.label : ""}
-                          placement="right"
-                          arrow
-                        >
-                          <Link
-                            to={subPath.path}
-                            className={`
-                              flex items-center justify-between p-2 text-sm
-                              transition-colors duration-200
-                              relative group rounded-lg font-normal
-
-                              /* Active/hover for sub-items */
-                              ${pathname === subPath.path
-                                ? 'bg-[#EBEBEC] text-[#000]'
-                                : 'text-[#4A4A4A] hover:bg-[#EBEBEC] hover:text-[#1F1F1F]'
-                              }
-                            `}
-                          >
-                            <div className="flex items-center">
-                              <span
-                                className={`flex items-center min-w-[22px] ${!isExpanded ? 'mx-0' : ''
-                                  }`}
-                              >
-                                {subPath.icon}
-                              </span>
-                              <span
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link
+                                to={subPath.path}
                                 className={`
-                                  whitespace-nowrap transition-all duration-300 ml-3
-                                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
+                                  flex items-center justify-between p-2 text-sm
+                                  transition-colors duration-200
+                                  rounded-lg font-normal
+                                  ${pathname === subPath.path
+                                    ? 'bg-[#EBEBEC] text-[#000]'
+                                    : 'text-[#4A4A4A] hover:bg-[#EBEBEC] hover:text-[#1F1F1F]'
+                                  }
                                 `}
                               >
+                                <div className="flex items-center">
+                                  <span className="flex items-center min-w-[22px]">
+                                    {subPath.icon}
+                                  </span>
+                                  <span
+                                    className={`
+                                      whitespace-nowrap transition-all duration-300 ml-3
+                                      ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
+                                    `}
+                                  >
+                                    {subPath.label}
+                                  </span>
+                                </div>
+                              </Link>
+                            </TooltipTrigger>
+                            {!isExpanded && (
+                              <TooltipContent side="right" align="center">
                                 {subPath.label}
-                              </span>
-                            </div>
-                          </Link>
-                        </Tooltip>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                       </li>
                     ))}
                   </ul>
@@ -160,44 +176,71 @@ export function Sidebar({ logout }: { logout: () => void }) {
             ))}
           </ul>
         </nav>
-        <div className="mt-auto mb-12 flex flex-col space-y-2">
-          <Tooltip title={!isExpanded ? 'Switch Theme' : ''} placement="right" arrow>
-            <button
-              className={`
-                flex items-center p-2 rounded-lg transition-colors duration-200
-                hover:bg-[#EBEBEC]
-              `}
-              onClick={toggleTheme}            >
-              <span className="flex items-center min-w-[22px]">🌓</span>
-              <span
-                className={`
-                  ml-3 whitespace-nowrap transition-all duration-300
-                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
-                `}
+        <div className="mt-6 flex flex-col space-y-1.5">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="w-full justify-start flex items-center"
+                >
+                  {theme === 'light' ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                  {isExpanded && (
+                    <span className="ml-2">
+                      {theme === 'light' ? 'Light' : 'Dark'}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                align="center"
+                className={`${isExpanded ? 'hidden' : 'block'}`}
               >
-                Switch Theme
-              </span>
-            </button>
-          </Tooltip>
-          <Tooltip title={!isExpanded ? 'Logout' : ''} placement="right" arrow>
-            <button
-              className={`
-                flex items-center p-2 rounded-lg transition-colors duration-200
-                hover:bg-[#EBEBEC]
-              `}
-              onClick={() => logout()}
-            >
-              <span className="flex items-center min-w-[22px]">🚪</span>
-              <span
-                className={`
-                  ml-3 whitespace-nowrap transition-all duration-300
-                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
-                `}
+                {theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              setUserDropdownOpen(open);
+              if (open) {
+                setIsExpanded(true);
+              }
+            }}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start p-0 flex items-center"
               >
-                Logout
-              </span>
-            </button>
-          </Tooltip>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="https://github.com/shadcn.png" alt="User" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                {isExpanded && (
+                  <div className="ml-2 flex flex-col items-start text-left">
+                    <span className="text-sm font-medium">{userDecoded?.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {userDecoded?.email}
+                    </span>
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </aside>

@@ -1,6 +1,5 @@
-import React from 'react';
 import { Formik, Form } from 'formik';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,24 +9,31 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
 import { DatePicker } from 'antd';
-import moment from 'moment';
 import { Stack } from '@mui/material';
 
-const FilterForm = ({
+interface FilterFormProps {
+    open: boolean;
+    onClose: () => void;
+    onSubmit: (values: any) => void;
+    filterableFields: Array<{ key: string; label: string }>;
+    items?: Array<any>;
+}
+
+const FilterForm: React.FC<FilterFormProps> = ({
     open,
     onClose,
     onSubmit,
     filterableFields,
     items = []
-}: any) => {
+}) => {
     const initialValues = {
-        start_date: null,
-        end_date: null,
+        start_date: null as string | null, // Store as ISO string
+        end_date: null as string | null,
+        // Add other filterable fields if necessary
     };
 
-    const getUniqueItems = (key: any) => {
+    const getUniqueItems = (key: string) => {
         const uniqueValues = new Set();
         return items
             .filter((item: any) => item[key] !== undefined)
@@ -38,7 +44,7 @@ const FilterForm = ({
             });
     };
 
-    const handleSubmit = (values: any) => {
+    const handleSubmit = (values: typeof initialValues) => {
         onSubmit(values);
         onClose();
     };
@@ -53,7 +59,7 @@ const FilterForm = ({
                     {({ values, setFieldValue }: any) => (
                         <Form className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                {filterableFields.map(({ key, label }: any) => (
+                                {filterableFields.map(({ key, label }) => (
                                     <div key={key} className="space-y-2">
                                         <Label>{label}</Label>
                                         <Select
@@ -78,19 +84,22 @@ const FilterForm = ({
                                     <div className="w-96">
                                         <Label>Start Date</Label>
                                         <DatePicker
-                                            value={values.start_date ? moment(values.start_date) : null}
-                                            onChange={(date) => setFieldValue('start_date', date ? date.toISOString() : null)}
+                                            value={values.start_date ? new Date(values.start_date) : null}
+                                            onChange={(date: Date | null, dateString: string) => {
+                                                setFieldValue('start_date', date ? date.toISOString() : null);
+                                            }}
                                             style={{ width: '100%' }}
                                         />
                                     </div>
-
-
                                 </Stack>
+
                                 <div className="w-46">
                                     <Label>End Date</Label>
                                     <DatePicker
-                                        value={values.end_date ? moment(values.end_date) : null}
-                                        onChange={(date) => setFieldValue('end_date', date ? date.toISOString() : null)}
+                                        value={values.end_date ? new Date(values.end_date) : null}
+                                        onChange={(date: Date | null, dateString: string) => {
+                                            setFieldValue('end_date', date ? date.toISOString() : null);
+                                        }}
                                         style={{ width: '100%' }}
                                     />
                                 </div>

@@ -1,5 +1,3 @@
-// import SourceForm from '@/components/BuildPipeLineComps/SourceForm';
-import SavedDashboardView from '@/pages/SavedDashboardView';
 import { createTheme } from '@mui/material';
 import { lazy } from 'react';
 const Catalogs = lazy(() => import('@/components/Catalog/Catalogs'));
@@ -37,6 +35,7 @@ const AllReleaseBundle = lazy(() => import('@/pages/allReleaseBundle'));
 const CreateBundle = lazy(() => import('@/pages/createBundle'));
 const ReleaseBundle = lazy(() => import('@/pages/releaseBundle'));
 const Xplorer = lazy(() => import('@/pages/XplorePage'));
+import SavedDashboardView from '@/pages/SavedDashboardView';
 export const routeList = [
   {
     path: "/",

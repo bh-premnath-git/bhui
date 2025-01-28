@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        'date-fn': 'date-fn/esm',
+        
       },
     },
     test: {

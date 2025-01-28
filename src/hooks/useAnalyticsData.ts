@@ -1,23 +1,16 @@
 import { useState, useEffect } from "react";
+import { GenericData } from "@/types/analytics";
 
-export interface SalesData {
-  date: string;
-  Dole: number;
-  "Frieda's": number;
-  Goya: number;
-  Chiquita: number;
-}
 
 export const formatCurrency = (value: number): string => {
   return `$${value.toLocaleString()}`;
 };
 
 export function useAnalyticsData() {
-  const [data, setData] = useState<SalesData[]>([]);
+  const [data, setData] = useState<GenericData[]>([]);
 
   useEffect(() => {
-    // Simulate API call with dummy data
-    const dummyData: SalesData[] = [
+    const dummyData: GenericData[] = [
       {
         date: "Jan 25",
         Dole: 12100,

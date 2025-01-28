@@ -1,31 +1,60 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useSQLQuery } from "@/hooks/useSQLQuery";
+import { PanelLayout } from "./shared/PanelLayout";
+import { Copy, PlayCircle, RotateCcw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SQLViewer() {
-  const [query, setQuery] = useState(
-    `SELECT 
-  DATE_TRUNC('day', order_date) as sale_date,
-  brand_name,
-  SUM(total_sales_amount) as daily_sales
-FROM 
-  sales_summary
-WHERE 
-  order_date >= CURRENT_DATE - INTERVAL '7 days'
-GROUP BY 
-  sale_date, brand_name
-ORDER BY 
-  sale_date DESC, brand_name;`
-  );
+  const { query, setQuery, executeQuery, defaultQuery } = useSQLQuery();
+  const { toast } = useToast();
+
+  const handleCopyQuery = async () => {
+    await navigator.clipboard.writeText(query);
+    toast({
+      description: "Query copied to clipboard",
+      duration: 2000,
+    });
+  };
+
+  const handleReset = () => {
+    setQuery(defaultQuery);
+    toast({
+      description: "Query reset to default",
+      duration: 2000,
+    });
+  };
 
   return (
-    <div className="space-y-4">
+    <PanelLayout>
       <Textarea
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="font-mono h-[200px]"
+        className="font-mono flex-1 resize-none"
       />
-      <Button className="w-full bg-black">Run Query</Button>
-    </div>
+      <div className="flex justify-end gap-2">
+        <Button 
+          variant="outline"
+          onClick={handleCopyQuery}
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Copy
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={handleReset}
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset
+        </Button>
+        <Button 
+          onClick={executeQuery}
+          className="bg-black text-white border hover:bg-gray-200"
+        >
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Run
+        </Button>
+      </div>
+    </PanelLayout>
   );
 }

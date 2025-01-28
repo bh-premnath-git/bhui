@@ -29,6 +29,8 @@ export default function AnalyticsTable({
   onNextPage,
   formatCurrency
 }: AnalyticsTableProps) {
+  const selectedBrands = activeFilter ? activeFilter.split(',') : ["Dole", "Frieda's", "Goya", "Chiquita"];
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -36,16 +38,9 @@ export default function AnalyticsTable({
           <TableHeader className="bg-muted/50">
             <TableRow>
               <TableHead className="w-[100px] font-bold">Date</TableHead>
-              {!activeFilter ? (
-                <>
-                  <TableHead className="text-right font-bold">Dole</TableHead>
-                  <TableHead className="text-right font-bold">Frieda's</TableHead>
-                  <TableHead className="text-right font-bold">Goya</TableHead>
-                  <TableHead className="text-right font-bold">Chiquita</TableHead>
-                </>
-              ) : (
-                <TableHead className="text-right font-bold">{activeFilter}</TableHead>
-              )}
+              {selectedBrands.map((brand) => (
+                <TableHead key={brand} className="text-right font-bold">{brand}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,18 +50,11 @@ export default function AnalyticsTable({
                 className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/20'}
               >
                 <TableCell className="font-medium">{row.date}</TableCell>
-                {!activeFilter ? (
-                  <>
-                    <TableCell className="text-right">{formatCurrency(row.Dole)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(row["Frieda's"])}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(row.Goya)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(row.Chiquita)}</TableCell>
-                  </>
-                ) : (
-                  <TableCell className="text-right">
-                    {formatCurrency(row[activeFilter as keyof typeof row])}
+                {selectedBrands.map((brand) => (
+                  <TableCell key={brand} className="text-right">
+                    {formatCurrency(row[brand] || 0)}
                   </TableCell>
-                )}
+                ))}
               </TableRow>
             ))}
           </TableBody>

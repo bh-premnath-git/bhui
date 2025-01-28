@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Chip } from '@mui/material';
 import { Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { Button } from '@mui/material';
-import { AddAlert, PersonAddAlt } from '@mui/icons-material';
+import {  PersonAddAlt } from '@mui/icons-material';
 import { Card } from '../ui/card';
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { Spinner } from '../ui/spinner';
@@ -300,6 +300,10 @@ const AlertTableDtl: React.FC<AlertTableDtlProps> = ({ jobDetailList, loading, e
     );
   }
 
+  const handleXplore = () => {
+    navigate("/data-catalog/xplore");
+  }
+
   return (
     <div className="container mx-auto p-4">
       {(!jobDetailList || jobDetailList.length === 0) ? (
@@ -308,6 +312,8 @@ const AlertTableDtl: React.FC<AlertTableDtlProps> = ({ jobDetailList, loading, e
         <FlexibleTable
           data={jobDetailList}
           columns={columns}
+          tableName="dataopsalert"
+          clickXploreFn={handleXplore}
           itemsPerPageOptions={[5, 10, 20]}
           defaultItemsPerPage={10}
           isAction={false}

@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -6,77 +7,112 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAnalytics } from "@/contexts/AnalyticsContext";
-import { useAnalyticsData } from "@/hooks/useAnalyticsData";
-import { useChartStyles } from "@/hooks/useChartStyles";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { MoreHorizontal } from "lucide-react";
-import useToast from '@/components/teast-service';
+import { useToast } from "@/components/ui/use-toast";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StatsCards from "./analytics/StatsCards";
 import AnalyticsChart from "./analytics/AnalyticsChart";
 import AnalyticsTable from "./analytics/AnalyticsTable";
 
-const ITEMS_PER_PAGE = 5;
-
 export default function AnalyticsPanel() {
-  const { viewMode, setViewMode } = useAnalytics();
-  const { data, formatCurrency } = useAnalyticsData();
-  const { styles } = useChartStyles();
+  const { 
+    viewMode, 
+    setViewMode, 
+    data,
+    isLoading,
+    error, 
+    formatCurrency, 
+    activeFilters, 
+    setActiveFilters,
+    chartStyles,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage
+  } = useAnalytics();
   const { getColorSchemeColors } = useColorScheme();
-	const [ToastComponent, showToast] = useToast();
+  const { toast } = useToast();
   const { saveDashboard } = useDashboard();
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  const colors = getColorSchemeColors(styles.colorScheme);
+  const colors = getColorSchemeColors(chartStyles.colorScheme);
 
   const handleSave = (type: 'existing' | 'new') => {
     const dashboard = {
       name: 'Daily Sales by Brand',
       data,
-      styles,
+      styles: chartStyles,
       type: viewMode as 'chart' | 'table',
     };
     
     const savedDashboard = saveDashboard(dashboard);
     
-    showToast(`Dashboard saved ${type === 'new' ? 'as new' : 'to existing'} successfully.`, { color: '#00b060' });
+    toast({
+      title: "Dashboard Saved",
+      description: `Dashboard saved ${type === 'new' ? 'as new' : 'to existing'} successfully.`,
+    });
+
     navigate(`/saved-dashboard/${savedDashboard.id}`);
   };
 
   const handleFilterClick = (brand: string) => {
-    if (activeFilter === brand) {
-      setActiveFilter(null);
-    showToast('Showing all brands data', { color: '#00b060' });
-    } else {
-      setActiveFilter(brand);
-      showToast(`Showing data for ${brand}`, { color: '#00b060' });
-     
-    }
+    setActiveFilters((prevFilters: string[]) => {
+      const isSelected = prevFilters.includes(brand);
+      if (isSelected) {
+        const newFilters = prevFilters.filter(f => f !== brand);
+        toast({
+          title: "Filter Removed",
+          description: `Removed ${brand} from filters`,
+        });
+        return newFilters;
+      } else {
+        toast({
+          title: "Filter Added",
+          description: `Added ${brand} to filters`,
+        });
+        return [...prevFilters, brand];
+      }
+    });
   };
 
-  const filteredData = activeFilter
-    ? data.map(row => ({
-        ...row,
-        [activeFilter]: row[activeFilter as keyof typeof row],
-        date: row.date,
-      }))
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-destructive">
+        <p>Error loading data. Please try again later.</p>
+      </div>
+    );
+  }
+
+  const filteredData = activeFilters.length > 0
+    ? data.map(row => {
+        const filteredRow = { date: row.date };
+        activeFilters.forEach(filter => {
+          filteredRow[filter] = row[filter];
+        });
+        return filteredRow;
+      })
     : data;
 
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
 
   const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
+    setCurrentPage(Math.max(currentPage - 1, 1));
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    setCurrentPage(Math.min(currentPage + 1, totalPages));
   };
 
   return (
@@ -113,7 +149,7 @@ export default function AnalyticsPanel() {
 
       <StatsCards 
         data={data}
-        activeFilter={activeFilter}
+        activeFilter={activeFilters.join(',')}
         onFilterClick={handleFilterClick}
         formatCurrency={formatCurrency}
       />
@@ -122,8 +158,8 @@ export default function AnalyticsPanel() {
         <TabsContent value="chart">
           <AnalyticsChart 
             data={filteredData}
-            activeFilter={activeFilter}
-            styles={styles}
+            activeFilter={activeFilters.join(',')}
+            styles={chartStyles}
             colors={colors}
             formatCurrency={formatCurrency}
           />
@@ -132,7 +168,7 @@ export default function AnalyticsPanel() {
         <TabsContent value="table">
           <AnalyticsTable 
             data={currentData}
-            activeFilter={activeFilter}
+            activeFilter={activeFilters.join(',')}
             currentPage={currentPage}
             totalPages={totalPages}
             onPreviousPage={handlePreviousPage}
@@ -141,7 +177,6 @@ export default function AnalyticsPanel() {
           />
         </TabsContent>
       </Tabs>
-      <ToastComponent />
     </div>
   );
 }

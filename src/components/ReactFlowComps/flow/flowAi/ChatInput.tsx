@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
-import SendRoundedIcon from '@mui/icons-material/SendRounded'
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import { Trash2, Send } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 import { debounce } from 'lodash'
 
 interface ChatInputProps {
@@ -17,7 +17,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, deleteCon, isLoadi
   const adjustTextareaHeight = debounce(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px` // Reduced maxHeight
     }
   }, 100)
 
@@ -42,47 +42,49 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, deleteCon, isLoadi
     }
   }
 
-  const deleteConnversation = async () => {
+  const deleteConversation = async () => {
     await deleteCon()
   }
 
   return (
-    <div className="flex-shrink-0 py-6 px-6 bg-white border-t">
-      <div className="flex items-end space-x-3">
+    <div className="flex-shrink-0 py-4 px-4 bg-white border-t">
+      <div className="flex items-center gap-2">
         <Textarea
           ref={textareaRef}
-          placeholder="Ask BigHammer AI"
+          placeholder="Ask BigHammer AI..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyPress}
           disabled={isLoading}
-          className="flex-grow px text-base rounded-xl bg-gray-50 border resize-none placeholder:text-gray-400"
+          className="flex-1 bg-white border border-gray-300 rounded-md p-2 text-base text-black resize-none focus:outline-none focus:ring-2 focus:ring-gray-400"
           style={{
-            minHeight: '52px',
-            maxHeight: '200px'
+            minHeight: '40px',
+            maxHeight: '150px'
           }}
         />
-        <button
+        <Button
           onClick={handleSend}
           disabled={!inputValue.trim() || isLoading}
-          className={`p rounded-full transition-colors flex-shrink-0 ${!inputValue.trim() || isLoading
-            ? 'cursor-not-allowed opacity-50'
-            : 'hover:bg-purple-800 cursor-pointer'
+          className={`flex items-center justify-center p-2 rounded-md transition-colors ${!inputValue.trim() || isLoading
+            ? 'bg-black hover:bg-gray-800 cursor-not-allowed opacity-50'
+            : 'bg-black hover:bg-gray-800'
             }`}
+          aria-label="Send Message"
         >
-          <SendRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
-        </button>
-        <button
-          onClick={() => { deleteConnversation() }}
-          className={`p rounded-full transition-colors flex-shrink-0 ${!inputValue.trim() || isLoading
+          <Send className="h-5 w-5 text-white" />
+        </Button>
+        <Button
+          onClick={deleteConversation}
+          disabled={isLoading}
+          className={`flex items-center justify-center p-2 rounded-md transition-colors ${isLoading
             ? 'cursor-not-allowed opacity-50'
-            : 'hover:bg-purple-800 cursor-pointer'
+            : 'bg-transparent hover:bg-gray-100'
             }`}
+          aria-label="Delete Conversation"
         >
-          <DeleteRoundedIcon className="h-7 w-7 text-gold-300 hover:text-gold-400 transition-colors" />
-        </button>
+          <Trash2 className="h-5 w-5 text-black" />
+        </Button>
       </div>
     </div>
   )
 }
-

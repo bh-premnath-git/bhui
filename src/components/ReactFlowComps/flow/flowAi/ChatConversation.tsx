@@ -19,18 +19,28 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { aiMissingData } = useFlow()
 
-
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop =
         scrollContainerRef.current.scrollHeight
     }
   }, [conversation])
-
+console.log("conversation", conversation);
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-grow overflow-auto px-4 py-6 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent bg-gray-20"
+      className="
+        flex-grow
+        overflow-auto
+        px-4
+        py-6
+        space-y-3
+        bg-gray-20
+        scrollbar-thin
+        scrollbar-thumb-gray-300
+        scrollbar-track-transparent
+        scroll-container
+      "
     >
       {conversation.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -40,22 +50,24 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           {isLoading && <Spinner className="w-8 h-8" />}
         </div>
       ) : (
-        conversation.map((entry) => {
-          return (
-            <div key={entry.id} className="space-y-3">
-              <div className="flex justify-end">
-                <div className="flex items-end gap-2 max-w-[80%]">
-                  <div className="bg-gray-200 text-black px-4 py-2 rounded-2xl rounded-br-none shadow-sm">
-                    {entry.question}
-                  </div>
-                  <CircleUserRound className="text-gray-600 w-6 h-6 flex-shrink-0 mb-1" />
+        conversation.map((entry) => (
+          <div key={entry.id} className="space-y-3">
+            {/* User question (left-aligned) */}
+            <div className="flex w-full justify-start">
+              <div className="flex items-end gap-2 max-w-[80%]">
+                <CircleUserRound className="text-gray-600 w-6 h-6 flex-shrink-0 mb-1" />
+                <div className="bg-gray-200 text-black px-4 py-2 rounded-2xl rounded-br-none shadow-sm">
+                  {entry.question}
                 </div>
               </div>
+            </div>
 
-              {entry.response === null ? (
+            {/* Assistant response (right-aligned) */}
+            {entry.response === null ? (
+              <div className="flex w-full justify-end">
                 <div className="flex gap-2 items-end max-w-[80%]">
                   <img
-                    src="/assets/buildPipeline/bighammer.png"
+                    src="/assets/ai/ai.png"
                     alt="Assistant"
                     className="w-6 h-6 flex-shrink-0 mb-1"
                   />
@@ -63,19 +75,28 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                     <Spinner className="w-6 h-6" showLoadingTxt={false} />
                   </div>
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div className="flex w-full justify-end">
                 <div className="flex gap-2 items-start max-w-[75%]">
+                  <ResponseContent
+                    onSend={onSend}
+                    sender="assistant"
+                    response={entry.response}
+                    missing={entry.missing}
+                    aimissingData={aiMissingData}
+                    id={entry.id}
+                  />
                   <img
-                    src="/assets/buildPipeline/bighammer.png"
+                    src="/assets/ai/ai.png"
                     alt="Assistant"
                     className="w-6 h-6 flex-shrink-0 mt-1"
                   />
-                    <ResponseContent onSend={onSend} sender="assistant" response={entry.response} missing={entry.missing} aimissingData={aiMissingData} id={entry.id} />
                 </div>
-              )}
-            </div>
-          )
-        })
+              </div>
+            )}
+          </div>
+        ))
       )}
     </div>
   )

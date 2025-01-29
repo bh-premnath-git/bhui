@@ -101,7 +101,7 @@ export const useConversation = () => {
       setConversation(prev =>
         prev.map(entry =>
           entry.id === prev[prev.length - 1].id
-            ? { ...entry, response: `Error: ${errorMessage}` }
+            ? { ...entry, response: `${errorMessage} try again later` }
             : entry
         )
       )

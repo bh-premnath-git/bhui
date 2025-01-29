@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, Stack, Typography, Modal, Link } from '@mui/material';
-import { Field, Form, Formik, useFormik } from 'formik';
+import React, { useState } from 'react';
+import { Box, Button, Stack, Modal } from '@mui/material';
+import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast, ToastContainer, ToastPosition } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import { RootState } from '@/store/store';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { insertPipeline, setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
+import { setBuildPipeLineDtl } from '@/redux/BuildPipeLineSlice';
 import CustomField from '@/common/CustomField';
 import { ApiService } from '@/services/apiServices';
 import { COLORS } from '@/utils/constants';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 const style = {
     position: 'absolute' as 'absolute',
@@ -19,7 +20,6 @@ const style = {
     transform: 'translate(-50%, -50%)',
     width: 800,
     bgcolor: 'background.paper',
-    // border: '2px solid #000',
     boxShadow: 2,
     p: 4,
     borderRadius: 1,
@@ -34,7 +34,6 @@ interface BuildPipeLineCreatePopupProps {
 
 const validationSchema = Yup.object().shape({
     bh_project_id: Yup.string().required('Project is required'),
-    // git_branch: Yup.string().required('Branch is required'),
     pipeline_name: Yup.string().required('Name is required'),
     notes: Yup.string().notRequired(),
 });
@@ -66,7 +65,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                 <Formik
                     initialValues={{
                         bh_project_id: '',
-                        // git_branch: '',
                         pipeline_name: '',
                         notes: '',
                     }}
@@ -75,9 +73,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                     onSubmit={async (values, { setSubmitting }) => {
                         let body: any = values;
                         body.tags = {};
-                        // setIsLoading(true)
-                        const response = await ApiService('8011', 'post', '/pipeline', body);
-                        console.log(response);
+                        const response = await ApiService(CATALOG_API_PORT, 'post', '/pipeline', body);
                         if (response?.error) {
                             showToast(response?.error, { color: COLORS.red });
                         } else {

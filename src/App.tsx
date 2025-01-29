@@ -13,6 +13,7 @@ import store from './store/store';
 import { ThemeProvider } from '@mui/material';
 import { ThemeProvider as ThemesProvides } from "@/contexts/ThemeContext";
 import { DashboardProvider } from "./contexts/DashboardContext";
+import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
 
 import { routeList, theme } from '@/router/route';
 import { ErrorBoundary } from "@/ErrorBoundry"
@@ -26,9 +27,9 @@ interface LayoutProps {
 const Layout = ({ isAuthenticated, logout }: LayoutProps) => {
   return (
     <div className="flex flex-col h-screen">
-      <Header isAuthenticated={isAuthenticated} logout={logout} />
+      <Header isAuthenticated={isAuthenticated} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <Sidebar logout={logout} />
         <main className="flex-1 overflow-auto overflow-x-hidden	p-1 ml-8">
           <Outlet />
         </main>
@@ -114,22 +115,24 @@ function App() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <DashboardProvider>
-              <FlowProvider>
-                <Provider store={store}>
-                  <BrowserRouter>
-                    <Suspense fallback={<Loading />}>
-                      <Routes>
-                        <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
-                          {routeList.map((route, index) => (
-                            <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
-                          ))}
-                        </Route>
-                      </Routes>
-                    </Suspense>
-                  </BrowserRouter>
-                </Provider>
-              </FlowProvider>
-              <ToastContainer />
+              <AnalyticsProvider>
+                <FlowProvider>
+                  <Provider store={store}>
+                    <BrowserRouter>
+                      <Suspense fallback={<Loading />}>
+                        <Routes>
+                          <Route element={<Layout isAuthenticated={isAuthenticated} logout={logout} />} >
+                            {routeList.map((route, index) => (
+                              <Route key={`${index}-${route.path}`} path={route.path} element={route.element} />
+                            ))}
+                          </Route>
+                        </Routes>
+                      </Suspense>
+                    </BrowserRouter>
+                  </Provider>
+                </FlowProvider>
+                <ToastContainer />
+              </AnalyticsProvider>
             </DashboardProvider>
           </QueryClientProvider>
         </ErrorBoundary>

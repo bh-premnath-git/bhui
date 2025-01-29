@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
-import { decrypt_string, encrypt_string } from "@/services/encryption";
+import { encrypt_string } from "@/services/encryption";
 import { toast } from "sonner";
 import {
     Tooltip,
@@ -23,6 +23,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDispatch } from 'react-redux';
+import { CATALOG_API_PORT } from '@/configration/environment';
+
 
 const schemaReferences: Record<string, any> = {
     "schemas/Source.json": sourceSchema,
@@ -33,7 +35,6 @@ const schemaReferences: Record<string, any> = {
     "transformations/readers/CSVOptions.json": csvOptionsSchema,
 };
 
-// Add new interface for connection type
 interface ConnectionType {
     id: number;
     connection_name: string;
@@ -42,7 +43,6 @@ interface ConnectionType {
     connection_type: string;
 }
 
-// Add proper interfaces for form data and schema
 interface FormSchema {
     type: string;
     properties: Record<string, any>;
@@ -66,7 +66,6 @@ interface FormData {
     [key: string]: any;
 }
 
-// Update component props interface
 interface ReaderOptionsFormProps {
     onSubmit?: (data: FormData) => void;
     onClose?: () => void;
@@ -75,53 +74,42 @@ interface ReaderOptionsFormProps {
     nodeId?: string;
 }
 
-// Add this interface to type the groups
 interface SchemaGroup {
     id: string;
     title?: string;
 }
 
-
-
-// Update the isFieldRequired function to handle nested source properties
 const isFieldRequired = (
     fieldName: string,
     schema: any,
     path: string[],
     currentFormData: FormData
 ) => {
-    // Check direct required fields from the base schema (readerSchema)
     if (Array.isArray(readerSchema.required) && readerSchema.required.includes(fieldName)) {
         return true;
     }
 
-    // Check direct required fields from the current schema
     if (Array.isArray(schema.required) && schema.required.includes(fieldName)) {
         return true;
     }
 
-    // Check if we're in the source object
     if (path[0] === 'source') {
         const sourceType = currentFormData.source?.type;
         if (sourceType) {
-            // Find the matching condition in Source.json
             const sourceCondition = sourceSchema.allOf?.find(
                 condition => condition.if.properties.type.const === sourceType
             );
 
-            // Check if the field is required for this source type
             if (sourceCondition?.then?.required?.includes(fieldName)) {
                 return true;
             }
         }
 
-        // Check if the field is required in the base Source schema
         if (sourceSchema.required?.includes(fieldName)) {
             return true;
         }
     }
 
-    // For nested objects in source.connection
     if (path.includes('connection') && currentFormData.source?.connection?.type) {
         const connectionType = currentFormData.source.connection.type;
         const connectionCondition = connectionSchema.allOf?.find(
@@ -136,7 +124,6 @@ const isFieldRequired = (
     return false;
 };
 
-// First define the formatFieldName function
 const formatFieldName = (fieldName: string) => {
     return fieldName
         .replace(/([A-Z])/g, " $1")
@@ -146,7 +133,6 @@ const formatFieldName = (fieldName: string) => {
         .join(" ");
 };
 
-// Then define the RequiredFieldLabel component that uses formatFieldName
 const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
     <div className="flex items-center gap-1">
         {formatFieldName(fieldName)}
@@ -155,16 +141,12 @@ const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
 );
 
 
-// Add this helper function to get source type specific fields
 const getSourceTypeFields = (sourceType: string) => {
     const condition = sourceSchema.allOf?.find(
         condition => condition.if.properties.type.const === sourceType
     );
 
-    // Get additional properties from the condition only
     const additionalProperties = condition?.then?.properties || {};
-
-    // Return only the additional properties, excluding base properties
     return {
         properties: additionalProperties,
         required: [...(condition?.then?.required || [])]
@@ -207,15 +189,13 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     const [connectionTypes, setConnectionTypes] = useState<ConnectionType[]>([]);
     const [activeSection, setActiveSection] = useState(0);
     const [submitValue, setSubmitValue] = useState('')
-    // Add effect to fetch connection types
     useEffect(() => {
         fetchConnectionTypes();
     }, []);
 
     const fetchConnectionTypes = async () => {
         try {
-            const response = await ApiService('8011', 'GET', '/connection_registry/list/?connection_type=source');
-            console.log(response)
+            const response = await ApiService(CATALOG_API_PORT, 'GET', '/connection_registry/list/?connection_type=source');
             setConnectionTypes(response);
         } catch (error) {
             console.error('Error fetching connection types:', error);
@@ -226,7 +206,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         resolveSchema();
     }, [formData]);
 
-    // Define resolveFileTypeSchema function
     const resolveFileTypeSchema = (schema: any) => {
         const fileTypeCondition = readerSchema.allOf?.find(
             (condition: any) => condition.if.properties.file_type?.const === formData.file_type
@@ -244,7 +223,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         return schema;
     };
 
-    // Define resolveSourceTypeSchema function
     const resolveSourceTypeSchema = (schema: any) => {
         const sourceTypeCondition = readerSchema.allOf?.find(
             (condition) => condition.if.properties.source?.properties?.type?.const === formData.source?.type
@@ -262,7 +240,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         return schema;
     };
 
-    // Define resolveConnectionSchema function
     const resolveConnectionSchema = (schema: any) => {
         if (!formData.source?.connection?.type) return schema;
 
@@ -273,7 +250,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
         if (connectionCondition) {
             if (connectionCondition.then.$ref) {
-                // Handle referenced schemas
                 const schemaName = connectionCondition.then.$ref.split('/').pop().replace('.json', '');
                 const referencedSchema = schemaReferences[`connections/${schemaName}.json`]?.connectionSpecification;
 
@@ -288,7 +264,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     }
                 };
             } else {
-                // Handle inline schema definitions
                 return {
                     ...schema,
                     properties: {
@@ -331,7 +306,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         setCurrentSchema(resolvedSchema);
     };
 
-    // Update handleChange to be more type-safe
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
         path: string[] = []
@@ -340,8 +314,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         setFormData((prev) => {
             const newData = { ...prev };
             let current = newData;
-
-            // Handle nested paths with type safety
             for (let i = 0; i < path.length - 1; i++) {
                 if (!current[path[i]]) {
                     current[path[i]] = {};
@@ -362,8 +334,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             return newData;
         });
     };
-
-    // Move radio handling functions inside the component
     const renderPostgresRadioField = (fieldName: string, fieldSchema: any, path: string[]) => {
         return (
             <div key={fieldName} className="col-span-3 border p-4 my-2 rounded">
@@ -409,21 +379,17 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                     )}
 
                                 </div>
-                                {/* Show additional fields when this option is selected */}
                                 {formData.replication_method?.method === option.properties?.method?.const && (
                                     <div className="mt-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             {Object.entries(option.properties)
                                                 .filter(([key, schema]: [string, any]) => {
-                                                    // For CDC method, exclude method and plugin fields
                                                     if (option.properties.method?.const === 'CDC') {
                                                         return !['method', 'plugin'].includes(key);
                                                     }
-                                                    // For other methods, show all fields
                                                     return true;
                                                 })
                                                 .map(([key, schema]: [string, any]) => {
-                                                    // Skip if the property should only show based on certain conditions
                                                     if (schema.required && !option.required?.includes(key)) {
                                                         return null;
                                                     }
@@ -570,7 +536,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Show fields when this option is selected */}
                                 {formData.source?.connection?.credentials?.auth_type === authType &&
                                     option.properties && (
                                         <div className="ml-7">
@@ -629,15 +594,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     const renderField = (fieldName: string, fieldSchema: any, path: string[] = []): React.ReactNode => {
         if (!fieldSchema) return null;
 
-        // Skip rendering titles for specific fields
         const skipTitleForFields = ['connection', 'connectionSpecification'];
 
-        // Special handling for connection object
         if (fieldName === 'connection' && path.includes('source')) {
             return (
                 <div key={fieldName} className="col-span-2 my-2">
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                        {/* Render fields based on Connection.json base properties */}
                         {Object.entries(connectionSchema.properties).map(([key, schema]: [string, any]) => (
                             <div key={key} className="mb-4">
                                 <Label>
@@ -648,7 +610,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                     )}
                                 </Label>
                                 {schema.endpoint ? (
-                                    // For fields with endpoint (like type), render select
                                     <select
                                         name={key}
                                         value={formData.source?.connection?.[key] || ""}
@@ -663,7 +624,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                         ))}
                                     </select>
                                 ) : (
-                                    // For other fields (like name), render Input
                                     <Input
                                         name={key}
                                         value={formData.source?.connection?.[key] || ""}
@@ -698,23 +658,17 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             }
         }
 
-        // Skip rendering if the field should be hidden
         if (skipTitleForFields.includes(fieldName)) {
             return null;
         }
-
-        // Handle radio display type fields
         if (fieldSchema.display_type === 'radio') {
             if (fieldName === 'replication_method') {
                 return renderPostgresRadioField(fieldName, fieldSchema, path);
             }
             if (fieldName === 'credentials' && path.includes('connection')) {
                 return renderSnowflakeRadioField(fieldName, fieldSchema, path);
-                // return renderSnowflakeRadioField(fieldName, fieldSchema, path);
             }
         }
-
-        // Add special handling for SSL modes
         if (fieldName === 'ssl_mode' && fieldSchema.oneOf) {
             return (
                 <div key={fieldName} className="col-span-2 border p-4 my-2 rounded">
@@ -757,8 +711,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                         {option.title}
                                     </Label>
                                     <p className="text-sm text-gray-500">{option.description}</p>
-
-                                    {/* Show additional fields for verify-ca and verify-full modes */}
                                     {formData.source?.connection?.ssl_mode?.mode === option.properties.mode.const &&
                                         (option.title === 'verify-ca' || option.title === 'verify-full') && (
                                             <div className="mt-4 ml-4">
@@ -865,7 +817,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
             );
         }
-        console.log(formData)
         return (
             <div key={fieldName} className="w-full space-y-2">
                 <div className="flex items-center gap-2">
@@ -908,11 +859,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         );
     };
 
-    // Update handleSubmit to include validation and API call
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate required fields
         const missingFields: string[] = [];
         const validateFields = (schema: any, path: string[] = []) => {
             Object.entries(schema.properties || {}).forEach(([key, fieldSchema]: [string, any]) => {
@@ -940,8 +889,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             toast.error('Please fill out all required fields.');
             return;
         }
-
-        console.log("Form Data:", formData);
         let connectionData = {};
         if (formData?.source?.connection?.type == "bigquery") {
             connectionData = {
@@ -958,22 +905,10 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             }
         }
         const { encryptedString, initVector } = encrypt_string(JSON.stringify(connectionData));
-        console.log(encryptedString, initVector);
-        console.log(decrypt_string(encryptedString, initVector));
-
         try {
-            console.log(connectionTypes);
-            console.log(formData.source?.connection?.type)
-            // Transform data for connection config
             const connectionTypeMatch = connectionTypes.find(type =>
                 type?.connection_name === formData?.source?.connection?.type
             );
-            console.log(connectionTypeMatch)
-
-
-
-            console.log(initialData)
-            console.log(submitValue)
             if (initialData?.connectionConfigId && submitValue === 'final') {
                 const transformedData = {
                     connection_name: connectionTypeMatch.connection_name.toLowerCase(),
@@ -985,7 +920,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     config: encryptedString,
                     init_vector: initVector
                 };
-                const response = await ApiService('8011', 'put', `/connection_registry/connection_config/${initialData.connectionConfigId}`, transformedData);
+                const response = await ApiService(CATALOG_API_PORT, 'put', `/connection_registry/connection_config/${initialData.connectionConfigId}`, transformedData);
                 console.log(response)
             }
             if (submitValue === 'final' && !initialData) {
@@ -1000,7 +935,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     config: encryptedString,
                     init_vector: initVector
                 };
-                const response = await ApiService('8011', 'POST', '/connection_registry/connection_config', transformedData);
+                const response = await ApiService(CATALOG_API_PORT, 'POST', '/connection_registry/connection_config', transformedData);
 
                 if (!response || !response.id) {
                     throw new Error('Failed to create connection configuration');
@@ -1020,10 +955,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     "file_name": formData?.source?.file_name ?? '',
                 };
 
-                const dataSourceResponse = await ApiService('8011', 'POST', '/data_source/', dataSourcePayload);
+                const dataSourceResponse = await ApiService(CATALOG_API_PORT, 'POST', '/data_source/', dataSourcePayload);
 
                 if (dataSourceResponse) {
-                    // Create source data structure
                     const sourceData = {
                         data: {
                             label: formData.source?.source_name || dataSourceResponse.data_src_name,
@@ -1038,8 +972,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             }
                         }
                     };
-
-                    // Call onSourceUpdate with the nodeId and updated data
                     if (onSourceUpdate && nodeId) {
                         onSourceUpdate({ nodeId, sourceData });
                     }
@@ -1048,27 +980,18 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     toast.success("Reader configuration saved successfully");
                 }
             }
-            // Create connection config
-
-
-            // Prepare data source payload
-
-
-
         } catch (error) {
             console.error('Error during form submission:', error);
             toast.error('An error occurred while saving the configuration.');
         }
     };
 
-    // Update renderConnectionFields to be more dynamic
     const renderConnectionFields = (fieldSchema: any, path: string[], fieldName: string) => {
         if (!formData.source?.connection?.type) return null;
 
         const connectionType = formData.source.connection.type;
         let specificSchema = null;
 
-        // Find the matching condition in Connection.json
         const connectionCondition = connectionSchema.allOf.find(
             (condition) => condition.if.properties.type?.const === connectionType
         );
@@ -1076,11 +999,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         if (!connectionCondition) return null;
 
         if (connectionCondition.then.$ref) {
-            // Handle referenced schemas
             const schemaName = connectionCondition.then.$ref.split('/').pop().replace('.json', '');
             specificSchema = schemaReferences[`connections/${schemaName}.json`]?.connectionSpecification;
         } else {
-            // Handle inline schema definitions
             specificSchema = {
                 properties: connectionCondition.then.properties,
                 required: connectionCondition.then.required
@@ -1089,15 +1010,11 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
         if (!specificSchema) return null;
 
-        // Handle grouped fields (like in postgres)
         if (specificSchema.groups) {
             return renderGroupedFields(specificSchema, path);
         }
-        console.log(specificSchema)
-        // For non-grouped fields, render in a grid
         return (
             <div className="space-y-6">
-                {/* First render radio fields (credentials) in full width */}
                 {Object.entries(specificSchema.properties || {})
                     .filter(([name, schema]: [string, any]) => schema.display_type === 'radio')
                     .map(([name, schema]: [string, any]) => (
@@ -1109,7 +1026,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         </div>
                     ))}
 
-                {/* Then render remaining fields in a three-column grid */}
                 <div className="grid grid-cols-3 gap-4">
                     {Object.entries(specificSchema.properties || {})
                         .filter(([name, schema]: [string, any]) => !schema.display_type)
@@ -1126,7 +1042,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         );
     };
 
-    // Add helper function for grouped fields
     const renderGroupedFields = (schema: any, path: string[]) => {
         const groups = schema.groups;
         const fieldsByGroup = Object.entries(schema.properties || {}).reduce((acc: any, [name, schema]: [string, any]) => {
@@ -1150,7 +1065,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     <TabsContent key={group.id} value={group.id}>
                         <div className="grid grid-cols-2 gap-4">
                             {fieldsByGroup[group.id]?.map(([name, schema]: [string, any]) => {
-                                // Check if the field is a radio type or ssl_mode
                                 const isFullWidth = schema.display_type === 'radio' || name === 'ssl_mode';
                                 return (
                                     <div key={name} className={isFullWidth ? "col-span-2" : "col-span-1"}>
@@ -1170,7 +1084,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
 
 
-    // Define form sections
     const sections = [
         {
             id: 'basic',
@@ -1209,12 +1122,10 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         </div>
                     ) : formData.source.type === 'File' || formData.source.type === 'Relational' ? (
                         <>
-                            {/* Show file_type only for File source type */}
                             {formData.source.type === 'File' && renderField('file_type', currentSchema.properties.file_type)}
 
                             <div className="col-span-2">
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Render source type specific fields (file_name or table_name) */}
                                     {Object.entries(getSourceTypeFields(formData.source.type).properties)
                                         .map(([fieldName, schema]: [string, any]) => (
                                             <div key={fieldName} className="col-span-1">
@@ -1223,8 +1134,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                         ))}
                                 </div>
                             </div>
-
-                            {/* Show CSV options only for File source type with CSV file_type */}
                             {formData.source.type === 'File' && formData.file_type === 'CSV' && currentSchema.properties.read_options && (
                                 <div className="col-span-2">
                                     <div className="grid grid-cols-3 gap-4">
@@ -1283,11 +1192,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     };
 
-    // Update the progress bar styling
     const renderProgressBar = () => (
         <div className="mb-6">
             <div className="relative">
-                {/* Progress line */}
                 <div className="absolute top-[18px] left-[50px] right-[50px] h-0.5 bg-gray-200">
                     <div
                         className="h-full bg-black transition-all duration-500 ease-in-out"
@@ -1297,7 +1204,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     />
                 </div>
 
-                {/* Steps - reduced vertical spacing */}
                 <div className="relative flex justify-between">
                     {sections.map((section, index) => (
                         <div
@@ -1305,7 +1211,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             className={`flex flex-col items-center w-32 transition-all duration-300 ${index <= activeSection ? 'opacity-100' : 'opacity-60'
                                 }`}
                         >
-                            {/* Step circle - reduced size */}
                             <div
                                 className={`
                                     w-9 h-9 rounded-full flex items-center justify-center
@@ -1337,17 +1242,11 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                     index + 1
                                 )}
                             </div>
-
-                            {/* Step label - reduced spacing */}
                             <div className="mt-2 space-y-0.5 text-center">
                                 <p className={`text-sm font-medium ${index <= activeSection ? 'text-black' : 'text-gray-400'
                                     }`}>
                                     {section.title}
                                 </p>
-                                {/* <p className={`text-xs ${index <= activeSection ? 'text-gray-600' : 'text-gray-400'
-                                    }`}>
-                                    {section.description}
-                                </p> */}
                             </div>
                         </div>
                     ))}
@@ -1355,8 +1254,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             </div>
         </div>
     );
-
-    // Add an effect to set default values when CSV is selected
     useEffect(() => {
         if (formData.file_type === 'CSV') {
             const defaultValues = Object.entries(csvOptionsSchema.properties).reduce((acc, [key, schema]: [string, any]) => {
@@ -1374,17 +1271,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     }, [formData.file_type]);
 
-    // Add this useEffect to handle initial data
     useEffect(() => {
         if (initialData) {
             setFormData(initialData);
-
-            // If there's a source type, we need to fetch connection types
             if (initialData.source?.type) {
                 fetchConnectionTypes();
             }
-
-            // If there's a file type and it's CSV, we need to set default read options
             if (initialData.source?.type === 'File' && initialData.file_type === 'CSV') {
                 const defaultValues = Object.entries(csvOptionsSchema.properties).reduce((acc, [key, schema]: [string, any]) => {
                     acc[key] = schema.default;
@@ -1402,19 +1294,14 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     }, [initialData]);
 
-    // Update the main form return statement with reduced spacing
     return (
         <form onSubmit={handleSubmit} className="flex flex-col h-full max-w-6xl mx-auto bg-white">
-            {/* Progress bar - reduced padding */}
             <div className="flex-none px-3 pt-3">
                 {renderProgressBar()}
             </div>
-
-            {/* Scrollable content area - reduced padding */}
             <div className="flex-1 overflow-auto px-3 min-h-0">
                 <Card className="mb-3 shadow-sm border border-gray-200 rounded-lg">
                     <CardContent className="p-3">
-                        {/* Section header - reduced spacing */}
                         <div className="mb-3 border-b border-gray-200 pb-3">
                             <h2 className="text-lg font-semibold mb-0.5 text-black">
                                 {sections[activeSection].title}
@@ -1423,8 +1310,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                 {sections[activeSection].description}
                             </p>
                         </div>
-
-                        {/* Content area - reduced gap */}
                         <div className="relative">
                             <div className="grid gap-3">
                                 {sections[activeSection].content}
@@ -1433,8 +1318,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Footer - reduced padding */}
             <div className="flex-none px-3 py-3 border-t bg-white">
                 <div className="flex justify-between items-center">
                     <Button

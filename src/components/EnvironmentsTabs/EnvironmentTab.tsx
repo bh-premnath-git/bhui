@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import RequiredLabel from '@/components/RequiredFieldLabel';
 import { encrypt_string } from '@/services/encryption';
 import { AccordionSection } from '../CreateFlowForm/CreateFlowForm'; // Ensure this is correctly imported
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 // Types
 type Tag = {
@@ -356,7 +357,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         init_vector: encryted_aws_key_id.initVector
       };
 
-      const result = await ApiService('8011', 'post', '/aws/test_connection', credentials, params);
+      const result = await ApiService(CATALOG_API_PORT, 'post', '/aws/test_connection', credentials, params);
       const pvtkey = result["pvt_key"]
       onChange({
         awsPvtKey: pvtkey
@@ -364,7 +365,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
       const success = result && typeof result === 'object' && 'success' in result;
 
       if (success) {
-        const result = await ApiService('8011', 'get', '/bh_airflow/list-airflow-environments', null, { ...params, location: locationVal });
+        const result = await ApiService(CATALOG_API_PORT, 'get', '/bh_airflow/list-airflow-environments', null, { ...params, location: locationVal });
         setMwaaEnvironments(result as MWAAEnvironments);
       }
 
@@ -430,7 +431,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             if (!value) return;
             // /api/v1/bh_airflow/get_airflow_environment
             const result = await ApiService(
-              '8011',
+              CATALOG_API_PORT,
               'get',
               `/bh_airflow/get_airflow_environment`,
               null, {

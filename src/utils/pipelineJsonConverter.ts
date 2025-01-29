@@ -1,5 +1,6 @@
 import { Node, Edge } from 'reactflow';
 import { ApiService } from '@/services/apiServices';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 export interface UINode extends Node {
     type: string;
@@ -153,7 +154,7 @@ console.log(nodeToTransformationName)
             case 'Sorter':
                 return {
                     ...baseConfig,
-                    sort_columns: node.data.transformationData?.sort_columns || []
+                    sort_columns: node.data.transformationData?.sort_columns 
                 };
 
             case 'Aggregator':
@@ -340,14 +341,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     let yPosition = 100;
     const yOffset = -117;
 
-    // Create a map to store transformation name to node ID mapping
     const transformationToNodeMap: { [key: string]: string } = {};
 
-    // Process sources and create Reader nodes
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {
             const sourceDetails = await ApiService(
-                "8011",
+                CATALOG_API_PORT,
                 "get",
                 `/data_source/${source.data_src_id}`,
                 null

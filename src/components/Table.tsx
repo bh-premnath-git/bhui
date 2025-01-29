@@ -40,9 +40,7 @@ import { cn } from "@/lib/utils";
 
 // Utility functions
 const getValidPageNumber = (current: number, total: number): number => {
-  // Ensure total is at least 1
   const validTotal = Math.max(1, total);
-  // Ensure current is between 1 and validTotal
   return Math.max(1, Math.min(current, validTotal));
 };
 
@@ -50,10 +48,7 @@ const getSafeString = (value: any): string => {
   return value?.toString?.() || "";
 };
 
-const getSafeNumber = (value: any): number => {
-  const num = Number(value);
-  return num > 0 ? num : 1;
-};
+
 
 // Interfaces and Types
 interface ColumnConfig {
@@ -112,6 +107,7 @@ const TABLE_NAME_RESTRICTED_ACTIONS = ["Create New Flow", "Add Pipeline"];
 const TABLE_NAME_ACTIONS_AI = ["Catalog Table", "DataOps"];
 const TABLE_AI_COLS = ["Description"];
 const EXTRA_BUTTON_TABLE = ["Xplore"];
+const SHOWONL_XPLORER = ["dataopsalert"];
 
 // Components
 const CustomTableHeader: React.FC<{
@@ -699,7 +695,7 @@ export function FlexibleTable({
               aria-label="Search"
             />
           )}
-          {tableName && EXTRA_BUTTON_TABLE.includes(tableName) && (
+          {tableName && (EXTRA_BUTTON_TABLE.includes(tableName)) && (
             <Button
               variant="default"
               className={cn(
@@ -713,7 +709,7 @@ export function FlexibleTable({
               Import Source
             </Button>
           )}
-          {tableName && !TABLE_NAME_ACTIONS_AI.includes(tableName) && (
+          {tableName && !TABLE_NAME_ACTIONS_AI.includes(tableName) && !SHOWONL_XPLORER.includes(tableName) && (
             <Button
               variant="default"
               className={cn(
@@ -723,12 +719,28 @@ export function FlexibleTable({
               )}
               onClick={
                 tableName === "Xplore" ? handleClickXplore : handleCreateNew
-              } 
+              }
               aria-label={`Create New ${tableName}`}
             >
               {tableName} <PlusCircle className="ml-2 h-4 w-4" />
             </Button>
           )}
+
+          {tableName && SHOWONL_XPLORER.includes(tableName) && (
+            <Button
+              variant="default"
+              className={cn(
+                SHOWONL_XPLORER.includes(tableName)
+                  ? "bg-gray-900 text-white hover:bg-gray-800"
+                  : `${background} hover:${background} text-white`
+              )}
+              onClick={handleClickXplore}
+              aria-label={`Explorer${tableName}`}
+            >
+              Xplore <PlusCircle className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+
         </div>
       </div>
 

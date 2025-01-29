@@ -2,17 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import { Typography } from '@mui/material';
 import { Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import useToast from '@/components/teast-service';
 import { ApiService } from '@/services/apiServices';
 import { Label } from '../ui/label';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
+import { AUDIT_PORT } from '@/configration/environment';
 
 interface SkipPopUpProps {
     open: boolean;
@@ -72,7 +69,7 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
         }
         try {
             const url = '/event_details';
-            const result = await ApiService('8003', 'post', url, body);
+            const result = await ApiService(AUDIT_PORT, 'post', url, body);
             if (result) {
                 showToast('Job has been skipped successfully', { vertical: 'top', horizontal: 'center' });
                 setTimeout(() => {
@@ -105,7 +102,7 @@ const SkipPopUp: React.FC<SkipPopUpProps> = ({ open, onClose, jobDetail }) => {
         };
         try {
             const url = `/job_details/${jobDetail.job_id}`;
-            const result = await ApiService('8003', 'put', url, data)
+            const result = await ApiService(AUDIT_PORT, 'put', url, data)
             if (!result) {
                 throw new Error(`HTTP error! status: ${result.status}`);
             }

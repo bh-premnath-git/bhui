@@ -1,33 +1,19 @@
 import React from "react";
 import { Link, useLocation, useNavigate, matchPath } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import logo from "/assets/logo/fixLogo.svg";
 import { CustomToolbar } from "./CustomToolbar/CustomToolbar";
 import { CustomBuildToolbar } from "./CustomBuildToolbar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { jwtDecode } from "jwt-decode";
-import {ThemeToggle } from "@/components/ThemeToogle";
+
 interface HeaderProps {
   isAuthenticated?: boolean;
-  logout?: () => void;
 }
 
 export function Header(props: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { pathname } = location;
-  const token: string | null = sessionStorage?.getItem("token");
-  const decoded: any = token ? jwtDecode(token) : null;
 
   const renderHeaderContent = (
     renderContent: (() => React.ReactNode) | React.ReactNode | string
@@ -61,32 +47,7 @@ export function Header(props: HeaderProps) {
       <div className="flex-grow">
         {renderHeaderContent(renderingHeadContent(pathname))}
       </div>
-      <ThemeToggle />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 rounded-md px-3 py-2 transition-colors">
-            <Avatar className="h-8 w-8">
-              <AvatarImage
-                src="https://assets.imgix.net/examples/pione.jpg"
-                alt="User Avatar"
-              />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-gray-700">
-                {decoded?.email}
-              </span>
-              <span className="text-xs text-gray-500">{decoded?.name}</span>
-            </div>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={props.logout}>Log out</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+
     </header>
   );
 }
@@ -113,7 +74,6 @@ export function renderingHeadContent(pathname: string) {
     (state: RootState) => state.buildPipeLineApi
   );
 
-  const navigate = useNavigate();
 
   const capitalize = (str: string) => {
     return str
@@ -128,7 +88,6 @@ export function renderingHeadContent(pathname: string) {
     let pathAcc = "";
 
     segments.forEach((segment, index) => {
-      // Handle dynamic segments for 'environment'
       if (
         segments[index - 1] === "environment" &&
         segment.match(/^\d+$/)
@@ -143,7 +102,6 @@ export function renderingHeadContent(pathname: string) {
         }
       }
 
-      // Handle dynamic segments for 'projects'
       if (segments[index - 1] === "projects" && segment.match(/^\d+$/)) {
         if (
           editProjectData &&
@@ -155,7 +113,6 @@ export function renderingHeadContent(pathname: string) {
         }
       }
 
-      // Handle dynamic segments for 'customer' or 'customers'
       if (
         (segments[index - 1] === "customer" ||
           segments[index - 1] === "customers") &&
@@ -170,8 +127,6 @@ export function renderingHeadContent(pathname: string) {
             customerData.relation_ship_owner_email;
         }
       }
-
-      // Handle dynamic segments for 'user' or 'users'
       if (
         (segments[index - 1] === "user" ||
           segments[index - 1] === "users") &&
@@ -210,7 +165,7 @@ export function renderingHeadContent(pathname: string) {
 
   const breadcrumbs = getBreadcrumbs(pathname);
 
-  if (pathname === "/dashboard") {
+  if (pathname === "/dashboard" || pathname === "/") {
     return (
       <div className="w-2/5 font-bold">
         <span className="text-gray-900 font-bold">DataOps</span>
@@ -246,7 +201,6 @@ export function renderingHeadContent(pathname: string) {
     </div>
   );
 
-  // Use matchPath for dynamic route matching
   const isManageFlowPath = matchPath(
     "/designers/manage-flow/:id",
     pathname
@@ -256,7 +210,6 @@ export function renderingHeadContent(pathname: string) {
     return <CustomToolbar selectedData={selectedFlowFromList} />;
   }
 
-  // Handle build-playground paths
   if (
     pathname === "/designers/build-playground/" ||
     pathname.includes("/designers/build-playground/")
@@ -264,6 +217,5 @@ export function renderingHeadContent(pathname: string) {
     return <CustomBuildToolbar buildPipeLineDtl={buildPipeLineDtl} />;
   }
 
-  // Default to breadcrumb rendering
   return breadcrumbRender;
 }

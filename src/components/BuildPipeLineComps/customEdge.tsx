@@ -72,8 +72,7 @@ export const CustomEdge = memo(({
     const { metricsData, isMetricsLoading } = useSelector((state: RootState) => state.buildPipeLineApi);
 
     const sourceNode = getNode(source);
-    console.log(sourceNode)
-    console.log(transformationCounts)
+    
     const rowCount = transformationCounts.find(
         (t) => t.transformationName === sourceNode?.data.label?.toLowerCase()
     )?.rowCount;

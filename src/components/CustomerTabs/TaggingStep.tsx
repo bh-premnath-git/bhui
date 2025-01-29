@@ -7,6 +7,8 @@ import { ApiService } from '@/services/apiServices';
 import TagDialog from '@/common/TagDialog';
 import { COLORS } from '@/utils/constants';
 import useToast from '@/components/teast-service';
+import { CATALOG_API_PORT } from '@/configration/environment';
+
 
 type Tag = {
     tagKey: string;
@@ -31,7 +33,7 @@ function TaggingStep(props: any) {
         if (data) {
             const fetchConnection = async () => {
                 try {
-                    const result = await ApiService('8011', 'get', `/customer/${data}`);
+                    const result = await ApiService(CATALOG_API_PORT, 'get', `/customer/${data}`);
                     setCustomerData(result);
                     if (result.tags) {
                         setTags(result.tags.tagList);
@@ -56,7 +58,7 @@ function TaggingStep(props: any) {
         if (tags.length && customerData) {
             customerData.tags = { tagList: tags };
             try {
-                const result = await ApiService('8011', 'put', `/customer/${props.data}`, customerData);
+                const result = await ApiService(CATALOG_API_PORT, 'put', `/customer/${props.data}`, customerData);
                 if (result) {
                     setOpen(true);
                     if (userData) {

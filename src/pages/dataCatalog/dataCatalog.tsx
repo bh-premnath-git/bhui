@@ -25,7 +25,6 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Database,
-  Users,
   Clock,
   FileQuestion,
 } from "lucide-react";
@@ -128,19 +127,6 @@ const columns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     type: "text",
-  },
-  {
-    key: "total_customer",
-    header: "Total Consumers",
-    sortable: true,
-    filterable: true,
-    type: "text",
-    render: (value: string) => (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Users size={16} className="text-gray-500" />
-        <Typography>{value || "0"}</Typography>
-      </Box>
-    ),
   },
   {
     key: "total_records",

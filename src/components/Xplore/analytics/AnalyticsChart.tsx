@@ -1,15 +1,22 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Bar,
+  Line,
+  Pie,
   BarChart,
+  LineChart,
+  PieChart,
   CartesianGrid,
   Legend,
   ResponsiveContainer,
   Tooltip,
+  Cell,
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartStyles } from "@/hooks/useChartStyles";
+import type { ChartStyles } from "@/types/chart";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
+import { useMemo } from "react";
 
 interface AnalyticsChartProps {
   data: any[];
@@ -42,32 +49,108 @@ export default function AnalyticsChart({
   colors,
   formatCurrency 
 }: AnalyticsChartProps) {
-  const formattedData = data.map(item => ({
-    ...item,
-    formatCurrency
-  }));
+  const { chartStyles } = useAnalytics();
+  
+  const formattedData = useMemo(() => {
+    return data.map(item => ({
+      ...item,
+      formatCurrency
+    }));
+  }, [data, formatCurrency]);
+
+  const selectedBrands = activeFilter ? activeFilter.split(',') : ["Dole", "Frieda's", "Goya", "Chiquita"];
+
+  const pieData = useMemo(() => {
+    if (chartStyles.chartType !== 'pie') return [];
+    
+    return selectedBrands.map(brand => ({
+      name: brand,
+      value: formattedData.reduce((sum, item) => sum + (item[brand] || 0), 0),
+      formatCurrency
+    }));
+  }, [selectedBrands, formattedData, chartStyles.chartType, formatCurrency]);
+
+  const renderChart = () => {
+    const commonProps = {
+      width: 800,
+      height: styles.height,
+    };
+    const commonChartComponents = (
+      <>
+        {chartStyles.showLegend && <Legend />}
+        <Tooltip content={<CustomTooltip />} />
+      </>
+    );
+
+    switch (chartStyles.chartType) {
+      case 'line':
+        return (
+          <LineChart {...commonProps} data={formattedData}>
+            {chartStyles.enableStyle && <CartesianGrid strokeDasharray="3 3" />}
+            <XAxis dataKey="date" />
+            <YAxis />
+            {commonChartComponents}
+            {selectedBrands.map((brand, index) => (
+              <Line 
+                key={brand}
+                dataKey={brand} 
+                stroke={colors[index % colors.length]} 
+                type="monotone"
+                label={chartStyles.showDataLabels ? {
+                  position: 'top',
+                  formatter: (value: number) => formatCurrency(value)
+                } : false}
+              />
+            ))}
+          </LineChart>
+        );
+      case 'pie':
+        return (
+          <PieChart {...commonProps}>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={styles.height / 3}
+              label={chartStyles.showDataLabels ? (entry) => `${entry.name}: ${formatCurrency(entry.value)}` : false}
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={entry.name} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+            {commonChartComponents}
+          </PieChart>
+        );
+      default:
+        return (
+          <BarChart {...commonProps} data={formattedData}>
+            {chartStyles.enableStyle && <CartesianGrid strokeDasharray="3 3" />}
+            <XAxis dataKey="date" />
+            <YAxis />
+            {commonChartComponents}
+            {selectedBrands.map((brand, index) => (
+              <Bar 
+                key={brand}
+                dataKey={brand} 
+                fill={colors[index % colors.length]}
+                label={chartStyles.showDataLabels ? {
+                  position: 'top',
+                  formatter: (value: number) => formatCurrency(value)
+                } : false}
+              />
+            ))}
+          </BarChart>
+        );
+    }
+  };
 
   return (
     <Card className="col-span-4">
       <CardContent className="p-6">
         <ResponsiveContainer width="100%" height={styles.height}>
-          <BarChart data={formattedData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis tickFormatter={(value) => formatCurrency(value)} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            {!activeFilter ? (
-              <>
-                <Bar dataKey="Dole" fill={colors[0]} />
-                <Bar dataKey="Frieda's" fill={colors[1]} />
-                <Bar dataKey="Goya" fill={colors[2]} />
-                <Bar dataKey="Chiquita" fill={colors[3]} />
-              </>
-            ) : (
-              <Bar dataKey={activeFilter} fill={colors[0]} />
-            )}
-          </BarChart>
+          {renderChart()}
         </ResponsiveContainer>
       </CardContent>
     </Card>

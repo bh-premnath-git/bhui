@@ -1,12 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ApiService } from "@/services/apiServices";
-import { duration } from "@mui/material";
+import { AUDIT_PORT } from "@/configration/environment";
 
 export interface ApiState {
   getDataOpsList: any;
   filterData: any;
   loading: boolean;
   error: string | null;
+  taskDetails: any[];
+  taskLoading: boolean;
+  taskError: string | null;
 }
 
 const initialState: ApiState = {
@@ -14,6 +17,9 @@ const initialState: ApiState = {
   error: null,
   getDataOpsList: [],
   filterData: [],
+  taskDetails: [],
+  taskLoading: false,
+  taskError: null,
 };
 
 interface ApiResponse {
@@ -25,7 +31,7 @@ export const getDataOps: any = createAsyncThunk(
   'dataops_hub/dataops',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService('8003', 'get', '/job_details/list/', null, params);
+      const response = await ApiService(AUDIT_PORT, 'get', '/job_details/list/', null, params);
       const transformed = response.map((item: any, index: number) => ({
         ...item,
         id: (index).toString(),
@@ -43,19 +49,48 @@ export const getDataOps: any = createAsyncThunk(
   }
 );
 
+export const getTaskDetails = createAsyncThunk<
+  any[],
+  string | number,
+  { rejectValue: string }
+>(
+  "dataops_hub/taskDetails",
+  async (jobId, thunkAPI) => {
+    try {
+      const params = {
+        job_id: jobId,
+        offset: 0,
+        limit: 100,
+        order_desc: false,
+      };
+      const response = await ApiService(
+        AUDIT_PORT,
+        "get",
+        "/task_details/list/",
+        null,
+        params
+      );
+      const transformed = response.map((item: any, index: number) => ({
+        ...item,
+        id: index.toString(),
+      }));
+      return transformed;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message as string);
+    }
+  }
+);
+
 const DataOpsSlice = createSlice({
   name: "api/dataops",
   initialState,
   reducers: {
     setFilterData: (state, action) => {
-      console.log(action.payload); // Log the entire payload for debugging
 
       if (action.payload?.dataOpsList && action.payload?.value) {
-        console.log(action.payload.dataOpsList)
         const filteredData = action.payload.dataOpsList.filter((item: any) =>
           item.pipeline_name.toLowerCase().includes(action.payload.value.toLowerCase())
         )
-        console.log(filteredData); // Log the filtered results for debugging
         state.getDataOpsList = filteredData;
       } else {
         console.warn('Invalid payload structure:', action.payload);
@@ -81,7 +116,23 @@ const DataOpsSlice = createSlice({
           state.loading = false;
           state.error = action.payload;
         }
-      );
+      )
+      .addCase(getTaskDetails.pending, (state) => {
+        state.taskLoading = true;
+        state.taskError = null;
+      })
+      .addCase(
+        getTaskDetails.fulfilled,
+        (state, action: PayloadAction<any[]>) => {
+          state.taskLoading = false;
+          state.taskDetails = action.payload; // store the tasks
+        }
+      )
+      .addCase(getTaskDetails.rejected, (state, action: PayloadAction<string>) => {
+        state.taskLoading = false;
+        state.taskError = action.payload;
+      });
+
   },
 });
 

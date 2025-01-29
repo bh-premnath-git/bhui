@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useFlow } from '@/contexts/FlowContext'
-
+import { useSelectedType } from '@/hooks/useOtherTypes'
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 interface ResponseContentProps {
   onSend: (message: string) => void
   response: string
@@ -13,6 +16,94 @@ interface ResponseContentProps {
 
 type MissingData = Record<string, string[]>
 
+const MissingFieldInput: React.FC<{
+  selectedEnvironment: any
+  operator: string
+  field: string
+  value: string
+  onChange: (value: string) => void
+}> = ({ selectedEnvironment, operator, field, value, onChange }) => {
+  const operatorSchema = useSelectedType(operator, field);
+  const missingFieldUIType = operatorSchema.ui_properties.ui_type;
+
+  const endpoint = operatorSchema.ui_properties.endpoint || "";
+  const shouldFetchOptions = missingFieldUIType === "dropdown" && endpoint !== "";
+
+  const { options: fetchedOptions, isLoading } = useDropdownOptions(
+    endpoint,
+    shouldFetchOptions && endpoint !== "{catalog_base_url}/api/v1/pipeline/list"
+      ? selectedEnvironment
+      : null
+  );
+
+  const [options, setOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (missingFieldUIType === "enum") {
+      const enumOptions = operatorSchema.enum;
+      setOptions(enumOptions || []);
+    } else if (missingFieldUIType === "dropdown") {
+      setOptions(fetchedOptions || []);
+    }
+  }, [missingFieldUIType, operatorSchema, fetchedOptions]);
+
+  const renderInput = () => {
+    switch (missingFieldUIType) {
+      case "dropdown":
+      case "enum":
+        return (
+          <select
+            className="bg-gray-800 border-none focus:outline-none text-sm text-white px-2 py-1"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="">Select option</option>
+            {options.map((option, index) => (
+              <option key={index} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        );
+      case "textbox":
+        return (
+          <textarea
+            placeholder="Enter text"
+            className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-400 resize-y min-h-[60px]"
+            style={{
+              width: `calc(${Math.max(value.length, 20)}ch + 1rem)`,
+              maxWidth: "40ch",
+            }}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+      default:
+        return (
+          <input
+            type="text"
+            placeholder="Enter value"
+            className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-400"
+            style={{
+              width: `calc(${Math.max(value.length, 10)}ch + 1rem)`,
+              maxWidth: "30ch",
+            }}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="flex items-center rounded-full bg-gray-700 border border-gray-600 px-1 py-2">
+      <label className="mr-2 font-medium text-sm text-gray-200">{field}:</label>
+      {renderInput()}
+    </div>
+  );
+};
+
 export const ResponseContent: React.FC<ResponseContentProps> = ({
   response,
   missing,
@@ -23,8 +114,10 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
-
-  const { setAiflowStrructre, setAiMissingData } = useFlow()
+  const { selectedEnvironment } = useSelector(
+    (state: RootState) => state.flowApi
+  );
+  const { setAiflowStrructre, setAiMissingData, } = useFlow()
 
   const containerClass = 'bg-gray-100 text-black p-2 rounded-lg relative space-y-4'
 
@@ -59,26 +152,23 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
 
   useEffect(() => {
     setOperatorFields((prev) => {
-      const newState = { ...prev }
-      let changed = false
+      const newState = { ...prev };
 
       for (const operator in allMissingData) {
         if (!newState[operator]) {
-          newState[operator] = {}
-          changed = true
+          newState[operator] = {};
         }
 
         allMissingData[operator].forEach((field) => {
           if (!newState[operator][field]) {
-            newState[operator][field] = ''
-            changed = true
+            newState[operator][field] = '';
           }
-        })
+        });
       }
 
-      return changed ? newState : prev
-    })
-  }, [allMissingData])
+      return JSON.stringify(newState) !== JSON.stringify(prev) ? newState : prev;
+    });
+  }, [allMissingData]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(formattedResponse)
@@ -119,34 +209,22 @@ export const ResponseContent: React.FC<ResponseContentProps> = ({
               </h4>
               <div className="flex flex-wrap gap-3">
                 {fields.map((field) => (
-                  <div
+                  <MissingFieldInput
+                    selectedEnvironment={selectedEnvironment}
                     key={field}
-                    className="flex items-center rounded-full bg-gray-700 border border-gray-600 px-1 py-2"
-                  >
-                    <label className="mr-2 font-medium text-sm text-gray-200">
-                      {field}:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter value"
-                      className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-400"
-                      style={{
-                        width: `calc(${Math.max((operatorFields[operator]?.[field] || '').length, 10)}ch + 1rem)`,
-                        maxWidth: '30ch',
-                      }}
-                      value={operatorFields[operator]?.[field] || ''}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        setOperatorFields((prev) => ({
-                          ...prev,
-                          [operator]: {
-                            ...prev[operator],
-                            [field]: value,
-                          },
-                        }))
-                      }}
-                    />
-                  </div>
+                    operator={operator}
+                    field={field}
+                    value={operatorFields[operator]?.[field] || ''}
+                    onChange={(value) => {
+                      setOperatorFields((prev) => ({
+                        ...prev,
+                        [operator]: {
+                          ...prev[operator],
+                          [field]: value,
+                        },
+                      }));
+                    }}
+                  />
                 ))}
               </div>
             </div>

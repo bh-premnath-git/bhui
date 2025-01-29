@@ -24,6 +24,7 @@ import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/fe
 import { useNavigate, useLocation } from 'react-router-dom';
 import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/utils/pipelineJsonConverter';
 import KeyboardShortcutsPanel from '@/components/BuildPipeLineComps/KeyboardShortcutsPanel';
+import { CATALOG_API_PORT } from '@/configration/environment';
 
 interface UIProperties {
     color: string;
@@ -128,11 +129,12 @@ const BuildPlayGround: React.FC = () => {
     const [copiedFormStates, setCopiedFormStates] = useState<{ [key: string]: any }>({});
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+    
     useEffect(() => {
         const fetchPipelineDetails = async () => {
             try {
                 const response = await ApiService(
-                    "8011",
+                    CATALOG_API_PORT,
                     "get",
                     `/pipeline/${id}`,
                     null
@@ -230,7 +232,7 @@ const BuildPlayGround: React.FC = () => {
                     dispatch(setSaving());
                     const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
                     await ApiService(
-                        "8011",
+                        CATALOG_API_PORT,
                         "patch",
                         `/pipeline/${id}`,
                         pipeline_json
@@ -731,11 +733,11 @@ const BuildPlayGround: React.FC = () => {
             });
 
             debuggedNodesList.forEach(checkpoint => {
-                params.append('checkpoints', checkpoint?.title);
+                params.append('checkpoints', checkpoint?.title?.toLowerCase());
             });
 
             const response = await ApiService(
-                "8011",
+                CATALOG_API_PORT,
                 "post",
                 `/pipeline/debug/start_pipeline?${params.toString()}`,
                 null
@@ -746,7 +748,7 @@ const BuildPlayGround: React.FC = () => {
             }
 
             const countsResponse = await ApiService(
-                "8011",
+                CATALOG_API_PORT,
                 "get",
                 `/pipeline/debug/get_transformation_count`,
                 null,
@@ -768,7 +770,7 @@ const BuildPlayGround: React.FC = () => {
     const handleStop = useCallback(async () => {
         try {
             const response = await ApiService(
-                "8011",
+                CATALOG_API_PORT,
                 "post",
                 `/pipeline/debug/stop_pipeline`,
                 null,
@@ -786,7 +788,7 @@ const BuildPlayGround: React.FC = () => {
         try {
             console.log('Next pipeline clicked');
             const result = await ApiService(
-                "8011",
+                CATALOG_API_PORT,
                 "post",
                 `/pipeline/run-next-checkpoint`,
                 null,
@@ -796,7 +798,7 @@ const BuildPlayGround: React.FC = () => {
             // Only proceed if first API call was successful
             if (result && !result.error) {
                 const countsResponse = await ApiService(
-                    "8011",
+                    CATALOG_API_PORT,
                     "get",
                     `/pipeline/debug/get_transformation_count`,
                     null,
@@ -817,7 +819,7 @@ const BuildPlayGround: React.FC = () => {
             console.error('Error in handleNext:', error);
             // Handle error appropriately (e.g., show error message to user)
         }
-    }, []);
+    }, [pipelineDtl?.pipeline_name]);
 
     const edgeTypes = useMemo(() => ({
         default: (props: any) => (
@@ -1013,7 +1015,7 @@ const BuildPlayGround: React.FC = () => {
         try {
             dispatch(setSaving());
             const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
-            await ApiService("8011", "patch", `/pipeline/${id}`, { pipeline_json: pipeline_json });
+            await ApiService(CATALOG_API_PORT, "patch", `/pipeline/${id}`, { pipeline_json: pipeline_json });
             dispatch(setSaved());
             dispatch(setUnsavedChanges());
             setShowLeavePrompt(false);
@@ -1045,7 +1047,7 @@ const BuildPlayGround: React.FC = () => {
                 if (!dataSrcId) return [];
 
                 const response = await ApiService(
-                    "8011",
+                    CATALOG_API_PORT,
                     "get",
                     `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
                     null

@@ -1,5 +1,6 @@
 import { ApiService } from "@/services/apiServices";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { CATALOG_API_PORT } from "@/configration/environment";
 
 export interface ApiState {
   dataSourceList: any[];
@@ -32,7 +33,7 @@ export const getdataSourceList = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await ApiService(
-        "8011",
+        CATALOG_API_PORT,
         "get",
         "/data_source/list/",
         null,
@@ -53,7 +54,7 @@ export const getDataSourceLayout = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await ApiService(
-        "8011",
+        CATALOG_API_PORT,
         "get",
         "/data_source_layout/list_full/",
         null,

@@ -15,17 +15,14 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
   dependsOn, 
   onInputChange 
 }) => {
-  // Group properties into rows based on spancol
   const rows: Property[][] = [];
   let currentRow: Property[] = [];
   let currentRowWidth = 0;
 
   properties.forEach((property) => {
-    //console.log("property >>", property);
         
     const spancol = property.ui_properties.spancol || 1;
     
-    // If adding this property would exceed 2 columns, start a new row
     if (currentRowWidth + spancol > 2) {
       rows.push(currentRow);
       currentRow = [property];
@@ -36,7 +33,6 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
     }
   });
 
-  // Add the last row if it has any properties
   if (currentRow.length > 0) {
     rows.push(currentRow);
   }

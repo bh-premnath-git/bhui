@@ -10,7 +10,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import nodeData from '../../pages/buildPipeLine/node_display.json';
 import schemaData from '../../pages/buildPipeLine/mdata.json';
-import { Button, Dialog, DialogActions, DialogContent, Menu, MenuItem } from '@mui/material';
+import { Badge, Button, Dialog, DialogActions, DialogContent, Menu, MenuItem } from '@mui/material';
 import { CustomNode } from '@/components/BuildPipeLineComps/CustomNode';
 import { ApiService } from '@/services/apiServices';
 import { CustomEdge } from '@/components/BuildPipeLineComps/customEdge';
@@ -23,6 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/redux/features/autoSaveSlice';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/utils/pipelineJsonConverter';
+import KeyboardShortcutsPanel from '@/components/BuildPipeLineComps/KeyboardShortcutsPanel';
 
 interface UIProperties {
     color: string;
@@ -46,6 +47,51 @@ interface SourceColumn {
     name: string;
     dataType: string;
 }
+
+const ValidationErrorNotification = ({ 
+    errors, 
+    onClose 
+}: { 
+    errors: string[]; 
+    onClose: () => void;
+}) => {
+    if (errors.length === 0) return null;
+    
+    return (
+        <div className="absolute bottom-10 left-1000 z-50 w-[600px]">
+            <div className="bg-red-50 border border-red-200 rounded-lg shadow-lg p-4">
+                <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm font-medium text-red-800">Pipeline Validation Issues</h3>
+                        <div className="mt-2">
+                            <ul className="list-disc pl-5 space-y-1">
+                                {errors.map((error, index) => (
+                                    <li key={index} className="text-sm text-red-700">{error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <button
+                            onClick={onClose}
+                            className="inline-flex text-gray-400 hover:text-gray-500"
+                        >
+                            <span className="sr-only">Close</span>
+                            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const BuildPlayGround: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -74,6 +120,13 @@ const BuildPlayGround: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [sourceColumns, setSourceColumns] = useState<SourceColumn[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<Array<{ id: string, label: string, title: string }>>([]);
+    const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+    const [copiedNodes, setCopiedNodes] = useState<any[]>([]);
+    const [copiedEdges, setCopiedEdges] = useState<any[]>([]);
+    const [copiedFormStates, setCopiedFormStates] = useState<{ [key: string]: any }>({});
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchPipelineDetails = async () => {
@@ -90,7 +143,7 @@ const BuildPlayGround: React.FC = () => {
                     // Convert pipeline JSON to UI format
                     const uiJson = convertPipelineToUIJson(response.pipeline_json);
                     const convertedJson = await uiJson;
-
+                    console.log(convertedJson)
                     // Update nodes with titles from transformations
                     const nodesWithTitles = convertedJson.nodes.map(node => {
                         const transformation = response.pipeline_json.transformations.find(
@@ -100,11 +153,11 @@ const BuildPlayGround: React.FC = () => {
                             ...node,
                             data: {
                                 ...node.data,
-                                title: transformation?.name || node.data.label // Set title from transformation name
+                                title: transformation?.name || node.data.title // Set title from transformation name
                             }
                         };
                     });
-
+                    console.log(nodesWithTitles)
                     setNodes(nodesWithTitles);
                     setEdges(convertedJson.edges);
 
@@ -176,7 +229,6 @@ const BuildPlayGround: React.FC = () => {
                 try {
                     dispatch(setSaving());
                     const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
-                    console.log(pipeline_json)
                     await ApiService(
                         "8011",
                         "patch",
@@ -185,8 +237,13 @@ const BuildPlayGround: React.FC = () => {
                     );
                     dispatch(setSaved());
                 } catch (error) {
-                    console.error('Error saving pipeline state:', error);
-                    dispatch(setSaveError());
+                    if (error.message.includes('Pipeline is incomplete or broken:')) {
+                        const errorMessages = error.message.split('\n').slice(1);
+                        setValidationErrors(errorMessages);
+                    } else {
+                        console.error('Error saving pipeline state:', error);
+                        dispatch(setSaveError(error.message));
+                    }
                 }
             }
         }, autoSaveInterval);
@@ -207,7 +264,8 @@ const BuildPlayGround: React.FC = () => {
                         data: {
                             ...node.data,
                             label: updatedData.data.label,
-                            source: updatedData.data.source
+                            source: updatedData.data.source,
+                            title: updatedData.data.title
                         }
                     };
                 }
@@ -217,37 +275,61 @@ const BuildPlayGround: React.FC = () => {
         dispatch(setUnsavedChanges());
     }, [setNodes, dispatch]);
 
+    // const handleNodeClick = useCallback((event: any, node: any) => {
+    //     // Clear any previous highlight
+    //     setHighlightedNodeId(null);
+
+    //     // Set the new highlighted node
+    //     setTimeout(() => {
+    //         setHighlightedNodeId(node?.id);
+    //         // Optional: Clear highlight after some time
+    //         setTimeout(() => setHighlightedNodeId(null), 2000);
+    //     }, 0);
+    // }, []);
+
     const handleNodeClick = useCallback((node: Node, source: any) => {
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;
         }
 
-        const currentCount = nodeCounters[node.ui_properties.module_name] || 0;
-        const newCount = currentCount + 1;
+        // Get the base module name
+        const baseModuleName = node.ui_properties.module_name;
 
-        setNodeCounters(prev => ({
-            ...prev,
-            [node.ui_properties.module_name]: newCount
-        }));
+        // Count existing nodes of the same type
+        const existingNodes = nodes.filter(n => 
+            n.data.label.toLowerCase().startsWith(baseModuleName.toLowerCase())
+        );
 
-        const position = {
-            x: nodes.length * 130 + 50,
+        // Create a numbered suffix if there are existing nodes
+        const nodeNumber = existingNodes.length + 1;
+        const nodeLabel = existingNodes.length > 0 
+            ? `${baseModuleName} ${nodeNumber}`
+            : baseModuleName;
+        console.log(baseModuleName)
+        // Find the last selected node's position
+        const lastNode = nodes[nodes.length - 1];
+        const basePosition = lastNode ? {
+            x: lastNode.position.x + 150,
+            y: lastNode.position.y
+        } : {
+            x: 50,
             y: 100
         };
 
-        const uniqueId = `${node.ui_properties.module_name}_${newCount}`;
+        const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
 
         // Create a more detailed node data structure
         const newNode = {
             id: uniqueId,
             type: 'custom',
-            position,
+            position: basePosition,
             data: {
-                label: source?.data_src_name || node.ui_properties.module_name,
+                label: source?.data_src_name || baseModuleName, // Use the numbered label here
                 icon: node.ui_properties.icon,
                 ports: node.ui_properties.ports,
                 source: source,
+                title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
@@ -258,18 +340,35 @@ const BuildPlayGround: React.FC = () => {
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setNodes, nodeCounters, reactFlowInstance, dispatch, handleNodeUpdate]);
+    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleFormSubmit = useCallback((data: any) => {
         console.log('Form data:', data);
         if (selectedSchema?.nodeId) {
+            // Update form states
             setFormStates((prev: any) => ({
                 ...prev,
                 [selectedSchema.nodeId]: data
             }));
+
+            // Update node data with transformation data
+            setNodes((nds) =>
+                nds.map((node) => {
+                    if (node.id === selectedSchema.nodeId) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                transformationData: data
+                            }
+                        };
+                    }
+                    return node;
+                })
+            );
         }
         setIsFormOpen(false);
-    }, [selectedSchema]);
+    }, [selectedSchema, setNodes]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);
@@ -590,8 +689,9 @@ const BuildPlayGround: React.FC = () => {
                 setSelectedFormState={setSelectedFormState}
                 onDebugToggle={handleDebugToggle}
                 debuggedNodes={debuggedNodes}
-                handleRunClick={handleRun}
+                handleRunClick={handleRunClick}
                 onSourceUpdate={handleSourceUpdate}
+                handleSearchResultClick={handleSearchResultClick}
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
@@ -733,11 +833,94 @@ const BuildPlayGround: React.FC = () => {
         setRedoStack([]); // Clear redo stack on new action
     }, [nodes, edges]);
 
-    const handleCut = useCallback(() => {
+    const handleCopy = useCallback(() => {
+        const selectedNodes = nodes.filter(node => node.selected);
+        const selectedEdges = edges.filter(edge => {
+            const sourceNode = selectedNodes.find(node => node.id === edge.source);
+            const targetNode = selectedNodes.find(node => node.id === edge.target);
+            return sourceNode && targetNode;
+        });
+
+        // Copy form states for selected nodes
+        const selectedFormStates = selectedNodes.reduce((acc, node) => {
+            if (formStates[node.id]) {
+                acc[node.id] = formStates[node.id];
+            }
+            return acc;
+        }, {});
+
+        setCopiedNodes(selectedNodes);
+        setCopiedEdges(selectedEdges);
+        // Store copied form states
+        setCopiedFormStates(selectedFormStates);
+    }, [nodes, edges, formStates]);
+
+    const handlePaste = useCallback(() => {
+        if (copiedNodes.length === 0) return;
+
         addNodeToHistory();
-        setNodes((nds) => nds.filter((node) => !node.selected));
-        setEdges((eds) => eds.filter((edge) => !edge.selected));
-    }, [nodes, edges, addNodeToHistory]);
+
+        // Create new IDs for the pasted nodes
+        const idMapping = {};
+        const newNodes = copiedNodes.map(node => {
+            const newId = `${node.id}_copy_${Date.now()}`;
+            idMapping[node.id] = newId;
+
+            return {
+                ...node,
+                id: newId,
+                position: {
+                    x: node.position.x + 50,
+                    y: node.position.y + 50
+                },
+                selected: false
+            };
+        });
+
+        // Update edges with new node IDs
+        const newEdges = copiedEdges.map(edge => ({
+            ...edge,
+            id: `${edge.id}_copy_${Date.now()}`,
+            source: idMapping[edge.source],
+            target: idMapping[edge.target],
+            selected: false
+        }));
+
+        // Create new form states for pasted nodes
+        const newFormStates = {};
+        Object.entries(copiedFormStates).forEach(([oldNodeId, formState]) => {
+            const newNodeId = idMapping[oldNodeId];
+            if (newNodeId) {
+                newFormStates[newNodeId] = { ...formState };
+            }
+        });
+
+        setNodes(prevNodes => [...prevNodes, ...newNodes]);
+        setEdges(prevEdges => [...prevEdges, ...newEdges]);
+        // Update form states with the copied states
+        setFormStates(prevFormStates => ({
+            ...prevFormStates,
+            ...newFormStates
+        }));
+        dispatch(setUnsavedChanges());
+    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setNodes, setEdges, setFormStates, dispatch]);
+
+    const handleCut = useCallback(() => {
+        const selectedNodes = nodes.filter(node => node.selected);
+        const selectedEdges = edges.filter(edge => {
+            const sourceNode = selectedNodes.find(node => node.id === edge.source);
+            const targetNode = selectedNodes.find(node => node.id === edge.target);
+            return sourceNode && targetNode;
+        });
+
+        setCopiedNodes(selectedNodes);
+        setCopiedEdges(selectedEdges);
+
+        addNodeToHistory();
+        setNodes(nds => nds.filter(node => !node.selected));
+        setEdges(eds => eds.filter(edge => !edge.selected));
+        dispatch(setUnsavedChanges());
+    }, [nodes, edges, addNodeToHistory, setNodes, setEdges, dispatch]);
 
     const handleRedo = useCallback(() => {
         if (redoStack.length > 0) {
@@ -761,12 +944,29 @@ const BuildPlayGround: React.FC = () => {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.ctrlKey && event.key === 'x') {
-                handleCut();
-            } else if (event.ctrlKey && event.key === 'y') {
-                handleRedo();
-            } else if (event.ctrlKey && event.key === 'z') {
-                handleUndo();
+            if (event.ctrlKey) {
+                switch (event.key.toLowerCase()) {
+                    case 'c':
+                        event.preventDefault();
+                        handleCopy();
+                        break;
+                    case 'v':
+                        event.preventDefault();
+                        handlePaste();
+                        break;
+                    case 'x':
+                        event.preventDefault();
+                        handleCut();
+                        break;
+                    case 'y':
+                        event.preventDefault();
+                        handleRedo();
+                        break;
+                    case 'z':
+                        event.preventDefault();
+                        handleUndo();
+                        break;
+                }
             }
         };
 
@@ -774,7 +974,7 @@ const BuildPlayGround: React.FC = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [handleCut, handleRedo, handleUndo]);
+    }, [handleCopy, handlePaste, handleCut, handleRedo, handleUndo]);
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -822,7 +1022,7 @@ const BuildPlayGround: React.FC = () => {
 
         } catch (error) {
             console.error('Error saving pipeline state:', error);
-            dispatch(setSaveError());
+            dispatch(setSaveError(error.message));
             setShowLeavePrompt(false);
             navigate("/designers/build-datapipeline/", { replace: true });
         }
@@ -869,10 +1069,251 @@ const BuildPlayGround: React.FC = () => {
         fetchSourceColumns(nodes);
     }, [nodes, fetchSourceColumns]);
 
+    // Add this function to handle search
+    const handleSearch = useCallback((term: string) => {
+        setSearchTerm(term);
+        if (!term.trim()) {
+            setSearchResults([]);
+            setHighlightedNodeId(null);
+            return;
+        }
+
+        const results = nodes.filter(node =>
+            node.data.label?.toLowerCase().includes(term.toLowerCase()) ||
+            node.data.title?.toLowerCase().includes(term.toLowerCase())
+        ).map(node => ({
+            id: node.id,
+            label: node.data.label,
+            title: node.data.title || node.data.label
+        }));
+
+        setSearchResults(results);
+    }, [nodes]);
+
+    // Add this function to handle result selection
+    const handleSearchResultClick = useCallback((nodeId: string) => {
+        setHighlightedNodeId(nodeId);
+
+        // Find the node and center the view on it
+        const node = nodes.find(n => n.id === nodeId);
+        if (node) {
+            reactFlowInstance.setCenter(
+                node.position.x + 100,
+                node.position.y + 100,
+                { duration: 800 }
+            );
+        }
+    }, [nodes, reactFlowInstance]);
+
+    // Add keyboard shortcut info to the UI
+    const keyboardShortcuts = [
+        { key: 'Ctrl + C', action: 'Copy' },
+        { key: 'Ctrl + V', action: 'Paste' },
+        { key: 'Ctrl + X', action: 'Cut' },
+        { key: 'Ctrl + Z', action: 'Undo' },
+        { key: 'Ctrl + Y', action: 'Redo' }
+    ];
+
+    const handleAlignHorizontal = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Create a map of node levels (columns)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node => 
+            !edges.some(edge => edge.target === node.id)
+        );
+
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
+            
+            visited.add(id);
+            nodeLevels.set(id, level);
+
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
+                }
+            });
+        }
+
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelWidth = 200; // Horizontal spacing between levels
+        const nodeSpacing = 150; // Vertical spacing between nodes in the same level
+
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (level * levelWidth),
+                    y: startY + (indexInLevel * nodeSpacing)
+                }
+            };
+        });
+
+        setNodes(newNodes);
+
+        // Center the view
+        setTimeout(() => {
+            const centerX = startX + (maxLevel * levelWidth) / 2;
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+
+        dispatch(setUnsavedChanges());
+    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
+
+    const handleAlignVertical = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Create a map of node levels (rows)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node => 
+            !edges.some(edge => edge.target === node.id)
+        );
+
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
+            
+            visited.add(id);
+            nodeLevels.set(id, level);
+
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
+                }
+            });
+        }
+
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelHeight = 150; // Vertical spacing between levels
+        const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
+
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (indexInLevel * nodeSpacing),
+                    y: startY + (level * levelHeight)
+                }
+            };
+        });
+
+        setNodes(newNodes);
+
+        // Center the view
+        setTimeout(() => {
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
+            const centerY = startY + (maxLevel * levelHeight) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+
+        dispatch(setUnsavedChanges());
+    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
+
     return (
         <div>
-
             <div className="p-1 ml-8">
+                <ValidationErrorNotification 
+                    errors={validationErrors} 
+                    onClose={() => setValidationErrors([])} 
+                />
+                {/* Add search component */}
+                <div className="absolute top- -100 right-4 z-50">
+                    <div className="relative">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                placeholder="Search nodes..."
+                                className="w-64 px-4 py-2 pr-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        {searchResults.length > 0 && searchTerm && (
+                            <div className="absolute mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-100 max-h-60 overflow-y-auto">
+                                {searchResults.map((result) => (
+                                    <button
+                                        key={result.id}
+                                        onClick={() => handleSearchResultClick(result.id)}
+                                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-gray-800">{result.title}</span>
+                                            <span className="text-xs text-gray-500">{result.label}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add keyboard shortcuts info */}
+
+                </div>
+                <div className="absolute bottom-5 left-100 mt-2 z-50">
+    <div className=" rounded-lg  p-2 text-sm">
+        <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
+    </div>
+</div>
                 {debuggedNodesList.length > 0 && (
                     <div className="mb-4 p-2 bg-blue-50 rounded-lg">
                         <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
@@ -906,8 +1347,22 @@ const BuildPlayGround: React.FC = () => {
                 </div>
                 <div style={{ height: '69vh', width: '100%', }}>
                     <ReactFlow
-                        nodes={nodes || []}
-                        edges={edges || []}
+                        nodes={nodes.map(node => ({
+                            ...node,
+                            selected: node.selected || false,
+                            style: {
+                                ...node.style,
+                                ...(highlightedNodeId === node.id && {
+                                    background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1))',
+                                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.1)',
+                                    borderRadius: '12px',
+                                    padding: '4px',
+                                    zIndex: 1000,
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                })
+                            }
+                        }))}
+                        edges={edges}
                         onNodesChange={handleNodesChange}
                         onEdgesChange={handleEdgesChange}
                         onConnect={onConnect}
@@ -927,12 +1382,20 @@ const BuildPlayGround: React.FC = () => {
                         onZoomIn={handleZoomIn}
                         onZoomOut={handleZoomOut}
                         onCenter={handleCenter}
+                        onAlignHorizontal={handleAlignHorizontal}
+                        onAlignVertical={handleAlignVertical}
                         handleRunClick={handleRun}
                         onStop={handleStop}
                         onNext={handleNext}
                         isPipelineRunning={isPipelineRunning}
                         isLoading={false}
                         pipelineConfig={handleRunClick}
+                        logs={[
+                            { timestamp: '2024-03-14 10:30:15', message: 'Pipeline started', level: 'info' },
+                            { timestamp: '2024-03-14 10:30:16', message: 'Processing node 1', level: 'info' },
+                            { timestamp: '2024-03-14 10:30:17', message: 'Warning: High memory usage', level: 'warning' },
+                            { timestamp: '2024-03-14 10:30:18', message: 'Error: Failed to process node 2', level: 'error' },
+                        ]}
                     />
                 </div>
 

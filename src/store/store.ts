@@ -22,6 +22,7 @@ export const store = configureStore({
     customerApi: CustomerSlice,
     dataopsApi: DataOpsSlice,
     autoSave: autoSaveSlice,
+    
   },
 });
 

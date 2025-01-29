@@ -7,19 +7,28 @@ interface Position {
 interface NodePort {
     inputs: number;
     outputs: number;
-    maxInputs: number;
+    maxInputs: number | 'unlimited';
 }
 
-interface TransformationConfig {
+interface TransformationData {
+    sql?: string;
     condition?: string;
     conditions?: any[];
     derived_fields?: any[];
     sort_columns?: any[];
     group_by?: string[];
-    aggregate?: any[];
-    pivot?: any[];
+    aggregations?: any[];
+    pivot_by?: any[];
     expressions?: any[];
     advanced?: any;
+    dq_rules?: any[];
+    rows_to_keep?: string;
+    dedup_by?: string[];
+    order_by?: any[];
+    repartition_type?: string;
+    repartition_value?: number;
+    operation_type?: string;
+    allow_missing_columns?: boolean;
 }
 
 interface NodeData {
@@ -27,12 +36,12 @@ interface NodeData {
     icon: string;
     ports: NodePort;
     transformationType: string;
-    transformationData: any;
+    transformationData: TransformationData;
+    color: string;
     metadata: {
         level: number;
         description: string;
         parameters: any[];
-        config?: TransformationConfig;
     };
 }
 
@@ -55,33 +64,32 @@ interface FlowEdge {
     data?: {
         transformationType: string;
         connectionType: string;
-        metadata?: any;
     };
 }
 
-// Enhanced layout manager with better positioning strategies
+// Layout manager with improved positioning strategies
 class LayoutManager {
     private readonly baseYPosition: number = 100;
-    private readonly xGap: number = 200;
-    private readonly yGap: number = 120;
-    private levelWidths: Map<number, number>;
+    private readonly xGap: number = 250;
+    private readonly yGap: number = 150;
+    private readonly levelNodes: Map<number, number>;
 
     constructor() {
-        this.levelWidths = new Map();
+        this.levelNodes = new Map();
     }
 
-    public getPosition(level: number, nodesInLevel: number): Position {
-        const levelWidth = this.levelWidths.get(level) || 0;
-        this.levelWidths.set(level, levelWidth + 1);
+    public getPosition(level: number, index: number): Position {
+        const nodesInLevel = this.levelNodes.get(level) || 0;
+        this.levelNodes.set(level, nodesInLevel + 1);
 
         return {
-            x: this.xGap * level,
-            y: this.baseYPosition + (nodesInLevel * this.yGap)
+            x: level * this.xGap,
+            y: this.baseYPosition + (index * this.yGap) - ((nodesInLevel * this.yGap) / 2)
         };
     }
 
     public optimizeLayout(nodes: FlowNode[]): void {
-        // Center nodes vertically within their levels
+        // Group nodes by level
         const levelGroups = new Map<number, FlowNode[]>();
         nodes.forEach(node => {
             const level = node.data.metadata.level;
@@ -91,9 +99,10 @@ class LayoutManager {
             levelGroups.get(level)?.push(node);
         });
 
+        // Adjust vertical positions within each level
         levelGroups.forEach((levelNodes, level) => {
             const totalHeight = levelNodes.length * this.yGap;
-            const startY = (this.baseYPosition - totalHeight / 2) + this.yGap;
+            const startY = this.baseYPosition - (totalHeight / 2);
             levelNodes.forEach((node, index) => {
                 node.position.y = startY + (index * this.yGap);
             });
@@ -101,47 +110,92 @@ class LayoutManager {
     }
 }
 
-const getIcon = (type: string): string => {
-    const iconMap: Record<string, string> = {
-        Reader: '/assets/buildPipeline/6.svg',
-        Filter: '/assets/buildPipeline/display/filter.svg',
-        Joiner: '/assets/buildPipeline/display/join.svg',
-        Lookup: '/assets/buildPipeline/squre/3.svg',
-        SchemaTransformation: '/assets/buildPipeline/28.svg',
-        Sorter: '/assets/buildPipeline/squre/1.svg',
-        Aggregator: '/assets/buildPipeline/squre/2.svg',
-        Target: '/assets/buildPipeline/7.svg',
-
-        // Add other mappings as needed
+// Node configuration manager
+class NodeConfigManager {
+    private static readonly nodeConfigs: { [key: string]: any } = {
+        Reader: {
+            color: '#f7a01f',
+            icon: '/assets/buildPipeline/6.svg',
+            ports: { inputs: 0, outputs: 1, maxInputs: 0 }
+        },
+        Target: {
+            color: '#07a260',
+            icon: '/assets/buildPipeline/7.svg',
+            ports: { inputs: 1, outputs: 0, maxInputs: 1 }
+        },
+        Filter: {
+            color: '#f5bc2a',
+            icon: '/assets/buildPipeline/display/filter.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Joiner: {
+            color: '#ff7396',
+            icon: '/assets/buildPipeline/display/join.svg',
+            ports: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
+        },
+        SchemaTransformation: {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/28.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Sorter: {
+            color: '#219fe7',
+            icon: '/assets/buildPipeline/squre/1.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Aggregator: {
+            color: '#d43faa',
+            icon: '/assets/buildPipeline/squre/2.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        'DQ Check': {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/squre/4.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Dedupe: {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/squre/5.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Repartition: {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/squre/6.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        'SQL Transformation': {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/squre/7.svg',
+            ports: { inputs: 1, outputs: 1, maxInputs: 1 }
+        },
+        Union: {
+            color: '#32D1A4',
+            icon: '/assets/buildPipeline/squre/8.svg',
+            ports: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
+        }
     };
-    return iconMap[type] || '/assets/buildPipeline/default.svg';
-};
+
+    public static getNodeConfig(type: string) {
+        return this.nodeConfigs[type] || this.nodeConfigs['Filter']; // Default to Filter config
+    }
+}
 
 export const parsePipelineToUIJson = (pipelineJson: any) => {
     const nodes: FlowNode[] = [];
     const edges: FlowEdge[] = [];
     const layoutManager = new LayoutManager();
     const transformationMap = new Map<string, string>();
-    const levelMap = new Map<number, number>();
 
-    // Enhanced node creation with better configuration handling
+    // Create node with proper configuration
     const createNode = (
         id: string,
         type: string,
         label: string,
         level: number,
-        config: any = {}
+        transformationData: TransformationData = {}
     ): FlowNode => {
-        const nodesInLevel = levelMap.get(level) || 0;
-        levelMap.set(level, nodesInLevel + 1);
-
-        const position = layoutManager.getPosition(level, nodesInLevel);
-
-        const ports = {
-            inputs: calculateInputPorts(type, config),
-            outputs: type === "Target" ? 0 : 1,
-            maxInputs: type === "Joiner" ? 2 : 1
-        };
+        const nodeConfig = NodeConfigManager.getNodeConfig(type);
+        const position = layoutManager.getPosition(level, nodes.length);
 
         return {
             id,
@@ -149,15 +203,15 @@ export const parsePipelineToUIJson = (pipelineJson: any) => {
             position,
             data: {
                 label,
-                icon: getIcon(type),
-                ports,
+                icon: nodeConfig.icon,
+                ports: nodeConfig.ports,
+                color: nodeConfig.color,
                 transformationType: type,
-                transformationData: config,
+                transformationData,
                 metadata: {
                     level,
-                    description: config.description || "",
-                    parameters: config.parameters || [],
-                    config: extractTransformationConfig(type, config)
+                    description: "",
+                    parameters: []
                 }
             },
             width: 56,
@@ -165,109 +219,79 @@ export const parsePipelineToUIJson = (pipelineJson: any) => {
         };
     };
 
-    // Helper function to calculate input ports based on transformation type
-    const calculateInputPorts = (type: string, config: any): number => {
-        switch (type) {
-            case "Joiner":
-            case "Lookup":
-                return 2;
-            case "Reader":
-                return 0;
-            default:
-                return 1;
-        }
-    };
+    // Process sources first
+    if (pipelineJson.sources) {
+        pipelineJson.sources.forEach((source: any, index: number) => {
+            const nodeId = `Reader_${index + 1}`;
+            const node = createNode(nodeId, 'Reader', source.name, 0, source);
+            nodes.push(node);
+            transformationMap.set(`read_${source.name}`, nodeId);
+        });
+    }
 
-    // Helper function to extract relevant configuration based on transformation type
-    const extractTransformationConfig = (type: string, config: any): TransformationConfig => {
-        const baseConfig: TransformationConfig = {};
-
-        switch (type) {
-            case "Filter":
-                baseConfig.condition = config.condition;
-                break;
-            case "Joiner":
-                baseConfig.conditions = config.conditions;
-                baseConfig.expressions = config.expressions;
-                baseConfig.advanced = config.advanced;
-                break;
-            case "SchemaTransformation":
-                baseConfig.derived_fields = config.derived_fields;
-                break;
-            case "Sorter":
-                baseConfig.sort_columns = config.sort_columns;
-                break;
-            case "Aggregator":
-                baseConfig.group_by = config.group_by;
-                baseConfig.aggregate = config.aggregate;
-                baseConfig.pivot = config.pivot;
-                break;
-        }
-
-        return baseConfig;
-    };
-
-    // Process transformations sequentially
-    const processTransformations = () => {
-        if (!pipelineJson.transformations) return;
-
+    // Process transformations
+    if (pipelineJson.transformations) {
         pipelineJson.transformations.forEach((transform: any, index: number) => {
-            const nodeId = `${transform.transformation}_${transform.name}`;
+            if (transform.transformation === 'Reader') return;
+
+            const nodeId = `${transform.transformation}_${index + 1}`;
             transformationMap.set(transform.name, nodeId);
 
-            // Set level based on sequence (index)
-            const level = index + 1;
+            const node = createNode(
+                nodeId,
+                transform.transformation,
+                transform.name,
+                index + 1,
+                transform
+            );
+            nodes.push(node);
 
-            nodes.push(createNode(nodeId, transform.transformation, transform.name, level, transform));
-
-            // Create edges to previous node
-            if (index > 0) {
-                const previousTransform = pipelineJson.transformations[index - 1];
-                const sourceId = transformationMap.get(previousTransform.name);
-
+            // Create edges for dependencies
+            transform.dependent_on.forEach((dependentName: string, inputIndex: number) => {
+                const sourceId = transformationMap.get(dependentName);
                 if (sourceId) {
-                    const targetHandle = transform.transformation === "Joiner"
-                        ? "input-0"  // First input for Joiner
-                        : "input-0";
-
                     edges.push({
+                        id: `edge-${sourceId}-${nodeId}-${inputIndex}`,
                         source: sourceId,
-                        sourceHandle: "output-0",
                         target: nodeId,
-                        targetHandle: targetHandle,
-                        id: `edge-${sourceId}-${nodeId}-0`,
-                        type: "smoothstep",
+                        sourceHandle: 'output-0',
+                        targetHandle: `input-${inputIndex}`,
+                        type: 'smoothstep',
                         data: {
                             transformationType: transform.transformation,
-                            connectionType: "default"
+                            connectionType: 'default'
                         }
                     });
-
-                    // For Joiner, add second connection if lookup_data is specified
-                    if (transform.transformation === "Joiner" || transform.transformation === "Lookup") {
-                        const lookupNodeId = transformationMap.get(transform.lookup_data);
-                        if (lookupNodeId) {
-                            edges.push({
-                                source: lookupNodeId,
-                                sourceHandle: "output-0",
-                                target: nodeId,
-                                targetHandle: "input-1",
-                                id: `edge-${lookupNodeId}-${nodeId}-1`,
-                                type: "smoothstep",
-                                data: {
-                                    transformationType: transform.transformation,
-                                    connectionType: "lookup"
-                                }
-                            });
-                        }
-                    }
                 }
+            });
+        });
+    }
+
+    // Process targets
+    if (pipelineJson.targets) {
+        pipelineJson.targets.forEach((target: any, index: number) => {
+            const nodeId = `Target_${index + 1}`;
+            const node = createNode(nodeId, 'Target', target.name, nodes.length, target);
+            nodes.push(node);
+
+            // Connect last transformation to target
+            const lastTransformation = findLastTransformation(nodes);
+            if (lastTransformation) {
+                edges.push({
+                    id: `edge-${lastTransformation.id}-${nodeId}`,
+                    source: lastTransformation.id,
+                    target: nodeId,
+                    sourceHandle: 'output-0',
+                    targetHandle: 'input-0',
+                    type: 'smoothstep',
+                    data: {
+                        transformationType: 'Target',
+                        connectionType: 'default'
+                    }
+                });
             }
         });
-    };
-
-    // Process the transformations
-    processTransformations();
+    }
 
     // Optimize final layout
     layoutManager.optimizeLayout(nodes);
@@ -275,15 +299,12 @@ export const parsePipelineToUIJson = (pipelineJson: any) => {
     return { nodes, edges };
 };
 
-// Helper function to find appropriate source for target connection
-const findAppropriateSourceForTarget = (nodes: FlowNode[], target: any): FlowNode | undefined => {
-    const transformationNodes = nodes.filter(n =>
-        n.data.transformationType !== "Target" &&
-        n.data.ports.outputs > 0
-    );
-
-    return transformationNodes.reduce((prev, current) => {
-        if (!prev) return current;
-        return current.data.metadata.level > prev.data.metadata.level ? current : prev;
-    }, undefined);
+// Helper function to find the last transformation node
+const findLastTransformation = (nodes: FlowNode[]): FlowNode | undefined => {
+    return nodes
+        .filter(node => node.data.transformationType !== 'Target')
+        .reduce((prev, current) => {
+            if (!prev) return current;
+            return current.data.metadata.level > prev.data.metadata.level ? current : prev;
+        }, undefined);
 };

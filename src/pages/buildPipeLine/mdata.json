@@ -7,9 +7,11 @@
       "type": "object",
       "ui_type": "normal",
       "properties": {
+        
         "condition": {
           "type": "expression",
-          "minLength": 1
+          "minLength": 1,
+          "ui_type": "full-width"
         }
       },
       "required": [
@@ -23,13 +25,14 @@
       "type": "object",
       "ui_type": "normal",
       "properties": {
-        "condition": {
-          "type": "string",
-          "minLength": 1
+        "sql": {
+          "type": "expression",
+          "minLength": 1,
+          "ui_type": "full-width"
         }
       },
       "required": [
-        "condition"
+        "sql"
       ]
     },
     {
@@ -463,44 +466,40 @@
           "if": {
             "properties": {
               "repartition_type": { "const": "repartition" }
-            },
-            "required": ["repartition_type"]
+            }
           },
           "then": {
-            "required": ["repartition_value"]
+            "required": ["repartition_type","repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
               "repartition_type": { "const": "coalesce" }
-            },
-            "required": ["repartition_type"]
+            }
           },
           "then": {
-            "required": ["repartition_value"]
+            "required": ["repartition_type","repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
               "repartition_type": { "const": "hash_repartition" }
-            },
-            "required": ["repartition_type"]
+            }
           },
           "then": {
-            "required": ["repartition_expression", "repartition_value"]
+            "required": ["repartition_type","repartition_expression", "repartition_value"]
           }
         },
         {
           "if": {
             "properties": {
               "repartition_type": { "const": "repartition_by_range" }
-            },
-            "required": ["repartition_type"]
+            }
           },
           "then": {
-            "required": ["repartition_expression", "repartition_value"]
+            "required": ["repartition_type","repartition_expression", "repartition_value"]
           }
         }
       ]

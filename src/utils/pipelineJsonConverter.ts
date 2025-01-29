@@ -19,14 +19,74 @@ export interface UINode extends Node {
     };
 }
 
+// Add this interface for validation results
+interface ValidationResult {
+    isValid: boolean;
+    errors: string[];
+}
+
+// Add this validation function
+const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): ValidationResult => {
+    const errors: string[] = [];
+
+    nodes.forEach(node => {
+        // Skip validation for Reader nodes (they only need outputs)
+        if (node.id.startsWith('Reader_')) {
+            const hasOutput = edges.some(edge => edge.source === node.id);
+            if (!hasOutput) {
+                errors.push(`Reader node "${node.data.title || node.data.label}" is not connected to any transformation`);
+            }
+            return;
+        }
+
+        // Skip validation for Target nodes (they only need inputs)
+        if (node.id.startsWith('Target_')) {
+            const hasInput = edges.some(edge => edge.target === node.id);
+            if (!hasInput) {
+                errors.push(`Target node "${node.data.title || node.data.label}" is not connected to any transformation`);
+            }
+            return;
+        }
+
+        // Check inputs
+        const incomingEdges = edges.filter(edge => edge.target === node.id);
+        const requiredInputs = node.data.ports.inputs;
+        const maxInputs:any = node.data.ports.maxInputs;
+
+        if (incomingEdges.length === 0) {
+            errors.push(`Node "${node.data.title || node.data.label}" has no input connections`);
+        } else if (typeof maxInputs === 'number' && incomingEdges.length < requiredInputs) {
+            errors.push(`Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`);
+        }
+
+        // Check outputs
+        const outgoingEdges = edges.filter(edge => edge.source === node.id);
+        if (outgoingEdges.length === 0) {
+            errors.push(`Node "${node.data.title || node.data.label}" has no output connections`);
+        }
+    });
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+};
+
 export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any) => {
     const uiNodes = nodes as UINode[];
+    
+    // Validate pipeline connections
+    const validation = validatePipelineConnections(uiNodes, edges);
+    if (!validation.isValid) {
+        throw new Error(`Pipeline is incomplete or broken:\n${validation.errors.join('\n')}`);
+    }
 
+    console.log(uiNodes)
     // Extract sources from Reader nodes
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
-            name: node.data.label,
+            name: node.data.title || node.data.label,
             source_type: "File",
             file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
             data_src_id: node.data.source.data_src_id,
@@ -41,84 +101,101 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const nodeToTransformationName = new Map();
     uiNodes.forEach(node => {
         if (node.id.startsWith('Reader_')) {
-            nodeToTransformationName.set(node.id, `read_${node.data.label}`);
+            nodeToTransformationName.set(node.id, `read_${node.data.title || node.data.label}`);
         } else {
-            const type = node.id.split('_')[0];
-            nodeToTransformationName.set(node.id, getTransformationName(type, node.data.title));
+            nodeToTransformationName.set(node.id, node.data.title || node.data.label);
         }
     });
-
+console.log(nodeToTransformationName)
     // Create transformations array following the flow order
     const transformations = [];
 
     // Helper function to get transformation config based on type and data
     const getTransformationConfig = (node: UINode, dependent_on: string[]) => {
         const baseConfig = {
-            name: nodeToTransformationName.get(node.id),  // Use the mapped name
+            name: nodeToTransformationName.get(node.id),
             dependent_on,
             transformation: node.id.split('_')[0]
         };
 
         switch (node.id.split('_')[0]) {
+            
             case 'Filter':
                 return {
                     ...baseConfig,
-                    condition: node.data.transformationData?.condition || "age >= 18" // Default or from data
+                    condition: node.data.transformationData?.condition || ""
+
+                };
+
+            case 'SQL Transformation':
+                return {
+                    ...baseConfig,
+                    sql: node.data.transformationData?.sql || "true"
+                    
                 };
 
             case 'Joiner':
                 return {
                     ...baseConfig,
-                    conditions: node.data.transformationData?.conditions || [{
-                        join_input: "read_lookup_data",
-                        join_condition: "read_input_data.id = read_lookup_data.id",
-                        join_type: "left"
-                    }],
-                    expressions: node.data.transformationData?.expressions || [{
-                        target_column: "full_name",
-                        expression: "concat(read_input_data.name, ' ', read_input_data.city)"
-                    }],
-                    advanced: {
-                        hints: node.data.transformationData?.hints || [{
-                            join_input: "read_input_data",
-                            hint_type: "broadcast"
-                        }]
+                    conditions: node.data.transformationData?.conditions || [],
+                    expressions: node.data.transformationData?.expressions || [],
+                    advanced: node.data.transformationData?.advanced || {
+                        hints: []
                     }
                 };
 
             case 'SchemaTransformation':
                 return {
                     ...baseConfig,
-                    derived_fields: node.data.transformationData?.derived_fields || [{
-                        name: "full_address",
-                        expression: "concat(address, ' ', city, ' ', state, ' ', zip)"
-                    }, {
-                        name: "is_adult",
-                        expression: "case when age >= 18 then 'Yes' else 'No' end"
-                    }]
+                    derived_fields: node.data.transformationData?.derived_fields || []
                 };
 
             case 'Sorter':
                 return {
                     ...baseConfig,
-                    sort_columns: node.data.transformationData?.sort_columns || [{
-                        column: "city",
-                        order: "asc"
-                    }]
+                    sort_columns: node.data.transformationData?.sort_columns || []
                 };
 
             case 'Aggregator':
                 return {
                     ...baseConfig,
-                    group_by: node.data.transformationData?.group_by || ["city"],
-                    aggregate: node.data.transformationData?.aggregate || [{
-                        expression: "avg(age)",
-                        target_column: "average_age"
-                    }],
-                    pivot: node.data.transformationData?.pivot || [{
-                        pivot_column: "city",
-                        pivot_values: ["New York", "Los Angeles", "Chicago"]
-                    }]
+                    group_by: node.data.transformationData?.group_by || [],
+                    aggregations: node.data.transformationData?.aggregations || [],
+                    pivot_by: node.data.transformationData?.pivot_by || []
+                };
+
+            case 'DQ Check':
+                return {
+                    ...baseConfig,
+                    transformation: node.data.transformationData?.transformation || "",
+                    name: node.data.transformationData?.name || "",
+                    limit: node.data.transformationData?.limit,
+                    dq_rules: node.data.transformationData?.dq_rules || []
+                };
+
+            case 'Dedupe':
+                return {
+                    ...baseConfig,
+                    rows_to_keep: node.data.transformationData?.rows_to_keep || "any",
+                    dedup_by: node.data.transformationData?.dedup_by || [],
+                    order_by: node.data.transformationData?.order_by || []
+                };
+
+            case 'Repartition':
+                return {
+                    ...baseConfig,
+                    repartition_type: node.data.transformationData?.repartition_type || "repartition",
+                    repartition_value: node.data.transformationData?.repartition_value,
+                    override_partition: node.data.transformationData?.override_partition || "",
+                    repartition_expression: node.data.transformationData?.repartition_expression || [],
+                    limit: node.data.transformationData?.limit
+                };
+
+            case 'Union':
+                return {
+                    ...baseConfig,
+                    operation_type: node.data.transformationData?.operation_type || "union",
+                    allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
                 };
 
             default:
@@ -131,11 +208,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .filter(node => node.id.startsWith('Reader_'))
         .forEach(node => {
             transformations.push({
-                name: `read_${node.data.label}`,
+                name: `read_${node.data.title || node.data.label}`,
                 dependent_on: [],
                 transformation: "Reader",
                 source: {
-                    name: node.data.label,
+                    name: node.data.title || node.data.label,
                     source_type: "File",
                     file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
                     connection: {
@@ -221,12 +298,18 @@ interface Transformation {
 const getNodeIcon = (type: string): string => {
     const iconMap: { [key: string]: string } = {
         Reader: '/assets/buildPipeline/6.svg',
+        Target: '/assets/buildPipeline/7.svg',
         Filter: '/assets/buildPipeline/display/filter.svg',
         Joiner: '/assets/buildPipeline/display/join.svg',
+        Ship: '/assets/buildPipeline/display/ship.svg',
         SchemaTransformation: '/assets/buildPipeline/28.svg',
         Sorter: '/assets/buildPipeline/squre/1.svg',
         Aggregator: '/assets/buildPipeline/squre/2.svg',
-        Target: '/assets/buildPipeline/7.svg'
+        'DQ Check': '/assets/buildPipeline/squre/4.svg',
+        Dedupe: '/assets/buildPipeline/squre/5.svg',
+        Repartition: '/assets/buildPipeline/squre/6.svg',
+        'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
+        Union: '/assets/buildPipeline/squre/8.svg'
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
 };
@@ -234,12 +317,18 @@ const getNodeIcon = (type: string): string => {
 const getNodePorts = (type: string) => {
     const portsMap: { [key: string]: { inputs: number; outputs: number; maxInputs: number | 'unlimited' } } = {
         Reader: { inputs: 0, outputs: 1, maxInputs: 0 },
+        Target: { inputs: 1, outputs: 0, maxInputs: 1 },
         Filter: { inputs: 1, outputs: 1, maxInputs: 1 },
         Joiner: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        Ship: { inputs: 1, outputs: 1, maxInputs: 1 },
         SchemaTransformation: { inputs: 1, outputs: 1, maxInputs: 1 },
         Sorter: { inputs: 1, outputs: 1, maxInputs: 1 },
         Aggregator: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Target: { inputs: 1, outputs: 0, maxInputs: 1 }
+        'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
+        Dedupe: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
+        'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
+        Union: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
     };
     return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };
 };
@@ -265,7 +354,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             );
 
             const nodeId = `Reader_${index + 1}`;
-            // Map the source name to the node ID
             transformationToNodeMap[`read_${source.name}`] = nodeId;
 
             nodes.push({
@@ -277,6 +365,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
                 },
                 data: {
                     label: source.name,
+                    title: source.name,
                     icon: getNodeIcon('Reader'),
                     ports: getNodePorts('Reader'),
                     source: sourceDetails
@@ -291,7 +380,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
 
     // Process transformations
     let transformationCounter: { [key: string]: number } = {};
-    xPosition += 130; // Initial offset for transformations
+    xPosition += 130;
 
     for (const transform of pipelineJson.transformations) {
         if (transform.transformation === 'Reader') continue;
@@ -300,7 +389,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
         transformationCounter[type] = (transformationCounter[type] || 0) + 1;
 
         const nodeId = `${type}_${transformationCounter[type]}`;
-        // Map the transformation name to the node ID
         transformationToNodeMap[transform.name] = nodeId;
 
         nodes.push({
@@ -309,8 +397,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             position: { x: xPosition, y: yPosition },
             data: {
                 label: type,
+                title: transform.name,
                 icon: getNodeIcon(type),
-                ports: getNodePorts(type)
+                ports: getNodePorts(type),
+                transformationData: {
+                    ...transform
+                }
             },
             width: 56,
             height: 72
@@ -371,13 +463,5 @@ function capitalizeFirstLetter(str: string): string {
 
 // Update the transformation name mapping
 const getTransformationName = (type: string, title: string): string => {
-    const baseName = title?.toLowerCase() || type.toLowerCase();
-    switch (type) {
-        case 'SchemaTransformation':
-            return 'schema_transformation';
-        case 'Joiner':
-            return 'join_transformation';
-        default:
-            return `${baseName}_transformation`;
-    }
+    return title || type;
 }; 

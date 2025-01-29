@@ -1,12 +1,12 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, InputAdornment, Stack, TextField, Typography } from '@mui/material'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { IoClose, IoFilterSharp } from 'react-icons/io5'
 import { FiFilter } from 'react-icons/fi';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { FaSearch } from 'react-icons/fa';
 import CustomTable, { generateColumnsFromData } from '@/common/CustomTable';
-import LogsPage from './LogsPage';
+import { Terminal } from './LogsPage';
 import AddFilterPopUp from './AddFilterPopUp';
 import AddSortPopUp from './AddSortPopUp';
 import { FlexibleTable } from '../Table';
@@ -16,7 +16,7 @@ export default function PipeLinePopUp({ open, handleClose, transformData }: any)
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [openFilter, setOpenFilter] = React.useState(false);
     const [openSort, setOpenSort] = React.useState(false);
-
+    const [isLogsOpen, setIsLogsOpen] = useState(false);
     const handleFilterOpen = () => {
         setOpenFilter(true);
     };
@@ -36,7 +36,9 @@ export default function PipeLinePopUp({ open, handleClose, transformData }: any)
         console.log(transformData)
     }, [transformData]);
 
-
+    const handleCloseLogs = () => {
+        setIsLogsOpen(false);
+    };
 
     const columns: any = generateColumnsFromData(transformData, ['']);
 
@@ -136,7 +138,19 @@ export default function PipeLinePopUp({ open, handleClose, transformData }: any)
                     </Stack>
                     <Stack sx={{ fontWeight: 600 }}>Showing All Logs</Stack>
 
-                    <LogsPage drawerHeight={'90%'} />
+                    {/* <LogsPage drawerHeight={'90%'} /> */}
+
+                    <Terminal
+                isOpen={isLogsOpen}
+                onClose={handleCloseLogs}
+                title="Pipeline Logs"
+                logs={[
+                    { timestamp: '2024-03-14 10:30:15', message: 'Pipeline started', level: 'info' },
+                    { timestamp: '2024-03-14 10:30:16', message: 'Processing node 1', level: 'info' },
+                    { timestamp: '2024-03-14 10:30:17', message: 'Warning: High memory usage', level: 'warning' },
+                    { timestamp: '2024-03-14 10:30:18', message: 'Error: Failed to process node 2', level: 'error' },
+                ]}
+            />
                 </Stack>
             </>)}
 

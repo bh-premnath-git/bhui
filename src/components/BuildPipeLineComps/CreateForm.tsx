@@ -442,13 +442,21 @@ const FormContent: React.FC<{
     if (schema.title === 'Repartition') {
       const repartitionType = values.repartition_type;
       
-      // Handle conditional rendering based on repartition_type
-      // if (fieldKey === 'repartition_value') {
-      //   return ['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(repartitionType);
-      // }
-      
-      if (fieldKey === 'repartition_expression') {
-        return ['repartition', 'coalesce','hash_repartition', 'repartition_by_range'].includes(repartitionType);
+      // Find the matching condition in the schema
+      const matchingCondition = schema.anyOf?.find(condition => 
+        condition.if?.properties?.repartition_type?.const === repartitionType
+      );
+
+      if (matchingCondition) {
+        // For fields that should only be shown for specific repartition types
+        if (fieldKey === 'repartition_expression') {
+          return ['hash_repartition', 'repartition_by_range'].includes(repartitionType);
+        }
+
+        // For repartition_value
+        if (fieldKey === 'repartition_value') {
+          return ['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(repartitionType);
+        }
       }
     }
     
@@ -457,17 +465,30 @@ const FormContent: React.FC<{
 
   // Update isFieldRequired function to handle conditional requirements
   const isFieldRequired = (fieldKey: string, fieldSchema?: any, parentKey?: string) => {
-    // Check top-level required fields
-    if (Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
-      return true;
-    }
+    // Check if we have the schema title and it matches Repartition
+    if (schema.title === 'Repartition') {
+      const repartitionType = values?.repartition_type || 'repartition';
+      
+      // Find the matching condition in the schema
+      const matchingCondition = schema.anyOf?.find(condition => 
+        condition.if?.properties?.repartition_type?.const === repartitionType
+      );
 
-    // Handle Dedupe specific conditional requirements
-    if (schema.title === 'Dedupe') {
-      const rowsToKeep = values.rows_to_keep;
-      if (fieldKey === 'order_by' && (rowsToKeep === 'first' || rowsToKeep === 'last')) {
+      if (matchingCondition) {
+        // Check if the field is required for this repartition type
+        const requiredFields = matchingCondition.then?.required || [];
+        return requiredFields.includes(fieldKey);
+      }
+
+      // Check top-level required fields
+      if (Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
         return true;
       }
+    }
+
+    // Handle other schema types...
+    if (Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
+      return true;
     }
 
     // Check if the parent object has this field as required
@@ -711,7 +732,7 @@ const FormContent: React.FC<{
     );
   };
 
-  // Update renderField to handle Dedupe specific fields
+  // Update renderField to handle boolean type fields
   const renderField = (key: string, value: any, parentKey?: string) => {
     if (!shouldRenderField(key, value)) {
       return null;
@@ -724,6 +745,40 @@ const FormContent: React.FC<{
 
     const isRequired = isFieldRequired(key, value, parentKey);
     const description = value.description;
+
+    // Handle boolean type fields
+    if (value.type === 'boolean') {
+      return (
+        <Box sx={fieldStyles.fieldContainer}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Field name={key}>
+              {({ field }) => (
+                <input
+                  type="checkbox"
+                  {...field}
+                  checked={field.value}
+                />
+              )}
+            </Field>
+            <Box sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {key.replace(/_/g, ' ').split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
+              {isRequired && <span style={{ color: 'red' }}> *</span>}
+              {description && (
+                <Tooltip title={description} placement="top">
+                  <InfoIcon sx={{ fontSize: 16, color: 'action.active', ml: 0.5, cursor: 'help' }} />
+                </Tooltip>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      );
+    }
 
     // Handle array container type
     if (value.type === 'array-container') {
@@ -818,7 +873,11 @@ const FormContent: React.FC<{
     const rows: [string, any][][] = [];
 
     fields.forEach(([key, value]) => {
-      if (value.type === 'array' || value.type === 'object' || value.type === 'array-container') {
+      // Check if field should be full width
+      if (value.type === 'array' || 
+          value.type === 'object' || 
+          value.type === 'array-container' ||
+          value.ui_type === 'full-width') {  // Add this condition
         if (currentRow.length > 0) {
           rows.push(currentRow);
           currentRow = [];
@@ -848,11 +907,18 @@ const FormContent: React.FC<{
         }}
       >
         {row.map(([key, value]) => (
-          <Box key={key} sx={{ width: row.length === 1 ? '100%' : undefined }}>
+          <Box key={key} sx={{ 
+            width: (value.ui_type === 'full-width' || 
+                   value.type === 'array' || 
+                   value.type === 'object' || 
+                   value.type === 'array-container') ? '100%' : undefined 
+          }}>
             {renderField(key, value, parentKey)}
           </Box>
         ))}
-        {row.length < 3 && row[0][1].type !== 'array' && 
+        {row.length < 3 && 
+         row[0][1].ui_type !== 'full-width' &&  // Fix the comparison operator
+         row[0][1].type !== 'array' && 
          row[0][1].type !== 'object' && 
          row[0][1].type !== 'array-container' && 
          [...Array(3 - row.length)].map((_, i) => (

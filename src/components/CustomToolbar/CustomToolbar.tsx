@@ -75,7 +75,6 @@ export const CustomToolbar: React.FC<CustomToolbarProps> = ({ selectedData }) =>
     <div className="bg-white border-b">
       <div className="max-w-screen-xl px-1 py-2">
         <div className="flex items-center justify-between gap-2">
-          {/* Left group */}
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { LocalStorageService } from '@/services/localStorageServices';
 import { useFlow } from '@/contexts/FlowContext';
 import { ApiService } from '@/services/apiServices';
 import { CATALOG_API_PORT } from '@/configration/environment';
+import useToast from '@/components/teast-service';
 
 interface PlaybackButtonProps {
   selectedFlowId: string;
@@ -24,6 +25,10 @@ interface PlaybackButtonProps {
   selectedData: any;
   flowName: string;
   selectedEnvName: any;
+}
+
+function areAllTaskIdsValid(tasks: any[]): boolean {
+  return tasks.every(task => !!task.task_id);
 }
 
 export function PlaybackButton({
@@ -40,12 +45,12 @@ export function PlaybackButton({
   const location = useLocation(); 
   const { isDirty, formdataNum } = useFlow();
   const { dagParserTime } = useAppSelector((state) => state.flowApi);
+  const [ToastComponent, showToast] = useToast();
 
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   const abortControllerRef = useRef<AbortController | null>(null);
   
   const formdataNumRef = useRef<number>(formdataNum);
-
   const [isLoading, setIsLoading] = useState(false);
 
   const sizeClasses = {
@@ -61,29 +66,33 @@ export function PlaybackButton({
   };
 
   const asyncUpdateFlowDef = async () => {
-    // If currently "playing," skip
     if (isPlaying || !selectedFlowId) return;
 
     try {
       abortControllerRef.current = new AbortController();
-
       const flowStructure = LocalStorageService.getItem(`flow-${selectedFlowId}`);
       const flowJson = flowStructure?.nodeFormData?.map((item: any) => item.formData);
-
-      await dispatch(
-        updateFlowDefinition({
-          flow_id: selectedFlowId,
-          flow_json: {
-            flow_deployment_id: selectedData?.flow_deployment_id,
+      const checkForTaskIds = areAllTaskIdsValid(flowJson);
+      if(checkForTaskIds){
+        await dispatch(
+          updateFlowDefinition({
             flow_id: selectedFlowId,
-            flow_json: { flowJson, flowStructure }
-          }
-        })
-      );
+            flow_json: {
+              flow_deployment_id: selectedData?.flow_deployment_id,
+              flow_id: selectedFlowId,
+              flow_json: { flowJson, flowStructure }
+            }
+          })
+        );
+        showToast('Flow definition updated successfully.', { color: '#00b060' });
+      }else{
+        showToast("Please check all the task", { color: '#f44336' });
+      }
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         console.log('Flow definition update was aborted due to route change.');
       } else {
+        showToast('Error updating flow definition. Please try again.', { color: '#f44336' });
         console.error('Error updating flow definition:', error);
       }
     } finally {
@@ -91,6 +100,7 @@ export function PlaybackButton({
     }
   };
 
+  // Trigger DAG deployment
   const asyncFlowDeploy = async (): Promise<boolean> => {
     try {
       abortControllerRef.current = new AbortController();
@@ -113,11 +123,13 @@ export function PlaybackButton({
           ...selectedEnvName
         })
       );
+      showToast('Deployment started successfully.', { color: '#00b060' });
       return true;
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         console.log('Flow deployment was aborted due to route change.');
       } else {
+        showToast('Error deploying flow. Please try again.', { color: '#f44336' });
         console.error('Error deploying flow:', error);
       }
       return false;
@@ -129,9 +141,7 @@ export function PlaybackButton({
   useEffect(() => {
     if (!isDirty && selectedFlowId) {
       if (formdataNumRef.current !== formdataNum) {
-        
         formdataNumRef.current = formdataNum;
-        
         asyncUpdateFlowDef();
       }
     }
@@ -186,6 +196,7 @@ export function PlaybackButton({
           <p>{isPlaying ? "Deployment Started" : "Deployment Stopped"}</p>
         </TooltipContent>
       </Tooltip>
+      <ToastComponent />
     </TooltipProvider>
   );
 }

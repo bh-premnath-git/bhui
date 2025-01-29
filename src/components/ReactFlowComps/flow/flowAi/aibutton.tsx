@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChatSlidingPortal } from './ChatSlidingPortal'
+import ai from "/assets/ai/ai.png"
 
 const SparkleButton = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -16,13 +17,13 @@ const SparkleButton = () => {
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsChatOpen(!isChatOpen)}
       >
-          <img src="/assets/buildPipeline/bighammer.png" alt="bighammer" className="w-16 h-16" />
+          <img src={ai} alt="ai" className="w-10 h-10" />
       </motion.button>
 
       <ChatSlidingPortal
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        imageSrc="/assets/buildPipeline/bighammer.png" 
+        imageSrc={ai} 
       />
 
     </div>

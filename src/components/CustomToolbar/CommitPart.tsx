@@ -17,7 +17,7 @@ interface CommitPayload {
 export const CommitPart = ({ selectedData }: { selectedData: any }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [commitMessage, setCommitMessage] = useState('');
-    const [isLoading, setIsLoading] = useState(false); // For showing the loader
+    const [isLoading, setIsLoading] = useState(false);
     const [ToastComponent, showToast] = useToast();
 
     async function commitApi({ id, message }: CommitPayload) {
@@ -33,9 +33,9 @@ export const CommitPart = ({ selectedData }: { selectedData: any }) => {
 
     const handleCommit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true); // Start loader
+        setIsLoading(true);
         await commitApi({ id: selectedData?.flow_deployment_id, message: commitMessage });
-        setIsLoading(false); // Stop loader
+        setIsLoading(false);
         setCommitMessage('');
         setIsDialogOpen(false);
     };

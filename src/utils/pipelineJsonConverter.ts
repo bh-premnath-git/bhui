@@ -20,68 +20,177 @@ export interface UINode extends Node {
     };
 }
 
-// Add this interface for validation results
+// Add new interface for logs
+interface PipelineLog {
+    timestamp: string;
+    message: string;
+    level: 'info' | 'error' | 'warning';
+}
+
+// Modify validation result to include logs
 interface ValidationResult {
     isValid: boolean;
     errors: string[];
+    logs: PipelineLog[];
 }
 
-// Add this validation function
+// Update validation function to generate logs
 const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): ValidationResult => {
     const errors: string[] = [];
+    const logs: PipelineLog[] = [];
+    const timestamp = new Date().toISOString();
+
+    // Add initial validation log
+    logs.push({
+        timestamp,
+        message: 'Starting pipeline validation...',
+        level: 'info'
+    });
 
     nodes.forEach(node => {
-        // Skip validation for Reader nodes (they only need outputs)
+        // Add log for each node being validated
+        logs.push({
+            timestamp,
+            message: `Validating node: ${node.data.title || node.data.label}`,
+            level: 'info'
+        });
+
+        // Reader node validation
         if (node.id.startsWith('Reader_')) {
             const hasOutput = edges.some(edge => edge.source === node.id);
             if (!hasOutput) {
-                errors.push(`Reader node "${node.data.title || node.data.label}" is not connected to any transformation`);
+                const error = `Reader node "${node.data.title || node.data.label}" is not connected to any transformation`;
+                errors.push(error);
+                logs.push({
+                    timestamp,
+                    message: error,
+                    level: 'error'
+                });
+            } else {
+                logs.push({
+                    timestamp,
+                    message: `Reader node "${node.data.title || node.data.label}" is properly connected`,
+                    level: 'info'
+                });
             }
             return;
         }
 
-        // Skip validation for Target nodes (they only need inputs)
+        // Target node validation
         if (node.id.startsWith('Target_')) {
             const hasInput = edges.some(edge => edge.target === node.id);
             if (!hasInput) {
-                errors.push(`Target node "${node.data.title || node.data.label}" is not connected to any transformation`);
+                const error = `Target node "${node.data.title || node.data.label}" is not connected to any transformation`;
+                errors.push(error);
+                logs.push({
+                    timestamp,
+                    message: error,
+                    level: 'error'
+                });
+            } else {
+                logs.push({
+                    timestamp,
+                    message: `Target node "${node.data.title || node.data.label}" is properly connected`,
+                    level: 'info'
+                });
             }
             return;
         }
 
-        // Check inputs
+        // Input validation
         const incomingEdges = edges.filter(edge => edge.target === node.id);
         const requiredInputs = node.data.ports.inputs;
-        const maxInputs:any = node.data.ports.maxInputs;
+        const maxInputs: any = node.data.ports.maxInputs;
 
         if (incomingEdges.length === 0) {
-            errors.push(`Node "${node.data.title || node.data.label}" has no input connections`);
+            const error = `Node "${node.data.title || node.data.label}" has no input connections`;
+            errors.push(error);
+            logs.push({
+                timestamp,
+                message: error,
+                level: 'error'
+            });
         } else if (typeof maxInputs === 'number' && incomingEdges.length < requiredInputs) {
-            errors.push(`Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`);
+            const error = `Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`;
+            errors.push(error);
+            logs.push({
+                timestamp,
+                message: error,
+                level: 'warning'
+            });
+        } else {
+            logs.push({
+                timestamp,
+                message: `Node "${node.data.title || node.data.label}" has valid input connections`,
+                level: 'info'
+            });
         }
 
-        // Check outputs
+        // Output validation
         const outgoingEdges = edges.filter(edge => edge.source === node.id);
         if (outgoingEdges.length === 0) {
-            errors.push(`Node "${node.data.title || node.data.label}" has no output connections`);
+            const error = `Node "${node.data.title || node.data.label}" has no output connections`;
+            errors.push(error);
+            logs.push({
+                timestamp,
+                message: error,
+                level: 'error'
+            });
+        } else {
+            logs.push({
+                timestamp,
+                message: `Node "${node.data.title || node.data.label}" has valid output connections`,
+                level: 'info'
+            });
         }
+    });
+
+    // Add final validation status log
+    logs.push({
+        timestamp,
+        message: errors.length === 0 ? 'Pipeline validation completed successfully' : 'Pipeline validation completed with errors',
+        level: errors.length === 0 ? 'info' : 'error'
     });
 
     return {
         isValid: errors.length === 0,
-        errors
+        errors,
+        logs
     };
 };
 
-export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any) => {
+// Add a helper function to generate unique titles
+const generateUniqueTitle = (type: string, existingTitles: Set<string>): string => {
+    let counter = 1;
+    let title = type;
+    
+    while (existingTitles.has(title)) {
+        title = `${type}${counter}`;
+        counter++;
+    }
+    
+    existingTitles.add(title);
+    return title;
+};
+
+export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
     const uiNodes = nodes as UINode[];
     
-    // Validate pipeline connections
-    const validation = validatePipelineConnections(uiNodes, edges);
-    if (!validation.isValid) {
-        throw new Error(`Pipeline is incomplete or broken:\n${validation.errors.join('\n')}`);
+    if (validateOnly) {
+        // Perform validation and return logs
+        const validation = validatePipelineConnections(uiNodes, edges);
+        
+        if (!validation.isValid) {
+            const error = new Error(`Pipeline is incomplete or broken:\n${validation.errors.join('\n')}`);
+            (error as any).logs = validation.logs;
+            throw error;
+        }
+        
+        // Return early if only validating
+        return validation;
     }
-
+    
+    // Continue with normal pipeline JSON conversion without validation
     console.log(uiNodes)
     // Extract sources from Reader nodes
     const sources = uiNodes
@@ -108,148 +217,117 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         }
     });
 console.log(nodeToTransformationName)
-    // Create transformations array following the flow order
-    const transformations = [];
+    // Process transformations in order
+    const transformations = uiNodes
+        .filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_'))
+        .map(node => {
+            const baseConfig = {
+                name: node.data.title, // Use the node's title as the transformation name
+                transformation: node.data.label,
+                dependent_on: edges
+                    .filter(edge => edge.target === node.id)
+                    .map(edge => {
+                        const sourceNode = uiNodes.find(n => n.id === edge.source);
+                        return sourceNode?.data.title || '';
+                    })
+            };
 
-    // Helper function to get transformation config based on type and data
-    const getTransformationConfig = (node: UINode, dependent_on: string[]) => {
-        const baseConfig = {
-            name: nodeToTransformationName.get(node.id),
-            dependent_on,
-            transformation: node.id.split('_')[0]
-        };
-
-        switch (node.id.split('_')[0]) {
-            
-            case 'Filter':
-                return {
-                    ...baseConfig,
-                    condition: node.data.transformationData?.condition || ""
-
-                };
-
-            case 'SQL Transformation':
-                return {
-                    ...baseConfig,
-                    sql: node.data.transformationData?.sql || "true"
-                    
-                };
-
-            case 'Joiner':
-                return {
-                    ...baseConfig,
-                    conditions: node.data.transformationData?.conditions || [],
-                    expressions: node.data.transformationData?.expressions || [],
-                    advanced: node.data.transformationData?.advanced || {
-                        hints: []
-                    }
-                };
-
-            case 'SchemaTransformation':
-                return {
-                    ...baseConfig,
-                    derived_fields: node.data.transformationData?.derived_fields || []
-                };
-
-            case 'Sorter':
-                return {
-                    ...baseConfig,
-                    sort_columns: node.data.transformationData?.sort_columns 
-                };
-
-            case 'Aggregator':
-                return {
-                    ...baseConfig,
-                    group_by: node.data.transformationData?.group_by || [],
-                    aggregations: node.data.transformationData?.aggregations || [],
-                    pivot_by: node.data.transformationData?.pivot_by || []
-                };
-
-            case 'DQ Check':
-                return {
-                    ...baseConfig,
-                    transformation: node.data.transformationData?.transformation || "",
-                    name: node.data.transformationData?.name || "",
-                    limit: node.data.transformationData?.limit,
-                    dq_rules: node.data.transformationData?.dq_rules || []
-                };
-
-            case 'Dedupe':
-                return {
-                    ...baseConfig,
-                    rows_to_keep: node.data.transformationData?.rows_to_keep || "any",
-                    dedup_by: node.data.transformationData?.dedup_by || [],
-                    order_by: node.data.transformationData?.order_by || []
-                };
-
-            case 'Repartition':
-                return {
-                    ...baseConfig,
-                    repartition_type: node.data.transformationData?.repartition_type || "repartition",
-                    repartition_value: node.data.transformationData?.repartition_value,
-                    override_partition: node.data.transformationData?.override_partition || "",
-                    repartition_expression: node.data.transformationData?.repartition_expression || [],
-                    limit: node.data.transformationData?.limit
-                };
-
-            case 'Union':
-                return {
-                    ...baseConfig,
-                    operation_type: node.data.transformationData?.operation_type || "union",
-                    allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
-                };
-
-            default:
-                return baseConfig;
-        }
-    };
-
-    // Process Reader transformations
-    uiNodes
-        .filter(node => node.id.startsWith('Reader_'))
-        .forEach(node => {
-            transformations.push({
-                name: `read_${node.data.title || node.data.label}`,
-                dependent_on: [],
-                transformation: "Reader",
-                source: {
-                    name: node.data.title || node.data.label,
-                    source_type: "File",
-                    file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
-                    connection: {
-                        name: node.data.source.connection?.name || "local_connection",
-                        connection_type: capitalizeFirstLetter(node.data.source.connection_type),
-                        file_path_prefix: `${node.data.source.file_path_prefix}/`
-                    }
-                },
-                read_options: {
-                    header: true
-                }
-            });
-        });
-
-    // Process other transformations
-    const processedNodes = new Set(uiNodes.filter(node => node.id.startsWith('Reader_')).map(n => n.id));
-    const remainingNodes = new Set(uiNodes.filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_')).map(n => n.id));
-
-    while (remainingNodes.size > 0) {
-        for (const nodeId of remainingNodes) {
-            const incomingEdges = edges.filter(edge => edge.target === nodeId);
-            const dependentNodes = incomingEdges.map(edge => edge.source);
-
-            if (dependentNodes.every(depNode => processedNodes.has(depNode))) {
-                const node = uiNodes.find(n => n.id === nodeId)!;
-                const dependent_on = incomingEdges.map(edge => nodeToTransformationName.get(edge.source));
-
-                // Get transformation config with all required fields
-                const transformationConfig = getTransformationConfig(node, dependent_on);
-                transformations.push(transformationConfig);
-
-                processedNodes.add(nodeId);
-                remainingNodes.delete(nodeId);
+            // Rest of the transformation configuration...
+            switch (node.data.label) {
+                case 'Aggregator':
+                    return {
+                        ...baseConfig,
+                        name: node.data.title, // Explicitly set the name
+                        group_by: node.data.transformationData?.group_by || [],
+                        aggregations: node.data.transformationData?.aggregate || [],
+                        pivot_by: node.data.transformationData?.pivot_by || []
+                    };
+                case 'Filter':
+                    return {
+                        ...baseConfig,
+                        condition: node.data.transformationData?.condition || ''
+                    };
+                case 'SQL Transformation':
+                    return {
+                        ...baseConfig,
+                        sql: node.data.transformationData?.sql || "true"
+                    };
+                case 'Joiner':
+                    return {
+                        ...baseConfig,
+                        conditions: node.data.transformationData?.conditions || [],
+                        expressions: node.data.transformationData?.expressions || [],
+                        advanced: node.data.transformationData?.advanced || {
+                            hints: []
+                        }
+                    };
+                case 'SchemaTransformation':
+                    return {
+                        ...baseConfig,
+                        derived_fields: node.data.transformationData?.derived_fields || []
+                    };
+                case 'Sorter':
+                    return {
+                        ...baseConfig,
+                        sort_columns: node.data.transformationData?.sort_columns 
+                    };
+                case 'DQ Check':
+                    return {
+                        ...baseConfig,
+                        transformation: node.data.transformationData?.transformation || "",
+                        name: node.data.transformationData?.name || "",
+                        limit: node.data.transformationData?.limit,
+                        dq_rules: node.data.transformationData?.dq_rules || []
+                    };
+                case 'Dedupe':
+                    return {
+                        ...baseConfig,
+                        rows_to_keep: node.data.transformationData?.rows_to_keep || "any",
+                        dedup_by: node.data.transformationData?.dedup_by || [],
+                        order_by: node.data.transformationData?.order_by || []
+                    };
+                case 'Repartition':
+                    return {
+                        ...baseConfig,
+                        repartition_type: node.data.transformationData?.repartition_type || "repartition",
+                        repartition_value: node.data.transformationData?.repartition_value,
+                        override_partition: node.data.transformationData?.override_partition || "",
+                        repartition_expression: node.data.transformationData?.repartition_expression || [],
+                        limit: node.data.transformationData?.limit
+                    };
+                case 'Union':
+                    return {
+                        ...baseConfig,
+                        operation_type: node.data.transformationData?.operation_type || "union",
+                        allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
+                    };
+                case 'Select':
+                    return {
+                        ...baseConfig,
+                        column_list: node.data.transformationData?.column_list || [],
+                        limit: node.data.transformationData?.limit || ''
+                    };
+                case 'Sequence':
+                    return {
+                        ...baseConfig,
+                        for_column_name: node.data.transformationData?.for_column_name || "",
+                        order_by: node.data.transformationData?.order_by || [],
+                        start_with: node.data.transformationData?.start_with || 1,
+                        limit: node.data.transformationData?.limit
+                    };
+                case 'Drop':
+                    return {
+                        ...baseConfig,
+                        column_list: node.data.transformationData?.column_list || [],
+                        pattern: node.data.transformationData?.pattern
+                    };
+                default:
+                    return {
+                        ...baseConfig,
+                        ...node.data.transformationData
+                    };
             }
-        }
-    }
+        });
 
     // Create target configuration
     const targets = uiNodes
@@ -267,14 +345,14 @@ console.log(nodeToTransformationName)
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
-            name: pipelineDtl?.pipeline_name,
-            description: pipelineDtl?.pipeline_description,
+            name: pipelineDtl?.pipeline_name || "sample_pipeline",
+            description: pipelineDtl?.pipeline_description || " ",
             version: "1.0",
             mode: "DEBUG",
             parameters: [],
             sources,
             targets,
-            transformations
+            transformations: transformations.filter(Boolean)
         }
     };
 };
@@ -310,7 +388,10 @@ const getNodeIcon = (type: string): string => {
         Dedupe: '/assets/buildPipeline/squre/5.svg',
         Repartition: '/assets/buildPipeline/squre/6.svg',
         'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
-        Union: '/assets/buildPipeline/squre/8.svg'
+        Union: '/assets/buildPipeline/squre/8.svg',
+        Select: '/assets/buildPipeline/squre/11.svg',
+        Sequence: '/assets/buildPipeline/squre/12.svg',
+        Drop: '/assets/buildPipeline/squre/13.svg'
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
 };
@@ -340,9 +421,11 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     let xPosition = 50;
     let yPosition = 100;
     const yOffset = -117;
+    
+    // Track existing titles to ensure uniqueness
+    const existingTitles = new Set<string>();
 
-    const transformationToNodeMap: { [key: string]: string } = {};
-
+    // Process readers first
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {
             const sourceDetails = await ApiService(
@@ -353,7 +436,8 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             );
 
             const nodeId = `Reader_${index + 1}`;
-            transformationToNodeMap[`read_${source.name}`] = nodeId;
+            const title = source.name;
+            existingTitles.add(title);
 
             nodes.push({
                 id: nodeId,
@@ -363,8 +447,8 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
                     y: index === 0 ? yPosition : yPosition + yOffset
                 },
                 data: {
-                    label: source.name,
-                    title: source.name,
+                    label: 'Reader',
+                    title: title,
                     icon: getNodeIcon('Reader'),
                     ports: getNodePorts('Reader'),
                     source: sourceDetails
@@ -378,17 +462,18 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     }
 
     // Process transformations
-    let transformationCounter: { [key: string]: number } = {};
     xPosition += 130;
+    const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
 
     for (const transform of pipelineJson.transformations) {
         if (transform.transformation === 'Reader') continue;
 
         const type = transform.transformation;
-        transformationCounter[type] = (transformationCounter[type] || 0) + 1;
-
-        const nodeId = `${type}_${transformationCounter[type]}`;
-        transformationToNodeMap[transform.name] = nodeId;
+        const nodeId = `${type}_${nodes.length + 1}`;
+        
+        // Use the original transformation name if it exists
+        const nodeTitle = transform.name || generateUniqueTitle(type, existingTitles);
+        transformationNodes.set(transform.name, nodeId);
 
         nodes.push({
             id: nodeId,
@@ -396,11 +481,13 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             position: { x: xPosition, y: yPosition },
             data: {
                 label: type,
-                title: transform.name,
+                title: nodeTitle, // Use the preserved name
                 icon: getNodeIcon(type),
                 ports: getNodePorts(type),
+                transformationType: type,
                 transformationData: {
-                    ...transform
+                    ...transform,
+                    name: nodeTitle // Ensure the name is preserved in transformation data
                 }
             },
             width: 56,
@@ -408,31 +495,39 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
         });
 
         // Create edges based on dependencies
-        transform.dependent_on.forEach((dependentNode: string, index: number) => {
-            const sourceNodeId = transformationToNodeMap[dependentNode];
-            if (sourceNodeId) {
-                edges.push({
-                    source: sourceNodeId,
-                    sourceHandle: 'output-0',
-                    target: nodeId,
-                    targetHandle: `input-${index}`,
-                    id: `reactflow__edge-${sourceNodeId}output-0-${nodeId}input-${index}`
-                });
-            }
-        });
+        if (transform.dependent_on) {
+            transform.dependent_on.forEach((dependentName: string, index: number) => {
+                const sourceNodeId = [...nodes].reverse().find(
+                    node => node.data.title === dependentName
+                )?.id;
+
+                if (sourceNodeId) {
+                    edges.push({
+                        source: sourceNodeId,
+                        sourceHandle: 'output-0',
+                        target: nodeId,
+                        targetHandle: `input-${index}`,
+                        id: `reactflow__edge-${sourceNodeId}output-0-${nodeId}input-${index}`
+                    });
+                }
+            });
+        }
 
         xPosition += 130;
     }
 
-    // Add target node
+    // Add target nodes
     if (pipelineJson.targets && pipelineJson.targets.length > 0) {
         const targetId = 'Target_1';
+        const targetTitle = generateUniqueTitle('Target', existingTitles);
+
         nodes.push({
             id: targetId,
             type: 'custom',
             position: { x: xPosition, y: yPosition },
             data: {
                 label: 'Target',
+                title: targetTitle,
                 icon: getNodeIcon('Target'),
                 ports: getNodePorts('Target')
             },

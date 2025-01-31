@@ -115,7 +115,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         case 'Aggregator':
           return {
             group_by: initialValues.group_by?.map((col: any) => ({
-              group_by: col || ''
+              group_by: col?.group_by || ''
             })) || [{ group_by: '' }],
             aggregations: initialValues.aggregate?.map((agg: any) => ({
               target_column: agg?.target_column || '',
@@ -126,7 +126,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             }],
             pivot_by: initialValues.pivot?.map((piv: any) => ({
               pivot_column: piv?.pivot_column || '',
-              pivot_values: Array.isArray(piv?.pivot_values) ? piv.pivot_values : []
+              pivot_values: piv.pivot_values || ''
             })) || [{
               pivot_column: '',
               pivot_values: []
@@ -161,6 +161,38 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
               operator: '='
             }],
             broadcast_hint: initialValues?.broadcast_hint || false
+          };
+
+        case 'Select':
+          return {
+            transformation: initialValues.transformation || '',
+            column_list: initialValues.column_list?.map((col: any) => ({
+              name: col?.name || '',
+              expression: col?.expression || ''
+            })) || [{
+              name: '',
+              expression: ''
+            }],
+            limit: initialValues.limit || ''
+          };
+
+        case 'Sequence':
+          return {
+            for_column_name: initialValues.for_column_name || '',
+            order_by: initialValues.order_by || [],
+            start_with: initialValues.start_with || 1,
+            limit: initialValues.limit || ''
+          };
+
+        case 'Drop':
+          return {
+            transformation: initialValues.transformation || '',
+            column_list: initialValues.column_list?.map((col: any) => ({
+              column: col?.column || ''
+            })) || [{
+              column: ''
+            }],
+            limit: initialValues.limit || ''
           };
 
         default:

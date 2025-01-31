@@ -12,7 +12,7 @@ const KeyboardShortcutsPanel = ({ keyboardShortcuts }) => {
             {/* Toggle Button */}
             <button
                 onClick={togglePanel}
-                className="bg-blue-500 rounded-full shadow-lg p-2 hover:bg-blue-600 transition-all duration-300 ease-in-out hover:shadow-xl"
+                className="bg-black rounded-full shadow-lg p-2 hover:bg-black transition-all duration-300 ease-in-out hover:shadow-xl"
             >
                 {isMinimized ? (
                     <svg

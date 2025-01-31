@@ -587,6 +587,132 @@
       "required": [
         "operation_type"
       ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Select",
+      "ui_type": "object",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "column_list": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "Sequence",
+      "properties": {
+        
+        "for_column_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order_by": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              
+            ],
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          }
+        },
+        "start_with": {
+          "type": "number"
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "transformation",
+        "for_column_name",
+        "order_by",
+        "start_with"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "Drop",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+       "column": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              
+            ],
+            "properties": {
+              "column_list": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
     }
   ]
 }

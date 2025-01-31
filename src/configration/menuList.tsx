@@ -11,7 +11,9 @@ import {
     Users,
     FolderGit2,
     Settings2,
+    Cable,
 } from "lucide-react";
+import { Connect } from "vite";
 
 export const menuList = [
     {
@@ -77,6 +79,11 @@ export const menuList = [
                 label: "Manage Environments", 
                 path: "/admin-console/environment",
                 icon: <Settings2 size={18} />,
+            },
+            { 
+                label: "Manage Connections", 
+                path: "/admin-console/connection",
+                icon: <Cable size={18} />,
             },
         ]
     }

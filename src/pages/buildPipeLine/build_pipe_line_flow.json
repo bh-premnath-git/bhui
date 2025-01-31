@@ -128,6 +128,25 @@
             "lead": "/assets/buildPipeline/squre/10.svg",
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Change Detection"
+        },
+        {
+            "id": 11,
+            "lead": "/assets/buildPipeline/squre/11.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "select"
+        },      
+        {
+            "id": 12,
+            "lead": "/assets/buildPipeline/squre/12.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Sequence"
+        },
+        {
+            "id": 13,
+            "lead": "/assets/buildPipeline/squre/13.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Drop"
         }
+      
     ]
 }

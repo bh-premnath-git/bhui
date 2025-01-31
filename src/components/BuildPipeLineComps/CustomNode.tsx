@@ -70,7 +70,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     selectedSchema?: any;
     handleSearchResultClick: (data: any) => void;
 }) => {
-    console.log(data.title)
+    // console.log(data.title)
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleValue, setTitleValue] = useState(data.title );
@@ -84,7 +84,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [selectedSourceLabel, setSelectedSourceLabel] = useState(null);
     const [selectedSource, setSelectedSource] = useState(null);
     const [isSelected, setIsSelected] = useState(false);
-console.log(titleValue)
+    const [titleError, setTitleError] = useState<string | null>(null);
+// console.log(titleValue)
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -199,11 +200,38 @@ console.log(titleValue)
     }, []);
 
     const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setTitleValue(e.target.value);
+        const newValue = e.target.value;
+        // Optional: Add additional validation here if needed
+        setTitleValue(newValue);
     }, []);
+
+    // Add function to check if title already exists
+    const isTitleDuplicate = useCallback((newTitle: string, currentId: string) => {
+        const existingNodes = reactFlowInstance.getNodes();
+        return existingNodes.some(node => 
+            node.id !== currentId && 
+            (node.data.title === newTitle || node.data.label === newTitle)
+        );
+    }, [reactFlowInstance]);
 
     const handleTitleBlur = useCallback(() => {
         setIsEditingTitle(false);
+        setTitleError(null);
+
+        const baseModuleName = data.label.split(' ')[0];
+        
+        if (titleValue === baseModuleName && isTitleDuplicate(baseModuleName, id)) {
+            setTitleError('This name is already in use');
+            setTitleValue(data.title);
+            return;
+        }
+
+        if (isTitleDuplicate(titleValue, id)) {
+            setTitleError('This name is already in use');
+            setTitleValue(data.title);
+            return;
+        }
+
         setNodes((nodes: any[]) =>
             nodes.map(node =>
                 node.id === id
@@ -211,7 +239,7 @@ console.log(titleValue)
                     : node
             )
         );
-    }, [id, setNodes, titleValue]);
+    }, [id, setNodes, titleValue, data.label, data.title, isTitleDuplicate]);
 
     const handleInfo = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -339,7 +367,6 @@ console.log(titleValue)
         handleSearchResultClick(id);
     }, [id, handleSearchResultClick]);
 
-    
     return (
         <div 
             className="relative group"
@@ -402,16 +429,25 @@ console.log(titleValue)
                 }`}
                     onDoubleClick={handleDoubleClick}>
                     {isEditingTitle ? (
-                        <input 
-                            type="text" 
-                            value={titleValue} 
-                            onChange={handleTitleChange} 
-                            onBlur={handleTitleBlur}
-                            className="min-w-0 w-auto text-center text-[8px] border border-gray-200 rounded-sm px-1 py-0.5 outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 shadow-sm hover:border-gray-300"
-                            style={{ width: `${Math.min(Math.max(titleValue.length * 10.5, 20), 200)}px` }}
-                            autoFocus 
-                            spellCheck="false" 
-                        />
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                value={titleValue} 
+                                onChange={handleTitleChange} 
+                                onBlur={handleTitleBlur}
+                                className={`min-w-0 w-auto text-center text-[8px] border rounded-sm px-1 py-0.5 outline-none focus:ring-2 transition-all duration-200 shadow-sm hover:border-gray-300 ${
+                                    titleError ? 'border-red-300 focus:ring-red-400 focus:border-red-400' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
+                                }`}
+                                style={{ width: `${Math.min(Math.max(titleValue.length * 10.5, 20), 200)}px` }}
+                                autoFocus 
+                                spellCheck="false" 
+                            />
+                            {titleError && (
+                                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-[7px] text-red-500 whitespace-nowrap">
+                                    {titleError}
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <span className="cursor-pointer select-none truncate max-w-[100px]" title={titleValue || data.label}>
                             {titleValue || data.label}

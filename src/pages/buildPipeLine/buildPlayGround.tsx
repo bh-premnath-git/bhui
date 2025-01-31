@@ -25,7 +25,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/utils/pipelineJsonConverter';
 import KeyboardShortcutsPanel from '@/components/BuildPipeLineComps/KeyboardShortcutsPanel';
 import { CATALOG_API_PORT } from '@/configration/environment';
-
+import { Terminal } from '@/components/BuildPipeLineComps/LogsPage';
 interface UIProperties {
     color: string;
     icon: string;
@@ -49,50 +49,6 @@ interface SourceColumn {
     dataType: string;
 }
 
-const ValidationErrorNotification = ({ 
-    errors, 
-    onClose 
-}: { 
-    errors: string[]; 
-    onClose: () => void;
-}) => {
-    if (errors.length === 0) return null;
-    
-    return (
-        <div className="absolute bottom-10 left-1000 z-50 w-[600px]">
-            <div className="bg-red-50 border border-red-200 rounded-lg shadow-lg p-4">
-                <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-sm font-medium text-red-800">Pipeline Validation Issues</h3>
-                        <div className="mt-2">
-                            <ul className="list-disc pl-5 space-y-1">
-                                {errors.map((error, index) => (
-                                    <li key={index} className="text-sm text-red-700">{error}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                        <button
-                            onClick={onClose}
-                            className="inline-flex text-gray-400 hover:text-gray-500"
-                        >
-                            <span className="sr-only">Close</span>
-                            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const BuildPlayGround: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -128,6 +84,8 @@ const BuildPlayGround: React.FC = () => {
     const [copiedEdges, setCopiedEdges] = useState<any[]>([]);
     const [copiedFormStates, setCopiedFormStates] = useState<{ [key: string]: any }>({});
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [conversionLogs, setConversionLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
+    const [showLogs, setShowLogs] = useState(false);
 
     
     useEffect(() => {
@@ -148,16 +106,33 @@ const BuildPlayGround: React.FC = () => {
                     console.log(convertedJson)
                     // Update nodes with titles from transformations
                     const nodesWithTitles = convertedJson.nodes.map(node => {
-                        const transformation = response.pipeline_json.transformations.find(
-                            (t: any) => t.transformation === node.data.label
-                        );
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                title: transformation?.name || node.data.title // Set title from transformation name
+                        // Find the matching transformation by both type and position in the array
+                        const matchingTransformation = response.pipeline_json.transformations.find(
+                            (t: any) => {
+                                // For exact match, check both transformation type and name
+                                if (t.title === node.data.title && t.name) {
+                                    return true;
+                                }
+                                return false;
                             }
-                        };
+                        );
+
+                        // If we found a matching transformation, use its name as the title
+                        if (matchingTransformation) {
+                            console.log(matchingTransformation)
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    title: matchingTransformation.name,
+                                    transformationData: {
+                                        ...node.data.transformationData,
+                                        name: matchingTransformation.name // Ensure name is preserved in transformation data
+                                    }
+                                }
+                            };
+                        }
+                        return node;
                     });
                     console.log(nodesWithTitles)
                     setNodes(nodesWithTitles);
@@ -166,41 +141,127 @@ const BuildPlayGround: React.FC = () => {
                     // Initialize form states from pipeline JSON transformations
                     const initialFormStates = {};
                     response.pipeline_json.transformations.forEach((transformation: any) => {
-                        const nodeId = nodesWithTitles.find(
-                            (node: any) => node.data.label === transformation.transformation
-                        )?.id;
+                        // Find the exact node that matches both transformation type and name
+                        const matchingNode = nodesWithTitles.find( 
+                            (node: any) => 
+                                node.data.label === transformation.transformation && 
+                                node.data.title === transformation.name
+                        );
+                        // console.log(nodesWithTitles)
 
-                        if (nodeId) {
+                        if (matchingNode?.id) {
+                        console.log(transformation)
+                            
                             switch (transformation.transformation) {
                                 case 'Joiner':
-                                    initialFormStates[nodeId] = {
+                                    initialFormStates[matchingNode.id] = {
                                         conditions: transformation.conditions || [],
                                         expressions: transformation.expressions || [],
-                                        advanced: transformation.advanced || []
+                                        advanced: transformation.advanced || [],
+                                        name: transformation.name // Preserve the name in form state
                                     };
                                     break;
                                 case 'SchemaTransformation':
-                                    initialFormStates[nodeId] = {
-                                        derived_fields: transformation.derived_fields || []
+                                    initialFormStates[matchingNode.id] = {
+                                        derived_fields: transformation.derived_fields || [],
+                                        name: transformation.name // Preserve the name in form state
                                     };
                                     break;
                                 case 'Sorter':
-                                    initialFormStates[nodeId] = {
-                                        sort_columns: transformation.sort_columns || []
+                                    initialFormStates[matchingNode.id] = {
+                                        sort_columns: transformation.sort_columns || [],
+                                        name: transformation.name // Preserve the name in form state
                                     };
                                     break;
                                 case 'Aggregator':
-                                    initialFormStates[nodeId] = {
+                                    initialFormStates[matchingNode.id] = {
                                         group_by: transformation.group_by || [],
-                                        aggregate: transformation.aggregate || [],
-                                        pivot: transformation.pivot || []
+                                        aggregate: transformation.aggregations || [],
+                                        pivot: transformation.pivot_by || [],
+                                        name: transformation.name // Preserve the name in form state
                                     };
                                     break;
                                 case 'Filter':
-                                    initialFormStates[nodeId] = {
-                                        condition: transformation.condition || ''
+                                    initialFormStates[matchingNode.id] = {
+                                        condition: transformation.condition || '',
+                                        name: transformation.name // Preserve the name in form state
                                     };
                                     break;
+                                case 'Repartition':
+                                    initialFormStates[matchingNode.id] = {
+                                        repartition_type: transformation.repartition_type || 'repartition',
+                                        repartition_value: transformation.repartition_value || '',
+                                        override_partition: transformation.override_partition || '',
+                                        repartition_expression: transformation.repartition_expression || [{
+                                            expression: '',
+                                            sort_order: '',
+                                            order: 0
+                                        }],
+                                        limit: transformation.limit || '',
+                                        name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                case 'Lookup':
+                                    initialFormStates[matchingNode.id] = {
+                                        lookup_name: transformation.lookup_name || '',
+                                        lookup_table: transformation.lookup_table || '',
+                                        lookup_columns: transformation.lookup_columns || [{
+                                            source_column: '',
+                                            lookup_column: '',
+                                            output_column: ''
+                                        }],
+                                        lookup_conditions: transformation.lookup_conditions || [{
+                                            source_column: '',
+                                            lookup_column: '',
+                                            operator: '='
+                                        }],
+                                        broadcast_hint: transformation.broadcast_hint || false,
+                                        name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                case 'Dedupe':
+                                    initialFormStates[matchingNode.id] = {
+                                        rows_to_keep: transformation.rows_to_keep || "any",
+                                        dedup_by: transformation.dedup_by || [],
+                                        order_by: transformation.order_by || [],
+                                        name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                case 'Sequence':
+                                    initialFormStates[matchingNode.id] = {
+                                        for_column_name: transformation.for_column_name || '',
+                                        order_by: transformation.order_by || [],
+                                        start_with: transformation.start_with || 1,
+                                        limit: transformation.limit || '',
+                                        // name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                case 'Drop':
+                                    initialFormStates[matchingNode.id] = {
+                                        column_list: transformation.column_list || [],
+                                        pattern: transformation.pattern || '',
+                                        transformation: transformation.transformation || '',
+                                        name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                case 'Select':
+                                    initialFormStates[matchingNode.id] = {
+                                        column_list: transformation.column_list.map((col: any) => ({
+                                            name: col.name || '',
+                                            expression: col.expression || ''
+                                        })),
+                                        // limit: transformation.limit || '',
+                                        transformation: transformation.transformation || '',
+                                        name: transformation.name // Preserve the name in form state
+                                    };
+                                    break;
+                                default:
+                                    if (transformation.name) {
+                                        initialFormStates[matchingNode.id] = {
+                                            ...transformation,
+                                            name: transformation.name // Preserve the name in form state
+                                        };
+                                    }
                             }
                         }
                     });
@@ -238,14 +299,20 @@ const BuildPlayGround: React.FC = () => {
                         pipeline_json
                     );
                     dispatch(setSaved());
+                    // Clear any existing validation errors
+                    setValidationErrors([]);
                 } catch (error) {
+                    if (error.logs) {
+                        // Show the logs in the terminal
+                        setConversionLogs(error.logs);
+                        setShowLogs(true);
+                    }
                     if (error.message.includes('Pipeline is incomplete or broken:')) {
                         const errorMessages = error.message.split('\n').slice(1);
                         setValidationErrors(errorMessages);
-                    } else {
-                        console.error('Error saving pipeline state:', error);
-                        dispatch(setSaveError(error.message));
                     }
+                    console.error('Error saving pipeline state:', error);
+                    dispatch(setSaveError(error.message));
                 }
             }
         }, autoSaveInterval);
@@ -361,7 +428,11 @@ const BuildPlayGround: React.FC = () => {
                             ...node,
                             data: {
                                 ...node.data,
-                                transformationData: data
+                                transformationData: {
+                                    ...node.data.transformationData,
+                                    ...data,
+                                    name: data.name || node.data.title
+                                }
                             }
                         };
                     }
@@ -482,33 +553,6 @@ const BuildPlayGround: React.FC = () => {
                 return null;
             }).filter(Boolean);
 
-            if (moduleName === 'join' || moduleName === 'joiner') {
-                const formState = formStates[node.id] || {};
-                return {
-                    name: `${moduleName}_transformation`,
-                    dependent_on: dependentOn,
-                    transformation: "Joiner",
-                    conditions: [
-                        {
-                            join_input: formState.join_input || "read_lookup_data",
-                            join_condition: formState.join_condition || "read_input_data.id = read_lookup_data.id",
-                            join_type: formState.join_type || "left"
-                        }
-                    ],
-                    expressions: [
-                        {
-                            name: formState.expressions?.[0]?.name || "full_name",
-                            expression: formState.expressions?.[0]?.expression || "concat(read_input_data.name, ' ', read_input_data.city)"
-                        }
-                    ],
-                    advanced: [
-                        {
-                            join_input: formState.advanced?.[0]?.join_input || "read_input_data",
-                            hint_type: formState.advanced?.[0]?.hint_type || "broadcast"
-                        }
-                    ]
-                };
-            }
 
             // Handle other transformations
             return {
@@ -722,6 +766,8 @@ const BuildPlayGround: React.FC = () => {
     const handleRun = useCallback(async () => {
         try {
             setIsPipelineRunning(true);
+            setShowLogs(true); // Show logs panel when run is clicked
+            const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl, true); // Add validateOnly parameter
 
             // Call handleRunClick to get the pipeline configuration
             const pipelineConfig = handleRunClick(new Event('click') as any);
@@ -735,6 +781,16 @@ const BuildPlayGround: React.FC = () => {
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title?.toLowerCase());
             });
+            setSelectedFormState(pipelineConfig);
+            setRunDialogOpen(true);
+setConversionLogs([
+                ...conversionLogs,
+                {
+                    timestamp: new Date().toISOString(),
+                    message: 'Pipeline validation successful. Starting execution...',
+                    level: 'info'
+                }
+            ]);
 
             const response = await ApiService(
                 CATALOG_API_PORT,
@@ -764,6 +820,17 @@ const BuildPlayGround: React.FC = () => {
             }
         } catch (error) {
             console.error('Error starting pipeline:', error);
+            if (error.logs) {
+                // Show the logs in the terminal
+                setConversionLogs(error.logs);
+                setShowLogs(true);
+            }
+            if (error.message.includes('Pipeline is incomplete or broken:')) {
+                const errorMessages = error.message.split('\n').slice(1);
+                setValidationErrors(errorMessages);
+            }
+            console.error('Error saving pipeline state:', error);
+            dispatch(setSaveError(error.message));
         }
     }, [handleRunClick, debuggedNodesList]);
 
@@ -946,37 +1013,67 @@ const BuildPlayGround: React.FC = () => {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.ctrlKey) {
-                switch (event.key.toLowerCase()) {
-                    case 'c':
-                        event.preventDefault();
-                        handleCopy();
-                        break;
-                    case 'v':
-                        event.preventDefault();
-                        handlePaste();
-                        break;
-                    case 'x':
-                        event.preventDefault();
-                        handleCut();
-                        break;
-                    case 'y':
-                        event.preventDefault();
-                        handleRedo();
-                        break;
-                    case 'z':
-                        event.preventDefault();
-                        handleUndo();
-                        break;
+            // Check if the active element is an input, textarea, or other form element
+            const isFormElement = document.activeElement instanceof HTMLInputElement || 
+                                document.activeElement instanceof HTMLTextAreaElement ||
+                                document.activeElement instanceof HTMLSelectElement;
+
+            // Only handle Ctrl+F if not in a form element
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+                event.preventDefault();
+                const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+
+            // Only handle Ctrl+D if not in a form element
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+                event.preventDefault();
+                const selectedNodes = nodes.filter(node => node.selected);
+                selectedNodes.forEach(node => {
+                    handleDebugToggle(node.id, node.data.title || node.data.label);
+                });
+            }
+
+            // Only handle keyboard shortcuts if not in a form element
+            if (!isFormElement) {
+                // Copy nodes
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
+                    event.preventDefault();
+                    handleCopy();
+                }
+
+                // Paste nodes
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+                    event.preventDefault();
+                    handlePaste();
+                }
+
+                // Cut nodes
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
+                    event.preventDefault();
+                    handleCut();
+                }
+
+                // Undo
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+                    event.preventDefault();
+                    handleUndo();
+                }
+
+                // Redo
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+                    event.preventDefault();
+                    handleRedo();
                 }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [handleCopy, handlePaste, handleCut, handleRedo, handleUndo]);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [nodes, handleDebugToggle, handleCopy, handlePaste, handleCut, handleUndo, handleRedo]);
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1113,7 +1210,9 @@ const BuildPlayGround: React.FC = () => {
         { key: 'Ctrl + V', action: 'Paste' },
         { key: 'Ctrl + X', action: 'Cut' },
         { key: 'Ctrl + Z', action: 'Undo' },
-        { key: 'Ctrl + Y', action: 'Redo' }
+        { key: 'Ctrl + Y', action: 'Redo' },
+        { key: 'Ctrl + F', action: 'Search' },
+        { key: 'Ctrl + D', action: 'Toggle Debug' }
     ];
 
     const handleAlignHorizontal = useCallback(() => {
@@ -1267,19 +1366,17 @@ const BuildPlayGround: React.FC = () => {
     return (
         <div>
             <div className="p-1 ml-8">
-                <ValidationErrorNotification 
-                    errors={validationErrors} 
-                    onClose={() => setValidationErrors([])} 
-                />
+               
                 {/* Add search component */}
                 <div className="absolute top- -100 right-4 z-50">
                     <div className="relative">
                         <div className="relative">
                             <input
+                                data-search-input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => handleSearch(e.target.value)}
-                                placeholder="Search nodes..."
+                                placeholder="Search nodes... (Ctrl+F)"
                                 className="w-64 px-4 py-2 pr-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -1502,6 +1599,14 @@ const BuildPlayGround: React.FC = () => {
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                {/* Add Terminal component */}
+                <Terminal
+                    isOpen={showLogs}
+                    onClose={() => setShowLogs(false)}
+                    title="Pipeline Validation Logs"
+                    logs={conversionLogs}
+                />
             </div>
         </div>
     );

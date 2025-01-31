@@ -18,6 +18,8 @@ const ProjectEdit = lazy(() => import('@/pages/projectEdit'));
 const AllEnvironments = lazy(() => import('@/pages/allEnvironments'));
 const EnvironmentCreate = lazy(() => import('@/pages/environmentCreate'));
 const EnvironmentEdit = lazy(() => import('@/pages/environmentEdit'));
+const AllConnections = lazy(() => import('@/pages/allConnections'));
+const ConnectionCreate = lazy(() => import('@/pages/connectionCreate'));
 const AllFlows = lazy(() => import('@/pages/allFlows'));
 const PageNotFound = lazy(() => import('@/pages/pageNotFound'));
 const RedirectToDash = lazy(() => import('@/components/RedirectToDash'));
@@ -52,6 +54,9 @@ export const routeList = [
   { path: "/admin-console/environment", element: <AllEnvironments /> },
   { path: "/admin-console/environment/new", element: <EnvironmentCreate /> },
   { path: "/admin-console/environment/:id", element: <EnvironmentEdit /> },
+  { path: "/admin-console/connection", element: <AllConnections /> },
+  { path: "/admin-console/connection/new", element: <ConnectionCreate /> },
+  { path: "/admin-console/connection/:id", element: <ConnectionCreate /> },
   { path: "/designers/manage-flow", element: <AllFlows /> },
   { path: '/designers/manage-flow/:id', element: <ManageFlow /> },
   { path: "*", element: <PageNotFound /> },

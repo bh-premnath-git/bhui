@@ -844,11 +844,23 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         name={fieldName}
                         value={fieldValue || ""}
                         onChange={(e) => handleChange(e, path)}
+                        onPaste={(e) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData.getData('text/plain');
+                            const updatedEvent = {
+                                target: {
+                                    name: fieldName,
+                                    value: pastedText
+                                }
+                            } as React.ChangeEvent<HTMLInputElement>;
+                            handleChange(updatedEvent, path);
+                        }}
                         placeholder={`Enter ${formatFieldName(fieldName)}`}
-                        className={`w-full transition-all border-2 focus:ring-0 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue
-                            ? 'border-red-300 focus:border-red-500'
-                            : 'border-gray-200'
-                            }`}
+                        className={`w-full transition-all border-2 focus:ring-0 ${
+                            isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue
+                                ? 'border-red-300 focus:border-red-500'
+                                : 'border-gray-200'
+                        }`}
                     />
 
                 </div>

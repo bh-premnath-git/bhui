@@ -319,10 +319,10 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
       "type": "object",
-      "title": "Dedupe",
+      "title": "Dedup",
       "ui_type": "object",
       "properties": {
-        "rows_to_keep": {
+        "keep": {
           "type": "string",
           "minLength": 1,
           "enum": [
@@ -346,11 +346,11 @@
           "items": {
             "type": "object",
             "properties": {
-              "order_column": {
+              "column": {
                 "type": "string",
                 "minLength": 1
               },
-              "sort": {
+              "order": {
                 "type": "string",
                 "enum": [
                   "asc",
@@ -366,14 +366,14 @@
         }
       },
       "required": [
-        "rows_to_keep",
+        "keep",
         "dedup_by"
       ],
       "allOf": [
         {
           "if": {
             "properties": {
-              "rows_to_keep": {
+              "keep": {
                 "const": "first"
               }
             }
@@ -385,7 +385,7 @@
         {
           "if": {
             "properties": {
-              "rows_to_keep": {
+              "keep": {
                 "const": "last"
               }
             }
@@ -631,7 +631,7 @@
       "description": "",
       "type": "object",
       "ui_type": "object",
-      "title": "Sequence",
+      "title": "SequenceGenerator",
       "properties": {
         
         "for_column_name": {
@@ -665,7 +665,7 @@
         "start_with": {
           "type": "number"
         },
-        "limit": {
+        "step": {
           "type": "number"
         }
       },

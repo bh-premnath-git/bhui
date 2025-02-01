@@ -19,6 +19,7 @@ interface FormFieldProps {
   error?: string;
   disabled?: boolean;
   onValidate?: (value: string) => string | undefined;
+  onChange?: (value: any) => void;
 }
 
 interface SourceColumn {
@@ -47,6 +48,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   error,
   disabled,
   onValidate,
+  onChange,
 }) => {
   const [isEditorReady, setIsEditorReady] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);

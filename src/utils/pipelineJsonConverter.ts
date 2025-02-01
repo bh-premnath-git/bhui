@@ -221,6 +221,7 @@ console.log(nodeToTransformationName)
     const transformations = uiNodes
         .filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_'))
         .map(node => {
+            console.log(node.data.title)
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
                 transformation: node.data.label,
@@ -228,7 +229,8 @@ console.log(nodeToTransformationName)
                     .filter(edge => edge.target === node.id)
                     .map(edge => {
                         const sourceNode = uiNodes.find(n => n.id === edge.source);
-                        return sourceNode?.data.title || '';
+                        console.log(sourceNode)
+                        return sourceNode?.data?.title || '';
                     })
             };
 
@@ -239,7 +241,7 @@ console.log(nodeToTransformationName)
                         ...baseConfig,
                         name: node.data.title, // Explicitly set the name
                         group_by: node.data.transformationData?.group_by || [],
-                        aggregations: node.data.transformationData?.aggregate || [],
+                        aggregations: node.data.transformationData?.aggregations || [],
                         pivot_by: node.data.transformationData?.pivot_by || []
                     };
                 case 'Filter':
@@ -279,10 +281,10 @@ console.log(nodeToTransformationName)
                         limit: node.data.transformationData?.limit,
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
-                case 'Dedupe':
+                case 'Dedup':
                     return {
                         ...baseConfig,
-                        rows_to_keep: node.data.transformationData?.rows_to_keep || "any",
+                        keep: node.data.transformationData?.keep || "any",
                         dedup_by: node.data.transformationData?.dedup_by || [],
                         order_by: node.data.transformationData?.order_by || []
                     };
@@ -307,13 +309,13 @@ console.log(nodeToTransformationName)
                         column_list: node.data.transformationData?.column_list || [],
                         limit: node.data.transformationData?.limit || ''
                     };
-                case 'Sequence':
+                case 'SequenceGenerator':
                     return {
                         ...baseConfig,
                         for_column_name: node.data.transformationData?.for_column_name || "",
                         order_by: node.data.transformationData?.order_by || [],
                         start_with: node.data.transformationData?.start_with || 1,
-                        limit: node.data.transformationData?.limit
+                        step: node.data.transformationData?.step || ''
                     };
                 case 'Drop':
                     return {
@@ -357,22 +359,6 @@ console.log(nodeToTransformationName)
     };
 };
 
-interface Source {
-    name: string;
-    source_type: string;
-    file_name: string;
-    connection: {
-        name: string;
-        connection_type: string;
-        file_path_prefix: string;
-    };
-}
-
-interface Transformation {
-    name: string;
-    transformation: string;
-    dependent_on: string[];
-}
 
 const getNodeIcon = (type: string): string => {
     const iconMap: { [key: string]: string } = {
@@ -385,12 +371,12 @@ const getNodeIcon = (type: string): string => {
         Sorter: '/assets/buildPipeline/squre/1.svg',
         Aggregator: '/assets/buildPipeline/squre/2.svg',
         'DQ Check': '/assets/buildPipeline/squre/4.svg',
-        Dedupe: '/assets/buildPipeline/squre/5.svg',
+        Dedup: '/assets/buildPipeline/squre/5.svg',
         Repartition: '/assets/buildPipeline/squre/6.svg',
         'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
         Union: '/assets/buildPipeline/squre/8.svg',
         Select: '/assets/buildPipeline/squre/11.svg',
-        Sequence: '/assets/buildPipeline/squre/12.svg',
+        SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
         Drop: '/assets/buildPipeline/squre/13.svg'
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
@@ -407,7 +393,7 @@ const getNodePorts = (type: string) => {
         Sorter: { inputs: 1, outputs: 1, maxInputs: 1 },
         Aggregator: { inputs: 1, outputs: 1, maxInputs: 1 },
         'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
-        Dedupe: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
         'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
         Union: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
@@ -500,6 +486,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
                 const sourceNodeId = [...nodes].reverse().find(
                     node => node.data.title === dependentName
                 )?.id;
+                console.log(sourceNodeId)
 
                 if (sourceNodeId) {
                     edges.push({

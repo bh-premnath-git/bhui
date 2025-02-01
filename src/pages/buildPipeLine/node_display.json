@@ -110,7 +110,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Dedupe",
+        "module_name": "Dedup",
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/5.svg",
         "ports": {
@@ -170,7 +170,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Sequence",
+        "module_name": "SequenceGenerator",
         "color": "#905aee",
         "icon": "/assets/buildPipeline/squre/12.svg",
         "ports": {

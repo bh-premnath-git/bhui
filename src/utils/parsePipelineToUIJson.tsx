@@ -22,7 +22,7 @@ interface TransformationData {
     expressions?: any[];
     advanced?: any;
     dq_rules?: any[];
-    rows_to_keep?: string;
+    keep?: string;
     dedup_by?: string[];
     order_by?: any[];
     repartition_type?: string;
@@ -153,7 +153,7 @@ class NodeConfigManager {
             icon: '/assets/buildPipeline/squre/4.svg',
             ports: { inputs: 1, outputs: 1, maxInputs: 1 }
         },
-        Dedupe: {
+        Dedup: {
             color: '#32D1A4',
             icon: '/assets/buildPipeline/squre/5.svg',
             ports: { inputs: 1, outputs: 1, maxInputs: 1 }

@@ -219,20 +219,20 @@ const BuildPlayGround: React.FC = () => {
                                         name: transformation.name // Preserve the name in form state
                                     };
                                     break;
-                                case 'Dedupe':
+                                case 'Dedup':
                                     initialFormStates[matchingNode.id] = {
-                                        rows_to_keep: transformation.rows_to_keep || "any",
+                                        keep: transformation.keep || "any",
                                         dedup_by: transformation.dedup_by || [],
                                         order_by: transformation.order_by || [],
                                         name: transformation.name // Preserve the name in form state
                                     };
                                     break;
-                                case 'Sequence':
+                                case 'SequenceGenerator':
                                     initialFormStates[matchingNode.id] = {
                                         for_column_name: transformation.for_column_name || '',
                                         order_by: transformation.order_by || [],
                                         start_with: transformation.start_with || 1,
-                                        limit: transformation.limit || '',
+                                        step: transformation.step || '',
                                         // name: transformation.name // Preserve the name in form state
                                     };
                                     break;
@@ -459,7 +459,7 @@ const BuildPlayGround: React.FC = () => {
         );
         console.log(sourceNodes)
         const sources = sourceNodes.map(node => ({
-            name: node?.data?.title || node.data?.source?.data_src_name || "input_data",
+            name: node.data?.source?.data_src_name ,
             source_type: "File",
             file_name: `${node.data.source?.file_path_prefix || "examples"}/${node.data.source?.file_name || "NaN"}`,
             data_src_id: node.data.source?.data_src_id || "NaN",
@@ -520,11 +520,11 @@ const BuildPlayGround: React.FC = () => {
                 console.log(node.data)
 
                 return {
-                    name: "read_" + (node?.data?.title || node?.data?.source?.custom_metadata?.reader_name || node?.data?.source?.data_src_name || "input_data"),
+                    name: node?.data?.title,
                     dependent_on: [],
                     transformation: "Reader",
                     source: {
-                        name: node?.data?.title || node.data?.source?.data_src_name || null,
+                        name: node.data?.source?.data_src_name || null,
                         source_type: "File",
                         file_name: node.data.source?.file_name || null,
                         connection: {
@@ -540,19 +540,39 @@ const BuildPlayGround: React.FC = () => {
                 };
             }
 
-            const moduleName = node.data.label.split(' ')[0].toLowerCase();
+            const moduleName = node.data?.title.split(' ')[0].toLowerCase();
             const incomingEdges = edges.filter(edge => edge.target === node.id);
             const dependentOn = incomingEdges.map(edge => {
                 const sourceNode = allNodes.find(n => n.id === edge.source);
                 if (sourceNode?.data?.source) {
-                    return "read_" + (sourceNode.data.title || sourceNode.data.source.data_src_name || "input_data");
+                    return (sourceNode.data.title || sourceNode.data.source.data_src_name );
                 } else if (sourceNode?.data?.label) {
-                    const moduleName = sourceNode.data.label.split(' ')[0].toLowerCase();
+                    const moduleName = sourceNode.data.title.split(' ')[0].toLowerCase();
+                    console.log(moduleName);
                     return getTransformationName(moduleName);
                 }
                 return null;
             }).filter(Boolean);
 
+            // Handle Aggregator transformation specifically
+            if (node.data.label === "Aggregator") {
+                const formState = formStates[node.id] || {};
+                return {
+                    name: getTransformationName(moduleName),
+                    dependent_on: dependentOn,
+                    transformation: node.data.label,
+                    // Convert group_by array of objects to array of strings
+                    group_by: formState.group_by?.map(g => g.group_by) || [],
+                    // Rename aggregations to aggregate and keep structure
+                    aggregate: formState.aggregate || [],
+                    // Rename pivot_by to pivot and keep structure
+                    pivot: formState.pivot?.map(p => ({
+                        pivot_column: p.pivot_column,
+                        // Split pivot_values string into array if it's a string
+                        pivot_values: p.pivot_values?.split(',').map(v => v.trim()) || []
+                    })) || []
+                };
+            }
 
             // Handle other transformations
             return {
@@ -1129,6 +1149,7 @@ setConversionLogs([
 
     const getTransformationName = (moduleName: string): string => {
         const lowerModuleName = moduleName.toLowerCase();
+        console.log(lowerModuleName);
         return `${lowerModuleName}`;
     };
 

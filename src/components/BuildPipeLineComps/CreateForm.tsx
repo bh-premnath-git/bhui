@@ -114,23 +114,9 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
         case 'Aggregator':
           return {
-            group_by: initialValues.group_by?.map((col: any) => ({
-              group_by: col?.group_by || ''
-            })) || [{ group_by: '' }],
-            aggregations: initialValues.aggregate?.map((agg: any) => ({
-              target_column: agg?.target_column || '',
-              expression: agg?.expression || ''
-            })) || [{
-              target_column: '',
-              expression: ''
-            }],
-            pivot_by: initialValues.pivot?.map((piv: any) => ({
-              pivot_column: piv?.pivot_column || '',
-              pivot_values: piv.pivot_values || ''
-            })) || [{
-              pivot_column: '',
-              pivot_values: []
-            }]
+            group_by: initialValues.group_by || [],
+            aggregations: initialValues.aggregate || [],
+            pivot_by: initialValues.pivot || []
           };
 
         case 'Repartition':
@@ -176,12 +162,12 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             limit: initialValues.limit || ''
           };
 
-        case 'Sequence':
+        case 'SequenceGenerator':
           return {
             for_column_name: initialValues.for_column_name || '',
             order_by: initialValues.order_by || [],
             start_with: initialValues.start_with || 1,
-            limit: initialValues.limit || ''
+            step: initialValues.step || ''
           };
 
         case 'Drop':
@@ -194,6 +180,12 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             }],
             limit: initialValues.limit || ''
           };
+          case 'Dedup':
+            return {
+              keep: initialValues.keep || "any",
+              dedup_by: initialValues.dedup_by || [],
+              order_by: initialValues.order_by || []
+            };
 
         default:
           return initialValues || {};
@@ -702,7 +694,7 @@ const FormContent: React.FC<{
                 <Box>
                   {(values[fieldKey] || []).map((item: any, index: number) => (
                     <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                      <Field name={`${fieldKey}.${index}.order_column`}>
+                      <Field name={`${fieldKey}.${index}.column`}>
                         {({ field }) => (
                           <FormField
                             fieldSchema={{ 
@@ -710,14 +702,14 @@ const FormContent: React.FC<{
                               title: '',
                               properties: {}
                             }}
-                            name={`${fieldKey}.${index}.order_column`}
-                            fieldKey="order_column"
+                              name={`${fieldKey}.${index}.column`}
+                            fieldKey="column"
                             value={field.value}
                             required={true}
                           />
                         )}
                       </Field>
-                      <Field name={`${fieldKey}.${index}.sort`}>
+                      <Field name={`${fieldKey}.${index}.order`}>
                         {({ field }) => (
                           <FormField
                             fieldSchema={{ 
@@ -726,8 +718,8 @@ const FormContent: React.FC<{
                               title: '',
                               properties: {}
                             }}
-                            name={`${fieldKey}.${index}.sort`}
-                            fieldKey="sort"
+                            name={`${fieldKey}.${index}.order`}
+                            fieldKey="order"
                             value={field.value}
                             required={true}
                           />
@@ -749,7 +741,7 @@ const FormContent: React.FC<{
                 onClick={() => {
                   const emptyItem = fieldKey === 'dedup_by' ? 
                     '' : 
-                    { order_column: '', sort: 'asc' };
+                    { column: '', order: 'asc' };
                   arrayHelpers.push(emptyItem);
                 }}
                 sx={{ textTransform: 'none', color: 'green', fontWeight: 'bold' }}
@@ -771,7 +763,7 @@ const FormContent: React.FC<{
     }
 
     // Special handling for Dedupe arrays
-    if (schema.title === 'Dedupe' && (key === 'dedup_by' || key === 'order_by')) {
+    if (schema.title === 'Dedup' && (key === 'dedup_by' || key === 'order_by')) {
       return renderDedupeArrays(key, value);
     }
 

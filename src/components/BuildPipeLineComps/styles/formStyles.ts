@@ -38,5 +38,13 @@ export const buttonStyles = {
     '&:hover': {
       backgroundColor: '#424242',
     },
+  },
+  addButton: {
+    textTransform: 'none',
+    color: 'green',
+    fontWeight: 'bold',
+    '&:hover': {
+      backgroundColor: 'transparent'
+    }
   }
 }; 

@@ -97,7 +97,7 @@
             "id": 5,
             "lead": "/assets/buildPipeline/squre/5.svg",
             "line": "/assets/buildPipeline/Line 7.png",
-            "title": "Dedupe"
+            "title": "Dedup"
         },
         {
             "id": 6,
@@ -139,7 +139,7 @@
             "id": 12,
             "lead": "/assets/buildPipeline/squre/12.svg",
             "line": "/assets/buildPipeline/Line 7.png",
-            "title": "Sequence"
+            "title": "SequenceGenerator"
         },
         {
             "id": 13,

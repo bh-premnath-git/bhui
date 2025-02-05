@@ -11,7 +11,8 @@ interface TerminalProps {
     isOpen: boolean;
     onClose: () => void;
     title?: string;
-    logs?: Log[];
+    terminalLogs?: Log[];
+    proplesLogs?: Log[];
     defaultHeight?: string;
     minHeight?: string;
 }
@@ -19,13 +20,15 @@ interface TerminalProps {
 export const Terminal: React.FC<TerminalProps> = ({
     isOpen,
     onClose,
-    title = 'Terminal',
-    logs = [],
+    title = 'Logs',
+    terminalLogs = [],
+    proplesLogs = [],
     defaultHeight = '40%',
     minHeight = '40px'
 }) => {
     const [isMinimized, setIsMinimized] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
+    const [activeTab, setActiveTab] = useState<'terminal' | 'proples'>('terminal');
 
     const handleMinimize = () => {
         setIsMinimized(true);
@@ -134,6 +137,40 @@ export const Terminal: React.FC<TerminalProps> = ({
                     </Typography>
                 </Box>
 
+                {/* Tab Buttons */}
+                <Box sx={{ 
+                    display: isMinimized ? 'none' : 'flex',
+                    borderBottom: '1px solid #e0e0e0',
+                    bgcolor: '#f5f5f5',
+                }}>
+                    <Box
+                        onClick={() => setActiveTab('terminal')}
+                        sx={{
+                            px: 3,
+                            py: 1,
+                            cursor: 'pointer',
+                            borderBottom: activeTab === 'terminal' ? '2px solid #1976d2' : 'none',
+                            color: activeTab === 'terminal' ? '#1976d2' : '#666',
+                            '&:hover': { bgcolor: '#eee' }
+                        }}
+                    >
+                        Terminal
+                    </Box>
+                    <Box
+                        onClick={() => setActiveTab('proples')}
+                        sx={{
+                            px: 3,
+                            py: 1,
+                            cursor: 'pointer',
+                            borderBottom: activeTab === 'proples' ? '2px solid #1976d2' : 'none',
+                            color: activeTab === 'proples' ? '#1976d2' : '#666',
+                            '&:hover': { bgcolor: '#eee' }
+                        }}
+                    >
+                        Proplems
+                    </Box>
+                </Box>
+
                 {/* Terminal Content */}
                 <Box
                     sx={{
@@ -159,26 +196,52 @@ export const Terminal: React.FC<TerminalProps> = ({
                         },
                     }}
                 >
-                    {logs.map((log, index) => (
-                        <Box
-                            key={index}
-                            sx={{
-                                mb: 1,
-                                color: log.level === 'error' ? '#dc3545' :
-                                       log.level === 'warning' ? '#ffc107' :
-                                       '#28a745',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                            }}
-                        >
-                            <span style={{ color: '#666', marginRight: '8px' }}>{log.timestamp}</span>
-                            <span>{log.message}</span>
-                        </Box>
-                    ))}
-                    {logs.length === 0 && (
-                        <Box sx={{ color: '#666', fontStyle: 'italic' }}>
-                            No logs available...
-                        </Box>
+                    {activeTab === 'terminal' ? (
+                        terminalLogs.length > 0 ? (
+                            terminalLogs.map((log, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        mb: 1,
+                                        color: log.level === 'error' ? '#dc3545' :
+                                               log.level === 'warning' ? '#ffc107' :
+                                               '#28a745',
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                    }}
+                                >
+                                    <span style={{ color: '#666', marginRight: '8px' }}>{log.timestamp}</span>
+                                    <span>{log.message}</span>
+                                </Box>
+                            ))
+                        ) : (
+                            <Box sx={{ color: '#666', fontStyle: 'italic' }}>
+                                No terminal logs available...
+                            </Box>
+                        )
+                    ) : (
+                        proplesLogs.length > 0 ? (
+                            proplesLogs.map((log, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        mb: 1,
+                                        color: log.level === 'error' ? '#dc3545' :
+                                               log.level === 'warning' ? '#ffc107' :
+                                               '#28a745',
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                    }}
+                                >
+                                    <span style={{ color: '#666', marginRight: '8px' }}>{log.timestamp}</span>
+                                    <span>{log.message}</span>
+                                </Box>
+                            ))
+                        ) : (
+                            <Box sx={{ color: '#666', fontStyle: 'italic' }}>
+                                No proples logs available...
+                            </Box>
+                        )
                     )}
                 </Box>
             </Box>

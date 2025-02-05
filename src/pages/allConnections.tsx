@@ -31,10 +31,19 @@ const AllConnections: React.FC = () => {
   const [connectionList,setConnectionList] = React.useState<Connection[]>([]);
   useLayoutEffect(() => {
     // dispatch(listConnections({ offset: 0, limit: 1000 }));
-    let params={offset:0,limit:1000}
     const fetchConnections = async () => {
-      const response = await ApiService(CATALOG_API_PORT, 'get', '/connection_registry/connection_config/list/',params);
-      console.log(response)
+      const queryParams = new URLSearchParams({
+        offset: "0",
+        limit: "1000",
+      }).toString();
+
+      // Add forward slash before query parameters to match Swagger format
+      const response = await ApiService(
+        CATALOG_API_PORT,
+        'get',
+        `/connection_registry/connection_config/list/?${queryParams}`
+      );
+  console.log(response)
       setConnectionList(response);
     };
     fetchConnections();
@@ -46,7 +55,6 @@ const AllConnections: React.FC = () => {
   const navigate = useNavigate();
 
   const handleConnClick = (conn: Connection) => {
-    // dispatch(setEditConnectionData(conn));
     navigate(`/admin-console/connection/${conn.id}`);
   };
 

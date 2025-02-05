@@ -34,7 +34,8 @@ interface FlowControlsProps {
     isPipelineRunning: boolean;
     isLoading: boolean;
     pipelineConfig: any;
-    logs?: Log[]; // Add this prop to receive logs
+    terminalLogs?: Log[];
+    proplesLogs?: Log[];
     onAlignHorizontal: () => void;
     onAlignVertical: () => void;
 }
@@ -49,7 +50,8 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     isPipelineRunning,
     isLoading,
     pipelineConfig,
-    logs = [], // Default to empty array
+    terminalLogs,
+    proplesLogs,
     onAlignHorizontal,
     onAlignVertical
 }) => {
@@ -146,7 +148,8 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
                 isOpen={isLogsOpen}
                 onClose={handleCloseLogs}
                 title="Pipeline Logs"
-                logs={logs}
+                terminalLogs={terminalLogs}
+                proplesLogs={proplesLogs}
             />
         </>
     );

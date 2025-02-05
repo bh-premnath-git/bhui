@@ -47,8 +47,53 @@ const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): Validation
         level: 'info'
     });
 
+    // Validate overall pipeline structure
+    if (nodes.length === 0) {
+        logs.push({
+            timestamp,
+            message: 'Pipeline is empty - no nodes found',
+            level: 'error'
+        });
+        errors.push('Pipeline is empty - no nodes found');
+        return { isValid: false, errors, logs };
+    }
+
+    // Check for at least one reader and one target
+    const hasReader = nodes.some(node => node.id.startsWith('Reader_'));
+    const hasTarget = nodes.some(node => node.id.startsWith('Target_'));
+
+    if (!hasReader) {
+        logs.push({
+            timestamp,
+            message: 'Pipeline must contain at least one Reader node',
+            level: 'error'
+        });
+        errors.push('Pipeline must contain at least one Reader node');
+    } else {
+        logs.push({
+            timestamp,
+            message: 'Reader node(s) found in pipeline',
+            level: 'info'
+        });
+    }
+
+    if (!hasTarget) {
+        logs.push({
+            timestamp,
+            message: 'Pipeline must contain at least one Target node',
+            level: 'error'
+        });
+        errors.push('Pipeline must contain at least one Target node');
+    } else {
+        logs.push({
+            timestamp,
+            message: 'Target node(s) found in pipeline',
+            level: 'info'
+        });
+    }
+
     nodes.forEach(node => {
-        // Add log for each node being validated
+        // Node validation start log
         logs.push({
             timestamp,
             message: `Validating node: ${node.data.title || node.data.label}`,
@@ -69,7 +114,7 @@ const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): Validation
             } else {
                 logs.push({
                     timestamp,
-                    message: `Reader node "${node.data.title || node.data.label}" is properly connected`,
+                    message: `✓ Reader node "${node.data.title || node.data.label}" is properly connected`,
                     level: 'info'
                 });
             }
@@ -90,18 +135,20 @@ const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): Validation
             } else {
                 logs.push({
                     timestamp,
-                    message: `Target node "${node.data.title || node.data.label}" is properly connected`,
+                    message: `✓ Target node "${node.data.title || node.data.label}" is properly connected`,
                     level: 'info'
                 });
             }
             return;
         }
 
-        // Input validation
+        // Transformation node validation
         const incomingEdges = edges.filter(edge => edge.target === node.id);
+        const outgoingEdges = edges.filter(edge => edge.source === node.id);
         const requiredInputs = node.data.ports.inputs;
-        const maxInputs: any = node.data.ports.maxInputs;
+        const maxInputs = node.data.ports.maxInputs;
 
+        // Input validation
         if (incomingEdges.length === 0) {
             const error = `Node "${node.data.title || node.data.label}" has no input connections`;
             errors.push(error);
@@ -110,24 +157,31 @@ const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): Validation
                 message: error,
                 level: 'error'
             });
-        } else if (typeof maxInputs === 'number' && incomingEdges.length < requiredInputs) {
-            const error = `Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`;
+        } else if (incomingEdges.length < requiredInputs) {
+            const warning = `Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`;
+            errors.push(warning);
+            logs.push({
+                timestamp,
+                message: warning,
+                level: 'warning'
+            });
+        } else if (maxInputs && incomingEdges.length > maxInputs) {
+            const error = `Node "${node.data.title || node.data.label}" exceeds maximum allowed inputs (${maxInputs})`;
             errors.push(error);
             logs.push({
                 timestamp,
                 message: error,
-                level: 'warning'
+                level: 'error'
             });
         } else {
             logs.push({
                 timestamp,
-                message: `Node "${node.data.title || node.data.label}" has valid input connections`,
+                message: `✓ Node "${node.data.title || node.data.label}" has valid input connections (${incomingEdges.length}/${requiredInputs})`,
                 level: 'info'
             });
         }
 
         // Output validation
-        const outgoingEdges = edges.filter(edge => edge.source === node.id);
         if (outgoingEdges.length === 0) {
             const error = `Node "${node.data.title || node.data.label}" has no output connections`;
             errors.push(error);
@@ -139,16 +193,20 @@ const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): Validation
         } else {
             logs.push({
                 timestamp,
-                message: `Node "${node.data.title || node.data.label}" has valid output connections`,
+                message: `✓ Node "${node.data.title || node.data.label}" has valid output connections`,
                 level: 'info'
             });
         }
     });
 
-    // Add final validation status log
+    // Add final validation summary
+    const successCount = logs.filter(log => log.level === 'info').length;
+    const warningCount = logs.filter(log => log.level === 'warning').length;
+    const errorCount = logs.filter(log => log.level === 'error').length;
+
     logs.push({
         timestamp,
-        message: errors.length === 0 ? 'Pipeline validation completed successfully' : 'Pipeline validation completed with errors',
+        message: `Validation complete: ${successCount} successes, ${warningCount} warnings, ${errorCount} errors`,
         level: errors.length === 0 ? 'info' : 'error'
     });
 
@@ -190,13 +248,45 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         return validation;
     }
     
-    // Continue with normal pipeline JSON conversion without validation
-    console.log(uiNodes)
-    // Extract sources from Reader nodes
+    // Get ordered nodes using topological sort
+    const getOrderedNodes = () => {
+        const orderedNodes: UINode[] = [];
+        const visited = new Set<string>();
+
+        const processNode = (nodeId: string) => {
+            if (visited.has(nodeId)) return;
+            visited.add(nodeId);
+
+            // Process incoming edges first
+            const incomingEdges = edges.filter(edge => edge.target === nodeId);
+            incomingEdges.forEach(edge => {
+                if (!visited.has(edge.source)) {
+                    processNode(edge.source);
+                }
+            });
+
+            const node = uiNodes.find(n => n.id === nodeId);
+            if (node) {
+                orderedNodes.push(node);
+            }
+        };
+
+        // Start with target nodes
+        const targetNodes = uiNodes.filter(node => node.id.startsWith('Target_'));
+        targetNodes.forEach(node => {
+            processNode(node.id);
+        });
+
+        return orderedNodes;
+    };
+
+    const orderedUiNodes = getOrderedNodes();
+    
+    // Extract sources and create reader transformations
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
-            name: node.data.title || node.data.label,
+            name: node.data.source.name || node.data.title,
             source_type: "File",
             file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
             data_src_id: node.data.source.data_src_id,
@@ -207,18 +297,30 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             }
         }));
 
-    // Create a map of node IDs to their transformation names
-    const nodeToTransformationName = new Map();
-    uiNodes.forEach(node => {
-        if (node.id.startsWith('Reader_')) {
-            nodeToTransformationName.set(node.id, `read_${node.data.title || node.data.label}`);
-        } else {
-            nodeToTransformationName.set(node.id, node.data.title || node.data.label);
-        }
-    });
-console.log(nodeToTransformationName)
-    // Process transformations in order
-    const transformations = uiNodes
+    // Create reader transformations
+    const readerTransformations = uiNodes
+        .filter(node => node.id.startsWith('Reader_'))
+        .map(node => ({
+            name: node.data.title,
+            dependent_on: [],
+            transformation: "Reader",
+            source: {
+                name: node.data.source.name || node.data.title,
+                source_type: "File",
+                file_name: node.data.source.file_name,
+                connection: {
+                    name: node.data.source.connection?.name || "local_connection",
+                    connection_type: capitalizeFirstLetter(node.data.source.connection_type),
+                    file_path_prefix: node.data.source.file_path_prefix
+                }
+            },
+            read_options: {
+                header: true
+            }
+        }));
+
+    // Process regular transformations using ordered nodes
+    const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_'))
         .map(node => {
             console.log(node.data.title)
@@ -331,10 +433,10 @@ console.log(nodeToTransformationName)
             }
         });
 
-    // Create target configuration
+    // Create target configuration and writer transformation
     const targets = uiNodes
         .filter(node => node.id.startsWith('Target_'))
-        .map(() => ({
+        .map(node => ({
             name: "output_data",
             type: "File",
             connection: {
@@ -344,6 +446,43 @@ console.log(nodeToTransformationName)
             load_mode: "overwrite"
         }));
 
+    // const writerTransformations = uiNodes
+    //     .filter(node => node.id.startsWith('Target_'))
+    //     .map(node => {
+    //         const lastTransformation = uiNodes
+    //             .filter(n => !n.id.startsWith('Target_'))
+    //             .slice(-1)[0];
+            
+    //         return {
+    //             name: "write_output",
+    //             dependent_on: [lastTransformation?.data.title || ""],
+    //             transformation: "Writer",
+    //             target: {
+    //                 name: "output_data",
+    //                 type: "File",
+    //                 connection: {
+    //                     type: "File",
+    //                     file_path: "examples/output.csv"
+    //                 },
+    //                 load_mode: "overwrite"
+    //             }
+    //         };
+    //     });
+console.log({
+    $schema: "https://json-schema.org/draft-07/schema#",
+    name: pipelineDtl?.pipeline_name || "sample_pipeline",
+    description: pipelineDtl?.pipeline_description || " ",
+    version: "1.0",
+    mode: "DEBUG",
+    parameters: [],
+    sources,
+    targets,
+    transformations: [
+        ...readerTransformations,
+        ...regularTransformations.filter(Boolean),
+        // ...writerTransformations
+    ]
+})
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -354,7 +493,11 @@ console.log(nodeToTransformationName)
             parameters: [],
             sources,
             targets,
-            transformations: transformations.filter(Boolean)
+            transformations: [
+                ...readerTransformations,
+                ...regularTransformations.filter(Boolean),
+                // ...writerTransformations
+            ]
         }
     };
 };

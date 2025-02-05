@@ -120,12 +120,10 @@ const ConnectionCreate = () => {
         setIsEditMode(true);   
         
         try {
-          // Convert parameters to URLSearchParams format
           const queryParams = new URLSearchParams({
             id: id.toString(),
           }).toString();
 
-          // Add forward slash before query parameters to match Swagger format
           const response = await ApiService(
             CATALOG_API_PORT,
             'get',
@@ -135,17 +133,37 @@ const ConnectionCreate = () => {
           if (response && response?.length > 0) {
             const connectionData = response[0];
             
-            // Decrypt the config
-            const decryptedConfig = decrypt_string(connectionData.config, connectionData.init_vector);
-            const parsedConfig = JSON.parse(decryptedConfig);
-
-            setInitialConnectionData({
-              connection_name: connectionData.connection_config_name,
-              type: connectionData.connection_name.charAt(0).toUpperCase() + connectionData.connection_name.slice(1),
-              ...parsedConfig
-            });
+            // Get connection type from custom_metadata
+            const connectionType = connectionData.custom_metadata?.type || 
+                                 connectionData.connection_name.charAt(0).toUpperCase() + 
+                                 connectionData.connection_name.slice(1);
             
-            setSelectedType(connectionData.connection_name.charAt(0).toUpperCase() + connectionData.connection_name.slice(1));
+            // Set the selected type to trigger schema loading
+            setSelectedType(connectionType);
+
+            // Prepare initial data from custom_metadata or config
+            let configData = {};
+            if (connectionData.config && connectionData.init_vector) {
+              // If config exists, decrypt it
+              const decryptedConfig = decrypt_string(connectionData.config, connectionData.init_vector);
+              configData = JSON.parse(decryptedConfig);
+            } else if (connectionData.custom_metadata) {
+              // Otherwise use custom_metadata
+              configData = {
+                file_path_prefix: connectionData.custom_metadata.file_path_prefix,
+                // Add other fields as needed
+              };
+            }
+
+            // Set initial form data
+            const initialData = {
+              connection_name: connectionData.connection_config_name,
+              type: connectionType, // Use the same connectionType here
+              ...configData
+            };
+            
+            console.log('Setting initial connection data:', initialData);
+            setInitialConnectionData(initialData);
           } else {
             toast.error('Connection not found');
             navigate('/admin-console/connection');
@@ -246,6 +264,7 @@ const ConnectionCreate = () => {
 
   const generateInitialValues = () => {
     if (isEditMode && initialConnectionData) {
+      console.log('Initial Connection Data:', initialConnectionData);
       return initialConnectionData;
     }
 
@@ -254,11 +273,9 @@ const ConnectionCreate = () => {
       type: selectedType || ''
     };
 
-    // Add specific schema fields if they exist
     if (specificSchema?.connectionSpecification?.properties) {
       Object.entries(specificSchema.connectionSpecification.properties).forEach(([key, value]: [string, any]) => {
         if (value.oneOf) {
-          // Initialize oneOf fields with mode and empty values for all possible properties
           const allProperties: any = {};
           value.oneOf.forEach((option: any) => {
             if (option.properties) {
@@ -560,32 +577,31 @@ const ConnectionCreate = () => {
   };
 
   const handleSubmit = async (values: any) => {
-    // Log the complete form values
-    console.log('Form Values:', {
-      connection_name: values.connection_name,
-      type: values.type,
-      ...values
-    });
+    console.log('Form Values:', values);
     let connectionData = {};
-    console.log(values)
+
     // Format connection data based on connection type
-    if (values.type.toLowerCase() === "bigquery") {
-      connectionData = {
-        "project_id": values.project_id,
-        "dataset_id": values.dataset_id,
-        "credentials_json": values.credentials_json,
-        "source_type": values.type.toLowerCase()
-      };
-    } else if (values.type.toLowerCase() === "local") {
-      connectionData = {
-        "file_path_prefix": values.file_path_prefix,
-        "source_type": values.type.toLowerCase()
-      };
+    switch (values.type.toLowerCase()) {
+      case "bigquery":
+        connectionData = {
+          project_id: values.project_id,
+          dataset_id: values.dataset_id,
+          credentials_json: values.credentials_json,
+          source_type: values.type.toLowerCase()
+        };
+        break;
+      case "local":
+        connectionData = {
+          file_path_prefix: values.file_path_prefix,
+          source_type: values.type.toLowerCase()
+        };
+        break;
+      // Add other connection types as needed
     }
 
     // Encrypt the connection data
     const { encryptedString, initVector } = encrypt_string(JSON.stringify(connectionData));
-    console.log(decrypt_string(encryptedString, initVector))
+
     try {
       const connectionTypeMatch = connectionTypes.find(type => 
         type.connection_display_name === values.type
@@ -596,9 +612,14 @@ const ConnectionCreate = () => {
       }
 
       const transformedData = {
-        connection_config_name: values.connection_name || "default_name",
+        connection_config_name: values.connection_name,
         connection_name: connectionTypeMatch.connection_display_name.toLowerCase(),
-        custom_metadata: {},
+        connection_description: "", // Added this field
+        custom_metadata: {
+          connection_name: values.connection_name,
+          type: values.type,
+          ...connectionData
+        },
         connection_type: "source",
         connection_status: "active",
         data_residency: "auto",
@@ -607,17 +628,20 @@ const ConnectionCreate = () => {
         connection_id: connectionTypeMatch.id
       };
 
-      if (isEditMode) {
-        // Update existing connection
+      if (isEditMode && id) {
+        // Updated PUT request
         await ApiService(
           CATALOG_API_PORT,
           'PUT',
           `/connection_registry/connection_config/${id}`,
-          transformedData
+          transformedData,
+          null,
+          {
+            'Content-Type': 'application/json'
+          }
         );
         toast.success("Connection updated successfully");
       } else {
-        // Create new connection
         await ApiService(
           CATALOG_API_PORT,
           'POST',
@@ -677,7 +701,7 @@ const ConnectionCreate = () => {
                       setFieldValue('type', value);
                       setSelectedType(value);
                     }}
-                    value={values.type}
+                    value={values.type || selectedType}
                   >
                     <SelectTrigger className="transition-all hover:border-primary/50">
                       <SelectValue placeholder="Select connection type" />

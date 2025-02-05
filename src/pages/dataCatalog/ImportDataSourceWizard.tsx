@@ -37,6 +37,10 @@ import {
     ChevronRight,
     BarChart2,
     ChevronsLeftRightEllipsis,
+    TableIcon,
+    ColumnsIcon,
+    DatabaseIcon,
+    DownloadIcon,
 } from "lucide-react";
 import { parseFile, FileData, ParseOptions } from "@/utils/fileParser";
 import {
@@ -157,7 +161,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
 
     const createLayoutFields = async (data: any) => {
         try {
-            return await ApiService(CATALOG_API_PORT, 'post', '/layout_fields/bulk', data);
+            return await ApiService(CATALOG_API_PORT, 'post', '/layout_fields/bulk/', data);
         } catch (error) {
             console.error("Error creating layout fields:", error);
             return null
@@ -295,9 +299,93 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
         setSelectedColumnIndex(null);
     };
 
-    const importSection = () => {
+    const importSection = async () => {
+        try {
+            // First API call - Create Data Source
+            const dataSourcePayload = {
+                data_src_name: fileName,
+                data_src_desc: `Imported from ${fileName}`,
+                data_src_tags: {},
+                lake_zone_id: 1, // You may want to make this configurable
+                data_src_key: fileName.toLowerCase().replace(/\s+/g, '_'),
+                connection_config_id: 1, // You may want to make this configurable
+                bh_project_id: Number(bhProject),
+                data_src_quality: "80",
+                data_src_status_cd: 1,
+                file_name: fileName,
+                connection_type: "FILE",
+                file_path_prefix: ""
+            };
 
-    }
+            const dataSourceResponse = await createDataSource(dataSourcePayload);
+            if (!dataSourceResponse?.data_src_id) {
+                throw new Error("Failed to create data source");
+            }
+
+            const dataSrcId = dataSourceResponse.data_src_id;
+
+            // Second API call - Create Data Source Layout
+            const layoutPayload = {
+                data_src_lyt_name: fileName,
+                data_src_lyt_fmt_cd: layoutFormatsTypes?.find((type: any) => 
+                    type.code_dtl_desc?.toLowerCase() === fileType?.toLowerCase())?.code_dtl_id || 0,
+                data_src_lyt_delimiter_cd: delimiterTypes?.find((type: any) => 
+                    type.code_dtl_value === delimiter)?.code_dtl_id || 0,
+                data_src_lyt_cust_delimiter: delimiter,
+                data_src_lyt_header: true,
+                data_src_lyt_encoding_cd: encodingTypes?.find((type: any) => 
+                    type.code_dtl_value === encoding)?.code_dtl_id || 0,
+                data_src_lyt_quote_chars_cd: 1, // Default value, adjust as needed
+                data_src_lyt_escape_chars_cd: 1, // Default value, adjust as needed
+                data_src_lyt_regex: "",
+                data_src_lyt_pk: false,
+                data_src_lyt_total_records: fileData ? fileData.length - 1 : 0,
+                data_src_lyt_type_cd: 1, // Default value, adjust as needed
+                data_src_lyt_is_mandatory: true,
+                data_src_n_rows_to_skip: headerRow - 1,
+                data_src_file_path: "",
+                data_src_file_type: fileType,
+                data_src_multi_part_file: false,
+                data_src_is_history_required: false,
+                data_src_id: dataSrcId,
+                data_src_lyt_key: `${fileName?.toLowerCase().replace(/\s+/g, '_')}_layout`
+            };
+
+            const layoutResponse = await createDataSourceLayout(layoutPayload);
+            if (!layoutResponse?.data_src_lyt_id) {
+                throw new Error("Failed to create data source layout");
+            }
+
+            const layoutId = layoutResponse?.data_src_lyt_id;
+
+            // Third API call - Create Layout Fields
+            const layoutFieldsPayload = headers.map((header, index) => ({
+                lyt_fld_name: header,
+                lyt_fld_desc: `Field for ${header}`,
+                lyt_fld_order: index + 1,
+                lyt_fld_is_pk: false,
+                lyt_fld_start: 0,
+                lyt_fld_length: 0,
+                lyt_fld_data_type_cd: dataTypes?.find((type: any) => 
+                    type.code_dtl_desc?.toLowerCase() === columnMetadata[index]?.dataType)?.code_dtl_id || 0,
+                lyt_fld_tags: {},
+                lyt_id: layoutId,
+                lyt_fld_key: `${header?.toLowerCase().replace(/\s+/g, '_')}_field`
+            }));
+
+            const layoutFieldsResponse = await createLayoutFields(layoutFieldsPayload);
+            console.log(layoutFieldsResponse);
+            if (!layoutFieldsResponse) {
+                throw new Error("Failed to create layout fields");
+            }
+
+            // Success - close the import section
+            closeImportSection();
+        } catch (error) {
+            console.error("Error in import process:", error);
+            setError(error instanceof Error ? error.message : "An error occurred during import");
+        }
+    };
 
     const generateHistogramData = (columnIndex: number): { name: string; value: number }[] => {
         if (!fileData) return [];
@@ -318,7 +406,14 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
 
     const renderTablePreview = () => {
         if (!fileData || fileData.length === 0) {
-            return <p className="text-sm text-gray-500">No data available</p>;
+            return (
+                <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                    <div className="text-gray-400">
+                        <DatabaseIcon className="w-8 h-8 mb-2" />
+                    </div>
+                    <p className="text-gray-500 text-sm">No data available for preview</p>
+                </div>
+            );
         }
 
         const totalRows = fileData.length - 1;
@@ -328,96 +423,162 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
         const tableRows = fileData.slice(startIndex, endIndex);
 
         return (
-            <>
-                <Table className="min-w-full table-auto">
-                    <TableHeader>
-                        <TableRow>
-                            {headers.map((header, index) => (
-                                <TableHead key={index} className="px-4 py-2 border-b">
-                                    <div className="flex items-center space-x-2">
-                                        <div
-                                            role="textbox"
-                                            aria-label={`Edit column header ${header}`}
-                                            contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleHeaderChange(index, e.currentTarget.textContent || '')}
-                                            className="outline-none border-b border-transparent hover:border-gray-400 focus:border-gray-600 transition-colors cursor-pointer"
-                                        >
-                                            {header}
-                                        </div>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        aria-label="Expand column"
-                                                        className="p-1"
-                                                    >
-                                                        <ChevronsLeftRightEllipsis className="h-4 w-4 text-gray-600" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="bg-gray-900 text-white p-2 rounded-md shadow-lg">
-                                                    <p className="text-sm">Data Type: {columnMetadata[index]?.dataType}</p>
-                                                    <p className="text-sm">Unique Values: {columnMetadata[index]?.uniqueValues}</p>
-                                                    <p className="text-sm">Null Count: {columnMetadata[index]?.nullCount}</p>
-                                                    <p className="text-sm">Min Value: {columnMetadata[index]?.minValue}</p>
-                                                    <p className="text-sm">Max Value: {columnMetadata[index]?.maxValue}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            aria-label={`View histogram for ${header}`}
-                                            onClick={() => handleHistogramClick(index)}
-                                            className="p-1"
-                                        >
-                                            <BarChart2 className="h-4 w-4 text-gray-600" />
-                                        </Button>
-                                    </div>
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tableRows.map((row, rowIndex) => (
-                            <TableRow key={rowIndex} className={rowIndex % 2 === 0 ? "bg-gray-100" : "bg-white"}>
-                                {row.map((cell, cellIndex) => (
-                                    <TableCell key={cellIndex} className="px-4 py-2 border-b">
-                                        {cell !== undefined ? String(cell) : ""}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                {totalPages > 1 && (
-                    <div className="mt-4 flex items-center justify-center space-x-4">
+            <div className="space-y-2">
+                {/* Table Header Stats */}
+                <div className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg shadow-sm">
+                    <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-1.5">
+                            <TableIcon className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-xs text-gray-600">
+                                Showing rows {startIndex} - {endIndex} of {totalRows}
+                            </span>
+                        </div>
+                        <div className="h-3.5 w-px bg-gray-200" />
+                        <div className="flex items-center space-x-1.5">
+                            <ColumnsIcon className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-xs text-gray-600">
+                                {headers.length} columns
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center">
                         <Button
                             variant="outline"
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="flex items-center"
-                            aria-label="Previous Page"
+                            size="sm"
+                            className="text-gray-600 hover:text-gray-900 h-7 text-xs"
                         >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="flex items-center"
-                            aria-label="Next Page"
-                        >
-                            <ChevronRight className="h-4 w-4 ml-1" />
+                            <DownloadIcon className="w-3.5 h-3.5 mr-1.5" />
+                            Export
                         </Button>
                     </div>
-                )}
-            </>
+                </div>
+
+                {/* Main Table */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <Table className="w-full">
+                            <TableHeader>
+                                <TableRow className="bg-gray-50 border-b border-gray-200">
+                                    {headers.map((header, index) => (
+                                        <TableHead 
+                                            key={index} 
+                                            className="px-3 py-2 first:pl-4 last:pr-4"
+                                        >
+                                            <div className="flex items-center space-x-1.5">
+                                                <div
+                                                    role="textbox"
+                                                    aria-label={`Edit column header ${header}`}
+                                                    contentEditable
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => handleHeaderChange(index, e.currentTarget.textContent || '')}
+                                                    className="font-medium text-xs text-gray-900 outline-none border-b-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-colors cursor-text px-1"
+                                                >
+                                                    {header}
+                                                </div>
+                                                
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="p-0.5 h-6 hover:bg-gray-100 rounded"
+                                                                onClick={() => handleHistogramClick(index)}
+                                                            >
+                                                                <BarChart2 className="h-3.5 w-3.5 text-gray-500" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent 
+                                                            className="bg-white p-2 rounded-lg shadow-lg border border-gray-200"
+                                                            side="bottom"
+                                                        >
+                                                            <div className="space-y-1.5">
+                                                                <div className="flex items-center justify-between text-xs">
+                                                                    <span className="text-gray-500">Data Type:</span>
+                                                                    <span className="font-medium text-gray-900">{columnMetadata[index]?.dataType}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-xs">
+                                                                    <span className="text-gray-500">Unique Values:</span>
+                                                                    <span className="font-medium text-gray-900">{columnMetadata[index]?.uniqueValues}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-xs">
+                                                                    <span className="text-gray-500">Null Count:</span>
+                                                                    <span className="font-medium text-gray-900">{columnMetadata[index]?.nullCount}</span>
+                                                                </div>
+                                                                <div className="h-px bg-gray-100 my-1.5" />
+                                                                <div className="flex items-center justify-between text-xs">
+                                                                    <span className="text-gray-500">Range:</span>
+                                                                    <span className="font-medium text-gray-900">
+                                                                        {columnMetadata[index]?.minValue} - {columnMetadata[index]?.maxValue}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </div>
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
+                            
+                            <TableBody>
+                                {tableRows.map((row, rowIndex) => (
+                                    <TableRow 
+                                        key={rowIndex}
+                                        className={`
+                                            border-b border-gray-100 last:border-0
+                                            ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                                            hover:bg-blue-50/50 transition-colors
+                                        `}
+                                    >
+                                        {row.map((cell, cellIndex) => (
+                                            <TableCell 
+                                                key={cellIndex} 
+                                                className="px-3 py-1.5 text-xs text-gray-700 first:pl-4 last:pr-4"
+                                            >
+                                                {cell !== undefined ? String(cell) : "—"}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100">
+                            <div className="text-xs text-gray-500">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            
+                            <div className="flex items-center space-x-1.5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center h-7 text-xs"
+                                >
+                                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center h-7 text-xs"
+                                >
+                                    Next
+                                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
         );
     };
     const renderStepContent = () => {
@@ -443,15 +604,15 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
                                 <div className="flex flex-col space-y-6">
                                     <div className="flex items-center space-x-4">
                                         <div className="flex-grow">
-                                            <Label htmlFor="fileName">File Name</Label>
+                                            <Label htmlFor="fileName">Source Name</Label>
                                             <div className="flex items-center space-x-2 mt-1">
                                                 <Input
                                                     id="fileName"
                                                     value={fileName}
                                                     onChange={handleFileNameChange}
                                                     className="w-full"
-                                                    placeholder="Enter file name"
-                                                    aria-label="Edit file name"
+                                                    placeholder="Enter source name"
+                                                    aria-label="Edit source name"
                                                 />
                                                 <Edit2 className="h-4 w-4 text-gray-500" aria-hidden="true" />
                                             </div>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import ReactFlow, {
     useNodesState,
     useEdgesState,
@@ -85,7 +85,10 @@ const BuildPlayGround: React.FC = () => {
     const [copiedFormStates, setCopiedFormStates] = useState<{ [key: string]: any }>({});
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [conversionLogs, setConversionLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
+    const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
+    const [ctrlDPressed, setCtrlDPressed] = useState(false);
+    const ctrlDTimeout = useRef<NodeJS.Timeout | null>(null);
 
     
     useEffect(() => {
@@ -787,30 +790,50 @@ const BuildPlayGround: React.FC = () => {
         try {
             setIsPipelineRunning(true);
             setShowLogs(true); // Show logs panel when run is clicked
-            const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl, true); // Add validateOnly parameter
+            
+            // Clear previous logs and errors
+            setConversionLogs([{
+                timestamp: new Date().toISOString(),
+                message: 'Starting pipeline validation...',
+                level: 'info'
+            }]);
+            setValidationErrors([]);
 
-            // Call handleRunClick to get the pipeline configuration
+            // Perform validation first
+            const validationResult:any = convertUIToPipelineJson(nodes, edges, pipelineDtl, true);
+            
+            // Always update logs with validation results
+            if (validationResult.logs) {
+                setConversionLogs(prevLogs => [...prevLogs, ...validationResult.logs]);
+            }
+
+            // If validation fails, throw error
+            if (!validationResult.isValid) {
+                throw new Error(`Pipeline is incomplete or broken:\n${validationResult.errors.join('\n')}`);
+            }
+
+            // If validation passes, get pipeline configuration
             const pipelineConfig = handleRunClick(new Event('click') as any);
 
             const params = new URLSearchParams({
                 pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
-                pipeline_json: JSON.stringify(pipelineConfig), // Use the actual config object
+                pipeline_json: JSON.stringify(pipelineConfig),
                 mode: 'DEBUG',
             });
 
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title?.toLowerCase());
             });
+
             setSelectedFormState(pipelineConfig);
             setRunDialogOpen(true);
-setConversionLogs([
-                ...conversionLogs,
-                {
-                    timestamp: new Date().toISOString(),
-                    message: 'Pipeline validation successful. Starting execution...',
-                    level: 'info'
-                }
-            ]);
+
+            // Add execution start log
+            setConversionLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: 'Pipeline validation successful. Starting execution...',
+                level: 'info'
+            }]);
 
             const response = await ApiService(
                 CATALOG_API_PORT,
@@ -823,6 +846,59 @@ setConversionLogs([
                 throw new Error(response.error);
             }
 
+            // If pipeline starts successfully, begin streaming logs
+            if (response) {
+                // Add success log
+                setConversionLogs(prevLogs => [...prevLogs, {
+                    timestamp: new Date().toISOString(),
+                    message: 'Pipeline started successfully. Streaming logs...',
+                    level: 'info'
+                }]);
+
+                // Start streaming logs
+                const streamLogsInterval = setInterval(async () => {
+                    try {
+                        const logsResponse = await ApiService(
+                            "8011",  // Using port 8011 for log streaming
+                            "get",
+                            `/api/v1/pipeline/stream-logs/${pipelineDtl?.pipeline_name || "sample"}`,
+                            null
+                        );
+
+                        if (logsResponse) {
+                            // Assuming the response contains an array of log entries
+                            const newLogs = Array.isArray(logsResponse) ? logsResponse : [logsResponse];
+                            setTerminalLogs(prevLogs => [
+                                ...prevLogs,
+                                ...newLogs.map(log => ({
+                                    timestamp: new Date().toISOString(),
+                                    message: log.message || log,
+                                    level: log.level || 'info'
+                                }))
+                            ]);
+
+                            // If we receive a completion signal or error, stop streaming
+                            if (logsResponse.some(log => 
+                                log.message?.includes('Pipeline completed') || 
+                                log.message?.includes('Pipeline failed') ||
+                                log.level === 'error'
+                            )) {
+                                clearInterval(streamLogsInterval);
+                                setIsPipelineRunning(false);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error streaming logs:', error);
+                        clearInterval(streamLogsInterval);
+                        setIsPipelineRunning(false);
+                    }
+                }, 1000); // Poll every second
+
+                // Cleanup interval on component unmount
+                return () => clearInterval(streamLogsInterval);
+            }
+
+            // Get transformation counts
             const countsResponse = await ApiService(
                 CATALOG_API_PORT,
                 "get",
@@ -838,21 +914,26 @@ setConversionLogs([
             if (countsResponse.transformationOutputCounts) {
                 setTransformationCounts(countsResponse.transformationOutputCounts);
             }
+
         } catch (error) {
             console.error('Error starting pipeline:', error);
-            if (error.logs) {
-                // Show the logs in the terminal
-                setConversionLogs(error.logs);
-                setShowLogs(true);
-            }
+            
+            // Add error log
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `Error: ${error.message}`,
+                level: 'error'
+            }]);
+
             if (error.message.includes('Pipeline is incomplete or broken:')) {
                 const errorMessages = error.message.split('\n').slice(1);
                 setValidationErrors(errorMessages);
             }
-            console.error('Error saving pipeline state:', error);
+
             dispatch(setSaveError(error.message));
+            setIsPipelineRunning(false);
         }
-    }, [handleRunClick, debuggedNodesList]);
+    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl]);
 
     const handleStop = useCallback(async () => {
         try {
@@ -1031,14 +1112,89 @@ setConversionLogs([
         }
     }, [history, nodes, edges]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            // Check if the active element is an input, textarea, or other form element
-            const isFormElement = document.activeElement instanceof HTMLInputElement || 
-                                document.activeElement instanceof HTMLTextAreaElement ||
-                                document.activeElement instanceof HTMLSelectElement;
+    const handleLogsClick = useCallback(() => {
+        setShowLogs(prev => !prev);  // Toggle logs visibility
+    }, []);
 
-            // Only handle Ctrl+F if not in a form element
+    const handleKeyDown = (event: KeyboardEvent) => {
+        const isFormElement = document.activeElement instanceof HTMLInputElement || 
+                             document.activeElement instanceof HTMLTextAreaElement ||
+                             document.activeElement instanceof HTMLSelectElement;
+
+        if (!isFormElement) {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
+                event.preventDefault();
+                handleCopy();
+            }
+    
+            // Paste (Ctrl + V)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+                event.preventDefault();
+                handlePaste();
+            }
+    
+            // Cut (Ctrl + X)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
+                event.preventDefault();
+                handleCut();
+            }
+    
+            // Undo (Ctrl + Z)
+            if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                handleUndo();
+            }
+    
+            // Redo (Ctrl + Y or Ctrl + Shift + Z)
+            if ((event.ctrlKey || event.metaKey) && 
+                (event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z'))) {
+                event.preventDefault();
+                handleRedo();
+            }
+            // Debug mode toggle (Ctrl + D)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+                event.preventDefault();
+                setCtrlDPressed(true);
+                
+                // Clear any existing timeout
+                if (ctrlDTimeout.current) {
+                    clearTimeout(ctrlDTimeout.current);
+                }
+
+                // Set a new timeout to reset ctrlDPressed
+                ctrlDTimeout.current = setTimeout(() => {
+                    setCtrlDPressed(false);
+                }, 500); // Reset after 500ms
+
+                // Add selected nodes to debug list
+                const selectedNodes = nodes.filter(node => node.selected);
+                if (selectedNodes.length > 0) {
+                    selectedNodes.forEach(node => {
+                        handleDebugToggle(node.id, node.data.title);
+                    });
+                } else {
+                    // If no nodes are selected, show a notification or alert
+                    console.log('Please select nodes to debug');
+                    // Optionally add a UI notification here
+                }
+            }
+
+            // Remove from debug list (Ctrl + D + R)
+            if (ctrlDPressed && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
+                event.preventDefault();
+                // Remove selected nodes from debug list
+                const selectedNodes = nodes.filter(node => node.selected);
+                if (selectedNodes.length > 0) {
+                    selectedNodes.forEach(node => {
+                        if (debuggedNodes.has(node.id)) {
+                            handleDebugToggle(node.id, node.data.title);
+                        }
+                    });
+                }
+                setCtrlDPressed(false);
+            }
+
+            // Existing shortcuts
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
                 event.preventDefault();
                 const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
@@ -1048,52 +1204,58 @@ setConversionLogs([
                 }
             }
 
-            // Only handle Ctrl+D if not in a form element
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+            // Run pipeline (Ctrl + R)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
                 event.preventDefault();
-                const selectedNodes = nodes.filter(node => node.selected);
-                selectedNodes.forEach(node => {
-                    handleDebugToggle(node.id, node.data.title || node.data.label);
-                });
+                handleRun();
             }
 
-            // Only handle keyboard shortcuts if not in a form element
-            if (!isFormElement) {
-                // Copy nodes
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
-                    event.preventDefault();
-                    handleCopy();
-                }
-
-                // Paste nodes
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
-                    event.preventDefault();
-                    handlePaste();
-                }
-
-                // Cut nodes
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
-                    event.preventDefault();
-                    handleCut();
-                }
-
-                // Undo
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-                    event.preventDefault();
-                    handleUndo();
-                }
-
-                // Redo
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
-                    event.preventDefault();
-                    handleRedo();
-                }
+            // Open logs (Ctrl + L)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
+                event.preventDefault();
+                handleLogsClick();
             }
-        };
 
+            // Stop pipeline (Ctrl + K)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+                handleStop();
+            }
+
+            // Next step (Ctrl + N)
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
+                event.preventDefault();
+                handleNext();
+            }
+
+            // Zoom in (Ctrl + Plus)
+            if ((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')) {
+                event.preventDefault();
+                handleZoomIn();
+            }
+
+            // Zoom out (Ctrl + Minus)
+            if ((event.ctrlKey || event.metaKey) && event.key === '-') {
+                event.preventDefault();
+                handleZoomOut();
+            }
+
+            // ... rest of existing shortcuts (Copy, Paste, Cut, etc.) ...
+        }
+    };
+
+    useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [nodes, handleDebugToggle, handleCopy, handlePaste, handleCut, handleUndo, handleRedo]);
+    }, [nodes, handleDebugToggle, handleCopy, handlePaste, handleCut, handleUndo, handleRedo, handleRun, handleStop, handleNext, handleZoomIn, handleZoomOut, handleLogsClick]);
+
+    useEffect(() => {
+        return () => {
+            if (ctrlDTimeout.current) {
+                clearTimeout(ctrlDTimeout.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1233,7 +1395,13 @@ setConversionLogs([
         { key: 'Ctrl + Z', action: 'Undo' },
         { key: 'Ctrl + Y', action: 'Redo' },
         { key: 'Ctrl + F', action: 'Search' },
-        { key: 'Ctrl + D', action: 'Toggle Debug' }
+        { key: 'Ctrl + D', action: 'Add to Debug List' },
+        { key: 'Ctrl + R', action: 'Run Pipeline' },
+        { key: 'Ctrl + L', action: 'Open Logs' },
+        { key: 'Ctrl + K', action: 'Stop Pipeline' },
+        { key: 'Ctrl + N', action: 'Next Step' },
+        { key: 'Ctrl + +', action: 'Zoom In' },
+        { key: 'Ctrl + -', action: 'Zoom Out' },
     ];
 
     const handleAlignHorizontal = useCallback(() => {
@@ -1510,12 +1678,9 @@ setConversionLogs([
                         isPipelineRunning={isPipelineRunning}
                         isLoading={false}
                         pipelineConfig={handleRunClick}
-                        logs={[
-                            { timestamp: '2024-03-14 10:30:15', message: 'Pipeline started', level: 'info' },
-                            { timestamp: '2024-03-14 10:30:16', message: 'Processing node 1', level: 'info' },
-                            { timestamp: '2024-03-14 10:30:17', message: 'Warning: High memory usage', level: 'warning' },
-                            { timestamp: '2024-03-14 10:30:18', message: 'Error: Failed to process node 2', level: 'error' },
-                        ]}
+                        terminalLogs={terminalLogs}
+                        proplesLogs={conversionLogs}
+                           
                     />
                 </div>
 
@@ -1626,7 +1791,8 @@ setConversionLogs([
                     isOpen={showLogs}
                     onClose={() => setShowLogs(false)}
                     title="Pipeline Validation Logs"
-                    logs={conversionLogs}
+                    terminalLogs={terminalLogs}
+                    proplesLogs={conversionLogs}
                 />
             </div>
         </div>

@@ -231,6 +231,8 @@ function DataCatalogTable({ catalogList, gitProjectList, loading, error }: DataC
 
   const closeImportSection = () => {
     setShowImportSection(false);
+    dispatch(getdataSourceList({ offset: 0, limit: 1000 }));
+
   };
 
   return (

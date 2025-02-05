@@ -449,7 +449,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                             )}
                         </div>
                     ) : (
-                        <span className="cursor-pointer select-none truncate max-w-[100px]" title={titleValue || data.label}>
+                        <span className="cursor-pointer select-none max-w-[100px]" title={titleValue || data.label}>
                             {titleValue || data.label}
                         </span>
                     )}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const KeyboardShortcutsPanel = ({ keyboardShortcuts }) => {
     const [isMinimized, setIsMinimized] = useState(true);
-
+console.log(keyboardShortcuts)
     const togglePanel = () => {
         setIsMinimized(!isMinimized);
     };
@@ -50,7 +50,7 @@ const KeyboardShortcutsPanel = ({ keyboardShortcuts }) => {
             {/* Panel Content */}
             <div
                 className={` bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${
-                    isMinimized ? 'max-h-0 opacity-0 mt-0' : 'max-h-64 opacity-100 mt-2'
+                    isMinimized ? 'max-h-0 opacity-0 mt-0' : 'max-h-auto opacity-100 mt-2'
                 }`}
                 style={{ transitionProperty: 'max-height, opacity, margin-top' }}
             >

@@ -1,31 +1,35 @@
-export type Status = "success" | "failed" | "in-progress"
-
-export interface TableData {
-  id: string
-  flow: string
+export type DataItem = {
+  name: string
   project: string
-  status: Status
-  startTime: string
-  duration: string
-  owner: string
+  pipeline: string
+  latency: number
+  cost: number
+  freshness: number
+  status: "In Progress" | "Completed" | "Failed" | "Did Not Arrive" | "Not Published"
+  date: Date
 }
 
-export interface StatsData {
-  success: number
-  failed: number
-  inProgress: number
+export type FilterOption = "All" | string
+
+export interface CustomizedDotProps {
+  cx: number
+  cy: number
+  stroke: string
+  payload?: { name: string; [key: string]: any }
+  value?: number
+  index?: number
+  dataKey?: string
+  isShow?: boolean
+  key?: string
 }
 
-export interface FilterValues {
-  project: string
-  flow: string
-  status: string
-  startDate: Date | undefined
-  endDate: Date | undefined
+export type ChartData = {
+  latency: any[]
+  cost: any[]
+  freshness: any[]
+  ingestion: any[]
+  publish: any[]
+  health: any[]
+  quality: any[]
+  incident: any[]
 }
-
-export interface FilterOption {
-  value: string
-  label: string
-}
-

@@ -1,4 +1,4 @@
-import { GenericData } from "@/types/analytics";
+import { GenericData } from "@/types/analytics.types";
 
 export const fetchData = async (): Promise<GenericData[]> => {
   await new Promise(resolve => setTimeout(resolve, 1000));

@@ -1,32 +1,27 @@
 import { configureStore } from '@reduxjs/toolkit';
-import BuildPipeLineSlice from '@/redux/BuildPipeLineSlice';
-import toggleReducer from '@/redux/ToggleSlice';
-import ProjectSlice from '@/redux/ProjectSlice';
-import FlowSlice from '@/redux/FlowSlice';
-import Environment from '@/redux/EnvironmentSlice';
-import CatalogSlice from '@/redux/CatalogSlice';
-import UserSlice from '@/redux/UserSlice';
-import CustomerSlice from '@/redux/CustomerSlice';
-import DataOpsSlice from '@/redux/DataOpsSlice';
-import autoSaveSlice from '@/redux/features/autoSaveSlice';
+import sidebarReducer from './features/sidebarSlice';
+import userReducer from './features/userSlice';
+import dataSourcesReducer from './features/dataSourcesSlice';
+import managedUsersReducer from './features/manageUserSlice';
+import operationReducer from './features/operationSlice';
+import alertReducer from './features/alertSlice';
+import buildPipeLineReducer from './oldstore/BuildPipeLineSlice';
+import projectReducer from "./oldstore/ProjectSlice"
+import autoSaveReducer from "./oldstore/features/autoSaveSlice"
 
 export const store = configureStore({
   reducer: {
-    buildPipeLineApi: BuildPipeLineSlice,
-    projectApi: ProjectSlice,
-    environmentApi: Environment,
-    toggle: toggleReducer,
-    flowApi: FlowSlice,
-    catalogApi: CatalogSlice,
-    userApi: UserSlice,
-    customerApi: CustomerSlice,
-    dataopsApi: DataOpsSlice,
-    autoSave: autoSaveSlice,
-    
+    sidebar: sidebarReducer,
+    users: userReducer,
+    dataSources: dataSourcesReducer,
+    managedUsers: managedUsersReducer,
+    operations: operationReducer,
+    alerts: alertReducer,
+    buildPipeLine: buildPipeLineReducer,
+    projectApi: projectReducer,
+    autoSave: autoSaveReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-export default store;
-

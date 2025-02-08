@@ -1,5 +1,4 @@
 import axios, { AxiosRequestConfig } from "axios";
-import { toast } from 'react-toastify';
 
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
 const PRIFIX_URL = import.meta.env.VITE_API_PREFIX_URL;
@@ -85,11 +84,10 @@ const ApiService = async (
         const errorData = error.response.data;
         const errorMessage = errorData.message || 'An unexpected error occurred';
 
-        // You can also include error_code in the toast if needed
-        toast.error(errorMessage);
+        throw new Error(errorMessage);
       } else {
         // Generic error message for network/other errors
-        toast.error('An error occurred while processing your request');
+        throw new Error('An error occurred while processing your request');
       }
     }
     throw error;

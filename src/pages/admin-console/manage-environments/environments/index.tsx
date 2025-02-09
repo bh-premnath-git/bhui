@@ -5,6 +5,8 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { getDataSources } from "@/api/get-methods";
 import { setEnvironments } from '@/store/features/environmentslice';
+import { Network } from 'lucide-react';
+import { EmptyState } from '@/components/shared/EmptyState';
 
 const ManageEnvironments = () => {
   const dispatch = useAppDispatch();
@@ -22,6 +24,18 @@ const ManageEnvironments = () => {
 
   if (error) {
     return <ErrorState message={(error as Error).message} />;
+  }
+
+  if(environments.length === 0){
+    return (
+      <div className="container">
+          <EmptyState
+            title="Welcome to Your Environment Management !"
+            description="Ready to manage your environments."
+            Icon={Network}
+          />
+      </div>
+    );
   }
 
   return (

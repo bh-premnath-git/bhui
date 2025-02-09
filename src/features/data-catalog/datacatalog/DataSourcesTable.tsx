@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import  DataCatalogSchema  from "./DataCatalogSchema";
 import  DataCatalogImport  from "../importsource/DataCatalogImport";
+import { formatDate } from "@/lib/dayeformat";
+
 
 interface DataSourcesTableProps {
   data: DataSource[];
@@ -97,6 +99,9 @@ export const DataSourcesTable = ({ data }: DataSourcesTableProps) => {
     {
       accessorKey: "updated_at",
       header: "Last Updated",
+      cell: ({ row }) => {
+        return <>{formatDate(row.original.updated_at)}</>
+      }
     },
   ];
 

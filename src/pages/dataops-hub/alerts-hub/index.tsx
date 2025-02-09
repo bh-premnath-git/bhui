@@ -8,8 +8,7 @@ import { AlertCircle } from 'lucide-react';
 
 const AlertsHub = () => {
   const { data: alerts = [], isLoading, error } = getDataSources.alerts();
-  console.log("alerts >>>", alerts);
-
+  
   if (isLoading) {
     return <LoadingState className='w-full min-h-screen' />;
   }

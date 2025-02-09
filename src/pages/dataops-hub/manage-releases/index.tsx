@@ -2,6 +2,8 @@ import { ReleasesTable } from '@/features/dataops/managerelease/ReleasesTable';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { getDataSources } from '@/api/get-methods';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { Package } from 'lucide-react';
 
 const ManageReleases = () => {
   const { data: releases = [], isLoading, error } = getDataSources.releases();
@@ -12,6 +14,18 @@ const ManageReleases = () => {
 
   if (error) {
     return <ErrorState message={(error as Error).message} />;
+  }
+
+  if (releases.length === 0) {
+    return (
+      <div className="container">
+        <EmptyState
+          title="Welcome to Your Release Management !"
+          description="Ready to manage your releases."
+          Icon={Package}
+        />
+      </div>
+    );
   }
 
   return (

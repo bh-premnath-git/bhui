@@ -31,5 +31,6 @@ export interface DataSource {
   file_path_prefix: string | null;
   bh_project_name: string | null;
   total_customer: number;
+  updated_at: string;
   data_source_metadata: DataSourceMetadata[];
 }

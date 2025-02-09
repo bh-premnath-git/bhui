@@ -6,6 +6,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { KeycloakProvider } from "@/provider/KeycloakProvider";
+import { ErrorBoundary } from "@/components/errorboundry";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -15,8 +16,8 @@ const queryClient = new QueryClient({
         typeof metaErrorMessage === "string"
           ? metaErrorMessage
           : error instanceof Error
-          ? error.message
-          : String(error);
+            ? error.message
+            : String(error);
       toast.error(errorMessage);
     },
   }),
@@ -34,19 +35,20 @@ const queryClient = new QueryClient({
 });
 function App() {
   return (
-    <KeycloakProvider>
-    <QueryClientProvider client={queryClient}>
-      <Provider store={store}>
-        <ThemeProvider>
-          <Router>
-            <AppLayout />
-            <Toaster position="top-right" richColors />
-          </Router>
-        </ThemeProvider>
-      </Provider>
-    </QueryClientProvider>
-    </KeycloakProvider>
-    
+    <ErrorBoundary>
+      <KeycloakProvider>
+        <QueryClientProvider client={queryClient}>
+          <Provider store={store}>
+            <ThemeProvider>
+              <Router>
+                <AppLayout />
+                <Toaster position="top-right" richColors />
+              </Router>
+            </ThemeProvider>
+          </Provider>
+        </QueryClientProvider>
+      </KeycloakProvider>
+    </ErrorBoundary>
   );
 }
 

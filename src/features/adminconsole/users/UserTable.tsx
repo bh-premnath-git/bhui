@@ -2,34 +2,37 @@ import { User } from '@/types/user.types';
 import { DataTable } from "@/components/bh-table/data-table";
 import { Button } from "@/components/ui/button"
 import { CustomToolbarConfig } from "@/types/data-table.types";
-import { getUniqueValues } from "@/lib/utils";
+import { getUniqueValues, getInitials } from "@/lib/utils";
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { PlusIcon } from 'lucide-react';
 import { DotsVerticalIcon } from "@radix-ui/react-icons"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge";
-import { format } from 'date-fns';
+import { Row } from '@tanstack/react-table';
+import { useNavigate } from 'react-router-dom';
+import _ from 'lodash';
 
 interface UserTableProps {
   data: User[];
 }
 
 export const UserTable = ({ data }: UserTableProps) => {
+  const navigate = useNavigate()
   const columns: ColumnDefWithFilters<User>[] = [
     {
-      accessorKey: 'name',
+      accessorKey: 'username',
       header: 'Name',
+      filterOptions: getUniqueValues(data, 'username'),
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded bg-gray-100 flex items-center justify-center text-sm font-medium">
-            {row.original.initials}
+            {getInitials(row.getValue("username"))}
           </div>
           <div>
-            <div className="font-medium">{row.getValue("name")}</div>
+            <div className="font-medium">{row.getValue("username")}</div>
           </div>
         </div>
       ),
-      filterOptions: getUniqueValues(data, 'name'),
     },
     {
       accessorKey: 'email',
@@ -50,11 +53,11 @@ export const UserTable = ({ data }: UserTableProps) => {
       ),
     },
     {
-      accessorKey: 'roles',
+      accessorKey: 'realm_roles',
       header: 'Roles',
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
-          {row.original.roles.map((role, index) => (
+          {row.original.realm_roles.map((role, index) => (
             <Badge key={index} variant="outline">
               {role}
             </Badge>
@@ -63,27 +66,19 @@ export const UserTable = ({ data }: UserTableProps) => {
       ),
     },
     {
-      accessorKey: 'status',
+      accessorKey: 'emailVerified',
       header: 'Status',
+      filterOptions: getUniqueValues(data, 'emailVerified'),
       cell: ({ row }) => (
-        <Badge variant={row.getValue("status") === "Active" ? "default" : "destructive"}>
-          {row.getValue("status")}
-        </Badge>
+        <span className={`px-2 py-1 rounded-full text-xs ${row.getValue("emailVerified") ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+        {_.startCase(row.getValue("emailVerified") ? "active" : "inactive" as string)}
+      </span>
       ),
-      filterOptions: getUniqueValues(data, 'status'),
     },
-    {
-      accessorKey: 'created',
-      header: 'Created',
-      cell: ({ row }) => format(new Date(row.getValue('created')), 'yyyy-MM-dd'),
-    },
-    {
-      accessorKey: 'lastActive',
-      header: 'Last Active',
-      cell: ({ row }) => format(new Date(row.getValue('lastActive')), 'yyyy-MM-dd'),
-    },
+
     {
       id: "actions",
+      header: 'Actions',
       cell: ({ row }) => {
         return (
           <DropdownMenu>
@@ -108,12 +103,18 @@ export const UserTable = ({ data }: UserTableProps) => {
         label: "Add User",
         icon: PlusIcon,
         variant: "default",
-        onClick: () => console.log("Add User clicked"),
+        onClick: () => {
+          navigate("/admin-console/users/add");
+        },
       },
     ],
   };
 
   const tableName: string = "user";
+
+  const rowClickHandler = (row: Row<User>) => {
+    navigate(`/admin-console/users/${row.original.id}`);
+  }
 
   return (
     <DataTable
@@ -122,6 +123,7 @@ export const UserTable = ({ data }: UserTableProps) => {
       customToolbarConfig={customToolbarConfig}
       showToolbar={true}
       tableName={tableName}
+      onRowClick={rowClickHandler}
     />
   );
 };

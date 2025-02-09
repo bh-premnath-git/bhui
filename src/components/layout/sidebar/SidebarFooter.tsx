@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useKeycloakAuth } from "@/provider/KeycloakProvider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarFooterProps {
   isCollapsed: boolean;
@@ -16,7 +17,7 @@ interface SidebarFooterProps {
 }
 
 export const SidebarFooter = ({ isCollapsed, theme, onThemeChange }: SidebarFooterProps) => {
-  const { logout } = useKeycloakAuth();
+  const { userData, logout } = useKeycloakAuth();
 
   const handleLogout = () => {
     logout();
@@ -50,7 +51,7 @@ export const SidebarFooter = ({ isCollapsed, theme, onThemeChange }: SidebarFoot
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             className={cn(
               'w-full text-foreground bg-accent hover:text-accent-foreground transition-colors',
@@ -58,13 +59,16 @@ export const SidebarFooter = ({ isCollapsed, theme, onThemeChange }: SidebarFoot
               isCollapsed && 'px-0'
             )}
           >
-            <User className="h-5 w-5 shrink-0" />
-            {!isCollapsed && <span className="ml-3">Account</span>}
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://github.com/shadcn.png" alt="User" />
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+            {!isCollapsed && userData && userData.email && <span className="ml-1 truncate">{userData.email}</span>}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-            <LogOut className="mr-2 h-4 w-4" />
+            <LogOut className="mr-2 h-2 w-2" />
             <span>Logout</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

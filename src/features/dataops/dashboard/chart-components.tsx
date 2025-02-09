@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ErrorBoundary } from "react-error-boundary"
 import { ResponsiveContainer } from "recharts"
 import React from "react"
 
@@ -16,11 +15,9 @@ export const ChartCard: React.FC<{ title: string; children: React.ReactNode }> =
       <CardTitle className="text-sm text-center">{title}</CardTitle>
     </CardHeader>
     <CardContent>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
         <ResponsiveContainer width="100%" height={280} aria-label={title}>
           {React.isValidElement(children) ? children : <div>No data available</div>}
         </ResponsiveContainer>
-      </ErrorBoundary>
     </CardContent>
   </Card>
 )

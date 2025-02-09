@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { X, Search } from "lucide-react";
-
 import SchemaTable from "./SchemaTable";
 import OnboardTaggingStep from "./OnboardTaggingStep";
 import PreviewTable from "./PreviewTable";

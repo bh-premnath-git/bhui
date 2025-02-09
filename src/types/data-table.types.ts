@@ -19,6 +19,7 @@ export interface DataTableProps<TData> {
   data: TData[]
   columns: any[]
   showToolbar?: boolean
+  useStatusCard?: boolean
 }
 
 export type FilterOption = {
@@ -26,3 +27,14 @@ export type FilterOption = {
   value: string
 }
 
+export interface StatsData {
+  success: number
+  failed: number
+  inProgress: number
+}
+
+export interface StatsCardsProps {
+data: StatsData
+selectedStatuses: string[]
+onStatusSelect: (status: string) => void
+}

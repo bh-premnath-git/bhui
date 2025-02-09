@@ -8,6 +8,7 @@ import alertReducer from './features/alertSlice';
 import buildPipeLineReducer from './oldstore/BuildPipeLineSlice';
 import projectReducer from "./oldstore/ProjectSlice"
 import autoSaveReducer from "./oldstore/features/autoSaveSlice"
+import dataOpsSlice from "./oldstore/DataOpsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     buildPipeLine: buildPipeLineReducer,
     projectApi: projectReducer,
     autoSave: autoSaveReducer,
+    dataopsApi: dataOpsSlice
   },
 });
 

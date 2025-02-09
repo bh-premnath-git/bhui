@@ -1,7 +1,10 @@
 export interface Project {
   id: number;
-  name: string;
-  description: string;
+  bh_project_name: string;
+  ytd_cost: number;
+  current_month_cost: number;
+  total_storage: number;
+  total_data_sources: number;
   status: 'active' | 'archived';
 }
 

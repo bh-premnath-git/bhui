@@ -7,35 +7,49 @@ import { getUniqueValues } from "@/lib/utils";
 import { PlusIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import { Row } from '@tanstack/react-table';
+import { useNavigate } from 'react-router-dom';
+import _ from 'lodash';
 
 interface EnvironmentTableProps {
   environments: Environment[]
 }
 
 export const EnvironmentTable = ({ environments }: EnvironmentTableProps) => {
+  const navigate = useNavigate()
   const tableName: string = "environments"
 
   const columns: ColumnDefWithFilters<Environment>[] = [
     {
-      accessorKey: "name",
+      accessorKey: "bh_env_name",
       header: "Name",
-      filterOptions: getUniqueValues(environments, 'name')
+      filterOptions: getUniqueValues(environments, 'bh_env_name')
     },
     {
-      accessorKey: "cloud_provider",
+      accessorKey: "cloud_provider_name",
       header: "Cloud Provider",
-      filterOptions: getUniqueValues(environments, 'cloud_provider')
+      filterOptions: getUniqueValues(environments, 'cloud_provider_name')
     },
     {
-      accessorKey: "type",
+      accessorKey: "bh_env_provider_name",
       header: "Type",
+      filterOptions: getUniqueValues(environments, 'bh_env_provider_name')
     },
     {
       accessorKey: "status",
       header: "Status",
+      cell: ({ row }) => (
+        <span className={`px-2 py-1 rounded-full text-xs ${row.original.status === 'active'
+          ? 'bg-green-100 text-green-800'
+          : 'bg-gray-100 text-gray-800'
+        }`}>
+        {_.startCase(row.original.status as string)}
+      </span>
+      )
     },
     {
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
         return (
           <DropdownMenu>
@@ -60,13 +74,21 @@ export const EnvironmentTable = ({ environments }: EnvironmentTableProps) => {
         label: "Add Environment",
         icon: PlusIcon,
         variant: "default",
-        onClick: () => console.log("Custom Add User clicked"),
+        onClick: () => {
+          navigate("/admin-console/environment/add")
+        },
       },
     ],
   };
 
+  const rowClickHandler = (row: Row<Environment>) => {
+    navigate(`/admin-console/environment/${row.original.id}`);
+  }
+
   return <DataTable
     tableName={tableName}
     customToolbarConfig={customToolbarConfig}
-    columns={columns} data={environments} showToolbar={true} />;
+    columns={columns} data={environments} showToolbar={true}
+    onRowClick={rowClickHandler}
+  />;
 };

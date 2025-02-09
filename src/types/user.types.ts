@@ -1,12 +1,12 @@
 export interface User {
   id: string;
   initials: string;
-  name: string;
+  username: string;
   description: string;
   email: string;
   projects: any[];
-  roles: string[];
-  status: string;
+  realm_roles: string[];
+  emailVerified: boolean;
   created: string;
   lastActive: string;
 }

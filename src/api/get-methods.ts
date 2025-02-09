@@ -1,5 +1,5 @@
 import { useFetchData } from "@/hooks/useFetchData";
-import { AUDIT_PORT, CATALOG_API_PORT } from "@/services/environment";
+import { AUDIT_PORT, CATALOG_API_PORT, KEYCLOAK_API_PORT, MONITOR_PORT } from "@/services/environment";
 import { fetchData as releaseFetchData } from "@/services/releaseApi";
 import { useQuery } from '@tanstack/react-query';
 
@@ -31,9 +31,9 @@ export const getDataSources = {
             queryKey,
             {
                 portNumber: CATALOG_API_PORT,
-                url: '/projects',
+                url: '/bh_project/list/',
                 params: { offset: 0, limit: 1000 },
-                usePrefix: false,
+                usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load projects',
                     successMessage: 'Projects loaded successfully',
@@ -51,9 +51,9 @@ export const getDataSources = {
             queryKey,
             {
                 portNumber: CATALOG_API_PORT,
-                url: '/environments',
+                url: '/environment/environment/list/',
                 params: { offset: 0, limit: 1000 },
-                usePrefix: false,
+                usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load environments',
                     successMessage: 'Environments loaded successfully',
@@ -71,7 +71,7 @@ export const getDataSources = {
         const { data, error, isLoading } = useFetchData(
             queryKey,
             {
-                portNumber: CATALOG_API_PORT,
+                portNumber: KEYCLOAK_API_PORT,
                 url: '/users',
                 params: { offset: 0, limit: 1000 },
                 usePrefix: false,
@@ -90,12 +90,18 @@ export const getDataSources = {
     },
     operations: () => {
         const queryKey = ['operations'];
+        const now = new Date();
+        const tenDaysAgo = new Date(now);
+        tenDaysAgo.setDate(now.getDate() - 10);
+
+        const tenDaysAgoISOString = tenDaysAgo.toISOString();
+        const params = { job_start_time: tenDaysAgoISOString };
         const { data, error, isLoading } = useFetchData(
             queryKey,
             {
                 portNumber: AUDIT_PORT,
-                url: '/job_details/list',
-                params: { offset: 0, limit: 1000 },
+                url: '/job_details/list/',
+                params: params,
                 usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load operations',
@@ -157,10 +163,10 @@ export const getDataSources = {
         const { data, error, isLoading } = useFetchData(
             queryKey,
             {
-                portNumber: CATALOG_API_PORT,
-                url: '/alerts',
+                portNumber: MONITOR_PORT,
+                url: '/alert/search/alerts',
                 params: { offset: 0, limit: 1000 },
-                usePrefix: false,
+                usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load alerts',
                     successMessage: 'Alerts loaded successfully',

@@ -9,8 +9,8 @@ import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { Row } from "@tanstack/react-table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import  DataCatalogSchema  from "./DataCatalogSchema";
-import  DataCatalogImport  from "../importsource/DataCatalogImport";
+import DataCatalogSchema from "./DataCatalogSchema";
+import DataCatalogImport from "../importsource/DataCatalogImport";
 import { formatDate } from "@/lib/dayeformat";
 
 
@@ -120,7 +120,8 @@ export const DataSourcesTable = ({ data }: DataSourcesTableProps) => {
         icon: RotateCcw,
         variant: "outline",
         onClick: () => {
-          navigate("/data-catalog/xplore")},
+          navigate("/data-catalog/xplore")
+        },
       }
     ],
   };
@@ -146,16 +147,16 @@ export const DataSourcesTable = ({ data }: DataSourcesTableProps) => {
             showToolbar={true}
             onRowClick={rowClickHandler}
           />
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetContent side="right" className="w-[90vw]">
-              <SheetHeader>
-                <SheetTitle>{selectedRow?.data_src_name}</SheetTitle>
-              </SheetHeader>
-              <DataCatalogSchema data={selectedRow} />
-            </SheetContent>
-          </Sheet>
         </React.Fragment>
       )}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-[90vw]">
+          <SheetHeader>
+            <SheetTitle>{selectedRow?.data_src_name}</SheetTitle>
+          </SheetHeader>
+          <DataCatalogSchema data={selectedRow} />
+        </SheetContent>
+      </Sheet>
     </React.Fragment>
   );
 };

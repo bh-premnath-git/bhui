@@ -4,11 +4,12 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { getDataSources } from "@/api/get-methods";
 import { Workflow } from "lucide-react";
-
+import { useKeycloakAuth } from "@/provider/KeycloakProvider";
 
 const ManageFlow = () => {
+  const { userData } = useKeycloakAuth();
   const { data: flows, isLoading, error } = getDataSources.flows()
-
+  
   if (isLoading) return <LoadingState className='w-full min-h-screen' />;
   if (error) return <ErrorState message="Failed to load flows" />;
 
@@ -24,9 +25,17 @@ const ManageFlow = () => {
     );
   }
 
+  const mFlows = flows.map((flow: any) => {
+    return {
+      ...flow,
+      user: userData.firstName
+    };
+  });
+  
+
   return (
     <div className="container mx-auto space-y-6">
-      <FlowTable flows={flows || []} />
+      <FlowTable flows={mFlows || []} />
     </div>
   );
 };

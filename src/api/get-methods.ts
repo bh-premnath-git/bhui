@@ -4,6 +4,7 @@ import { fetchData as releaseFetchData } from "@/services/releaseApi";
 import { useQuery } from '@tanstack/react-query';
 
 export const getDataSources = {
+    
     dataSources: () => {
         const queryKey = ['data-sources'];
         const { data, error, isLoading } = useFetchData(
@@ -60,8 +61,9 @@ export const getDataSources = {
                 }
             }
         );
+        const mData = data?.map((item: any) => ({ ...item, created_on: item?.created_on ?? new Date() }))
         return {
-            data,
+            data: mData,
             error,
             isLoading
         }
@@ -152,6 +154,8 @@ export const getDataSources = {
                 }
             }
         );
+        
+        
         return {
             data,
             error,

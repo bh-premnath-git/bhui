@@ -12,7 +12,7 @@ const Designer = lazy(() => import("@/pages/designers/designers"));
 const BuildDataPipeline = lazy(() => import("@/pages/designers/build-data-pipeline"));
 const BuildPlayGround = lazy(() => import("@/pages/designers/build-playground"));
 const ManageFlow = lazy(() => import("@/pages/designers/manage-flow"));
-const FlowPlayGround = lazy(() => import("@/pages/designers/floe-playground"));
+const FlowPlayGround = lazy(() => import("@/pages/designers/flow-playground"));
 
 const OpsHub = lazy(() => import("@/pages/dataops-hub/ops-hub"));
 const AlertsHub = lazy(() => import("@/pages/dataops-hub/alerts-hub"));
@@ -63,7 +63,7 @@ export const AppLayout = () => {
               <Route path="/designers/build-datapipeline" element={<BuildDataPipeline />} />
               <Route path="/designers/build-playground/:id" element={<BuildPlayGround />} />
               <Route path="/designers/manage-flow" element={<ManageFlow />} />
-              <Route path="/designers/flow-playground:id" element={<FlowPlayGround />} />
+              <Route path="/designers/flow-playground/:id" element={<FlowPlayGround />} />
 
               <Route path="/dataops-hub/ops-hub" element={<OpsHub />} />
               <Route path="/dataops-hub/alerts" element={<AlertsHub />} />

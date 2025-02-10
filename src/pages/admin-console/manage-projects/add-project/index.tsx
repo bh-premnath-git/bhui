@@ -1,6 +1,7 @@
+import AddProjectComp from "@/features/adminconsole/projects/addprojects"
 const AddProject = () => {
   return (
-    <div>index</div>
+    <AddProjectComp />
   )
 }
 

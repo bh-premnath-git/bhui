@@ -1,6 +1,6 @@
 // redux/UserSlice.ts
 
-import { KEYCLOAK_API_PORT } from '@/configration/environment';
+import { KEYCLOAK_API_PORT } from '@/services/environment';
 import { ApiService } from '@/services/apiServices';
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 

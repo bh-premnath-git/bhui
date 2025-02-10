@@ -1,5 +1,5 @@
 export interface Project {
-  id: number;
+  bh_project_id: number;
   bh_project_name: string;
   ytd_cost: number;
   current_month_cost: number;

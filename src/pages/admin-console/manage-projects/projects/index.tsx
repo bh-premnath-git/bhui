@@ -32,7 +32,7 @@ const ManageProjects = () => {
   return (
     <div className="container">
       <div className="bg-card rounded-lg shadow-sm">
-        <ProjectTable projects={projects} />
+        <ProjectTable projects={projects || []} />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
+import EditProjectComp from "@/features/adminconsole/projects/editprojects"
 const EditProject = () => {
   return (
-    <div>index</div>
+    <EditProjectComp />
   )
 }
 

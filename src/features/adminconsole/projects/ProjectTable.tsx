@@ -1,15 +1,12 @@
-import { Project } from '@/types/project.types';
-import { DataTable } from "@/components/bh-table/data-table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ColumnDefWithFilters } from "@/types/typesys.types";
-import { CustomToolbarConfig } from "@/types/data-table.types";
+import _ from 'lodash';
+import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from 'lucide-react';
 import { Row } from '@tanstack/react-table';
-import { useNavigate } from 'react-router-dom';
+import { Project } from '@/types/project.types';
+import { DataTable } from "@/components/bh-table/data-table"
+import { ColumnDefWithFilters } from "@/types/typesys.types";
+import { CustomToolbarConfig } from "@/types/data-table.types";
 import { getUniqueValues } from '@/lib/utils';
-import _ from 'lodash';
-import { Button } from '@/components/ui';
-import { DotsVerticalIcon } from '@radix-ui/react-icons';
 
 interface ProjectTableProps {
   projects: Project[]
@@ -53,25 +50,6 @@ export const ProjectTable = ({ projects }: ProjectTableProps) => {
         </span>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <DotsVerticalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-red-600">Delete Project</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
   ];
   const customToolbarConfig: CustomToolbarConfig = {
     buttons: [
@@ -84,7 +62,7 @@ export const ProjectTable = ({ projects }: ProjectTableProps) => {
     ],
   };
   const rowClickHandler = (row: Row<Project>) => {
-    navigate(`/admin-console/projects/${row.original.id}`);
+    navigate(`/admin-console/projects/${row.original.bh_project_id}`);
   }
   return <DataTable
     tableName={tableName}

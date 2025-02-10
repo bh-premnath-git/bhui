@@ -9,6 +9,9 @@ import buildPipeLineReducer from './oldstore/BuildPipeLineSlice';
 import projectReducer from "./oldstore/ProjectSlice"
 import autoSaveReducer from "./oldstore/features/autoSaveSlice"
 import dataOpsSlice from "./oldstore/DataOpsSlice"
+import environmentSlice from "./oldstore/EnvironmentSlice"
+import userSlice from "./oldstore/UserSlice"
+import flowSlice from "./oldstore/FlowSlice"
 
 export const store = configureStore({
   reducer: {
@@ -21,7 +24,10 @@ export const store = configureStore({
     buildPipeLine: buildPipeLineReducer,
     projectApi: projectReducer,
     autoSave: autoSaveReducer,
-    dataopsApi: dataOpsSlice
+    dataopsApi: dataOpsSlice,
+    environmentApi: environmentSlice,
+    userApi: userSlice,
+    flowApi: flowSlice
   },
 });
 

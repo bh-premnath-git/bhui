@@ -1,5 +1,5 @@
 export interface Environment {
-  id: number;
+  bh_env_id: number;
   bh_env_name: string;
   cloud_provider_name: string;
   created_on: string;

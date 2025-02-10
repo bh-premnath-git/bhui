@@ -97,7 +97,10 @@ export function DataTable<TData, TValue>({
                       virtualRow.index % 2 === 0 ? "bg-background" : "bg-muted/50",
                       onRowClick && "cursor-pointer hover:bg-accent hover:text-accent-foreground"
                     )}
-                    onClick={() => onRowClick && onRowClick(row)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onRowClick && onRowClick(row)
+                    }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>

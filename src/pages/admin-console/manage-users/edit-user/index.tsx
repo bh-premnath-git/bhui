@@ -1,8 +1,8 @@
-import React from 'react'
+import EditUserComp from "@/features/adminconsole/users/edituser"
 
 const EditUser = () => {
   return (
-    <div>AddUseredit-user</div>
+    <EditUserComp />
   )
 }
 

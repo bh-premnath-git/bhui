@@ -1,16 +1,13 @@
+import _ from 'lodash';
+import { PlusIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Row } from '@tanstack/react-table';
 import { User } from '@/types/user.types';
 import { DataTable } from "@/components/bh-table/data-table";
-import { Button } from "@/components/ui/button"
 import { CustomToolbarConfig } from "@/types/data-table.types";
 import { getUniqueValues, getInitials } from "@/lib/utils";
 import { ColumnDefWithFilters } from "@/types/typesys.types";
-import { PlusIcon } from 'lucide-react';
-import { DotsVerticalIcon } from "@radix-ui/react-icons"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge";
-import { Row } from '@tanstack/react-table';
-import { useNavigate } from 'react-router-dom';
-import _ from 'lodash';
 
 interface UserTableProps {
   data: User[];
@@ -74,26 +71,6 @@ export const UserTable = ({ data }: UserTableProps) => {
         {_.startCase(row.getValue("emailVerified") ? "active" : "inactive" as string)}
       </span>
       ),
-    },
-
-    {
-      id: "actions",
-      header: 'Actions',
-      cell: ({ row }) => {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <DotsVerticalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-red-600">Delete user</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
     },
   ];
 

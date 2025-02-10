@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ApiService } from "@/services/apiServices";
 import { jwtDecode } from "jwt-decode";
-import { CATALOG_API_PORT } from "@/configration/environment";
+import { CATALOG_API_PORT } from "@/services/environment";
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;

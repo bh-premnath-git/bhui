@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import React, {useState} from 'react';
+import { PlusIcon } from 'lucide-react';
+import { Row } from '@tanstack/react-table';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button } from '@/components/ui/button';
 import { Pipeline } from '@/types/designer.types';
 import { DataTable } from "@/components/bh-table/data-table"
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { getUniqueValues } from '@/lib/utils';
 import { CustomToolbarConfig } from "@/types/data-table.types";
-import { PlusIcon } from 'lucide-react';
-import { Row } from '@tanstack/react-table';
-import { useNavigate } from 'react-router-dom';
 import PipeLineCreatePopup from './pipeLineCreatePopup/pipeLineCreatePopup';
-import { toast } from 'sonner';
 
 interface PipelineTableProps {
   pipelines?: Pipeline[];
@@ -16,6 +19,12 @@ interface PipelineTableProps {
 
 export const PipelineTable = ({ pipelines = [] }: PipelineTableProps) => {
   const tableName: string = "pipelines"
+
+  const handleDelete = (event: React.MouseEvent, data: Pipeline) => {
+    event.stopPropagation()
+    console.log("Deleting environment with ID:", data); 
+  }
+
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false)
   const navigate = useNavigate()
   const handleAddPipeline = () => {
@@ -49,6 +58,27 @@ export const PipelineTable = ({ pipelines = [] }: PipelineTableProps) => {
       accessorKey: 'lastModified',
       header: 'Last Modified',
     },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <DotsVerticalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="text-red-600"
+                onClick={(event) => handleDelete(event, row.original)}
+              >Delete Pipeline</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    }
   ];
 
   const customToolbarConfig: CustomToolbarConfig = {
@@ -67,14 +97,13 @@ export const PipelineTable = ({ pipelines = [] }: PipelineTableProps) => {
   }
 
   return <>
-    {!isCreatePopupOpen && <DataTable
+  <PipeLineCreatePopup
+      showToast={toast}
+      open={isCreatePopupOpen} handleClose={() => setIsCreatePopupOpen(false)} />
+    {<DataTable
       tableName={tableName}
       customToolbarConfig={customToolbarConfig}
       onRowClick={rowClickHandler}
       columns={columns} data={pipelines} showToolbar={true} />}
-    <PipeLineCreatePopup
-      showToast={toast}
-      open={isCreatePopupOpen} handleClose={() => setIsCreatePopupOpen(false)} />
-
   </>;
 };

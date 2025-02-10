@@ -3,12 +3,13 @@ import loaderLogo from "/assets/logo/loaderLogo.svg";
 
 interface SpinnerProps {
   className?: string;
+  classNameContainer?: string;
 }
 
-export const LoadingState = ({ className }: SpinnerProps) => {
+export const LoadingState = ({ className, classNameContainer }: SpinnerProps) => {
   return (
     <div className={cn("flex flex-col items-center justify-center", className)}>
-      <div className="relative w-40 h-40">
+      <div className={cn("relative w-40 h-40", classNameContainer)}>
         <div className="absolute inset-0">
           {[...Array(6)].map((_, i) => (
             <div

@@ -9,13 +9,13 @@ import { setBuildPipeLineDtl } from '@/store/oldstore/BuildPipeLineSlice';
 import { ApiService } from '@/services/apiServices';
 import { CATALOG_API_PORT } from '@/services/environment';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Button,
   FormField,
@@ -67,17 +67,14 @@ const PipeLineCreatePopup: React.FC<PipeLineCreatePopupProps> = ({
   };
 
   return (
-    <Sheet  open={open} onOpenChange={handleClose}>
-      <SheetTrigger asChild>
-        <Button variant="outline">Create Pipeline</Button>
-      </SheetTrigger>
-      <SheetContent className="h-[40vh] w-[40vw]">
-        <SheetHeader>
-          <SheetTitle>Create Pipeline</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-[40vw] h-[40vh]">
+        <DialogHeader>
+          <DialogTitle>Create Pipeline</DialogTitle>
+          <DialogDescription>
             Fill in the details below to create a new pipeline.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-2 gap-4">
@@ -146,18 +143,15 @@ const PipeLineCreatePopup: React.FC<PipeLineCreatePopupProps> = ({
                 />
               )}
             </div>
-            <div className="mt-6 flex justify-center space-x-4">
-              <Button variant="outline" onClick={handleClose}>
-                Close
-              </Button>
+            <div className="mt-6 flex justify-center">
               <Button type="submit" disabled={isSubmitting}>
                 Create Pipeline
               </Button>
             </div>
           </form>
         </FormProvider>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 };
 

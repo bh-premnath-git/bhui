@@ -1,6 +1,7 @@
+import AddUserComp from "@/features/adminconsole/users/adduser"
 const AddUser = () => {
   return (
-    <div>add-user</div>
+    <AddUserComp />
   )
 }
 

@@ -42,17 +42,17 @@ export const extractStringToJSON = (value: string): Object | false => {
   return value;
 };
 
-export const getChangedValues = <T>(
+export const getChangedValues = <T extends object>(
   object1: T,
   object2: T,
   keysToCheck: (keyof T)[]
 ): Partial<T> => {
-  return pickBy(object2!, (value, key) => {
-    if (!keysToCheck.includes(key as any)) {
-      return false; // Ignore keys not in the specified list
+  return pickBy(object2, (value, key) => {
+    if (!keysToCheck.includes(key as keyof T)) {
+      return false;
     }
-    return !isEqual(value, (object1 as any)[key as any]); // Compare values and return true if they are not equal
-  }) as Partial<T>;
+    return !isEqual(value, object1[key]);
+  });
 };
 
 export const compareByKeys = <T, U>(obj1: T, obj2: U, keys: (keyof T)[]): boolean => {
@@ -72,4 +72,21 @@ export const setNestedProperty = <T>(obj: T, path: (keyof T)[], value: any): T =
     }),
     value
   ) as T;
+};
+
+export const parseStringifiedJson = (value: string): [boolean, unknown] => {
+  try {
+    let parsedValue = JSON.parse(value);
+    if (typeof parsedValue === "string") {
+      try {
+        parsedValue = JSON.parse(parsedValue);
+      } catch (innerError) {
+        return [false, null];
+      }
+    }
+
+    return [true, parsedValue];
+  } catch (error) {
+    return [false, null];
+  }
 };

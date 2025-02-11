@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setBuildPipeLineDtl } from '@/store/oldstore/BuildPipeLineSlice';
-import { ApiService } from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from '@/services/environment';
 import {
   Dialog,
@@ -14,7 +14,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Button,
@@ -56,7 +55,12 @@ const PipeLineCreatePopup: React.FC<PipeLineCreatePopupProps> = ({
   const { handleSubmit, control, formState: { isSubmitting } } = methods;
 
   const onSubmit = async (values: any) => {
-    const response = await ApiService(CATALOG_API_PORT, 'post', '/pipeline', values);
+    const response = await ApiService({
+      portNumber: CATALOG_API_PORT,
+      method: 'post',
+      url: '/pipeline',
+      data: values
+    });
     if (response?.error) {
       showToast(response?.error, { color: 'red' });
     } else {

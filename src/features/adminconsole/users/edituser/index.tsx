@@ -12,9 +12,8 @@ import { Label } from "@/components/ui/label"
 import { FormFieldWrapper } from "@/components/ui/formfield-wrapper"
 import { useAppDispatch } from "@/hooks/useRedux" 
 import { editUserDeployment } from "@/store/oldstore/UserSlice"
-import { ApiService } from "@/services/apiServices"
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from "@/services/environment"
-
 import { cn } from "@/lib/utils"
 import { CommandMultiSelect } from "@/components/ui/command-multi-select"
 
@@ -167,8 +166,8 @@ export default function EditUser() {
     const fetchData = async () => {
       try {
         const [rolesRes, projectsRes] = await Promise.all([
-          ApiService(CATALOG_API_PORT, "get", "/codes_hdr/1"),
-          ApiService(CATALOG_API_PORT, "get", "/bh_project/search"),
+          ApiService({portNumber: CATALOG_API_PORT, method: "get", url: "/codes_hdr/1"}),
+          ApiService({portNumber:CATALOG_API_PORT, method: "get", url: "/bh_project/search"}),
         ])
 
         setRoles(rolesRes.codes_dtl || [])

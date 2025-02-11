@@ -1,12 +1,7 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { keycloak } from "@/services/keycloak";
 import { httpClient } from "@/services/httpClient";
+import { KEYCLOAK_REDIRECT_URI } from "@/services/environment";
 
 interface KeycloakContextProps {
   isAuthenticated: boolean;
@@ -14,13 +9,10 @@ interface KeycloakContextProps {
   logout: () => void;
 }
 
-// Create the React context
 const KeycloakContext = createContext<KeycloakContextProps>({
   isAuthenticated: false,
   userData: null,
-  logout: () => {
-    /* default no-op */
-  },
+  logout: () => {},
 });
 
 export function useKeycloakAuth() {
@@ -35,13 +27,13 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("authenticated");
     keycloak.logout({
-      redirectUri: import.meta.env.VITE_KEYCLOAK_REDIRECT_URI + "login",
+      redirectUri: KEYCLOAK_REDIRECT_URI as string + "login",
     });
   }, []);
 
-  // (Optional) Start token refresh
+  // Token Refresh Logic
   const startTokenRefresh = useCallback(() => {
-    keycloak.onTokenExpired = () => {
+    const refreshToken = () => {
       keycloak
         .updateToken(30)
         .then((refreshed) => {
@@ -58,46 +50,58 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
           logout();
         });
     };
+
+    keycloak.onTokenExpired = refreshToken;
+
+    return () => {
+      keycloak.onTokenExpired = null;
+    };
   }, [logout]);
 
+  // Keycloak Initialization
   useEffect(() => {
-    (async () => {
+    const initializeKeycloak = async () => {
       try {
         const authenticated = await keycloak.init({
           onLoad: "login-required",
           checkLoginIframe: true,
           pkceMethod: "S256",
         });
+
+        setIsAuthenticated(authenticated);
+
         if (authenticated) {
-          setIsAuthenticated(true);
           const token = keycloak.token ?? "";
           sessionStorage.setItem("authenticated", "true");
           sessionStorage.setItem("token", JSON.stringify(token));
           httpClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          startTokenRefresh();
+
+          const cleanup = startTokenRefresh();
           const profile = await keycloak.loadUserProfile();
           setUserData(profile);
-        } else {
-          setIsAuthenticated(false);
+
+          return cleanup;
         }
       } catch (error) {
         console.error("Failed to initialize Keycloak", error);
       }
-    })();
+    };
+
+    const cleanup = initializeKeycloak();
 
     return () => {
       keycloak.clearToken();
+      if (cleanup) cleanup.then(fn => fn());
     };
   }, [startTokenRefresh]);
 
+  const keycloakContextValue = useMemo(
+    () => ({ isAuthenticated, userData, logout }),
+    [isAuthenticated, userData, logout]
+  );
+
   return (
-    <KeycloakContext.Provider
-      value={{
-        isAuthenticated,
-        userData,
-        logout,
-      }}
-    >
+    <KeycloakContext.Provider value={keycloakContextValue}>
       {children}
     </KeycloakContext.Provider>
   );

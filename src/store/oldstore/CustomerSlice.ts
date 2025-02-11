@@ -1,5 +1,5 @@
 import { CATALOG_API_PORT } from '@/services/environment';
-import {ApiService} from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
@@ -26,7 +26,12 @@ export const getCustomerList: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     // alert(JSON.stringify(params))
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'get', '/customer/list/', null, params);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: '/customer/list/',
+        params: params
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

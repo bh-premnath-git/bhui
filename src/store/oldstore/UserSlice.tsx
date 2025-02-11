@@ -1,7 +1,7 @@
 // redux/UserSlice.ts
 
 import { KEYCLOAK_API_PORT } from '@/services/environment';
-import { ApiService } from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApiState {
@@ -34,7 +34,13 @@ export const getUserDataList = createAsyncThunk<
   'user/getUserDataList',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService(KEYCLOAK_API_PORT, 'get', '/users', null, params, null, false);
+      const response = await ApiService({
+        portNumber: KEYCLOAK_API_PORT,
+        method: 'get',
+        url: '/users',
+        params,
+        usePrefix: false
+      });
       return response.users;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -52,12 +58,13 @@ export const createUserDeployment = createAsyncThunk<
   'user/deployment/create',
   async (params, thunkAPI) => {
     try {
-      const response = await ApiService(
-        KEYCLOAK_API_PORT,
-        'post',
-        '/users',
-        params, null, {}, false
-      );
+      const response = await ApiService({
+        portNumber: KEYCLOAK_API_PORT,
+        method: 'post',
+        url: '/users',
+        data: params,
+        usePrefix: false
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -73,12 +80,13 @@ export const editUserDeployment = createAsyncThunk<
   'user/deployment/edit',
   async ({ id, params }, thunkAPI) => {
     try {
-      const response = await ApiService(
-        KEYCLOAK_API_PORT,
-        'put',
-        `/users/${id}`,
-        params, null, {}, false
-      );
+      const response = await ApiService({
+        portNumber: KEYCLOAK_API_PORT,
+        method: 'put',
+        url: `/users/${id}`,
+        data: params,
+        usePrefix: false
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -164,4 +172,3 @@ const UserSlice = createSlice({
 
 export default UserSlice.reducer;
 export const { clearErrors, resetState } = UserSlice.actions;
-

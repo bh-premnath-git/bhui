@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 
 import { CustomNode } from './BuildPipeLineComps/CustomNode';
-import { ApiService } from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { CustomEdge } from './BuildPipeLineComps/customEdge';
 import { FlowControls } from './FlowControls';
 import CreateFormFormik from './BuildPipeLineComps/CreateForm';
@@ -28,8 +28,9 @@ import { setSaving, setSaved, setSaveError, setUnsavedChanges } from '@/store/ol
 import { useNavigate, useLocation } from 'react-router-dom';
 import { convertPipelineToUIJson, convertUIToPipelineJson } from '@/lib/pipelineJsonConverter';
 import KeyboardShortcutsPanel from './BuildPipeLineComps/KeyboardShortcutsPanel';
-import { CATALOG_API_PORT } from '@/services/environment';
+import { AUTO_SAVE_TIME, CATALOG_API_PORT } from '@/services/environment';
 import { Terminal } from './BuildPipeLineComps/LogsPage';
+
 
 interface UIProperties {
   color: string;
@@ -73,7 +74,7 @@ const BuildPlayGround: React.FC = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const saveStatus = useSelector((state: any) => state.autoSave);
-  const time = import.meta.env.VITE_AUTO_SAVE_TIME;
+  const time = AUTO_SAVE_TIME;
   const autoSaveInterval = parseInt(time, 10) || 10000;
   const [history, setHistory] = useState<{ nodes: any[]; edges: any[] }[]>([]);
   const [redoStack, setRedoStack] = useState<{ nodes: any[]; edges: any[] }[]>([]);
@@ -101,7 +102,7 @@ const BuildPlayGround: React.FC = () => {
   useEffect(() => {
     const fetchPipelineDetails = async () => {
       try {
-        const response = await ApiService(CATALOG_API_PORT, 'get', `/pipeline/${id}`, null);
+        const response = await ApiService({ portNumber: CATALOG_API_PORT, method: 'get', url: `/pipeline/${id}`, params: null });
         setPipelineDtl(response);
         console.log(response);
 
@@ -300,7 +301,7 @@ const BuildPlayGround: React.FC = () => {
         try {
           dispatch(setSaving());
           const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
-          await ApiService(CATALOG_API_PORT, 'patch', `/pipeline/${id}`, pipeline_json);
+          await ApiService({ portNumber: CATALOG_API_PORT, method: 'patch', url: `/pipeline/${id}`, data: pipeline_json });
           dispatch(setSaved());
           // Clear any existing validation errors
           setValidationErrors([]);
@@ -373,13 +374,13 @@ const BuildPlayGround: React.FC = () => {
       const lastNode = nodes[nodes.length - 1];
       const basePosition = lastNode
         ? {
-            x: lastNode.position.x + 150,
-            y: lastNode.position.y,
-          }
+          x: lastNode.position.x + 150,
+          y: lastNode.position.y,
+        }
         : {
-            x: 50,
-            y: 100,
-          };
+          x: 50,
+          y: 100,
+        };
 
       const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
 
@@ -462,9 +463,8 @@ const BuildPlayGround: React.FC = () => {
       const sources = sourceNodes.map((node) => ({
         name: node.data?.source?.data_src_name,
         source_type: 'File',
-        file_name: `${node.data.source?.file_path_prefix || 'examples'}/${
-          node.data.source?.file_name || 'NaN'
-        }`,
+        file_name: `${node.data.source?.file_path_prefix || 'examples'}/${node.data.source?.file_name || 'NaN'
+          }`,
         data_src_id: node.data.source?.data_src_id || 'NaN',
         connection: {
           name: node.data.source?.connection_name || 'local_connection',
@@ -850,12 +850,12 @@ const BuildPlayGround: React.FC = () => {
         },
       ]);
 
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        'post',
-        `/pipeline/debug/start_pipeline?${params.toString()}`,
-        null
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'post',
+        url: `/pipeline/debug/start_pipeline?${params.toString()}`,
+        data: null
+      });
 
       if (response.error) {
         throw new Error(response.error);

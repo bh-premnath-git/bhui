@@ -1,7 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-
-const DOMAIN = import.meta.env.VITE_API_DOMAIN;
-const PREFIX_URL = import.meta.env.VITE_API_PREFIX_URL;
+import { API_DOMAIN, API_PREFIX_URL } from './environment';
 
 interface ApiServiceConfig {
   portNumber: string;
@@ -25,8 +23,8 @@ const ApiService = async <T = any>({
   signal
 }: ApiServiceConfig): Promise<T> => {
   const BASE_URL = usePrefix
-    ? `${DOMAIN}:${portNumber}${PREFIX_URL}`
-    : `${DOMAIN}:${portNumber}`;
+    ? `${API_DOMAIN}:${portNumber}${API_PREFIX_URL}`
+    : `${API_DOMAIN}:${portNumber}`;
 
   try {
     const token = sessionStorage?.getItem('token');

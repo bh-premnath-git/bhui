@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import {ApiService} from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from "@/services/environment";
 
 
@@ -62,7 +62,6 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
   async (environmentData, thunkAPI) => {
     try {
       let data: any;
-      let headers = {};
       const filteredData = Object.fromEntries(
         Object.entries(environmentData).filter(([_, value]) => value != null && value !== "")
       );
@@ -73,7 +72,14 @@ export const createEnvironment = createAsyncThunk<Environment, CreateEnvironment
           }
         });
       
-      const response = await ApiService(CATALOG_API_PORT, 'post', '/environment/environment', data, null, headers);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'post',
+        url: '/environment/environment',
+        data,
+        params: null,
+      
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -85,7 +91,13 @@ export const listEnvironments = createAsyncThunk<Environment[], ListParams, { re
   'environment/list',
   async (params:any, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'get', '/environment/environment/list/', null, params);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: '/environment/environment/list/',
+        data: null,
+        params,
+      });
       const transformed = response.map((item: any) => {
         return ({
           Environment_Id: item["bh_env_id"],
@@ -107,7 +119,13 @@ export const fetchEnvironmentData = createAsyncThunk<Environment, string | numbe
   'environment/fetchById',
   async (id, thunkAPI) => {
     try {
-      const data = await ApiService(CATALOG_API_PORT, 'get', `/environment/environment/${id}`);
+      const data = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: `/environment/environment/${id}`,
+        data: null,
+        params: null,
+      });
       return data;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -120,7 +138,13 @@ export const editEnvironment = createAsyncThunk<Environment, any, { rejectValue:
   async (environmentData, thunkAPI) => {
     try {
       const { id, ...updateData } = environmentData;
-      const response = await ApiService(CATALOG_API_PORT, 'put', `/environment/environment/${id}`, updateData);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'put',
+        url: `/environment/environment/${id}`,
+        data: updateData,
+        params: null,
+      });
       
       return {
         Environment_Id: response.bh_env_id,

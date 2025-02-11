@@ -9,7 +9,7 @@ import csvOptionsSchema from "./json/CSVOptions.json";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -195,7 +195,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const fetchConnectionTypes = async () => {
         try {
-            const response = await ApiService(CATALOG_API_PORT, 'GET', '/connection_registry/list/?connection_type=source');
+            const response = await ApiService(
+                { portNumber: CATALOG_API_PORT, method: 'GET', url: '/connection_registry/list/?connection_type=source' }
+            );
             setConnectionTypes(response);
         } catch (error) {
             console.error('Error fetching connection types:', error);
@@ -856,11 +858,10 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             handleChange(updatedEvent, path);
                         }}
                         placeholder={`Enter ${formatFieldName(fieldName)}`}
-                        className={`w-full transition-all border-2 focus:ring-0 ${
-                            isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue
+                        className={`w-full transition-all border-2 focus:ring-0 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue
                                 ? 'border-red-300 focus:border-red-500'
                                 : 'border-gray-200'
-                        }`}
+                            }`}
                     />
 
                 </div>
@@ -932,7 +933,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     config: encryptedString,
                     init_vector: initVector
                 };
-                const response = await ApiService(CATALOG_API_PORT, 'put', `/connection_registry/connection_config/${initialData.connectionConfigId}`, transformedData);
+                const response = await ApiService({
+                    portNumber: CATALOG_API_PORT,
+                    method: 'put',
+                    url: `/connection_registry/connection_config/${initialData.connectionConfigId}`,
+                    data: transformedData
+                });
                 console.log(response)
             }
             if (submitValue === 'final' && !initialData) {
@@ -947,7 +953,14 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     config: encryptedString,
                     init_vector: initVector
                 };
-                const response = await ApiService(CATALOG_API_PORT, 'POST', '/connection_registry/connection_config', transformedData);
+                const response = await ApiService({
+                    portNumber: CATALOG_API_PORT,
+                    method: 'POST',
+                    url: '/connection_registry/connection_config',
+                    data: {
+                        connection_config: transformedData
+                    }
+                });
 
                 if (!response || !response.id) {
                     throw new Error('Failed to create connection configuration');
@@ -967,7 +980,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     "file_name": formData?.source?.file_name ?? '',
                 };
 
-                const dataSourceResponse = await ApiService(CATALOG_API_PORT, 'POST', '/data_source/', dataSourcePayload);
+                const dataSourceResponse = await ApiService({
+                    portNumber: CATALOG_API_PORT,
+                    method: 'POST',
+                    url: '/data_source/',
+                    data: dataSourcePayload
+                });
 
                 if (dataSourceResponse) {
                     const sourceData = {

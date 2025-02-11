@@ -1,4 +1,4 @@
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { CATALOG_API_PORT } from "@/services/environment";
 
@@ -32,13 +32,13 @@ export const getdataSourceList = createAsyncThunk(
   "catalog/datasource",
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        "get",
-        "/data_source/list/",
-        null,
-        params
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: "get",
+        url: "/data_source/list/",
+        data: null,
+        params: params
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -53,13 +53,13 @@ export const getDataSourceLayout = createAsyncThunk(
   "catalog/data_source_layout",
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        "get",
-        "/data_source_layout/list_full/",
-        null,
-        params
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: "get",
+        url: "/data_source_layout/list_full/",
+        data: null,
+        params: params
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

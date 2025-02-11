@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { ApiService } from '@/services/api.services';
 import { AxiosError } from 'axios';

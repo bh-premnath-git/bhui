@@ -4,47 +4,50 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
-
-interface DataTableFacetedFilterProps<TData, TValue> {
-    column: any
-    title: string
+  } from "@/components/ui/select";
+  
+  interface DataTableFacetedFilterProps<TData, TValue> {
+    column: any;
+    title: string;
     options: {
-        label: string
-        value: string
-    }[]
-}
-
-export function DataTableFacetedFilter<TData, TValue>({
+      label: string;
+      value: string;
+    }[];
+  }
+  
+  export function DataTableFacetedFilter<TData, TValue>({
     column,
     title,
     options,
-}: DataTableFacetedFilterProps<TData, TValue>) {
-    const facets = column?.getFacetedUniqueValues()
-    const selectedValues = new Set(column?.getFilterValue() as string[])
-
+  }: DataTableFacetedFilterProps<TData, TValue>) {
+    // Assume the filter value is stored as an array.
+    // For single-select behavior, we consider only the first element.
+    const currentFilterValue = (column?.getFilterValue() as string[]) || [];
+    const currentValue = currentFilterValue[0] || "";
+  
+    const handleValueChange = (value: string) => {
+      // Toggle the filter:
+      // If the same value is selected again, clear the filter.
+      if (value === currentValue) {
+        column?.setFilterValue(undefined);
+      } else {
+        column?.setFilterValue([value]);
+      }
+    };
+  
     return (
-        <Select
-            onValueChange={(value) => {
-                if (selectedValues.has(value)) {
-                    selectedValues.delete(value)
-                } else {
-                    selectedValues.add(value)
-                }
-                const filterValues = Array.from(selectedValues)
-                column?.setFilterValue(filterValues.length ? filterValues : undefined)
-            }}
-        >
-            <SelectTrigger className="h-8 w-[120px] lg:w-[140px]">
-                <SelectValue placeholder={title} />
-            </SelectTrigger>
-            <SelectContent>
-                {options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                    </SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
-    )
-}
+      <Select value={currentValue} onValueChange={handleValueChange}>
+        <SelectTrigger className="h-8 w-[120px] lg:w-[140px]">
+          <SelectValue placeholder={title} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+  

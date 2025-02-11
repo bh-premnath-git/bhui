@@ -13,7 +13,7 @@ import { FormFieldWrapper } from "@/components/ui/formfield-wrapper"
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux"
 import { createUserDeployment } from "@/store/oldstore/UserSlice"
 import { LoadingState } from "@/components/shared/LoadingState"
-import { ApiService } from "@/services/apiServices"
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from "@/services/environment"
 import { CommandMultiSelect } from "@/components/ui/command-multi-select"
 
@@ -133,7 +133,7 @@ const AddUser = () => {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const projectsRes = await ApiService(CATALOG_API_PORT, "get", "/bh_project/search")
+                const projectsRes = await ApiService({ portNumber: CATALOG_API_PORT, method: "get", url: "/bh_project/search" })
                 const formattedProjects = projectsRes.map((proj: any) => ({
                     label: proj.bh_project_name,
                     value: proj.bh_project_id.toString(),

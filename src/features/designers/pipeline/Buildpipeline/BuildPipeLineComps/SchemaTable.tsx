@@ -21,8 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { X, Loader2 } from "lucide-react";
 import { MdOutlineDeleteSweep } from "react-icons/md";
-
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from "@/services/environment";
 
 interface SchemaTableProps {
@@ -40,11 +39,12 @@ export default function SchemaTable({ initialData }: SchemaTableProps) {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const response = await ApiService(
-          CATALOG_API_PORT,
-          "get",
-          `/data_source_layout/list_full/?data_src_id=${initialData?.sourceId}`
-        );
+        const response = await ApiService({
+          portNumber: CATALOG_API_PORT,
+          method: "get",
+          url: `/data_source_layout/list_full/`,
+          params: { data_src_id: initialData?.sourceId }
+        });
         if (response[0]?.layout_fields) {
           const transformedData = response[0].layout_fields.map((field: any) => ({
             name: field.lyt_fld_name,

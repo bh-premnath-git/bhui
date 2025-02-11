@@ -38,14 +38,12 @@ export const DataSourcesTable = ({ data }: DataSourcesTableProps) => {
       ),
     },
     {
-      accessorKey: "project",
+      accessorKey: "bh_project_name",
       header: "Project",
-      filterOptions: getUniqueValues(data, 'project')
     },
     {
       accessorKey: "owner",
       header: "Owner",
-      filterOptions: getUniqueValues(data, 'owner'),
       cell: ({ row }) => {
         const ownerName = row.getValue("owner") as string
         if (!ownerName) return null

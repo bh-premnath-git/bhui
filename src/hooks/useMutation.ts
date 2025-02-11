@@ -17,6 +17,7 @@ interface QueryMetadata extends Record<string, unknown> {
 interface MutateDataParams {
   portNumber: string;
   url: string;
+  params?: any; // For query parameters
   additionalHeaders?: Record<string, string>;
   usePrefix?: boolean;
   metadata?: QueryMetadata;
@@ -29,6 +30,7 @@ const useMutateData = <TData = any, TVariables = any>(
   {
     portNumber,
     url,
+    params,
     additionalHeaders,
     usePrefix = true,
     metadata,
@@ -37,12 +39,13 @@ const useMutateData = <TData = any, TVariables = any>(
   }: MutateDataParams
 ) => {
   return useMutation<TData, AxiosError<ApiError>, TVariables>({
-    mutationFn: (data: TVariables) =>
+    mutationFn: (variables: TVariables) =>
       ApiService<TData>({
         portNumber,
         method,
         url,
-        data,
+        data: variables,
+        params,
         additionalHeaders,
         usePrefix,
       }),

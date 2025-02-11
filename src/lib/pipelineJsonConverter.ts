@@ -1,5 +1,5 @@
 import { Node, Edge } from 'reactflow';
-import { ApiService } from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from '@/services/environment';
 
 export interface UINode extends Node {
@@ -557,12 +557,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     // Process readers first
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {
-            const sourceDetails = await ApiService(
-                CATALOG_API_PORT,
-                "get",
-                `/data_source/${source.data_src_id}`,
-                null
-            );
+            const sourceDetails = await ApiService({
+                portNumber: CATALOG_API_PORT,
+                method: "get",
+                url: `/data_source/${source.data_src_id}`,
+                params: null
+            });
 
             const nodeId = `Reader_${index + 1}`;
             const title = source.name;

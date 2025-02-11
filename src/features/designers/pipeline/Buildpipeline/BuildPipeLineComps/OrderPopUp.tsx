@@ -9,7 +9,7 @@ import SchemaTable from "./SchemaTable";
 import OnboardTaggingStep from "./OnboardTaggingStep";
 import PreviewTable from "./PreviewTable";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from "@/services/environment";
 
 interface OrderPopUpProps {
@@ -42,13 +42,11 @@ export default function OrderPopUp({
             limit: 10,
             order_desc: false,
           };
-          const response = await ApiService(
-            CATALOG_API_PORT,
-            "get",
-            "/connection_registry/connection_config/list/",
-            null,
-            params,
-            { accept: "application/json" }
+          const response = await ApiService({
+           portNumber: CATALOG_API_PORT,
+           method: "get",
+            url: "/connection_registry/connection_config/list/",
+            params,}
           );
           if (response && response.length > 0) {
             let data = response[0]?.custom_metadata;

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { jwtDecode } from "jwt-decode";
 import { CATALOG_API_PORT } from "@/services/environment";
 
@@ -82,16 +82,14 @@ export const createFlow = createAsyncThunk<
   "flow/create",
   async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        "post",
-        "/flow/create/",
-        params,
-        null,
-        {},
-        true,
-        signal
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: "post",
+        url: "/flow/create/",
+        params: params,
+        data: null,
+        signal: signal
+      });
       return response;
     } catch (error: any) {
       // Check if the error is due to a canceled request
@@ -117,16 +115,14 @@ export const listFlows = createAsyncThunk<
   "flow/list",
   async (params, { rejectWithValue, signal }) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        "get",
-        "/flow/list/",
-        null,
-        params,
-        {},
-        true,
-        signal
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: "get",
+        url: "/flow/list/",
+        params: params,
+        data: null,
+        signal: signal
+      });
       const transformed = response.map((item: any) => ({
         id: item.flow_id,
         Name: item.flow_name,
@@ -153,7 +149,13 @@ export const getFlowProjectList = createAsyncThunk<
   'flow/gitproject',
   async (params = {}, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'get', '/bh_project/list/', null, params);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: '/bh_project/list/',
+        params: params,
+        data: null,
+      });
 
       const transformed: FlowProject[] = response.map((item: any) => {
         return ({
@@ -179,7 +181,13 @@ export const getEnvironmentList = createAsyncThunk<
   'flow/environmentList',
   async (_, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'get', '/environment/environment/list/', null, { offset: 0, limit: 100 });
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: '/environment/environment/list/',
+        params: { offset: 0, limit: 100 },
+        data: null,
+      });
       const transformed = response.map((item: any) => (
         {
           id: item["bh_env_id"],
@@ -199,7 +207,13 @@ export const searchFlow: any = createAsyncThunk(
   'flows/searchFlow',
   async (value: string, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'get', `/flow/flow/search?flow_name=${value}`);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: `/flow/flow/search?flow_name=${value}`,
+        params: null,
+        data: null,
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -215,7 +229,13 @@ export const patchFlowOperation = createAsyncThunk<
   'flow/patchFlowOperation',
   async ({ flow_id, data }, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, 'patch', `/flow/${flow_id}`, data);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'patch',
+        url: `/flow/${flow_id}`,
+        params: null,
+        data: data,
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -232,7 +252,13 @@ export const deleteFlowbyId = createAsyncThunk<
   "flow/deleteFlow",
   async ({ flow_id }, thunkAPI) => {
     try {
-      const response = await ApiService(CATALOG_API_PORT, "delete", `/flow/${flow_id}`);
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: "delete",
+        url: `/flow/${flow_id}`,
+        params: null,
+        data: null,
+      });
       return { flow_id, response };
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -249,16 +275,14 @@ export const updateFlowDefinition = createAsyncThunk<
   async ({ flow_id, flow_json }, { rejectWithValue, signal }) => {  
     
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        'patch',
-        `/flow/flow-definition/update-by-flow-id/${flow_id}`,
-        flow_json,
-        null,
-        {},
-        true,
-        signal
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'patch',
+        url: `/flow/flow-definition/update-by-flow-id/${flow_id}`,
+        params: null,
+        data: flow_json,
+        signal: signal
+      });
       return response;
     } catch (error: any) {
       if (error.name === "AbortError") {
@@ -277,12 +301,13 @@ export const updateFlowConfiguration = createAsyncThunk<
   'flow/updateFlowConfiguration',
   async ({ flow_config_id, flow_config }, thunkAPI) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        'put',
-        `/flow/flow-config/${flow_config_id}`,
-        { flow_config: flow_config }
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'put',
+        url: `/flow/flow-config/${flow_config_id}`,
+        params: null,
+        data: { flow_config: flow_config },
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -299,12 +324,13 @@ export const patchCronDeployment = createAsyncThunk<
   'flow/patchCronDeployment',
   async ({ flow_deployment_id, cron_expression }, thunkAPI) => {
     try {
-      const response = await ApiService(
-        CATALOG_API_PORT,
-        'patch',
-        `/flow/flow-deployment/${flow_deployment_id}`,
-        { cron_expression: cron_expression }
-      );
+      const response = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'patch',
+        url: `/flow/flow-deployment/${flow_deployment_id}`,
+        params: null,
+        data: { cron_expression: cron_expression },
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
@@ -322,7 +348,13 @@ export const dagParserTimeFunc = createAsyncThunk<
   'flow/dagParserTime',
   async (params, thunkAPI) => {
     try {
-      const response: string = await ApiService(CATALOG_API_PORT, 'get', 'bh_airflow/dag_parse_time', null, params);
+      const response: string = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'get',
+        url: 'bh_airflow/dag_parse_time',
+        params: params,
+        data: null,
+      });
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

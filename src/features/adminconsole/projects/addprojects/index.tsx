@@ -18,7 +18,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { RequiredLabel } from '@/components/ui/required-fields';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { createProject, searchProject } from '@/store/oldstore/ProjectSlice';
-import { ApiService } from '@/services/apiServices';
+import { ApiService } from "@/services/api.services";
 import { encrypt_string } from '@/services/encryption';
 import { CATALOG_API_PORT } from '@/services/environment';
 import { ValidationComponent } from '@/components/ui/validation-component';
@@ -103,7 +103,11 @@ export default function ProjectCreationComponent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await ApiService(CATALOG_API_PORT, 'get', '/codes_hdr/30');
+        const result = await ApiService({
+          portNumber: CATALOG_API_PORT,
+          method: 'get',
+          url: '/codes_hdr/30'
+        });
         setGithubProviderList(result.codes_dtl);
       } catch (error) {
         console.error('Error fetching Git provider list:', error);
@@ -163,7 +167,12 @@ export default function ProjectCreationComponent() {
         init_vector: initVector,
       };
 
-      const result = await ApiService(CATALOG_API_PORT, 'post', 'bh_project/validate-token/', body);
+      const result = await ApiService({
+        portNumber: CATALOG_API_PORT,
+        method: 'post',
+        url: 'bh_project/validate-token/',
+        data: body
+      });
       
       if (result.status >= 200 && result.status < 300) {
         setIsTokenValid('valid');

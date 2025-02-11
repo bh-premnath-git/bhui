@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { ApiService } from "@/services/apiServices";
+import { ApiService } from "@/services/api.services";
 import { AUDIT_PORT } from "@/services/environment";
 
 export interface ApiState {
@@ -31,7 +31,13 @@ export const getDataOps: any = createAsyncThunk(
   'dataops_hub/dataops',
   async (params: any, thunkAPI) => {
     try {
-      const response = await ApiService(AUDIT_PORT, 'get', '/job_details/list/', null, params);
+      const response = await ApiService({
+        portNumber: AUDIT_PORT,
+        method: 'get',
+        url: '/job_details/list/',
+        params: params,
+        data: null
+      });
       const transformed = response.map((item: any, index: number) => ({
         ...item,
         id: (index).toString(),
@@ -63,13 +69,13 @@ export const getTaskDetails = createAsyncThunk<
         limit: 100,
         order_desc: false,
       };
-      const response = await ApiService(
-        AUDIT_PORT,
-        "get",
-        "/task_details/list/",
-        null,
-        params
-      );
+      const response = await ApiService({
+        portNumber: AUDIT_PORT,
+        method: 'get',
+        url: '/task_details/list/',
+        params: params,
+        data: null
+      });
       const transformed = response.map((item: any, index: number) => ({
         ...item,
         id: index.toString(),

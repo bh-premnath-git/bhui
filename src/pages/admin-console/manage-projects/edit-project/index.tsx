@@ -1,7 +1,7 @@
-import EditProjectComp from "@/features/adminconsole/projects/editprojects"
+import {ProjectEditForm} from "@/features/adminconsole/projects/editprojects"
 const EditProject = () => {
   return (
-    <EditProjectComp />
+    <ProjectEditForm />
   )
 }
 

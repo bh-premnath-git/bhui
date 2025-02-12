@@ -1,7 +1,7 @@
-import AddProjectComp from "@/features/adminconsole/projects/addprojects"
+import {ProjectForm} from "@/features/adminconsole/projects/addprojects"
 const AddProject = () => {
   return (
-    <AddProjectComp />
+    <ProjectForm />
   )
 }
 

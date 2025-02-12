@@ -60,11 +60,9 @@ export function ProjectEditForm() {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // Validation Errors
   const [validationError, setValidationError] = useState(false);
   const [validationErrorMsg, setValidationErrorMsg] = useState('');
 
-  // ---------- React Hook Form Setup ----------
   const {
     register,
     handleSubmit,

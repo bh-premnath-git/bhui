@@ -47,7 +47,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const { editEnvironmentData: editenvdata } = useAppSelector(
     (reduxState) => reduxState.environmentApi
   );
-  
+
   useEffect(() => {
     if (editenvdata && editenvdata.bh_env_id) {
       dispatch({ type: 'SET_EDITING', payload: true });
@@ -165,7 +165,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         if (response.type === 'environment/edit/fulfilled') {
           toast.success('Environment updated successfully');
           setTimeout(() => {
-            navigate('/admin-console/environment');
+            navigate('/admin-console/environment', { state: { forceRefetch: true } });
           }, 1000);
         }
       })

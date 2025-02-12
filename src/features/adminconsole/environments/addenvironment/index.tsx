@@ -88,7 +88,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
             toast.success('Environment created successfully');
           }
           setTimeout(() => {
-            navigate('/admin-console/environment');
+            navigate('/admin-console/environment', { state: { forceRefetch: true } });
           }, 1000);
         })
         .catch((error: any) => {

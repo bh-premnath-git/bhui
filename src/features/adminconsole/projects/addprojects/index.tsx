@@ -23,20 +23,14 @@ import { projectFormSchema, ProjectFormValues } from '@/features/adminconsole/pr
 import { TagManager } from '@/features/adminconsole/projects/project/TagManager';
 import { ExistingProjectModal } from '@/features/adminconsole/projects/project/ExistingProjectModal';
 import { ValidationComponent } from '@/components/ui/validation-component';
-
-interface GithubProvider {
-  id: string;
-  dtl_desc: string;
-}
+import {GithubProvider} from "@/types/features/project/types"
 
 export function ProjectForm() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // Redux Data
   const { searchProjectList } = useAppSelector((state) => state.projectApi);
 
-  // Local States
   const [githubProviderList, setGithubProviderList] = useState<GithubProvider[]>([]);
   const [tags, setTags] = useState<{ tagKey: string; tagValue: string }[]>([]);
   const [projectExistsModalOpen, setProjectExistsModalOpen] = useState(false);

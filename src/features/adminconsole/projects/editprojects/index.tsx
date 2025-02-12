@@ -23,11 +23,8 @@ import { CATALOG_API_PORT } from '@/services/environment';
 import { projectEditFormSchema, ProjectEditFormValues } from '@/features/adminconsole/projects/project/projectSchema';
 import { TagManager } from '@/features/adminconsole/projects/project/TagManager';
 import { ExistingProjectModal } from '@/features/adminconsole/projects/project/ExistingProjectModal';
+import {GithubProvider} from "@/types/features/project/types"
 
-interface GithubProvider {
-  id: string;
-  dtl_desc: string;
-}
 
 export function ProjectEditForm() {
   const dispatch = useAppDispatch();

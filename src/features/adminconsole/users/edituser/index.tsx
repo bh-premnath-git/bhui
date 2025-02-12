@@ -1,431 +1,433 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { z } from "zod"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useDebounce } from "use-debounce"
 import { toast } from "sonner"
+import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+import { createUserDeployment } from "@/store/oldstore/UserSlice"
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux"
 import { LoadingState } from "@/components/shared/LoadingState"
-import { Label } from "@/components/ui/label"
-import { FormFieldWrapper } from "@/components/ui/formfield-wrapper"
-import { useAppDispatch } from "@/hooks/useRedux" 
-import { editUserDeployment } from "@/store/oldstore/UserSlice"
-import { ApiService } from "@/services/api.services";
+import { ApiService } from "@/services/api.services"
 import { CATALOG_API_PORT } from "@/services/environment"
-import { cn } from "@/lib/utils"
-import { CommandMultiSelect } from "@/components/ui/command-multi-select"
 
-
-// Simple Toggle Implementation (replacing MUI <Switch>)
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean
-  onChange: (val: boolean) => void
-  label?: string
-}) {
-  return (
-    <div className="flex items-center space-x-2">
-      {label && <Label className="mr-2">{label}</Label>}
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-          checked ? "bg-blue-600" : "bg-gray-300"
-        )}
-      >
-        <span
-          className={cn(
-            "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-            checked ? "translate-x-6" : "translate-x-1"
-          )}
-        />
-      </button>
-      <span className="ml-2 text-sm">{checked ? "Active" : "Inactive"}</span>
-    </div>
-  )
-}
-
-// -------------- Data Types --------------
-interface RoleType extends SelectOption {
-  dtl_code: string
-  dtl_desc: string
-}
-
-interface ProjectType {
-  value: string
-  label: string
-}
-
-interface ProjectDetail {
-  project: ProjectType[]
-  projectRole: RoleType[]
-}
-
-interface UserData {
-  bh_user_id?: string
-  firstName?: string
-  middleName?: string
-  lastName?: string
-  email?: string
-  enabled?: boolean
-  user_admin_status_cd?: string
-  projects?: ProjectType[]
-  realm_roles?: RoleType[]
-}
-
-// -------------- Zod Schema --------------
-const schema = z.object({
-  bh_user_first_name: z.string().nonempty("First Name is required"),
-  bh_user_middle_name: z.string().optional(),
-  bh_user_last_name: z.string().nonempty("Last Name is required"),
-  user_email_id: z.string().email("Invalid email address").nonempty("Email is required"),
-  // In your old code, user_status_cd must be "601" or "602" => We'll handle that logic with a toggle
-  user_status_cd: z.string().nonempty("Please select status"),
-  user_admin_status_cd: z.string().nonempty("Please select admin status"),
-  project_details: z.array(
-    z.object({
-      project: z
-        .array(
-          z.object({
-            value: z.string().nonempty("Project value is required"),
-            label: z.string().nonempty("Project label is required"),
-          })
-        )
-        .min(1, "At least one project is required"),
-      projectRole: z
-        .array(
-          z.object({
-            dtl_code: z.string().nonempty("Role code is required"),
-            dtl_desc: z.string().nonempty("Role description is required"),
-          })
-        )
-        .min(1, "At least one role is required"),
-    })
-  ),
+const userSchema = z.object({
+  firstName: z.string().min(1, "First Name is required"),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1, "Last Name is required"),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
+  projects: z.array(z.string()).min(1, "At least one project is required"),
+  roles: z.array(z.string()).min(1, "At least one role is required"),
 })
 
-type EditUserFormValues = z.infer<typeof schema>
+type CreateUserFormData = z.infer<typeof userSchema>
 
 type SelectOption = {
   label: string
   value: string
 }
 
-export default function EditUser() {
+export default function CreateUserForm() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const location = useLocation()
+  
+  const { userDataList } = useAppSelector((state) => state.userApi)
 
-  const userData: UserData = location.state?.rowData || {}
+  const [userExistModelOpen, setUserExistModelOpen] = useState(false)
 
-  // Local states
-  const [roles, setRoles] = useState<RoleType[]>([])
-  const [projects, setProjects] = useState<ProjectType[]>([])
-  const [statusToggle, setStatusToggle] = useState(true) // Replaces MUI Switch
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Hook Form + Zod
+  const [availableProjects, setAvailableProjects] = useState<SelectOption[]>([])
+
+  const availableRoles = ["admin-user", "ops-user", "designer-user"]
+
   const {
     register,
     handleSubmit,
-    control,
-    formState: { errors, isSubmitting, isValid },
+    watch,
     setValue,
-  } = useForm<EditUserFormValues>({
-    resolver: zodResolver(schema),
+    getValues,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<CreateUserFormData>({
+    resolver: zodResolver(userSchema),
     mode: "onChange",
     defaultValues: {
-      bh_user_first_name: "",
-      bh_user_middle_name: "",
-      bh_user_last_name: "",
-      user_email_id: "",
-      user_status_cd: "601", // active
-      user_admin_status_cd: "2102",
-      project_details: [
-        {
-          project: [],
-          projectRole: [],
-        },
-      ],
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      email: "",
+      projects: [],
+      roles: [],
     },
   })
 
-  // For array fields
-  const { fields: projectDetailsFields } = useFieldArray({
-    control,
-    name: "project_details",
-  })
+  const watchFirstName = watch("firstName")
+  const [debouncedFirstName] = useDebounce(watchFirstName, 500)
 
-  // Fetch data on mount
+  // ----------------------------------
+  // Checking if User Already Exists
+  // ----------------------------------
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [rolesRes, projectsRes] = await Promise.all([
-          ApiService({portNumber: CATALOG_API_PORT, method: "get", url: "/codes_hdr/1"}),
-          ApiService({portNumber:CATALOG_API_PORT, method: "get", url: "/bh_project/search"}),
-        ])
+    // If firstName is typed & >=3 chars, do a user search
+    if (debouncedFirstName && debouncedFirstName.length >= 3) {
+      setUserExistModelOpen(false)
+      dispatch(
+        // userDataList might be a thunk that fetches & stores user data in Redux
+        userDataList(debouncedFirstName)
+      )
+    } else {
+      setUserExistModelOpen(false)
+    }
+  }, [debouncedFirstName, dispatch, userDataList])
 
-        setRoles(rolesRes.codes_dtl || [])
-
-        const formattedProjects = projectsRes.map((proj: any) => ({
-          value: proj.bh_project_id.toString(),
-          label: proj.bh_project_name,
-        }))
-        setProjects(formattedProjects)
-
-        // If user data is passed in, populate the form
-        if (userData) {
-          const isActive = userData.enabled ?? true
-          setStatusToggle(isActive)
-
-          // Convert userData => form values
-          const initialProjects = userData.projects ?? []
-          const initialRoles = userData.realm_roles ?? []
-
-          setValue("bh_user_first_name", userData.firstName || "")
-          setValue("bh_user_middle_name", userData.middleName || "")
-          setValue("bh_user_last_name", userData.lastName || "")
-          setValue("user_email_id", userData.email || "")
-          setValue("user_status_cd", isActive ? "601" : "602")
-          setValue(
-            "user_admin_status_cd",
-            userData.user_admin_status_cd || "2102"
-          )
-          setValue("project_details", [
-            {
-              project: initialProjects,
-              projectRole: initialRoles,
-            },
-          ])
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        toast.error("Error fetching data")
+  useEffect(() => {
+    if (debouncedFirstName && userDataList?.length > 0) {
+      const userExists = userDataList.some(
+        (user: any) =>
+          user.bh_user_first_name?.toLowerCase() === debouncedFirstName.toLowerCase()
+      )
+      if (userExists) {
+        setUserExistModelOpen(true)
       }
     }
+  }, [userDataList, debouncedFirstName])
 
-    fetchData()
-  }, [userData, setValue])
-
-  const onSubmit = async (values: EditUserFormValues) => {
-    if (!userData?.bh_user_id) {
-      toast.error("No user ID found.")
-      return
-    }
-
-    // Convert toggle => status code
-    values.user_status_cd = statusToggle ? "601" : "602"
-
-    try {
-      await dispatch(
-        editUserDeployment({
-          id: userData.bh_user_id,
-          params: values,
+  // ----------------------------------
+  // Fetching Projects from API
+  // ----------------------------------
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const projectsRes = await ApiService({
+          portNumber: CATALOG_API_PORT,
+          method: "get",
+          url: "/bh_project/search",
         })
-      )
-      toast.success("User updated successfully")
-      setTimeout(() => navigate("/admin-console/users"), 1000)
-    } catch (error) {
-      console.error("Error updating user:", error)
-      toast.error("Error updating user")
+
+        const formatted = projectsRes.map((proj: any) => ({
+          label: proj.bh_project_name,
+          value: proj.bh_project_id.toString(),
+        })) as SelectOption[]
+
+        // Filter out any incomplete data
+        setAvailableProjects(
+          formatted.filter((p) => p.label && p.value)
+        )
+      } catch (error) {
+        console.error("Error fetching projects:", error)
+        toast.error("Error fetching projects")
+      }
+    }
+    fetchProjects()
+  }, [])
+
+  // ----------------------------------
+  // Utility: Add/Remove Projects
+  // ----------------------------------
+  function addProject(value: string) {
+    const currentProjects = getValues("projects")
+    // avoid duplicates
+    if (!currentProjects.includes(value)) {
+      setValue("projects", [...currentProjects, value], {
+        shouldValidate: true,
+        shouldDirty: true,
+      })
     }
   }
 
+  function removeProject(value: string) {
+    const currentProjects = getValues("projects")
+    setValue(
+      "projects",
+      currentProjects.filter((proj) => proj !== value),
+      { shouldValidate: true, shouldDirty: true }
+    )
+  }
+
+  // ----------------------------------
+  // Utility: Add/Remove Roles
+  // ----------------------------------
+  function addRole(value: string) {
+    const currentRoles = getValues("roles")
+    if (!currentRoles.includes(value)) {
+      setValue("roles", [...currentRoles, value], {
+        shouldValidate: true,
+        shouldDirty: true,
+      })
+    }
+  }
+
+  function removeRole(value: string) {
+    const currentRoles = getValues("roles")
+    setValue(
+      "roles",
+      currentRoles.filter((role) => role !== value),
+      { shouldValidate: true, shouldDirty: true }
+    )
+  }
+
+  // ----------------------------------
+  // Submit Handler
+  // ----------------------------------
+  const onSubmit = async (data: CreateUserFormData) => {
+    try {
+      setIsLoading(true)
+
+      // We build the user object similarly to your old code
+      const userObj = {
+        email: data.email,
+        email_verified: true,
+        enabled: true,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        realm_roles: data.roles,
+        projects: data.projects,
+        username: `${data.firstName}_${data.lastName}`,
+      }
+
+      await dispatch(createUserDeployment(userObj))
+      toast.success("User created successfully")
+
+      // Optional redirect
+      setTimeout(() => {
+        navigate("/admin-console/users")
+      }, 1000)
+    } catch (error) {
+      console.error("Error creating user:", error)
+      toast.error("Error creating user")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ----------------------------------
   // Render
+  // ----------------------------------
+  const projectsValue = watch("projects")
+  const rolesValue = watch("roles")
+
   return (
-    <div className="max-w-4xl mx-auto p-3 space-y-6 rounded border bg-white text-black shadow w-full mt-8">
-      {/* Header Section */}
-      <div className="border-b pb-2 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Edit User</h2>
-          <p className="text-sm text-gray-700 mt-1">
-            Update user details and configure their access permissions
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="text-xs font-medium px-3 py-1 border-gray-300 hover:bg-gray-100"
-          onClick={() => navigate("/admin-console/users")}
-        >
+    <Card className="w-full max-w-6xl mx-auto">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-md">Create New User</CardTitle>
+        <Button variant="outline" onClick={() => navigate("/admin-console/users")}>
           View All Users
         </Button>
-      </div>
+      </CardHeader>
 
-      {/* Our Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* User Details Section */}
-        <div className="p-1 rounded bg-white border space-y-2">
-          <h3 className="text-base font-medium text-black border-b pb-2">User Details</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {/* First Name */}
-            <FormFieldWrapper
-              name="bh_user_first_name"
-              label="First Name"
-              required
-              error={errors.bh_user_first_name?.message}
-            >
-              <Input
-                placeholder="Enter first name"
-                className="h-8 border-gray-300 text-sm"
-                {...register("bh_user_first_name")}
-              />
-            </FormFieldWrapper>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">User Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* First Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  First Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="Enter first name"
+                  {...register("firstName")}
+                />
+                {errors.firstName && (
+                  <p className="text-red-500 text-sm">{errors.firstName.message}</p>
+                )}
+              </div>
 
-            {/* Middle Name */}
-            <FormFieldWrapper
-              name="bh_user_middle_name"
-              label="Middle Name"
-              error={errors.bh_user_middle_name?.message}
-            >
-              <Input
-                placeholder="Enter middle name"
-                className="h-8 border-gray-300 text-sm"
-                {...register("bh_user_middle_name")}
-              />
-            </FormFieldWrapper>
+              {/* Middle Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Middle Name</label>
+                <Input
+                  placeholder="Enter middle name"
+                  {...register("middleName")}
+                />
+                {errors.middleName && (
+                  <p className="text-red-500 text-sm">{errors.middleName.message}</p>
+                )}
+              </div>
 
-            {/* Last Name */}
-            <FormFieldWrapper
-              name="bh_user_last_name"
-              label="Last Name"
-              required
-              error={errors.bh_user_last_name?.message}
-            >
-              <Input
-                placeholder="Enter last name"
-                className="h-8 border-gray-300 text-sm"
-                {...register("bh_user_last_name")}
-              />
-            </FormFieldWrapper>
-          </div>
+              {/* Last Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Last Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="Enter last name"
+                  {...register("lastName")}
+                />
+                {errors.lastName && (
+                  <p className="text-red-500 text-sm">{errors.lastName.message}</p>
+                )}
+              </div>
+            </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-2">
             {/* Email */}
-            <FormFieldWrapper
-              name="user_email_id"
-              label="Email Address"
-              required
-              error={errors.user_email_id?.message}
-              className="col-span-1"
-            >
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Email Address <span className="text-destructive">*</span>
+              </label>
               <Input
-                placeholder="Enter email address"
                 type="email"
-                className="h-8 border-gray-300 text-sm w-full"
-                {...register("user_email_id")}
+                className="w-1/2"
+                placeholder="Enter email address"
+                {...register("email")}
               />
-            </FormFieldWrapper>
-
-            {/* Toggle for User Status */}
-            <div className="col-span-2 flex items-center pt-4">
-              <Toggle
-                checked={statusToggle}
-                onChange={setStatusToggle}
-                label="Status"
-              />
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email.message}</p>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Project Access Section */}
-        <div className="p-3 rounded bg-white border space-y-4">
-          <h3 className="text-base font-medium text-black border-b pb-2">
-            Project Access
-          </h3>
+          {/* ---------------- Project Access ---------------- */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Project Access</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Projects */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Projects <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  {/* Current Project Badges */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {projectsValue.map((project) => (
+                      <Badge
+                        key={project}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {project}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => removeProject(project)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
 
-          {projectDetailsFields.map((detail, index) => {
-            // We watch the current values to display / filter them
-            // but we can also do it with setValue calls in CommandMultiSelect
-            const fieldNameProject = `project_details.${index}.project` as const
-            const fieldNameRole = `project_details.${index}.projectRole` as const
-
-            return (
-              <div key={detail.id} className="grid grid-cols-2 gap-4">
-                {/* Projects */}
-                <FormFieldWrapper
-                  name={fieldNameProject}
-                  label="Projects"
-                  required
-                  error={errors.project_details?.[index]?.project?.message}
-                >
-                  <CommandMultiSelect<ProjectType>
-                    placeholder="Select projects"
-                    options={projects} // or filter out already selected if you want
-                    // Convert from form value
-                    value={detail.project as ProjectType[]}
-                    onChange={(newVal) => {
-                      // must store them in React Hook Form
-                      setValue(fieldNameProject, newVal, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
+                  {/* Project Picker (Single-Select) */}
+                  <Select
+                    onValueChange={(selected) => {
+                      // Add the newly selected project to the array
+                      addProject(selected)
                     }}
-                  />
-                </FormFieldWrapper>
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Dynamically loaded from the API */}
+                      {availableProjects.map((p) => (
+                        <SelectItem key={p.value} value={p.label}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {errors.projects && (
+                  <p className="text-red-500 text-sm">{errors.projects.message}</p>
+                )}
+              </div>
 
-                {/* Roles */}
-                <FormFieldWrapper
-                  name={fieldNameRole}
-                  label="Roles"
-                  required
-                  error={errors.project_details?.[index]?.projectRole?.message}
-                >
-                  <CommandMultiSelect<RoleType>
-                    placeholder="Select roles"
-                    options={roles.map((r) => ({
-                      dtl_code: r.dtl_code,
-                      dtl_desc: r.dtl_desc,
-                      label: r.dtl_desc, // For display
-                      value: r.dtl_code, // Unique code
-                    }))}
-                    // Convert from form
-                    value={detail.projectRole.map((r) => ({
-                      dtl_code: r.dtl_code,
-                      dtl_desc: r.dtl_desc,
-                      label: r.dtl_desc,
-                      value: r.dtl_code
-                    }))}
-                    onChange={(newVal) => {
-                      // Convert back to RoleType
-                      const roleObjs = newVal.map((v) => ({
-                        dtl_code: v.value,
-                        dtl_desc: v.label,
-                      }))
-                      setValue(fieldNameRole, roleObjs, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
+              {/* Roles */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Roles <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  {/* Current Role Badges */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {rolesValue.map((role) => (
+                      <Badge
+                        key={role}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {role}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => removeRole(role)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Role Picker (Single-Select) */}
+                  <Select
+                    onValueChange={(selected) => {
+                      addRole(selected)
                     }}
-                  />
-                </FormFieldWrapper>
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoles.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {errors.roles && (
+                  <p className="text-red-500 text-sm">{errors.roles.message}</p>
+                )}
               </div>
-            )
-          })}
-        </div>
+            </div>
+          </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-center pt-2">
-          <Button
-            type="submit"
-            className="w-1/4 h-8 bg-black hover:bg-gray-800 text-white font-medium text-sm"
-            disabled={isSubmitting || !isValid}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center">
-                <LoadingState className="mr-1" />
-                Updating...
-              </div>
-            ) : (
-              "Update User"
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
+          {/* ---------------- Submit Button ---------------- */}
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              className="w-full max-w-xs"
+              disabled={isLoading || isSubmitting || !isValid}
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <LoadingState />
+                  Creating...
+                </div>
+              ) : (
+                "Create User"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+
+      {/* ---------------- User Already Exists Dialog ---------------- */}
+      <Dialog open={userExistModelOpen} onOpenChange={setUserExistModelOpen}>
+        <DialogContent className="sm:max-w-[300px] rounded-md bg-white text-black border border-gray-300 p-3">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold text-red-600">
+              User Already Exists
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center gap-1 py-2 text-center">
+            <p className="text-sm text-gray-700">
+              A user with this first name already exists. Please choose a different name.
+            </p>
+            <Button
+              onClick={() => setUserExistModelOpen(false)}
+              className="mt-2 h-8 text-sm bg-black text-white hover:bg-gray-800"
+            >
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
   )
 }

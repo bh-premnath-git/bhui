@@ -1,10 +1,9 @@
-import { useTheme } from "@/context/ThemeContext";
 import { useLocation } from "react-router-dom";
 import { menuList } from "@/config/menuConfig";
 
 export const AppHeader = () => {
-  const { theme } = useTheme();
   const location = useLocation();
+  console.log("location", location);
   
   const getPageTitle = (path: string) => {
     // First check main routes
@@ -14,7 +13,7 @@ export const AppHeader = () => {
     // Then check sub-routes
     for (const item of menuList) {
       if (item.subPaths) {
-        const subRoute = item.subPaths.find(subItem => subItem.path === path);
+        const subRoute = item.subPaths.find(subItem => path.startsWith(subItem.path));
         if (subRoute) return subRoute.label;
       }
     }

@@ -3,7 +3,7 @@ import { PlusIcon } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { DotsVerticalIcon } from '@radix-ui/react-icons'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Flow } from "@/types/designer.types";
+import { Flow } from "@/types/features/flow/types";
 import { DataTable } from "@/components/bh-table/data-table"
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { getUniqueValues } from '@/lib/utils';
@@ -13,6 +13,8 @@ import { Row } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import FlowCreatePopup from './flowdesigner/flow-create-popup';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { setFlow } from '@/store/features/flowSlice';
 
 interface FlowTableProps {
   flows: Flow[];
@@ -21,6 +23,7 @@ interface FlowTableProps {
 export const FlowTable = ({ flows }: FlowTableProps) => {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false)
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
   const tableName: string = "flows"
 
   const handleAddFlow = () => {
@@ -95,14 +98,15 @@ export const FlowTable = ({ flows }: FlowTableProps) => {
   };
 
   const rowClickHandler = (row: Row<Flow>) => {
+    dispatch(setFlow(row.original))
     navigate(`/designers/flow-playground/${row.original.flow_id}`);
   }
 
   return <>
-  <FlowCreatePopup open={isCreatePopupOpen} showToast={toast} handleClose={() => setIsCreatePopupOpen(false)} />
-  <DataTable
-    tableName={tableName}
-    customToolbarConfig={customToolbarConfig}
-    onRowClick={rowClickHandler}
-    columns={columns} data={flows} showToolbar={true} /></>;
+    <FlowCreatePopup open={isCreatePopupOpen} showToast={toast} handleClose={() => setIsCreatePopupOpen(false)} />
+    <DataTable
+      tableName={tableName}
+      customToolbarConfig={customToolbarConfig}
+      onRowClick={rowClickHandler}
+      columns={columns} data={flows} showToolbar={true} /></>;
 };

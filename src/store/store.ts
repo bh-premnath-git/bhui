@@ -11,7 +11,7 @@ import autoSaveReducer from "./oldstore/features/autoSaveSlice"
 import dataOpsSlice from "./oldstore/DataOpsSlice"
 import environmentSlice from "./oldstore/EnvironmentSlice"
 import userSlice from "./oldstore/UserSlice"
-import flowSlice from "./oldstore/FlowSlice"
+import flowSlice from "./features/flowSlice"
 
 export const store = configureStore({
   reducer: {

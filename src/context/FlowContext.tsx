@@ -11,7 +11,7 @@ import {
   CustomNodeData,
   NodeFormData,
   EditingNode,
-} from '@/types/flow';
+} from '@/types/flow.types';
 import { useDebouncedCallback } from '@/hooks/useDebounce';
 import { useNodeOperations } from '@/hooks/useNodeOperations';
 import { useFlowOperations } from '@/hooks/useFlowOperations';

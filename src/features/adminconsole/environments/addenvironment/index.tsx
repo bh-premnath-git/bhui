@@ -174,7 +174,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         >
           {state.activeTab === TABS[TABS.length - 1] ? (
             <>
-              {state.isLoading ? <LoadingState className="max-h-[10px]" /> : null}
+              {state.isLoading ? <LoadingState className="max-h-[6px] max-w-[6px]" classNameContainer="max-h-[4px] max-w-[4px]" /> : null}
               Create Environment
             </>
           ) : (

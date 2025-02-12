@@ -3,11 +3,23 @@
  *
  * Defines constants and TypeScript types for the Environment feature.
  */
+export interface Environment {
+  bh_env_id: number;
+  bh_env_name: string;
+  cloud_provider_name: string;
+  created_on: string;
+  bh_env_provider_name: 'development' | 'staging' | 'production' | string;
+  status: 'active' | 'inactive';
+}
+
+export interface EnvironmentTableProps {
+  environments: Environment[];
+}
 
 export const environmentOptions = {
   "301": "Development",
-  "302": "Staging",
-  "303": "Production",
+  "304": "Staging",
+  "305": "Production",
 } as const;
 
 export const locationOptions = ["us-east-1", "us-west-1", "eu-central-1"] as const;

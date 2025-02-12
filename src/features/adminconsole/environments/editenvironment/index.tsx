@@ -43,6 +43,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const navigate = useNavigate();
   const dispatchApi = useAppDispatch();
 
+  const disabledPlatforms = ["google-cloud"];
   const [state, dispatch] = useReducer(reducer, initialState);
   const { editEnvironmentData: editenvdata } = useAppSelector(
     (reduxState) => reduxState.environmentApi
@@ -219,6 +220,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
               airflowDagBucket={state.environmentTab.airflowDagBucket}
               privateKeyFile={state.environmentTab.privateKeyFile}
               changeVerification={handleChangeVerification}
+              disabledPlatforms={disabledPlatforms}
               isEditing={state.isEditing}
             />
           </div>

@@ -251,7 +251,10 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     if (isEditing) {
       reset({
         environmentName: environmentName,
-        // Any other fields you want to reset
+        environment: environmentOptions[environment as keyof typeof environmentOptions] 
+        ? environment 
+        : "",
+        location: location
       });
     }
   }, [isEditing, environmentName, reset]);
@@ -321,15 +324,15 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 <Select
                   value={field.value}
                   onValueChange={(value) => {
-                    field.onChange(value);
-                    onChange({ environment: value });
+                    if (value in environmentOptions) {
+                      field.onChange(value);
+                      onChange({ environment: value });
+                    }
                   }}
                 >
                   <SelectTrigger className="border-blue-200">
                     <SelectValue placeholder="Select Environment">
-                      {field.value
-                        ? environmentOptions[field.value as keyof typeof environmentOptions]
-                        : "Select Environment"}
+                      {environmentOptions[field.value as keyof typeof environmentOptions] ?? "Select Environment"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { Row } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from 'lucide-react';
-import { Environment } from '@/types/environment.types';
+import { Environment } from '@/types/features/environment/types';
 import { DataTable } from "@/components/bh-table/data-table"
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { CustomToolbarConfig } from "@/types/data-table.types";

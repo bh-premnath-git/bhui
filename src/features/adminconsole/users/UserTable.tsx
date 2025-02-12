@@ -2,12 +2,14 @@ import _ from 'lodash';
 import { PlusIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Row } from '@tanstack/react-table';
-import { User } from '@/types/user.types';
+import { User } from '@/types/features/user/types';
 import { DataTable } from "@/components/bh-table/data-table";
 import { CustomToolbarConfig } from "@/types/data-table.types";
 import { getUniqueValues, getInitials } from "@/lib/utils";
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { Badge } from "@/components/ui/badge";
+import { useAppDispatch } from '@/hooks/useRedux';
+import { setSingleUser } from '@/store/features/manageUserSlice';
 
 interface UserTableProps {
   data: User[];
@@ -15,6 +17,7 @@ interface UserTableProps {
 
 export const UserTable = ({ data }: UserTableProps) => {
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
   const columns: ColumnDefWithFilters<User>[] = [
     {
       accessorKey: 'username',
@@ -90,6 +93,7 @@ export const UserTable = ({ data }: UserTableProps) => {
   const tableName: string = "user";
 
   const rowClickHandler = (row: Row<User>) => {
+    dispatch(setSingleUser(row.original))
     navigate(`/admin-console/users/${row.original.id}`);
   }
 

@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebounce } from 'use-debounce';
 import { toast } from 'sonner';
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlusCircle, X } from 'lucide-react';
-
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { searchProject, updateProject } from '@/store/oldstore/ProjectSlice';
 import { ApiService } from "@/services/api.services";
@@ -22,7 +20,6 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { encrypt_string } from '@/services/encryption';
 import { ValidationComponent } from '@/components/ui/validation-component';
 import { RequiredLabel } from '@/components/ui/required-fields';
-
 import { CATALOG_API_PORT } from '@/services/environment';
 
 // -------------------- Zod Schema --------------------

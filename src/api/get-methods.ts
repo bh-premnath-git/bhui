@@ -33,7 +33,7 @@ export const getDataSources = {
             {
                 portNumber: CATALOG_API_PORT,
                 url: '/bh_project/list/',
-                params: { offset: 0, limit: 1000 },
+                params: { offset: 0, limit: 1000, order_desc: true, order_by: 'bh_project_id' },
                 usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load projects',
@@ -53,7 +53,7 @@ export const getDataSources = {
             {
                 portNumber: CATALOG_API_PORT,
                 url: '/environment/environment/list/',
-                params: { offset: 0, limit: 1000 },
+                params: { offset: 0, limit: 1000, order_desc: true, order_by: 'bh_env_id' },
                 usePrefix: true,
                 metadata: {
                     errorMessage: 'Failed to load environments',

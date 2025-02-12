@@ -7,6 +7,8 @@ import { DataTable } from "@/components/bh-table/data-table"
 import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { CustomToolbarConfig } from "@/types/data-table.types";
 import { getUniqueValues } from '@/lib/utils';
+import { setEditProjectData } from '@/store/oldstore/ProjectSlice';
+import { useAppDispatch } from '@/hooks/useRedux';
 
 interface ProjectTableProps {
   projects: Project[]
@@ -14,6 +16,7 @@ interface ProjectTableProps {
 
 export const ProjectTable = ({ projects }: ProjectTableProps) => {
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
 
   const tableName: string = "projects"
   const columns: ColumnDefWithFilters<Project>[] = [
@@ -62,6 +65,7 @@ export const ProjectTable = ({ projects }: ProjectTableProps) => {
     ],
   };
   const rowClickHandler = (row: Row<Project>) => {
+    dispatch(setEditProjectData(row.original));
     navigate(`/admin-console/projects/${row.original.bh_project_id}`);
   }
   return <DataTable

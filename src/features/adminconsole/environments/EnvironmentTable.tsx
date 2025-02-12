@@ -8,17 +8,18 @@ import { ColumnDefWithFilters } from "@/types/typesys.types";
 import { CustomToolbarConfig } from "@/types/data-table.types";
 import { getUniqueValues } from "@/lib/utils";
 import { formatDate } from '@/lib/dayeformat';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { setEditEnvironmentData } from '@/store/oldstore/EnvironmentSlice';
 
 interface EnvironmentTableProps {
   environments: Environment[]
 }
 
 export const EnvironmentTable = ({ environments }: EnvironmentTableProps) => {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const tableName: string = "environments"
-  console.log("data environments >>>", environments);
   
-
   const columns: ColumnDefWithFilters<Environment>[] = [
     {
       accessorKey: "bh_env_name",
@@ -69,6 +70,7 @@ export const EnvironmentTable = ({ environments }: EnvironmentTableProps) => {
   };
 
   const rowClickHandler = (row: Row<Environment>) => {
+    dispatch(setEditEnvironmentData(row.original));
     navigate(`/admin-console/environment/${row.original.bh_env_id}`);
   }
 

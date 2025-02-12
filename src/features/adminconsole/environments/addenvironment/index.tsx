@@ -9,65 +9,8 @@ import { useAppDispatch } from '@/hooks/useRedux';
 import { encrypt_string } from '@/services/encryption';
 import { toast } from 'sonner';
 import { LoadingState } from '@/components/shared/LoadingState';
-
-type Tag = {
-  tagList: { key: string; value: string }[];
-} | null;
-
-type EnvironmentTabState = {
-  environmentName: string;
-  environment: string;
-  projectId: string;
-  location: string;
-  accessKey: string;
-  secretAccessKey: string;
-  airflowUrl: string;
-  airflowDagBucket: string;
-  awsPvtKey: string | null;
-  privateKeyFile: File | null;
-  verification: boolean;
-  selectedMwaaEnv: string | null;
-};
-
-const TABS = ["environment"] as const;
-type TabType = (typeof TABS)[number];
-
-type State = {
-  activeTab: TabType;
-  tags: Tag[];
-  selectedPlatform: string;
-  environmentTab: EnvironmentTabState;
-  isLoading: boolean;
-};
-
-type Action =
-  | { type: 'SET_ACTIVE_TAB'; payload: TabType }
-  | { type: 'SET_TAGS'; payload: Tag[] }
-  | { type: 'SET_SELECTED_PLATFORM'; payload: string }
-  | { type: 'SET_ENVIRONMENT_TAB'; payload: Partial<EnvironmentTabState> }
-  | { type: 'SET_VERIFICATION'; payload: boolean }
-  | { type: 'SET_LOADING'; payload: boolean };
-
-const initialState: State = {
-  activeTab: TABS[0],
-  tags: [],
-  selectedPlatform: "aws",
-  environmentTab: {
-    environmentName: "",
-    environment: "",
-    projectId: "",
-    location: "",
-    accessKey: "",
-    secretAccessKey: "",
-    airflowUrl: "",
-    airflowDagBucket: "",
-    selectedMwaaEnv: null,
-    awsPvtKey: null,
-    privateKeyFile: null,
-    verification: false
-  },
-  isLoading: false,
-};
+import { EnvironmentTabState, State, Action, TABS, initialState, TabType } from "@/types/features/environment/types";
+import { areAllRequiredFieldsFilled } from '@/lib/environment';
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -100,6 +43,8 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
   const navigate = useNavigate();
 
   const disabledPlatforms = ["google-cloud"];
+  const canProceed = areAllRequiredFieldsFilled(state.environmentTab, state.selectedPlatform)
+    && state.environmentTab.verification;
 
   const handleBack = (): void => {
     const currentIndex = TABS.indexOf(state.activeTab);
@@ -225,7 +170,7 @@ export default function EnvironmentConsoleComponent(): JSX.Element {
         <Button
           className="bg-gray-900 text-white hover:bg-gray-800"
           onClick={handleNext}
-          disabled={!state.environmentTab.verification}
+          disabled={!canProceed}
         >
           {state.activeTab === TABS[TABS.length - 1] ? (
             <>

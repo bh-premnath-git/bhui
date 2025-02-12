@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Check, PlusCircle, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,320 +11,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { FileUpload } from "@/components/bh-upload";
-import { ApiService } from "@/services/api.services";
-import { ValidationComponent } from "@/components/ui/validation-component";
-import { encrypt_string } from "@/services/encryption";
-import { AccordionSection } from "@/components/shared/Accordion";
-import { CATALOG_API_PORT } from "@/services/environment";
 import { RequiredLabel } from "@/components/ui/required-fields";
+import { AccordionSection } from "@/components/shared/Accordion";
+import { FileUpload } from "@/components/bh-upload";
+import { ValidationComponent } from "@/components/ui/validation-component";
 
-// -----------------------------------------------------------------------------
-// Constants & Types
-// -----------------------------------------------------------------------------
+// Services
+import { ApiService } from "@/services/api.services";
+import { encrypt_string } from "@/services/encryption";
+import { CATALOG_API_PORT } from "@/services/environment";
 
-const environmentOptions = {
-  "301": "Development",
-  "302": "Staging",
-  "303": "Production",
-} as const;
-
-const locationOptions = ["us-east-1", "us-west-1", "eu-central-1"] as const;
-type LocationOption = typeof locationOptions[number];
-
-type Tag = {
-  tagList: { key: string; value: string }[];
-} | null;
-
-type Platform = {
-  id: string;
-  name: string;
-  logo: string;
-  cloud_provider: number;
-};
-
-const PLATFORMS: Platform[] = [
-  {
-    id: "aws",
-    name: "Amazon Web Services",
-    logo: "/assets/environments/aws.svg?height=40&width=40",
-    cloud_provider: 101,
-  },
-  {
-    id: "google-cloud",
-    name: "Google Cloud",
-    logo: "/assets/environments/google.svg?height=40&width=40",
-    cloud_provider: 102,
-  },
-];
-
-// -----------------------------------------------------------------------------
-// Validation Schema
-// -----------------------------------------------------------------------------
-
-const schema = z
-  .object({
-    environmentName: z.string().min(1, "Environment name is required"),
-    environment: z.string().min(1, "Environment is required"),
-    projectId: z.string().min(1, "Project ID is required"),
-    location: z.string().min(1, "Location is required"),
-    accessKey: z.string().optional(),
-    secretAccessKey: z.string().optional(),
-    privateKeyFile: z.instanceof(File).or(z.null()).optional(),
-    airflowUrl: z.string().optional(),
-    airflowDagBucket: z.string().optional(),
-    selectedPlatform: z.string().min(1, "Platform is required"),
-    selectedMwaaEnv: z.string().nullable().optional(),
-    awsPvtKey: z.string().nullable().optional(),
-  })
-  .superRefine((data, ctx) => {
-    // AWS validations
-    if (data.selectedPlatform === "aws") {
-      if (!data.accessKey?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Access Key is required for AWS",
-          path: ["accessKey"],
-        });
-      }
-      if (!data.secretAccessKey?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Secret Access Key is required for AWS",
-          path: ["secretAccessKey"],
-        });
-      }
-    }
-
-    // Google Cloud validations
-    if (data.selectedPlatform === "google-cloud") {
-      if (!data.privateKeyFile) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Private Key File is required for Google Cloud",
-          path: ["privateKeyFile"],
-        });
-      }
-    }
-  });
-
-export type FormValues = z.infer<typeof schema>;
-
-// -----------------------------------------------------------------------------
-// Sub-Components
-// -----------------------------------------------------------------------------
-
-/**
- * PlatformSelector
- * - A simple component to toggle between AWS and GCP.
- */
-const PlatformSelector: React.FC<{
-  selectedPlatform: string;
-  setSelectedPlatform: (platform: string) => void;
-  disabledPlatforms?: string[];
-}> = ({ selectedPlatform, setSelectedPlatform, disabledPlatforms = [] }) => {
-  return (
-    <div className="flex flex-wrap gap-6">
-      {PLATFORMS.map((platform) => {
-        const isDisabled = disabledPlatforms.includes(platform.id);
-
-        return (
-          <div
-            key={platform.id}
-            className={[
-              "flex flex-row items-center space-x-3 border rounded-md p-1 transition-all duration-200",
-              selectedPlatform === platform.id
-                ? "border-green-500 bg-green-50 shadow-md"
-                : "border-gray-700 bg-gray-50",
-              isDisabled
-                ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer hover:bg-gray-200 hover:shadow-sm",
-            ].join(" ")}
-            onClick={() => {
-              if (!isDisabled) {
-                setSelectedPlatform(platform.id);
-              }
-            }}
-            style={{ width: "250px", minWidth: "200px" }}
-          >
-            <div
-              className={[
-                "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors duration-200",
-                selectedPlatform === platform.id
-                  ? "border-green-500 bg-green-500"
-                  : "border-gray-700 bg-gray-200",
-              ].join(" ")}
-            >
-              {selectedPlatform === platform.id && (
-                <Check className="w-3 h-3 text-white" />
-              )}
-            </div>
-            <div className="flex flex-col items-center flex-grow text-center">
-              <img
-                src={platform.logo}
-                alt={`${platform.name} logo`}
-                className="w-10 h-10 mb-1"
-              />
-              <span className="text-xs font-medium text-gray-800">
-                {platform.name}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-/**
- * TagInput
- * - Allows adding key/value tags which are displayed as badges.
- */
-const TagInput: React.FC<{
-  tags: Tag[];
-  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
-}> = ({ tags, setTags }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tagKey, setTagKey] = useState("");
-  const [tagValue, setTagValue] = useState("");
-
-  // Remove a single tag
-  const removeTag = (tagIndex: number, itemIndex: number) => {
-    setTags((prevTags) => {
-      return prevTags
-        .map((tag, i) => {
-          if (i === tagIndex && tag && tag.tagList.length > 1) {
-            return {
-              tagList: tag.tagList.filter((_, j) => j !== itemIndex),
-            };
-          }
-          return i === tagIndex ? null : tag;
-        })
-        .filter(Boolean);
-    });
-  };
-
-  // Add a new tag
-  const addTag = () => {
-    if (tagKey && tagValue) {
-      setTags((prevTags) => [
-        ...prevTags,
-        { tagList: [{ key: tagKey, value: tagValue }] },
-      ]);
-      setTagKey("");
-      setTagValue("");
-      setIsModalOpen(false);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <p className="text-sm text-gray-700">
-        Add tags to help identify compute instances in your cloud account.
-      </p>
-      <div className="flex flex-wrap gap-2 mt-2">
-        {tags.map((tag, index) =>
-          tag !== null
-            ? tag.tagList.map((item, itemIndex) => (
-                <Badge
-                  key={`${index}-${itemIndex}`}
-                  variant="secondary"
-                  className="px-2 py-1 flex items-center bg-gray-100 text-gray-800 border border-gray-300 rounded-md shadow-sm"
-                >
-                  {`${item.key}: ${item.value}`}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-2 h-4 w-4 p-0"
-                    onClick={() => removeTag(index, itemIndex)}
-                  >
-                    <X className="h-3 w-3 text-gray-600" />
-                  </Button>
-                </Badge>
-              ))
-            : null
-        )}
-      </div>
-
-      {/* Modal Dialog */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="flex items-center space-x-2 text-emerald-600 border-emerald-500 hover:bg-emerald-50"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>Add Tag</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[385px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              Add New Tag
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-6 space-y-4">
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="tagKey" className="text-sm font-medium text-gray-800">
-                Key
-              </Label>
-              <Input
-                id="tagKey"
-                value={tagKey}
-                onChange={(e) => setTagKey(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100"
-                placeholder="e.g. environment"
-              />
-            </div>
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="tagValue" className="text-sm font-medium text-gray-800">
-                Value
-              </Label>
-              <Input
-                id="tagValue"
-                value={tagValue}
-                onChange={(e) => setTagValue(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-300 rounded-md focus:bg-white focus:ring-2 focus:ring-blue-100"
-                placeholder="e.g. production"
-              />
-            </div>
-          </div>
-          <DialogFooter className="mt-6">
-            <Button
-              onClick={addTag}
-              className="w-full bg-black text-white hover:bg-gray-800"
-            >
-              Add Tag
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-// -----------------------------------------------------------------------------
-// Main Component
-// -----------------------------------------------------------------------------
+// Local Imports
+import { Tag, locationOptions, LocationOption, environmentOptions } from "@/types/features/environment/types";
+import { environmentSchema, EnvironmentFormValues } from "./schema";
+import { PlatformSelector } from "./PlatformSelector";
+import { TagInput } from "./TagInput";
 
 interface EnvironmentTabProps {
   selectedPlatform: string;
   setSelectedPlatform: (platform: string) => void;
   tags: Tag[];
-  setTags: (
-    newTags: Tag[] | ((prevTags: Tag[]) => Tag[])
-  ) => void;
-  onChange: (changes: Partial<FormValues>) => void;
+  setTags: (newTags: Tag[] | ((prevTags: Tag[]) => Tag[])) => void;
+  onChange: (changes: Partial<EnvironmentFormValues>) => void;
   environmentName?: string;
   environment?: string;
   projectId?: string;
@@ -338,6 +44,7 @@ interface EnvironmentTabProps {
   privateKeyFile?: File | null;
   changeVerification: (verified: boolean) => void;
   disabledPlatforms?: string[];
+  isEditing?: boolean;
 }
 
 export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
@@ -357,16 +64,23 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
   privateKeyFile = null,
   changeVerification,
   disabledPlatforms = [],
+  isEditing = false,
 }) => {
+
+  // -------------------------------------------------------
+  // 1. Set up React Hook Form with Zod validation
+  // -------------------------------------------------------
   const {
     register,
     handleSubmit,
     setValue,
     control,
     watch,
+    reset,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  } = useForm<EnvironmentFormValues>({
+    mode: "all",
+    resolver: zodResolver(environmentSchema),
     defaultValues: {
       environmentName,
       environment,
@@ -392,8 +106,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     advancedSettings: false,
     tags: false,
   });
-
-  // Toggle Accordion Sections
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections((prev) => {
       const isCurrentlyOpen = prev[section];
@@ -408,16 +120,22 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     });
   };
 
-  // Validate AWS keys via test_connection endpoint
-  const handleValidate = async (values: FormValues) => {
+  // -------------------------------------------------------
+  // 3. AWS credentials validation & MWAA listing
+  // -------------------------------------------------------
+  const handleValidate = async (values: EnvironmentFormValues) => {
     try {
       if (!values.accessKey || !values.secretAccessKey || !values.location) {
         toast.error("Please fill in all required fields");
         return false;
       }
 
-      // Convert location from string index to actual location value
+      // Convert the numeric string (e.g. "1", "2", "3") to actual location (e.g. "us-east-1")
       const locationVal = locationOptions[parseInt(values.location) - 1];
+      if (!locationVal) {
+        toast.error("Invalid location selected");
+        return false;
+      }
 
       // Encrypt credentials
       const encryptedAwsKeyId = encrypt_string(values.accessKey);
@@ -426,6 +144,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         encryptedAwsKeyId.initVector
       );
 
+      // Prepare request payload
       const params = { bh_env_name: values.environmentName };
       const credentials = {
         aws_access_key_id: encryptedAwsKeyId.encryptedString,
@@ -442,14 +161,14 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         data: credentials,
         params,
       });
+
+      // e.g. The server might return a private key once validated
       const pvtKey = result["pvt_key"];
       onChange({ awsPvtKey: pvtKey });
 
-      const success =
-        result && typeof result === "object" && "success" in result;
-
-      // If success, list MWAA environments
+      const success = result && typeof result === "object" && "success" in result;
       if (success) {
+        // If success, fetch MWAA environments
         const mwaaRes = await ApiService({
           portNumber: CATALOG_API_PORT,
           method: "get",
@@ -460,32 +179,39 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             location: locationVal,
           },
         });
+
         setMwaaEnvironments(mwaaRes as string[]);
         toast.success("Successfully connected to AWS");
       } else {
         toast.error("Failed to connect");
       }
 
+      // Notify the parent about the verification status
       changeVerification(success);
       return success;
     } catch (error) {
+      console.error(error);
       toast.error("Failed to connect");
       changeVerification(false);
       return false;
     }
   };
-
-  // Handle Google Cloud private key file upload
+  // -------------------------------------------------------
+  // 4. GCP private key file handling
+  // -------------------------------------------------------
   const handleFileUpload = (file: File) => {
     onChange({ privateKeyFile: file });
     setValue("privateKeyFile", file);
   };
 
-  // Fetch MWAA info for selected environment
+  // -------------------------------------------------------
+  // 5. MWAA environment details fetch
+  // -------------------------------------------------------
   const handleGetMWAAInfos = async (selectedEnv: string) => {
     try {
       if (!selectedEnv) return;
 
+      const locationVal = locationOptions[parseInt(formValues.location) - 1];
       const result = await ApiService({
         portNumber: CATALOG_API_PORT,
         method: "get",
@@ -493,12 +219,13 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         data: null,
         params: {
           airflow_env_name: selectedEnv,
-          location: formValues.location,
+          location: locationVal,
           bh_env_name: formValues.environmentName,
         },
       });
 
       if (result) {
+        // Update the form with new values
         setValue("airflowUrl", result.WebserverUrl);
         setValue("airflowDagBucket", result.SourceBucketArn);
         onChange({
@@ -511,14 +238,26 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     }
   };
 
-  // No direct submission needed, changes are handled "onChange"
-  const onSubmit = (data: FormValues) => {
-    // intentionally empty - form changes are handled on-the-fly
+  // -------------------------------------------------------
+  // 6. React Hook Form submission handler (optional)
+  // -------------------------------------------------------
+  const onSubmit = (data: EnvironmentFormValues) => {
+    // Form values are updated on the fly via onChange,
+    // but you can still handle an explicit submit if needed.
+    console.log("Form submitted with data:", data);
   };
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (isEditing) {
+      reset({
+        environmentName: environmentName,
+        // Any other fields you want to reset
+      });
+    }
+  }, [isEditing, environmentName, reset]);
+  // -------------------------------------------------------
+  // 7. Render JSX
+  // -------------------------------------------------------
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -534,8 +273,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           necessary credentials.
         </p>
       </div>
-
-      {/* Environment Details */}
+      {/* ------------------------------ */}
+      {/* 1. Environment Details        */}
+      {/* ------------------------------ */}
       <AccordionSection
         title="Environment Details"
         isOpen={openSections.environmentDetails}
@@ -567,7 +307,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             )}
           </div>
 
-          {/* Environment (Dev, Staging, Production) */}
+          {/* Environment Options (Dev, Staging, Prod) */}
           <div className="space-y-2">
             <RequiredLabel>
               <Label htmlFor="environment" className="font-medium">
@@ -616,8 +356,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           </div>
         </div>
       </AccordionSection>
-
-      {/* Platform Selection */}
+      {/* ------------------------------ */}
+      {/* 2. Platform Selection          */}
+      {/* ------------------------------ */}
       <AccordionSection
         title="Select Platform"
         isOpen={openSections.platform}
@@ -627,9 +368,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         hasError={!!errors.selectedPlatform}
       >
         <RequiredLabel>
-          <Label className="font-medium">
-            Select which platform you'd like to use
-          </Label>
+          <Label className="font-medium">Select which platform to use</Label>
         </RequiredLabel>
         <PlatformSelector
           selectedPlatform={watch("selectedPlatform")}
@@ -646,8 +385,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           </div>
         )}
       </AccordionSection>
-
-      {/* Credentials */}
+      {/* ------------------------------ */}
+      {/* 3. Credentials                 */}
+      {/* ------------------------------ */}
       <AccordionSection
         title="Credentials"
         isOpen={openSections.credentials}
@@ -665,7 +405,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         }
       >
         <div className="text-sm text-gray-600 mb-2">
-          Select a project, location, and provide platform-specific credentials.
+          Provide cloud project ID, location, and platform-specific credentials.
         </div>
 
         {/* Project ID & Location */}
@@ -691,7 +431,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               </div>
             )}
           </div>
-
           {/* Location */}
           <div className="space-y-2">
             <RequiredLabel>
@@ -704,7 +443,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               control={control}
               render={({ field }) => (
                 <Select
-                  // Convert the stored numeric string to the readable location
+                  // Convert stored numeric string to actual location option
                   value={
                     field.value ? locationOptions[parseInt(field.value) - 1] : ""
                   }
@@ -739,9 +478,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               )}
             />
             {errors.location && (
-              <div className="text-red-500 text-sm">
-                {errors.location.message}
-              </div>
+              <div className="text-red-500 text-sm">{errors.location.message}</div>
             )}
           </div>
         </div>
@@ -770,7 +507,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 </div>
               )}
             </div>
-
             {/* Secret Access Key */}
             <div className="space-y-2">
               <RequiredLabel>
@@ -784,8 +520,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 placeholder="Enter AWS Secret Access Key"
                 className="border-blue-200 focus:ring-blue-500"
                 {...register("secretAccessKey", {
-                  onChange: (e) =>
-                    onChange({ secretAccessKey: e.target.value }),
+                  onChange: (e) => onChange({ secretAccessKey: e.target.value }),
                 })}
               />
               {errors.secretAccessKey && (
@@ -794,8 +529,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Validation Button */}
+            {/* Validation Button (to test credentials) */}
             <div className="mt h-16 flex items-center">
               <ValidationComponent
                 onValidate={() => handleValidate(formValues)}
@@ -805,7 +539,6 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             </div>
           </div>
         )}
-
         {/* Google Cloud Credentials */}
         {watch("selectedPlatform") === "google-cloud" && (
           <div className="mt space-y-2">
@@ -815,10 +548,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
               </Label>
             </RequiredLabel>
             <div className="w-full md:w-1/2">
-              <FileUpload
-                onFileUpload={handleFileUpload}
-                maxSize={10 * 1024 * 1024}
-              />
+              <FileUpload onFileUpload={handleFileUpload} maxSize={10 * 1024 * 1024} />
             </div>
             {errors.privateKeyFile && (
               <div className="text-red-500 text-sm">
@@ -828,8 +558,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           </div>
         )}
       </AccordionSection>
-
-      {/* Advanced Settings */}
+      {/* ------------------------------ */}
+      {/* 4. Advanced Settings           */}
+      {/* ------------------------------ */}
       <AccordionSection
         title="Advanced Settings"
         isOpen={openSections.advancedSettings}
@@ -838,7 +569,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
         titleColor="text-purple-800"
       >
         <p className="text-sm text-gray-600 mb-4">
-          Provide optional Airflow configuration if needed.
+          Provide optional Airflow configuration (e.g. MWAA) if needed.
         </p>
 
         {/* MWAA Environment */}
@@ -888,8 +619,7 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
             />
           </div>
         </div>
-
-        {/* Airflow Info */}
+        {/* Airflow URL & DAG Bucket (populated after MWAA is selected) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
           <div className="space-y-2">
             <Label htmlFor="airflowUrl" className="font-medium">
@@ -927,8 +657,9 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
           </div>
         </div>
       </AccordionSection>
-
-      {/* Tags */}
+      {/* ------------------------------ */}
+      {/* 5. Tags                        */}
+      {/* ------------------------------ */}
       <AccordionSection
         title="Tags"
         isOpen={openSections.tags}
@@ -941,5 +672,3 @@ export const EnvironmentTab: React.FC<EnvironmentTabProps> = ({
     </form>
   );
 };
-
-export default EnvironmentTab;

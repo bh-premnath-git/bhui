@@ -45,21 +45,15 @@ export const DataSourcesTable = ({ data }: DataSourcesTableProps) => {
       accessorKey: "owner",
       header: "Owner",
       cell: ({ row }) => {
-        const ownerName = row.getValue("owner") as string
-        if (!ownerName) return null
-        const nameParts = ownerName.split(" ");
-        const initials =
-          nameParts.length === 1
-            ? nameParts[0].slice(0, 2).toUpperCase()
-            : (
-              nameParts[0][0] +
-              nameParts[nameParts.length - 1][0]
-            ).toUpperCase();
-
+        const ownerName = row.getValue("owner");
+        if (!ownerName || typeof ownerName !== 'string') return '-';
+        const [firstName, lastName] = ownerName.split(' ');
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Avatar>
-              <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarFallback>
+                {firstName?.[0]}{lastName?.[0]}
+              </AvatarFallback>
             </Avatar>
             <div>
               <div className="font-semibold">{ownerName}</div>

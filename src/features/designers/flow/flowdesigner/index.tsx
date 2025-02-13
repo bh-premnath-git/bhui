@@ -9,13 +9,13 @@ import ReactFlow, {
   useReactFlow,
   getOutgoers,
 } from 'reactflow';
-import { useFlow } from '@/contexts/FlowContext';
-import { ToolbarNodes } from '@/components/ReactFlowComps/flow/toolbar/ToolbarNodes';
-import { CustomControls } from '@/components/ReactFlowComps/flow/flow/CustomControls';
-import { nodeTypes } from '@/lib/nodeTypes';
-import { edgeTypes } from '@/lib/edgeTypes';
+import { useFlow } from '@/context/FlowContext';
+import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
+import { CustomControls } from '@/components/bh-reactflow-comps/flow/flow/CustomControls';
+import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
+import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
+import SparkleButton from '@/components/bh-reactflow-comps/flowAi/aibutton';
 import 'reactflow/dist/style.css';
-import SparkleButton from './flowAi/aibutton';
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];

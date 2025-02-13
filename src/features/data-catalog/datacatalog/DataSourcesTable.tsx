@@ -13,7 +13,6 @@ import DataCatalogSchema from "./DataCatalogSchema";
 import DataCatalogImport from "../importsource/DataCatalogImport";
 import { formatDate } from "@/lib/dayeformat";
 
-
 interface DataSourcesTableProps {
   data: DataSource[];
 }

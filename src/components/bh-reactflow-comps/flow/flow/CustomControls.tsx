@@ -11,9 +11,9 @@ export const CustomControls = memo(() => {
   return (
     <>
       <div className="fixed bottom-4 right-4 flex items-center gap-2 z-50">
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-1.5 shadow-lg border flex items-center gap-1.5">
+        <div className="bg-transparent backdrop-blur-sm rounded-lg p-1.5 shadow-lg border flex items-center gap-1.5">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={fitView}
             className="h-8 w-8 hover:bg-gray-100"
@@ -22,7 +22,7 @@ export const CustomControls = memo(() => {
             <AlignHorizontalDistributeCenter className="h-4 w-4" />
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={zoomOut}
             className="h-8 w-8 hover:bg-gray-100"
@@ -31,7 +31,7 @@ export const CustomControls = memo(() => {
             <ZoomOut className="h-4 w-4" />
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={zoomIn}
             className="h-8 w-8 hover:bg-gray-100"
@@ -41,7 +41,7 @@ export const CustomControls = memo(() => {
           </Button>
           <div className="w-px h-6 bg-gray-200 mx-1" />
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={toggleDataPreview}
             className={cn(

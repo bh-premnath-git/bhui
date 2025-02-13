@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import schema from '@/pages/designers/manage-flow/data/flow_schema.json';
+import schema from '@/pages/designers/flow-playground/data/flow_schema.json';
 
 export function useModules() {
   return useMemo(() => {

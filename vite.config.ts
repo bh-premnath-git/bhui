@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       include: [
-        'react-flow-renderer',
         'reactflow'
       ],
     },

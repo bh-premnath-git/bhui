@@ -74,13 +74,16 @@ export const AppSidebar = () => {
               {({ isActive }) => (
                 <>
                   <span className={cn(
-                    "transition-transform duration-200",
+                    "sidebar-icon",
                     isActive && "scale-110"
                   )}>
                     {item.icon}
                   </span>
                   {!isCollapsed && (
-                    <>
+                    <div className={cn(
+                      "sidebar-content flex-1 flex items-center gap-1",
+                      isCollapsed && "sidebar-content-collapsed"
+                    )}>
                       <span className="flex-1">{item.label}</span>
                       {item.subPaths && (
                         <ChevronDown
@@ -91,7 +94,7 @@ export const AppSidebar = () => {
                           )}
                         />
                       )}
-                    </>
+                    </div>
                   )}
                 </>
               )}
@@ -100,7 +103,7 @@ export const AppSidebar = () => {
             {!isCollapsed && item.subPaths && (
               <div 
                 className={cn(
-                  "ml-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                  "sidebar-content ml-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
                   expandedItems.includes(item.path) ? "opacity-100" : "opacity-0 h-0"
                 )}
                 style={{

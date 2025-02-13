@@ -57,13 +57,6 @@ export const FlowTable = ({ flows }: FlowTableProps) => {
       )
     },
     {
-      accessorKey: "updated_at",
-      header: "Last Executed",
-      cell: ({ row }) => (
-        <span>{formatDate(row.original.updated_at)}</span>
-      )
-    },
-    {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {

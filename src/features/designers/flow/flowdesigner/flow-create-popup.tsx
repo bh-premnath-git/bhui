@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import CreateFlowForm from './create-flowform';
 import { ApiService } from "@/services/api.services";
 import { CATALOG_API_PORT } from '@/services/environment';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { getFlowProjectList } from '@/store/features/flowSlice';
 
 // Define the props for the popup
 interface FlowCreatePopupProps {
@@ -17,7 +19,10 @@ const FlowCreatePopup: React.FC<FlowCreatePopupProps> = ({
     showToast,
 }) => {
     const [isLoading, setIsLoading] = useState(false);
-
+    const dispatch = useAppDispatch();
+    useEffect(() => {
+        dispatch(getFlowProjectList({ offset: 0, limit: 1000 }));
+    }, [dispatch, getFlowProjectList]);
     const onCreateFlow = async (payload: any) => {
         setIsLoading(true);
         try {
@@ -36,8 +41,6 @@ const FlowCreatePopup: React.FC<FlowCreatePopupProps> = ({
             } else {
                 showToast('Flow created successfully', { color: 'green' });
                 setIsLoading(false);
-                // Optionally, you can perform additional actions here,
-                // such as refreshing data or navigating to the newly created flow.
                 return response;
             }
         } catch (error: any) {
@@ -49,7 +52,7 @@ const FlowCreatePopup: React.FC<FlowCreatePopupProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-[80vw] h-[80vh]">
+            <DialogContent className="max-w-[50vw] h-[90vh]">
                 <CreateFlowForm
                     onClose={handleClose}
                     onCreateFlow={onCreateFlow}

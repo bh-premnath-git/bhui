@@ -335,7 +335,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     isLoading,
 }) => {
     const dispatch = useAppDispatch();
-    const { environments, flowProjectList: projects, searchedFlow, searchLoading } =
+    const { environments, projects, searchedFlow, searchLoading } =
         useAppSelector((state) => state.flowApi);
 
     // Local states
@@ -416,7 +416,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     const onSubmit: SubmitHandler<FormValues> = async (values) => {
         try {
             const selectedProjectObject = projects.find(
-                (project) => project.ProjectId.toString() === values.selectedProject
+                (project) => project.bh_project_id.toString() === values.selectedProject
             );
 
             const payload: CreateFlowPayload = {
@@ -433,7 +433,7 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                     long_running: values.alert_settings?.long_running || false,
                 },
                 flow_json: {},
-                projectName: selectedProjectObject?.Name || '',
+                projectName: selectedProjectObject?.bh_project_name || '',
             };
 
             const result = await onCreateFlow(payload);
@@ -513,10 +513,10 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                                         <SelectContent>
                                             {projects.map((project) => (
                                                 <SelectItem
-                                                    key={project.ProjectId}
-                                                    value={project.ProjectId.toString()}
+                                                    key={project.bh_project_id}
+                                                    value={project.bh_project_id.toString()}
                                                 >
-                                                    {project.Name}
+                                                    {project.bh_project_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -549,9 +549,9 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
                                             <SelectValue placeholder="Select Environment" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {environments.map((env) => (
-                                                <SelectItem key={env.id} value={env.id.toString()}>
-                                                    {env.envName}
+                                        {environments.map((env) =>(
+                                                <SelectItem key={env.bh_env_id} value={env.bh_env_id.toString()}>
+                                                    {env.bh_env_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

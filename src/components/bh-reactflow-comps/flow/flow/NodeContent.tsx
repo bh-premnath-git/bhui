@@ -26,12 +26,9 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
   useEffect(() => {
     if (isEditing && editableRef.current) {
       editableRef.current.focus();
-
-      // Place cursor at the end of content
       const selection = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(editableRef.current);
-      // Collapse range at the end (false)
       range.collapse(false);
       selection?.removeAllRanges();
       selection?.addRange(range);

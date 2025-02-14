@@ -4,8 +4,6 @@ import { NodeContent } from "./NodeContent";
 import { NodeHandles } from "./NodeHandles";
 import { useFlow } from "@/context/FlowContext";
 import { NodeForm } from "./subcomponents/NodeForm";
-
-// Shadcn UI components
 import {
   Sheet,
   SheetContent,
@@ -84,7 +82,7 @@ export const CustomNode = memo(
             setIsNodeTapModalOpen(open);
           }}
         >
-          <SheetContent side="right" className="w-[90vw]">
+          <SheetContent side="right" className="w-[45vw]">
             <SheetHeader>
               <SheetTitle>Configure Node Properties</SheetTitle>
             </SheetHeader>

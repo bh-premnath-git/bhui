@@ -34,11 +34,11 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
         <NodeToolbar
           isVisible={!!isHovered}
           position={Position.Top}
-          className="p-1 rounded-md bg-transparent"
+          className="p-1 rounded-md"
         >
           <div className="flex">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               title="Clone"
               className="gap-1 w-4 h-4"
@@ -47,7 +47,7 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
               <Copy className="h-2 w-2" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               title="Delete"
               className="gap-1 w-4 h-4"
@@ -56,7 +56,7 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
               <Trash2 className="h-2 w-2" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               title="Info"
               className="gap-1 w-4 h-4"
@@ -65,7 +65,7 @@ export const NodeToolBar = forwardRef<NodeToolBarRef, NodeToolBarProps>(
               <Info className="h-2 w-2" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               title="Rename"
               className="gap-1 w-4 h-4"

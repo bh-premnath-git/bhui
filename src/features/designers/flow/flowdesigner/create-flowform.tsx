@@ -472,13 +472,13 @@ const CreateFlowForm: React.FC<CreateFlowFormProps> = ({
     const notificationsHasError = hasError(['recipientEmails']);
 
     return (
-        <div className="bg-gradient-to-b from-gray-50 to-white p-2 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
+        <div className="bg-gradient-to-b from-gray-50 to-white p-1 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
             <div className="border-b pb-1 mb-1">
                 <h2 className="text-xl font-bold text-gray-800">Create Flow</h2>
                 <p className="text-gray-500 mt-0">
                     Configure your flow settings and notifications
                 </p>
-                {errorMsg && <p className="text-red-500 mt-2">{errorMsg}</p>}
+                {errorMsg && <p className="text-red-500 mt-1">{errorMsg}</p>}
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">

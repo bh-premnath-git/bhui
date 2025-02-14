@@ -29,7 +29,7 @@ const FlowCreatePopup: React.FC<FlowCreatePopupProps> = ({
             const response = await ApiService({
                 portNumber: CATALOG_API_PORT,
                 method: 'post',
-                url: '/flow',
+                url: '/flow/create/',
                 data: payload
             }
             );

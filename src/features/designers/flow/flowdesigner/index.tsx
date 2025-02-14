@@ -14,7 +14,6 @@ import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/Toolb
 import { CustomControls } from '@/components/bh-reactflow-comps/flow/flow/CustomControls';
 import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
-import SparkleButton from '@/components/bh-reactflow-comps/flowAi/aibutton';
 import 'reactflow/dist/style.css';
 
 const proOptions = { hideAttribution: true };
@@ -177,7 +176,6 @@ export function FlowEditor() {
             <Panel position="top-center" className="w-full z-40">
               <div className="flex justify-between items-start w-full px-4 pt-4">
                 <ToolbarNodes />
-                <SparkleButton />
               </div>
             </Panel>
             <CustomControls />

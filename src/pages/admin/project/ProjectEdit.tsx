@@ -1,5 +1,5 @@
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
-import { EditProject } from '@/features/admin/projects/pages/EditProject';
+import { EditProject } from '@/features/admin/projects/EditProject';
 
 const ProjectEdit = () => {
   return (

@@ -1,5 +1,5 @@
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
-import { AddProject } from '@/features/admin/projects/pages/AddProject';
+import { AddProject } from '@/features/admin/projects/AddProject';
 
 const ProjeAdd = () => {
   return (

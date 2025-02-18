@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Users2 } from 'lucide-react';
+import { Users  } from 'lucide-react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -9,7 +9,7 @@ import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { UsersList } from '@/features/admin/users/Users';
 import { useUserManagementServive } from '@/features/admin/users/services/userMgtSrv';
 
-function Users() {
+function UsersListPage() {
   const { users, isLoading, isFetching, isError } = useUsers();
   const usrMgntSrv = useUserManagementServive();
   useEffect(() => {
@@ -40,7 +40,7 @@ function Users() {
         <EmptyState
           title="Welcome to Your User Management!"
           description="Ready to manage your users."
-          Icon={Users2}
+          Icon={Users}
         />
       </div>
     );
@@ -60,4 +60,4 @@ function Users() {
   );
 }
 
-export default withPageErrorBoundary(Users, 'Users');
+export default withPageErrorBoundary(UsersListPage, 'Users');

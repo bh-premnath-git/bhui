@@ -9,21 +9,21 @@ const DesignerDashboard = lazy(() => import('@/pages/designers/DesignerDashboard
 const BuildDataPipeline = lazy(() => import('@/pages/designers/BuildDataPipeline'));
 const DataPipeCanvas = lazy(() => import('@/pages/designers/DataPipelineCanvas'));
 const ManageFlow = lazy(() => import('@/pages/designers/ManageFlow'));
-const FlowCanvas = lazy(() => import('@/features/designers/FlowCanvas'));
-const DataOpsHub = lazy(() => import('@/features/dataops/DataOpsHub'));
-const OpsHub = lazy(() => import('@/features/dataops/OpsHub'));
-const AlertsHub = lazy(() => import('@/features/dataops/AlertsHub'));
-const ReleaseBundle = lazy(() => import('@/features/dataops/ReleaseBundle'));
+const FlowCanvas = lazy(() => import('@/pages/designers/FlowCanvas'));
+const DataOpsHub = lazy(() => import('@/pages/dataops/DataopsHub'));
+const OpsHub = lazy(() => import('@/pages/dataops/OpsHub'));
+const AlertsHub = lazy(() => import('@/pages/dataops/AlertsHub'));
+const ReleaseBundle = lazy(() => import('@/pages/dataops/ReleaseBundle'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminManage'));
 const Users = lazy(() => import('@/pages/admin/user/UserList'));
 const AddUser = lazy(() => import('@/pages/admin/user/UserAdd'));
 const EditUser = lazy(() => import('@/pages/admin/user/UserEdit'));
 const Projects = lazy(() => import('@/pages/admin/project/ProjectList'));
-const AddProject = lazy(() => import('@/features/admin/projects/pages/AddProject'));
-const EditProject = lazy(() => import('@/features/admin/projects/pages/EditProject'));
+const AddProject = lazy(() => import('@/pages/admin/project/ProjeAdd'));
+const EditProject = lazy(() => import('@/pages/admin/project/ProjectEdit'));
 const Environment = lazy(() => import('@/pages/admin/environment/EnvironmentList'));
-const AddEnvironment = lazy(() => import('@/features/admin/environment/pages/AddEnvironment'));
-const EditEnvironment = lazy(() => import('@/features/admin/environment/pages/EditEnvironment'));
+const AddEnvironment = lazy(() => import('@/pages/admin/environment/EnvironmentAdd'));
+const EditEnvironment = lazy(() => import('@/pages/admin/environment/EnvironmentEdit'));
 
 export const routerConfig: RouteObject[] = [
   {

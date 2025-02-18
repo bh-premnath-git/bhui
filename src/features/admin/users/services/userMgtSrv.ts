@@ -4,16 +4,16 @@ import { setUsers, setSelectedUser } from "@/store/slices/admin/usersSlice";
 
 export interface UserManagementService {
     getUsers(): Promise<User[]>;
-    selectatedUser(user: User | null): Promise<User | null>;
+    selectedUser(user: User | null): Promise<User | null>;
 }
 
-export const useUserManagementServive = () => {
+export const useUserManagementService = () => {
     const dispatch = useAppDispatch();
     return ({
         setUsers: (users: User[]) => {
             dispatch(setUsers(users));
         },
-        selectatedUser: (user: User | null) => {
+        selectedUser: (user: User | null) => {
             dispatch(setSelectedUser(user));
         }
     })

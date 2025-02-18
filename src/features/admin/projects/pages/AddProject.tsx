@@ -6,7 +6,7 @@ import { useProjects } from '../hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from '../components/ProjectPageLayout';
 
-export default function AddProject() {
+export function AddProject() {
   const navigate = useNavigate();
   const { handleCreateProject } = useProjects();
 

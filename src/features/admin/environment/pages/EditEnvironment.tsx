@@ -7,7 +7,7 @@ import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-export default function EditEnvironment() {
+export function EditEnvironment() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { handleUpdateEnvironment, environments } = useEnvironments();

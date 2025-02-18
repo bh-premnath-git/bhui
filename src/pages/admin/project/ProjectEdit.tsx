@@ -1,7 +1,10 @@
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { EditProject } from '@/features/admin/projects/pages/EditProject';
+
 const ProjectEdit = () => {
   return (
-    <div>ProjectEdit</div>
+    <EditProject />
   )
 }
 
-export default ProjectEdit
+export default withPageErrorBoundary(ProjectEdit, 'ProjectEdit');

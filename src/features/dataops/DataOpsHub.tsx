@@ -1,7 +1,7 @@
 import { DataOpsProvider } from "@/context/dataops/DataOpsContext"
 import Dashboard from "@/features/dataops/dashboard"
 
-export default function DataOpsHub() {
+export function DataOpsHub() {
   return (
     <DataOpsProvider>
       <Dashboard />

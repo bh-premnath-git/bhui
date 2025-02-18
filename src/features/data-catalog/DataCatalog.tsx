@@ -4,9 +4,9 @@ import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
-import { useDataCatalogManagementService } from './services/datacatalogMgtSrv';
+import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
 
-function DataCatalog({ datasources }: { datasources: DataSource[] }) {
+export function DataCatalog({ datasources }: { datasources: DataSource[] }) {
   const { handleNavigation } = useNavigation();
   const dataCatalogSrv = useDataCatalogManagementService();
 
@@ -19,5 +19,3 @@ function DataCatalog({ datasources }: { datasources: DataSource[] }) {
     />
   );
 }
-
-export default DataCatalog;

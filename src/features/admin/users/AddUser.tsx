@@ -6,7 +6,7 @@ import { useUsers } from '@/features/admin/users/hooks/useUsers';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 
-export default function AddUser() {
+export function AddUser() {
   const navigate = useNavigate();
   const { handleCreateUser } = useUsers({ shouldFetch: false });
 

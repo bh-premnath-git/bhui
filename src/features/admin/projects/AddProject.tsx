@@ -1,10 +1,10 @@
 
 import { useNavigate } from 'react-router-dom';
-import { ProjectForm } from '../components/ProjectForm';
+import { ProjectForm } from './components/ProjectForm';
 import { ProjectMutationData } from '@/types/admin/project';
-import { useProjects } from '../hooks/useProjects';
+import { useProjects } from './hooks/useProjects';
 import { ROUTES } from '@/config/routes';
-import { ProjectPageLayout } from '../components/ProjectPageLayout';
+import { ProjectPageLayout } from './components/ProjectPageLayout';
 
 export function AddProject() {
   const navigate = useNavigate();

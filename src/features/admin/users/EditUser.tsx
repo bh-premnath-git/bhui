@@ -1,13 +1,12 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { UserForm } from '@/features/admin/users/components/UserForm';
 import { UserMutationData } from '@/types/admin/user';
 import { useUsers } from '@/features/admin/users/hooks/useUsers';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 
-function EditUser() {
+export default function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { handleUpdateUser, users } = useUsers();
@@ -54,5 +53,3 @@ function EditUser() {
     </div>
   );
 }
-
-export default withPageErrorBoundary(EditUser, 'EditUser');

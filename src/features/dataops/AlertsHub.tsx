@@ -1,8 +1,5 @@
 
-import React from 'react';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
-
-function AlertsHub() {
+export default function AlertsHub() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Alerts Hub</h1>
@@ -10,5 +7,3 @@ function AlertsHub() {
     </div>
   );
 }
-
-export default withPageErrorBoundary(AlertsHub, 'AlertsHub');

@@ -1,15 +1,14 @@
 
 import { useNavigate } from 'react-router-dom';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { ProjectForm } from '../components/ProjectForm';
 import { ProjectMutationData } from '@/types/admin/project';
-import { useProjectsContext } from '../context/ProjectsContext';
+import { useProjects } from '../hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from '../components/ProjectPageLayout';
 
-function AddProject() {
+export default function AddProject() {
   const navigate = useNavigate();
-  const { handleCreateProject } = useProjectsContext();
+  const { handleCreateProject } = useProjects();
 
   const onSubmit = async (data: ProjectMutationData) => {
     try {
@@ -32,5 +31,3 @@ function AddProject() {
     </ProjectPageLayout>
   );
 }
-
-export default withPageErrorBoundary(AddProject, 'AddProject');

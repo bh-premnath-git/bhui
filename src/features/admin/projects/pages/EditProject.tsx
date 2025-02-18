@@ -1,16 +1,15 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { ProjectForm } from '../components/ProjectForm';
 import { ProjectMutationData } from '@/types/admin/project';
-import { useProjectsContext } from '../context/ProjectsContext';
+import { useProjects } from '../hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from '../components/ProjectPageLayout';
 
-function EditProject() {
+export default function EditProject() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { handleUpdateProject, projects } = useProjectsContext();
+  const { handleUpdateProject, projects } = useProjects();
   
   const project = projects?.find(p => p.id === id);
 
@@ -42,5 +41,3 @@ function EditProject() {
     </ProjectPageLayout>
   );
 }
-
-export default withPageErrorBoundary(EditProject, 'EditProject');

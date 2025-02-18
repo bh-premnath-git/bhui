@@ -1,5 +1,6 @@
 import { RootState } from '@/store'
 import { useAppSelector } from '@/hooks/uaeRedux'
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 
 const UserEdit = () => {
     const user = useAppSelector((state: RootState) => state.users.selectedUser);
@@ -8,4 +9,4 @@ const UserEdit = () => {
     )
 }
 
-export default UserEdit
+export default withPageErrorBoundary(UserEdit, 'UserEdit');

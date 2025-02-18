@@ -1,8 +1,7 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { DataOpsProvider } from "@/context/dataops/DataOpsContext"
 import Dashboard from "@/features/dataops/dashboard"
 
-function DataOpsHub() {
+export default function DataOpsHub() {
   return (
     <DataOpsProvider>
       <Dashboard />
@@ -10,4 +9,3 @@ function DataOpsHub() {
   );
 }
 
-export default withPageErrorBoundary(DataOpsHub, 'DataOpsHub');

@@ -1,5 +1,4 @@
 
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
 import { ArrowRight, Network, GitBranch } from 'lucide-react';
@@ -25,7 +24,7 @@ const designerOptions = [
   },
 ];
 
-function Designers() {
+export default function Designers() {
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Page Title */}
@@ -73,5 +72,3 @@ function Designers() {
   );
 }
 
-
-export default withPageErrorBoundary(Designers, 'DesignerDashboard');

@@ -1,9 +1,7 @@
-import React from 'react'
-
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 const UserAdd = () => {
   return (
     <div>UserAdd</div>
   )
 }
-
-export default UserAdd
+export default withPageErrorBoundary(UserAdd, 'UserAdd');

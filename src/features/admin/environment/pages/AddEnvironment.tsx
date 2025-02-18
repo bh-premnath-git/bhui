@@ -1,15 +1,13 @@
 
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { EnvironmentForm } from '../components/EnvironmentForm';
-import { EnvironmentMutationData } from '../types/environment.types';
+import { EnvironmentMutationData } from '@/types/admin/environemnt';
 import { useEnvironments } from '../hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-function AddEnvironment() {
+export default function AddEnvironment() {
   const navigate = useNavigate();
   const { handleCreateEnvironment } = useEnvironments({ shouldFetch: false });
 
@@ -43,5 +41,3 @@ function AddEnvironment() {
     </div>
   );
 }
-
-export default withPageErrorBoundary(AddEnvironment, 'AddEnvironment');

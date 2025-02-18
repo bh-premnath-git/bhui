@@ -40,7 +40,7 @@ interface UserFormProps {
   checkUserExists?: (firstName: string) => Promise<boolean>;
 }
 
-export default function UserForm({
+export function UserForm({
   initialData,
   onSubmit,
   onCancel,

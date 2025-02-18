@@ -2,7 +2,7 @@ import type React from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import type { FilterOption } from "@/types/dashboard"
+import type { FilterOption } from "@/types/dataops/data-ops-hub.d"
 import { useFilters } from "@/hooks/useFilter"
 
 interface FilterSelectProps {

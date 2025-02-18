@@ -1,6 +1,6 @@
-import { useDashboard } from "@/context/DashboardContext"
+import { useDataOps } from "@/context/dataops/DataOpsContext"
 
 export const useFilters = () => {
-  const { filters, handleFilterChange, resetFilters, loadSavedFilters } = useDashboard()
+  const { filters, handleFilterChange, resetFilters, loadSavedFilters } = useDataOps()
   return { filters, handleFilterChange, resetFilters, loadSavedFilters }
 }

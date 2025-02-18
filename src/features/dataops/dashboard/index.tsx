@@ -10,11 +10,11 @@ import {
   IncidentSummaryChart,
   FreshnessChart,
 } from "./charts"
-import { useDashboard } from "@/context/DashboardContext"
+import { useDataOps } from "@/context/dataops/DataOpsContext"
 import { useFilters } from "@/hooks/useFilter"
 
 const DashboardContent = () => {
-  const { chartData, chartOrder, setChartOrder } = useDashboard()
+  const { chartData, chartOrder, setChartOrder } = useDataOps()
   const { loadSavedFilters } = useFilters()
 
   useEffect(() => {

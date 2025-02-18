@@ -1,5 +1,5 @@
 import Keycloak, { KeycloakConfig } from 'keycloak-js';
-import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from './environment';
+import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from '@/config/platformenv';
 
 const initOptions: KeycloakConfig = {
   url: KEYCLOAK_URL,

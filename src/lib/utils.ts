@@ -1,21 +1,34 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { DataItem, ChartData } from "@/types/dashboard"
+import type { DataItem, ChartData } from "@/types/dataops/data-ops-hub.d"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const getUniqueValues = <T>(data: T[], field: string) => {
-  const uniqueValues = Array.from(new Set(data.map(item => {
-    const value = field.split('.').reduce((acc: any, key) => acc[key], item);
-    return String(value);
-  })));
-  return uniqueValues.map(value => ({
-    label: value,
-    value: value
-  }));
-};
+export const getUniqueValues = <TData, TValue extends string | number>(
+  data: TData[],
+  columnId: string,
+): { label: string; value: string }[] => {
+  const uniqueValues = new Set<TValue>()
+  data.forEach((row) => {
+    const value = row[columnId]
+    if (value !== undefined && value !== null) {
+      uniqueValues.add(value)
+    }
+  })
+  return Array.from(uniqueValues).map((value) => ({
+    label: value.toString(),
+    value: value.toString(),
+  }))
+}
+
+export function getInitials(input: string): string {
+  return input
+    .match(/\b\w/g)
+    ?.join('')
+    .toUpperCase() || ''
+}
 
 export const setCookie = (name: string, value: string, days: number) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString()
@@ -150,10 +163,3 @@ export const downloadCSV = (data: Array<Record<string, any>>, filename: string =
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
-
-export function getInitials(input: string): string {
-  return input
-    .match(/\b\w/g)
-    ?.join('')
-    .toUpperCase() || '';
-}

@@ -1,0 +1,58 @@
+
+import { useNavigate, useParams } from 'react-router-dom';
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { UserForm } from '@/features/admin/users/components/UserForm';
+import { UserMutationData } from '@/types/admin/user';
+import { useUsers } from '@/features/admin/users/hooks/useUsers';
+import { ROUTES } from '@/config/routes';
+import { Button } from '@/components/ui/button';
+
+function EditUser() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const { handleUpdateUser, users } = useUsers();
+  
+  const user = users?.find(u => u.id === id);
+
+  const onSubmit = async (data: UserMutationData) => {
+    try {
+      if (id) {
+        await handleUpdateUser(id, data);
+        navigate(ROUTES.ADMIN.USERS.INDEX);
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
+  };
+
+  if (!user) {
+    return <div className="p-6">User not found</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Edit User</h1>
+          <p className="text-gray-600">Modify user details and access permissions</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate(ROUTES.ADMIN.USERS.INDEX)}
+        >
+          View All Users
+        </Button>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <UserForm
+          initialData={user}
+          onSubmit={onSubmit}
+          mode="edit"
+        />
+      </div>
+    </div>
+  );
+}
+
+export default withPageErrorBoundary(EditUser, 'EditUser');

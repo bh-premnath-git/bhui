@@ -1,58 +1,97 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --font-sans: "Inter", sans-serif; 
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222.2 84% 4.9%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.75rem;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
     --chart-1-color: #003f5c;
     --chart-2-color: #2f4b7c;
     --chart-3-color: #665191;
     --chart-4-color: #a05195;
     --chart-5-color: #d45087;
   }
- 
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.9%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
     --chart-1-color: #003f5c;
     --chart-2-color: #2f4b7c;
     --chart-3-color: #665191;
@@ -61,101 +100,12 @@
   }
 }
 
-* {
-  @apply border-border;
-}
+@layer base {
+  * {
+    @apply border-border;
+  }
 
-body {
-  font-family: var(--font-sans);
-  @apply bg-background text-foreground;
-}
-
-/* Theme transition */
-* {
-  @apply transition-colors duration-200;
-}
-
-.sidebar-animation {
-  @apply transition-[width] duration-300 ease-in-out will-change-[width];
-}
-
-/* Add smooth transitions for sidebar content */
-.sidebar-content {
-  @apply transition-[opacity,transform] duration-300 ease-in-out;
-}
-
-.sidebar-content-collapsed {
-  @apply opacity-0 scale-95;
-}
-
-.sidebar-icon {
-  @apply transition-transform duration-300 ease-in-out;
-}
-
-.page-transition {
-  @apply transition-all duration-300 ease-in-out;
-}
-
-/* Apply theme-aware styles to all cards */
-.card {
-  @apply bg-card text-card-foreground;
-}
-
-/* Apply theme-aware styles to all inputs */
-input, textarea, select {
-  @apply bg-background text-foreground border-input;
-}
-
-/* Apply theme-aware styles to all buttons */
-button {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90;
-}
-
-/* Apply theme-aware styles to navigation links */
-nav a {
-  @apply text-foreground hover:text-foreground/80;
-}
-
-/* Apply theme-aware styles to headings */
-h1, h2, h3, h4, h5, h6 {
-  @apply text-foreground;
-}
-
-/* Apply theme-aware styles to all charts */
-.recharts-wrapper {
-  @apply text-foreground;
-}
-
-.recharts-cartesian-grid line {
-  @apply stroke-border;
-}
-
-.recharts-cartesian-axis-line {
-  @apply stroke-border;
-}
-
-.recharts-cartesian-axis-tick-line {
-  @apply stroke-border;
-}
-
-.recharts-cartesian-axis-tick-value {
-  @apply fill-foreground;
-}
-
-.recharts-tooltip-wrapper {
-  @apply bg-background border-border;
-}
-
-.flow-control-btn {
-  @apply px-4 py-2 rounded-lg transition-all duration-200 ease-in-out;
-  background-color: hsl(var(--primary) / 0.6);
-  color: hsl(var(--primary-foreground));
-}
-
-.flow-control-btn:hover {
-  background-color: hsl(var(--primary) / 0.4);
-}
-
-.flow-control-btn:disabled {
-  @apply opacity-50 cursor-not-allowed;
+  body {
+    @apply bg-background text-foreground;
+  }
 }

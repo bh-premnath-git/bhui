@@ -4,11 +4,11 @@ import { ROUTES } from './routes';
 
 // Lazy load all pages
 const NotFound = lazy(() => import('@/pages/NotFound'));
-const DataCatalog = lazy(() => import('@/features/data-catalog/DataCatalog'));
-const DesignerDashboard = lazy(() => import('@/features/designers/DesignerDashboard'));
-const BuildDataPipeline = lazy(() => import('@/features/designers/BuildDataPipeline'));
-const DataPipeCanvas = lazy(() => import('@/features/designers/DataPipelineCanvas'));
-const ManageFlow = lazy(() => import('@/features/designers/ManageFlow'));
+const DataCatalog = lazy(() => import('@/pages/data-catalog'));
+const DesignerDashboard = lazy(() => import('@/pages/designers/DesignerDashboard'));
+const BuildDataPipeline = lazy(() => import('@/pages/designers/BuildDataPipeline'));
+const DataPipeCanvas = lazy(() => import('@/pages/designers/DataPipelineCanvas'));
+const ManageFlow = lazy(() => import('@/pages/designers/ManageFlow'));
 const FlowCanvas = lazy(() => import('@/features/designers/FlowCanvas'));
 const DataOpsHub = lazy(() => import('@/features/dataops/DataOpsHub'));
 const OpsHub = lazy(() => import('@/features/dataops/OpsHub'));

@@ -24,7 +24,7 @@ const designerOptions = [
   },
 ];
 
-export default function Designers() {
+export function Designers() {
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Page Title */}

@@ -14,10 +14,12 @@ export const columns: ColumnDefWithFilters<DataSource>[] = [
     header: 'Name',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('data_src_name', {
-    header: 'Type',
-    enableColumnFilter: true,
+  columnHelper.accessor('data_src_desc', {
+    header: 'Description',
+    enableColumnFilter: false,
   }),
 ];
+
+
 
 

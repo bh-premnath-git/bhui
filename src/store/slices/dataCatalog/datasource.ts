@@ -1,30 +1,29 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DataSource } from '@/types/data-catalog/dataCatalog';  
 
 interface DataSourceState {
-  environments: DataSource[];
-  selectedEnvironment: DataSource | null;
+  datasource: DataSource[];
+  selectedDataSource: DataSource | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: DataSourceState = {
-  environments: [],
-  selectedEnvironment: null,
+  datasource: [],
+  selectedDataSource: null,
   loading: false,
   error: null,
 };
 
-const environmentsSlice = createSlice({
-  name: 'environments',
+const dataSourceSlice = createSlice({
+  name: 'datasource',
   initialState,
   reducers: {
-    setEnvironments: (state, action: PayloadAction<Environment[]>) => {
-      state.environments = action.payload;
+    setDatasources: (state, action: PayloadAction<DataSource[]>) => {
+      state.datasource = action.payload;
     },
-    setSelectedEnvironment: (state, action: PayloadAction<Environment | null>) => {
-      state.selectedEnvironment = action.payload;
+    setSelectedDatasource: (state, action: PayloadAction<DataSource | null>) => {
+      state.selectedDataSource = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -35,5 +34,5 @@ const environmentsSlice = createSlice({
   },
 });
 
-export const { setEnvironments, setSelectedEnvironment, setLoading, setError } = environmentsSlice.actions;
-export default environmentsSlice.reducer;
+export const { setDatasources, setSelectedDatasource, setLoading, setError } = dataSourceSlice.actions;
+export default dataSourceSlice.reducer;

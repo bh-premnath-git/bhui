@@ -1,8 +1,9 @@
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { AddEnvironment } from '@/features/admin/environment/pages/AddEnvironment';
 
 const EnvironmentAdd = () => {
   return (
-    <div>EnvironmentAdd</div>
+    <AddEnvironment />
   )
 }
 

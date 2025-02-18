@@ -7,11 +7,11 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { useUsers } from '@/features/admin/users/hooks/useUsers';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { UsersList } from '@/features/admin/users/Users';
-import { useUserManagementServive } from '@/features/admin/users/services/userMgtSrv';
+import { useUserManagementService } from '@/features/admin/users/services/userMgtSrv';
 
 function UsersListPage() {
   const { users, isLoading, isFetching, isError } = useUsers();
-  const usrMgntSrv = useUserManagementServive();
+  const usrMgntSrv = useUserManagementService();
   useEffect(() => {
     if(users && users.users.length > 0){
       usrMgntSrv.setUsers(users.users);

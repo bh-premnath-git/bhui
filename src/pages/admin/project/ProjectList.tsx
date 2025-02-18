@@ -9,7 +9,7 @@ import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ProjectsList } from '@/features/admin/projects/Projects';
 import { useProjectManagementServive } from '@/features/admin/projects/services/projMgtSrv';
 
-function Users() {
+function ProjectsListPage() {
   const { projects, isLoading, isFetching, isError } = useProjects();
   const projMgntSrv = useProjectManagementServive();
   useEffect(() => {
@@ -38,8 +38,8 @@ function Users() {
     return (
       <div className="p-6">
         <EmptyState
-          title="Welcome to Your User Management!"
-          description="Ready to manage your users."
+          title="Welcome to Your Project Management!"
+          description="Ready to manage your projects."
           Icon={FolderGit2}
         />
       </div>
@@ -60,4 +60,4 @@ function Users() {
   );
 }
 
-export default withPageErrorBoundary(Users, 'Users');
+export default withPageErrorBoundary(ProjectsListPage, 'Projects');

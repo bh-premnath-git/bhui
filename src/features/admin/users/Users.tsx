@@ -5,14 +5,14 @@ import { User } from '@/types/admin/user';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
-import { useUserManagementServive } from '@/features/admin/users/services/userMgtSrv';
+import { useUserManagementService } from '@/features/admin/users/services/userMgtSrv';
 
 export function UsersList({ users }: { users: User[] }) {
   const { handleNavigation } = useNavigation()
-  const usrMgntSrv = useUserManagementServive();
+  const usrMgntSrv = useUserManagementService();
 
   const onRowClickHandler = (row: Row<User>) => {
-    usrMgntSrv.selectatedUser(row.original)
+    usrMgntSrv.selectedUser(row.original)
     handleNavigation(ROUTES.ADMIN.USERS.EDIT(row.original.id))
   }
   return (

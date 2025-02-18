@@ -1,9 +1,6 @@
-import React from 'react'
-
-const FlowCanvas = () => {
+export const FlowCanvas = () => {
   return (
     <div>FlowCanvas</div>
   )
 }
 
-export default FlowCanvas

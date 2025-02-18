@@ -1,7 +1,10 @@
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { AddProject } from '@/features/admin/projects/pages/AddProject';
+
 const ProjeAdd = () => {
   return (
-    <div>ProjeAdd</div>
+    <AddProject />
   )
 }
 
-export default ProjeAdd
+export default withPageErrorBoundary(ProjeAdd, 'ProjeAdd');

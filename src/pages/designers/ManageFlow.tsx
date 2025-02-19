@@ -1,13 +1,16 @@
+import { useEffect } from 'react';
+import { GitBranch  } from 'lucide-react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { FlowList } from '@/features/designers/ManageFlow';
 import { useFlowManagementService } from '@/features/designers/flow/services/flowMgtSrv';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { useFlow } from '@/features/designers/flow/hooks/useFlow';
-import { useEffect } from 'react';
-import exp from 'constants';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { TableSkeleton } from '@/components/shared/TableSkeleton';
 
 export function ManageFlowPage() {
-    const { flows, isFetching } = useFlow();
+    const { flows, isLoading, isFetching, isError } = useFlow();
     const flowService = useFlowManagementService();
 
     useEffect(() => {
@@ -15,6 +18,34 @@ export function ManageFlowPage() {
             flowService.setFlows(flows);
         }
     }, [flows]);
+
+    if (isLoading) {
+        return (
+            <div className="p-6">
+                <TableSkeleton />
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="p-6">
+                <ErrorState message="Something went wrong" />
+            </div>
+        );
+    }
+
+    if (!flows || flows.length === 0) {
+        return (
+            <div className="p-6">
+                <EmptyState
+                    title="Welcome to Flow Management!"
+                    description="Ready to manage your flows."
+                    Icon={GitBranch}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">

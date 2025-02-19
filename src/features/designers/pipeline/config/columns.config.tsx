@@ -1,15 +1,11 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
-import { ROUTES } from '@/config/routes';
-import { PlusIcon, Users } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
-import { getInitials } from '@/lib/utils';
-import { useNavigation } from "@/hooks/useNavigation";
+import { PlusIcon, Network } from 'lucide-react';
 import { Pipeline } from '@/types/designer/pipeline';
 
 const columnHelper = createColumnHelper<Pipeline>()
 
-export const columns: ColumnDefWithFilters<Pipeline, any>[] = [
+const columns: ColumnDefWithFilters<Pipeline, any>[] = [
   columnHelper.accessor('pipeline_name', {
     header: 'Name',
     enableColumnFilter: true,
@@ -18,4 +14,22 @@ export const columns: ColumnDefWithFilters<Pipeline, any>[] = [
     header: 'Project Name',
     enableColumnFilter: true,
   }),
+  //  last updated, last executed
 ];
+
+
+const getToolbarConfig = (): TToolbarConfig => {
+  return {
+    buttons: [
+      {
+        label: <Network className="mr-2 h-4 w-4" />,
+        variant: "outline",
+        icon: PlusIcon,
+        onClick: () => {
+          console.log("L");
+        },
+      }]
+  }
+}
+
+export { columns, getToolbarConfig }

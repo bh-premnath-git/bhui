@@ -1,7 +1,6 @@
-
 import { useResource } from '@/hooks/api/useResource';
 import type { 
-  UsersPaginatedResponse,
+  User,
   UserMutationData 
 } from '@/types/admin/user';
 import { toast } from 'sonner';
@@ -11,25 +10,31 @@ interface UseUsersOptions {
   shouldFetch?: boolean;
 }
 
+/**
+ * Hook for managing users data and operations
+ */
 export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   const {
     getAll,
+    getOne,
     createOne,
     updateOne,
     deleteOne
-  } = useResource<UsersPaginatedResponse>('users', KEYCLOAK_API_PORT, false);
+  } = useResource<User>('users', KEYCLOAK_API_PORT, false);
 
   const { data: users, isLoading, isFetching, isError } = getAll();
-  
+
+  // Create mutations once at the hook level
   const createMutation = createOne();
-  const updateMutation = updateOne("placeholder-id");
-  const deleteMutation = deleteOne("placeholder-id");
+  const updateMutation = updateOne("");
+  const deleteMutation = deleteOne("");
 
   const handleCreateUser = async (data: UserMutationData) => {
     try {
       await createMutation.mutateAsync(data);
       toast.success('User created successfully');
     } catch (error) {
+      console.error("Error creating user:", error);
       toast.error('Failed to create user');
       throw error;
     }
@@ -40,6 +45,7 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
       await updateMutation.mutateAsync({ id, ...data });
       toast.success('User updated successfully');
     } catch (error) {
+      console.error("Error updating user:", error);
       toast.error('Failed to update user');
       throw error;
     }
@@ -50,6 +56,7 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
       await deleteMutation.mutateAsync({ id });
       toast.success('User deleted successfully');
     } catch (error) {
+      console.error("Error deleting user:", error);
       toast.error('Failed to delete user');
       throw error;
     }
@@ -60,6 +67,7 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     isLoading,
     isFetching,
     isError,
+    getOne,
     handleCreateUser,
     handleUpdateUser,
     handleDeleteUser

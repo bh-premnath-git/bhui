@@ -1,16 +1,15 @@
-
 import { createColumnHelper } from "@tanstack/react-table"
 import type {TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
 import { Environment } from '@/types/admin/environemnt';
 import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
 import { PlusIcon, Settings2 } from 'lucide-react';
-
+import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/date-format";
 
 const columnHelper = createColumnHelper<Environment>()
 
-
-export const columns: ColumnDefWithFilters<Environment>[] = [
+const columns: ColumnDefWithFilters<Environment>[] = [
   columnHelper.accessor('bh_env_name', {
     header: 'Name',
     enableColumnFilter: true,
@@ -19,14 +18,30 @@ export const columns: ColumnDefWithFilters<Environment>[] = [
     header: 'Type',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('status', {
-    header: 'Status',
+  columnHelper.accessor('created_at', {
+    header: 'Created On',
+    cell: ({ row }) => {
+      const date = row.getValue('created_at') as string | null;
+      const formattedDate = date ? formatDate(date) : formatDate(new Date(), 'yyyy-MM-dd');
+      return <div>{formattedDate}</div>;
+    },
     enableColumnFilter: false,
   }),
-  
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: ({ row }) => {
+      const type = row.getValue('status') as string;
+      return (
+        <Badge className={`capitalize ${type === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          {type}
+        </Badge>
+      );
+    },
+    enableColumnFilter: false,
+  }),
 ];
 
-export const getToolbarConfig = (): TToolbarConfig => {
+const getToolbarConfig = (): TToolbarConfig => {
   const { handleNavigation } = useNavigation()
   return {
     buttons: [
@@ -41,3 +56,5 @@ export const getToolbarConfig = (): TToolbarConfig => {
   }
 
 }
+
+export { columns, getToolbarConfig }

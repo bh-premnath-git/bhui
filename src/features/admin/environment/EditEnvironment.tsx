@@ -1,7 +1,7 @@
-
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EnvironmentForm } from './components/EnvironmentForm';
-import { EnvironmentMutationData } from '@/types/admin/environemnt';
+import { EnvironmentFormValues } from './components/environmentFormSchema';
 import { useEnvironments } from './hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,24 @@ export function EditEnvironment() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { handleUpdateEnvironment, environments } = useEnvironments();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const environment = environments?.find(e => e.id === id);
 
-  const onSubmit = async (data: EnvironmentMutationData) => {
+  const onSubmit = async (data: EnvironmentFormValues) => {
     try {
+      setIsSubmitting(true);
+      setError(null);
       if (id) {
-        await handleUpdateEnvironment(id, data);
+        //await handleUpdateEnvironment(id, data);
         navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX);
       }
     } catch (error) {
       console.error('Failed to update environment:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update environment');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -43,9 +50,11 @@ export function EditEnvironment() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Edit Environment</h1>
         <EnvironmentForm
+          mode="edit"
           initialData={environment}
           onSubmit={onSubmit}
-          onCancel={() => navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX)}
+          isSubmitting={isSubmitting}
+          error={error}
         />
       </div>
     </div>

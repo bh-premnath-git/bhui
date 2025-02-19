@@ -1,149 +1,156 @@
+"use client"
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Form } from "@/components/ui/form"
+import { environmentFormSchema, type EnvironmentFormValues } from "./environmentFormSchema"
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { EnvironmentMutationData } from '../types/environment.types';
+  EnvironmentDetailsFields,
+  PlatformFields,
+  CredentialsFields,
+  AdvancedSettingsFields,
+  TagsField,
+} from "./FormFields"
+import { Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface EnvironmentFormProps {
-  initialData?: EnvironmentMutationData;
-  onSubmit: (data: EnvironmentMutationData) => void;
-  onCancel: () => void;
+  initialData?: EnvironmentFormValues
+  onSubmit: (data: EnvironmentFormValues) => Promise<void>
+  mode: "create" | "edit"
+  isSubmitting: boolean
+  error: string | null
 }
 
-export function EnvironmentForm({ initialData, onSubmit, onCancel }: EnvironmentFormProps) {
-  const form = useForm<EnvironmentMutationData>({
+export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, error }: EnvironmentFormProps) {
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
+
+  const form = useForm<EnvironmentFormValues>({
+    resolver: zodResolver(environmentFormSchema),
     defaultValues: initialData || {
-      name: '',
-      description: '',
-      status: 'active',
-      type: 'development'
+      environmentName: "",
+      environment: "",
+      platform: {
+        type: "",
+        region: "",
+        zone: "",
+      },
+      credentials: {
+        accessKey: "",
+        secretKey: "",
+        token: "",
+      },
+      advancedSettings: {
+        vpc: "",
+        subnet: "",
+        securityGroup: "",
+      },
+      tags: [],
+    },
+  })
+
+  const isEditMode = mode === "edit"
+
+  useEffect(() => {
+    if (isSubmitting) {
+      setFormState("submitting")
+    } else if (error) {
+      setFormState("error")
+    } else if (!isSubmitting && formState === "submitting") {
+      setFormState("success")
+      const timer = setTimeout(() => setFormState("idle"), 2000)
+      return () => clearTimeout(timer)
     }
-  });
+  }, [isSubmitting, error, formState])
+
+  const handleSubmit = async (data: EnvironmentFormValues) => {
+    try {
+      await onSubmit(data)
+    } catch (error) {
+      console.error("Form submission error:", error)
+    }
+  }
+
+  const getButtonStyles = () => {
+    switch (formState) {
+      case "submitting":
+        return "bg-blue-500 hover:bg-blue-600"
+      case "success":
+        return "bg-green-500 hover:bg-green-600"
+      case "error":
+        return "bg-red-500 hover:bg-red-600"
+      default:
+        return "bg-primary hover:bg-primary/90"
+    }
+  }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="bg-card border rounded-lg divide-y">
-          {/* Environment Details Section */}
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-blue-600 mb-4">Environment Details</h3>
-            <div className="grid gap-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Environment Name <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. My Dev Env" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+    <Card className="w-full max-w-8xl mx-auto border-none shadow-none">
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <Accordion type="single" collapsible defaultValue="environment-details">
+              <AccordionItem value="environment-details">
+                <AccordionTrigger className="text-lg font-semibold text-primary">Environment Details</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <EnvironmentDetailsFields form={form} />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="platform">
+                <AccordionTrigger className="text-lg font-semibold">Select Platform</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <PlatformFields form={form} />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="credentials">
+                <AccordionTrigger className="text-lg font-semibold">Credentials</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <CredentialsFields form={form} />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="advanced-settings">
+                <AccordionTrigger className="text-lg font-semibold">Advanced Settings</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <AdvancedSettingsFields form={form} />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="tags">
+                <AccordionTrigger className="text-lg font-semibold">Tags</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <TagsField form={form} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            <div className="flex justify-center pt-6">
+              <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
+                {formState === "submitting" ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {isEditMode ? "Updating..." : "Creating..."}
+                  </>
+                ) : formState === "success" ? (
+                  "Success!"
+                ) : formState === "error" ? (
+                  "Error"
+                ) : isEditMode ? (
+                  "Update Environment"
+                ) : (
+                  "Create Environment"
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Environment Type <span className="text-destructive">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select environment type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="development">Development</SelectItem>
-                        <SelectItem value="staging">Staging</SelectItem>
-                        <SelectItem value="production">Production</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe your environment"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              </Button>
             </div>
-          </div>
-
-          {/* Platform Selection */}
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-green-600 mb-4">Select Platform</h3>
-            <div className="p-4 bg-muted/50 rounded-md">
-              <p className="text-muted-foreground text-sm">No platform selected</p>
-            </div>
-          </div>
-
-          {/* Credentials Section */}
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-orange-600 mb-4">Credentials</h3>
-            <div className="p-4 bg-muted/50 rounded-md">
-              <p className="text-muted-foreground text-sm">No credentials configured</p>
-            </div>
-          </div>
-
-          {/* Advanced Settings */}
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-purple-600 mb-4">Advanced Settings</h3>
-            <div className="p-4 bg-muted/50 rounded-md">
-              <p className="text-muted-foreground text-sm">No advanced settings configured</p>
-            </div>
-          </div>
-
-          {/* Tags Section */}
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-pink-600 mb-4">Tags</h3>
-            <div className="p-4 bg-muted/50 rounded-md">
-              <p className="text-muted-foreground text-sm">No tags added</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-4">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit">
-            {initialData ? 'Update' : 'Create'} Environment
-          </Button>
-        </div>
-      </form>
-    </Form>
-  );
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  )
 }

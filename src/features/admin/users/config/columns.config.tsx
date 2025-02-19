@@ -9,9 +9,10 @@ import { useNavigation } from "@/hooks/useNavigation";
 
 const columnHelper = createColumnHelper<User>()
 
-export const columns: ColumnDefWithFilters<User, any>[] = [
+const columns: ColumnDefWithFilters<User, any>[] = [
   columnHelper.accessor('username', {
     header: 'Name',
+
     cell: (info) => {
       const intials = getInitials(info.getValue())
       return (
@@ -55,7 +56,7 @@ export const columns: ColumnDefWithFilters<User, any>[] = [
   }),
 ];
 
-export const getToolbarConfig = (): TToolbarConfig => {
+const getToolbarConfig = (): TToolbarConfig => {
   const { handleNavigation } = useNavigation()
   return {
     buttons: [
@@ -70,3 +71,5 @@ export const getToolbarConfig = (): TToolbarConfig => {
   }
 
 }
+
+export { columns, getToolbarConfig }

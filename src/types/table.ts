@@ -19,7 +19,7 @@ export interface TopSectionProps<TData> {
 }
 
 export interface ColumnHeaderButton {
-  icon: LucideIcon
+  icon: LucideIcon | React.ComponentType<React.SVGProps<SVGSVGElement>>
   onClick: () => void
   tooltip?: string
 }
@@ -36,6 +36,22 @@ export interface DataTableProps<TData> {
   pagination?: boolean
   toolbarConfig?: TToolbarConfig
   onRowClick?: (row: Row<TData>) => void
+}
+
+export interface TToolbarButton {
+  label: string | React.ReactNode
+  icon: LucideIcon
+  variant: "link" | "default" | "outline" | "destructive" | "secondary" | "ghost"
+  onClick: () => void
+}
+
+export interface TToolbarConfig {
+  buttons: TToolbarButton[]
+}
+
+export interface TopSectionProps<TData> {
+  table: Table<TData>
+  toolbarConfig: TToolbarConfig
 }
 
 export type StatusMetric = {

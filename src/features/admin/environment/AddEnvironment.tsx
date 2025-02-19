@@ -1,7 +1,7 @@
-
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnvironmentForm } from './components/EnvironmentForm';
-import { EnvironmentMutationData } from '@/types/admin/environemnt';
+import { EnvironmentFormValues } from './components/environmentFormSchema';
 import { useEnvironments } from './hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,20 @@ import { ArrowLeft } from 'lucide-react';
 export function AddEnvironment() {
   const navigate = useNavigate();
   const { handleCreateEnvironment } = useEnvironments({ shouldFetch: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (data: EnvironmentMutationData) => {
+  const onSubmit = async (data: EnvironmentFormValues) => {
     try {
-      await handleCreateEnvironment(data);
+      setIsSubmitting(true);
+      setError(null);
+      //await handleCreateEnvironment(data);
       navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX);
     } catch (error) {
       console.error('Failed to create environment:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create environment');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -33,9 +40,11 @@ export function AddEnvironment() {
       
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Add New Environment</h1>
-        <EnvironmentForm
-          onSubmit={onSubmit}
-          onCancel={() => navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX)}
+        <EnvironmentForm 
+          mode="create" 
+          onSubmit={onSubmit} 
+          isSubmitting={isSubmitting} 
+          error={error} 
         />
       </div>
     </div>

@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button';
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { handleUpdateUser, handleGetUser } = useUsers();
+  const { handleUpdateUser, getUserById } = useUsers();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const user = handleGetUser(id);
+  const user = getUserById(id);
   debugger
   const onSubmit = async (data: UserMutationData) => {
     try {

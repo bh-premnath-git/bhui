@@ -1,9 +1,22 @@
+import { DataTable } from "@/components/bh-table/data-table";
+import { AlertHub } from "@/types/dataops/alertsHub";
+import { Row } from '@tanstack/react-table';
+import { useNavigation } from "@/hooks/useNavigation";
+import { ROUTES } from "@/config/routes";
+import { useAlertHubManagementService } from "@/features/dataops/alertsHubs/services/alertsHubMgtSrv";
+import { columns } from "./alertsHubs/config/columns.config";
 
-export function AlertsHub() {
+export function AlertsHub({ alertHubs }: { alertHubs: AlertHub[] }) {
+  const { handleNavigation } = useNavigation();
+  const alertHubSrv = useAlertHubManagementService();
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Alerts Hub</h1>
-      <p>View and manage system alerts.</p>
-    </div>
+    <DataTable<AlertHub>
+      columns={columns}
+      data={alertHubs || []}
+      topVariant="simple"
+      pagination={true}
+    />
   );
 }
+

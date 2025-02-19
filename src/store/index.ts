@@ -5,7 +5,8 @@ import projectsReducer from './slices/admin/projectsSlice';
 import environmentsReducer from './slices/admin/environmentsSlice';
 import dataSourceReducer from './slices/dataCatalog/datasourceSlice';
 import pipelineReducer from './slices/designer/pipelineSlice';
-import { pipeline } from 'stream';
+import dataopshubReducer from './slices/dataops/dataOpsHubSlice';
+import alertHubReducer from './slices/dataops/alertHubSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,8 @@ export const store = configureStore({
     environments: environmentsReducer,
     datasource: dataSourceReducer,
     pipeline: pipelineReducer,
+    dataOpsHub: dataopshubReducer,
+    alertHub: alertHubReducer,
   },
 });
 

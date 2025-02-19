@@ -28,7 +28,6 @@ export function AddProject() {
 
   return (
     <ProjectPageLayout
-      title="Create New Project"
       description="Configure your project settings and repository details."
     >
       <ProjectForm 

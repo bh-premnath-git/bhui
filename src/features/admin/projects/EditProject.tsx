@@ -37,7 +37,6 @@ export function EditProject() {
 
   return (
     <ProjectPageLayout
-      title="Edit Project"
       description="Modify your project settings and repository details."
     >
       <ProjectForm

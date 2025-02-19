@@ -69,7 +69,7 @@ export function ProjectForm({ initialData, onSubmit, mode, isSubmitting, error }
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto border-none shadow-none">
+    <Card className="w-full max-w-6xl mx-auto border-none shadow-none">
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">

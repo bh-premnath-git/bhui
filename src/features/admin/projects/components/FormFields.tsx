@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { githubProviders } from "./projectFormSchema"
-import { AddTagDialog } from "./AddTagDialog"
+import { AddTagDialog } from "@/components/shared/AddTagDialog"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>

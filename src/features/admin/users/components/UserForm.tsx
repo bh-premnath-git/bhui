@@ -1,309 +1,105 @@
-import { useEffect, useState } from 'react';
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useDebounce } from "use-debounce";
-import { X } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-const userSchema = z.object({
-  firstName: z.string().min(1, "First Name is required"),
-  middleName: z.string().optional(),
-  lastName: z.string().min(1, "Last Name is required"),
-  email: z.string().email("Invalid email address").min(1, "Email is required"),
-  projects: z.array(z.string()).min(1, "At least one project is required"),
-  roles: z.array(z.string()).min(1, "At least one role is required"),
-});
-
-type UserFormData = z.infer<typeof userSchema>;
+import { useState, useEffect } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Form } from "@/components/ui/form"
+import { Loader2 } from "lucide-react"
+import { userFormSchema } from "./userFormSchema"
+import { NameFields, EmailField, StatusField, ProjectsAndRolesFields } from "./FormFields"
+import type { UserMutationData } from "@/types/admin/user"
 
 interface UserFormProps {
-  initialData?: Partial<UserFormData>;
-  onSubmit: (data: UserFormData) => void;
-  onCancel?: () => void;
-  mode?: 'create' | 'edit';
-  availableProjects?: Array<{ label: string; value: string }>;
-  checkUserExists?: (firstName: string) => Promise<boolean>;
+  initialData?: Partial<UserMutationData> | any
+  onSubmit: (data: UserMutationData) => Promise<void>
+  mode: "create" | "edit"
+  isSubmitting: boolean
+  error: string | null
 }
 
-export function UserForm({
-  initialData,
-  onSubmit,
-  onCancel,
-  mode = 'create',
-  availableProjects = [],
-  checkUserExists
-}: UserFormProps) {
-  const [userExistModalOpen, setUserExistModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export function UserForm({ initialData, onSubmit, mode, isSubmitting, error }: UserFormProps) {
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
 
-  const form = useForm<UserFormData>({
-    resolver: zodResolver(userSchema),
-    defaultValues: {
-      firstName: initialData?.firstName || "",
-      middleName: initialData?.middleName || "",
-      lastName: initialData?.lastName || "",
-      email: initialData?.email || "",
-      projects: initialData?.projects || [],
-      roles: initialData?.roles || [],
+  const form = useForm<UserMutationData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: initialData || {
+      first_name: "",
+      last_name: "",
+      email: "",
+      enabled: true,
+      projects: [],
+      realm_roles: [],
     },
-    mode: "onChange"
-  });
+  })
 
-  const watchFirstName = form.watch("firstName");
-  const [debouncedFirstName] = useDebounce(watchFirstName, 500);
-
-  const availableRoles = ["admin-user", "ops-user", "designer-user"];
+  const isEditMode = mode === "edit"
 
   useEffect(() => {
-    const checkName = async () => {
-      if (mode === 'create' && debouncedFirstName?.length >= 3 && checkUserExists) {
-        const exists = await checkUserExists(debouncedFirstName);
-        setUserExistModalOpen(exists);
-      }
-    };
-    checkName();
-  }, [debouncedFirstName, mode, checkUserExists]);
-
-  // Utility functions for managing arrays
-  const addToArray = (field: "projects" | "roles", value: string) => {
-    const current = form.getValues(field);
-    if (!current.includes(value)) {
-      form.setValue(field, [...current, value], {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
+    if (isSubmitting) {
+      setFormState("submitting")
+    } else if (error) {
+      setFormState("error")
+    } else if (!isSubmitting && formState === "submitting") {
+      setFormState("success")
+      const timer = setTimeout(() => setFormState("idle"), 2000)
+      return () => clearTimeout(timer)
     }
-  };
+  }, [isSubmitting, error, formState])
 
-  const removeFromArray = (field: "projects" | "roles", value: string) => {
-    const current = form.getValues(field);
-    form.setValue(
-      field,
-      current.filter((item) => item !== value),
-      { shouldValidate: true, shouldDirty: true }
-    );
-  };
-
-  const handleSubmit = async (data: UserFormData) => {
+  const handleSubmit = async (data: UserMutationData) => {
     try {
-      setIsLoading(true);
-      await onSubmit(data);
-    } finally {
-      setIsLoading(false);
+      // Generate username from first_name and last_name
+      const username = `${data.first_name.toLowerCase()}${data.last_name.toLowerCase()}`
+      await onSubmit({ ...data, username })
+    } catch (error) {
+      console.error("Form submission error:", error)
     }
-  };
+  }
+
+  const getButtonStyles = () => {
+    switch (formState) {
+      case "submitting":
+        return "bg-blue-500 hover:bg-blue-600"
+      case "success":
+        return "bg-green-500 hover:bg-green-600"
+      case "error":
+        return "bg-red-500 hover:bg-red-600"
+      default:
+        return "bg-primary hover:bg-primary/90"
+    }
+  }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-md">
-          {mode === 'create' ? 'Create New User' : 'Edit User'}
-        </CardTitle>
-        {onCancel && (
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-      </CardHeader>
-
+    <Card className="w-full max-w-6xl mx-auto border-none shadow-none">
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">User Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter first name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="middleName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Middle Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter middle name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name <span className="text-destructive">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter last name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email" 
-                        className="w-1/2" 
-                        placeholder="Enter email address" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <NameFields form={form} />
+            <EmailField form={form} />
+            <StatusField form={form} />
+            <ProjectsAndRolesFields form={form} />
+            <div className="flex flex-col items-center space-y-2">
+              <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
+                {formState === "submitting" ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {isEditMode ? "Updating..." : "Creating..."}
+                  </>
+                ) : formState === "success" ? (
+                  "Success!"
+                ) : formState === "error" ? (
+                  "Error"
+                ) : isEditMode ? (
+                  "Update User"
+                ) : (
+                  "Create User"
                 )}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Project Access</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <FormLabel>Projects <span className="text-destructive">*</span></FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {form.watch("projects").map((project) => (
-                      <Badge
-                        key={project}
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {project}
-                        <X
-                          className="h-3 w-3 cursor-pointer"
-                          onClick={() => removeFromArray("projects", project)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                  <Select
-                    onValueChange={(value) => addToArray("projects", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProjects.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.projects && (
-                    <p className="text-red-500 text-sm">
-                      {form.formState.errors.projects.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <FormLabel>Roles <span className="text-destructive">*</span></FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {form.watch("roles").map((role) => (
-                      <Badge
-                        key={role}
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {role}
-                        <X
-                          className="h-3 w-3 cursor-pointer"
-                          onClick={() => removeFromArray("roles", role)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                  <Select
-                    onValueChange={(value) => addToArray("roles", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableRoles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.roles && (
-                    <p className="text-red-500 text-sm">
-                      {form.formState.errors.roles.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <Button
-                type="submit"
-                className="w-full max-w-xs"
-                disabled={isLoading || !form.formState.isValid}
-              >
-                {isLoading ? 'Processing...' : mode === 'create' ? 'Create User' : 'Update User'}
               </Button>
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
           </form>
         </Form>
       </CardContent>
-
-      <Dialog open={userExistModalOpen} onOpenChange={setUserExistModalOpen}>
-        <DialogContent className="sm:max-w-[300px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold text-red-600">
-              User Already Exists
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-1 py-2 text-center">
-            <p className="text-sm text-gray-700">
-              A user with this first name already exists. Please choose a different name.
-            </p>
-            <Button
-              onClick={() => setUserExistModalOpen(false)}
-              className="mt-2"
-            >
-              OK
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
-  );
+  )
 }

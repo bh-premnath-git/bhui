@@ -6,20 +6,31 @@ import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
 import { PlusIcon, FolderGit2 } from 'lucide-react';
 
-
 const columnHelper = createColumnHelper<Project>();
 
-export const columns: ColumnDefWithFilters<Project>[] = [
+const columns: ColumnDefWithFilters<Project>[] = [
   columnHelper.accessor('bh_project_name', {
     header: 'Name',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('bh_github_provider', {
-    header: 'Type',
+  columnHelper.accessor('ytd_cost', {
+    header: 'Ytd Cost',
+    enableColumnFilter: false,
+  }),
+  columnHelper.accessor('current_month_cost', {
+    header: 'Current Month Cost',
+    enableColumnFilter: false,
+  }),
+  columnHelper.accessor('total_data_sources', {
+    header: 'Data Sources',
+    enableColumnFilter: false,
+  }),
+  columnHelper.accessor('status', {
+    header: 'Status',
     cell: ({ row }) => {
-      const type = row.getValue('bh_github_provider') as number;
+      const type = row.getValue('status') as string;
       return (
-        <Badge variant="outline">
+        <Badge className={`capitalize ${type === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
           {type}
         </Badge>
       );
@@ -28,7 +39,7 @@ export const columns: ColumnDefWithFilters<Project>[] = [
   }),
 ];
 
-export const getToolbarConfig = (): TToolbarConfig => {
+const getToolbarConfig = (): TToolbarConfig => {
   const { handleNavigation } = useNavigation()
   return {
     buttons: [
@@ -43,3 +54,5 @@ export const getToolbarConfig = (): TToolbarConfig => {
   }
 
 }
+
+export { columns, getToolbarConfig }

@@ -15,7 +15,7 @@ export interface BaseUser {
   emailVerified: boolean;
   realm_roles: string[];
   projects: string[];
-  
+
   // Add optional fields for user creation/update
   credentials?: Array<{
     type: string;
@@ -39,7 +39,7 @@ export interface User extends BaseUser {
     impersonate: boolean;
     manage: boolean;
   };
-  
+
   // Add missing API fields
   attributes?: Record<string, any>;
   groups?: string[];
@@ -59,10 +59,10 @@ export interface UserResponse {
 }
 
 // Update mutation type to handle different operations
-export type UserMutationData = Omit<BaseUser, 'realm_roles' | 'projects'> & {
-  id?: string; // Required for updates
-  realm_roles?: string[];
-  projects?: string[];
+export type UserMutationData = Omit<BaseUser, 'firstName' | 'lastName'> & {
+  id?: string;
+  first_name?: string;
+  last_name?: string;
   credentials?: Array<{
     type: string;
     value: string;

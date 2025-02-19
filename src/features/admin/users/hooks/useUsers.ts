@@ -14,13 +14,15 @@ interface UseUsersOptions {
 export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   const {
     getAll,
+    getOne,
     createOne,
     updateOne,
     deleteOne
   } = useResource<UsersPaginatedResponse>('users', KEYCLOAK_API_PORT, false);
 
   const { data: users, isLoading, isFetching, isError } = getAll();
-  
+
+  const getUserById =async (id: string) => getOne(id);
   const createMutation = createOne();
   const updateMutation = updateOne("placeholder-id");
   const deleteMutation = deleteOne("placeholder-id");
@@ -34,6 +36,17 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
       throw error;
     }
   };
+
+  const handleGetUser = async (id: string) => {
+    try {
+     const user = await getUserById(id);
+      toast.success('User fetched successfully');
+      return user;
+    } catch (error) {
+      toast.error('Failed to get user');
+      throw error;
+    }
+  }
 
   const handleUpdateUser = async (id: string, data: UserMutationData) => {
     try {
@@ -60,6 +73,7 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     isLoading,
     isFetching,
     isError,
+    handleGetUser,
     handleCreateUser,
     handleUpdateUser,
     handleDeleteUser

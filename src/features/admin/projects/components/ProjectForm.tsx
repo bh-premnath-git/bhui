@@ -1,194 +1,103 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ProjectMutationData } from '../types/project.types';
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Form } from "@/components/ui/form"
+import { projectFormSchema, type ProjectFormValues } from "./projectFormSchema"
+import { ProjectNameField, GithubFields, TagsField } from "./FormFields"
+import { Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface ProjectFormProps {
-  initialData?: ProjectMutationData;
-  onSubmit: (data: ProjectMutationData) => void;
-  mode?: 'create' | 'edit';
+  initialData?: ProjectFormValues
+  onSubmit: (data: ProjectFormValues) => Promise<void>
+  mode: "create" | "edit"
+  isSubmitting: boolean
+  error: string | null
 }
 
-export function ProjectForm({ initialData, onSubmit, mode = 'create' }: ProjectFormProps) {
-  const form = useForm<ProjectMutationData>({
+export function ProjectForm({ initialData, onSubmit, mode, isSubmitting, error }: ProjectFormProps) {
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectFormSchema),
     defaultValues: initialData || {
-      name: '',
-      description: '',
-      status: 'active',
-      type: 'development',
-      gitProvider: '',
-      gitUsername: '',
-      gitEmail: '',
-      defaultBranch: 'main',
-      gitHubUrl: '',
-      gitHubToken: '',
-      tags: []
+      projectName: "",
+      githubProvider: "",
+      githubUsername: "",
+      githubEmail: "",
+      defaultBranch: "main",
+      githubRepositoryUrl: "",
+      githubToken: "",
+      tags: [],
+    },
+  })
+
+  const isEditMode = mode === "edit"
+
+  useEffect(() => {
+    if (isSubmitting) {
+      setFormState("submitting")
+    } else if (error) {
+      setFormState("error")
+    } else if (!isSubmitting && formState === "submitting") {
+      setFormState("success")
+      const timer = setTimeout(() => setFormState("idle"), 2000)
+      return () => clearTimeout(timer)
     }
-  });
+  }, [isSubmitting, error, formState])
+
+  const handleSubmit = async (data: ProjectFormValues) => {
+    try {
+      await onSubmit(data)
+    } catch (error) {
+      console.error("Form submission error:", error)
+    }
+  }
+
+  const getButtonStyles = () => {
+    switch (formState) {
+      case "submitting":
+        return "bg-blue-500 hover:bg-blue-600"
+      case "success":
+        return "bg-green-500 hover:bg-green-600"
+      case "error":
+        return "bg-red-500 hover:bg-red-600"
+      default:
+        return "bg-primary hover:bg-primary/90"
+    }
+  }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="p-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Name <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter project name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="border-t">
-          <div className="p-6">
-            <h3 className="text-lg font-medium mb-4">Repository Details</h3>
-            <div className="grid gap-6">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="gitProvider"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Git Provider <span className="text-destructive">*</span></FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Provider" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="github">GitHub</SelectItem>
-                          <SelectItem value="gitlab">GitLab</SelectItem>
-                          <SelectItem value="bitbucket">Bitbucket</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="gitUsername"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Git Username <span className="text-destructive">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. johndoe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="gitEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Git Email <span className="text-destructive">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="user@github.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="defaultBranch"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Branch</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. main" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="gitHubUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GitHub URL <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://github.com/username/repository" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+    <Card className="w-full max-w-4xl mx-auto border-none shadow-none">
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+            <ProjectNameField form={form} />
+            <GithubFields form={form} />
+            <TagsField form={form} />
+            <div className="flex justify-center">
+              <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
+                {formState === "submitting" ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {isEditMode ? "Updating..." : "Creating..."}
+                  </>
+                ) : formState === "success" ? (
+                  "Success!"
+                ) : formState === "error" ? (
+                  "Error"
+                ) : isEditMode ? (
+                  "Update Project"
+                ) : (
+                  "Create Project"
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gitHubToken"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GitHub Token <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Tags</h3>
-              <Button type="button" variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Tag
               </Button>
             </div>
-            <p className="text-muted-foreground text-sm">Add tags to identify compute instances.</p>
-            <div className="mt-4 p-4 border rounded-md bg-muted/50">
-              <p className="text-muted-foreground text-sm">No tags added yet</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t p-6">
-          <div className="flex justify-end">
-            <Button type="submit">
-              {mode === 'create' ? 'Create Project' : 'Update Project'}
-            </Button>
-          </div>
-        </div>
-      </form>
-    </Form>
-  );
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  )
 }

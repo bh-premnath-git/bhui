@@ -39,8 +39,13 @@ const columns: ColumnDefWithFilters<Pipeline, any>[] = [
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="h-4 w-4" align="end" side="right">
-            <DropdownMenuItem>
+          <DropdownMenuContent align="end" side="right">
+            <DropdownMenuItem
+             onClick={(event) => {
+              event.stopPropagation();
+              console.log("Delete row >>",row);
+            }}
+            >
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

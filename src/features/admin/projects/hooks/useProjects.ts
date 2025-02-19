@@ -3,13 +3,17 @@ import { ProjectPaginatedResponse, ProjectMutationData } from '@/types/admin/pro
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 
-export const useProjects = () => {
+interface UseProjectsOptions {
+  shouldFetch?: boolean;
+}
+
+export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
   const {
     getAll,
     createOne,
     updateOne,
     deleteOne
-  } = useResource<ProjectPaginatedResponse>('projects', CATALOG_API_PORT, true);
+  } = useResource<ProjectPaginatedResponse>('bh_project', CATALOG_API_PORT, true);
 
   const { data: projects, isLoading, isFetching, isError } = getAll('/bh_project/list/');
   const createMutation = createOne();

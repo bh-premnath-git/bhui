@@ -1,7 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
-import { PlusIcon, Network } from 'lucide-react';
+import { PlusIcon, Network, MoreVertical  } from 'lucide-react';
 import { Pipeline } from '@/types/designer/pipeline';
+import { formatDate } from "@/lib/date-format";
 
 const columnHelper = createColumnHelper<Pipeline>()
 
@@ -14,7 +15,23 @@ const columns: ColumnDefWithFilters<Pipeline, any>[] = [
     header: 'Project Name',
     enableColumnFilter: true,
   }),
-  //  last updated, last executed
+  columnHelper.accessor('updated_at', {
+    header: 'Last Updated',
+    cell: ({ row }) => formatDate(row.getValue('updated_at') ?? new Date()),
+    enableColumnFilter: false,
+  }),
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      return (
+        <div className="flex items-center space-x-2">
+          <MoreVertical className="h-4 w-4" />
+        </div>
+      )
+    },
+    enableColumnFilter: false,
+  }
 ];
 
 

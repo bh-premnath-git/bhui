@@ -1,8 +1,21 @@
-export function BuildDataPipeline() {
+import { DataTable } from '@/components/bh-table/data-table';
+import { Row } from '@tanstack/react-table';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
+import { columns } from './pipeline/config/columns.config';
+import { Pipeline } from '@/types/designer/pipeline';
+import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv';
+
+export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
+  const { handleNavigation } = useNavigation();
+  const pipelineSrv = usePipelineManagementService();
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Build Data Pipelines</h1>
-      <p>Create and configure your data pipelines.</p>
-    </div>
+    <DataTable<Pipeline>
+      columns={columns}
+      data={pipeline || []}
+      topVariant="simple"
+      pagination={true}
+    />
   );
 }

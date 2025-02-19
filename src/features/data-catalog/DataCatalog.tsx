@@ -1,8 +1,21 @@
-export function DataCatalog() {
+import { DataTable } from '@/components/bh-table/data-table';
+import { columns } from './config/columns.config';
+import { DataSource } from '@/types/data-catalog/dataCatalog';
+import { Row } from '@tanstack/react-table';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
+import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
+
+export function DataCatalog({ datasources }: { datasources: DataSource[] }) {
+  const { handleNavigation } = useNavigation();
+  const dataCatalogSrv = useDataCatalogManagementService();
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Data Catalog</h1>
-      <p>Explore and manage your data assets here.</p>
-    </div>
+    <DataTable<DataSource>
+      columns={columns}
+      data={datasources || []}
+      topVariant="simple"
+      pagination={true}
+    />
   );
 }

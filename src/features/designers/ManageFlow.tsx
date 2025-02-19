@@ -1,8 +1,21 @@
-export function ManageFlow() {
+import { DataTable } from '@/components/bh-table/data-table';
+import { Row } from '@tanstack/react-table';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
+import { columns } from './flow/config/columns.config';
+import { Flow } from '@/types/designer/flow';
+import { useFlowManagementService } from './flow/services/flowMgtSrv';
+
+export function FlowList({ flows }: { flows: Flow[] }) {
+  const { handleNavigation } = useNavigation();
+  const flowSrv = useFlowManagementService();
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Manage Flow</h1>
-      <p>Control and monitor your data flows.</p>
-    </div>
+    <DataTable<Flow>
+      columns={columns}
+      data={flows || []}
+      topVariant="simple"
+      pagination={true}
+    />
   );
 }

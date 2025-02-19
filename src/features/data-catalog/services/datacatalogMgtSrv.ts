@@ -1,6 +1,6 @@
 import { DataSource } from "@/types/data-catalog/dataCatalog";
 import { useAppDispatch } from "@/hooks/uaeRedux";
-import { setDatasources, setSelectedDatasource } from "@/store/slices/dataCatalog/datasource";
+import { setDatasources, setSelectedDatasource } from "@/store/slices/dataCatalog/datasourceSlice";
 
 export interface DataCatalogManagementService {
     getDatasources(): Promise<DataSource[]>;

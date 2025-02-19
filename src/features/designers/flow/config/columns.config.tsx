@@ -1,7 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
-import { PlusIcon, GitBranch } from 'lucide-react';
+import { PlusIcon, GitBranch, MoreVertical } from 'lucide-react';
 import { Flow } from '@/types/designer/flow';
+import { formatDate } from "@/lib/date-format";
 
 const columnHelper = createColumnHelper<Flow>()
 
@@ -12,9 +13,30 @@ const columns: ColumnDefWithFilters<Flow>[] = [
   }),
   columnHelper.accessor('bh_project_name', {
     header: 'Project',
-    enableColumnFilter: true,     
+    enableColumnFilter: true,
   }),
-  // createdby, lastupdated, lastexecu
+  columnHelper.accessor('created_by', {
+    header: 'Created By',
+    enableColumnFilter: false,
+  }),
+  columnHelper.accessor('updated_at', {
+    header: 'Last Updated',
+    cell: (info) => formatDate(info.getValue()),
+    enableColumnFilter: false,
+  }),
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      return (
+        <div className="flex items-center space-x-2">
+          <MoreVertical className="h-4 w-4" />
+        </div>
+      )
+    },
+    enableColumnFilter: false,
+  }
+
 ];
 
 const getToolbarConfig = (): TToolbarConfig => {

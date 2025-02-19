@@ -29,6 +29,7 @@ export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
     const handleOpenCreate = () => setCreateDialogOpen(true);
     const handleOpenDelete = (event: Event) => {
       const customEvent = event as CustomEvent<Pipeline>;
+      pipelineSrv.selectedPipeline(customEvent.detail);
       setDeleteDialogOpen(true);
     };
     window.addEventListener("openCreatePipelineDialog", handleOpenCreate);

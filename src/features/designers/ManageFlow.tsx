@@ -29,6 +29,7 @@ export function FlowList({ flows }: { flows: Flow[] }) {
     const handleOpenCreate = () => setCreateDialogOpen(true);
     const handleOpenDelete = (event: Event) => {
       const customEvent = event as CustomEvent<Flow>;
+      flowSrv.selectedFlow(customEvent.detail);
       setDeleteDialogOpen(true);
     };
     window.addEventListener("openCreateFlowDialog", handleOpenCreate);

@@ -47,7 +47,11 @@ const columns: ColumnDefWithFilters<Flow>[] = [
             <DropdownMenuItem
              onClick={(event) => {
               event.stopPropagation();
-              console.log("Delete row >>",row);
+              window.dispatchEvent(
+                new CustomEvent("openFlowDeleteDialog", {
+                  detail: row.original,
+                })
+              );
             }}
             >
               Delete
@@ -58,7 +62,6 @@ const columns: ColumnDefWithFilters<Flow>[] = [
     },
     enableColumnFilter: false,
   }
-
 ];
 
 const getToolbarConfig = (): TToolbarConfig => {
@@ -69,8 +72,7 @@ const getToolbarConfig = (): TToolbarConfig => {
         variant: "outline",
         icon: PlusIcon,
         onClick: () => {
-          console.log(">>>");
-        },
+          window.dispatchEvent(new Event("openCreateFlowDialog"));        },
       }]
   }
 }

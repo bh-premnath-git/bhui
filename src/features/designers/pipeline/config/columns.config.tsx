@@ -28,7 +28,7 @@ const columns: ColumnDefWithFilters<Pipeline>[] = [
   }),
   columnHelper.accessor('updated_at', {
     header: 'Last Updated',
-    cell: (info) => formatDate(info.getValue()),
+    cell: (info) => formatDate(info.getValue() ?? new Date()),
     enableColumnFilter: false,
   }),
   {

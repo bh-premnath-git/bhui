@@ -60,9 +60,10 @@ export interface UserResponse {
 
 // Update mutation type to handle different operations
 export type UserMutationData = Omit<BaseUser, 'firstName' | 'lastName'> & {
-  id?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
+  first_name?: string;  // Form field name
+  last_name?: string;   // Form field name
   credentials?: Array<{
     type: string;
     value: string;

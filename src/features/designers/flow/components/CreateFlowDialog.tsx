@@ -46,7 +46,6 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
             
         }
       }
-      
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

@@ -5,6 +5,8 @@ import { ROUTES } from './routes';
 // Lazy load all pages
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const DataCatalog = lazy(() => import('@/pages/data-catalog'));
+const XploreerPage = lazy(() => import('@/pages/data-catalog/XploreerPage'));
+const DatasourceImport = lazy(() => import('@/pages/data-catalog/DatasourceImport'));
 const DesignerDashboard = lazy(() => import('@/pages/designers/DesignerDashboard'));
 const BuildDataPipeline = lazy(() => import('@/pages/designers/BuildDataPipeline'));
 const DataPipeCanvas = lazy(() => import('@/pages/designers/DataPipelineCanvas'));
@@ -38,7 +40,14 @@ export const routerConfig: RouteObject[] = [
     path: ROUTES.DATA_CATALOG,
     element: <DataCatalog />
   },
-  // Designer routes
+  {
+    path: `${ROUTES.DATA_CATALOG}/xplorer`,
+    element: <XploreerPage />
+  },
+  {
+    path: `${ROUTES.DATA_CATALOG}/datasource-import`,
+    element: <DatasourceImport />
+  },
   {
     path: ROUTES.DESIGNERS.INDEX,
     element: <DesignerDashboard />
@@ -59,7 +68,6 @@ export const routerConfig: RouteObject[] = [
     path: ROUTES.DESIGNERS.FLOW_PLAYGROUND(':id'),
     element: <FlowCanvas />
   },
-  // DataOps routes
   {
     path: ROUTES.DATAOPS.INDEX,
     element: <DataOpsHub />
@@ -94,7 +102,6 @@ export const routerConfig: RouteObject[] = [
     path: ROUTES.ADMIN.USERS.EDIT(':id'),
     element: <EditUser />
   },
-  // Project routes
   {
     path: ROUTES.ADMIN.PROJECTS.INDEX,
     element: <Projects />
@@ -107,7 +114,6 @@ export const routerConfig: RouteObject[] = [
     path: ROUTES.ADMIN.PROJECTS.EDIT(':id'),
     element: <EditProject />
   },
-  // Environment routes
   {
     path: ROUTES.ADMIN.ENVIRONMENT.INDEX,
     element: <Environment />

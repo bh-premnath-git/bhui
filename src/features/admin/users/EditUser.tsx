@@ -8,6 +8,7 @@ import { UserForm } from "./components/UserForm"
 import { useUsers } from "./hooks/useUsers"
 import { ROUTES } from '@/config/routes'
 import type { UserMutationData } from "@/types/admin/user"
+import { apiToUiRoles, uiToApiRoles } from "./components/FormFields"
 
 export function EditUser() {
   const navigate = useNavigate();
@@ -22,7 +23,11 @@ export function EditUser() {
       setIsSubmitting(true);
       setError(null);
       if (id) {
-        await handleUpdateUser(id, data);
+        const submitData = {
+          ...data,
+          realm_roles: uiToApiRoles(data.realm_roles)
+        };
+        await handleUpdateUser(id, submitData);
         navigate(ROUTES.ADMIN.USERS.INDEX);
       }
     } catch (err) {
@@ -31,6 +36,17 @@ export function EditUser() {
       setIsSubmitting(false);
     }
   };
+
+  // Transform API data to match form field names
+  const formInitialData = user ? {
+    ...user,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    email: user.email,
+    enabled: user.enabled,
+    projects: user.projects,
+    realm_roles: apiToUiRoles(user.realm_roles),
+  } : null;
 
   if (!user) {
     return <div>User not found</div>;
@@ -55,7 +71,7 @@ export function EditUser() {
         
         <div className="bg-card rounded-lg shadow p-6">
           <UserForm
-            initialData={user}
+            initialData={formInitialData}
             onSubmit={onSubmit}
             mode="edit"
             isSubmitting={isSubmitting}

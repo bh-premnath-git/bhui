@@ -1,12 +1,18 @@
+import { useEffect, useState } from 'react';
 import { DataTable } from '@/components/bh-table/data-table';
+import { columns, getToolbarConfig } from './pipeline/config/columns.config';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
-import { columns, getToolbarConfig } from './pipeline/config/columns.config';
 import { Pipeline } from '@/types/designer/pipeline';
 import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv';
+import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
+import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 
 export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const { handleNavigation } = useNavigation();
   const pipelineSrv = usePipelineManagementService();
 
@@ -15,14 +21,33 @@ export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
     handleNavigation(ROUTES.DESIGNERS.BUILD_PLAYGROUND(row.original.pipeline_id.toString()))
   }
 
+  useEffect(() => {
+    const handleOpenCreate = () => setCreateDialogOpen(true);
+    const handleOpenDelete = (event: Event) => {
+      const customEvent = event as CustomEvent<Pipeline>;
+      pipelineSrv.selectedPipeline(customEvent.detail);
+      setDeleteDialogOpen(true);
+    };
+    window.addEventListener("openCreatePipelineDialog", handleOpenCreate);
+    window.addEventListener("openPipelineDeleteDialog", handleOpenDelete);
+
+    return () => {
+      window.removeEventListener("openCreatePipelineDialog", handleOpenCreate);
+      window.removeEventListener("openPipelineDeleteDialog", handleOpenDelete);
+    };
+  }, []);
+
   return (
-    <DataTable<Pipeline>
-      columns={columns}
-      data={pipeline || []}
-      topVariant="simple"
-      pagination={true}
-      toolbarConfig={getToolbarConfig()}
-      onRowClick={onRowClickHandler}
-    />
-  );
+    <>
+      <DataTable<Pipeline>
+        columns={columns}
+        data={pipeline || []}
+        topVariant="simple"
+        pagination={true}
+        toolbarConfig={getToolbarConfig()}
+        onRowClick={onRowClickHandler}
+      />
+      <CreatePipelineDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <DeletePipelineDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
+    </>);
 }

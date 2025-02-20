@@ -1,6 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
-import { PlusIcon, Network, MoreVertical  } from 'lucide-react';
+import { PlusIcon, Network, MoreVertical } from 'lucide-react';
 import { Pipeline } from '@/types/designer/pipeline';
 import { formatDate } from "@/lib/date-format";
 import { Button } from '@/components/ui/button';
@@ -13,18 +13,22 @@ import {
 
 const columnHelper = createColumnHelper<Pipeline>()
 
-const columns: ColumnDefWithFilters<Pipeline, any>[] = [
+const columns: ColumnDefWithFilters<Pipeline>[] = [
   columnHelper.accessor('pipeline_name', {
     header: 'Name',
     enableColumnFilter: true,
   }),
   columnHelper.accessor('bh_project_name', {
-    header: 'Project Name',
+    header: 'Project',
     enableColumnFilter: true,
+  }),
+  columnHelper.accessor('created_by', {
+    header: 'Created By',
+    enableColumnFilter: false,
   }),
   columnHelper.accessor('updated_at', {
     header: 'Last Updated',
-    cell: ({ row }) => formatDate(row.getValue('updated_at') ?? new Date()),
+    cell: (info) => formatDate(info.getValue() ?? new Date()),
     enableColumnFilter: false,
   }),
   {
@@ -34,13 +38,22 @@ const columns: ColumnDefWithFilters<Pipeline, any>[] = [
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-5 w-5 p-0">
+            <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="h-4 w-4" align="end" side="right">
-            <DropdownMenuItem>
+          <DropdownMenuContent align="end" side="right">
+            <DropdownMenuItem
+             onClick={(event) => {
+              event.stopPropagation();
+              window.dispatchEvent(
+                new CustomEvent("openPipelineDeleteDialog", {
+                  detail: row.original,
+                })
+              );
+            }}
+            >
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -51,7 +64,6 @@ const columns: ColumnDefWithFilters<Pipeline, any>[] = [
   }
 ];
 
-
 const getToolbarConfig = (): TToolbarConfig => {
   return {
     buttons: [
@@ -60,7 +72,7 @@ const getToolbarConfig = (): TToolbarConfig => {
         variant: "outline",
         icon: PlusIcon,
         onClick: () => {
-          console.log("L");
+          window.dispatchEvent(new Event("openCreatePipelineDialog"));
         },
       }]
   }

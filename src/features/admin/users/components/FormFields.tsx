@@ -3,7 +3,40 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
-import { projects, roles } from "./userFormSchema"
+import { projects } from "./userFormSchema"
+
+// Add role mapping configuration
+const ROLE_MAPPINGS = {
+  'admin-user': 'Admin',
+  'designer-user': 'Designer',
+  'ops-user': 'Ops'
+} as const;
+
+// Reverse mapping for form submission
+const UI_TO_API_ROLES = {
+  'Admin': 'admin-user',
+  'Designer': 'designer-user',
+  'Ops': 'ops-user'
+} as const;
+
+// Update the roles array to match UI display names
+export const roles = [
+  { label: 'Admin', value: 'Admin' },
+  { label: 'Designer', value: 'Designer' },
+  { label: 'Ops', value: 'Ops' }
+];
+
+// Helper function to convert API roles to UI roles
+export const apiToUiRoles = (apiRoles: string[]): string[] => {
+  return apiRoles
+    .filter(role => role !== 'default-roles-bighammer-realm')
+    .map(role => ROLE_MAPPINGS[role as keyof typeof ROLE_MAPPINGS] || role);
+};
+
+// Helper function to convert UI roles back to API roles
+export const uiToApiRoles = (uiRoles: string[]): string[] => {
+  return uiRoles.map(role => UI_TO_API_ROLES[role as keyof typeof UI_TO_API_ROLES]);
+};
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -82,7 +115,19 @@ export const StatusField = ({ form }: { form: any }) => (
 
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => (
   <div className="grid grid-cols-2 gap-6">
-    <MultiSelect form={form} name="projects" label="Projects" placeholder="Select projects" options={projects} />
-    <MultiSelect form={form} name="realm_roles" label="Roles" placeholder="Select roles" options={roles} />
+    <MultiSelect 
+      form={form} 
+      name="projects" 
+      label="Projects" 
+      placeholder="Select projects" 
+      options={projects} 
+    />
+    <MultiSelect 
+      form={form} 
+      name="realm_roles" 
+      label="Roles" 
+      placeholder="Select roles" 
+      options={roles} 
+    />
   </div>
 )

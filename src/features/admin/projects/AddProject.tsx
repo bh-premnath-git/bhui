@@ -9,11 +9,11 @@ import { ProjectMutationData } from '@/types/admin/project';
 
 export function AddProject() {
   const navigate = useNavigate();
-  const { handleCreateProject } = useProjects({ shouldFetch: true });
+  const { handleCreateProject } = useProjects();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (formData: ProjectFormValues) => {
+  const onSubmit = async (data: ProjectFormValues) => {
     try {
       setIsSubmitting(true);
       setError(null);

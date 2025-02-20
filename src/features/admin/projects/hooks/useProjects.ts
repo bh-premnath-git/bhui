@@ -19,6 +19,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   const createMutation = createOne();
   const updateMutation = updateOne("placeholder-id");
   const deleteMutation = deleteOne("placeholder-id");
+  const validateMutation = createOne('/bh_project/validate-token/');
 
   const handleCreateProject = async (data: ProjectMutationData) => {
     try {
@@ -50,6 +51,16 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     }
   };
 
+  const handleValidateToken = async (data: ProjectMutationData) => {
+    try {
+      await validateMutation.mutateAsync(data);
+      toast.success('Token validated successfully');
+    } catch (error) {   
+      toast.error('Failed to validate token');
+      throw error;
+    }
+  };
+
   return {
     projects,
     isLoading,
@@ -57,6 +68,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     isError,
     handleCreateProject,
     handleUpdateProject,
-    handleDeleteProject
+    handleDeleteProject,
+    handleValidateToken
   };
 };

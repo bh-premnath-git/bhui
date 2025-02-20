@@ -42,4 +42,6 @@ export interface ProjectMutationData {
       tagList: string[];
   };
   status?: 'active' | 'inactive';
+  init_vector?: string;
 }
+

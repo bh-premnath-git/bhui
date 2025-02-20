@@ -20,7 +20,7 @@ export function EditProject() {
       setIsSubmitting(true);
       setError(null);
       if (id) {
-        // await handleUpdateProject(id, data);
+        await handleUpdateProject(id, data);
         navigate(ROUTES.ADMIN.PROJECTS.INDEX);
       }
     } catch (error) {

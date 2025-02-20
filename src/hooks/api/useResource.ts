@@ -1,4 +1,3 @@
-
 import { useApiQuery, useApiMutation } from './useApiQuery';
 
 export function useResource<T>(resource: string, portNumber: number, usePrefix: boolean) {
@@ -36,12 +35,13 @@ export function useResource<T>(resource: string, portNumber: number, usePrefix: 
     );
   };
 
-  const createOne = () => {
+  const createOne = (url?: string, params?: Record<string, any>) => {
     return useApiMutation<T>(
       {
         ...baseConfig,
-        url: `/${resource}`,
+        url: url || `/${resource}`,
         method: 'POST',
+        params,
         metadata: {
           successMessage: `${resource} created successfully`,
           errorMessage: `Failed to create ${resource}`,

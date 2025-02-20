@@ -1,5 +1,6 @@
 
 import { Suspense } from "react";
+import { ReactFlowProvider } from 'reactflow';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -77,12 +78,14 @@ const App = () => (
           <TooltipProvider>
             <ThemeProvider>
               <BrowserRouter>
-                <SidebarProvider>
-                  <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
-                    <Sidebar />
-                    <MainContent />
-                  </div>
-                </SidebarProvider>
+                <ReactFlowProvider>
+                  <SidebarProvider>
+                    <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
+                      <Sidebar />
+                      <MainContent />
+                    </div>
+                  </SidebarProvider>
+                </ReactFlowProvider>
               </BrowserRouter>
             </ThemeProvider>
             <Toaster position="top-right" />

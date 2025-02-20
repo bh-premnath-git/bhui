@@ -1,9 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Flow } from '@/types/designer/flow';
+import { Environment } from '@/types/admin/environemnt';
 
 interface FlowState {
     flows: Flow[];
     selectedFlow: Flow | null;
+    environment: Environment | null;
+    dagEunID: Record<string, any> | null
     loading: boolean;
     error: string | null;
 }
@@ -11,6 +14,8 @@ interface FlowState {
 const initialState: FlowState = {
     flows: [],
     selectedFlow: null,
+    environment: null,
+    dagEunID: null,
     loading: false,
     error: null,
 };

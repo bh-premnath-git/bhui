@@ -3,15 +3,11 @@ import { DataTable } from '@/components/bh-table/data-table';
 import { columns, getToolbarConfig } from './flow/config/columns.config';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ROUTES } from '@/config/routes';
 import { Flow } from '@/types/designer/flow';
 import { useFlowManagementService } from './flow/services/flowMgtSrv';
+import { CreateFlowDialog } from './flow/components/CreateFlowDialog';
+import { DeleteFlowDialog } from './flow/components/DeleteFlowDialog';
 
 export function FlowList({ flows }: { flows: Flow[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -51,15 +47,7 @@ export function FlowList({ flows }: { flows: Flow[] }) {
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
       />
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          create
-        </DialogContent>
-      </Dialog>
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          delete
-        </DialogContent>
-      </Dialog>
+      <CreateFlowDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <DeleteFlowDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </>);
 }

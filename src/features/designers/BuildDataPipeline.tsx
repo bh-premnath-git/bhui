@@ -3,15 +3,11 @@ import { DataTable } from '@/components/bh-table/data-table';
 import { columns, getToolbarConfig } from './pipeline/config/columns.config';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ROUTES } from '@/config/routes';
 import { Pipeline } from '@/types/designer/pipeline';
 import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv';
+import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
+import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 
 export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -51,15 +47,7 @@ export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
       />
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          create
-        </DialogContent>
-      </Dialog>
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          delete
-        </DialogContent>
-      </Dialog>
+      <CreatePipelineDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <DeletePipelineDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </>);
 }

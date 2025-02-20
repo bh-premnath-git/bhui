@@ -45,3 +45,11 @@ export interface ProjectMutationData {
   init_vector?: string;
 }
 
+export interface ProjectGitValidation {
+    bh_github_token_url: string;
+    bh_github_provider: string;
+    bh_github_username: string;
+    bh_github_url: string;
+    init_vector : string;
+}
+

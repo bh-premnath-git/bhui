@@ -126,7 +126,7 @@ export const GithubFields = ({ form }: { form: any }) => (
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
-              <Button type="button" variant="secondary" size="sm" className="shrink-0">
+              <Button type="button" variant="secondary" size="sm" className="shrink-0" onClick={() => form.setValue("githubToken", "")}>
                 Validate
               </Button>
             </div>

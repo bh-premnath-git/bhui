@@ -21,6 +21,6 @@ export const projectFormSchema = z.object({
 export type ProjectFormValues = z.infer<typeof projectFormSchema>
 
 export const githubProviders = [
-  { label: "GitHub", value: "github" },
-  { label: "GitHub Enterprise", value: "github-enterprise" },
+  { label: "GitHub", value: "4100" },
+  { label: "GitHub Enterprise", value: "4200" },
 ] as const

@@ -1,5 +1,5 @@
 import { useResource } from '@/hooks/api/useResource';
-import { ProjectPaginatedResponse, ProjectMutationData } from '@/types/admin/project';
+import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation } from '@/types/admin/project';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 
@@ -51,7 +51,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     }
   };
 
-  const handleValidateToken = async (data: ProjectMutationData) => {
+  const handleValidateToken = async (data: ProjectGitValidation) => {
     try {
       await validateMutation.mutateAsync(data);
       toast.success('Token validated successfully');

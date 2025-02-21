@@ -6,6 +6,8 @@ import { X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { githubProviders } from "./projectFormSchema"
 import { AddTagDialog } from "@/components/shared/AddTagDialog"
+import { encrypt_string } from "@/services/encryption"
+import { useProjects } from "../hooks/useProjects"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -30,7 +32,23 @@ export const ProjectNameField = ({ form }: { form: any }) => (
   />
 )
 
-export const GithubFields = ({ form }: { form: any }) => (
+export const GithubFields = ({ form }: { form: any }) =>{ 
+  const { handleValidateToken } = useProjects();
+  const validateGitHub = async () => {
+    const { githubProvider, githubUsername, githubEmail, githubRepositoryUrl, githubToken } = form.getValues()
+    const { encryptedString, initVector } = encrypt_string(githubToken);
+    const data = {
+      bh_github_provider: githubProvider,
+      bh_github_username: githubUsername,
+      bh_github_email: githubEmail,
+      bh_github_url: githubRepositoryUrl,
+      bh_github_token_url: encryptedString,
+      init_vector: initVector
+    }
+    await handleValidateToken(data);
+  }
+  
+  return(
   <div className="space-y-4">
     <div className="grid gap-4 md:grid-cols-4">
       <FormField
@@ -126,7 +144,7 @@ export const GithubFields = ({ form }: { form: any }) => (
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
-              <Button type="button" variant="secondary" size="sm" className="shrink-0" onClick={() => form.setValue("githubToken", "")}>
+              <Button type="button" variant="secondary" size="sm" className="shrink-0" onClick={() => validateGitHub()}>
                 Validate
               </Button>
             </div>
@@ -136,7 +154,7 @@ export const GithubFields = ({ form }: { form: any }) => (
       />
     </div>
   </div>
-)
+)}
 
 export const TagsField = ({ form }: { form: any }) => {
   const tags = form.watch("tags") || []

@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DataSource } from '@/types/data-catalog/dataCatalog';  
-
 interface DataSourceState {
   datasource: DataSource[];
   selectedDataSource: DataSource | null;

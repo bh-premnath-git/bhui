@@ -8,6 +8,7 @@ import pipelineReducer from './slices/designer/pipelineSlice';
 import flowReducer from './slices/designer/flowSlice';
 import dataopshubReducer from './slices/dataops/dataOpsHubSlice';
 import alertHubReducer from './slices/dataops/alertHubSlice';
+import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     flow: flowReducer,
     dataOpsHub: dataopshubReducer,
     alertHub: alertHubReducer,
+    layoutField: layoutFiedlReducer,
   },
 });
 

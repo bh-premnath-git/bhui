@@ -17,6 +17,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Button } from "./components/ui/button";
 import { LazyLoading } from "./components/shared/LazyLoading";
 import { KeycloakProvider } from "./context/KeycloakContext";
+import 'reactflow/dist/style.css';
 
 const queryClient = new QueryClient();
 

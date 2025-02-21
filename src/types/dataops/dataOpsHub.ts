@@ -20,4 +20,38 @@ export interface DataOpsHub {
     updated_by: string;
   }
   
+  export interface TaskMetadata {
+    priority: number;
+    task_type: string;
+    retry_count: number;
+  }
   
+  export interface TaskStatistics {
+    memory_usage_mb: number;
+    records_processed: number;
+    processing_time_ms: number;
+  }
+  
+  export interface JobMetadata {
+    job_type: string;
+    environment: string;
+  }
+  
+  export interface TaskDetails {
+    task_id: string;
+    job_id: string;
+    task_name: string;
+    task_status: string;
+    task_metadata: TaskMetadata;
+    task_statistics: TaskStatistics;
+    job_metadata: JobMetadata;
+    input_data: string;
+    output_data: string;
+    trace_id: string;
+    task_start_time: string; 
+    task_end_time: string; 
+    created_at: string; 
+    created_by: string;
+    updated_at: string; 
+    updated_by: string;
+  }

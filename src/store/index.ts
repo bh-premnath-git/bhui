@@ -10,6 +10,7 @@ import dataopshubReducer from './slices/dataops/dataOpsHubSlice';
 import alertHubReducer from './slices/dataops/alertHubSlice';
 import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
 import autoSaveReducer from './slices/designer/features/autoSaveSlice';
+import taskDetailSlice from './slices/dataops/taskDetailSlice';
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ export const store = configureStore({
     alertHub: alertHubReducer,
     layoutField: layoutFiedlReducer,
     autoSave: autoSaveReducer,
+    tasksetails: taskDetailSlice,
   },
 });
 

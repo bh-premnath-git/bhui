@@ -7,17 +7,23 @@ import { useParams } from "react-router-dom";
 
 interface UseLayoutFieldsOptions {
     shouldFetch: boolean;
+    dataSourceId?: number;
 }
 
 export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch: true }) => {
     const {
         getAll,
-    } = useResource<LayoutField>('datasource_layout', CATALOG_API_PORT, true);
+    } = useResource<LayoutField>('/datasource_layout', CATALOG_API_PORT, true);
 
-    const { data: layoutFields, isLoading, isFetching, isError } = getAll('data_source_layout/list_full', {params: 'layout_id'});
+    const { data: layoutFields, isLoading, isFetching, isError } = getAll(
+        '/data_source_layout/list_full/', 
+        {
+            data_src_id: options.dataSourceId
+        }
+    );
 
     return {
-        layoutFields,
+        layoutFields: layoutFields?.[0]?.layout_fields || [],
         isLoading,
         isFetching,
         isError,

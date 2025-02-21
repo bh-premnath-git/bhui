@@ -27,7 +27,7 @@ export function CatalagSlideWrapper({
         <SheetHeader>
           <SheetTitle>{selectedRow?.data_src_name}</SheetTitle>
         </SheetHeader>
-        <DataCatalogSchema />
+        <DataCatalogSchema dataSourceId={selectedRow?.data_src_id} />
       </SheetContent>
     </Sheet>
   );

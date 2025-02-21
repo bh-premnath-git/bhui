@@ -9,6 +9,7 @@ import flowReducer from './slices/designer/flowSlice';
 import dataopshubReducer from './slices/dataops/dataOpsHubSlice';
 import alertHubReducer from './slices/dataops/alertHubSlice';
 import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
+import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     dataOpsHub: dataopshubReducer,
     alertHub: alertHubReducer,
     layoutField: layoutFiedlReducer,
+    autoSave: autoSaveReducer,
   },
 });
 

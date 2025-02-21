@@ -1,0 +1,718 @@
+{
+  "schema": [
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Filter",
+      "description": "",
+      "type": "object",
+      "ui_type": "normal",
+      "properties": {
+        
+        "condition": {
+          "type": "expression",
+          "minLength": 1,
+          "ui_type": "full-width"
+        }
+      },
+      "required": [
+        "condition"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SQL Transformation",
+      "description": "",
+      "type": "object",
+      "ui_type": "normal",
+      "properties": {
+        "sql": {
+          "type": "expression",
+          "minLength": 1,
+          "ui_type": "full-width"
+        }
+      },
+      "required": [
+        "sql"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Router",
+      "ui_type": "tab-container",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "condition": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "condition"
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "conditions"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "SchemaTransformation",
+      "ui_type": "array-container",
+      "properties": {
+        "derived_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "expression",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "derived_fields"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Aggregator",
+      "ui_type": "tab-container",
+      "properties": {
+        "aggregations": {
+          "type": "array",
+          "items": {
+            "target_column": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
+          }
+        },
+        "group_by": {
+          "type": "array",
+          "items": {
+            "group_by": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "pivot_by": {
+          "type": "array",
+          "items": {
+            "pivot_column": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pivot_values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "group_by",
+        "aggregations"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Joiner",
+      "ui_type": "tab-container",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The name of input dataframe to join"
+            },
+            "join_condition": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            },
+            "join_type": {
+              "type": "string",
+              "minLength": 1,
+              "enum": [
+                "inner",
+                "left",
+                "right",
+                "full",
+                "left_semi",
+                "left_anti"
+              ]
+            }
+          }
+        },
+        "expressions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
+          }
+        },
+        "advanced": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hint_type": {
+              "type": "string",
+              "minLength": 1,
+              "enum": [
+                "broadcast",
+                "merge",
+                "shuffle_hash",
+                "shuffle_replicate_nl",
+                "None"
+              ]
+            },
+            "propagate_all_columns": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "hints"
+          ]
+        }
+      },
+      "required": [
+        "conditions"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Sorter",
+      "ui_type": "array-container",
+      "properties": {
+        "sort_columns": {
+          "type": "array",
+          "items": {
+            "column": {
+              "type": "string"
+            },
+            "order": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "sort_columns"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "tab-container",
+      "title": "DQ Check",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "type": "number"
+        },
+        "dq_rules": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              "rule_name",
+              "column",
+              "rule_type",
+              "value"
+            ],
+            "properties": {
+              "rule_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "rule_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "transformation",
+        "name",
+        "dq_rules"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Dedup",
+      "ui_type": "object",
+      "properties": {
+        "keep": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "any",
+            "first",
+            "last",
+            "distinct",
+            "unique_only"
+          ],
+          "default": "any"
+        },
+        "dedup_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "order_by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ]
+              }
+            },
+            "required": [
+              "order_column",
+              "sort"
+            ]
+          }
+        }
+      },
+      "required": [
+        "keep",
+        "dedup_by"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "keep": {
+                "const": "first"
+              }
+            }
+          },
+          "then": {
+            "required": ["order_by"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keep": {
+                "const": "last"
+              }
+            }
+          },
+          "then": {
+            "required": ["order_by"]
+          }
+        }
+      ]
+    },
+    {
+      "id" : "file://repartition_schema.json",
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Repartition",
+      "ui_type": "object",
+      "properties": {
+        "repartition_type": {
+          "type": "select",
+          "minLength": 1,
+          "enum": [
+            "repartition",
+            "coalesce",
+            "hash_repartition",
+            "repartition_by_range"
+          ],
+          "default": "repartition"
+        },
+        "repartition_value": {
+          "type": "number"
+        },
+        "override_partition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repartition_expression": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              "expression",
+              "sort_order",
+              "order"
+            ],
+            "properties": {
+              "expression": {
+                "type": "expression",
+                "minLength": 1
+              },
+              "sort_order": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "select",
+                "minLength": 1,
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          }
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "repartition_type",
+        "override_partition"
+      ],
+      "anyOf": [
+        {
+          "if": {
+            "properties": {
+              "repartition_type": { "const": "repartition" }
+            }
+          },
+          "then": {
+            "required": ["repartition_type","repartition_value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": { "const": "coalesce" }
+            }
+          },
+          "then": {
+            "required": ["repartition_type","repartition_value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": { "const": "hash_repartition" }
+            }
+          },
+          "then": {
+            "required": ["repartition_type","repartition_expression", "repartition_value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": { "const": "repartition_by_range" }
+            }
+          },
+          "then": {
+            "required": ["repartition_type","repartition_expression", "repartition_value"]
+          }
+        }
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Lookup",
+      "ui_type": "tab-container",
+      "properties": {
+        "lookup_columns": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "out_column_name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "column",
+              "out_column_name"
+            ]
+          }
+        },
+        "lookup_condition": {
+          "type": "object",
+          "properties": {
+            "column_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "lookup_with": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "column_name",
+            "lookup_with"
+          ]
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "lookup_columns",
+        "lookup_condition"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Union",
+      "ui_type": "object",
+      "properties": {
+        "operation_type": {
+          "type": "string",
+          "enum": [
+            "union",
+            "intersect_all",
+            "except_all",
+            "union_all",
+            "union_by_name"
+          ],
+          "description": "The type of operation to perform",
+          "default": "union"
+        },
+        "allow_missing_columns": {
+          "type": "boolean",
+          "description": "If true, missing columns in the input dataframes will be filled with nulls",
+          "default": false
+        }
+      },
+      "required": [
+        "operation_type"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Select",
+      "ui_type": "object",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "column_list": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "SequenceGenerator",
+      "properties": {
+        
+        "for_column_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order_by": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              
+            ],
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          }
+        },
+        "start_with": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "transformation",
+        "for_column_name",
+        "order_by",
+        "start_with"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "Drop",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+       "column": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              
+            ],
+            "properties": {
+              "column_list": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
+    }
+  ]
+}

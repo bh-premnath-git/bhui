@@ -1,0 +1,100 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "reader_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source": {
+            "type": "object",
+            "$ref": "schemas/Source.json"
+        }
+    },
+    "required": [
+        "reader_name",
+        "source"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "source": {
+                        "properties": {
+                            "type": {
+                                "const": "File"
+                            }
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_type": {
+                        "type": "string",
+                        "description": "File Type",
+                        "enum": [
+                            "CSV",
+                            "JSON",
+                            "Parquet",
+                            "ORC",
+                            "Avro",
+                            "Excel",
+                            "XML",
+                            "FixedWidth"
+                        ]
+                    }
+                },
+                "required": [
+                    "file_type"
+                ],
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "file_type": {
+                                    "const": "CSV"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "read_options": {
+                                    "type": "object",
+                                    "items": {
+                                        "$ref": "transformations/readers/CSVOptions.json"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "read_options"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "source": {
+                        "properties": {
+                            "type": {
+                                "const": "Relational"
+                            }
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Query",
+                        "minLength": 1
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -13,13 +13,17 @@ interface UsePipelineOptions {
 export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true }) => {
     const {
         getAll,
-        createOne,
+        createMutation,
         updateMutation,
         deleteMutation
     } = useResource<PipelinePaginatedResponse>('pipelines', CATALOG_API_PORT, true);
 
-    const { data: pipelines, isLoading, isFetching, isError } = getAll('/pipeline/list/');
-    const createMutation = createOne();
+    const { data: pipelinesResponse, isLoading, isFetching, isError } = getAll('/pipeline/list/') as {
+        data: PipelinePaginatedResponse;
+        isLoading: boolean;
+        isFetching: boolean;
+        isError: boolean;
+    };
 
     const handleCreatePipeline = async (data: PipelineMutationData) => {
         try {
@@ -52,7 +56,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
     };
 
     return {
-        pipelines,
+        pipelines: pipelinesResponse || [],
         isLoading,
         isFetching,
         isError,

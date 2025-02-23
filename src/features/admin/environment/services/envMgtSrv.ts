@@ -1,4 +1,4 @@
-import { Environment } from "@/types/admin/environemnt";
+import { Environment } from "@/types/admin/environment";
 import { useAppDispatch } from "@/hooks/uaeRedux";
 import { setEnvironments, setSelectedEnvironment } from "@/store/slices/admin/environmentsSlice";
 

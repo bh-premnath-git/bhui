@@ -10,15 +10,12 @@ interface UseDataOpsHubOptions {
 export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: true }) => {
   const {
     getAll,
-    createOne,
-    updateOne,
-    deleteOne
+    createMutation,
+    updateMutation,
+    deleteMutation
   } = useResource<DataOpsHub>('job_details', AUDIT_PORT, true);
 
   const { data: dataOpsHub, isLoading, isFetching, isError } = getAll('/job_details/list/');
-  const createMutation = createOne();
-  const updateMutation = updateOne("placeholder-id");
-  const deleteMutation = deleteOne("placeholder-id");
 
   const handleCreateDataOpsHub = async (data: DataOpsHub) => {
     try {
@@ -60,4 +57,3 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
     handleDeleteDataOpsHub
   };
 }
-

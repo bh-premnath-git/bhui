@@ -1,6 +1,6 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Environment } from '@/types/admin/environemnt';  
+import { Environment } from '@/types/admin/environment';  
 
 interface EnvironmentsState {
   environments: Environment[];

@@ -10,15 +10,14 @@ interface UseAlertHubOptions {
 export const useAlertHub = (options: UseAlertHubOptions = { shouldFetch: true }) => {
     const {
         getAll,
-        createOne,
-        updateOne,
-        deleteOne
+        createMutation,
+        updateMutation,
+        deleteMutation
     } = useResource<AlertHub>('alert', MONITOR_PORT, true);
 
     const { data: alertHub, isLoading, isFetching, isError } = getAll('/alert/');
-    const createMutation = createOne();
-    const updateMutation = updateOne("placeholder-id");
-    const deleteMutation = deleteOne("placeholder-id");
+    const updateOne = updateMutation;
+    const deleteOne = deleteMutation;
 
     const handleCreateAlertHub = async (data: AlertHub) => {
         try {
@@ -32,7 +31,7 @@ export const useAlertHub = (options: UseAlertHubOptions = { shouldFetch: true })
 
     const handleUpdateAlertHub = async (id: string, data: AlertHub) => {
         try {
-            await updateMutation.mutateAsync({ id, ...data });
+            await updateOne.mutateAsync({ id, ...data });
             toast.success('updated successfully');
         } catch (error) {
             toast.error('Failed to update');
@@ -42,7 +41,7 @@ export const useAlertHub = (options: UseAlertHubOptions = { shouldFetch: true })
 
     const handleDeleteAlertHub = async (id: string) => {
         try {
-            await deleteMutation.mutateAsync({ id });
+            await deleteOne.mutateAsync({ id });
             toast.success('deleted successfully');
         } catch (error) {
             toast.error('Failed to delete');

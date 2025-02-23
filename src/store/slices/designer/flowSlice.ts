@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Flow } from '@/types/designer/flow';
-import { Environment } from '@/types/admin/environemnt';
+import { Environment } from '@/types/admin/environment';
 
 interface FlowState {
     flows: Flow[];

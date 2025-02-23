@@ -14,7 +14,7 @@ interface UseFlowOptions {
 export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
     const {
         getAll,
-        createOne,
+        createMutation,
         updateMutation,
         deleteMutation
     } = useResource<Flow>('flows', CATALOG_API_PORT, true);
@@ -25,8 +25,6 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
         isFetching: boolean;
         isError: boolean;
     };
-
-    const createMutation = createOne();
 
     const handleCreateFlow = async (data: FlowMutationData) => {
         try {
@@ -64,7 +62,7 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
     };
 
     return {
-        flows: flowsResponse || [],
+        flows: flowsResponse?.data || [],
         isLoading,
         isFetching,
         isError,

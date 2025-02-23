@@ -14,8 +14,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     getOne,
     createMutation,
     updateMutation,
-    deleteMutation,
-    createOne
+    deleteMutation
   } = useResource<Project>('bh_project', CATALOG_API_PORT, true);
 
   const { data: projectsResponse, isLoading, isFetching, isError } = getAll('/bh_project/list/') as {
@@ -37,7 +36,9 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     isError: false
   };
 
-  const validateMutation = createOne('/bh_project/validate-token/');
+  // Use another instance of useResource for validation
+  const validateResource = useResource<Project>('bh_project', CATALOG_API_PORT, true);
+  const validateMutation = validateResource.createMutation;
 
   const handleCreateProject = async (data: ProjectMutationData) => {
     try {
@@ -76,9 +77,13 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 
   const handleValidateToken = async (data: ProjectGitValidation) => {
     try {
-      await validateMutation.mutateAsync(data);
+      const response = await validateMutation.mutateAsync({
+        ...data,
+        url: '/bh_project/validate-token/'
+      });
       toast.success('Token validated successfully');
-    } catch (error) {   
+      return response;
+    } catch (error) {
       toast.error('Failed to validate token');
       throw error;
     }

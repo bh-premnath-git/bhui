@@ -1,6 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type {TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
-import { Environment } from '@/types/admin/environemnt';
+import { Environment } from '@/types/admin/environment';
 import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
 import { PlusIcon, Settings2 } from 'lucide-react';

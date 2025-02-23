@@ -1,6 +1,5 @@
-
 import { useResource } from '@/hooks/api/useResource';
-import { Environment, EnvironmentMutationData } from '@/types/admin/environemnt';
+import { Environment, EnvironmentMutationData } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 
@@ -11,17 +10,13 @@ interface UseEnvironmentsOptions {
 export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch: true }) => {
   const {
     getAll,
-    createOne,
-    updateOne,
-    deleteOne
+    createMutation,
+    updateMutation,
+    deleteMutation
   } = useResource<Environment>('environments', CATALOG_API_PORT, true);
 
   const { data: environments, isLoading, isFetching, isError } = getAll("/environment/environment/list/");
   
-  const createMutation = createOne();
-  const updateMutation = updateOne("placeholder-id");
-  const deleteMutation = deleteOne("placeholder-id");
-
   const handleCreateEnvironment = async (data: EnvironmentMutationData) => {
     try {
       await createMutation.mutateAsync(data);

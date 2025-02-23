@@ -7,20 +7,17 @@ interface UseDataCatalogOptions {
   shouldFetch?: boolean;
 }
 
-export const usedatasource =  (options: UseDataCatalogOptions = { shouldFetch: true })  => {
+export const usedatasource = (options: UseDataCatalogOptions = { shouldFetch: true }) => {
   const {
     getAll,
-    createOne,
-    updateOne,
-    deleteOne
+    createMutation,
+    updateMutation,
+    deleteMutation
   } = useResource<DataSourcePaginatedResponse>('data_source', CATALOG_API_PORT, true);
 
   const { data: datasource, isLoading, isFetching, isError } = getAll('/data_source/list/');
-  const createMutation = createOne();
-  const updateMutation = updateOne("placeholder-id");
-  const deleteMutation = deleteOne("placeholder-id");
 
-  const handlecreateDatasource = async (data: DataSourceMutationData) => {
+  const handleCreateDatasource = async (data: DataSourceMutationData) => {
     try {
       await createMutation.mutateAsync(data);
       toast.success('Data imported successfully');
@@ -53,11 +50,11 @@ export const usedatasource =  (options: UseDataCatalogOptions = { shouldFetch: t
   
 
   return {
-    datasource,
+    datasource: datasource || [],
     isLoading,
     isFetching,
     isError,
-    handlecreateDatasource,
+    handleCreateDatasource,
     handleUpdateDatasource,
     handleDeleteDatasource
   };

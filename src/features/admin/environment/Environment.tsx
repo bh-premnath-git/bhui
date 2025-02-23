@@ -1,7 +1,7 @@
 
 import { DataTable } from '@/components/bh-table/data-table';
 import { columns,getToolbarConfig } from './config/columns.config';
-import { Environment } from '@/types/admin/environemnt';
+import { Environment } from '@/types/admin/environment';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';

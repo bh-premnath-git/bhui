@@ -16,18 +16,12 @@ interface UseUsersOptions {
 export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   const {
     getAll,
-    getOne,
-    createOne,
-    updateOne,
-    deleteOne
+    createMutation,
+    updateMutation,
+    deleteMutation
   } = useResource<User>('users', KEYCLOAK_API_PORT, false);
 
-  const { data: users, isLoading, isFetching, isError } = getAll();
-
-  // Create mutations once at the hook level
-  const createMutation = createOne();
-  const updateMutation = updateOne("");
-  const deleteMutation = deleteOne("");
+  const { data: users, isLoading, isFetching, isError } = getAll('/users/');
 
   const handleCreateUser = async (data: UserMutationData) => {
     try {
@@ -67,7 +61,6 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     isLoading,
     isFetching,
     isError,
-    getOne,
     handleCreateUser,
     handleUpdateUser,
     handleDeleteUser

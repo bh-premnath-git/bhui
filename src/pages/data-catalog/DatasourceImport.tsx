@@ -1,7 +1,15 @@
+import { ImportProvider } from "@/context/datacatalog/ImportContext"
+import {ImportWizard} from "@/features/data-catalog/ImportWizard"
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+
 const DatasourceImport = () => {
   return (
-    <div>DatasourceImport</div>
+    <div className="min-h-screen p-6 bg-background">
+      <ImportProvider>
+      <ImportWizard />
+      </ImportProvider>
+    </div>
   )
 }
 
-export default DatasourceImport
+export default withPageErrorBoundary(DatasourceImport, 'DatasourceImport');

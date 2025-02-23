@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { GitBranch  } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { FlowList } from '@/features/designers/ManageFlow';
 import { useFlowManagementService } from '@/features/designers/flow/services/flowMgtSrv';
@@ -14,10 +14,10 @@ export function ManageFlowPage() {
     const flowService = useFlowManagementService();
 
     useEffect(() => {
-        if(flows && flows.length > 0) {
+        if (Array.isArray(flows) && flows.length > 0) {
             flowService.setFlows(flows);
         }
-    }, [flows]);
+    }, [flows, flowService]);
 
     if (isLoading) {
         return (
@@ -30,18 +30,21 @@ export function ManageFlowPage() {
     if (isError) {
         return (
             <div className="p-6">
-                <ErrorState message="Something went wrong" />
+                <ErrorState
+                    title="Error Loading Flows"
+                    description="There was an error loading the flows. Please try again later."
+                />
             </div>
         );
     }
 
-    if (!flows || flows.length === 0) {
+    if (!Array.isArray(flows) || flows.length === 0) {
         return (
             <div className="p-6">
                 <EmptyState
-                    title="Welcome to Flow Management!"
-                    description="Ready to manage your flows."
                     Icon={GitBranch}
+                    title="No Flows Found"
+                    description="Get started by creating a new flow."
                 />
             </div>
         );
@@ -55,7 +58,7 @@ export function ManageFlowPage() {
                         <LoadingState className='w-40 h-40' />
                     </div>
                 )}
-                <FlowList flows={flows || []} />
+                <FlowList flows={flows} />
             </div>
         </div>
     );

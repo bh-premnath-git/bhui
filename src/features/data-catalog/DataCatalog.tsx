@@ -48,8 +48,8 @@ export function DataCatalog({ datasources }: { datasources: DataSource[] }) {
         onRowClick={onRowClickHandler}
       />
       <CatalagSlideWrapper 
-        isSheetOpen={isSheetOpen}
-        setIsSheetOpen={setIsSheetOpen}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
         selectedRow={selectedRow}
       />
     </>

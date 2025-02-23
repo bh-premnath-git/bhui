@@ -62,7 +62,7 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
     };
 
     return {
-        flows: flowsResponse?.data || [],
+        flows: flowsResponse || [],
         isLoading,
         isFetching,
         isError,

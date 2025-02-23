@@ -18,15 +18,15 @@ export interface TopSectionProps<TData> {
   toolbarConfig: TToolbarConfig
 }
 
-export interface ColumnHeaderButton {
-  icon: LucideIcon | React.ComponentType<React.SVGProps<SVGSVGElement>>
+export interface HeaderButton {
+  icon: LucideIcon
   onClick: () => void
-  tooltip?: string
+  tooltip: string
 }
 
 export type ColumnDefWithFilters<TData, TValue = unknown> = ColumnDef<TData, TValue> & {
   enableColumnFilter?: boolean
-  headerButton?: ColumnHeaderButton
+  headerButton?: HeaderButton
 }
 
 export interface DataTableProps<TData> {
@@ -38,23 +38,7 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: Row<TData>) => void
 }
 
-export interface TToolbarButton {
-  label: string | React.ReactNode
-  icon: LucideIcon
-  variant: "link" | "default" | "outline" | "destructive" | "secondary" | "ghost"
-  onClick: () => void
-}
-
-export interface TToolbarConfig {
-  buttons: TToolbarButton[]
-}
-
-export interface TopSectionProps<TData> {
-  table: Table<TData>
-  toolbarConfig: TToolbarConfig
-}
-
-export type StatusMetric = {
+export interface StatusMetric {
   label: string
   value: number
   percentage: number

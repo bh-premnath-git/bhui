@@ -1,34 +1,40 @@
-import { DataSource } from '@/types/data-catalog/dataCatalog';
+import { FC } from 'react';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
 import { DataCatalogSchema } from './DataCatalogSchema';
+import { DataSource } from '@/types/data-catalog/dataCatalog';
 
 interface CatalagSlideWrapperProps {
-  isSheetOpen: boolean;
-  setIsSheetOpen: (open: boolean) => void;
-  selectedRow?: DataSource;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedRow: DataSource | null;
 }
 
-export function CatalagSlideWrapper({
-  isSheetOpen,
-  setIsSheetOpen,
+export const CatalagSlideWrapper: FC<CatalagSlideWrapperProps> = ({
+  open,
+  onOpenChange,
   selectedRow,
-}: CatalagSlideWrapperProps) {
+}) => {
   return (
-    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="right" 
         className="!w-[65vw]"
+        aria-describedby="data-catalog-description"
       >
         <SheetHeader>
           <SheetTitle>{selectedRow?.data_src_name}</SheetTitle>
+          <SheetDescription id="data-catalog-description">
+            Detailed view of the data catalog source.
+          </SheetDescription>
         </SheetHeader>
         <DataCatalogSchema dataSourceId={selectedRow?.data_src_id} />
       </SheetContent>
     </Sheet>
   );
-}
+};

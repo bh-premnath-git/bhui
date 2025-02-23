@@ -1,24 +1,42 @@
 import { useResource } from '@/hooks/api/useResource';
-import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation } from '@/types/admin/project';
+import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation, Project } from '@/types/admin/project';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 
 interface UseProjectsOptions {
   shouldFetch?: boolean;
+  projectId?: string;
 }
 
 export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
   const {
     getAll,
-    createOne,
-    updateOne,
-    deleteOne
-  } = useResource<ProjectPaginatedResponse>('bh_project', CATALOG_API_PORT, true);
+    getOne,
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    createOne
+  } = useResource<Project>('bh_project', CATALOG_API_PORT, true);
 
-  const { data: projects, isLoading, isFetching, isError } = getAll('/bh_project/list/');
-  const createMutation = createOne();
-  const updateMutation = updateOne("placeholder-id");
-  const deleteMutation = deleteOne("placeholder-id");
+  const { data: projectsResponse, isLoading, isFetching, isError } = getAll('/bh_project/list/') as {
+    data: ProjectPaginatedResponse;
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+  };
+
+  const { 
+    data: project, 
+    isLoading: isProjectLoading, 
+    isFetching: isProjectFetching, 
+    isError: isProjectError 
+  } = options.projectId ? getOne(`/bh_project/${options.projectId}/`) : {
+    data: undefined,
+    isLoading: false,
+    isFetching: false,
+    isError: false
+  };
+
   const validateMutation = createOne('/bh_project/validate-token/');
 
   const handleCreateProject = async (data: ProjectMutationData) => {
@@ -33,7 +51,10 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 
   const handleUpdateProject = async (id: string, data: ProjectMutationData) => {
     try {
-      await updateMutation.mutateAsync({ id, ...data });
+      await updateMutation.mutateAsync({
+        ...data,
+        url: `/bh_project/${id}/`
+      });
       toast.success('Project updated successfully');
     } catch (error) {
       toast.error('Failed to update project');
@@ -43,7 +64,9 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 
   const handleDeleteProject = async (id: string) => {
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync({
+        url: `/bh_project/${id}/`
+      });
       toast.success('Project deleted successfully');
     } catch (error) {
       toast.error('Failed to delete project');
@@ -62,10 +85,14 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   };
 
   return {
-    projects,
+    projects: projectsResponse || [],
+    project,
     isLoading,
+    isProjectLoading,
     isFetching,
+    isProjectFetching,
     isError,
+    isProjectError,
     handleCreateProject,
     handleUpdateProject,
     handleDeleteProject,

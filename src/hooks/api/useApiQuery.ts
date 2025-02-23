@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { ApiConfig } from '@/lib/api/api-config';
 import { apiService } from '@/lib/api/api-service';
@@ -20,7 +19,13 @@ export function useApiMutation<T>(
   options?: UseMutationOptions<T, Error, any>
 ) {
   const mutationFn = (data: any) => {
-    const mutationConfig = { ...config, data };
+    const mutationConfig = { 
+      ...config, 
+      data,
+      // If data contains a url, use it
+      url: data?.url || config.url
+    };
+
     switch (config.method.toUpperCase()) {
       case 'POST':
         return apiService.post<T>(mutationConfig);

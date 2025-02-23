@@ -10,13 +10,14 @@ import { ProjectsList } from '@/features/admin/projects/Projects';
 import { useProjectManagementServive } from '@/features/admin/projects/services/projMgtSrv';
 
 function ProjectsListPage() {
-  const { projects, isLoading, isFetching, isError } = useProjects();
+  const { projects, isLoading, isError, isFetching } = useProjects();
+  
   const projMgntSrv = useProjectManagementServive();
   useEffect(() => {
     if(projects && projects.length > 0){
         projMgntSrv.setProjects(projects);
     }
-  }, []);
+  }, [projects]);
 
   if (isLoading) {
     return (
@@ -29,18 +30,20 @@ function ProjectsListPage() {
   if (isError) {
     return (
       <div className="p-6">
-        <ErrorState message="Something went wrong" />
+        <ErrorState 
+          message="Failed to load projects. Please try again later."
+        />
       </div>
     );
   }
 
-  if (projects?.length === 0) {
+  if (!projects || projects.length === 0) {
     return (
       <div className="p-6">
         <EmptyState
-          title="Welcome to Your Project Management!"
-          description="Ready to manage your projects."
           Icon={FolderGit2}
+          title="No projects found"
+          description="Get started by creating a new project."
         />
       </div>
     );
@@ -51,10 +54,10 @@ function ProjectsListPage() {
       <div className="relative">
         {isFetching && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-            <LoadingState className='w-40 h-40' />
+            <LoadingState className="w-40 h-40" />
           </div>
         )}
-        <ProjectsList projects={projects || []} />
+        <ProjectsList projects={projects} />
       </div>
     </div>
   );

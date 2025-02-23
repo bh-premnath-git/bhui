@@ -63,7 +63,7 @@ export const routerConfig: RouteObject[] = [
   {
     path: ROUTES.DESIGNERS.MANAGE_FLOW,
     element: <ManageFlow />
-  }, 
+  },
   {
     path: ROUTES.DESIGNERS.FLOW_PLAYGROUND(':id'),
     element: <FlowCanvas />

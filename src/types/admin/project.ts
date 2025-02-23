@@ -18,7 +18,7 @@ export interface Project {
   current_month_cost: number;
   total_storage: number;
   tags: {
-    tagList: string[];
+    tagList: string; // JSON stringified array of { key: string, value: string }
   };
   repo_name: string | null;
   total_data_sources: number;
@@ -39,7 +39,7 @@ export interface ProjectMutationData {
   bh_github_token_url: string;
   bh_github_provider: number;
   tags?: {
-      tagList: string[];
+      tagList: string; // JSON stringified array of { key: string, value: string }
   };
   status?: 'active' | 'inactive';
   init_vector?: string;
@@ -52,4 +52,3 @@ export interface ProjectGitValidation {
     bh_github_url: string;
     init_vector : string;
 }
-

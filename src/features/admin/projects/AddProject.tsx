@@ -1,25 +1,67 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ProjectForm } from './components/ProjectForm';
-import { ProjectFormValues } from './components/projectFormSchema';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useProjects } from './hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from './components/ProjectPageLayout';
-import { ProjectMutationData } from '@/types/admin/project';
+import { encrypt_string } from '@/services/encryption';
+import { ProjectFormData, transformFormToApiData } from './components/projectFormSchema';
 
 export function AddProject() {
-  const navigate = useNavigate();
+  const { handleNavigation } = useNavigation()
   const { handleCreateProject, handleValidateToken } = useProjects();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validatedToken, setValidatedToken] = useState<{ encryptedString: string; initVector: string } | null>(null);
 
-  
-  const onSubmit = async (data: ProjectFormValues) => {
+  const handleValidateGitHub = async (data: ProjectFormData) => {
     try {
+      setError(null);
+      setIsValidating(true);
+      const { encryptedString, initVector } = encrypt_string(data.bh_github_token_url);
+      
+      const validationData = {
+        bh_github_provider: data.bh_github_provider,
+        bh_github_username: data.bh_github_username,
+        bh_github_email: data.bh_github_email,
+        bh_github_url: data.bh_github_url,
+        bh_github_token_url: encryptedString,
+        init_vector: initVector
+      };
+      
+      await handleValidateToken(validationData);
+      setValidatedToken({ encryptedString, initVector });
+    } catch (error) {
+      console.error('Failed to validate GitHub token:', error);
+      setError(error instanceof Error ? error.message : 'Failed to validate GitHub token');
+      setValidatedToken(null);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+  
+  const onSubmit = async (data: ProjectFormData) => {
+    try {
+      if (!validatedToken) {
+        setError("Please validate your GitHub token first");
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
-      await handleCreateProject(data);
-      navigate(ROUTES.ADMIN.PROJECTS.INDEX);
+      
+      const projectData = transformFormToApiData({
+        ...data,
+        bh_github_token_url: validatedToken.encryptedString
+      });
+      
+      await handleCreateProject({
+        ...projectData,
+        init_vector: validatedToken.initVector
+      });
+
+      handleNavigation(ROUTES.ADMIN.PROJECTS.INDEX, true);
     } catch (error) {
       console.error('Failed to create project:', error);
       setError(error instanceof Error ? error.message : 'Failed to create project');
@@ -34,8 +76,11 @@ export function AddProject() {
     >
       <ProjectForm 
         mode="create" 
-        onSubmit={onSubmit} 
-        isSubmitting={isSubmitting} 
+        onSubmit={onSubmit}
+        onValidateToken={handleValidateGitHub}
+        isSubmitting={isSubmitting}
+        isValidating={isValidating}
+        isTokenValidated={!!validatedToken}
         error={error} 
       />
     </ProjectPageLayout>

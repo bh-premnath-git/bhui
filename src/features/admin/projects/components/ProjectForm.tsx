@@ -1,102 +1,114 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, FormProvider } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Form } from "@/components/ui/form"
-import { projectFormSchema, type ProjectFormValues } from "./projectFormSchema"
 import { ProjectNameField, GithubFields, TagsField } from "./FormFields"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
+import { projectFormSchema, ProjectFormData } from "./projectFormSchema"
 
 interface ProjectFormProps {
-  initialData?: ProjectFormValues
-  onSubmit: (data: ProjectFormValues) => Promise<void>
+  initialData?: ProjectFormData | any
+  onSubmit: (data: ProjectFormData) => Promise<void>
+  onValidateToken: (data: ProjectFormData) => Promise<void>
   mode: "create" | "edit"
   isSubmitting: boolean
+  isValidating: boolean
+  isTokenValidated: boolean
   error: string | null
 }
 
-export function ProjectForm({ initialData, onSubmit, mode, isSubmitting, error }: ProjectFormProps) {
+export function ProjectForm({ 
+  initialData, 
+  onSubmit, 
+  onValidateToken,
+  mode, 
+  isSubmitting,
+  isValidating,
+  isTokenValidated,
+  error 
+}: ProjectFormProps) {
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
 
-  const form = useForm<ProjectFormValues>({
+  const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: initialData || {
-      projectName: "",
-      githubProvider: "",
-      githubUsername: "",
-      githubEmail: "",
-      defaultBranch: "main",
-      githubRepositoryUrl: "",
-      githubToken: "",
+      bh_project_name: "",
+      bh_github_provider: "",
+      bh_github_username: "",
+      bh_github_email: "",
+      bh_default_branch: "main",
+      bh_github_url: "",
+      bh_github_token_url: "",
       tags: [],
+      status: "active"
     },
   })
 
   const isEditMode = mode === "edit"
 
   useEffect(() => {
-    if (isSubmitting) {
-      setFormState("submitting")
-    } else if (error) {
-      setFormState("error")
-    } else if (!isSubmitting && formState === "submitting") {
-      setFormState("success")
-      const timer = setTimeout(() => setFormState("idle"), 2000)
-      return () => clearTimeout(timer)
+    if (!isEditMode) {
+      form.reset({
+        bh_project_name: "",
+        bh_github_provider: "",
+        bh_github_username: "",
+        bh_github_email: "",
+        bh_default_branch: "main",
+        bh_github_url: "",
+        bh_github_token_url: "",
+        tags: [],
+        status: "active"
+      })
     }
-  }, [isSubmitting, error, formState])
+  }, [isEditMode, form])
 
-  const handleSubmit = async (data: ProjectFormValues) => {
+  const handleSubmit = async (data: ProjectFormData) => {
     try {
+      setFormState("submitting")
       await onSubmit(data)
+      setFormState("success")
     } catch (error) {
-      console.error("Form submission error:", error)
-    }
-  }
-
-  const getButtonStyles = () => {
-    switch (formState) {
-      case "submitting":
-        return "bg-blue-500 hover:bg-blue-600"
-      case "success":
-        return "bg-green-500 hover:bg-green-600"
-      case "error":
-        return "bg-red-500 hover:bg-red-600"
-      default:
-        return "bg-primary hover:bg-primary/90"
+      setFormState("error")
     }
   }
 
   return (
     <Card className="w-full max-w-6xl mx-auto border-none shadow-none">
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-            <ProjectNameField form={form} />
-            <GithubFields form={form} />
-            <TagsField form={form} />
-            <div className="flex justify-center">
-              <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
-                {formState === "submitting" ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {isEditMode ? "Updating..." : "Creating..."}
-                  </>
-                ) : formState === "success" ? (
-                  "Success!"
-                ) : formState === "error" ? (
-                  "Error"
-                ) : isEditMode ? (
-                  "Update Project"
-                ) : (
-                  "Create Project"
-                )}
-              </Button>
-            </div>
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-          </form>
-        </Form>
+        <FormProvider {...form}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+              <ProjectNameField control={form.control} />
+              <GithubFields 
+                control={form.control} 
+                onValidateToken={onValidateToken} 
+                isEditMode={isEditMode}
+                isValidating={isValidating}
+                isTokenValidated={isTokenValidated}
+              />
+              <TagsField control={form.control} />
+              <div className="flex justify-center">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !isTokenValidated}
+                  className={isSubmitting ? "bg-blue-500 hover:bg-blue-600" : "bg-primary hover:bg-primary/90"}
+                  size="lg"
+                >
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {mode === "create" ? "Create Project" : "Update Project"}
+                </Button>
+              </div>
+
+              {error && (
+                <div className="text-sm text-red-500 text-center mt-2">
+                  {error}
+                </div>
+              )}
+            </form>
+          </Form>
+        </FormProvider>
       </CardContent>
     </Card>
   )

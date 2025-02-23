@@ -1,4 +1,3 @@
-
 import { configureStore } from '@reduxjs/toolkit';
 import usersReducer from './slices/admin/usersSlice';
 import projectsReducer from './slices/admin/projectsSlice';
@@ -11,6 +10,7 @@ import alertHubReducer from './slices/dataops/alertHubSlice';
 import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
 import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 import taskDetailSlice from './slices/dataops/taskDetailSlice';
+import globalReducer from './slices/globalGitSlice';
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +25,7 @@ export const store = configureStore({
     layoutField: layoutFiedlReducer,
     autoSave: autoSaveReducer,
     tasksetails: taskDetailSlice,
+    global: globalReducer,
   },
 });
 

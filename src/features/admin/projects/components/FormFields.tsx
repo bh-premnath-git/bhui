@@ -2,24 +2,20 @@ import type React from "react"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { X, Loader2, Check } from "lucide-react"
+import { Control, useFormContext } from "react-hook-form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { githubProviders } from "./projectFormSchema"
+import { type ProjectFormData } from "./projectFormSchema"
+import { useGithubProviders } from "@/hooks/useGithubProviders"
 import { AddTagDialog } from "@/components/shared/AddTagDialog"
-import { encrypt_string } from "@/services/encryption"
-import { useProjects } from "../hooks/useProjects"
+import { RequiredFormLabel } from "@/components/shared/RequiredFormLabel"
+import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
+import { useState } from "react"
 
-const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
-  <FormLabel>
-    {children}
-    <span className="text-red-500 ml-1">*</span>
-  </FormLabel>
-)
-
-export const ProjectNameField = ({ form }: { form: any }) => (
+export const ProjectNameField = ({ control }: { control: Control<ProjectFormData> }) => (
   <FormField
-    control={form.control}
-    name="projectName"
+    control={control}
+    name="bh_project_name"
     render={({ field }) => (
       <FormItem className="max-w-sm">
         <RequiredFormLabel>Project Name</RequiredFormLabel>
@@ -32,173 +28,209 @@ export const ProjectNameField = ({ form }: { form: any }) => (
   />
 )
 
-export const GithubFields = ({ form }: { form: any }) =>{ 
-  const { handleValidateToken } = useProjects();
-  const validateGitHub = async () => {
-    const { githubProvider, githubUsername, githubEmail, githubRepositoryUrl, githubToken } = form.getValues()
-    const { encryptedString, initVector } = encrypt_string(githubToken);
-    const data = {
-      bh_github_provider: githubProvider,
-      bh_github_username: githubUsername,
-      bh_github_email: githubEmail,
-      bh_github_url: githubRepositoryUrl,
-      bh_github_token_url: encryptedString,
-      init_vector: initVector
+interface GithubFieldsProps {
+  control: Control<ProjectFormData>
+  onValidateToken: (data: ProjectFormData) => Promise<void>
+  isEditMode?: boolean
+  isValidating: boolean
+  isTokenValidated: boolean
+}
+
+export function GithubFields({ 
+  control, 
+  onValidateToken, 
+  isEditMode = false,
+  isValidating,
+  isTokenValidated
+}: GithubFieldsProps) {
+  const { providers, isLoading, error: providersError } = useGithubProviders();
+  const form = useFormContext<ProjectFormData>();
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const handleValidation = async () => {
+    try {
+      setValidationError(null);
+      await onValidateToken(form.getValues());
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : 'Failed to validate token');
     }
-    await handleValidateToken(data);
-  }
-  
-  return(
-  <div className="space-y-4">
-    <div className="grid gap-4 md:grid-cols-4">
-      <FormField
-        control={form.control}
-        name="githubProvider"
-        render={({ field }) => (
-          <FormItem>
-            <RequiredFormLabel>Github Provider</RequiredFormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Provider" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {githubProviders.map((provider) => (
-                  <SelectItem key={provider.value} value={provider.value}>
-                    {provider.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="githubUsername"
-        render={({ field }) => (
-          <FormItem>
-            <RequiredFormLabel>Github Username</RequiredFormLabel>
-            <FormControl>
-              <Input placeholder="Enter username" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="githubEmail"
-        render={({ field }) => (
-          <FormItem>
-            <RequiredFormLabel>Github Email</RequiredFormLabel>
-            <FormControl>
-              <Input type="email" placeholder="user@github.com" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="defaultBranch"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Default Branch</FormLabel>
-            <FormControl>
-              <Input placeholder="main" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-
-    <div className="grid gap-4 md:grid-cols-2">
-      <FormField
-        control={form.control}
-        name="githubRepositoryUrl"
-        render={({ field }) => (
-          <FormItem>
-            <RequiredFormLabel>Github Repository URL</RequiredFormLabel>
-            <FormControl>
-              <Input placeholder="https://github.com/..." {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="githubToken"
-        render={({ field }) => (
-          <FormItem className="relative">
-            <RequiredFormLabel>Github Token</RequiredFormLabel>
-            <div className="flex gap-2">
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
-              <Button type="button" variant="secondary" size="sm" className="shrink-0" onClick={() => validateGitHub()}>
-                Validate
-              </Button>
-            </div>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  </div>
-)}
-
-export const TagsField = ({ form }: { form: any }) => {
-  const tags = form.watch("tags") || []
-
-  const addTag = (key: string, value: string) => {
-    form.setValue("tags", [...tags, { key, value }])
-  }
-
-  const removeTag = (index: number) => {
-    const newTags = tags.filter((_: any, i: number) => i !== index)
-    form.setValue("tags", newTags)
-  }
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Add Tags</h3>
-          <p className="text-sm text-muted-foreground">
-            Add one or more tags to easily identify compute instances created by BigHammer.ai in your AWS account
-          </p>
-        </div>
-        <AddTagDialog onAddTag={addTag} />
+      <div className="grid gap-4 md:grid-cols-4">
+        <FormField
+          control={control}
+          name="bh_github_provider"
+          render={({ field }) => (
+            <FormItem>
+              <RequiredFormLabel>GitHub Provider</RequiredFormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <span>Loading...</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Select Provider" />
+                    )}
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {providersError ? (
+                    <div className="p-2 text-sm text-destructive">Failed to load providers</div>
+                  ) : (
+                    providers?.map((provider) => (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="bh_github_username"
+          render={({ field }) => (
+            <FormItem>
+              <RequiredFormLabel>GitHub Username</RequiredFormLabel>
+              <FormControl>
+                <Input placeholder="Enter username" {...field} disabled={isEditMode} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="bh_github_email"
+          render={({ field }) => (
+            <FormItem>
+              <RequiredFormLabel>GitHub Email</RequiredFormLabel>
+              <FormControl>
+                <Input type="email" placeholder="Enter email" {...field} disabled={isEditMode} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="bh_default_branch"
+          render={({ field }) => (
+            <FormItem>
+              <RequiredFormLabel>Default Branch</RequiredFormLabel>
+              <FormControl>
+                <Input placeholder="main" {...field} disabled={isEditMode} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
 
-      {tags.length > 0 && (
-        <div className="space-y-4">
-          {tags.map((tag: any, index: number) => (
-            <div key={index} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
-              <div className="grid gap-1 flex-1">
-                <div className="text-sm font-medium">Key</div>
-                <div className="text-sm text-muted-foreground">{tag.key}</div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          control={control}
+          name="bh_github_url"
+          render={({ field }) => (
+            <FormItem>
+              <RequiredFormLabel>GitHub URL</RequiredFormLabel>
+              <FormControl>
+                <Input placeholder="https://github.com/username/repo" {...field} disabled={isEditMode} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="bh_github_token_url"
+          render={({ field }) => (
+            <FormItem className="relative">
+              <RequiredFormLabel>GitHub Token</RequiredFormLabel>
+              <div className="flex gap-2">
+                <FormControl>
+                  <Input type="password" placeholder="Enter token" {...field} />
+                </FormControl>
+                <ValidationButton
+                  onValidate={handleValidation}
+                  isValidating={isValidating}
+                  isValidated={isTokenValidated}
+                  error={validationError}
+                  onValidationChange={(state: ValidationState) => {
+                    if (state === 'not-validated') {
+                      setValidationError('Validation failed. Please check your token and try again.');
+                    }
+                  }}
+                />
               </div>
-              <div className="grid gap-1 flex-1">
-                <div className="text-sm font-medium">Value</div>
-                <div className="text-sm text-muted-foreground">{tag.value}</div>
-              </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => removeTag(index)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
+  )
+}
+
+interface Tag {
+  key: string
+  value: string
+}
+
+export const TagsField = ({ control }: { control: Control<ProjectFormData> }) => {
+  return (
+    <FormField
+      control={control}
+      name="tags"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Tags</FormLabel>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {field.value?.map((tag, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 text-sm bg-secondary rounded-md"
+                >
+                  <span>
+                    {tag.key}: {tag.value}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => {
+                      const newTags = [...field.value];
+                      newTags.splice(index, 1);
+                      field.onChange(newTags);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <AddTagDialog
+              onAddTag={(key, value) => {
+                field.onChange([...(field.value || []), { key, value }]);
+              }}
+            />
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 }

@@ -21,13 +21,14 @@ export function useResource<T>(resource: string, portNumber: number, usePrefix: 
     );
   };
 
-  const getOne = (id: string | number) => {
+  const getOne = (url?: string, params?: Record<string, any>) => {
     return useApiQuery<T>(
-      [resource, id.toString()],
+      [resource, 'one', JSON.stringify(params)],
       {
         ...baseConfig,
-        url: `/${resource}/${id}`,
-        method: 'GET',  // Added required method
+        url: url || `/${resource}`,
+        method: 'GET', 
+        params,
         metadata: {
           errorMessage: `Failed to fetch ${resource}`,
         },
@@ -35,54 +36,68 @@ export function useResource<T>(resource: string, portNumber: number, usePrefix: 
     );
   };
 
-  const createOne = (url?: string, params?: Record<string, any>) => {
-    return useApiMutation<T>(
-      {
-        ...baseConfig,
-        url: url || `/${resource}`,
-        method: 'POST',
-        params,
-        metadata: {
-          successMessage: `${resource} created successfully`,
-          errorMessage: `Failed to create ${resource}`,
-        },
-      }
-    );
-  };
+  const createMutation = useApiMutation<T>({
+    ...baseConfig,
+    url: `/${resource}`,
+    method: 'POST',
+    metadata: {
+      successMessage: `${resource} created successfully`,
+      errorMessage: `Failed to create ${resource}`,
+    },
+  });
 
-  const updateOne = (id: string | number) => {
-    return useApiMutation<T>(
-      {
-        ...baseConfig,
-        url: `/${resource}/${id}`,
-        method: 'PUT',
-        metadata: {
-          successMessage: `${resource} updated successfully`,
-          errorMessage: `Failed to update ${resource}`,
-        },
+  const updateMutation = useApiMutation<T & { url?: string }>({
+    ...baseConfig,
+    url: `/${resource}`,
+    method: 'PUT',
+    metadata: {
+      successMessage: `${resource} updated successfully`,
+      errorMessage: `Failed to update ${resource}`,
+    },
+  }, {
+    onMutate: (data: any) => {
+      if (data?.url) {
+        return { ...data, url: data.url };
       }
-    );
-  };
+      return data;
+    }
+  });
 
-  const deleteOne = (id: string | number) => {
-    return useApiMutation<void>(
-      {
-        ...baseConfig,
-        url: `/${resource}/${id}`,
-        method: 'DELETE',
-        metadata: {
-          successMessage: `${resource} deleted successfully`,
-          errorMessage: `Failed to delete ${resource}`,
-        },
+  const deleteMutation = useApiMutation<{ url: string }>({
+    ...baseConfig,
+    url: `/${resource}`,
+    method: 'DELETE',
+    metadata: {
+      successMessage: `${resource} deleted successfully`,
+      errorMessage: `Failed to delete ${resource}`,
+    },
+  }, {
+    onMutate: (data: any) => {
+      if (data?.url) {
+        return { url: data.url };
       }
-    );
+      return data;
+    }
+  });
+
+  const createOne = (url?: string) => {
+    return useApiMutation<T>({
+      ...baseConfig,
+      url: url || `/${resource}`,
+      method: 'POST',
+      metadata: {
+        successMessage: `${resource} created successfully`,
+        errorMessage: `Failed to create ${resource}`,
+      },
+    });
   };
 
   return {
     getAll,
     getOne,
-    createOne,
-    updateOne,
-    deleteOne,
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    createOne
   };
 }

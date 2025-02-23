@@ -1,10 +1,9 @@
-
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { ReactFlowProvider } from 'reactflow';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, useRoutes } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { SidebarProvider } from "@/context/SidebarContext";
@@ -18,6 +17,8 @@ import { Button } from "./components/ui/button";
 import { LazyLoading } from "./components/shared/LazyLoading";
 import { KeycloakProvider } from "./context/KeycloakContext";
 import 'reactflow/dist/style.css';
+import { useAppDispatch } from "@/hooks/uaeRedux";
+import { fetchGithubProviders } from "./store/slices/globalGitSlice";
 
 const queryClient = new QueryClient();
 
@@ -37,30 +38,56 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
   );
 }
 
-function MainContent() {
+function RootLayout() {
   const { isExpanded } = useSidebar();
-  const routes = useRoutes(routerConfig);
 
   return (
-    <div className={`col-start-2 col-span-1 transition-all duration-300 ${isExpanded ? "ml-64" : "ml-20"}`}>
-      <Header />
-      <main className="pt-16">
-        <ErrorBoundary
-          FallbackComponent={ErrorFallback}
-          onReset={() => {
-            console.log('Error boundary reset');
-          }}
-          onError={(error) => {
-            console.error('Error caught by boundary:', error);
-          }}
-        >
-          <Suspense fallback={<LazyLoading />}>
-            {routes}
-          </Suspense>
-        </ErrorBoundary>
-      </main>
+    <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
+      <Sidebar />
+      <div className={`col-start-2 col-span-1 transition-all duration-300 ${isExpanded ? "ml-64" : "ml-20"}`}>
+        <Header />
+        <main className="pt-16">
+          <ErrorBoundary
+            FallbackComponent={ErrorFallback}
+            onReset={() => {
+              console.log('Error boundary reset');
+            }}
+            onError={(error) => {
+              console.error('Error caught by boundary:', error);
+            }}
+          >
+            <Suspense fallback={<LazyLoading />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </div>
     </div>
   );
+}
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <ReactFlowProvider>
+        <SidebarProvider>
+          <RootLayout />
+        </SidebarProvider>
+      </ReactFlowProvider>
+    ),
+    children: routerConfig
+  }
+]);
+
+function AppInitializer() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(fetchGithubProviders());
+  }, [dispatch]);
+
+  return null;
 }
 
 const App = () => (
@@ -78,18 +105,10 @@ const App = () => (
         <KeycloakProvider>
           <TooltipProvider>
             <ThemeProvider>
-              <BrowserRouter>
-                <ReactFlowProvider>
-                  <SidebarProvider>
-                    <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
-                      <Sidebar />
-                      <MainContent />
-                    </div>
-                  </SidebarProvider>
-                </ReactFlowProvider>
-              </BrowserRouter>
+              <AppInitializer />
+              <RouterProvider router={router} />
+              <Toaster position="top-right" />
             </ThemeProvider>
-            <Toaster position="top-right" />
           </TooltipProvider>
         </KeycloakProvider>
       </ErrorBoundary>

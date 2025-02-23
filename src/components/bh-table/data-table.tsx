@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from "@tanstack/react-table"
 import { SimpleTopSection } from "./simple-top-section"
 import { StatusTopSection } from "./status-top-section"
@@ -16,9 +16,10 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [isInitialized, setIsInitialized] = React.useState(false)
 
   const table = useReactTable({
-    data,
+    data: data || [],
     columns,
     state: {
       columnFilters,
@@ -33,7 +34,13 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  if (!table) {
+  useEffect(() => {
+    if (!isInitialized && table) {
+      setIsInitialized(true)
+    }
+  }, [table, isInitialized])
+
+  if (!isInitialized || !table) {
     return <div>Loading...</div>
   }
 
@@ -49,5 +56,5 @@ export function DataTable<TData>({
 
       {pagination && <TablePagination table={table} />}
     </div>
-  )
+  );
 }

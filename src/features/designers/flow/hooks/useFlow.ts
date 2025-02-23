@@ -1,5 +1,6 @@
 import { useResource } from '@/hooks/api/useResource';
 import type {
+    Flow,
     FlowPaginatedResponse,
     FlowMutationData
 } from '@/types/designer/flow';
@@ -14,14 +15,18 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
     const {
         getAll,
         createOne,
-        updateOne,
-        deleteOne
-    } = useResource<FlowPaginatedResponse>('flows', CATALOG_API_PORT, true);
+        updateMutation,
+        deleteMutation
+    } = useResource<Flow>('flows', CATALOG_API_PORT, true);
 
-    const { data: flows, isLoading, isFetching, isError } = getAll('/flow/list/');
+    const { data: flowsResponse, isLoading, isFetching, isError } = getAll('/flow/list/') as {
+        data: FlowPaginatedResponse;
+        isLoading: boolean;
+        isFetching: boolean;
+        isError: boolean;
+    };
+
     const createMutation = createOne();
-    const updateMutation = updateOne("placeholder-id");
-    const deleteMutation = deleteOne("placeholder-id");
 
     const handleCreateFlow = async (data: FlowMutationData) => {
         try {
@@ -35,7 +40,10 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
 
     const handleUpdateFlow = async (id: string, data: FlowMutationData) => {
         try {
-            await updateMutation.mutateAsync({ id, ...data });
+            await updateMutation.mutateAsync({
+                ...data,
+                url: `/flow/${id}/`
+            });
             toast.success('Flow updated successfully');
         } catch (error) {
             toast.error('Failed to update flow');
@@ -45,7 +53,9 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
 
     const handleDeleteFlow = async (id: string) => {
         try {
-            await deleteMutation.mutateAsync({ id });
+            await deleteMutation.mutateAsync({
+                url: `/flow/${id}/`
+            });
             toast.success('Flow deleted successfully');
         } catch (error) {
             toast.error('Failed to delete flow');
@@ -54,7 +64,7 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
     };
 
     return {
-        flows,
+        flows: flowsResponse || [],
         isLoading,
         isFetching,
         isError,
@@ -62,4 +72,4 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
         handleUpdateFlow,
         handleDeleteFlow
     };
-}
+};

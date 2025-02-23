@@ -14,14 +14,12 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
     const {
         getAll,
         createOne,
-        updateOne,
-        deleteOne
+        updateMutation,
+        deleteMutation
     } = useResource<PipelinePaginatedResponse>('pipelines', CATALOG_API_PORT, true);
 
     const { data: pipelines, isLoading, isFetching, isError } = getAll('/pipeline/list/');
     const createMutation = createOne();
-    const updateMutation = updateOne("placeholder-id");
-    const deleteMutation = deleteOne("placeholder-id");
 
     const handleCreatePipeline = async (data: PipelineMutationData) => {
         try {

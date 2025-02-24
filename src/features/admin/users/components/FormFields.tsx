@@ -6,26 +6,6 @@ import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, realmRoleOptions } from "./userFormSchema"
 import { useAppSelector } from "@/hooks/uaeRedux"
 
-// Add role mapping configuration
-const ROLE_MAPPINGS = {
-} as const;
-
-// Reverse mapping for form submission
-const UI_TO_API_ROLES = {
-} as const;
-
-// Helper function to convert API roles to UI roles
-export const apiToUiRoles = (apiRoles: string[]): string[] => {
-  return apiRoles
-    .filter(role => role !== 'default-roles-bighammer-realm')
-    .map(role => ROLE_MAPPINGS[role as keyof typeof ROLE_MAPPINGS] || role);
-};
-
-// Helper function to convert UI roles back to API roles
-export const uiToApiRoles = (uiRoles: string[]): string[] => {
-  return uiRoles.map(role => UI_TO_API_ROLES[role as keyof typeof UI_TO_API_ROLES]);
-};
-
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">
     {children}
@@ -102,7 +82,8 @@ export const StatusField = ({ form }: { form: any }) => (
 )
 
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
-  const projectOptions = useAppSelector(getProjectOptions);
+  const projects = useAppSelector((state) => state.projects.projects);
+  const projectOptions = getProjectOptions(projects);
 
   return (
     <div className="grid grid-cols-2 gap-6">

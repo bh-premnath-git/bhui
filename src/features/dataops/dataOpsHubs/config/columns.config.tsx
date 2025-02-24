@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
+import type { ColumnDefWithFilters } from "@/types/table"
 import { DataOpsHub } from '@/types/dataops/dataOpsHub';
 
 export const columnHelper = createColumnHelper<DataOpsHub>();

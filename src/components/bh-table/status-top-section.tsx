@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle2, Clock, XCircle, X } from "lucide-react"
 import type { TopSectionProps, StatusMetric } from "@/types/table"
 
-export function StatusTopSection<TData>({ table, toolbarConfig }: TopSectionProps<TData>) {
+export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status" }: TopSectionProps<TData>) {
   const allRows = table.getCoreRowModel().rows
-  const statusColumn = table.getColumn("status")
+  const statusColumn = table.getColumn(headerFilter)
   const selectedStatuses = (statusColumn?.getFilterValue() as string[]) || []
   const metrics: StatusMetric[] = React.useMemo(() => {
     const statusCounts = new Map<string, number>()
     const totalRows = allRows.length
     allRows.forEach((row) => {
-      const status = row.getValue("status") as string
+      const status = row.getValue(headerFilter) as string
       statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
     })
     return Array.from(statusCounts.entries()).map(([status, count]) => {
@@ -21,7 +21,7 @@ export function StatusTopSection<TData>({ table, toolbarConfig }: TopSectionProp
       let icon: React.ReactNode
       let color: string
 
-      switch (status) {
+      switch (status.toLowerCase()) {
         case "success":
           icon = <CheckCircle2 className="h-3 w-3 text-green-600" />
           color = "green"

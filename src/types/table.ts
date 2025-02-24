@@ -16,6 +16,7 @@ export interface TToolbarConfig {
 export interface TopSectionProps<TData> {
   table: Table<TData>
   toolbarConfig: TToolbarConfig
+  headerFilter?: string
 }
 
 export interface HeaderButton {
@@ -33,6 +34,7 @@ export interface DataTableProps<TData> {
   data: TData[]
   columns: ColumnDefWithFilters<TData, any>[]
   topVariant?: "simple" | "status"
+  headerFilter?: string
   pagination?: boolean
   toolbarConfig?: TToolbarConfig
   onRowClick?: (row: Row<TData>) => void

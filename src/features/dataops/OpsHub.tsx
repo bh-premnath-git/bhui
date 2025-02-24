@@ -25,7 +25,8 @@ export function OpsHub({ dataOpsHubs }: { dataOpsHubs: DataOpsHub[] }) {
       <DataTable<DataOpsHub>
         columns={columns}
         data={dataOpsHubs || []}
-        topVariant="simple"
+        topVariant="status"
+        headerFilter = "flow_status"
         pagination={true}
         onRowClick={handleRowClick}
       />

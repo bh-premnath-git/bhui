@@ -10,6 +10,7 @@ export function DataTable<TData>({
   data,
   columns,
   topVariant = "simple",
+  headerFilter,
   pagination = true,
   toolbarConfig,
   onRowClick,
@@ -49,7 +50,7 @@ export function DataTable<TData>({
       {topVariant === "simple" ? (
         <SimpleTopSection table={table} toolbarConfig={toolbarConfig} />
       ) : (
-        <StatusTopSection table={table} toolbarConfig={toolbarConfig} />
+        <StatusTopSection table={table} toolbarConfig={toolbarConfig} headerFilter={headerFilter} />
       )}
 
       <TableContent table={table} onRowClick={onRowClick} />

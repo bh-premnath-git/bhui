@@ -2,10 +2,11 @@ import type React from "react"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { environments, platforms } from "./environmentFormSchema"
+import { environments, platforms, regions } from "./environmentFormSchema"
 import { AddTagDialog } from "@/components/shared/AddTagDialog"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -15,95 +16,77 @@ const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
 )
 
 export const EnvironmentDetailsFields = ({ form }: { form: any }) => (
-  <div className="grid gap-4 md:grid-cols-2">
-    <FormField
-      control={form.control}
-      name="environmentName"
-      render={({ field }) => (
-        <FormItem>
-          <RequiredFormLabel>Environment Name</RequiredFormLabel>
-          <FormControl>
-            <Input placeholder="e.g. My Dev Env" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="environment"
-      render={({ field }) => (
-        <FormItem>
-          <RequiredFormLabel>Environment</RequiredFormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+  <div className="space-y-6">
+    <div className="grid gap-6 md:grid-cols-2">
+      <FormField
+        control={form.control}
+        name="environmentName"
+        render={({ field }) => (
+          <FormItem>
+            <RequiredFormLabel>Environment Name</RequiredFormLabel>
             <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Environment" />
-              </SelectTrigger>
+              <Input placeholder="e.g. My Dev Env" {...field} />
             </FormControl>
-            <SelectContent>
-              {environments.map((env) => (
-                <SelectItem key={env.value} value={env.value}>
-                  {env.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="environment"
+        render={({ field }) => (
+          <FormItem>
+            <RequiredFormLabel>Environment</RequiredFormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Environment" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {environments.map((env) => (
+                  <SelectItem key={env.value} value={env.value}>
+                    {env.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   </div>
 )
 
 export const PlatformFields = ({ form }: { form: any }) => (
-  <div className="grid gap-4 md:grid-cols-3">
+  <div className="space-y-2">
     <FormField
       control={form.control}
       name="platform.type"
       render={({ field }) => (
         <FormItem>
-          <RequiredFormLabel>Platform</RequiredFormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Platform" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {platforms.map((platform) => (
-                <SelectItem key={platform.value} value={platform.value}>
-                  {platform.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="platform.region"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Region</FormLabel>
-          <FormControl>
-            <Input placeholder="e.g. us-east-1" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="platform.zone"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Zone</FormLabel>
-          <FormControl>
-            <Input placeholder="e.g. us-east-1a" {...field} />
-          </FormControl>
+          <div className="flex gap-4">
+            {platforms.map((platform) => (
+              <button
+                key={platform.value}
+                type="button"
+                onClick={() => field.onChange(platform.value)}
+                className={`border rounded-lg p-4 flex flex-col items-center justify-center ${
+                  field.value === platform.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                } transition-colors w-32 h-24`}
+              >
+                <img
+                  src={platform.image || "/placeholder.svg"}
+                  alt={platform.label}
+                  className="h-8 w-8 object-contain mb-2"
+                />
+                <span className="text-sm font-medium">{platform.label}</span>
+              </button>
+            ))}
+          </div>
           <FormMessage />
         </FormItem>
       )}
@@ -112,90 +95,137 @@ export const PlatformFields = ({ form }: { form: any }) => (
 )
 
 export const CredentialsFields = ({ form }: { form: any }) => (
-  <div className="grid gap-4">
-    <FormField
-      control={form.control}
-      name="credentials.accessKey"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Access Key</FormLabel>
-          <FormControl>
-            <Input type="password" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="credentials.secretKey"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Secret Key</FormLabel>
-          <FormControl>
-            <Input type="password" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="credentials.token"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Token (Optional)</FormLabel>
-          <FormControl>
-            <Input type="password" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  <div className="space-y-6">
+    <div className="grid gap-6 md:grid-cols-2">
+      <FormField
+        control={form.control}
+        name="platform.project"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Project Id</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. Aws Project Id" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="platform.region"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Region</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Region" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {regions.map((reg) => (
+                  <SelectItem key={reg.value} value={reg.value}>
+                    {reg.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="credentials.accessKey"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Access Key</FormLabel>
+            <FormControl>
+              <Input type="password" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="credentials.secretKey"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Secret Key</FormLabel>
+            <FormControl>
+              <Input type="password" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="credentials.validate"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-start space-x-3 space-y-0 md:col-span-2">
+            <FormControl>
+              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+            </FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel>Validate</FormLabel>
+            </div>
+          </FormItem>
+        )}
+      />
+    </div>
   </div>
 )
 
 export const AdvancedSettingsFields = ({ form }: { form: any }) => (
-  <div className="grid gap-4 md:grid-cols-3">
-    <FormField
-      control={form.control}
-      name="advancedSettings.vpc"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>VPC ID</FormLabel>
-          <FormControl>
-            <Input placeholder="vpc-xxxxxx" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="advancedSettings.subnet"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Subnet ID</FormLabel>
-          <FormControl>
-            <Input placeholder="subnet-xxxxxx" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-    <FormField
-      control={form.control}
-      name="advancedSettings.securityGroup"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Security Group ID</FormLabel>
-          <FormControl>
-            <Input placeholder="sg-xxxxxx" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  <div className="space-y-6">
+    <div>
+      <p className="text-sm text-muted-foreground mt-1">Provide optional Airflow configuration</p>
+    </div>
+    <div className="grid gap-6 md:grid-cols-2">
+      <FormField
+        control={form.control}
+        name="advancedSettings.mwaa"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>MWAA Ennironment</FormLabel>
+            <FormControl>
+              <Input placeholder="MWAA Envitronment" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+    <div className="grid gap-6 md:grid-cols-2">
+      <FormField
+        control={form.control}
+        name="advancedSettings.airflow"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Airflow Bucket Id</FormLabel>
+            <FormControl>
+              <Input placeholder="airflow id" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="advancedSettings.airflow_name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Airflow Bucket Name</FormLabel>
+            <FormControl>
+              <Input placeholder="Airflow name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   </div>
 )
 
@@ -245,3 +275,4 @@ export const TagsField = ({ form }: { form: any }) => {
     </div>
   )
 }
+

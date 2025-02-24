@@ -19,7 +19,7 @@ export function EnvironmentPageLayout({ description, children }: EnvironmentPage
         </div>
         <Button
           variant="outline"
-          onClick={() => navigate(ROUTES.ADMIN.ENVIRONMENTS.INDEX)}
+          onClick={() => navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX)}
           className="shrink-0"
         >
           View All Environments

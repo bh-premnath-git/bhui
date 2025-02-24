@@ -30,6 +30,9 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     isFetching: false,
     isError: false
   };
+
+  const { data: mwaaEnvironments, isLoading: isMwaaLoading, isFetching: isMwaaFetching, isError: isMwaaError } = getAll("/bh_airflow/list-airflow-environments");
+
   
   const handleCreateEnvironment = async (data: EnvironmentMutationData) => {
     try {
@@ -39,6 +42,20 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
       toast.error('Failed to create environment');
       throw error;
     }
+  };
+
+  const handleAWSValidation = async (data: EnvironmentMutationData) => {
+    try {
+      await createMutation.mutateAsync({
+        ...data,
+        url: '/aws/test_connection'
+      });
+      toast.success('AWS validation successful');
+    }
+    catch (error) {
+      toast.error('Failed to validate AWS');
+      throw error;    
+    } 
   };
 
   const handleUpdateEnvironment = async (id: string, data: EnvironmentMutationData) => {
@@ -69,13 +86,18 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   return {
     environments,
     environment,
+    mwaaEnvironments,
     isLoading,
     isEnvironmentLoading,
+    isMwaaLoading,
     isFetching,
     isEnvironmentFetching,
+    isMwaaFetching,
     isError,
     isEnvironmentError,
+    isMwaaError,
     handleCreateEnvironment,
+    handleAWSValidation,
     handleUpdateEnvironment,
     handleDeleteEnvironment
   };

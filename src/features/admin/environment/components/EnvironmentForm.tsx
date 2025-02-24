@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { FormProvider, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -16,6 +16,7 @@ import {
 } from "./FormFields"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 
 interface EnvironmentFormProps {
   initialData?: EnvironmentFormValues
@@ -90,13 +91,19 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
   return (
     <Card className="w-full max-w-8xl mx-auto border-none shadow-none">
       <CardContent>
+      <FormProvider {...form}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* <EnvironmentDetailsFields form={form} />
+            <PlatformFields form={form} />
+            <CredentialsFields form={form} />
+            <AdvancedSettingsFields form={form} />
+            <TagsField form={form} /> */}
             <Accordion type="single" collapsible defaultValue="environment-details">
               <AccordionItem value="environment-details">
                 <AccordionTrigger className="text-lg font-semibold text-primary">Environment Details</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                  <EnvironmentDetailsFields form={form} />
+                   <EnvironmentDetailsFields form={form} />
                 </AccordionContent>
               </AccordionItem>
 
@@ -150,6 +157,7 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
           </form>
         </Form>
+        </FormProvider>
       </CardContent>
     </Card>
   )

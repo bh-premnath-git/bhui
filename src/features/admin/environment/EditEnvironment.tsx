@@ -48,11 +48,8 @@ const transformFormToApiData = (data: EnvironmentFormValues, existingEnvironment
     }
   });
 
-  // Merge with existing data to ensure we have all required fields
   return {
-    // Keep existing values for fields we don't update
     ...existingEnvironment,
-    // Update the fields from the form
     bh_env_name: data.environmentName,
     bh_env_provider_name: data.environment,
     cloud_provider_name: data.platform.type,

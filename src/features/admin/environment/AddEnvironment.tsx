@@ -6,6 +6,7 @@ import { useEnvironments } from './hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { EnvironmentPageLayout } from './components/EnvironmentPageLayout';
 
 export function AddEnvironment() {
   const navigate = useNavigate();
@@ -28,25 +29,15 @@ export function AddEnvironment() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <Button
-        variant="ghost"
-        className="mb-6"
-        onClick={() => navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX)}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Environments
-      </Button>
-      
-      <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">Add New Environment</h1>
-        <EnvironmentForm 
+    <EnvironmentPageLayout description="Add New Environment">
+      <div className="p-6">
+      <EnvironmentForm 
           mode="create" 
           onSubmit={onSubmit} 
           isSubmitting={isSubmitting} 
           error={error} 
         />
       </div>
-    </div>
+    </EnvironmentPageLayout>
   );
 }

@@ -31,14 +31,19 @@ export const environmentFormSchema = z.object({
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
 
 export const environments = [
-  { label: "Development", value: "development" },
-  { label: "Staging", value: "staging" },
-  { label: "Production", value: "production" },
+  { label: "Development", value: "301" },
+  { label: "Staging", value: "304" },
+  { label: "Production", value: "305" },
 ] as const
 
 export const platforms = [
-  { label: "AWS", value: "aws" },
-  { label: "GCP", value: "gcp" },
-  { label: "Azure", value: "azure" },
+  { label: "AWS", value: "101", image: "/assets/environments/aws.svg" },
+  { label: "GCP", value: "102", image: "/assets/environments/google.svg" },
+] as const
+
+export const regions = [
+  { label: "us-east-1", value: "2" },
+  { label: "us-west-1", value: "3" },
+  { label: "eu-central-1", value: "18" },
 ] as const
 

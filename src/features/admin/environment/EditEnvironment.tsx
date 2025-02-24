@@ -12,7 +12,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { EnvironmentPageLayout } from "./components/EnvironmentPageLayout";
 
 const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues => {
-  // Transform tags from API format to form format
   const transformedTags = Object.entries(environment.tags || {}).map(([key, value]) => ({
     key,
     value: value as string

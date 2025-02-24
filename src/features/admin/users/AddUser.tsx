@@ -1,55 +1,58 @@
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { UserForm } from '@/features/admin/users/components/UserForm';
-import { UserMutationData } from '@/types/admin/user';
-import { useUsers } from '@/features/admin/users/hooks/useUsers';
-import { ROUTES } from '@/config/routes';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@/config/routes";
+import { UserForm } from "./components/UserForm";
+import { useUsers, useUserSearch } from "./hooks/useUsers";
+import { UserPageLayout } from "./components/UserPageLayout";
+import type { UserMutationData } from "@/types/admin/user";
 
 export function AddUser() {
   const navigate = useNavigate();
-  const { handleCreateUser } = useUsers({ shouldFetch: true });
+  const { handleCreateUser } = useUsers();
+  const { searchedUser, searchLoading, userNotFound, debounceSearchUser } = useUserSearch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const onSubmit = async (data: UserMutationData) => {
     try {
       setIsSubmitting(true);
       setError(null);
       await handleCreateUser(data);
       navigate(ROUTES.ADMIN.USERS.INDEX);
-    } catch (error) {
-      console.error('Failed to create user:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create user');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleNameChange = (firstName: string, lastName: string) => {
+    if (firstName && lastName) {
+      debounceSearchUser(`${firstName.toLowerCase()}${lastName.toLowerCase()}`);
+    }
+  };
+
+  const handleClearSearch = () => {
+    debounceSearchUser('');
+  };
+
   return (
-    <div className="p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <p className="text-muted-foreground">Add a new user and configure their access permissions</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate(ROUTES.ADMIN.USERS.INDEX)}
-          >
-            View All Users
-          </Button>
-        </div>
-        
-        <div className="bg-card rounded-lg shadow p-6">
+    <UserPageLayout description="Create a new user and assign their permissions">
+      <div className="p-6">
+        <div className="max-w-5xl mx-auto">
           <UserForm
             onSubmit={onSubmit}
+            onNameChange={handleNameChange}
+            onClearSearch={handleClearSearch}
             mode="create"
             isSubmitting={isSubmitting}
             error={error}
+            searchedUser={searchedUser}
+            searchLoading={searchLoading}
+            userNotFound={userNotFound}
           />
         </div>
       </div>
-    </div>
+    </UserPageLayout>
   );
 }

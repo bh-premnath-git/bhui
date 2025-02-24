@@ -1,47 +1,28 @@
-import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { RootState } from "@/store"
-import { useAppSelector } from "@/hooks/uaeRedux"
-import { UserForm } from "./components/UserForm"
-import { useUsers } from "./hooks/useUsers"
-import { ROUTES } from '@/config/routes'
-import type { UserMutationData } from "@/types/admin/user"
-import { apiToUiRoles, uiToApiRoles } from "./components/FormFields"
-import { LoadingState } from "@/components/shared/LoadingState"
-import { ErrorState } from "@/components/shared/ErrorState"
-import { UserPageLayout } from "./components/UserPageLayout"
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { LoadingState } from '@/components/shared/LoadingState';
+import { ROUTES } from "@/config/routes";
+import { UserForm } from "./components/UserForm";
+import { useUsers, useUserSearch } from "./hooks/useUsers";
+import { UserPageLayout } from "./components/UserPageLayout";
+import type { UserMutationData } from "@/types/admin/user";
 
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { selectedUser } = useAppSelector((state: RootState) => state.users);
-  const {
-    handleUpdateUser,
-    user: fetchedUser,
-    isUserLoading,
-    isUserError
-  } = useUsers({ 
-    userId: selectedUser?.id ? undefined : id, // Only fetch if we don't have selectedUser
-  });
-  
-  // Use selectedUser if available, otherwise use fetched user
-  const user = selectedUser || fetchedUser;
-
+  const { handleUpdateUser, user, isUserLoading } = useUsers({ shouldFetch: true, userId: id });
+  const { searchedUser, searchLoading, userNotFound, debounceSearchUser } = useUserSearch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (data: UserMutationData) => {
+    if (!id) return;
+
     try {
       setIsSubmitting(true);
       setError(null);
-      if (id) {
-        const submitData = {
-          ...data,
-          realm_roles: uiToApiRoles(data.realm_roles)
-        };
-        await handleUpdateUser(id, submitData);
-        navigate(ROUTES.ADMIN.USERS.INDEX);
-      }
+      await handleUpdateUser(id, data);
+      navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
     } finally {
@@ -49,52 +30,54 @@ export function EditUser() {
     }
   };
 
-  if (isUserLoading) {
-    return (
-      <div className="p-6">
-        <LoadingState className="w-40 h-40" />
-      </div>
-    );
-  }
+  const handleNameChange = (firstName: string, lastName: string) => {
+    if (firstName && lastName) {
+      debounceSearchUser(`${firstName.toLowerCase()}${lastName.toLowerCase()}`);
+    }
+  };
 
-  if (isUserError) {
-    return (
-      <div className="p-6">
-        <ErrorState
-          title="Error Loading User"
-          description="There was an error loading the user. Please try again later."
-        />
-      </div>
-    );
+  const handleClearSearch = () => {
+    debounceSearchUser('');
+  };
+
+  if (isUserLoading) {
+    return <LoadingState className="h-40 w-40" />;
   }
 
   if (!user) {
-    return (
-      <div className="p-6">
-        <ErrorState
-          title="User Not Found"
-          description="The requested user could not be found."
-        />
-      </div>
-    );
+    return <div>User not found</div>;
   }
 
-  // Transform API data to match form field names
-  const formInitialData = user ? {
-    ...user,
-    realm_roles: apiToUiRoles(user.realm_roles),
-  } : null;
+  // Transform user data for form initialization
+  const formInitialData: Partial<UserMutationData> = {
+    first_name: user.firstName,
+    last_name: user.lastName,
+    email: user.email,
+    enabled: user.enabled,
+    projects: user.projects || [],
+    realm_roles: user.realm_roles || [],
+    username: user.username
+  };
 
   return (
-    <UserPageLayout description="Modify user details and access permissions">
+    <UserPageLayout
+      description="Update user information and permissions"
+    >
       <div className="p-6">
-        <UserForm
-          initialData={formInitialData}
-          onSubmit={onSubmit}
-          mode="edit"
-          isSubmitting={isSubmitting}
-          error={error}
-        />
+        <div className="max-w-5xl mx-auto">
+          <UserForm
+            mode="edit"
+            initialData={formInitialData}
+            onSubmit={onSubmit}
+            onNameChange={handleNameChange}
+            onClearSearch={handleClearSearch}
+            isSubmitting={isSubmitting}
+            error={error}
+            searchedUser={searchedUser}
+            searchLoading={searchLoading}
+            userNotFound={userNotFound}
+          />
+        </div>
       </div>
     </UserPageLayout>
   );

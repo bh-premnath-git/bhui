@@ -13,7 +13,7 @@ export function UsersList({ users }: { users: User[] }) {
 
   const onRowClickHandler = (row: Row<User>) => {
     usrMgntSrv.selectedUser(row.original)
-    handleNavigation(ROUTES.ADMIN.USERS.EDIT(row.original.id))
+    handleNavigation(ROUTES.ADMIN.USERS.EDIT(row.original.username))
   }
   return (
     <DataTable<User>

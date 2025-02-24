@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { RequiredFormLabel } from "./FormFields"
+import type { SelectOption } from "./userFormSchema"
 
 interface MultiSelectProps {
   form: any
   name: string
   label: string
   placeholder: string
-  options: { label: string; value: string }[]
+  options: SelectOption[]
 }
 
 export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSelectProps) => (
@@ -30,11 +31,11 @@ export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSe
                 role="combobox"
                 className={cn(
                   "w-full justify-start h-auto min-h-[2.5rem] font-normal",
-                  !field.value.length && "text-muted-foreground",
+                  !field.value?.length && "text-muted-foreground"
                 )}
               >
                 <div className="flex gap-1 flex-wrap">
-                  {field.value.length > 0 ? (
+                  {field.value?.length > 0 ? (
                     field.value.map((value: string) => {
                       const option = options.find((o) => o.value === value)
                       return option ? (
@@ -86,18 +87,19 @@ export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSe
                       value={option.label}
                       key={option.value}
                       onSelect={() => {
-                        const newValue = field.value.includes(option.value)
-                          ? field.value.filter((value: string) => value !== option.value)
-                          : [...field.value, option.value]
+                        const currentValue = field.value || []
+                        const newValue = currentValue.includes(option.value)
+                          ? currentValue.filter((value: string) => value !== option.value)
+                          : [...currentValue, option.value]
                         form.setValue(name, newValue)
                       }}
                     >
                       <div
                         className={cn(
                           "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                          field.value.includes(option.value)
+                          field.value?.includes(option.value)
                             ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible",
+                            : "opacity-50 [&_svg]:invisible"
                         )}
                       >
                         <X className="h-4 w-4" />
@@ -115,4 +117,3 @@ export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSe
     )}
   />
 )
-

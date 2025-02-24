@@ -19,11 +19,12 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
         deleteMutation
     } = useResource<Flow>('flows', CATALOG_API_PORT, true);
 
-    const { data: flowsResponse, isLoading, isFetching, isError } = getAll('/flow/list/') as {
+    const { data: flowsResponse, isLoading, isFetching, isError, refetch } = getAll('/flow/list/') as {
         data: FlowPaginatedResponse;
         isLoading: boolean;
         isFetching: boolean;
         isError: boolean;
+        refetch: () => Promise<any>;
     };
 
     const handleCreateFlow = async (data: FlowMutationData) => {
@@ -68,6 +69,7 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
         isError,
         handleCreateFlow,
         handleUpdateFlow,
-        handleDeleteFlow
+        handleDeleteFlow,
+        refetchFlows: refetch
     };
 };

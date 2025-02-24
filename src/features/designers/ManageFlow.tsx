@@ -8,6 +8,7 @@ import { Flow } from '@/types/designer/flow';
 import { useFlowManagementService } from './flow/services/flowMgtSrv';
 import { CreateFlowDialog } from './flow/components/CreateFlowDialog';
 import { DeleteFlowDialog } from './flow/components/DeleteFlowDialog';
+import { useFlow } from './flow/hooks/useFlow';
 
 export function FlowList({ flows }: { flows: Flow[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -15,6 +16,7 @@ export function FlowList({ flows }: { flows: Flow[] }) {
 
   const { handleNavigation } = useNavigation();
   const flowSrv = useFlowManagementService();
+  const { refetchFlows } = useFlow();
 
   const onRowClickHandler = (row: Row<Flow>) => {
     flowSrv.selectedFlow(row.original)
@@ -48,6 +50,10 @@ export function FlowList({ flows }: { flows: Flow[] }) {
         onRowClick={onRowClickHandler}
       />
       <CreateFlowDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-      <DeleteFlowDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
+      <DeleteFlowDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={setDeleteDialogOpen} 
+        onSuccess={refetchFlows}
+      />
     </>);
 }

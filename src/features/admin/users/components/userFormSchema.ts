@@ -1,13 +1,15 @@
-import * as z from "zod"
+import { z } from "zod";
+import type { Project } from "@/types/admin/project";
 
 export const userFormSchema = z.object({
-  first_name: z.string().min(2, "First name must be at least 2 characters."),
-  last_name: z.string().min(2, "Last name must be at least 2 characters."),
-  email: z.string().email("Invalid email address."),
-  enabled: z.boolean().default(true),
-  projects: z.array(z.string()).min(1, "Select at least one project."),
-  realm_roles: z.array(z.string()).min(1, "Select at least one role."),
-})
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+  enabled: z.boolean(),
+  projects: z.array(z.string()),
+  realm_roles: z.array(z.string()),
+  username: z.string().optional(),
+});
 
 export type UserFormValues = z.infer<typeof userFormSchema>
 
@@ -16,14 +18,16 @@ export interface SelectOption {
   value: string
 }
 
-export const projects: SelectOption[] = [
-  { label: "Project 1", value: "project1" },
-  { label: "Project 2", value: "project2" },
-  { label: "Project 3", value: "project3" },
-]
+export const getProjectOptions = (projects: Project[]) => {
+  return projects.map(project => ({
+    label: project.bh_project_name,
+    value: project.bh_project_id.toString()
+  }));
+};
 
-export const roles: SelectOption[] = [
-  { label: "Admin", value: "admin" },
-  { label: "User", value: "user" },
-  { label: "Viewer", value: "viewer" },
+export const realmRoleOptions = [
+  { label: 'admin-user', value: 'admin-user' },
+  { label: 'ops-user', value: 'ops-user' },
+  { label: 'designer-user', value: 'designer-user' },
+  // default-roles-bighammer-realm
 ]

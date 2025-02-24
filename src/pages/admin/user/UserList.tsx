@@ -10,13 +10,16 @@ import { UsersList } from '@/features/admin/users/Users';
 import { useUserManagementService } from '@/features/admin/users/services/userMgtSrv';
 
 function UsersListPage() {
-  const { users, isLoading, isFetching, isError } = useUsers();
+  const { users, isLoading, isFetching, isError } = useUsers({ 
+    mutationsOnly: false,
+    shouldFetch: true 
+  });
   const usrMgntSrv = useUserManagementService();
   useEffect(() => {
     if(users && users.users.length > 0){
       usrMgntSrv.setUsers(users.users);
     }
-  }, []);
+  }, [users, usrMgntSrv]);
 
   if (isLoading) {
     return (

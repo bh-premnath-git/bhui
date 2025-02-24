@@ -5,17 +5,31 @@ import { CATALOG_API_PORT } from '@/config/platformenv';
 
 interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
+  environmentId?: string;
 }
 
 export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch: true }) => {
   const {
     getAll,
+    getOne,
     createMutation,
     updateMutation,
     deleteMutation
   } = useResource<Environment>('environments', CATALOG_API_PORT, true);
 
   const { data: environments, isLoading, isFetching, isError } = getAll("/environment/environment/list/");
+
+  const { 
+    data: environment, 
+    isLoading: isEnvironmentLoading, 
+    isFetching: isEnvironmentFetching, 
+    isError: isEnvironmentError 
+  } = options.environmentId ? getOne(`/environment/environment/${options.environmentId}/`) : {
+    data: undefined,
+    isLoading: false,
+    isFetching: false,
+    isError: false
+  };
   
   const handleCreateEnvironment = async (data: EnvironmentMutationData) => {
     try {
@@ -29,7 +43,10 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 
   const handleUpdateEnvironment = async (id: string, data: EnvironmentMutationData) => {
     try {
-      await updateMutation.mutateAsync({ id, ...data });
+      await updateMutation.mutateAsync({
+        ...data,
+        url: `/environment/environment/${id}/`
+      });
       toast.success('Environment updated successfully');
     } catch (error) {
       toast.error('Failed to update environment');
@@ -39,7 +56,9 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 
   const handleDeleteEnvironment = async (id: string) => {
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync({
+        url: `/environment/environment/${id}/`
+      });
       toast.success('Environment deleted successfully');
     } catch (error) {
       toast.error('Failed to delete environment');
@@ -49,9 +68,13 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 
   return {
     environments,
+    environment,
     isLoading,
+    isEnvironmentLoading,
     isFetching,
+    isEnvironmentFetching,
     isError,
+    isEnvironmentError,
     handleCreateEnvironment,
     handleUpdateEnvironment,
     handleDeleteEnvironment

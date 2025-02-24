@@ -2,8 +2,6 @@ import { useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { RootState } from "@/store"
 import { useAppSelector } from "@/hooks/uaeRedux"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
 import { UserForm } from "./components/UserForm"
 import { useUsers } from "./hooks/useUsers"
 import { ROUTES } from '@/config/routes'
@@ -11,6 +9,7 @@ import type { UserMutationData } from "@/types/admin/user"
 import { apiToUiRoles, uiToApiRoles } from "./components/FormFields"
 import { LoadingState } from "@/components/shared/LoadingState"
 import { ErrorState } from "@/components/shared/ErrorState"
+import { UserPageLayout } from "./components/UserPageLayout"
 
 export function EditUser() {
   const navigate = useNavigate();
@@ -87,26 +86,8 @@ export function EditUser() {
   } : null;
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          className="gap-2"
-          onClick={() => navigate(ROUTES.ADMIN.USERS.INDEX)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Users
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-medium">Edit User</h3>
-          <p className="text-sm text-muted-foreground">
-            Update user information and permissions
-          </p>
-        </div>
-
+    <UserPageLayout description="Modify user details and access permissions">
+      <div className="p-6">
         <UserForm
           initialData={formInitialData}
           onSubmit={onSubmit}
@@ -115,6 +96,6 @@ export function EditUser() {
           error={error}
         />
       </div>
-    </div>
+    </UserPageLayout>
   );
 }

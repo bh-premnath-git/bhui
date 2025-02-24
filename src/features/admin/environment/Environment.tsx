@@ -28,6 +28,5 @@ export function EnvironmentList({environments}:{environments: Environment[]}) {
   );
 }
 
-// const result = await ApiService(CATALOG_API_PORT, 'get', '/bh_airflow/list-airflow-environments', null, { ...params, location: locationVal });
 
 

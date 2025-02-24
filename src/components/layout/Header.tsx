@@ -1,29 +1,9 @@
-import { useLocation } from "react-router-dom";
 import { useSidebar } from "@/context/SidebarContext";
 import { cn } from "@/lib/utils";
-import { navigationItems } from "@/config/navigation";
+import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 
 export function Header() {
-  const location = useLocation();
   const { isExpanded } = useSidebar();
-
-  const getCurrentPageTitle = () => {
-    const currentPath = location.pathname;
-
-    if (currentPath === "/") return "Dashboard";
-
-    for (const navItem of navigationItems) {
-      if (currentPath.startsWith(navItem.path)) return navItem.title;
-
-      if (navItem.subItems) {
-        for (const subItem of navItem.subItems) {
-          if (currentPath.startsWith(subItem.path)) return subItem.title;
-        }
-      }
-    }
-
-    return "Page Not Found";
-  };
 
   return (
     <header
@@ -34,7 +14,7 @@ export function Header() {
       )}
     >
       <div className="h-full flex items-center px-6">
-        <h1 className="text-xl font-semibold">{getCurrentPageTitle()}</h1>
+        <NavigationBreadcrumb />
       </div>
     </header>
   );

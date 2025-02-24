@@ -4,12 +4,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
+import { useFlow } from '@/features/designers/flow/hooks/useFlow';
 import { FlowForm } from "./flow-form"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type FlowFormValues, flowFormSchema } from "./schema"
-
 
 type CreateFlowDialogProps = {
   open: boolean;

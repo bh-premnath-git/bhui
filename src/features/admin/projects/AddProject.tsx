@@ -61,7 +61,7 @@ export function AddProject() {
         init_vector: validatedToken.initVector
       });
 
-      handleNavigation(ROUTES.ADMIN.PROJECTS.INDEX, true);
+      handleNavigation(ROUTES.ADMIN.PROJECTS.INDEX, {}, true);
     } catch (error) {
       console.error('Failed to create project:', error);
       setError(error instanceof Error ? error.message : 'Failed to create project');

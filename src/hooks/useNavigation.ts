@@ -5,7 +5,7 @@ export interface NavigationHook {
   expandedItems: Set<string>;
   toggleExpanded: (path: string) => void;
   isItemExpanded: (path: string) => boolean;
-  handleNavigation: (path: string, params?: Record<string, string>) => void;
+  handleNavigation: (path: string, params?: Record<string, string>, forceRefetch?: boolean) => void;
 }
 
 export function useNavigation(): NavigationHook {
@@ -28,7 +28,7 @@ export function useNavigation(): NavigationHook {
     return expandedItems.has(path);
   };
 
-  const handleNavigation = (path: string, params?: Record<string, string>) => {
+  const handleNavigation = (path: string, params?: Record<string, string>, forceRefetch = false) => {
     let finalPath = path;
     
     // Replace path parameters if provided
@@ -38,7 +38,7 @@ export function useNavigation(): NavigationHook {
       });
     }
 
-    navigate(finalPath);
+    navigate(finalPath, { state: { refetch: forceRefetch } });
   };
 
   return {

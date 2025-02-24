@@ -8,6 +8,7 @@ import { KEYCLOAK_API_PORT } from '@/config/platformenv';
 
 interface UseUsersOptions {
   shouldFetch?: boolean;
+  userId?: string;
 }
 
 /**
@@ -16,12 +17,25 @@ interface UseUsersOptions {
 export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   const {
     getAll,
+    getOne,
     createMutation,
     updateMutation,
     deleteMutation
   } = useResource<User>('users', KEYCLOAK_API_PORT, false);
 
   const { data: users, isLoading, isFetching, isError } = getAll('/users/');
+
+  const { 
+    data: user, 
+    isLoading: isUserLoading, 
+    isFetching: isUserFetching, 
+    isError: isUserError 
+  } = options.userId ? getOne(`/users/${options.userId}/`) : {
+    data: undefined,
+    isLoading: false,
+    isFetching: false,
+    isError: false
+  };
 
   const handleCreateUser = async (data: UserMutationData) => {
     try {
@@ -36,7 +50,10 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
 
   const handleUpdateUser = async (id: string, data: UserMutationData) => {
     try {
-      await updateMutation.mutateAsync({ id, ...data });
+      await updateMutation.mutateAsync({
+        ...data,
+        url: `/users/${id}/`
+      });
       toast.success('User updated successfully');
     } catch (error) {
       console.error("Error updating user:", error);
@@ -47,7 +64,9 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
 
   const handleDeleteUser = async (id: string) => {
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync({
+        url: `/users/${id}/`
+      });
       toast.success('User deleted successfully');
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -58,9 +77,13 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
 
   return {
     users,
+    user,
     isLoading,
+    isUserLoading,
     isFetching,
+    isUserFetching,
     isError,
+    isUserError,
     handleCreateUser,
     handleUpdateUser,
     handleDeleteUser

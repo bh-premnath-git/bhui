@@ -11,13 +11,13 @@ import { useProjectManagementServive } from '@/features/admin/projects/services/
 
 function ProjectsListPage() {
   const { projects, isLoading, isError, isFetching } = useProjects();
-  
   const projMgntSrv = useProjectManagementServive();
+
   useEffect(() => {
-    if(projects && projects.length > 0){
-        projMgntSrv.setProjects(projects);
+    if (Array.isArray(projects) && projects.length > 0) {
+      projMgntSrv.setProjects(projects);
     }
-  }, [projects]);
+  }, [projects, projMgntSrv]);
 
   if (isLoading) {
     return (
@@ -30,19 +30,20 @@ function ProjectsListPage() {
   if (isError) {
     return (
       <div className="p-6">
-        <ErrorState 
-          message="Failed to load projects. Please try again later."
+        <ErrorState
+          title="Error Loading Projects"
+          description="There was an error loading the projects. Please try again later."
         />
       </div>
     );
   }
 
-  if (!projects || projects.length === 0) {
+  if (!Array.isArray(projects) || projects.length === 0) {
     return (
       <div className="p-6">
         <EmptyState
           Icon={FolderGit2}
-          title="No projects found"
+          title="No Projects Found"
           description="Get started by creating a new project."
         />
       </div>

@@ -82,7 +82,7 @@ export const StatusField = ({ form }: { form: any }) => (
 )
 
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
-  const projects = useAppSelector((state) => state.projects.projects);
+  const projects = useAppSelector((state) => state.users.projects);
   const projectOptions = getProjectOptions(projects);
 
   return (

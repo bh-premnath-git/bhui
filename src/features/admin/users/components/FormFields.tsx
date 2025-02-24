@@ -1,30 +1,18 @@
 import type React from "react"
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
-import { projects } from "./userFormSchema"
+import { getProjectOptions, realmRoleOptions } from "./userFormSchema"
+import { useAppSelector } from "@/hooks/uaeRedux"
 
 // Add role mapping configuration
 const ROLE_MAPPINGS = {
-  'admin-user': 'Admin',
-  'designer-user': 'Designer',
-  'ops-user': 'Ops'
 } as const;
 
 // Reverse mapping for form submission
 const UI_TO_API_ROLES = {
-  'Admin': 'admin-user',
-  'Designer': 'designer-user',
-  'Ops': 'ops-user'
 } as const;
-
-// Update the roles array to match UI display names
-export const roles = [
-  { label: 'Admin', value: 'Admin' },
-  { label: 'Designer', value: 'Designer' },
-  { label: 'Ops', value: 'Ops' }
-];
 
 // Helper function to convert API roles to UI roles
 export const apiToUiRoles = (apiRoles: string[]): string[] => {
@@ -39,13 +27,13 @@ export const uiToApiRoles = (uiRoles: string[]): string[] => {
 };
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
-  <FormLabel>
+  <FormLabel className="flex gap-1">
     {children}
-    <span className="text-red-500 ml-1">*</span>
+    <span className="text-destructive">*</span>
   </FormLabel>
 )
 
-export const NameFields = ({ form }: { form: any }) => (
+export const NameFields = ({ form, disabled }: { form: any; disabled?: boolean }) => (
   <div className="grid grid-cols-2 gap-6">
     <FormField
       control={form.control}
@@ -54,13 +42,12 @@ export const NameFields = ({ form }: { form: any }) => (
         <FormItem>
           <RequiredFormLabel>First Name</RequiredFormLabel>
           <FormControl>
-            <Input placeholder="Enter first name" {...field} />
+            <Input {...field} disabled={disabled} />
           </FormControl>
           <FormMessage />
         </FormItem>
       )}
     />
-
     <FormField
       control={form.control}
       name="last_name"
@@ -68,7 +55,7 @@ export const NameFields = ({ form }: { form: any }) => (
         <FormItem>
           <RequiredFormLabel>Last Name</RequiredFormLabel>
           <FormControl>
-            <Input placeholder="Enter last name" {...field} />
+            <Input {...field} disabled={disabled} />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -100,11 +87,12 @@ export const StatusField = ({ form }: { form: any }) => (
     <FormField
       control={form.control}
       name="enabled"
+      defaultValue={true}
       render={({ field }) => (
         <FormItem className="flex flex-row items-center gap-2">
           <FormLabel>Status</FormLabel>
           <FormControl>
-            <Switch checked={field.value} onCheckedChange={field.onChange} />
+            <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
           </FormControl>
           <span className="text-sm text-muted-foreground">{field.value ? "Active" : "Inactive"}</span>
         </FormItem>
@@ -113,21 +101,25 @@ export const StatusField = ({ form }: { form: any }) => (
   </div>
 )
 
-export const ProjectsAndRolesFields = ({ form }: { form: any }) => (
-  <div className="grid grid-cols-2 gap-6">
-    <MultiSelect 
-      form={form} 
-      name="projects" 
-      label="Projects" 
-      placeholder="Select projects" 
-      options={projects} 
-    />
-    <MultiSelect 
-      form={form} 
-      name="realm_roles" 
-      label="Roles" 
-      placeholder="Select roles" 
-      options={roles} 
-    />
-  </div>
-)
+export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
+  const projectOptions = useAppSelector(getProjectOptions);
+
+  return (
+    <div className="grid grid-cols-2 gap-6">
+      <MultiSelect 
+        form={form} 
+        name="projects" 
+        label="Projects" 
+        placeholder="Select projects" 
+        options={projectOptions} 
+      />
+      <MultiSelect 
+        form={form} 
+        name="realm_roles" 
+        label="Roles" 
+        placeholder="Select roles" 
+        options={realmRoleOptions} 
+      />
+    </div>
+  )
+}

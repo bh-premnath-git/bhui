@@ -1,10 +1,15 @@
-import { RootState } from '@/store'
-import { useAppSelector } from '@/hooks/uaeRedux'
+import { useEffect } from 'react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { EditUser } from '@/features/admin/users/EditUser';
+import { fetchProjects } from '@/store/slices/admin/usersSlice';
+import { useAppDispatch } from '@/hooks/uaeRedux';
 
 const UserEdit = () => {
-    const user = useAppSelector((state: RootState) => state.users.selectedUser);
+    const dispatch = useAppDispatch();
+    useEffect(() => {
+      dispatch(fetchProjects());
+    }, [dispatch]);
+
     return (
         <EditUser />
     )

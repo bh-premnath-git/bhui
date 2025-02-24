@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
@@ -8,6 +8,7 @@ import { KEYCLOAK_API_PORT } from '@/config/platformenv';
 interface UseUsersOptions {
   shouldFetch?: boolean;
   userId?: string;
+  mutationsOnly?: boolean;
 }
 
 interface ApiErrorOptions {
@@ -28,7 +29,7 @@ interface ApiError extends Error {
 const isUserNotFoundError = (error: unknown): boolean => {
   const apiError = error as ApiError;
   return (
-    apiError?.response?.status === 404 && 
+    apiError?.response?.status === 404 &&
     typeof apiError?.response?.data?.detail === 'string' &&
     apiError.response.data.detail.includes('User not found')
   );
@@ -44,7 +45,7 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   throw error;
 };
 
-export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
+export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => {
   const {
     getAll,
     getOne,
@@ -52,23 +53,21 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     updateMutation
   } = useResource<User>('users', KEYCLOAK_API_PORT, false);
 
-  // Get all users query
-  const usersQuery = getAll('/users/', { 
-    enabled: options.shouldFetch 
-  });
+  const usersQuery = !options.mutationsOnly ? getAll('/users/', {
+    enabled: options.shouldFetch
+  }) : null;
 
-  // Get single user query
-  const userQuery = getOne(`/users/${options.userId || ''}`, { 
-    enabled: !!options.userId && options.shouldFetch 
-  });
+  const userQuery = !options.mutationsOnly ? getOne(`/users/${options.userId || ''}`, {
+    enabled: !!options.userId && options.shouldFetch
+  }) : null;
 
-  const { data: users, isLoading, isFetching, isError } = usersQuery;
-  const { 
-    data: user, 
-    isLoading: isUserLoading, 
-    isFetching: isUserFetching, 
-    isError: isUserError 
-  } = userQuery;
+  const { data: users, isLoading, isFetching, isError } = usersQuery || {};
+  const {
+    data: user,
+    isLoading: isUserLoading,
+    isFetching: isUserFetching,
+    isError: isUserError
+  } = userQuery || {};
 
   const handleCreateUser = async (data: UserMutationData) => {
     try {
@@ -97,12 +96,12 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   return {
     users,
     user,
-    isLoading,
-    isUserLoading,
-    isFetching,
-    isUserFetching,
-    isError,
-    isUserError,
+    isLoading: isLoading || false,
+    isUserLoading: isUserLoading || false,
+    isFetching: isFetching || false,
+    isUserFetching: isUserFetching || false,
+    isError: isError || false,
+    isUserError: isUserError || false,
     handleCreateUser,
     handleUpdateUser
   };
@@ -110,58 +109,52 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
 
 export const useUserSearch = () => {
   const { getOne } = useResource<User>('users', KEYCLOAK_API_PORT, false);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedUser, setSearchedUser] = useState<User | null>(null);
   const [userNotFound, setUserNotFound] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Create a stable reference to getOne query
-  const searchUser = useMemo(() => 
-    getOne(`/users/${searchQuery}`, {
-      enabled: !!searchQuery,
-      retry: false // Don't retry on 404
-    }), [getOne, searchQuery]);
-
-  const { data, isLoading, error } = searchUser;
+  const fetchUser = useCallback(async (query: string) => {
+    setIsLoading(true);
+    try {
+      const response = await getOne(`/users/${query}`, { retry: false });
+      if (response.data) {
+        setSearchedUser(response.data);
+        setUserNotFound(false);
+      }
+    } catch (error) {
+      if (isUserNotFoundError(error)) {
+        setUserNotFound(true);
+        setSearchedUser(null);
+      } else {
+        console.error("User search error:", error);
+        toast.error("Error searching for user.");
+        setUserNotFound(false);
+        setSearchedUser(null);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getOne]);
 
   useEffect(() => {
-    // Reset states when search query is empty
     if (!searchQuery) {
       setSearchedUser(null);
       setUserNotFound(false);
       return;
     }
 
-    // Handle errors
-    if (error) {
-      if (isUserNotFoundError(error)) {
-        setUserNotFound(true);
-        setSearchedUser(null);
-      } else {
-        // For other errors, just reset states
-        setUserNotFound(false);
-        setSearchedUser(null);
-      }
-      return;
-    }
+    fetchUser(searchQuery);
+  }, [searchQuery, fetchUser]);
 
-    // Handle successful response
-    if (data) {
-      setSearchedUser(data);
-      setUserNotFound(false);
-    }
-  }, [searchQuery, data, error]);
-
-  // Create a stable debounced function with proper dependencies
-  const debounceSearchUser = useMemo(
-    () => debounce((query: string) => {
+  const debounceSearchUser = useMemo(() =>
+    debounce((query: string) => {
       console.log('Debounced search:', query);
       setSearchQuery(query);
     }, 500),
     [setSearchQuery]
   );
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       debounceSearchUser.cancel();
@@ -172,6 +165,6 @@ export const useUserSearch = () => {
     searchedUser,
     searchLoading: isLoading,
     userNotFound,
-    debounceSearchUser
+    debounceSearchUser,
   };
 };

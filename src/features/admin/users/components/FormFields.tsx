@@ -45,7 +45,7 @@ export const NameFields = ({ form, disabled }: { form: any; disabled?: boolean }
 )
 
 export const EmailField = ({ form }: { form: any }) => (
-    <div className="grid grid-cols-3 gap-4">
+  <div className="grid grid-cols-3 gap-4">
     <FormField
       control={form.control}
       name="email"
@@ -84,22 +84,23 @@ export const StatusField = ({ form }: { form: any }) => (
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
   const projects = useAppSelector((state) => state.users.projects);
   const projectOptions = getProjectOptions(projects);
+  console.log(">>>", form.getValues("projects"), form.getValues("realm_roles"));
 
   return (
     <div className="grid grid-cols-2 gap-6">
-      <MultiSelect 
-        form={form} 
-        name="projects" 
-        label="Projects" 
-        placeholder="Select projects" 
-        options={projectOptions} 
+      <MultiSelect
+        form={form}
+        name="projects"
+        label="Projects"
+        placeholder="Select projects"
+        options={projectOptions}
       />
-      <MultiSelect 
-        form={form} 
-        name="realm_roles" 
-        label="Roles" 
-        placeholder="Select roles" 
-        options={realmRoleOptions} 
+      <MultiSelect
+        form={form}
+        name="realm_roles"
+        label="Roles"
+        placeholder="Select roles"
+        options={realmRoleOptions}
       />
     </div>
   )

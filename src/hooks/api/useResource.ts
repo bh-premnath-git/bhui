@@ -36,7 +36,6 @@ export function useResource<T>(resource: string, portNumber: number, usePrefix: 
     );
   };
 
-  // Updated createMutation to match the pattern of updateMutation and deleteMutation
   const createMutation = useApiMutation<T & { url?: string }>(
     {
       ...baseConfig,
@@ -117,7 +116,6 @@ export function useResource<T>(resource: string, portNumber: number, usePrefix: 
     }
   );
 
-  
   return {
     getAll,
     getOne,

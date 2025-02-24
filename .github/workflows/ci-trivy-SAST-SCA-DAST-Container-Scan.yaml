@@ -31,28 +31,28 @@ jobs:
           scan-type: 'fs'
           security-checks: 'vuln,secret'
           format: 'json'
-          output: 'trivy_sast_sca_scan_report.json'
+          output: 'trivy_bh_ui_sast_sca_scan_report.json'
       
       - name: Convert Trivy DAST Vulnerability Scan Report JSON to HTML
         run: |
           # Start the HTML file
-          echo "<html><body><h1>Trivy SAST/SCA Vulnerability Scan Report</h1><table border=\"1\">" > trivy_sast_sca_scan_report.html
-          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_sast_sca_scan_report.html
+          echo "<html><body><h1>Trivy BH_UI SAST/SCA Vulnerability Scan Report</h1><table border=\"1\">" > trivy_bh_ui_sast_sca_scan_report.html
+          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_bh_ui_sast_sca_scan_report.html
           # Process the JSON and generate HTML table rows
-          cat trivy_sast_sca_scan_report.json | jq -r '
+          cat trivy_bh_ui_sast_sca_scan_report.json | jq -r '
           .Results[]? | .Target as $target |
             .Vulnerabilities[]? |
             "<tr><td>\($target)</td><td>\(.VulnerabilityID // "N/A")</td><td>\(.Severity // "N/A")</td><td>\(.Description // "N/A")</td></tr>"
-          ' >> trivy_sast_sca_scan_report.html
+          ' >> trivy_bh_ui_sast_sca_scan_report.html
     
           # Close the HTML tags
-          echo "</table></body></html>" >> trivy_sast_sca_scan_report.html
+          echo "</table></body></html>" >> trivy_bh_ui_sast_sca_scan_report.html
 
       - name: Upload SAST & SCA scan results
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-sast-sca-scan-report
-          path: trivy_sast_sca_scan_report.html
+          name: trivy-bh-ui-sast-sca-scan-report
+          path: trivy_bh_ui_sast_sca_scan_report.html
 
   dast_scan:
     name: DAST Scan
@@ -66,19 +66,19 @@ jobs:
         with:
           scan-type: 'config'
           format: 'table'
-          output: 'trivy_dast_scan_report.txt'
+          output: 'trivy_bh_ui_dast_scan_report.txt'
       
       - name: Convert Trivy DAST Vulnerability Scan Report to HTML
         run: |
-          echo "<html><body><h1>Trivy DAST Scan Report</h1><pre>" > trivy_dast_scan_report.html
-          cat trivy_dast_scan_report.txt >> trivy_dast_scan_report.html
-          echo "</pre></body></html>" >> trivy_dast_scan_report.html
+          echo "<html><body><h1>Trivy BH_UI DAST Scan Report</h1><pre>" > trivy_bh_ui_dast_scan_report.html
+          cat trivy_bh_ui_dast_scan_report.txt >> trivy_bh_ui_dast_scan_report.html
+          echo "</pre></body></html>" >> trivy_bh_ui_dast_scan_report.html
              
       - name: Upload DAST scan results
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-dast-scan-report
-          path: trivy_dast_scan_report.html
+          name: trivy-bh-ui-dast-scan-report
+          path: trivy_bh_ui_dast_scan_report.html
 
   container_scan:
     name: Container Image Scan
@@ -109,26 +109,26 @@ jobs:
           scan-type: 'image'
           image-ref: '${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_IMAGE_TAG }}'
           format: 'json'
-          output: 'trivy_container_scan_report.json'
+          output: 'trivy_bh_ui_container_scan_report.json'
       
       - name: Convert Trivy Container Vulnerability Scan Report JSON to HTML
         run: |
           # Start the HTML file
-          echo "<html><body><h1>Trivy Container Vulnerability Scan Report</h1><table border=\"1\">" > trivy_container_scan_report.html
-          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_container_scan_report.html
+          echo "<html><body><h1>Trivy BH_UI Container Vulnerability Scan Report</h1><table border=\"1\">" > trivy_bh_ui_container_scan_report.html
+          echo "<tr><th>Target</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>" >> trivy_bh_ui_container_scan_report.html
 
           # Process the JSON and generate HTML table rows
-          cat trivy_container_scan_report.json | jq -r '
+          cat trivy_bh_ui_container_scan_report.json | jq -r '
             .Results[]? | .Target as $target |
             .Vulnerabilities[]? |
             "<tr><td>\($target)</td><td>\(.VulnerabilityID // "N/A")</td><td>\(.Severity // "N/A")</td><td>\(.Description // "N/A")</td></tr>"
-          ' >> trivy_container_scan_report.html
+          ' >> trivy_bh_ui_container_scan_report.html
 
           # Close the HTML tags
-          echo "</table></body></html>" >> trivy_container_scan_report.html
+          echo "</table></body></html>" >> trivy_bh_ui_container_scan_report.html
 
       - name: Upload container scan results
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-container-scan-report
-          path: trivy_container_scan_report.html
+          name: trivy-bhui-container-scan-report
+          path: trivy_bh_ui_container_scan_report.html

@@ -125,41 +125,28 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   };
 };
 
-export const useProjectSearch = () => {
-  const { getOne } = useResource<Project>('bh_project', CATALOG_API_PORT, true);
+export function useProjectSearch() {
+  const { getOne } = useResource<Project[]>('bh_project', CATALOG_API_PORT, true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { data: searchedProject, isLoading, error } = getOne(`/bh_project/search?params=${searchQuery}`, { 
+  const { data: searchResults, isLoading, error } = getOne(`/bh_project/search?bh_project_name=${searchQuery}`, { 
     enabled: !!searchQuery,
   });
 
-  const projectNotFound = useMemo(() => {
-    if (!searchQuery) return false;
-    return error && isProjectNotFoundError(error);
-  }, [error, searchQuery]);
+  const projectFound = searchResults && searchResults.length > 0;
+  const projectNotFound = searchResults && searchResults.length === 0;
 
-  const debounceSearchProject = useMemo(() =>
-    debounce(
-      (query: string) => {
-        setSearchQuery(query);
-      }, 
-      800, 
-      { leading: false, trailing: true } // Prevent immediate execution, only trigger after delay
-    ),
+  const debounceSearchProject = useMemo(
+    () => debounce((query: string) => setSearchQuery(query), 800),
     []
   );
 
-  useEffect(() => {
-    return () => {
-      debounceSearchProject.cancel();
-      setSearchQuery('');
-    };
-  }, [debounceSearchProject]);
-
   return {
-    searchedProject: searchQuery ? searchedProject : null,
-    searchLoading: isLoading,
+    searchedProject: projectFound ? searchResults[0] : null,
+    projectFound,
     projectNotFound,
+    isLoading,
+    error,
     debounceSearchProject,
   };
-};
+}

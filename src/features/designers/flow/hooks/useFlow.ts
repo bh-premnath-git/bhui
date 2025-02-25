@@ -127,16 +127,15 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
 };
 
 export const useFlowSearch = () => {
-    const { getOne } = useResource<Flow>('flows', CATALOG_API_PORT, true);
+    const { getOne } = useResource<Flow[]>('flows', CATALOG_API_PORT, true);
     const [searchQuery, setSearchQuery] = useState('');
     
-    const { data: searchedFlow, isLoading, error } = getOne(`/flow/flow/search?flow_name=${searchQuery}`, { 
+    const { data: searchResults, isLoading, error } = getOne(`/flow/flow/search?flow_name=${searchQuery}`, { 
         enabled: !!searchQuery,
     });
 
-    const flowNotFound = useMemo(() => {
-        return error && isFlowNotFoundError(error);
-    }, [error]);
+    const flowFound = searchResults && searchResults.length > 0;
+    const flowNotFound = searchResults && searchResults.length === 0;
 
     const debounceSearchFlow = useMemo(() =>
         debounce((query: string) => {
@@ -150,8 +149,9 @@ export const useFlowSearch = () => {
     }, [debounceSearchFlow]);
 
     return {
-        searchedFlow: searchedFlow || null,
+        searchedFlow: flowFound ? searchResults[0] : null,
         searchLoading: isLoading,
+        flowFound,
         flowNotFound,
         debounceSearchFlow,
     };

@@ -1,3 +1,5 @@
+import { Environment } from "@/types/admin/environment"
+import { Project } from "@/types/admin/project"
 import * as z from "zod"
 
 export const basicInformationSchema = z.object({
@@ -25,6 +27,22 @@ export const flowFormSchema = z.object({
   additionalDetails: additionalDetailsSchema,
   monitorSettings: monitorSettingsSchema,
 })
+
+export const getProjectOptions = (projects: Project[]) => {
+  return projects.map(project => ({
+    label: project.bh_project_name,
+    value: project.bh_project_id.toString()
+  }));
+};
+
+export const getEnvironmentOptions = (environments: Environment[]) => {
+  return environments.map(environment => ({
+    label: environment.bh_env_name,
+    value: environment.bh_env_id.toString()
+  }));
+};
+
+
 
 export type FlowFormValues = z.infer<typeof flowFormSchema>
 

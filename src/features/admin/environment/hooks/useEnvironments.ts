@@ -1,4 +1,6 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
+import { debounce } from 'lodash';
 import { Environment, EnvironmentMutationData } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
@@ -7,6 +9,24 @@ interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
   environmentId?: string;
 }
+
+interface ApiError extends Error {
+  response?: {
+    status: number;
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
+const isEnvironmentNotFoundError = (error: unknown): boolean => {
+  const apiError = error as ApiError;
+  return (
+    apiError?.response?.status === 404 &&
+    typeof apiError?.response?.data?.detail === 'string' &&
+    apiError.response.data.detail.includes('Environment not found')
+  );
+};
 
 export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch: true }) => {
   const {
@@ -78,5 +98,36 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     handleCreateEnvironment,
     handleUpdateEnvironment,
     handleDeleteEnvironment
+  };
+};
+
+export const useEnvironmentSearch = () => {
+  const { getOne } = useResource<Environment>('environments', CATALOG_API_PORT, true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { data: searchedEnvironment, isLoading, error } = getOne(`/environment/environment/${searchQuery}/`, { 
+    enabled: !!searchQuery,
+  });
+
+  const environmentNotFound = useMemo(() => {
+    return error && isEnvironmentNotFoundError(error);
+  }, [error]);
+
+  const debounceSearchEnvironment = useMemo(() =>
+    debounce((query: string) => {
+      setSearchQuery(query);
+    }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debounceSearchEnvironment.cancel();
+  }, [debounceSearchEnvironment]);
+
+  return {
+    searchedEnvironment: searchedEnvironment || null,
+    searchLoading: isLoading,
+    environmentNotFound,
+    debounceSearchEnvironment,
   };
 };

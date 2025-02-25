@@ -3,12 +3,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "../schema"
+import { useAppSelector } from "@/hooks/uaeRedux"
+import { getProjectOptions, getEnvironmentOptions } from "../schema"
+import { Loader2, X, Check } from "lucide-react"
+import type { Flow } from '@/types/designer/flow'
 
 interface BasicInformationProps {
   form: UseFormReturn<FlowFormValues>
+  searchedFlow?: Flow | null
+  searchLoading?: boolean
+  flowNotFound?: boolean
+  onFlowNameChange?: (name: string) => void
 }
 
-export function BasicInformation({ form }: BasicInformationProps) {
+export function BasicInformation({ 
+  form,
+  searchedFlow,
+  searchLoading,
+  flowNotFound,
+  onFlowNameChange
+}: BasicInformationProps) {
+  const { projects, environments } = useAppSelector((state) => state.flow);
+  const projectOptions = getProjectOptions(projects);
+  const environmentOptions = getEnvironmentOptions(environments);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <FormField
@@ -24,8 +42,11 @@ export function BasicInformation({ form }: BasicInformationProps) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="project1">Project 1</SelectItem>
-                <SelectItem value="project2">Project 2</SelectItem>
+                {projectOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -46,8 +67,11 @@ export function BasicInformation({ form }: BasicInformationProps) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="dev">Development</SelectItem>
-                <SelectItem value="prod">Production</SelectItem>
+                {environmentOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -62,8 +86,33 @@ export function BasicInformation({ form }: BasicInformationProps) {
           <FormItem className="sm:col-span-2">
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Flow Name</FormLabel>
             <FormControl>
-              <Input placeholder="Enter Flow Name" {...field} />
+              <Input 
+                placeholder="Enter Flow Name" 
+                {...field} 
+                onChange={(e) => {
+                  field.onChange(e);
+                  onFlowNameChange?.(e.target.value);
+                }}
+              />
             </FormControl>
+            {searchLoading && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Checking availability...
+              </div>
+            )}
+            {searchedFlow && !flowNotFound && (
+              <div className="flex items-center text-sm text-destructive">
+                <X className="h-4 w-4 mr-2" />
+                Flow name already taken
+              </div>
+            )}
+            {flowNotFound && (
+              <div className="flex items-center text-sm text-green-600">
+                <Check className="h-4 w-4 mr-2" />
+                Flow name available
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )}
@@ -71,4 +120,3 @@ export function BasicInformation({ form }: BasicInformationProps) {
     </div>
   )
 }
-

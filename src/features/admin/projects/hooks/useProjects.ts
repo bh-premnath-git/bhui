@@ -1,4 +1,6 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
+import { debounce } from 'lodash';
 import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation, Project } from '@/types/admin/project';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
@@ -7,6 +9,24 @@ interface UseProjectsOptions {
   shouldFetch?: boolean;
   projectId?: string;
 }
+
+interface ApiError extends Error {
+  response?: {
+    status: number;
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
+const isProjectNotFoundError = (error: unknown): boolean => {
+  const apiError = error as ApiError;
+  return (
+    apiError?.response?.status === 404 &&
+    typeof apiError?.response?.data?.detail === 'string' &&
+    apiError.response.data.detail.includes('Project not found')
+  );
+};
 
 export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
   const {
@@ -102,5 +122,44 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     handleUpdateProject,
     handleDeleteProject,
     handleValidateToken
+  };
+};
+
+export const useProjectSearch = () => {
+  const { getOne } = useResource<Project>('bh_project', CATALOG_API_PORT, true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { data: searchedProject, isLoading, error } = getOne(`/bh_project/search?params=${searchQuery}`, { 
+    enabled: !!searchQuery,
+  });
+
+  const projectNotFound = useMemo(() => {
+    if (!searchQuery) return false;
+    return error && isProjectNotFoundError(error);
+  }, [error, searchQuery]);
+
+  const debounceSearchProject = useMemo(() =>
+    debounce(
+      (query: string) => {
+        setSearchQuery(query);
+      }, 
+      800, 
+      { leading: false, trailing: true } // Prevent immediate execution, only trigger after delay
+    ),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debounceSearchProject.cancel();
+      setSearchQuery('');
+    };
+  }, [debounceSearchProject]);
+
+  return {
+    searchedProject: searchQuery ? searchedProject : null,
+    searchLoading: isLoading,
+    projectNotFound,
+    debounceSearchProject,
   };
 };

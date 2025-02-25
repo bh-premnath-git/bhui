@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
@@ -81,11 +81,20 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
     }
   };
 
-  const handleUpdateUser = async (id: string, data: UserMutationData) => {
+  const handleUpdateUser = async (
+    id: string, 
+    data: UserMutationData | { projects: string[] } | { realm_roles: string[] }, 
+    type?: 'projects' | 'roles'
+  ) => {
     try {
+      let url = `/users/${id}`;
+      if (type) {
+        url = `/users/${id}/${type}`;
+      }
+      
       await updateMutation.mutateAsync({
         ...data,
-        url: `/users/${id}`
+        url
       });
       toast.success('User updated successfully');
     } catch (error) {
@@ -110,59 +119,28 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
 export const useUserSearch = () => {
   const { getOne } = useResource<User>('users', KEYCLOAK_API_PORT, false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchedUser, setSearchedUser] = useState<User | null>(null);
-  const [userNotFound, setUserNotFound] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { data: searchedUser, isLoading, error } = getOne(`/users/${searchQuery}`, { 
+    enabled: !!searchQuery,
+  });
 
-  const fetchUser = useCallback(async (query: string) => {
-    setIsLoading(true);
-    try {
-      const response = await getOne(`/users/${query}`, { retry: false });
-      if (response.data) {
-        setSearchedUser(response.data);
-        setUserNotFound(false);
-      }
-    } catch (error) {
-      if (isUserNotFoundError(error)) {
-        setUserNotFound(true);
-        setSearchedUser(null);
-      } else {
-        console.error("User search error:", error);
-        toast.error("Error searching for user.");
-        setUserNotFound(false);
-        setSearchedUser(null);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getOne]);
-
-  useEffect(() => {
-    if (!searchQuery) {
-      setSearchedUser(null);
-      setUserNotFound(false);
-      return;
-    }
-
-    fetchUser(searchQuery);
-  }, [searchQuery, fetchUser]);
+  const userNotFound = useMemo(() => {
+    return error && isUserNotFoundError(error);
+  }, [error]);
 
   const debounceSearchUser = useMemo(() =>
     debounce((query: string) => {
-      console.log('Debounced search:', query);
       setSearchQuery(query);
     }, 500),
-    [setSearchQuery]
+    []
   );
 
   useEffect(() => {
-    return () => {
-      debounceSearchUser.cancel();
-    };
+    return () => debounceSearchUser.cancel();
   }, [debounceSearchUser]);
 
   return {
-    searchedUser,
+    searchedUser: searchedUser || null,
     searchLoading: isLoading,
     userNotFound,
     debounceSearchUser,

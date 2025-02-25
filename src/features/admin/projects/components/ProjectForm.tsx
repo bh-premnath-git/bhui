@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, FormProvider } from "react-hook-form"
 import { Button } from "@/components/ui/button"
+import {Project } from '@/types/admin/project';
 import { Card, CardContent } from "@/components/ui/card"
 import { Form } from "@/components/ui/form"
 import { ProjectNameField, GithubFields, TagsField } from "./FormFields"
@@ -17,6 +18,10 @@ interface ProjectFormProps {
   isValidating: boolean
   isTokenValidated: boolean
   error: string | null
+  searchedProject?: Project | null
+  searchLoading?: boolean
+  projectNotFound?: boolean
+  onNameChange?: (name: string) => void
 }
 
 export function ProjectForm({ 
@@ -27,7 +32,11 @@ export function ProjectForm({
   isSubmitting,
   isValidating,
   isTokenValidated,
-  error 
+  error,
+  searchedProject,
+  searchLoading,
+  projectNotFound,
+  onNameChange
 }: ProjectFormProps) {
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
 
@@ -80,7 +89,13 @@ export function ProjectForm({
         <FormProvider {...form}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-              <ProjectNameField control={form.control} />
+              <ProjectNameField control={form.control}
+              searchedProject={searchedProject}
+              searchLoading={searchLoading}
+              projectNotFound={projectNotFound}
+              onNameChange={onNameChange}
+              isEditMode={isEditMode}
+              />
               <GithubFields 
                 control={form.control} 
                 onValidateToken={onValidateToken} 

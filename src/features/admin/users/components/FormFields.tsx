@@ -83,7 +83,7 @@ export const StatusField = ({ form }: { form: any }) => (
 
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
   const projects = useAppSelector((state) => state.users.projects);
-  const projectOptions = getProjectOptions(projects);
+  const projectOptions = getProjectOptions(projects);  
   return (
     <div className="grid grid-cols-2 gap-6">
       <MultiSelect

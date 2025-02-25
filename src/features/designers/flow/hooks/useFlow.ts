@@ -80,10 +80,14 @@ export const useFlow = (options: UseFlowOptions = { shouldFetch: true }) => {
 
     const handleCreateFlow = async (data: FlowMutationData) => {
         try {
-            await createMutation.mutateAsync(data);
+            await createMutation.mutateAsync({
+                ...data,
+                url: '/flow/create/'
+            });
             toast.success('Flow created successfully');
         } catch (error) {
-            handleApiError(error, { action: 'create' });
+            toast.error('Failed to create flow');
+            throw error;
         }
     };
 

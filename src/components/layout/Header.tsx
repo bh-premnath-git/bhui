@@ -24,11 +24,7 @@ export function Header() {
       return <BuildPlaygroundHeader />;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
-      return (
-        <FlowProvider>
-          <FlowPlaygroundHeader />
-        </FlowProvider>
-      );
+      return <FlowPlaygroundHeader />;
     }
     return <NavigationBreadcrumb />;
   };

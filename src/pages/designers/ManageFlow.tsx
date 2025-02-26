@@ -75,9 +75,7 @@ function ManageFlowPage() {
           <LoadingState className="w-40 h-40" />
         </div>
       )}
-      <FlowProvider>
-        <FlowList flows={flows} />
-      </FlowProvider>
+      <FlowList flows={flows} />
     </div>
   );
 }

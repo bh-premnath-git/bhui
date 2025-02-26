@@ -1,13 +1,10 @@
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
-import { FlowProvider } from '@/context/designers/FlowContext';
 import { FlowCanvas } from "@/features/designers/FlowCanvas";
 
 function FlowCanvasPage() {
     return (
         <div className="h-screen w-full">
-            <FlowProvider>
-                <FlowCanvas />
-            </FlowProvider>
+            <FlowCanvas />
         </div>
     )
 }

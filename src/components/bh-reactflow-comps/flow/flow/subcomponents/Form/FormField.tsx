@@ -30,12 +30,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       endpoint,
       language,
     } = property.ui_properties;
+
+    
     const { environment } = useAppSelector(
       (state: RootState) => state.flow
     );
+    
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
     const { options, isLoading } = useDropdownOptions(
-      endpoint,
+      endpoint ?? '',
       endpoint !== "{catalog_base_url}/api/v1/pipeline/list" ? `${environment?.bh_env_id}` : null
     );
     const defaultValue = property.ui_properties.default

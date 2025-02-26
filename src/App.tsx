@@ -19,6 +19,7 @@ import { KeycloakProvider } from "./context/KeycloakContext";
 import 'reactflow/dist/style.css';
 import { useAppDispatch } from "@/hooks/useRedux";
 import { fetchGithubProviders } from "./store/slices/globalGitSlice";
+import { FlowProvider } from "./context/designers/FlowContext";
 
 const queryClient = new QueryClient();
 
@@ -71,9 +72,11 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ReactFlowProvider>
-        <SidebarProvider>
-          <RootLayout />
-        </SidebarProvider>
+        <FlowProvider>
+          <SidebarProvider>
+            <RootLayout />
+          </SidebarProvider>
+        </FlowProvider>
       </ReactFlowProvider>
     ),
     children: routerConfig

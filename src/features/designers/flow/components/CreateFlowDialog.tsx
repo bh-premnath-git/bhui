@@ -5,6 +5,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useFlow, useFlowSearch } from '@/features/designers/flow/hooks/useFlow';
+import { useFlow as useFlowCtx } from '@/context/designers/FlowContext'
 import { FlowForm } from "./flow-form"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -20,6 +21,7 @@ type CreateFlowDialogProps = {
 };
 
 export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) {
+    const { setSelectedFlowId } = useFlowCtx();
     const { handleCreateFlow } = useFlow();
     const { handleNavigation } = useNavigation();
     const { searchedFlow, searchLoading, flowNotFound, debounceSearchFlow } = useFlowSearch();
@@ -70,6 +72,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 dispatch(setSelectedProject(Number(data.basicInformation.project)));
                 dispatch(setSelectedEnv(Number(data.basicInformation.environment)));
                 dispatch(setSelectedFlow(result));
+                setSelectedFlowId(result.flow_id.toString());
                 handleNavigation(ROUTES.DESIGNERS.FLOW_PLAYGROUND(result.flow_id.toString()));
                 onOpenChange(false);
             }).catch(err => console.log(err));

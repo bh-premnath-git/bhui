@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormField } from './FormField';
-import { Property, FormValues } from '@/types/flow.types';
+import { Property, FormValues } from '@/types/designer/flow';
 
 interface FormLayoutProps {
   properties: Property[];

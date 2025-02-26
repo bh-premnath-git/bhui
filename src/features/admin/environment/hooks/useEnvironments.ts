@@ -84,7 +84,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   });
 
   // Update environment mutation
-  const updateEnvironmentMutation = updateEnvironment('/environment/environment', {
+  const updateEnvironmentMutation = updateEnvironment('/environment/environment/', {
     mutationOptions: {
       onSuccess: () => toast.success('Environment updated successfully'),
       onError: (error) => handleApiError(error, { action: 'update' }),
@@ -124,7 +124,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 
   const handleDeleteEnvironment = useCallback(async (id: string) => {
     await deleteEnvironmentMutation.mutateAsync({
-      params: { id }
+      query: id
     });
   }, [deleteEnvironmentMutation]);
 

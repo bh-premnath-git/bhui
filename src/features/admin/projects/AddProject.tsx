@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ProjectForm } from './components/ProjectForm';
 import { useNavigation } from '@/hooks/useNavigation';
-import { useProjects } from './hooks/useProjects';
+import { useProjects, useProjectSearch } from './hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from './components/ProjectPageLayout';
 import { encrypt_string } from '@/services/encryption';
@@ -10,6 +10,7 @@ import { ProjectFormData, transformFormToApiData } from './components/projectFor
 export function AddProject() {
   const { handleNavigation } = useNavigation()
   const { handleCreateProject, handleValidateToken } = useProjects();
+  const { searchedProject, isLoading: searchLoading, projectFound, projectNotFound, debounceSearchProject } = useProjectSearch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export function AddProject() {
         init_vector: validatedToken.initVector
       });
 
-      handleNavigation(ROUTES.ADMIN.PROJECTS.INDEX, true);
+      handleNavigation(ROUTES.ADMIN.PROJECTS.INDEX, {}, true);
     } catch (error) {
       console.error('Failed to create project:', error);
       setError(error instanceof Error ? error.message : 'Failed to create project');
@@ -81,7 +82,11 @@ export function AddProject() {
         isSubmitting={isSubmitting}
         isValidating={isValidating}
         isTokenValidated={!!validatedToken}
-        error={error} 
+        error={error}
+        searchedProject={searchedProject}
+        searchLoading={searchLoading}
+        projectNotFound={projectNotFound}
+        onNameChange={debounceSearchProject}
       />
     </ProjectPageLayout>
   );

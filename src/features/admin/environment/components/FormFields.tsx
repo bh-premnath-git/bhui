@@ -10,8 +10,6 @@ import { Control, useFormContext } from "react-hook-form"
 import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
 import { useState, useEffect } from "react"
 import { useEnvironments } from "../hooks/useEnvironments"
-import { encrypt_string } from "@/services/encryption"
-import { set } from "lodash"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -208,20 +206,37 @@ export function CredentialsFields({
   )
 }
 
-export const AdvancedSettingsFields = ({ control }: { control: Control<EnvironmentFormValues> }) => {
-  const { mwaaEnvironments } = useEnvironments();
-  const form = useFormContext<EnvironmentFormValues>();
+export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control: Control<EnvironmentFormValues> , isTokenValidated: boolean}) => {
+  const { getValues, setValue, watch } = useFormContext<EnvironmentFormValues>();
+  const bhEnvName = getValues("environmentName");
+  const region = getValues("platform.region");
+  const regionLabel = regions.find((r) => r.value === region)?.label;
+
+  const [mwaaQueryParams, setMwaaQueryParams] = useState<{ bh_env_name: string; location: string } | null>(null);
 
   useEffect(() => {
-    const selectedMwaa = form.watch('advancedSettings.airflowName');
+    if (isTokenValidated) {
+      setMwaaQueryParams({
+        bh_env_name: bhEnvName,
+        location: regionLabel || "",
+      });
+    }
+  }, [isTokenValidated, bhEnvName, regionLabel]);
+
+  const { mwaaEnvironments } = useEnvironments({
+    mwaaQueryParams: mwaaQueryParams ?? undefined, // Pass undefined if not validated
+  });
+  console.log(mwaaEnvironments)
+  useEffect(() => {
+    const selectedMwaa = watch("advancedSettings.airflowName");
     if (selectedMwaa && mwaaEnvironments) {
-      const mwaaEnv = mwaaEnvironments.find(env => env.Name === selectedMwaa);
+      const mwaaEnv = mwaaEnvironments.find((env) => env.Name === selectedMwaa);
       if (mwaaEnv) {
-        form.setValue('advancedSettings.airflowBucketName', mwaaEnv.DagS3Path);
-        form.setValue('advancedSettings.airflowBucketUrl', mwaaEnv.WebserverUrl);
+        setValue("advancedSettings.airflowBucketName", mwaaEnv.DagS3Path);
+        setValue("advancedSettings.airflowBucketUrl", mwaaEnv.WebserverUrl);
       }
     }
-  }, [form.watch('advancedSettings.airflowName'), mwaaEnvironments]);
+  }, [watch("advancedSettings.airflowName"), mwaaEnvironments, setValue]);
 
   return (
     <div className="space-y-6">
@@ -253,7 +268,7 @@ export const AdvancedSettingsFields = ({ control }: { control: Control<Environme
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         <FormField
-          control={control} 
+          control={control}
           name="advancedSettings.airflowBucketName"
           render={({ field }) => (
             <FormItem>
@@ -267,7 +282,7 @@ export const AdvancedSettingsFields = ({ control }: { control: Control<Environme
         />
         <FormField
           control={control}
-          name="advancedSettings.airflowBucketUrl" 
+          name="advancedSettings.airflowBucketUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Airflow URL</FormLabel>

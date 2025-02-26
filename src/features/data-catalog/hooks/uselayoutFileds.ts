@@ -1,9 +1,8 @@
 import { useResource } from "@/hooks/api/useResource";
-import { LayoutField } from "@/types/data-catalog/dataCatalog";
+import { DataSourceLayout, LayoutField } from "@/types/data-catalog/dataCatalog";
 import { toast } from "sonner";
-import { CATALOG_API_PORT } from "@/config/platformenv";    
-import exp from "constants";
-import { useParams } from "react-router-dom";
+import { CATALOG_API_PORT } from "@/config/platformenv";
+import { useEffect } from "react";
 
 interface UseLayoutFieldsOptions {
     shouldFetch: boolean;
@@ -11,19 +10,37 @@ interface UseLayoutFieldsOptions {
 }
 
 export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch: true }) => {
-    const {
-        getAll,
-    } = useResource<LayoutField>('/datasource_layout', CATALOG_API_PORT, true);
-
-    const { data: layoutFields, isLoading, isFetching, isError } = getAll(
-        '/data_source_layout/list_full/', 
-        {
-            data_src_id: options.dataSourceId
-        }
+    // For queries - returns DataSourceLayout array which contains layout fields
+    const { getAll: getAllLayoutFields } = useResource<DataSourceLayout[]>(
+        'datasource_layout',
+        CATALOG_API_PORT,
+        true
     );
 
+    // List layout fields with data source filter
+    const { data: layouts, isLoading, isFetching, isError, error } = getAllLayoutFields({
+        url: '/data_source_layout/list_full/',
+        params: options.dataSourceId ? { data_src_id: options.dataSourceId } : undefined,
+        queryOptions: {
+            enabled: options.shouldFetch && !!options.dataSourceId,
+            retry: 2
+        }
+    });
+
+    // Handle errors at the hook level
+    useEffect(() => {
+        if (error) {
+            const errorMessage = 'Failed to fetch layout fields';
+            console.error(`${errorMessage}:`, error);
+            toast.error(errorMessage);
+        }
+    }, [error]);
+
+    // Extract layout fields from the first layout if it exists
+    const layoutFields = layouts?.[0] || null;
+
     return {
-        layoutFields: layoutFields?.[0]?.layout_fields || [],
+        layoutFields,
         isLoading,
         isFetching,
         isError,

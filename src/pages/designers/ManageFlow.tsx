@@ -8,60 +8,78 @@ import { useFlow } from '@/features/designers/flow/hooks/useFlow';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { fetchProjects, fetchEnvironments } from '@/store/slices/designer/flowSlice';
+import { FlowProvider } from "@/context/designers/FlowContext";
 
-export function ManageFlowPage() {
-    const { flows, isLoading, isFetching, isError } = useFlow();
-    const flowService = useFlowManagementService();
+function ManageFlowPage() {
+  const dispatch = useAppDispatch();
+  const { fetchFlowsList } = useFlow();
+  const flowService = useFlowManagementService();
 
-    useEffect(() => {
-        if (Array.isArray(flows) && flows.length > 0) {
-            flowService.setFlows(flows);
-        }
-    }, [flows, flowService]);
+  const {
+    data: flows = [],
+    isLoading,
+    isFetching,
+    isError
+  } = fetchFlowsList(true);
 
-    if (isLoading) {
-        return (
-            <div className="p-6">
-                <TableSkeleton />
-            </div>
-        );
+  const noFlows = !Array.isArray(flows) || flows.length === 0;
+
+  useEffect(() => {
+    dispatch(fetchProjects());
+    dispatch(fetchEnvironments());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!noFlows) {
+      flowService.setFlows(flows);
     }
+  }, [noFlows, flows, flowService]);
 
-    if (isError) {
-        return (
-            <div className="p-6">
-                <ErrorState
-                    title="Error Loading Flows"
-                    description="There was an error loading the flows. Please try again later."
-                />
-            </div>
-        );
-    }
-
-    if (!Array.isArray(flows) || flows.length === 0) {
-        return (
-            <div className="p-6">
-                <EmptyState
-                    Icon={GitBranch}
-                    title="No Flows Found"
-                    description="Get started by creating a new flow."
-                />
-            </div>
-        );
-    }
-
+  if (isLoading) {
     return (
-        <div className="p-6">
-            <div className="relative">
-                {isFetching && (
-                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-                        <LoadingState className='w-40 h-40' />
-                    </div>
-                )}
-                <FlowList flows={flows} />
-            </div>
-        </div>
+      <div className="p-6">
+        <TableSkeleton />
+      </div>
     );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState
+          title="Error Loading Flows"
+          description="There was an error loading the flows. Please try again later."
+        />
+      </div>
+    );
+  }
+
+  if (noFlows) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          Icon={GitBranch}
+          title="No Flows Found"
+          description="Get started by creating a new flow."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 relative">
+      {isFetching && (
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
+          <LoadingState className="w-40 h-40" />
+        </div>
+      )}
+      <FlowProvider>
+        <FlowList flows={flows} />
+      </FlowProvider>
+    </div>
+  );
 }
 
-export default withPageErrorBoundary(ManageFlowPage, 'ManageFlow')
+export default withPageErrorBoundary(ManageFlowPage, 'ManageFlow');

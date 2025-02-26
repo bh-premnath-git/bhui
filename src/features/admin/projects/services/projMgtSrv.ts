@@ -1,5 +1,5 @@
 import { Project } from "@/types/admin/project";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setProjects, setSelectedProject } from "@/store/slices/admin/projectsSlice";
 
 export interface ProjectManagementService {

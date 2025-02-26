@@ -1,9 +1,24 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { useMutation, useQuery, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ApiConfig, API_BASE_URL } from './api-config';
+import { ApiConfig } from './api-config';
+import { API_DOMAIN, API_PREFIX_URL } from '@/config/platformenv';
+
+const DEFAULT_API_DOMAIN = API_DOMAIN;
+const DEFAULT_API_PREFIX = API_PREFIX_URL;
 
 interface ErrorResponse {
   message: string;
+}
+
+// Example custom shape for mutation variables
+// You could generalize further or rename as you please
+export interface MutationVariables<TData = unknown> {
+  data?: TData; // The payload/body for your request
+  params?: Record<string, any>; // The URL query params
+  url?: string; // Dynamic URL override
+  query?: string; // Additional query string
+  // ...anything else you need
 }
 
 // Custom type guard for AxiosError with generics
@@ -25,35 +40,35 @@ class ApiService {
         'Content-Type': 'application/json',
       },
     });
-
     this.setupInterceptors();
   }
 
   private setupInterceptors() {
     this.instance.interceptors.request.use((config) => {
       const token = sessionStorage?.getItem('token');
-
       if (token) {
         config.headers.set('Authorization', `Bearer ${JSON.parse(token)}`);
       }
-
       if (config.data instanceof FormData) {
         config.headers.set('Content-Type', 'multipart/form-data');
       } else if (config.data) {
         config.headers.set('Content-Type', 'application/json');
       }
-
       return config;
     });
 
     this.instance.interceptors.response.use(
       (response) => response,
       (error: unknown) => {
-        if (isAxiosError<ErrorResponse>(error)) {
-          if (axios.isCancel(error)) {
-            return Promise.reject(error);
-          }
+        if (axios.isCancel(error)) {
+          console.log('Request cancelled', (error as any).message);
+          return Promise.reject(error);
+        }
 
+        if (isAxiosError<ErrorResponse>(error)) {
+          const status = error.response?.status;
+          const errorMessage = error.response?.data?.message || 'An error occurred';
+          toast.error(`API Error: ${status} - ${errorMessage}`);
           return Promise.reject(error);
         }
 
@@ -63,26 +78,56 @@ class ApiService {
     );
   }
 
-  private getUrl(config: ApiConfig): string {
-    const baseUrl = `${API_BASE_URL}:${config.portNumber}`;
-    return config.usePrefix ? `${baseUrl}/api/v1${config.url}` : `${baseUrl}${config.url}`;
+  private buildUrl(config: ApiConfig): string {
+    let url = config.url;
+    
+    // If we have an ID param, append it to the URL
+    if (config.params?.flowId) {
+      url = url.endsWith('/') ? url : url + '/';
+      url = `${url}${config.params.flowId}/`;
+      // Remove the id from params since it's now in the URL
+      const { flowId, ...restParams } = config.params;
+      config.params = restParams;
+    }
+    
+    return url;
   }
 
-  private async request<T>(config: ApiConfig): Promise<T> {
-    const axiosConfig: AxiosRequestConfig = {
-      url: this.getUrl(config),
-      method: config.method,
-      params: config.params,
-      data: config.data,
-      metadata: config.metadata,
-    };
+  private getUrl(config: ApiConfig): string {
+    const baseUrl = config.portNumber
+      ? `${DEFAULT_API_DOMAIN}:${config.portNumber}`
+      : DEFAULT_API_DOMAIN;
+    const prefix = config.usePrefix ? DEFAULT_API_PREFIX : '';
+    const path = prefix + this.buildUrl(config);
+    let url = baseUrl + path;
 
+    // Handle query parameters
+    const paramsString = new URLSearchParams(config.params || {}).toString();
+    if (paramsString) {
+      url += `?${paramsString}`;
+    }
+    if (config.query) {
+      url += url.includes('?') ? `&${config.query}` : `?${config.query}`;
+    }
+
+    return url;
+  }
+
+  public async request<T>(config: ApiConfig): Promise<AxiosResponse<T>> {
     try {
+      const axiosConfig: AxiosRequestConfig = {
+        url: this.getUrl(config),
+        method: config.method,
+        data: config.data,
+        headers: config.additionalHeaders,
+        signal: config.signal,
+      };
+
       const response = await this.instance.request<T>(axiosConfig);
       if (config.metadata?.successMessage) {
         toast.success(config.metadata.successMessage);
       }
-      return response.data;
+      return response;
     } catch (error) {
       if (config.metadata?.errorMessage) {
         toast.error(config.metadata.errorMessage);
@@ -91,24 +136,90 @@ class ApiService {
     }
   }
 
+  /**
+   * React Query GET helper
+   */
+  useApiQuery<T>(
+    queryKey: string | string[],
+    config: ApiConfig,
+    options?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn'>
+  ) {
+    return useQuery<T, Error>({
+      queryKey: typeof queryKey === 'string' ? [queryKey] : queryKey,
+      queryFn: () => this.request<T>(config).then((res) => res.data),
+      ...options,
+      retry: (failureCount, error) => {
+        if (axios.isCancel(error)) {
+          return false;
+        }
+        return failureCount < 3; // Or whatever default retry logic you prefer
+      },
+    });
+  }
+
+  /**
+   * React Query MUTATION helper
+   *
+   * - We let `TResponse` be the response type
+   * - We let `TVariables` be the shape of the object you pass to mutateAsync
+   */
+  useApiMutation<TResponse, TVariables = unknown>(
+    initialConfig: ApiConfig,
+    options?: Omit<UseMutationOptions<TResponse, Error, TVariables>, 'mutationFn'>
+  ) {
+    return useMutation<TResponse, Error, TVariables>({
+      mutationFn: async (variables) => {
+        // Merge anything we want from `variables` into the final config
+        const finalConfig: ApiConfig = {
+          ...initialConfig,
+          // If you want to treat `variables` as { data: Something; params: Record<string, any> }
+          // do a type assertion or destructure:
+          data:
+            (variables as MutationVariables<any>)?.data ?? initialConfig.data,
+          params:
+            (variables as MutationVariables<any>)?.params ?? initialConfig.params,
+          query:
+            (variables as MutationVariables<any>)?.query ?? initialConfig.query,
+          url:
+            (variables as MutationVariables<any>)?.url ?? initialConfig.url,
+        };
+
+        const response = await this.request<TResponse>(finalConfig);
+        return response.data;
+      },
+      ...options,
+      onError: (error, variables, context) => {
+        console.error('Mutation Error:', error);
+        // If user provided a custom onError, call it
+        if (options?.onError) {
+          options.onError(error, variables, context);
+        } else {
+          // Otherwise do a fallback toast
+          toast.error('Operation failed');
+        }
+      },
+    });
+  }
+
+  // Standard REST methods (optional if you still need them)
   async get<T>(config: ApiConfig): Promise<T> {
-    return this.request<T>({ ...config, method: 'GET' });
+    return this.request<T>({ ...config, method: 'GET' }).then((res) => res.data);
   }
 
   async post<T>(config: ApiConfig): Promise<T> {
-    return this.request<T>({ ...config, method: 'POST' });
+    return this.request<T>({ ...config, method: 'POST' }).then((res) => res.data);
   }
 
   async put<T>(config: ApiConfig): Promise<T> {
-    return this.request<T>({ ...config, method: 'PUT' });
+    return this.request<T>({ ...config, method: 'PUT' }).then((res) => res.data);
   }
 
   async patch<T>(config: ApiConfig): Promise<T> {
-    return this.request<T>({ ...config, method: 'PATCH' });
+    return this.request<T>({ ...config, method: 'PATCH' }).then((res) => res.data);
   }
 
   async delete<T>(config: ApiConfig): Promise<T> {
-    return this.request<T>({ ...config, method: 'DELETE' });
+    return this.request<T>({ ...config, method: 'DELETE' }).then((res) => res.data);
   }
 }
 

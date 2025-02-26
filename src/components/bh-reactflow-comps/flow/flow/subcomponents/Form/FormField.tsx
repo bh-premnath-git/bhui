@@ -8,7 +8,7 @@ import { CheckboxField } from "./UiElements/CheckboxField";
 import { MultiWordInput } from "./UiElements/MultiWordInput";
 import { CodeEditor } from "./UiElements/MonocoEditor";
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
-import { useAppSelector } from '@/hooks/uaeRedux';
+import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store";
 import { parseStringifiedJson } from "@/lib/object";
 

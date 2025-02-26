@@ -1,5 +1,5 @@
 import { LayoutField } from "@/types/data-catalog/dataCatalog";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setLayoutFields, setSelectedLayoutField } from "@/store/slices/dataCatalog/layoutFieldSlice";
 
 export interface LayoutFieldManagementService {

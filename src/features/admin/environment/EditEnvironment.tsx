@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { RootState } from "@/store";
-import { useAppSelector } from "@/hooks/uaeRedux";
+import { useAppSelector } from "@/hooks/useRedux";
 import { useEnvironments } from "./hooks/useEnvironments";
 import { ROUTES } from '@/config/routes';
 import { EnvironmentForm } from "./components/EnvironmentForm";

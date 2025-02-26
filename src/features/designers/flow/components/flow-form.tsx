@@ -8,16 +8,28 @@ import { AlertCircle, Save, Loader } from "lucide-react"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "./schema"
 import { Form } from "@/components/ui/form"
+import type { Flow } from '@/types/designer/flow'
 
 interface FlowFormProps {
     form: UseFormReturn<FlowFormValues>
     onSubmit: (data: FlowFormValues) => Promise<void>
+    searchedFlow?: Flow | null
+    searchLoading?: boolean
+    flowNotFound?: boolean
+    onFlowNameChange?: (name: string) => void
 }
 
-export function FlowForm({ form, onSubmit }: FlowFormProps) {
+export function FlowForm({ 
+    form, 
+    onSubmit,
+    searchedFlow,
+    searchLoading,
+    flowNotFound,
+    onFlowNameChange 
+}: FlowFormProps) {
     const [activeSection, setActiveSection] = React.useState("basic")
     const {
-        formState: { errors },
+        formState: { errors, isSubmitting },
     } = form
 
     const hasBasicErrors = !!errors.basicInformation
@@ -35,7 +47,13 @@ export function FlowForm({ form, onSubmit }: FlowFormProps) {
                             </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                            <BasicInformation form={form} />
+                            <BasicInformation 
+                                form={form} 
+                                searchedFlow={searchedFlow}
+                                searchLoading={searchLoading}
+                                flowNotFound={flowNotFound}
+                                onFlowNameChange={onFlowNameChange}
+                            />
                         </AccordionContent>
                     </AccordionItem>
 
@@ -60,7 +78,8 @@ export function FlowForm({ form, onSubmit }: FlowFormProps) {
                 </Accordion>
 
                 <div className="flex justify-end gap-2">
-                    <Button type="submit">
+                    <Button type="submit" disabled={isSubmitting || (searchedFlow && !flowNotFound)}>
+                        {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                         <Save className="h-4 w-4" />
                     </Button>
                 </div>

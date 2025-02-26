@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { EditUser } from '@/features/admin/users/EditUser';
 import { fetchProjects } from '@/store/slices/admin/usersSlice';
-import { useAppDispatch } from '@/hooks/uaeRedux';
+import { useAppDispatch } from '@/hooks/useRedux';
 
 const UserEdit = () => {
     const dispatch = useAppDispatch();

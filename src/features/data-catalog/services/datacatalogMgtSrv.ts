@@ -1,5 +1,5 @@
 import { DataSource } from "@/types/data-catalog/dataCatalog";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setDatasources, setSelectedDatasource } from "@/store/slices/dataCatalog/datasourceSlice";
 
 export interface DataCatalogManagementService {
@@ -10,7 +10,7 @@ export interface DataCatalogManagementService {
 export const useDataCatalogManagementService = () => {
     const dispatch = useAppDispatch();
     return ({
-        setDatasources: (datasources: DataSource[]) => {
+        setDatasources: (datasources: any[]) => {
             dispatch(setDatasources(datasources));
         },
         selectDatasource: (datasource: DataSource | null) => {

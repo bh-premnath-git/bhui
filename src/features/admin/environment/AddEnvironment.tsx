@@ -35,12 +35,11 @@ export function AddEnvironment() {
         initVector
       });
 
-      await handleAWSValidation({
+      await handleAWSValidation(data.environmentName, {
           aws_access_key_id: encryptedString1,
           aws_secret_access_key: encryptedString,
           init_vector: initVector,
-          location: data.platform.region,
-          bh_env_name: data.environmentName
+          location: data.platform.region
       });
 
       setIsTokenValidated(true);

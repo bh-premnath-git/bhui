@@ -21,7 +21,14 @@ export function EditUser() {
     try {
       setIsSubmitting(true);
       setError(null);
-      await handleUpdateUser(id, data);
+      
+      if (data.projects) {
+        await handleUpdateUser(id, { projects: data.projects }, 'projects');
+      }
+      if (data.realm_roles) {
+        await handleUpdateUser(id, { realm_roles: data.realm_roles }, 'roles');
+      }
+      
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');

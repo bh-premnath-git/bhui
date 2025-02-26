@@ -90,7 +90,9 @@ export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
               isValidating={props.isValidating}
               isTokenValidated={props.isTokenValidated}
              />
-            <AdvancedSettingsFields control={form.control} />
+            <AdvancedSettingsFields control={form.control}
+            isTokenValidated={props.isTokenValidated} 
+            />
             <TagsField form={form} />
             {/* <Accordion type="single" collapsible defaultValue="environment-details">
               <AccordionItem value="environment-details">

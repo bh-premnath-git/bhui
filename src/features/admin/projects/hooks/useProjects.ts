@@ -1,4 +1,6 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
+import { debounce } from 'lodash';
 import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation, Project } from '@/types/admin/project';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
@@ -8,86 +10,137 @@ interface UseProjectsOptions {
   projectId?: string;
 }
 
-export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
-  const {
-    getAll,
-    getOne,
-    createMutation,
-    updateMutation,
-    deleteMutation
-  } = useResource<Project>('bh_project', CATALOG_API_PORT, true);
+interface ApiErrorOptions {
+  action: 'create' | 'update' | 'delete' | 'validate' | 'search' | 'fetch';
+  context?: string;
+  silent?: boolean;
+}
 
-  const { data: projectsResponse, isLoading, isFetching, isError } = getAll('/bh_project/list/') as {
+const handleApiError = (error: unknown, options: ApiErrorOptions) => {
+  const { action, context = 'project', silent = false } = options;
+  const errorMessage = `Failed to ${action} ${context}`;
+  console.error(`${errorMessage}:`, error);
+  if (!silent) {
+    toast.error(errorMessage);
+  }
+  throw error;
+};
+
+export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
+  // For queries - returns Project objects
+  const { getOne: getProject, getAll: getAllProjects } = useResource<Project>(
+    'bh_project',
+    CATALOG_API_PORT,
+    true
+  );
+
+  // For mutations - accepts ProjectMutationData
+  const { create: createProject, update: updateProject, remove: removeProject } = useResource<ProjectMutationData>(
+    'bh_project',
+    CATALOG_API_PORT,
+    true
+  );
+
+  // For validation - accepts ProjectGitValidation
+  const { create: validateGit } = useResource<ProjectGitValidation>(
+    'bh_project',
+    CATALOG_API_PORT,
+    true
+  );
+
+  // List projects with pagination
+  const { data: projectsResponse, isLoading, isFetching, isError } = getAllProjects({
+    url: '/bh_project/list/',
+    queryOptions: {
+      enabled: options.shouldFetch,
+      retry: 2
+    }
+  }) as {
     data: ProjectPaginatedResponse;
     isLoading: boolean;
     isFetching: boolean;
     isError: boolean;
   };
 
+  // Get single project
   const { 
     data: project, 
     isLoading: isProjectLoading, 
     isFetching: isProjectFetching, 
     isError: isProjectError 
-  } = options.projectId ? getOne(`/bh_project/${options.projectId}/`) : {
+  } = options.projectId ? getProject({
+    url: `/bh_project/${options.projectId}/`,
+    queryOptions: {
+      enabled: !!options.projectId,
+      retry: 2
+    }
+  }) : {
     data: undefined,
     isLoading: false,
     isFetching: false,
     isError: false
   };
 
-  // Use another instance of useResource for validation
-  const validateResource = useResource<Project>('bh_project', CATALOG_API_PORT, true);
-  const validateMutation = validateResource.createMutation;
+  // Create project mutation
+  const createProjectMutation = createProject({
+    url: '/bh_project/create/',
+    mutationOptions: {
+      onSuccess: () => toast.success('Project created successfully'),
+      onError: (error) => handleApiError(error, { action: 'create' }),
+    },
+  });
 
-  const handleCreateProject = async (data: ProjectMutationData) => {
-    try {
-      await createMutation.mutateAsync(data);
-      toast.success('Project created successfully');
-    } catch (error) {
-      toast.error('Failed to create project');
-      throw error;
-    }
-  };
+  // Update project mutation
+  const updateProjectMutation = updateProject('/bh_project', {
+    mutationOptions: {
+      onSuccess: () => toast.success('Project updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update' }),
+    },
+  });
 
-  const handleUpdateProject = async (id: string, data: ProjectMutationData) => {
-    try {
-      await updateMutation.mutateAsync({
-        ...data,
-        url: `/bh_project/${id}/`
-      });
-      toast.success('Project updated successfully');
-    } catch (error) {
-      toast.error('Failed to update project');
-      throw error;
-    }
-  };
+  // Delete project mutation
+  const deleteProjectMutation = removeProject('/bh_project', {
+    mutationOptions: {
+      onSuccess: () => toast.success('Project deleted successfully'),
+      onError: (error) => handleApiError(error, { action: 'delete' }),
+    },
+  });
 
-  const handleDeleteProject = async (id: string) => {
-    try {
-      await deleteMutation.mutateAsync({
-        url: `/bh_project/${id}/`
-      });
-      toast.success('Project deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete project');
-      throw error;
-    }
-  };
+  // Validate git token mutation
+  const validateTokenMutation = validateGit({
+    url: '/bh_project/validate-token/',
+    mutationOptions: {
+      onSuccess: () => toast.success('Token validated successfully'),
+      onError: (error) => handleApiError(error, { action: 'validate' }),
+    },
+  });
 
-  const handleValidateToken = async (data: ProjectGitValidation) => {
-    try {
-      const response = await validateMutation.mutateAsync({
-        ...data,
-        url: '/bh_project/validate-token/'
-      });
-      toast.success('Token validated successfully');
-      return response;
-    } catch (error) {
-      toast.error('Failed to validate token');
-      throw error;
-    }
-  };
+  // Type-safe mutation handlers
+  const handleCreateProject = useCallback(async (data: ProjectMutationData) => {
+    await createProjectMutation.mutateAsync({
+      data
+    });
+  }, [createProjectMutation]);
+
+  const handleUpdateProject = useCallback(async (id: string, data: ProjectMutationData) => {
+    await updateProjectMutation.mutateAsync({
+      data,
+      params: { id }
+    });
+  }, [updateProjectMutation]);
+
+  const handleDeleteProject = useCallback(async (id: string) => {
+    await deleteProjectMutation.mutateAsync({
+      params: { id }
+    });
+  }, [deleteProjectMutation]);
+
+  const handleValidateToken = useCallback(async (data: ProjectGitValidation) => {
+    const response = await validateTokenMutation.mutateAsync({
+      data
+    });
+    return response;
+  }, [validateTokenMutation]);
 
   return {
     projects: projectsResponse || [],
@@ -104,3 +157,43 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     handleValidateToken
   };
 };
+
+export function useProjectSearch() {
+  const { getOne: searchProjects } = useResource<Project[]>(
+    'bh_project',
+    CATALOG_API_PORT,
+    true
+  );
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { data: searchResults, isLoading, error } = searchProjects({
+    url: '/bh_project/search',
+    params: { bh_project_name: searchQuery },
+    queryOptions: {
+      enabled: !!searchQuery,
+      retry: 2
+    }
+  });
+
+  const projectFound = searchResults && searchResults.length > 0;
+  const projectNotFound = searchResults && searchResults.length === 0;
+
+  const debounceSearchProject = useMemo(
+    () => debounce((query: string) => setSearchQuery(query), 800),
+    []
+  );
+
+  useEffect(() => {
+    return () => debounceSearchProject.cancel();
+  }, [debounceSearchProject]);
+
+  return {
+    searchedProject: projectFound ? searchResults[0] : null,
+    projectFound,
+    projectNotFound,
+    isLoading,
+    error,
+    debounceSearchProject,
+  };
+}

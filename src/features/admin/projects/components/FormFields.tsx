@@ -1,7 +1,8 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { Project } from '@/types/admin/project';
+import { X, Loader2, Check } from "lucide-react"
 import { Control, useFormContext } from "react-hook-form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { type ProjectFormData } from "./projectFormSchema"
@@ -11,7 +12,21 @@ import { RequiredFormLabel } from "@/components/shared/RequiredFormLabel"
 import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
 import { useState } from "react"
 
-export const ProjectNameField = ({ control }: { control: Control<ProjectFormData> }) => (
+export const ProjectNameField = ({ control,
+
+  searchedProject,
+  searchLoading,
+  projectNotFound,
+  onNameChange,
+  isEditMode = false
+}: {
+  control: Control<ProjectFormData>;
+  searchedProject?: Project | null;
+  searchLoading?: boolean;
+  projectNotFound?: boolean;
+  onNameChange?: (name: string) => void;
+  isEditMode?: boolean
+}) => (
   <FormField
     control={control}
     name="bh_project_name"
@@ -19,8 +34,35 @@ export const ProjectNameField = ({ control }: { control: Control<ProjectFormData
       <FormItem className="max-w-sm">
         <RequiredFormLabel>Project Name</RequiredFormLabel>
         <FormControl>
-          <Input placeholder="Project Name" {...field} />
+          <Input
+            placeholder="Project Name"
+            {...field}
+            onChange={(e) => {
+              field.onChange(e);
+              if (!isEditMode && onNameChange) {
+                onNameChange(e.target.value);
+              }
+            }}
+          />
         </FormControl>
+        {searchLoading && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Checking availability...
+          </div>
+        )}
+        {searchedProject && !projectNotFound && !isEditMode && (
+          <div className="flex items-center text-sm text-destructive">
+            <X className="h-4 w-4 mr-2" />
+            Project name already taken
+          </div>
+        )}
+        {projectNotFound && !isEditMode && (
+          <div className="flex items-center text-sm text-green-600">
+            <Check className="h-4 w-4 mr-2" />
+            Project name available
+          </div>
+        )}
         <FormMessage />
       </FormItem>
     )}
@@ -35,9 +77,9 @@ interface GithubFieldsProps {
   isTokenValidated: boolean
 }
 
-export function GithubFields({ 
-  control, 
-  onValidateToken, 
+export function GithubFields({
+  control,
+  onValidateToken,
   isEditMode = false,
   isValidating,
   isTokenValidated

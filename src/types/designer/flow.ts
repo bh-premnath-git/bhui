@@ -30,7 +30,7 @@ export interface FlowDeployment {
     recipient_email: string[];
     notes: string;
     tags: {
-      tagList: string[];
+      tagList: Record<string, string>[];
     };
     flow_deployment: FlowDeployment[];
     bh_project_name: string;
@@ -48,16 +48,22 @@ export interface FlowPaginatedResponse {
 
 export interface FlowMutationData {
     flow_name: string;
-    flow_key: string;
-    recipient_email: string[];
+    flow_key?: string;
+    recipient_email: {emails: string[]};
     notes: string;
     tags: {
-      tagList: string[];
+      tagList: Record<string, string>[];
     };
-    bh_project_name: string;
-    flow_config: string[];
-    flow_definition: FlowDefinition;
-}   
+    bh_project_id: number;
+    alert_settings: {
+      on_job_start: boolean;
+      on_job_failure: boolean;
+      on_job_success: boolean;
+      long_running: boolean;
+    };
+    flow_json: FlowDefinition | {};
+    bh_env_id: number;
+} 
 
 // playground
 import { Node, Edge, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";

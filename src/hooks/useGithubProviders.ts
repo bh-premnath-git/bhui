@@ -1,4 +1,4 @@
-import { useAppSelector } from '@/hooks/uaeRedux';
+import { useAppSelector } from '@/hooks/useRedux';
 import type { GithubProvider, GithubProvidersResponse } from '@/store/slices/globalGitSlice';
 
 interface FormattedProvider {

@@ -71,7 +71,6 @@ export interface AWSValidationData {
   aws_secret_access_key: string,
   init_vector: string,
   location: string
-  bh_env_name?: string
 };
 
 export type MWAAEnvironments = string[];

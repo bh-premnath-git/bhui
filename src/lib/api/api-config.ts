@@ -13,15 +13,16 @@ declare module 'axios' {
 }
 
 export interface ApiConfig {
-  portNumber: number;
-  url: string;
-  params?: Record<string, any>;
+  portNumber?: string;
   method: string;
-  data?: Record<string, any>;
-  usePrefix?: boolean;
-  metadata?: ApiMetadata;
+  url: string;
+  data?: Record<string, any> | FormData;
+  params?: Record<string, any>;
+  query?: string;
   additionalHeaders?: Record<string, string>;
+  usePrefix?: boolean;
   signal?: AbortSignal;
+  metadata?: ApiMetadata;
 }
 
 export interface ApiResponse<T> {

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, realmRoleOptions } from "./userFormSchema"
-import { useAppSelector } from "@/hooks/uaeRedux"
+import { useAppSelector } from "@/hooks/useRedux"
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">
@@ -83,7 +83,7 @@ export const StatusField = ({ form }: { form: any }) => (
 
 export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
   const projects = useAppSelector((state) => state.users.projects);
-  const projectOptions = getProjectOptions(projects);
+  const projectOptions = getProjectOptions(projects);  
   return (
     <div className="grid grid-cols-2 gap-6">
       <MultiSelect

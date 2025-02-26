@@ -1,5 +1,5 @@
 import { AlertHub } from "@/types/dataops/alertsHub"; 
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setAlerts, setSelectedAlert } from "@/store/slices/dataops/alertHubSlice";
 
 export interface AlertHubManagementService {

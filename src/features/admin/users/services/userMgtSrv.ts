@@ -1,5 +1,5 @@
 import { User } from "@/types/admin/user";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setUsers, setSelectedUser } from "@/store/slices/admin/usersSlice";
 
 export interface UserManagementService {

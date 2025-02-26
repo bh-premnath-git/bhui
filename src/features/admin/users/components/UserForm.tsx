@@ -78,7 +78,6 @@ export function UserForm({
       if (onNameChange && (name === 'first_name' || name === 'last_name')) {
         const firstName = value.first_name?.trim() || '';
         const lastName = value.last_name?.trim() || '';
-        console.log('Name change:', { firstName, lastName });
         onNameChange(firstName, lastName);
       }
     });
@@ -137,12 +136,10 @@ export function UserForm({
     const currentUsername = firstName && lastName ? `${firstName.toLowerCase()}${lastName.toLowerCase()}` : '';
     const originalUsername = initialData?.username;
 
-    // Don't show any status if we're in edit mode and username hasn't changed
     if (isEditMode && currentUsername === originalUsername) {
       return null;
     }
 
-    // Don't show any status if either name field is empty
     if (!firstName || !lastName) {
       return null;
     }
@@ -165,10 +162,10 @@ export function UserForm({
       );
     }
 
-    // Only show valid status if we have both names and either:
-    // 1. The API confirmed username doesn't exist (userNotFound)
-    // 2. The username matches the original username in edit mode
-    if ((userNotFound && currentUsername) || (searchedUser?.username === originalUsername)) {
+    if (
+      (mode === 'create' && userNotFound && currentUsername) || 
+      (mode === 'edit' && userNotFound && currentUsername && currentUsername !== originalUsername)
+    ) {
       return (
         <Alert className="mt-4 bg-green-50 text-green-700 border-green-200">
           <CheckCircle2 className="h-4 w-4 mr-2" />

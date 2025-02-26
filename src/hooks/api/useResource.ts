@@ -90,7 +90,7 @@ export function useResource<T>(resource: string, portNumber: string, usePrefix: 
    * ================  UPDATE  ================
    */
   const update = (
-    url: string,
+    url?: string,
     options?: {
       params?: Record<string, any>;
       query?: string;

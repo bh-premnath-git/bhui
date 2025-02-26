@@ -6,11 +6,13 @@ import About from './About';
 
 export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
   const dataCatalogSrv = useDataCatalogManagementService();
-  const { layoutFields, isLoading } = useLayoutFields({ 
+  const { layoutFields, isLoading, isFetching, isError } = useLayoutFields({ 
     shouldFetch: true,
     dataSourceId: dataSourceId
   });
+  const layoutData = layoutFields?.layout_fields || [];
 
+debugger
   return (
     <div className="mt-6">
       <h3 className="text-lg font-medium">Schema Details</h3>
@@ -18,7 +20,7 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
         <div className="flex-1">
           <DataTable
             columns={columns}
-            data={layoutFields}
+            data={layoutData}
             topVariant="simple"
             pagination={true}
           />
@@ -30,3 +32,4 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     </div>
   );
 }
+

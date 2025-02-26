@@ -74,11 +74,16 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
               <button
                 key={platform.value}
                 type="button"
-                onClick={() => field.onChange(platform.value)}
+                onClick={() => {
+                  if (platform.value !== "102") { 
+                    field.onChange(platform.value);
+                  }
+                }}
                 className={`border rounded-lg p-4 flex flex-col items-center justify-center ${field.value === platform.value
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
-                  } transition-colors w-32 h-24`}
+                  } transition-colors w-32 h-24 ${platform.value === "102" ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={platform.value === "102"}
               >
                 <img
                   src={platform.image || "/placeholder.svg"}
@@ -94,7 +99,8 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
       )}
     />
   </div>
-)
+);
+
 
 interface ValidateFieldsProps {
   control: Control<EnvironmentFormValues>

@@ -178,7 +178,8 @@ export const useUserSearch = () => {
     queryOptions: {
       enabled: !!searchQuery,
       retry: 2
-    }
+    },
+    params: { limit: 1000 }
   });
 
   const userNotFound = useMemo(() => {

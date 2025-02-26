@@ -55,7 +55,8 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
             queryOptions: {
                 enabled,
                 retry: 2
-            }
+            },
+            params: { limit: 1000 }
         });
 
     // Fetch single pipeline by ID

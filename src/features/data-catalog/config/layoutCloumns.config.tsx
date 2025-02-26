@@ -1,6 +1,6 @@
 import { createRef } from 'react';
 import type { ColumnDefWithFilters } from "@/types/table"; 
-import { LayoutField } from "@/types/data-catalog/dataCatalog";
+import { DataSourceLayout } from "@/types/data-catalog/dataCatalog";
 import { Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { DescriptionCell, DescriptionCellRef } from "../components/DescriptionCell";
@@ -9,7 +9,7 @@ import { TagCell } from "../components/TagCell";
 // Keep track of all description cell refs
 const descriptionCellRefs = new Map<string | number, React.RefObject<DescriptionCellRef>>();
 
-export const columns: ColumnDefWithFilters<LayoutField>[] = [
+export const columns: ColumnDefWithFilters<DataSourceLayout>[] = [
   {
     id: 'lyt_fld_name',
     accessorKey: 'lyt_fld_name',

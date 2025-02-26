@@ -54,7 +54,8 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     queryOptions: {
       enabled: options.shouldFetch,
       retry: 2
-    }
+    },
+    params: {limit:1000}
   }) as {
     data: ProjectPaginatedResponse;
     isLoading: boolean;
@@ -74,6 +75,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
       enabled: !!options.projectId,
       retry: 2
     }
+    
   }) : {
     data: undefined,
     isLoading: false,

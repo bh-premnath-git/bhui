@@ -36,7 +36,7 @@ export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch:
         }
     }, [error]);
 
-    // Extract layout fields from the first layout if it exists
+    // Extract the first layout if it exists
     const layoutFields = layouts?.[0] || null;
 
     return {

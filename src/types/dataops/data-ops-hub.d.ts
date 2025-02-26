@@ -35,7 +35,7 @@ export type ChartData = {
 }
 
 export interface ChartStyles {
-  chartType: 'bar' | 'line' | 'pie';
+  chartType: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'gauge' | 'treemap' | 'histogram' | 'bubble' | 'radar';
   colorScheme: 'sophisticated' | 'energetic' | 'minimalist' | 'custom';
   colors: string[];
   customColors?: string[];
@@ -43,4 +43,20 @@ export interface ChartStyles {
 
 export interface GenericData {
   [key: string]: string | number;
+}
+
+export interface DashboardMetric {
+  brand: string;
+  value: number;
+  trend: string;
+  status: 'increase' | 'decrease' | 'stable';
+}
+
+export interface DashboardData {
+  title: string;
+  description: string;
+  timeRange: string;
+  brands: string[];
+  metrics: DashboardMetric[];
+  salesData: GenericData[];
 }

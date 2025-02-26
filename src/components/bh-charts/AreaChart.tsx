@@ -6,37 +6,45 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts"
-import { COLORS } from "@/lib/colors"
 
 interface AreaChartProps {
   data: any[]
   xAxisDataKey: string
   areas: string[]
+  colors?: string[]
+  stacked?: boolean
 }
 
-export const AreaChart: React.FC<AreaChartProps> = ({ data, xAxisDataKey, areas }) => (
-  <ResponsiveContainer width="100%" height={300}>
-    <RechartsAreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey={xAxisDataKey} />
-      <YAxis />
-      <Tooltip />
-      <Legend />
-      {areas.map((area, index) => (
-        <Area
-          key={area}
-          type="monotone"
-          dataKey={area}
-          stackId="1"
-          stroke={COLORS[index % COLORS.length]}
-          fill={COLORS[index % COLORS.length]}
-          fillOpacity={1}
-          strokeWidth={2}
-        />
-      ))}
-    </RechartsAreaChart>
-  </ResponsiveContainer>
-)
+export const AreaChart: React.FC<AreaChartProps> = ({
+  data,
+  xAxisDataKey,
+  areas,
+  colors = ['#4B9EFF', '#45D483', '#FFB547', '#FF6B6B'],
+  stacked = false,
+}) => {
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <RechartsAreaChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey={xAxisDataKey} />
+        <YAxis />
+        <Tooltip />
+        {areas.map((area, index) => (
+          <Area
+            key={area}
+            type="monotone"
+            dataKey={area}
+            fill={colors[index % colors.length]}
+            stroke={colors[index % colors.length]}
+            stackId={stacked ? "1" : undefined}
+            fillOpacity={0.6}
+          />
+        ))}
+      </RechartsAreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+export default AreaChart

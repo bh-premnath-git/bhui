@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { GenericData } from "@/types/dataops/data-ops-hub.d";
+import { GenericData, DashboardData } from "@/types/dataops/data-ops-hub.d";
 import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
-import { fetchData } from "@/api/analytics-api";
+import { fetchData, fetchDashboardData } from "@/api/analytics-api";
 
 interface AnalyticsContextType {
-  data: GenericData[];
+  dashboardData: DashboardData | undefined;
   isLoading: boolean;
   error: Error | null;
   viewMode: "chart" | "table";
@@ -47,9 +47,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const itemsPerPage = 5;
   const [chartStyles, setChartStylesState] = useState<ChartStyles>(defaultChartStyles);
 
-  const { data = [], isLoading, error } = useQuery({
-    queryKey: ['salesData', selectedTimeRange],
-    queryFn: fetchData,
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['dashboardData'],
+    queryFn: fetchDashboardData,
   });
 
   const setChartStyles = useCallback((newStyles: Partial<ChartStyles>) => {
@@ -69,7 +69,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   return (
     <AnalyticsContext.Provider
       value={{
-        data,
+        dashboardData,
         isLoading,
         error,
         viewMode,

@@ -1,7 +1,8 @@
 import { useResource } from '@/hooks/api/useResource';
-import { Environment, EnvironmentMutationData } from '@/types/admin/environment';
+import { AWSValidationData, Environment, EnvironmentMutationData } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
+import { data } from 'react-router-dom';
 
 interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
@@ -17,7 +18,12 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     deleteMutation
   } = useResource<Environment>('environments', CATALOG_API_PORT, true);
 
-  const { data: environments, isLoading, isFetching, isError } = getAll("/environment/environment/list/");
+  const { data: environments, isLoading, isFetching, isError } = getAll("/environment/environment/list/") as {
+    data: Environment;
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+  };
 
   const { 
     data: environment, 
@@ -33,7 +39,8 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 
   const { data: mwaaEnvironments, isLoading: isMwaaLoading, isFetching: isMwaaFetching, isError: isMwaaError } = getAll("/bh_airflow/list-airflow-environments");
 
-  
+  const validateResource = useResource<Environment>('environments', CATALOG_API_PORT, true);
+  const validateMutation = validateResource.createMutation;
   const handleCreateEnvironment = async (data: EnvironmentMutationData) => {
     try {
       await createMutation.mutateAsync(data);
@@ -44,13 +51,14 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     }
   };
 
-  const handleAWSValidation = async (data: EnvironmentMutationData) => {
+  const handleAWSValidation = async (data: AWSValidationData) => {
     try {
-      await createMutation.mutateAsync({
+      const response = await validateMutation.mutateAsync({
         ...data,
-        url: '/aws/test_connection'
+        url: `/aws/test_connection?bh_env_name=${data.bh_env_name}`
       });
       toast.success('AWS validation successful');
+      return response;
     }
     catch (error) {
       toast.error('Failed to validate AWS');
@@ -84,7 +92,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   };
 
   return {
-    environments,
+    environments: environments || [],
     environment,
     mwaaEnvironments,
     isLoading,

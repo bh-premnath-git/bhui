@@ -2,11 +2,16 @@ import type React from "react"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { environments, platforms, regions } from "./environmentFormSchema"
+import { EnvironmentFormValues, environments, platforms, regions } from "./environmentFormSchema"
 import { AddTagDialog } from "@/components/shared/AddTagDialog"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Control, useFormContext } from "react-hook-form"
+import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
+import { useState, useEffect } from "react"
+import { useEnvironments } from "../hooks/useEnvironments"
+import { encrypt_string } from "@/services/encryption"
+import { set } from "lodash"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -15,11 +20,11 @@ const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   </FormLabel>
 )
 
-export const EnvironmentDetailsFields = ({ form }: { form: any }) => (
+export const EnvironmentDetailsFields = ({ control }: { control: Control<EnvironmentFormValues> }) => (
   <div className="space-y-6">
     <div className="grid gap-6 md:grid-cols-2">
       <FormField
-        control={form.control}
+        control={control}
         name="environmentName"
         render={({ field }) => (
           <FormItem>
@@ -32,7 +37,7 @@ export const EnvironmentDetailsFields = ({ form }: { form: any }) => (
         )}
       />
       <FormField
-        control={form.control}
+        control={control}
         name="environment"
         render={({ field }) => (
           <FormItem>
@@ -59,10 +64,10 @@ export const EnvironmentDetailsFields = ({ form }: { form: any }) => (
   </div>
 )
 
-export const PlatformFields = ({ form }: { form: any }) => (
+export const PlatformFields = ({ control }: { control: Control<EnvironmentFormValues> }) => (
   <div className="space-y-2">
     <FormField
-      control={form.control}
+      control={control}
       name="platform.type"
       render={({ field }) => (
         <FormItem>
@@ -72,11 +77,10 @@ export const PlatformFields = ({ form }: { form: any }) => (
                 key={platform.value}
                 type="button"
                 onClick={() => field.onChange(platform.value)}
-                className={`border rounded-lg p-4 flex flex-col items-center justify-center ${
-                  field.value === platform.value
+                className={`border rounded-lg p-4 flex flex-col items-center justify-center ${field.value === platform.value
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
-                } transition-colors w-32 h-24`}
+                  } transition-colors w-32 h-24`}
               >
                 <img
                   src={platform.image || "/placeholder.svg"}
@@ -94,140 +98,190 @@ export const PlatformFields = ({ form }: { form: any }) => (
   </div>
 )
 
-export const CredentialsFields = ({ form }: { form: any }) => (
-  <div className="space-y-6">
-    <div className="grid gap-6 md:grid-cols-2">
-      <FormField
-        control={form.control}
-        name="platform.project"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Project Id</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g. Aws Project Id" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="platform.region"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Region</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Region" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {regions.map((reg) => (
-                  <SelectItem key={reg.value} value={reg.value}>
-                    {reg.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="credentials.accessKey"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Access Key</FormLabel>
-            <FormControl>
-              <Input type="password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="credentials.secretKey"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Secret Key</FormLabel>
-            <FormControl>
-              <Input type="password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="credentials.validate"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-start space-x-3 space-y-0 md:col-span-2">
-            <FormControl>
-              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-            </FormControl>
-            <div className="space-y-1 leading-none">
-              <FormLabel>Validate</FormLabel>
-            </div>
-          </FormItem>
-        )}
-      />
-    </div>
-  </div>
-)
+interface ValidateFieldsProps {
+  control: Control<EnvironmentFormValues>
+  onValidateToken: (data: EnvironmentFormValues) => Promise<void>
+  isEditMode?: boolean
+  isValidating: boolean
+  isTokenValidated: boolean
+}
+export function CredentialsFields({
+  control,
+  onValidateToken,
+  isEditMode = false,
+  isValidating,
+  isTokenValidated
+}: ValidateFieldsProps) {
+  const form = useFormContext<EnvironmentFormValues>();
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const handleValidation = async () => {
+    try{
+      setValidationError(null); 
+      await onValidateToken(form.getValues());
+    } catch (error) {
+      setValidationError('Token failed. Please try again')
+    }
+  };
 
-export const AdvancedSettingsFields = ({ form }: { form: any }) => (
-  <div className="space-y-6">
-    <div>
-      <p className="text-sm text-muted-foreground mt-1">Provide optional Airflow configuration</p>
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField
+          control={control}
+          name="credentials.publicId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Id</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. Aws Project Id" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="platform.region"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Region</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Region" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {regions.map((reg) => (
+                    <SelectItem key={reg.value} value={reg.value}>
+                      {reg.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="credentials.accessKey"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Access Key</FormLabel>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="credentials.secretKey"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Secret Key</FormLabel>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <div className="flex justify-end mt-2">
+                <ValidationButton
+                  onValidate={handleValidation}
+                  isValidating={isValidating}
+                  isValidated={isTokenValidated}
+                  error={validationError}
+                  onValidationChange={(state: ValidationState) => {
+                    if (state === "not-validated") {
+                      setValidationError('Token failed. Please try again');
+                    }
+                  }}
+                />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+      </div>
     </div>
-    <div className="grid gap-6 md:grid-cols-2">
-      <FormField
-        control={form.control}
-        name="advancedSettings.mwaa"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>MWAA Ennironment</FormLabel>
-            <FormControl>
-              <Input placeholder="MWAA Envitronment" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+  )
+}
+
+export const AdvancedSettingsFields = ({ control }: { control: Control<EnvironmentFormValues> }) => {
+  const { mwaaEnvironments } = useEnvironments();
+  const form = useFormContext<EnvironmentFormValues>();
+
+  useEffect(() => {
+    const selectedMwaa = form.watch('advancedSettings.airflowName');
+    if (selectedMwaa && mwaaEnvironments) {
+      const mwaaEnv = mwaaEnvironments.find(env => env.Name === selectedMwaa);
+      if (mwaaEnv) {
+        form.setValue('advancedSettings.airflowBucketName', mwaaEnv.DagS3Path);
+        form.setValue('advancedSettings.airflowBucketUrl', mwaaEnv.WebserverUrl);
+      }
+    }
+  }, [form.watch('advancedSettings.airflowName'), mwaaEnvironments]);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField
+          control={control}
+          name="advancedSettings.airflowName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>MWAA Environment</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select MWAA Environment" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {mwaaEnvironments?.map((env) => (
+                    <SelectItem key={env.Name} value={env.Name}>
+                      {env.Name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField
+          control={control} 
+          name="advancedSettings.airflowBucketName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Airflow Bucket Name</FormLabel>
+              <FormControl>
+                <Input {...field} disabled />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="advancedSettings.airflowBucketUrl" 
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Airflow URL</FormLabel>
+              <FormControl>
+                <Input {...field} disabled />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
-    <div className="grid gap-6 md:grid-cols-2">
-      <FormField
-        control={form.control}
-        name="advancedSettings.airflow"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Airflow Bucket Id</FormLabel>
-            <FormControl>
-              <Input placeholder="airflow id" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="advancedSettings.airflow_name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Airflow Bucket Name</FormLabel>
-            <FormControl>
-              <Input placeholder="Airflow name" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  </div>
-)
+  );
+};
 
 export const TagsField = ({ form }: { form: any }) => {
   const tags = form.watch("tags") || []
@@ -275,4 +329,3 @@ export const TagsField = ({ form }: { form: any }) => {
     </div>
   )
 }
-

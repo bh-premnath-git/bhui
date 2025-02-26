@@ -26,6 +26,7 @@ const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues
       zone: environment.location || '',
     },
     credentials: {
+      publicId: environment.project_id || '',
       accessKey: environment.access_key || '',
       secretKey: environment.secret_access_key || '',
       token: environment.pvt_key || '',

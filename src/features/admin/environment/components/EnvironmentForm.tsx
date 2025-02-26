@@ -16,64 +16,51 @@ import {
 } from "./FormFields"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { encrypt_string } from "@/services/encryption"
 
 interface EnvironmentFormProps {
   initialData?: EnvironmentFormValues
   onSubmit: (data: EnvironmentFormValues) => Promise<void>
+  onValidate?: (data: EnvironmentFormValues) => Promise<void>
   mode: "create" | "edit"
   isSubmitting: boolean
+  isValidating: boolean
+  isTokenValidated: boolean
   error: string | null
 }
 
-export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, error }: EnvironmentFormProps) {
-  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
-
+export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
   const form = useForm<EnvironmentFormValues>({
-    resolver: zodResolver(environmentFormSchema),
-    defaultValues: initialData || {
-      environmentName: "",
-      environment: "",
-      platform: {
-        type: "",
-        region: "",
-        zone: "",
-      },
-      credentials: {
-        accessKey: "",
-        secretKey: "",
-        token: "",
-      },
-      advancedSettings: {
-        vpc: "",
-        subnet: "",
-        securityGroup: "",
-      },
-      tags: [],
-    },
-  })
+    resolver: zodResolver(environmentFormSchema)
+  });
 
-  const isEditMode = mode === "edit"
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const isEditMode = props.mode === "edit";
+
+  const handleSubmit = async (data: EnvironmentFormValues) => {
+    if (!form.formState.isValid) return;
+    await onSubmit(data);
+  };
 
   useEffect(() => {
-    if (isSubmitting) {
+    if (isEditMode) {
+      form.reset({
+
+      })
+    }
+  }, [isEditMode])
+
+  useEffect(() => {
+    if (props.isSubmitting) {
       setFormState("submitting")
-    } else if (error) {
+    } else if (props.error) {
       setFormState("error")
-    } else if (!isSubmitting && formState === "submitting") {
+    } else if (!props.isSubmitting && formState === "submitting") {
       setFormState("success")
       const timer = setTimeout(() => setFormState("idle"), 2000)
       return () => clearTimeout(timer)
     }
-  }, [isSubmitting, error, formState])
-
-  const handleSubmit = async (data: EnvironmentFormValues) => {
-    try {
-      await onSubmit(data)
-    } catch (error) {
-      console.error("Form submission error:", error)
-    }
-  }
+  }, [props.isSubmitting, props.error, formState])
 
   const getButtonStyles = () => {
     switch (formState) {
@@ -94,12 +81,18 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
       <FormProvider {...form}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* <EnvironmentDetailsFields form={form} />
-            <PlatformFields form={form} />
-            <CredentialsFields form={form} />
-            <AdvancedSettingsFields form={form} />
-            <TagsField form={form} /> */}
-            <Accordion type="single" collapsible defaultValue="environment-details">
+            <EnvironmentDetailsFields control={form.control} />
+            <PlatformFields control={form.control} />
+            <CredentialsFields 
+              control={form.control}
+              onValidateToken={props.onValidate}
+              isEditMode={isEditMode}
+              isValidating={props.isValidating}
+              isTokenValidated={props.isTokenValidated}
+             />
+            <AdvancedSettingsFields control={form.control} />
+            <TagsField form={form} />
+            {/* <Accordion type="single" collapsible defaultValue="environment-details">
               <AccordionItem value="environment-details">
                 <AccordionTrigger className="text-lg font-semibold text-primary">Environment Details</AccordionTrigger>
                 <AccordionContent className="pt-4">
@@ -117,7 +110,9 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
               <AccordionItem value="credentials">
                 <AccordionTrigger className="text-lg font-semibold">Credentials</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                  <CredentialsFields form={form} />
+                  <CredentialsFields 
+                  form={form} 
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -134,7 +129,7 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
                   <TagsField form={form} />
                 </AccordionContent>
               </AccordionItem>
-            </Accordion>
+            </Accordion> */}
 
             <div className="flex justify-center pt-6">
               <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
@@ -154,7 +149,7 @@ export function EnvironmentForm({ initialData, onSubmit, mode, isSubmitting, err
                 )}
               </Button>
             </div>
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {props.error && <p className="text-sm text-red-500 text-center">{props.error}</p>}
           </form>
         </Form>
         </FormProvider>

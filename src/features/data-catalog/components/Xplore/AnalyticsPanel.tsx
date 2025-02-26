@@ -150,7 +150,6 @@ export default function AnalyticsPanel() {
           <AnalyticsChart 
             data={filteredData}
             activeFilter={activeFilters.join(',')}
-            styles={chartStyles}
             formatCurrency={formatCurrency}
           />
         </TabsContent>

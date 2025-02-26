@@ -1,20 +1,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, LineChart, PieChart } from "@/components/bh-charts";
-import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
 import { useAnalytics } from "@/context/AnalyticsContext";
 import { useMemo } from "react";
 
 interface AnalyticsChartProps {
   data: any[];
   activeFilter: string | null;
-  styles: ChartStyles;
   formatCurrency: (value: number) => string;
 }
 
 export default function AnalyticsChart({ 
   data, 
-  activeFilter, 
-  styles,
+  activeFilter,
   formatCurrency 
 }: AnalyticsChartProps) {
   const { chartStyles } = useAnalytics();
@@ -45,6 +42,7 @@ export default function AnalyticsChart({
             data={formattedData}
             xAxisDataKey="date"
             lines={selectedBrands}
+            colors={chartStyles.colors}
           />
         );
       case 'pie':
@@ -53,6 +51,7 @@ export default function AnalyticsChart({
             data={pieData}
             dataKey="value"
             nameKey="name"
+            colors={chartStyles.colors}
           />
         );
       default:
@@ -61,6 +60,7 @@ export default function AnalyticsChart({
             data={formattedData}
             xAxisDataKey="date"
             bars={selectedBrands}
+            colors={chartStyles.colors}
           />
         );
     }

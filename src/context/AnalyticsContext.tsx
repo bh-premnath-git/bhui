@@ -25,22 +25,27 @@ interface AnalyticsContextType {
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
+interface ChartStyles {
+  chartType: 'bar' | 'line' | 'pie';
+  colorScheme: 'default' | 'monochrome' | 'colorful' | 'custom';
+  colors: string[];
+  customColors?: string[];
+}
+
+const defaultChartStyles: ChartStyles = {
+  chartType: 'bar',
+  colorScheme: 'default',
+  colors: ['#4B9EFF', '#45D483', '#FFB547', '#FF6B6B'],
+  customColors: ['#FFFFFF', '#FFFFFF', '#FFFFFF']
+};
+
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
   const [selectedTimeRange, setSelectedTimeRange] = useState("7days");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const [chartStyles, setChartStylesState] = useState<ChartStyles>({
-    height: 400,
-    colorScheme: 'monochrome',
-    orientation: 'vertical',
-    type: 'grouped',
-    enableStyle: true,
-    showDataLabels: false,
-    showLegend: true,
-    chartType: 'bar',
-  });
+  const [chartStyles, setChartStylesState] = useState<ChartStyles>(defaultChartStyles);
 
   const { data = [], isLoading, error } = useQuery({
     queryKey: ['salesData', selectedTimeRange],
@@ -48,8 +53,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   });
 
   const setChartStyles = useCallback((newStyles: Partial<ChartStyles>) => {
-    setChartStylesState(prevStyles => ({
-      ...prevStyles,
+    setChartStylesState(prev => ({
+      ...prev,
       ...newStyles
     }));
   }, []);

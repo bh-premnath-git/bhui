@@ -11,17 +11,13 @@ interface ErrorResponse {
   message: string;
 }
 
-// Example custom shape for mutation variables
-// You could generalize further or rename as you please
 export interface MutationVariables<TData = unknown> {
-  data?: TData; // The payload/body for your request
-  params?: Record<string, any>; // The URL query params
-  url?: string; // Dynamic URL override
-  query?: string; // Additional query string
-  // ...anything else you need
+  data?: TData | FormData;
+  params?: Record<string, any>;
+  url?: string;
+  query?: string;
 }
 
-// Custom type guard for AxiosError with generics
 function isAxiosError<T = any>(error: unknown): error is AxiosError<T> {
   return (
     typeof error === 'object' &&
@@ -50,9 +46,9 @@ class ApiService {
         config.headers.set('Authorization', `Bearer ${JSON.parse(token)}`);
       }
       if (config.data instanceof FormData) {
-        config.headers.set('Content-Type', 'multipart/form-data');
+        delete config.headers['Content-Type'];
       } else if (config.data) {
-        config.headers.set('Content-Type', 'application/json');
+        config.headers['Content-Type'] = 'application/json';
       }
       return config;
     });
@@ -81,11 +77,9 @@ class ApiService {
   private buildUrl(config: ApiConfig): string {
     let url = config.url;
     
-    // If we have an ID param, append it to the URL
     if (config.params?.flowId) {
       url = url.endsWith('/') ? url : url + '/';
       url = `${url}${config.params.flowId}/`;
-      // Remove the id from params since it's now in the URL
       const { flowId, ...restParams } = config.params;
       config.params = restParams;
     }
@@ -152,33 +146,25 @@ class ApiService {
         if (axios.isCancel(error)) {
           return false;
         }
-        return failureCount < 3; // Or whatever default retry logic you prefer
+        return failureCount < 3;
       },
     });
   }
 
-  /**
-   * React Query MUTATION helper
-   *
-   * - We let `TResponse` be the response type
-   * - We let `TVariables` be the shape of the object you pass to mutateAsync
-   */
+  
   useApiMutation<TResponse, TVariables = unknown>(
     initialConfig: ApiConfig,
     options?: Omit<UseMutationOptions<TResponse, Error, TVariables>, 'mutationFn'>
   ) {
     return useMutation<TResponse, Error, TVariables>({
       mutationFn: async (variables) => {
-        // Merge anything we want from `variables` into the final config
         const finalConfig: ApiConfig = {
           ...initialConfig,
-          // If you want to treat `variables` as { data: Something; params: Record<string, any> }
-          // do a type assertion or destructure:
           data:
             (variables as MutationVariables<any>)?.data ?? initialConfig.data,
           params:
             (variables as MutationVariables<any>)?.params ?? initialConfig.params,
-          query:
+            query:
             (variables as MutationVariables<any>)?.query ?? initialConfig.query,
           url:
             (variables as MutationVariables<any>)?.url ?? initialConfig.url,
@@ -190,11 +176,9 @@ class ApiService {
       ...options,
       onError: (error, variables, context) => {
         console.error('Mutation Error:', error);
-        // If user provided a custom onError, call it
         if (options?.onError) {
           options.onError(error, variables, context);
         } else {
-          // Otherwise do a fallback toast
           toast.error('Operation failed');
         }
       },

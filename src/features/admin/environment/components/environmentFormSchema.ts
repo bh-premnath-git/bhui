@@ -14,6 +14,7 @@ export const environmentFormSchema = z.object({
     accessKey: z.string().optional(),
     secretKey: z.string().optional(),
     pvtKey: z.string().optional(),
+    init_vector: z.string().optional(),
   }),
   advancedSettings: z.object({
     airflowName: z.string().optional(),
@@ -50,7 +51,7 @@ export const regions = [
   { label: "eu-central-1", value: "18" },
 ] as const
 
-export const transforFormToAPiData = (formData: EnvironmentFormValues): FormData => {
+export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormData => {
   const apiData: EnvironmentMutationData = {
     bh_env_name: formData.environmentName,
     bh_env_provider: Number(formData.environment),
@@ -60,6 +61,7 @@ export const transforFormToAPiData = (formData: EnvironmentFormValues): FormData
     secret_access_key: formData.credentials.secretKey,
     project_id: formData.credentials.publicId,
     pvt_key: formData.credentials.pvtKey,
+    init_vector: formData.credentials.init_vector,
     airflow_url: formData.advancedSettings.airflowBucketUrl,
     airflow_bucket_name: formData.advancedSettings.airflowBucketName,
     airflow_env_name: formData.advancedSettings.airflowName,
@@ -69,7 +71,6 @@ export const transforFormToAPiData = (formData: EnvironmentFormValues): FormData
     },
   }
 
-   // Create a new FormData object
    const data = new FormData();
    Object.entries(apiData).forEach(([key, value]) => {
      if (value !== undefined) {

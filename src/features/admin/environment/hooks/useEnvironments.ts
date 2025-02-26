@@ -129,7 +129,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   }, [deleteEnvironmentMutation]);
 
   const handleAWSValidation = useCallback(async (bh_env_name: string, data: AWSValidationData) => {
-    await AWSValidationMutation.mutateAsync({
+    return await AWSValidationMutation.mutateAsync({
       query: `bh_env_name=${bh_env_name}`,
       data,
     });

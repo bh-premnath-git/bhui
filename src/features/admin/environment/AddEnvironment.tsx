@@ -19,6 +19,7 @@ export function AddEnvironment() {
     accessKey: string;
     secretKey: string;
     initVector: string;
+    pvtKey?: string;
   } | null>(null);
 
   const handleValidate = async (data: EnvironmentFormValues) => {
@@ -35,12 +36,16 @@ export function AddEnvironment() {
         initVector
       });
 
-      await handleAWSValidation(data.environmentName, {
+      const result = await handleAWSValidation(data.environmentName, {
           aws_access_key_id: encryptedString1,
           aws_secret_access_key: encryptedString,
           init_vector: initVector,
           location: data.platform.region
       });
+      setEncryptedCredentials(prop => ({
+        ...prop, 
+        pvtKey: result.pvt_key
+      }))
 
       setIsTokenValidated(true);
       toast.success('Validation successful');
@@ -65,7 +70,14 @@ export function AddEnvironment() {
       setError(null);
       
       const environmentData = transforFormToAPiData({
-        ...data
+        ...data, 
+        credentials:{
+          publicId: data.credentials.publicId,
+          accessKey: encryptedCredentials.accessKey,
+          secretKey: encryptedCredentials.secretKey,
+          init_vector: encryptedCredentials.initVector,
+          pvtKey: encryptedCredentials.pvtKey
+        }
       })
 
       await handleCreateEnvironment(environmentData);

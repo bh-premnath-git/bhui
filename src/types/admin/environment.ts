@@ -70,7 +70,8 @@ export interface AWSValidationData {
   aws_access_key_id: string,
   aws_secret_access_key: string,
   init_vector: string,
-  location: string
+  location: string,
+  pvt_key?: string
 };
 
 export type MWAAEnvironments = string[];

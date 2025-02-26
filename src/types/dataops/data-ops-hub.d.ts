@@ -36,7 +36,7 @@ export type ChartData = {
 
 export interface ChartStyles {
   chartType: 'bar' | 'line' | 'pie';
-  colorScheme: 'default' | 'monochrome' | 'colorful' | 'custom';
+  colorScheme: 'sophisticated' | 'energetic' | 'minimalist' | 'custom';
   colors: string[];
   customColors?: string[];
 }

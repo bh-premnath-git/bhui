@@ -16,19 +16,34 @@ export default function StyleEditor() {
   const colorSchemes = {
     predefined: [
       { 
-        id: 'default', 
-        name: 'Default',
-        colors: ['#4B9EFF', '#45D483', '#FFB547', '#FF6B6B'] 
+        id: 'sophisticated', 
+        name: 'Sophisticated',
+        colors: [
+          '#2E4053', // Deep navy
+          '#008080', // Vibrant teal
+          '#FFD700', // Warm gold
+          '#94A3B8'  // Medium slate gray (replacing light gray)
+        ] 
       },
       { 
-        id: 'monochrome',
-        name: 'Monochrome', 
-        colors: ['#2C3E50', '#34495E', '#7F8C8D', '#95A5A6'] 
+        id: 'energetic',
+        name: 'Energetic', 
+        colors: [
+          '#1E90FF', // Electric blue
+          '#FF69B4', // Bright magenta
+          '#32CD32', // Lime green
+          '#64748B'  // Cool gray (replacing light gray)
+        ] 
       },
       { 
-        id: 'colorful',
-        name: 'Colorful', 
-        colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'] 
+        id: 'minimalist',
+        name: 'Minimalist', 
+        colors: [
+          '#36454F', // Charcoal gray
+          '#6495ED', // Muted blue
+          '#F08080', // Subtle coral
+          '#475569'  // Slate gray (replacing off-white)
+        ] 
       }
     ],
     custom: [
@@ -42,7 +57,7 @@ export default function StyleEditor() {
     console.log('Updating colors to:', scheme.colors);
     setChartStyles({ 
       ...chartStyles,
-      colorScheme: scheme.id as 'default' | 'monochrome' | 'colorful',
+      colorScheme: scheme.id as 'sophisticated' | 'energetic' | 'minimalist',
       colors: [...scheme.colors]
     });
   };
@@ -76,24 +91,24 @@ export default function StyleEditor() {
 
         <TabsContent value="step2" className="mt-6 space-y-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Select Predefined Colors</h3>
+            <h3 className="text-sm font-medium">Select Color Theme</h3>
             <div className="grid grid-cols-2 gap-2">
               {colorSchemes.predefined.map((scheme) => (
                 <Button
                   key={scheme.id}
                   variant="outline"
-                  className={`h-16 ${
+                  className={`h-20 ${
                     chartStyles.colorScheme === scheme.id ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => handleColorSchemeChange(scheme)}
                 >
                   <div className="flex flex-col items-center gap-2">
-                    <span className="text-sm">{scheme.name}</span>
+                    <span className="text-sm font-medium">{scheme.name}</span>
                     <div className="flex gap-2">
                       {scheme.colors.map((color) => (
                         <div
                           key={color}
-                          className="w-4 h-4 rounded-full"
+                          className="w-6 h-6 rounded-full shadow-sm"
                           style={{ backgroundColor: color }}
                         />
                       ))}

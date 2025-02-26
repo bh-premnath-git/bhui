@@ -1,3 +1,5 @@
+import type { ChartType, ColorScheme } from "@/features/data-catalog/components/Xplore/StyleEditor";
+
 export type DataItem = {
   name: string
   project: string
@@ -35,10 +37,9 @@ export type ChartData = {
 }
 
 export interface ChartStyles {
-  chartType: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'gauge' | 'treemap' | 'histogram' | 'bubble' | 'radar';
-  colorScheme: 'sophisticated' | 'energetic' | 'minimalist' | 'custom';
+  chartType: ChartType;
+  colorScheme: ColorScheme;
   colors: string[];
-  customColors?: string[];
 }
 
 export interface GenericData {

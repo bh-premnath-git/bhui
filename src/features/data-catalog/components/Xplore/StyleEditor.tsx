@@ -21,6 +21,37 @@ import {
 } from "@/components/ui/tooltip";
 import { colorPalettes, generateColorPalette } from "@/lib/colors";
 import { cn } from "@/lib/utils";
+import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
+
+// Define chart style types and defaults in StyleEditor
+export type ChartType = 'bar' | 'line' | 'pie' | 'area';
+export type ColorScheme = 'colorful1' | 'colorful2' | 'colorful3' | 'colorful4' | 'colorful5' | 
+                         'mono_blue' | 'mono_brown' | 'mono_green' | 'mono_purple';
+
+export const defaultChartStyles: ChartStyles = {
+  chartType: 'bar',
+  colorScheme: 'colorful1',
+  colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+};
+
+// Update the StyleIcon to a simpler pencil design
+const StyleIcon = () => (
+  <svg 
+    width="20" 
+    height="20" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className="stroke-current"
+  >
+    <path 
+      d="M15.2322 5.23223L18.7677 8.76777M16.7322 3.73223C17.7085 2.75592 19.2914 2.75592 20.2677 3.73223C21.244 4.70854 21.244 6.29146 20.2677 7.26777L6.5 21.0355H3V17.4644L16.7322 3.73223Z" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default function StyleEditor() {
   const { chartStyles, setChartStyles, data } = useAnalytics();
@@ -136,7 +167,7 @@ export default function StyleEditor() {
   const colorThemes = {
     colorful: [
       {
-        id: 'colorful1',
+        id: 'colorful1' as const,
         name: 'Colorful 1',
         colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
       },
@@ -163,7 +194,7 @@ export default function StyleEditor() {
     ],
     monochromatic: [
       {
-        id: 'mono_blue',
+        id: 'mono_blue' as const,
         name: 'Blue Scale',
         colors: ['#08519c', '#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#eff3ff']
       },
@@ -183,7 +214,7 @@ export default function StyleEditor() {
         colors: ['#4a1486', '#6a51a3', '#807dba', '#9e9ac8', '#bcbddc', '#dadaeb']
       }
     ]
-  };
+  } as const;
 
   const handleColorSchemeChange = (scheme: typeof colorThemes.colorful[0] | typeof colorThemes.monochromatic[0]) => {
     setChartStyles({ 
@@ -195,15 +226,17 @@ export default function StyleEditor() {
 
   return (
     <div className="w-full space-y-8">
+      {/* Remove the styling header with icon since it's now in the tab */}
+      
       {/* Chart Types Section */}
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold">Chart Types</h2>
+        <h3 className="text-base font-medium text-muted-foreground">Chart Types</h3>
         <div className="space-y-8">
           {Object.entries(chartsByCategory).map(([category, charts]) => (
             <div key={category} className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground px-1">
+              <h4 className="text-sm font-medium text-muted-foreground px-1">
                 {category} Charts
-              </h3>
+              </h4>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {charts.map(({ id, icon: Icon, label }) => (
                   <TooltipProvider key={id}>
@@ -250,13 +283,13 @@ export default function StyleEditor() {
 
       {/* Color Schemes Section */}
       <div className="space-y-6 pt-4 border-t">
-        <h2 className="text-lg font-semibold">Color Schemes</h2>
+        <h3 className="text-base font-medium text-muted-foreground">Color Schemes</h3>
         <div className="space-y-8">
           {/* Colorful Themes */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground px-1">
+            <h4 className="text-sm font-medium text-muted-foreground px-1">
               Colorful
-            </h3>
+            </h4>
             <div className="grid grid-cols-5 gap-4">
               {colorThemes.colorful.map((theme) => (
                 <button
@@ -285,9 +318,9 @@ export default function StyleEditor() {
 
           {/* Monochromatic */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground px-1">
+            <h4 className="text-sm font-medium text-muted-foreground px-1">
               Monochromatic
-            </h3>
+            </h4>
             <div className="grid grid-cols-4 gap-4">
               {colorThemes.monochromatic.map((theme) => (
                 <button

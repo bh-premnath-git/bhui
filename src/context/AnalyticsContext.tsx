@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { GenericData } from "@/types/dataops/data-ops-hub.d";
+import { GenericData, DashboardData } from "@/types/dataops/data-ops-hub.d";
 import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
-import { fetchData } from "@/api/analytics-api";
+import { fetchData, fetchDashboardData } from "@/api/analytics-api";
+import { defaultChartStyles } from "@/features/data-catalog/components/Xplore/StyleEditor";
 
 interface AnalyticsContextType {
-  data: GenericData[];
+  dashboardData: DashboardData | undefined;
   isLoading: boolean;
   error: Error | null;
   viewMode: "chart" | "table";
@@ -16,14 +17,14 @@ interface AnalyticsContextType {
   setActiveFilters: React.Dispatch<React.SetStateAction<string[]>>;
   formatCurrency: (value: number | undefined) => string;
   chartStyles: ChartStyles;
-  setChartStyles: (styles: Partial<ChartStyles>) => void;
+  setChartStyles: (styles: ChartStyles) => void;
   availableBrands: string[];
   currentPage: number;
   setCurrentPage: (page: number) => void;
   itemsPerPage: number;
 }
 
-const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
+export const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
@@ -31,28 +32,12 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const [chartStyles, setChartStylesState] = useState<ChartStyles>({
-    height: 400,
-    colorScheme: 'monochrome',
-    orientation: 'vertical',
-    type: 'grouped',
-    enableStyle: true,
-    showDataLabels: false,
-    showLegend: true,
-    chartType: 'bar',
-  });
+  const [chartStyles, setChartStyles] = useState<ChartStyles>(defaultChartStyles);
 
-  const { data = [], isLoading, error } = useQuery({
-    queryKey: ['salesData', selectedTimeRange],
-    queryFn: fetchData,
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: fetchDashboardData
   });
-
-  const setChartStyles = useCallback((newStyles: Partial<ChartStyles>) => {
-    setChartStylesState(prevStyles => ({
-      ...prevStyles,
-      ...newStyles
-    }));
-  }, []);
 
   const formatCurrency = useCallback((value: number | undefined): string => {
     if (value === undefined || value === null) return '$0';
@@ -64,7 +49,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   return (
     <AnalyticsContext.Provider
       value={{
-        data,
+        dashboardData,
         isLoading,
         error,
         viewMode,
@@ -89,8 +74,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
 export function useAnalytics() {
   const context = useContext(AnalyticsContext);
-  if (context === undefined) {
-    throw new Error("useAnalytics must be used within an AnalyticsProvider");
+  if (!context) {
+    throw new Error('useAnalytics must be used within an AnalyticsProvider');
   }
   return context;
 }

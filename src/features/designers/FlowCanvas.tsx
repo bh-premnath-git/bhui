@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import ReactFlow, {
   ReactFlowProvider,
   Panel,
@@ -9,18 +10,27 @@ import ReactFlow, {
   useReactFlow,
   getOutgoers,
 } from 'reactflow';
+import { useAppDispatch } from '@/hooks/useRedux';
 import { useFlow } from '@/context/designers/FlowContext';
+import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
 import { CustomControls } from '@/components/bh-reactflow-comps/flow/flow/CustomControls';
 import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
 import 'reactflow/dist/style.css';
+import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.8 };
 
 export const FlowCanvas = () => {
+  const { id } = useParams();
+  const { fetchFlowById } = useFlowApi();
+  const flow = fetchFlowById(id || '');
+  const dispatch = useAppDispatch();
+
   const {
     nodes,
     edges,
@@ -140,6 +150,12 @@ export const FlowCanvas = () => {
     },
     [nodes, edges],
   );
+
+  useEffect(() => {
+    dispatch(setSelectedFlow(flow.data));
+    const flowdeplayment: any = { ...flow }
+    dispatch(setSelectedEnv(Number(flowdeplayment.data?.flow_deployment[0].bh_env_id)));
+  }, [dispatch])
 
   return (
     <div className="w-full h-full bg-background relative">

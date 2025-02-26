@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import { Environment, EnvironmentMutationData } from '@/types/admin/environment';
@@ -10,81 +10,109 @@ interface UseEnvironmentsOptions {
   environmentId?: string;
 }
 
-interface ApiError extends Error {
-  response?: {
-    status: number;
-    data?: {
-      detail?: string;
-    };
-  };
+interface ApiErrorOptions {
+  action: 'create' | 'update' | 'delete' | 'search' | 'fetch';
+  context?: string;
+  silent?: boolean;
 }
 
-const isEnvironmentNotFoundError = (error: unknown): boolean => {
-  const apiError = error as ApiError;
-  return (
-    apiError?.response?.status === 404 &&
-    typeof apiError?.response?.data?.detail === 'string' &&
-    apiError.response.data.detail.includes('Environment not found')
-  );
+const handleApiError = (error: unknown, options: ApiErrorOptions) => {
+  const { action, context = 'environment', silent = false } = options;
+  const errorMessage = `Failed to ${action} ${context}`;
+  console.error(`${errorMessage}:`, error);
+  if (!silent) {
+    toast.error(errorMessage);
+  }
+  throw error;
 };
 
 export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch: true }) => {
-  const {
-    getAll,
-    getOne,
-    createMutation,
-    updateMutation,
-    deleteMutation
-  } = useResource<Environment>('environments', CATALOG_API_PORT, true);
+  // For queries - returns Environment objects
+  const { getOne: getEnvironment, getAll: getAllEnvironments } = useResource<Environment>(
+    'environments',
+    CATALOG_API_PORT,
+    true
+  );
 
-  const { data: environments, isLoading, isFetching, isError } = getAll("/environment/environment/list/");
+  // For mutations - accepts EnvironmentMutationData
+  const { create: createEnvironment, update: updateEnvironment, remove: removeEnvironment } = useResource<EnvironmentMutationData>(
+    'environments',
+    CATALOG_API_PORT,
+    true
+  );
 
+  // List environments
+  const { data: environments, isLoading, isFetching, isError } = getAllEnvironments({
+    url: '/environment/environment/list/',
+    queryOptions: {
+      enabled: options.shouldFetch,
+      retry: 2
+    }
+  });
+
+  // Get single environment
   const { 
     data: environment, 
     isLoading: isEnvironmentLoading, 
     isFetching: isEnvironmentFetching, 
     isError: isEnvironmentError 
-  } = options.environmentId ? getOne(`/environment/environment/${options.environmentId}/`) : {
+  } = options.environmentId ? getEnvironment({
+    url: `/environment/environment/${options.environmentId}/`,
+    queryOptions: {
+      enabled: !!options.environmentId,
+      retry: 2
+    }
+  }) : {
     data: undefined,
     isLoading: false,
     isFetching: false,
     isError: false
   };
-  
-  const handleCreateEnvironment = async (data: EnvironmentMutationData) => {
-    try {
-      await createMutation.mutateAsync(data);
-      toast.success('Environment created successfully');
-    } catch (error) {
-      toast.error('Failed to create environment');
-      throw error;
-    }
-  };
 
-  const handleUpdateEnvironment = async (id: string, data: EnvironmentMutationData) => {
-    try {
-      await updateMutation.mutateAsync({
-        ...data,
-        url: `/environment/environment/${id}/`
-      });
-      toast.success('Environment updated successfully');
-    } catch (error) {
-      toast.error('Failed to update environment');
-      throw error;
-    }
-  };
+  // Create environment mutation
+  const createEnvironmentMutation = createEnvironment({
+    url: '/environment/environment/create/',
+    mutationOptions: {
+      onSuccess: () => toast.success('Environment created successfully'),
+      onError: (error) => handleApiError(error, { action: 'create' }),
+    },
+  });
 
-  const handleDeleteEnvironment = async (id: string) => {
-    try {
-      await deleteMutation.mutateAsync({
-        url: `/environment/environment/${id}/`
-      });
-      toast.success('Environment deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete environment');
-      throw error;
-    }
-  };
+  // Update environment mutation
+  const updateEnvironmentMutation = updateEnvironment('/environment/environment', {
+    mutationOptions: {
+      onSuccess: () => toast.success('Environment updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update' }),
+    },
+  });
+
+  // Delete environment mutation
+  const deleteEnvironmentMutation = removeEnvironment('/environment/environment', {
+    mutationOptions: {
+      onSuccess: () => toast.success('Environment deleted successfully'),
+      onError: (error) => handleApiError(error, { action: 'delete' }),
+    },
+  });
+
+  // Type-safe mutation handlers
+  const handleCreateEnvironment = useCallback(async (data: EnvironmentMutationData) => {
+    await createEnvironmentMutation.mutateAsync({
+      data
+    });
+  }, [createEnvironmentMutation]);
+
+  const handleUpdateEnvironment = useCallback(async (id: string, data: EnvironmentMutationData) => {
+    await updateEnvironmentMutation.mutateAsync({
+      data,
+      params: { id }
+    });
+  }, [updateEnvironmentMutation]);
+
+  const handleDeleteEnvironment = useCallback(async (id: string) => {
+    await deleteEnvironmentMutation.mutateAsync({
+      params: { id }
+    });
+  }, [deleteEnvironmentMutation]);
 
   return {
     environments,
@@ -102,15 +130,30 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 };
 
 export const useEnvironmentSearch = () => {
-  const { getOne } = useResource<Environment>('environments', CATALOG_API_PORT, true);
+  const { getOne: getEnvironment } = useResource<Environment>(
+    'environments',
+    CATALOG_API_PORT,
+    true
+  );
+  
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { data: searchedEnvironment, isLoading, error } = getOne(`/environment/environment/${searchQuery}/`, { 
-    enabled: !!searchQuery,
+  const { data: searchedEnvironment, isLoading, error } = getEnvironment({
+    url: `/environment/environment/${searchQuery}/`,
+    queryOptions: {
+      enabled: !!searchQuery,
+      retry: 2
+    }
   });
 
   const environmentNotFound = useMemo(() => {
-    return error && isEnvironmentNotFoundError(error);
+    if (!error) return false;
+    const apiError = error as { response?: { status: number; data?: { detail?: string } } };
+    return (
+      apiError?.response?.status === 404 &&
+      typeof apiError?.response?.data?.detail === 'string' &&
+      apiError.response.data.detail.includes('Environment not found')
+    );
   }, [error]);
 
   const debounceSearchEnvironment = useMemo(() =>

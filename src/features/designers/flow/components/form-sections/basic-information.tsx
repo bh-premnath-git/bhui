@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "../schema"
-import { useAppSelector } from "@/hooks/uaeRedux"
+import { useAppSelector } from "@/hooks/useRedux"
 import { getProjectOptions, getEnvironmentOptions } from "../schema"
 import { Loader2, X, Check } from "lucide-react"
 import type { Flow } from '@/types/designer/flow'

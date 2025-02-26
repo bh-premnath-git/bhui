@@ -1,5 +1,5 @@
 import { Flow } from '@/types/designer/flow';
-import { useAppDispatch } from '@/hooks/uaeRedux';
+import { useAppDispatch } from '@/hooks/useRedux';
 import { setFlows, setSelectedFlow } from '@/store/slices/designer/flowSlice';
 
 export interface FlowManagementService {

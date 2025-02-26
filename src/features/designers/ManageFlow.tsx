@@ -16,7 +16,8 @@ export function FlowList({ flows }: { flows: Flow[] }) {
 
   const { handleNavigation } = useNavigation();
   const flowSrv = useFlowManagementService();
-  const { refetchFlows } = useFlow();
+  const { fetchFlowsList } = useFlow();
+  const { refetch: refetchFlows } = fetchFlowsList(true);
 
   const onRowClickHandler = (row: Row<Flow>) => {
     flowSrv.selectedFlow(row.original)

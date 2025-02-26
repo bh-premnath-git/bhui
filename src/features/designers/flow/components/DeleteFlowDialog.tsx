@@ -6,7 +6,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { useAppSelector } from "@/hooks/uaeRedux";
+import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store"
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";

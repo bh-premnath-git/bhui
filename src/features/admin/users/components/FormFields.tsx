@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, realmRoleOptions } from "./userFormSchema"
-import { useAppSelector } from "@/hooks/uaeRedux"
+import { useAppSelector } from "@/hooks/useRedux"
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">

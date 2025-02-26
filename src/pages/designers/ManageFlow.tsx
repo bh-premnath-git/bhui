@@ -8,13 +8,21 @@ import { useFlow } from '@/features/designers/flow/hooks/useFlow';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
-import { useAppDispatch } from '@/hooks/uaeRedux';
+import { useAppDispatch } from '@/hooks/useRedux';
 import { fetchProjects, fetchEnvironments } from '@/store/slices/designer/flowSlice';
+import { FlowProvider } from "@/context/designers/FlowContext";
 
 function ManageFlowPage() {
   const dispatch = useAppDispatch();
-  const { flows, isLoading, isFetching, isError } = useFlow();
+  const { fetchFlowsList } = useFlow();
   const flowService = useFlowManagementService();
+
+  const {
+    data: flows = [],
+    isLoading,
+    isFetching,
+    isError
+  } = fetchFlowsList(true);
 
   const noFlows = !Array.isArray(flows) || flows.length === 0;
 
@@ -67,7 +75,9 @@ function ManageFlowPage() {
           <LoadingState className="w-40 h-40" />
         </div>
       )}
-      <FlowList flows={flows} />
+      <FlowProvider>
+        <FlowList flows={flows} />
+      </FlowProvider>
     </div>
   );
 }

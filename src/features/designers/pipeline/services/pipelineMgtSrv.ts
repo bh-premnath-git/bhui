@@ -1,5 +1,5 @@
 import { Pipeline } from '@/types/designer/pipeline';
-import { useAppDispatch } from '@/hooks/uaeRedux';
+import { useAppDispatch } from '@/hooks/useRedux';
 import { setPipelines, setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 export interface PipelineManagementService {
@@ -10,7 +10,7 @@ export interface PipelineManagementService {
 export const usePipelineManagementService = () => {
     const dispatch = useAppDispatch();
     return ({
-        setPipelines: (pipelines: Pipeline[]) => {
+        setPipelines: (pipelines: any[]) => {
             dispatch(setPipelines(pipelines));
         },
         selectedPipeline: (pipeline: Pipeline | null) => {

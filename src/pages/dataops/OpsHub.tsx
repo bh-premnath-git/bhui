@@ -6,13 +6,15 @@ import { useDataOpsHubManagementService } from '@/features/dataops/dataOpsHubs/s
 import { useDataOpsHub } from '@/features/dataops/dataOpsHubs/hooks/usedataOpsHub';
 
 function OpsHubPage() {
-    const { dataOpsHub, isLoading, isFetching, isError } = useDataOpsHub();
+    const { jobs, isLoading, isFetching, isError } = useDataOpsHub();
     const dataOpsHubSrv = useDataOpsHubManagementService();
+    
     useEffect(() => {
-        if(dataOpsHub && dataOpsHub.length > 0){
-            dataOpsHubSrv.setDataOpsHubs(dataOpsHub);
+        if(jobs && jobs.length > 0){
+            dataOpsHubSrv.setDataOpsHubs(jobs);
         }
-    }, []);
+    }, [jobs]);
+    
     return (
         <div className="p-6">
             <div className="relative">
@@ -21,10 +23,9 @@ function OpsHubPage() {
                     <LoadingState className='w-40 h-40' />
                   </div>
                 )}
-                <OpsHub dataOpsHubs={dataOpsHub || []} />
+                <OpsHub dataOpsHubs={jobs || []} />
             </div>
         </div>
-        
     );
 }
 

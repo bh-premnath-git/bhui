@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Node, Edge,
   NodeChange,
@@ -28,7 +28,6 @@ const INITIAL_POSITION = { x: 50, y: 140 };
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const params = useParams();
   
   const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(() => {
     // Try to get flowId from URL first, then localStorage
@@ -273,13 +272,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     [setNodes]
   );
 
-  const setSelectedFlowId = useCallback(
-    (flowId: string) => {
-      setSelectedFlowIdState(flowId);
-    },
-    []
-  );
-
   const selectedNodeConnection = useCallback(
     (nodeId: string) => {
       const currentNode = nodes.find((n) => n.id === nodeId);
@@ -350,7 +342,66 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     return allOptimized;
   }, [nodes]);
 
-  // Debounce with 6s delay
+  // Update node dependencies when edges change
+  const updateNodeDependencies = useCallback(() => {
+    if (!selectedFlowId) return;
+    
+    setNodeFormData(currentFormData => {
+      const updatedFormData = [...currentFormData];
+      
+      // Create a map of nodeId to task_id for quick lookup
+      const nodeToTaskIdMap = new Map();
+      currentFormData.forEach(item => {
+        if (item.formData.task_id) {
+          nodeToTaskIdMap.set(item.nodeId, item.formData.task_id);
+        }
+      });
+      
+      // First, reset all dependsOn arrays
+      updatedFormData.forEach(item => {
+        if (item.formData && item.formData.dependsOn) {
+          item.formData.dependsOn = [];
+        }
+      });
+      
+      // Then update each node's dependencies based on incoming edges
+      edges.forEach(edge => {
+        const targetNodeIndex = updatedFormData.findIndex(item => item.nodeId === edge.target);
+        if (targetNodeIndex !== -1) {
+          const sourceTaskId = nodeToTaskIdMap.get(edge.source);
+          if (sourceTaskId) {
+            // Ensure we have a formData object
+            if (!updatedFormData[targetNodeIndex].formData) {
+              updatedFormData[targetNodeIndex].formData = {};
+            }
+            
+            // Ensure we have a dependsOn array
+            if (!updatedFormData[targetNodeIndex].formData.dependsOn) {
+              updatedFormData[targetNodeIndex].formData.dependsOn = [];
+            }
+            
+            // Add the dependency if it doesn't exist already
+            const dependsOn = updatedFormData[targetNodeIndex].formData.dependsOn;
+            if (!dependsOn.includes(sourceTaskId)) {
+              updatedFormData[targetNodeIndex].formData.dependsOn = [...dependsOn, sourceTaskId];
+            }
+          }
+        }
+      });
+      
+      return updatedFormData;
+    });
+    
+    console.log("Updated dependencies based on edges");
+  }, [selectedFlowId, edges, setNodeFormData]);
+  
+  // Call updateNodeDependencies whenever edges change
+  useEffect(() => {
+    if (selectedFlowId) {
+      updateNodeDependencies();
+    }
+  }, [edges, selectedFlowId, updateNodeDependencies]);
+
   const debouncedSave = useDebouncedCallback(
     () => {
       if (autoSave && selectedFlowId && isDirty) {
@@ -470,13 +521,36 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedFlowId, loadFlow]);
 
+  const prevNodesRef = useRef(nodes);
+  const prevEdgesRef = useRef(edges);
+  const prevFormDataRef = useRef(nodeFormData);
+
   useEffect(() => {
     if (selectedFlowId && changeTriggerCount < 2) {
-      setIsDirty(true);
-      setChangeTriggerCount((prev) => prev + 1);
-      debouncedSave();
+      // Check if there are actual changes before logging
+      const nodesChanged = JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes);
+      const edgesChanged = JSON.stringify(prevEdgesRef.current) !== JSON.stringify(edges);
+      const formDataChanged = JSON.stringify(prevFormDataRef.current) !== JSON.stringify(nodeFormData);
+      
+      if (nodesChanged || edgesChanged || formDataChanged) {
+        setIsDirty(true);
+        setChangeTriggerCount((prev) => prev + 1);
+        
+        // Only log modifications when autosave is enabled
+        if (autoSave) {
+          console.log("modification", { flowId: selectedFlowId });
+        }
+        
+        // Always update refs with current values regardless of autosave setting
+        prevNodesRef.current = nodes;
+        prevEdgesRef.current = edges;
+        prevFormDataRef.current = nodeFormData;
+        
+        // Call debouncedSave which will check if autosave is enabled
+        debouncedSave();
+      }
     }
-  }, [nodes, edges, selectedFlowId, debouncedSave, changeTriggerCount]);
+  }, [nodes, edges, nodeFormData, selectedFlowId, debouncedSave, changeTriggerCount, autoSave]);
 
   useEffect(() => {
     if (changeTriggerCount >= 2) {
@@ -538,7 +612,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setAiflowStrructre,
     setConsequentTaskDetail,
     aiMissingData,
-    setAiMissingData
+    setAiMissingData,
+    updateNodeDependencies
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

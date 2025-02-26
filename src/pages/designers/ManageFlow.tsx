@@ -10,7 +10,6 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { fetchProjects, fetchEnvironments } from '@/store/slices/designer/flowSlice';
-import { FlowProvider } from "@/context/designers/FlowContext";
 
 function ManageFlowPage() {
   const dispatch = useAppDispatch();

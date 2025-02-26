@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { PanelLayout } from "./shared/PanelLayout";
-import { AIChatInput } from "./AIChatInput" 
+import { AIChatInput } from "@/components/shared/AIChatInput";
 
 export default function AIChat() {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();

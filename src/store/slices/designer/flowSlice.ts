@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Flow } from '@/types/designer/flow';
+import { Flow, FlowAgentConversationResponse } from '@/types/designer/flow';
 import { Environment } from '@/types/admin/environment';
 import { Project } from '@/types/admin/project';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
 interface FlowState {
@@ -18,6 +18,7 @@ interface FlowState {
     loading: boolean;
     error: string | null;
     dagRunId: { dag_run_id: string; dag_id: string } | null;
+    flowAgentConversation: FlowAgentConversationResponse | null;
 }
 
 const initialState: FlowState = {
@@ -33,6 +34,7 @@ const initialState: FlowState = {
     loading: false,
     error: null,
     dagRunId: null,
+    flowAgentConversation: null,
 };
 
 export const fetchProjects = createAsyncThunk(
@@ -78,6 +80,23 @@ export const patchFlowOperation = createAsyncThunk(
             method: 'PATCH',
             metadata: {
                 errorMessage: 'Failed to patch flow operation'
+            }
+        });
+        return response;
+    }
+);
+
+export const updateFlowConfiguration = createAsyncThunk(
+    "flows/updateFlowConfiguration",
+    async (data: { flow_config_id: number, flow_config: { flow_config: any[] } }) => {
+        const response = await apiService.put<Flow>({
+            portNumber: CATALOG_API_PORT,
+            url: `/flow/flow-config/${data.flow_config_id}/`,
+            data: data.flow_config,
+            usePrefix: true,
+            method: 'PUT',
+            metadata: {
+                errorMessage: 'Failed to update flow configuration'
             }
         });
         return response;
@@ -139,18 +158,14 @@ export const updateFlowDefinition = createAsyncThunk(
     "flows/updateFlowDefinition",
     async (data: { 
         flow_id: string; 
-        flow_json: {
-            flow_deployment_id: number;
-            flow_id: string;
-            flow_json: { flowJson: any[]; flowStructure: any };
-        }
+        flow_json: Record<string, any>
     }) => {
-        const response = await apiService.post<Flow>({
+        const response = await apiService.patch<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: `/flow/${data.flow_id}/definition/`,
+            url: `/flow/flow-definition/update-by-flow-id/${data.flow_id}`,
             data: data.flow_json,
             usePrefix: true,
-            method: 'POST',
+            method: 'PATCH',
             metadata: {
                 errorMessage: 'Failed to update flow definition'
             }
@@ -170,6 +185,24 @@ export const triggerDagDeployment = createAsyncThunk(
             method: 'POST',
             metadata: {
                 errorMessage: 'Failed to trigger DAG deployment'
+            }
+        });
+        return response;
+    }
+);
+
+
+export const createFlowAgentConversationEntry = createAsyncThunk(
+    "flows/createFlowAgentConversationEntry",
+    async (data: { flow_id: string; request: string; thread_id: string }) => {
+        const response = await apiService.post<FlowAgentConversationResponse>({
+            portNumber: AGENT_PORT,
+            url: '/flow_agent/create_flow/',
+            data,
+            usePrefix: true,
+            method: 'POST',
+            metadata: {
+                errorMessage: 'Failed to create flow agent entry'
             }
         });
         return response;
@@ -201,6 +234,9 @@ const flowSlice = createSlice({
         },
         setDagRunId: (state, action: PayloadAction<{ dag_run_id: string; dag_id: string }>) => {
             state.dagRunId = action.payload;
+        },
+        clearFlowAgentConversation: (state) => {
+            state.flowAgentConversation = null;
         },
     },
     extraReducers: (builder) => {
@@ -290,6 +326,28 @@ const flowSlice = createSlice({
                 state.loading = false;
                 state.error = action.error.message || 'Failed to update flow definition';
             })
+            .addCase(updateFlowConfiguration.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateFlowConfiguration.fulfilled, (state, action) => {
+                state.loading = false;
+                if (state.selectedFlow && state.selectedFlow.flow_config) {
+                    // Update the flow_config in the selectedFlow
+                    state.selectedFlow = {
+                        ...state.selectedFlow,
+                        flow_config: state.selectedFlow.flow_config.map(config => 
+                            config.flow_config_id === action.meta.arg.flow_config_id 
+                                ? { ...config, flow_config: action.meta.arg.flow_config.flow_config }
+                                : config
+                        )
+                    };
+                }
+            })
+            .addCase(updateFlowConfiguration.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message || 'Failed to update flow configuration';
+            })
             .addCase(triggerDagDeployment.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -304,9 +362,21 @@ const flowSlice = createSlice({
             .addCase(triggerDagDeployment.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message || 'Failed to trigger DAG deployment';
+            })
+            .addCase(createFlowAgentConversationEntry.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createFlowAgentConversationEntry.fulfilled, (state, action) => {
+                state.loading = false;
+                state.flowAgentConversation = action.payload;
+            })
+            .addCase(createFlowAgentConversationEntry.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message || 'Failed to create flow agent conversation entry';
             });
     },
 });
 
-export const { setFlows, setSelectedFlow, setSelectedProject, setSelectedEnv, setLoading, setError, setDagRunId } = flowSlice.actions;
+export const { setFlows, setSelectedFlow, setSelectedProject, setSelectedEnv, setLoading, setError, setDagRunId, clearFlowAgentConversation } = flowSlice.actions;
 export default flowSlice.reducer;

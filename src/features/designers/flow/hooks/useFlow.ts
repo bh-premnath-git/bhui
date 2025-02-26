@@ -48,6 +48,7 @@ export const useFlow = () => {
   const fetchFlowsList = (enabled = true) =>
     getAllFlows({
       url: '/flow/list/',
+      params: {limit:1000},
       queryOptions: {
         enabled,
         retry: 2

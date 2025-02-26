@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { createShortUUID } from "@/lib/utils";
 import { Save } from "lucide-react";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import { useOtherTypes } from "@/hooks/useOtherTypes";
 import { useNodeFormInput } from "@/hooks/useNodeFormInput";
 
@@ -39,7 +39,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const [selectedValue, setSelectedValue] = useState<string>("");
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
     const typesMatched = useOtherTypes(selectedNode.data.selectedData);
-
     if (!selectedNode) {
         return null;
     }
@@ -109,39 +108,39 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
         const currentFields = getNodeFormData(selectedNode.id);
         if (!currentFields) {
-          toast("Missing required fields", {
-            style: {
-              backgroundColor: "#f44336",
-              color: "#fff",
-            },
-          });
+            toast("Missing required fields", {
+                style: {
+                    backgroundColor: "#f44336",
+                    color: "#fff",
+                },
+            });
             return;
         }
         const missingFields = requiredFieldsState.filter((field) => {
             const value = currentFields[field];
-          
+
             if (!value) {
-              return true;
+                return true;
             }
-          
+
             if (Array.isArray(value)) {
-              return value.length === 0;
+                return value.length === 0;
             }
-          
+
             if (typeof value === "string") {
-              return value.trim() === "";
+                return value.trim() === "";
             }
-          
+
             return false;
-          });
+        });
 
         if (missingFields.length > 0) {
-          toast(`Missing required fields: ${missingFields.join(", ")}`, {
-            style: {
-              backgroundColor: "#f44336",
-              color: "#fff",
-            },
-          });
+            toast(`Missing required fields: ${missingFields.join(", ")}`, {
+                style: {
+                    backgroundColor: "#f44336",
+                    color: "#fff",
+                },
+            });
             return;
         }
         setFormDataNum((prev) => prev + 1);

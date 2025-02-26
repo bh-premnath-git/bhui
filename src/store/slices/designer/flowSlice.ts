@@ -191,6 +191,7 @@ const flowSlice = createSlice({
         },
         setSelectedEnv: (state, action: PayloadAction<number>) => {
             state.selectedEnvironment = state.environments.find(e => e.bh_env_id === action.payload) || null;
+            state.environment = state.environments.find(e => e.bh_env_id === action.payload) || null;
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
@@ -223,6 +224,7 @@ const flowSlice = createSlice({
             .addCase(fetchEnvironments.fulfilled, (state, action) => {
                 state.loading = false;
                 state.environments = action.payload;
+                
             })
             .addCase(fetchEnvironments.rejected, (state, action) => {
                 state.loading = false;

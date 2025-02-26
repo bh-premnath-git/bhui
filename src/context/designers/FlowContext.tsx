@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import {
   Node, Edge,
   NodeChange,
@@ -26,7 +27,30 @@ const NODE_SPACING = 120;
 const INITIAL_POSITION = { x: 50, y: 140 };
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
-  const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(null);
+  const location = useLocation();
+  const params = useParams();
+  
+  const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(() => {
+    // Try to get flowId from URL first, then localStorage
+    const flowIdFromUrl = location.pathname.match(/\/flow\/(\d+)/)?.[1];
+    return flowIdFromUrl || LocalStorageService.getItem('selectedFlowId');
+  });
+
+  // Update selectedFlowId when URL changes
+  useEffect(() => {
+    const flowIdFromUrl = location.pathname.match(/\/flow\/(\d+)/)?.[1];
+    if (flowIdFromUrl && flowIdFromUrl !== selectedFlowId) {
+      setSelectedFlowIdState(flowIdFromUrl);
+    }
+  }, [location.pathname]);
+
+  // Persist selectedFlowId to localStorage
+  useEffect(() => {
+    if (selectedFlowId) {
+      LocalStorageService.setItem('selectedFlowId', selectedFlowId);
+    }
+  }, [selectedFlowId]);
+
   const [nodes, setNodes] = useState<Node<CustomNodeData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeFormData, setNodeFormData] = useState<NodeFormData[]>([]);
@@ -42,6 +66,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [isDirty, setIsDirty] = useState(false);
   const [formdataNum, setFormDataNum] = useState(0);
   const [aiMissingData, setAiMissingData] = useState({});
+  
+  useEffect(() => {
+    console.log('selectedFlowId changed:', selectedFlowId);
+  }, [selectedFlowId]);
 
   const [moduleTypes] = useModules();
 
@@ -355,35 +383,35 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
             );
 
             const nodeId = `task-${task.task_id ?? index}`;
-            
-              addNode({
-                id: nodeId,
-                type: 'custom',
-                data: {
-                  tempSave: true,
-                  label: matchedModule?.label,
-                  selectedData: matchedOperator?.type,
-                  type: matchedOperator?.type,
-                  status: 'pending',
-                  meta: {
-                    type: matchedOperator?.type,
-                    moduleInfo: {
-                      color: matchedModule?.color,
-                      icon: matchedModule?.icon,
-                      label: matchedModule?.label,
-                    },
-                    properties: matchedOperator?.properties,
-                    description: matchedOperator?.description,
-                    fullyOptimized: false,
-                  },
-                  requiredFields: matchedOperator?.requiredFields || [],
-                },
-                tempSave: true,
-              });
 
-              updateNodeFormData(nodeId, {
-                ...task,
-              });
+            addNode({
+              id: nodeId,
+              type: 'custom',
+              data: {
+                tempSave: true,
+                label: matchedModule?.label,
+                selectedData: matchedOperator?.type,
+                type: matchedOperator?.type,
+                status: 'pending',
+                meta: {
+                  type: matchedOperator?.type,
+                  moduleInfo: {
+                    color: matchedModule?.color,
+                    icon: matchedModule?.icon,
+                    label: matchedModule?.label,
+                  },
+                  properties: matchedOperator?.properties,
+                  description: matchedOperator?.description,
+                  fullyOptimized: false,
+                },
+                requiredFields: matchedOperator?.requiredFields || [],
+              },
+              tempSave: true,
+            });
+
+            updateNodeFormData(nodeId, {
+              ...task,
+            });
 
             if (index > 0) {
               const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
@@ -498,7 +526,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     saveFlow,
     addNode,
     updateNodeMeta,
-    setSelectedFlowId,
+    setSelectedFlowId: setSelectedFlowIdState,
     updatedSelectedNodeId,
     revertOrSaveData,
     selectedNodeConnection,

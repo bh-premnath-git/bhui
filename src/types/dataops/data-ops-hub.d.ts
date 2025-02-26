@@ -1,3 +1,5 @@
+import type { ChartType, ColorScheme } from "@/features/data-catalog/components/Xplore/StyleEditor";
+
 export type DataItem = {
   name: string
   project: string
@@ -35,16 +37,27 @@ export type ChartData = {
 }
 
 export interface ChartStyles {
-  height: number;
-  colorScheme: 'monochrome' | 'default' | 'colorful';
-  orientation: 'vertical' | 'horizontal';
-  type: 'grouped' | 'stacked' | 'stack100';
-  enableStyle: boolean;
-  showDataLabels: boolean;
-  showLegend: boolean;
-  chartType: 'bar' | 'line' | 'pie';
+  chartType: ChartType;
+  colorScheme: ColorScheme;
+  colors: string[];
 }
 
 export interface GenericData {
   [key: string]: string | number;
+}
+
+export interface DashboardMetric {
+  brand: string;
+  value: number;
+  trend: string;
+  status: 'increase' | 'decrease' | 'stable';
+}
+
+export interface DashboardData {
+  title: string;
+  description: string;
+  timeRange: string;
+  brands: string[];
+  metrics: DashboardMetric[];
+  salesData: GenericData[];
 }

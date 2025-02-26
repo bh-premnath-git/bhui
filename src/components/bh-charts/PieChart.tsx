@@ -6,9 +6,10 @@ interface PieChartProps {
   data: any[]
   dataKey: string
   nameKey: string
+  colors?: string[]
 }
 
-export const PieChart: React.FC<PieChartProps> = ({ data, dataKey, nameKey }) => (
+export const PieChart: React.FC<PieChartProps> = ({ data, dataKey, nameKey, colors }) => (
   <ResponsiveContainer width="100%" height={300}>
     <RechartsPieChart>
       <Pie
@@ -23,7 +24,7 @@ export const PieChart: React.FC<PieChartProps> = ({ data, dataKey, nameKey }) =>
         nameKey={nameKey}
       >
         {data.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          <Cell key={`cell-${index}`} fill={colors?.[index % (colors?.length || 1)]} />
         ))}
       </Pie>
       <Tooltip />

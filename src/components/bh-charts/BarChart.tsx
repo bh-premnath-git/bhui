@@ -15,9 +15,10 @@ interface BarChartProps {
   data: any[]
   xAxisDataKey: string
   bars: string[]
+  colors?: string[]
 }
 
-export const BarChart: React.FC<BarChartProps> = ({ data, xAxisDataKey, bars }) => (
+export const BarChart: React.FC<BarChartProps> = ({ data, xAxisDataKey, bars, colors }) => (
   <ResponsiveContainer width="100%" height={300}>
     <RechartsBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
       <CartesianGrid strokeDasharray="3 3" />
@@ -26,7 +27,7 @@ export const BarChart: React.FC<BarChartProps> = ({ data, xAxisDataKey, bars }) 
       <Tooltip />
       <Legend />
       {bars.map((bar, index) => (
-        <Bar key={bar} dataKey={bar} fill={COLORS[index % COLORS.length]} />
+        <Bar key={bar} dataKey={bar} fill={colors?.[index % (colors?.length || COLORS.length)]} />
       ))}
     </RechartsBarChart>
   </ResponsiveContainer>

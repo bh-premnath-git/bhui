@@ -1,159 +1,370 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAnalytics } from "@/context/AnalyticsContext";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart,
+  Activity, // For Area Chart
+  CircleDot, // For Scatter Plot
+  Timer, // For Gauge
+  LayoutGrid, // For Treemap
+  BarChart3, // For Histogram
+  Circle, // For Bubble Chart
+  Radar // For Radar Chart
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { colorPalettes, generateColorPalette } from "@/lib/colors";
+import { cn } from "@/lib/utils";
+import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
+
+// Define chart style types and defaults in StyleEditor
+export type ChartType = 'bar' | 'line' | 'pie' | 'area';
+export type ColorScheme = 'colorful1' | 'colorful2' | 'colorful3' | 'colorful4' | 'colorful5' | 
+                         'mono_blue' | 'mono_brown' | 'mono_green' | 'mono_purple';
+
+export const defaultChartStyles: ChartStyles = {
+  chartType: 'bar',
+  colorScheme: 'colorful1',
+  colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+};
+
+// Update the StyleIcon to a simpler pencil design
+const StyleIcon = () => (
+  <svg 
+    width="20" 
+    height="20" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className="stroke-current"
+  >
+    <path 
+      d="M15.2322 5.23223L18.7677 8.76777M16.7322 3.73223C17.7085 2.75592 19.2914 2.75592 20.2677 3.73223C21.244 4.70854 21.244 6.29146 20.2677 7.26777L6.5 21.0355H3V17.4644L16.7322 3.73223Z" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default function StyleEditor() {
-  const { chartStyles, setChartStyles } = useAnalytics();
+  const { chartStyles, setChartStyles, data } = useAnalytics();
+
+  const chartTypes = [
+    { 
+      id: 'bar' as const, 
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="12" width="4" height="8" className="fill-current"/>
+          <rect x="10" y="8" width="4" height="12" className="fill-current"/>
+          <rect x="16" y="4" width="4" height="16" className="fill-current"/>
+        </svg>
+      ),
+      label: 'Column',
+      category: 'Basic'
+    },
+    { 
+      id: 'line' as const, 
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18L9 12L14 16L20 6" className="stroke-current" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      label: 'Line',
+      category: 'Basic'
+    },
+    { 
+      id: 'pie' as const, 
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 12L12 5" className="stroke-current" strokeWidth="2"/>
+          <path d="M12 12L17 17" className="stroke-current" strokeWidth="2"/>
+          <circle cx="12" cy="12" r="7" className="stroke-current" strokeWidth="2"/>
+          <path d="M12 5C15.866 5 19 8.13401 19 12C19 13.9587 18.2203 15.7295 16.9497 17" className="stroke-current" strokeWidth="2"/>
+        </svg>
+      ),
+      label: 'Pie',
+      category: 'Basic'
+    },
+    { 
+      id: 'area' as const, 
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18L9 12L14 16L20 6V18H4Z" className="fill-current opacity-20"/>
+          <path d="M4 18L9 12L14 16L20 6" className="stroke-current" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      label: 'Area',
+      category: 'Basic'
+    },
+    // { 
+    //   id: 'scatter' as const, 
+    //   icon: CircleDot, 
+    //   label: 'Scatter Plot',
+    //   description: 'Identify correlations between variables',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'gauge' as const, 
+    //   icon: Timer, 
+    //   label: 'Gauge Chart',
+    //   description: 'Display progress towards a goal',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'treemap' as const, 
+    //   icon: LayoutGrid, 
+    //   label: 'Treemap',
+    //   description: 'Hierarchical data with nested rectangles',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'histogram' as const, 
+    //   icon: BarChart3, 
+    //   label: 'Histogram',
+    //   description: 'Show distribution of data',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'bubble' as const, 
+    //   icon: Circle, 
+    //   label: 'Bubble Chart',
+    //   description: 'Compare three dimensions of data',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'radar' as const, 
+    //   icon: Radar, 
+    //   label: 'Radar Chart',
+    //   description: 'Compare multiple variables',
+    //   category: 'Advanced'
+    // }
+  ] as const;
+
+  // Group charts by category
+  const chartsByCategory = chartTypes.reduce((acc, chart) => {
+    if (!acc[chart.category]) {
+      acc[chart.category] = [];
+    }
+    acc[chart.category].push(chart);
+    return acc;
+  }, {} as Record<string, typeof chartTypes>);
+
+  // Get number of data columns (excluding date/time columns)
+  const getDataColumnCount = () => {
+    if (!data || data.length === 0) return 4; // default fallback
+    const firstRow = data[0];
+    // Exclude date/time columns or any other metadata columns
+    return Object.keys(firstRow).filter(key => !key.toLowerCase().includes('date')).length;
+  };
+
+  const colorThemes = {
+    colorful: [
+      {
+        id: 'colorful1' as const,
+        name: 'Colorful 1',
+        colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+      },
+      {
+        id: 'colorful2',
+        name: 'Colorful 2',
+        colors: ['#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#393b79', '#637939']
+      },
+      {
+        id: 'colorful3',
+        name: 'Colorful 3',
+        colors: ['#8c6d31', '#843c39', '#7b4173', '#5254a3', '#006d2c', '#a63603']
+      },
+      {
+        id: 'colorful4',
+        name: 'Colorful 4',
+        colors: ['#3182bd', '#e6550d', '#31a354', '#756bb1', '#636363', '#6baed6']
+      },
+      {
+        id: 'colorful5',
+        name: 'Colorful 5',
+        colors: ['#9e9ac8', '#fd8d3c', '#74c476', '#969696', '#e377c2', '#7f7f7f']
+      }
+    ],
+    monochromatic: [
+      {
+        id: 'mono_blue' as const,
+        name: 'Blue Scale',
+        colors: ['#08519c', '#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#eff3ff']
+      },
+      {
+        id: 'mono_brown',
+        name: 'Brown Scale',
+        colors: ['#8c2d04', '#cc4c02', '#ec7014', '#fe9929', '#fec44f', '#fff7bc']
+      },
+      {
+        id: 'mono_green',
+        name: 'Green Scale',
+        colors: ['#005a32', '#238b45', '#41ab5d', '#74c476', '#a1d99b', '#c7e9c0']
+      },
+      {
+        id: 'mono_purple',
+        name: 'Purple Scale',
+        colors: ['#4a1486', '#6a51a3', '#807dba', '#9e9ac8', '#bcbddc', '#dadaeb']
+      }
+    ]
+  } as const;
+
+  const handleColorSchemeChange = (scheme: typeof colorThemes.colorful[0] | typeof colorThemes.monochromatic[0]) => {
+    setChartStyles({ 
+      ...chartStyles,
+      colorScheme: scheme.id,
+      colors: scheme.colors
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Chart Type</Label>
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            className={`p-2 text-sm border rounded-md ${
-              chartStyles.chartType === "bar" ? "bg-accent" : ""
-            }`}
-            onClick={() => setChartStyles({ chartType: "bar" })}
-          >
-            Bar Chart
-          </button>
-          <button
-            className={`p-2 text-sm border rounded-md ${
-              chartStyles.chartType === "line" ? "bg-accent" : ""
-            }`}
-            onClick={() => setChartStyles({ chartType: "line" })}
-          >
-            Line Chart
-          </button>
-          <button
-            className={`p-2 text-sm border rounded-md ${
-              chartStyles.chartType === "pie" ? "bg-accent" : ""
-            }`}
-            onClick={() => setChartStyles({ chartType: "pie" })}
-          >
-            Pie Chart
-          </button>
+    <div className="w-full space-y-8">
+      {/* Remove the styling header with icon since it's now in the tab */}
+      
+      {/* Chart Types Section */}
+      <div className="space-y-6">
+        <h3 className="text-base font-medium text-muted-foreground">Chart Types</h3>
+        <div className="space-y-8">
+          {Object.entries(chartsByCategory).map(([category, charts]) => (
+            <div key={category} className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground px-1">
+                {category} Charts
+              </h4>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {charts.map(({ id, icon: Icon, label }) => (
+                  <TooltipProvider key={id}>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "group relative w-full p-4 rounded-lg border transition-all duration-200",
+                            "hover:shadow-sm hover:border-primary/50 hover:bg-primary/5",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+                            "active:scale-[0.98]",
+                            chartStyles.chartType === id ? 
+                              "bg-primary/5 border-primary shadow-sm" : 
+                              "bg-background hover:bg-muted/5"
+                          )}
+                          onClick={() => setChartStyles({ ...chartStyles, chartType: id })}
+                        >
+                          <div className={cn(
+                            "flex items-center justify-center",
+                            "w-full h-12 rounded-md",
+                            "transition-colors duration-200",
+                            chartStyles.chartType === id ?
+                              "text-primary" :
+                              "text-muted-foreground group-hover:text-primary"
+                          )}>
+                            <Icon />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="flex flex-col gap-1">
+                        <p className="font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Best for: {getChartUsage(id)}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="axes">Axes</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
-        </TabsList>
-        <TabsContent value="general" className="space-y-4 mt-4">
+      {/* Color Schemes Section */}
+      <div className="space-y-6 pt-4 border-t">
+        <h3 className="text-base font-medium text-muted-foreground">Color Schemes</h3>
+        <div className="space-y-8">
+          {/* Colorful Themes */}
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Chart Height</Label>
-              <Slider
-                value={[chartStyles.height]}
-                onValueChange={([height]) => setChartStyles({ height })}
-                min={200}
-                max={800}
-                step={50}
-              />
-              <div className="text-xs text-muted-foreground text-right">
-                {chartStyles.height}px
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Color Scheme</Label>
-              <Select
-                value={chartStyles.colorScheme}
-                onValueChange={(value: "default" | "monochrome" | "colorful") => 
-                  setChartStyles({ colorScheme: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select color scheme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monochrome">Monochrome</SelectItem>
-                  <SelectItem value="default">Default</SelectItem>
-                  <SelectItem value="colorful">Colorful</SelectItem>
-                </SelectContent>
-              </Select>
+            <h4 className="text-sm font-medium text-muted-foreground px-1">
+              Colorful
+            </h4>
+            <div className="grid grid-cols-5 gap-4">
+              {colorThemes.colorful.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={cn(
+                    "p-4 rounded-lg border transition-all",
+                    "hover:shadow-md hover:border-primary/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    chartStyles.colorScheme === theme.id && "ring-2 ring-primary"
+                  )}
+                  onClick={() => handleColorSchemeChange(theme)}
+                >
+                  <div className="grid grid-cols-3 gap-1">
+                    {theme.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        className="aspect-square rounded-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
-        </TabsContent>
-        <TabsContent value="axes" className="space-y-4 mt-4">
+
+          {/* Monochromatic */}
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Chart Orientation</Label>
-              <Select
-                value={chartStyles.orientation}
-                onValueChange={(value: "vertical" | "horizontal") => 
-                  setChartStyles({ orientation: value })
-                }
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select orientation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="vertical">Vertical</SelectItem>
-                  <SelectItem value="horizontal">Horizontal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Chart Type</Label>
-              <Select
-                value={chartStyles.type}
-                onValueChange={(value: "grouped" | "stacked" | "stack100") => 
-                  setChartStyles({ type: value })
-                }
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="grouped">Grouped</SelectItem>
-                  <SelectItem value="stacked">Stacked</SelectItem>
-                  <SelectItem value="stack100">Stack 100%</SelectItem>
-                </SelectContent>
-              </Select>
+            <h4 className="text-sm font-medium text-muted-foreground px-1">
+              Monochromatic
+            </h4>
+            <div className="grid grid-cols-4 gap-4">
+              {colorThemes.monochromatic.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={cn(
+                    "p-4 rounded-lg border transition-all",
+                    "hover:shadow-md hover:border-primary/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    chartStyles.colorScheme === theme.id && "ring-2 ring-primary"
+                  )}
+                  onClick={() => handleColorSchemeChange(theme)}
+                >
+                  <div className="grid grid-cols-3 gap-1">
+                    {theme.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        className="aspect-square rounded-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
-        </TabsContent>
-        <TabsContent value="advanced" className="space-y-4 mt-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Enable Style</Label>
-              <Switch
-                checked={chartStyles.enableStyle}
-                onCheckedChange={(enableStyle) => setChartStyles({ enableStyle })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Show Data Labels</Label>
-              <Switch
-                checked={chartStyles.showDataLabels}
-                onCheckedChange={(showDataLabels) => setChartStyles({ showDataLabels })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Show Legend</Label>
-              <Switch
-                checked={chartStyles.showLegend}
-                onCheckedChange={(showLegend) => setChartStyles({ showLegend })}
-              />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
+}
+
+// Helper function to get chart usage
+function getChartUsage(chartType: string): string {
+  const usageMap: Record<string, string> = {
+    bar: 'Comparison',
+    line: 'Trends',
+    area: 'Part-to-whole',
+    pie: 'Distribution',
+    scatter: 'Correlation',
+    gauge: 'Single metric',
+    treemap: 'Hierarchy',
+    histogram: 'Distribution',
+    bubble: 'Multi-dimension',
+    radar: 'Multi-variable'
+  };
+  return usageMap[chartType] || '';
 }

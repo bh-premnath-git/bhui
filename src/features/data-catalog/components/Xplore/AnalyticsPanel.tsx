@@ -6,8 +6,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAnalytics } from "@/context/AnalyticsContext";
-import { useDashboard } from "@/context/DashboardContext";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -17,11 +15,11 @@ import AnalyticsTable from "./analytics/AnalyticsTable";
 
 export default function AnalyticsPanel() {
   const { 
-    viewMode, 
-    setViewMode, 
-    data,
+    dashboardData,
     isLoading,
-    error, 
+    error,
+    viewMode, 
+    setViewMode,
     formatCurrency, 
     activeFilters, 
     setActiveFilters,
@@ -30,28 +28,8 @@ export default function AnalyticsPanel() {
     setCurrentPage,
     itemsPerPage
   } = useAnalytics();
-  const { getColorSchemeColors } = useColorScheme();
-  const { saveDashboard } = useDashboard();
+  
   const navigate = useNavigate();
-
-  const colors = getColorSchemeColors(chartStyles.colorScheme);
-
-  const handleSave = (type: 'existing' | 'new') => {
-    const dashboard = {
-      name: 'Daily Sales by Brand',
-      data,
-      styles: chartStyles,
-      type: viewMode as 'chart' | 'table',
-    };
-    
-    const savedDashboard = saveDashboard(dashboard);
-    
-    toast.success("Dashboard saved successfully", {
-      description: `Dashboard saved ${type === 'new' ? 'as new' : 'to existing'}.`
-    });
-
-    navigate(`/saved-dashboard/${savedDashboard.id}`);
-  };
 
   const handleFilterClick = (brand: string) => {
     setActiveFilters((prevFilters: string[]) => {
@@ -67,7 +45,24 @@ export default function AnalyticsPanel() {
     });
   };
 
-  if (isLoading) {
+  const handleSave = (type: 'existing' | 'new') => {
+    const dashboard = {
+      name: dashboardData.title,
+      data: dashboardData.salesData,
+      styles: chartStyles,
+      type: viewMode as 'chart' | 'table',
+    };
+    
+    const savedDashboard = saveDashboard(dashboard);
+    
+    toast.success("Dashboard saved successfully", {
+      description: `Dashboard saved ${type === 'new' ? 'as new' : 'to existing'}.`
+    });
+
+    navigate(`/saved-dashboard/${savedDashboard.id}`);
+  };
+
+  if (isLoading || !dashboardData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -84,35 +79,27 @@ export default function AnalyticsPanel() {
   }
 
   const filteredData = activeFilters.length > 0
-    ? data.map(row => {
+    ? dashboardData.salesData.map(row => {
         const filteredRow = { date: row.date };
         activeFilters.forEach(filter => {
           filteredRow[filter] = row[filter];
         });
         return filteredRow;
       })
-    : data;
+    : dashboardData.salesData;
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
 
-  const handlePreviousPage = () => {
-    setCurrentPage(Math.max(currentPage - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage(Math.min(currentPage + 1, totalPages));
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Daily Sales by Brand</h1>
+          <h1 className="text-2xl font-bold">{dashboardData.title}</h1>
           <p className="text-muted-foreground">
-            Last 7 days · What were our daily sales for each brand?
+            {dashboardData.timeRange} · {dashboardData.description}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -139,7 +126,7 @@ export default function AnalyticsPanel() {
       </div>
 
       <StatsCards 
-        data={data}
+        metrics={dashboardData.metrics}
         activeFilter={activeFilters.join(',')}
         onFilterClick={handleFilterClick}
         formatCurrency={formatCurrency}
@@ -150,7 +137,6 @@ export default function AnalyticsPanel() {
           <AnalyticsChart 
             data={filteredData}
             activeFilter={activeFilters.join(',')}
-            styles={chartStyles}
             formatCurrency={formatCurrency}
           />
         </TabsContent>
@@ -161,8 +147,8 @@ export default function AnalyticsPanel() {
             activeFilter={activeFilters.join(',')}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPreviousPage={handlePreviousPage}
-            onNextPage={handleNextPage}
+            onPreviousPage={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+            onNextPage={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
             formatCurrency={formatCurrency}
           />
         </TabsContent>

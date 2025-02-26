@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnvironmentForm } from './components/EnvironmentForm';
-import { EnvironmentFormValues } from './components/environmentFormSchema';
+import { EnvironmentFormValues, transforFormToAPiData } from './components/environmentFormSchema';
 import { useEnvironments } from './hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { EnvironmentPageLayout } from './components/EnvironmentPageLayout';
@@ -58,26 +58,17 @@ export function AddEnvironment() {
       return;
     }
 
+    
     try {
       setIsSubmitting(true);
       
-      const formData = {
-        bh_env_name: data.environmentName,
-        bh_env_provider: parseInt(data.environment),
-        cloud_provider_cd: data.platform.type === 'aws' ? 101 : 102,
-        cloud_region_cd: parseInt(data.platform.region),
-        project_id: data.credentials.publicId || '',
-        access_key: encryptedCredentials.accessKey,
-        secret_access_key: encryptedCredentials.secretKey,
-        pvt_key: encryptedCredentials.initVector,
-        airflow_url: data.advancedSettings?.airflowBucketUrl || '',
-        airflow_bucket_name: data.advancedSettings?.airflowBucketName || '',
-        airflow_env_name: data.advancedSettings?.airflowName || '',
-        status: 'active',
-        tags: JSON.stringify({ tagList: data.tags || [] })
-      };
+      setError(null);
+      
+      const environmentData = transforFormToAPiData({
+        ...data
+      })
 
-      await handleCreateEnvironment(formData);
+      await handleCreateEnvironment(environmentData);
       toast.success('Environment created successfully');
       navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX);
     } catch (error) {

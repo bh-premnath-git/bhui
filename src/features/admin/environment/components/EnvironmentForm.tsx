@@ -31,16 +31,20 @@ interface EnvironmentFormProps {
 
 export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
   const form = useForm<EnvironmentFormValues>({
-    resolver: zodResolver(environmentFormSchema)
+    resolver: zodResolver(environmentFormSchema),
+      mode: "onChange", // Validate on each field change
+      reValidateMode: "onChange", // Revalidate on subsequent changes
   });
 
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const isEditMode = props.mode === "edit";
-
+  
   const handleSubmit = async (data: EnvironmentFormValues) => {
-    if (!form.formState.isValid) return;
+    const isFormValid = await form.trigger(); // Force validation
+    if (!isFormValid) return; // Exit if form is still invalid
     await onSubmit(data);
   };
+
 
   useEffect(() => {
     if (isEditMode) {
@@ -74,7 +78,7 @@ export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
         return "bg-primary hover:bg-primary/90"
     }
   }
-
+  
   return (
     <Card className="w-full max-w-8xl mx-auto border-none shadow-none">
       <CardContent>

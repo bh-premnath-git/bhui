@@ -28,8 +28,8 @@ export const environmentFormSchema = z.object({
       }),
     )
     .default([]),
-  status: z.enum(["active", "inactive"]).default("active")
-})
+  status: z.enum(["active", "inactive"]).default("active"),
+});
 
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
 
@@ -50,7 +50,7 @@ export const regions = [
   { label: "eu-central-1", value: "18" },
 ] as const
 
-export const transforFormToAPiData = (formData: EnvironmentFormValues): EnvironmentMutationData => {
+export const transforFormToAPiData = (formData: EnvironmentFormValues): FormData => {
   const apiData: EnvironmentMutationData = {
     bh_env_name: formData.environmentName,
     bh_env_provider: Number(formData.environment),
@@ -69,8 +69,19 @@ export const transforFormToAPiData = (formData: EnvironmentFormValues): Environm
     },
   }
 
-  return apiData;
-}
+   // Create a new FormData object
+   const data = new FormData();
+   Object.entries(apiData).forEach(([key, value]) => {
+     if (value !== undefined) {
+       // For nested objects like tags, stringify them
+       const valueToAppend = typeof value === "object" ? JSON.stringify(value) : value;
+       data.append(key, valueToAppend);
+     }
+   });
+ 
+   return data;
+ };
+
 
 export const transformApiDataToForm = (apiData: EnvironmentMutationData): EnvironmentFormValues => {
   const formData: Partial<EnvironmentFormValues> = {

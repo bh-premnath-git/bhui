@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce, get } from 'lodash';
-import { Environment, EnvironmentMutationData , AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
+import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 interface UseEnvironmentsOptions {
@@ -53,26 +53,14 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     }
   });
 
-   const {data: mwaaEnvironments, isLoading: isMwaaLoading, isFetching: isMwaaFetching, isError: isMwaaError}=getmwaaEnvironments({
-    url: '/bh_airflow/list-airflow-environments',
-    query: options.mwaaQueryParams ? 
-      Object.entries(options.mwaaQueryParams)
-        .filter(([_, value]) => value !== undefined)
-        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-        .join('&') 
-      : undefined,
-    queryOptions: {
-      enabled: options.shouldFetch,
-      retry: 2
-    }
-  });
+
 
   // Get single environment
-  const { 
-    data: environment, 
-    isLoading: isEnvironmentLoading, 
-    isFetching: isEnvironmentFetching, 
-    isError: isEnvironmentError 
+  const {
+    data: environment,
+    isLoading: isEnvironmentLoading,
+    isFetching: isEnvironmentFetching,
+    isError: isEnvironmentError
   } = options.environmentId ? getEnvironment({
     url: `/environment/environment/${options.environmentId}/`,
     queryOptions: {
@@ -80,15 +68,15 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
       retry: 2
     }
   }) : {
-    data: undefined,
-    isLoading: false,
-    isFetching: false,
-    isError: false
-  };
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: false
+    };
 
   // Create environment mutation
   const createEnvironmentMutation = createEnvironment({
-    url: '/environment/environment/create/',
+    url: '/environment/environment',
     mutationOptions: {
       onSuccess: () => toast.success('Environment created successfully'),
       onError: (error) => handleApiError(error, { action: 'create' }),
@@ -121,7 +109,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   });
 
   // Type-safe mutation handlers
-  const handleCreateEnvironment = useCallback(async (data: EnvironmentMutationData) => {
+  const handleCreateEnvironment = useCallback(async (data: FormData) => {
     await createEnvironmentMutation.mutateAsync({
       data
     });
@@ -141,11 +129,11 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   }, [deleteEnvironmentMutation]);
 
   const handleAWSValidation = useCallback(async (bh_env_name: string, data: AWSValidationData) => {
-  await AWSValidationMutation.mutateAsync({
-    query: `bh_env_name=${bh_env_name}`, 
-    data,
-  });
-}, [AWSValidationMutation]);
+    await AWSValidationMutation.mutateAsync({
+      query: `bh_env_name=${bh_env_name}`,
+      data,
+    });
+  }, [AWSValidationMutation]);
 
   return {
     environments: environments || [],
@@ -156,11 +144,6 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     isEnvironmentFetching,
     isError,
     isEnvironmentError,
-
-    mwaaEnvironments,
-    isMwaaLoading,
-    isMwaaFetching,
-    isMwaaError,
     handleCreateEnvironment,
     handleAWSValidation,
     handleUpdateEnvironment,
@@ -174,9 +157,9 @@ export const useEnvironmentSearch = () => {
     CATALOG_API_PORT,
     true
   );
-  
+
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const { data: searchedEnvironment, isLoading, error } = getEnvironment({
     url: `/environment/environment/${searchQuery}/`,
     queryOptions: {
@@ -213,3 +196,44 @@ export const useEnvironmentSearch = () => {
     debounceSearchEnvironment,
   };
 };
+
+
+export const useMwaaEnvironments = ({ mwaaQueryParams }: { mwaaQueryParams?: { bh_env_name: string; location: string } }) => {
+  const { getOne: getMwaaEnvironments } = useResource<string[]>(  
+    'mwaaEnvironments',  
+    CATALOG_API_PORT,  
+    true  
+  );  
+  const { data, isLoading, error } = getMwaaEnvironments({  
+    url: '/bh_airflow/list-airflow-environments',  
+    params: mwaaQueryParams,  
+    queryOptions: {  
+      enabled: !!mwaaQueryParams, // Only fetch when mwaaQueryParams is truthy  
+    },  
+  });  
+  return {  
+    data,  
+    isLoading,  
+    error  
+  };  
+};
+
+export const useAirflowEnvironment = ({ airflowParams }: {airflowParams?:  { airflow_env_name: string, bh_env_name: string; location: string }}) =>{
+  const {getOne: getAirflowEnv} = useResource<{ }>(
+    'bh_airflow',
+    CATALOG_API_PORT,
+    true
+  );
+  const { data, isLoading, error } = getAirflowEnv({  
+    url: '/bh_airflow/get_airflow_environment',  
+    params: airflowParams,  
+    queryOptions: {  
+      enabled: !!airflowParams,
+    },  
+  });  
+  return {  
+    data,  
+    isLoading,  
+    error  
+  };  
+}

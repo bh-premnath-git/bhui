@@ -9,7 +9,7 @@ import { X } from "lucide-react"
 import { Control, useFormContext } from "react-hook-form"
 import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
 import { useState, useEffect } from "react"
-import { useEnvironments } from "../hooks/useEnvironments"
+import { useAirflowEnvironment, useMwaaEnvironments } from "../hooks/useEnvironments"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel>
@@ -76,8 +76,8 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
                 type="button"
                 onClick={() => field.onChange(platform.value)}
                 className={`border rounded-lg p-4 flex flex-col items-center justify-center ${field.value === platform.value
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
                   } transition-colors w-32 h-24`}
               >
                 <img
@@ -113,8 +113,8 @@ export function CredentialsFields({
   const form = useFormContext<EnvironmentFormValues>();
   const [validationError, setValidationError] = useState<string | null>(null);
   const handleValidation = async () => {
-    try{
-      setValidationError(null); 
+    try {
+      setValidationError(null);
       await onValidateToken(form.getValues());
     } catch (error) {
       setValidationError('Token failed. Please try again')
@@ -206,10 +206,11 @@ export function CredentialsFields({
   )
 }
 
-export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control: Control<EnvironmentFormValues> , isTokenValidated: boolean}) => {
+export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control: Control<EnvironmentFormValues>, isTokenValidated: boolean }) => {
   const { getValues, setValue, watch } = useFormContext<EnvironmentFormValues>();
   const bhEnvName = getValues("environmentName");
   const region = getValues("platform.region");
+  const airflowName = watch("advancedSettings.airflowName"); // Use watch to react to changes
   const regionLabel = regions.find((r) => r.value === region)?.label;
 
   const [mwaaQueryParams, setMwaaQueryParams] = useState<{ bh_env_name: string; location: string } | null>(null);
@@ -223,21 +224,40 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
     }
   }, [isTokenValidated, bhEnvName, regionLabel]);
 
-  const { mwaaEnvironments } = useEnvironments({
-    mwaaQueryParams: mwaaQueryParams ?? undefined, // Pass undefined if not validated
+  const { data: mwaaEnvironments } = useMwaaEnvironments({
+    mwaaQueryParams: mwaaQueryParams ?? undefined,
   });
-  console.log(mwaaEnvironments)
-  useEffect(() => {
-    const selectedMwaa = watch("advancedSettings.airflowName");
-    if (selectedMwaa && mwaaEnvironments) {
-      const mwaaEnv = mwaaEnvironments.find((env) => env.Name === selectedMwaa);
-      if (mwaaEnv) {
-        setValue("advancedSettings.airflowBucketName", mwaaEnv.DagS3Path);
-        setValue("advancedSettings.airflowBucketUrl", mwaaEnv.WebserverUrl);
-      }
-    }
-  }, [watch("advancedSettings.airflowName"), mwaaEnvironments, setValue]);
 
+  // Only create airflowParams when all required values are present
+  const airflowParams = bhEnvName && regionLabel && airflowName
+    ? { 
+        airflow_env_name: airflowName, 
+        bh_env_name: bhEnvName, 
+        location: regionLabel 
+      }
+    : null;
+  
+  // Use a safe approach that works with your existing hook implementation
+  const { data: airflowData } = useAirflowEnvironment(
+    airflowParams 
+      ? { airflowParams } 
+      : { airflowParams: null }
+  );
+
+  // Update form fields when airflow data is available
+  useEffect(() => {
+    if (airflowData && 'SourceBucketArn' in airflowData) {
+      // Extract the bucket name from the SourceBucketArn
+      // Format: arn:aws:s3:::bucket-name
+      const bucketArnParts = (airflowData as { SourceBucketArn: string }).SourceBucketArn.split(':');
+      const bucketName = bucketArnParts[bucketArnParts.length - 1];
+      
+      // Set form values - in the order that matches your UI requirements
+      setValue("advancedSettings.airflowBucketUrl", (airflowData as unknown as { WebserverUrl: string }).WebserverUrl || '');
+      setValue("advancedSettings.airflowBucketName", bucketName || '');
+    }
+  }, [airflowData, setValue]);
+  
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -254,9 +274,9 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {mwaaEnvironments?.map((env) => (
-                    <SelectItem key={env.Name} value={env.Name}>
-                      {env.Name}
+                  {mwaaEnvironments?.map((env, key) => (
+                    <SelectItem key={key} value={env}>
+                      {env}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -269,10 +289,10 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
       <div className="grid gap-6 md:grid-cols-2">
         <FormField
           control={control}
-          name="advancedSettings.airflowBucketName"
+          name="advancedSettings.airflowBucketUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Airflow Bucket Name</FormLabel>
+              <FormLabel>Airflow URL</FormLabel>
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>
@@ -282,10 +302,10 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
         />
         <FormField
           control={control}
-          name="advancedSettings.airflowBucketUrl"
+          name="advancedSettings.airflowBucketName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Airflow URL</FormLabel>
+              <FormLabel>Airflow Bucket Name</FormLabel>
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>

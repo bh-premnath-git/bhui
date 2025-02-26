@@ -17,7 +17,7 @@ import { Button } from "./components/ui/button";
 import { LazyLoading } from "./components/shared/LazyLoading";
 import { KeycloakProvider } from "./context/KeycloakContext";
 import 'reactflow/dist/style.css';
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { fetchGithubProviders } from "./store/slices/globalGitSlice";
 
 const queryClient = new QueryClient();

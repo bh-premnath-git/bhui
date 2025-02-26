@@ -1,125 +1,179 @@
-import { useApiQuery, useApiMutation } from './useApiQuery';
+import { apiService } from '@/lib/api/api-service';
+import type { ApiConfig } from '@/lib/api/api-config';
+import { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { MutationVariables } from '@/lib/api/api-service';
 
-export function useResource<T>(resource: string, portNumber: number, usePrefix: boolean) {
-  const baseConfig = {
+/**
+ * Helper type to wrap UseMutationOptions so it matches the shape
+ * we want in mutateAsync(variables).
+ */
+type ResourceMutationOptions<T> = Omit<
+  UseMutationOptions<T, Error, MutationVariables<T>>,
+  'mutationFn'
+>;
+
+export function useResource<T>(resource: string, portNumber: string, usePrefix: boolean) {
+  const baseConfig: Partial<ApiConfig> = {
     portNumber,
     usePrefix,
   };
 
-  const getAll = (url?: string, options?: { enabled?: boolean }, params?: Record<string, any>) => {
-    const queryKey = [resource, 'list', JSON.stringify(params)];
-    const queryConfig = {
+  /**
+   * ================  GET ALL  ================
+   */
+  const getAll = (options?: {
+    url?: string;
+    params?: Record<string, any>;
+    query?: string;
+    queryOptions?: Omit<UseQueryOptions<T[], Error>, 'queryKey' | 'queryFn'>;
+  }) => {
+    const { url, params, query, queryOptions } = options || {};
+    const queryKey = [resource, 'list', JSON.stringify({ params, query })];
+    const queryConfig: ApiConfig = {
       ...baseConfig,
       url: url || `/${resource}`,
       method: 'GET',
       params,
+      query,
       metadata: {
         errorMessage: `Failed to fetch ${resource} list`,
       },
     };
-    return useApiQuery<T[] | any>(queryKey, queryConfig, options);
+    return apiService.useApiQuery<T[]>(queryKey, queryConfig, queryOptions);
   };
 
-  const getOne = (url?: string, options?: { enabled?: boolean }, params?: Record<string, any>) => {
-    const queryKey = [resource, 'one', JSON.stringify(params)];
-    const queryConfig = {
+  /**
+   * ================  GET ONE  ================
+   */
+  const getOne = (options?: {
+    url?: string;
+    params?: Record<string, any>;
+    query?: string;
+    queryOptions?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn'>;
+  }) => {
+    const { url, params, query, queryOptions } = options || {};
+    const queryKey = [resource, 'one', JSON.stringify({ params, query })];
+    const queryConfig: ApiConfig = {
       ...baseConfig,
       url: url || `/${resource}`,
       method: 'GET',
       params,
+      query,
       metadata: {
         errorMessage: `Failed to fetch ${resource}`,
       },
     };
-    return useApiQuery<T>(queryKey, queryConfig, options);
+    return apiService.useApiQuery<T>(queryKey, queryConfig, queryOptions);
   };
 
-  const createMutation = useApiMutation<T & { url?: string }>(
-    {
+  /**
+   * ================  CREATE  ================
+   */
+  const create = (options?: {
+    url?: string;
+    params?: Record<string, any>;
+    query?: string;
+    mutationOptions?: ResourceMutationOptions<T>;
+  }) => {
+    const { url, params, query, mutationOptions } = options || {};
+    const config: ApiConfig = {
       ...baseConfig,
-      url: `/${resource}`,
+      url: url || `/${resource}`,
       method: 'POST',
+      params,
+      query,
       metadata: {
         successMessage: `${resource} created successfully`,
         errorMessage: `Failed to create ${resource}`,
       },
-    },
-    {
-      onMutate: (data: any) => {
-        if (data?.url) {
-          return { ...data, url: data.url };
-        }
-        return data;
-      },
-    }
-  );
+    };
+    return apiService.useApiMutation<T, MutationVariables<T>>(config, mutationOptions);
+  };
 
-  const updateMutation = useApiMutation<T & { url?: string }>(
-    {
+  /**
+   * ================  UPDATE  ================
+   */
+  const update = (
+    url: string,
+    options?: {
+      params?: Record<string, any>;
+      query?: string;
+      mutationOptions?: ResourceMutationOptions<T>;
+    }
+  ) => {
+    const { params, query, mutationOptions } = options || {};
+    const config: ApiConfig = {
       ...baseConfig,
-      url: `/${resource}`,
+      url,
       method: 'PUT',
+      params,
+      query,
       metadata: {
         successMessage: `${resource} updated successfully`,
         errorMessage: `Failed to update ${resource}`,
       },
-    },
-    {
-      onMutate: (data: any) => {
-        if (data?.url) {
-          return { ...data, url: data.url };
-        }
-        return data;
-      },
-    }
-  );
+    };
+    return apiService.useApiMutation<T, MutationVariables<T>>(config, mutationOptions);
+  };
 
-  const patchMutation = useApiMutation<T & { url?: string }>(
-    {
+  /**
+   * ================  PATCH  ================
+   */
+  const patch = (
+    url: string,
+    options?: {
+      params?: Record<string, any>;
+      query?: string;
+      mutationOptions?: ResourceMutationOptions<T>;
+    }
+  ) => {
+    const { params, query, mutationOptions } = options || {};
+    const config: ApiConfig = {
       ...baseConfig,
-      url: `/${resource}`,
+      url,
       method: 'PATCH',
+      params,
+      query,
       metadata: {
         successMessage: `${resource} patched successfully`,
         errorMessage: `Failed to patch ${resource}`,
       },
-    },
-    {
-      onMutate: (data: any) => {
-        if (data?.url) {
-          return { ...data, url: data.url };
-        }
-        return data;
-      },
-    }
-  );
+    };
+    return apiService.useApiMutation<T, MutationVariables<T>>(config, mutationOptions);
+  };
 
-  const deleteMutation = useApiMutation<{ url: string }>(
-    {
+  /**
+   * ================  REMOVE  ================
+   */
+  const remove = (
+    baseUrl: string,
+    options?: {
+      params?: Record<string, any>;
+      query?: string;
+      mutationOptions?: Omit<UseMutationOptions<void, Error, MutationVariables>, 'mutationFn'>;
+    }
+  ) => {
+    const { params, query, mutationOptions } = options || {};
+    const config: ApiConfig = {
       ...baseConfig,
-      url: `/${resource}`,
+      url: baseUrl,
       method: 'DELETE',
+      params,
+      query,
       metadata: {
         successMessage: `${resource} deleted successfully`,
         errorMessage: `Failed to delete ${resource}`,
       },
-    },
-    {
-      onMutate: (data: any) => {
-        if (data?.url) {
-          return { url: data.url };
-        }
-        return data;
-      }
-    }
-  );
+    };
+    return apiService.useApiMutation<void, MutationVariables>(config, mutationOptions);
+  };
 
   return {
     getAll,
     getOne,
-    createMutation,
-    updateMutation,
-    patchMutation,
-    deleteMutation,
+    create,
+    update,
+    patch,
+    remove,
   };
 }

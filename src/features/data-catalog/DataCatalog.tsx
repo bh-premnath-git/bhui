@@ -8,7 +8,7 @@ import { useDataCatalogManagementService } from '@/features/data-catalog/service
 import { CatalagSlideWrapper } from './components/CatalagSlideWrapper';
 import { ROUTES } from '@/config/routes';
 
-export function DataCatalog({ datasources }: { datasources: DataSource[] }) {
+export function DataCatalog({ datasources }: { datasources: any[] }) {
   const { handleNavigation } = useNavigation();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataSource | undefined>();

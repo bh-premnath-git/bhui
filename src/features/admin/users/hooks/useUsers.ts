@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
@@ -17,24 +17,6 @@ interface ApiErrorOptions {
   silent?: boolean;
 }
 
-interface ApiError extends Error {
-  response?: {
-    status: number;
-    data?: {
-      detail?: string;
-    };
-  };
-}
-
-const isUserNotFoundError = (error: unknown): boolean => {
-  const apiError = error as ApiError;
-  return (
-    apiError?.response?.status === 404 &&
-    typeof apiError?.response?.data?.detail === 'string' &&
-    apiError.response.data.detail.includes('User not found')
-  );
-};
-
 const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   const { action, context = 'user', silent = false } = options;
   const errorMessage = `Failed to ${action} ${context}`;
@@ -46,61 +28,127 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 };
 
 export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => {
-  const {
-    getAll,
-    getOne,
-    createMutation,
-    updateMutation
-  } = useResource<User>('users', KEYCLOAK_API_PORT, false);
+  // For queries - returns User objects
+  const { getOne: getUser, getAll: getAllUsers } = useResource<User>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
 
-  const usersQuery = !options.mutationsOnly ? getAll('/users/', {
-    enabled: options.shouldFetch
-  }) : null;
+  // For mutations - accepts different types for different operations
+  const { create: createUser } = useResource<UserMutationData>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
 
-  const userQuery = !options.mutationsOnly ? getOne(`/users/${options.userId || ''}`, {
-    enabled: !!options.userId && options.shouldFetch
-  }) : null;
+  const { update: updateUser } = useResource<UserMutationData>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
 
-  const { data: users, isLoading, isFetching, isError } = usersQuery || {};
+  const { update: updateUserProjects } = useResource<{ projects: string[] }>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
+
+  const { update: updateUserRoles } = useResource<{ realm_roles: string[] }>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
+
+  // List users
+  const { data: users, isLoading, isFetching, isError } = !options.mutationsOnly 
+    ? getAllUsers({
+        url: '/users/',
+        queryOptions: {
+          enabled: options.shouldFetch,
+          retry: 2
+        }
+      })
+    : { data: undefined, isLoading: false, isFetching: false, isError: false };
+
+  // Get single user
   const {
     data: user,
     isLoading: isUserLoading,
     isFetching: isUserFetching,
     isError: isUserError
-  } = userQuery || {};
+  } = !options.mutationsOnly && options.userId
+    ? getUser({
+        url: `/users/${options.userId}`,
+        queryOptions: {
+          enabled: !!options.userId && options.shouldFetch,
+          retry: 2
+        }
+      })
+    : { data: undefined, isLoading: false, isFetching: false, isError: false };
 
-  const handleCreateUser = async (data: UserMutationData) => {
-    try {
-      await createMutation.mutateAsync({
-        ...data,
-        url: '/users'
-      });
-      toast.success('User created successfully');
-    } catch (error) {
-      handleApiError(error, { action: 'create' });
-    }
-  };
+  // Create user mutation
+  const createUserMutation = createUser({
+    url: '/users',
+    mutationOptions: {
+      onSuccess: () => toast.success('User created successfully'),
+      onError: (error) => handleApiError(error, { action: 'create' }),
+    },
+  });
 
-  const handleUpdateUser = async (
+  // Update user mutations
+  const updateUserMutation = updateUser('/users', {
+    mutationOptions: {
+      onSuccess: () => toast.success('User updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update' }),
+    },
+  });
+
+  const updateUserProjectsMutation = updateUserProjects('/users', {
+    mutationOptions: {
+      onSuccess: () => toast.success('User projects updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update', context: 'user projects' }),
+    },
+  });
+
+  const updateUserRolesMutation = updateUserRoles('/users', {
+    mutationOptions: {
+      onSuccess: () => toast.success('User roles updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update', context: 'user roles' }),
+    },
+  });
+
+  // Type-safe mutation handlers
+  const handleCreateUser = useCallback(async (data: UserMutationData) => {
+    await createUserMutation.mutateAsync({
+      data
+    });
+  }, [createUserMutation]);
+
+  const handleUpdateUser = useCallback(async (
     id: string, 
     data: UserMutationData | { projects: string[] } | { realm_roles: string[] }, 
     type?: 'projects' | 'roles'
   ) => {
-    try {
-      let url = `/users/${id}`;
-      if (type) {
-        url = `/users/${id}/${type}`;
-      }
-      
-      await updateMutation.mutateAsync({
-        ...data,
+    const url = `/users/${id}${type ? `/${type}` : ''}`;
+
+    if (type === 'projects') {
+      await updateUserProjectsMutation.mutateAsync({
+        data: data as { projects: string[] },
         url
       });
-      toast.success('User updated successfully');
-    } catch (error) {
-      handleApiError(error, { action: 'update' });
+    } else if (type === 'roles') {
+      await updateUserRolesMutation.mutateAsync({
+        data: data as { realm_roles: string[] },
+        url
+      });
+    } else {
+      await updateUserMutation.mutateAsync({
+        data: data as UserMutationData,
+        url
+      });
     }
-  };
+  }, [updateUserMutation, updateUserProjectsMutation, updateUserRolesMutation]);
 
   return {
     users,
@@ -117,15 +165,30 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
 };
 
 export const useUserSearch = () => {
-  const { getOne } = useResource<User>('users', KEYCLOAK_API_PORT, false);
+  const { getOne: searchUser } = useResource<User>(
+    'users',
+    KEYCLOAK_API_PORT,
+    false
+  );
+  
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { data: searchedUser, isLoading, error } = getOne(`/users/${searchQuery}`, { 
-    enabled: !!searchQuery,
+  const { data: searchedUser, isLoading, error } = searchUser({
+    url: `/users/${searchQuery}`,
+    queryOptions: {
+      enabled: !!searchQuery,
+      retry: 2
+    }
   });
 
   const userNotFound = useMemo(() => {
-    return error && isUserNotFoundError(error);
+    if (!error) return false;
+    const apiError = error as { response?: { status: number; data?: { detail?: string } } };
+    return (
+      apiError?.response?.status === 404 &&
+      typeof apiError?.response?.data?.detail === 'string' &&
+      apiError.response.data.detail.includes('User not found')
+    );
   }, [error]);
 
   const debounceSearchUser = useMemo(() =>

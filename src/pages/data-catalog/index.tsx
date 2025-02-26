@@ -3,18 +3,18 @@ import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { DataCatalog } from '@/features/data-catalog/DataCatalog';
 import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { usedatasource } from '@/features/data-catalog/hooks/usedataCatalog';
+import { useDataCatalog } from '@/features/data-catalog/hooks/usedataCatalog';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Database  } from 'lucide-react';
 
 function DataCatalogPage() {
-    const { datasource, isLoading, isFetching, isError } = usedatasource();
+    const { datasources, isLoading, isFetching, isError } = useDataCatalog();
     const dataCatalogSrv = useDataCatalogManagementService();
     useEffect(() => {
-        if(datasource && datasource.length > 0){
-            dataCatalogSrv.setDatasources(datasource);
+        if(datasources && datasources.length > 0){
+            dataCatalogSrv.setDatasources(datasources);
         }
     }, []);
 
@@ -28,7 +28,7 @@ function DataCatalogPage() {
         );
       }
 
-      if (datasource?.length === 0) {
+      if (datasources?.length === 0) {
         return (
           <div className="p-6">
             <EmptyState
@@ -48,7 +48,7 @@ function DataCatalogPage() {
                     <LoadingState className='w-40 h-40' />
                   </div>
                 )}
-                <DataCatalog datasources={datasource || []} />
+                <DataCatalog datasources={datasources || []} />
             </div>
         </div>
         

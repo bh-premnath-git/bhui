@@ -1,5 +1,5 @@
 import { Environment } from "@/types/admin/environment";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setEnvironments, setSelectedEnvironment } from "@/store/slices/admin/environmentsSlice";
 
 export interface EnvironmentManagementService {

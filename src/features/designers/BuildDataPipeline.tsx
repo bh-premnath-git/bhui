@@ -9,7 +9,7 @@ import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv
 import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
 import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 
-export function PipelineList({ pipeline }: { pipeline: Pipeline[] }) {
+export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 

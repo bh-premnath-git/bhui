@@ -1,5 +1,5 @@
 import { DataOpsHub } from "@/types/dataops/dataOpsHub";
-import { useAppDispatch } from "@/hooks/uaeRedux";
+import { useAppDispatch } from "@/hooks/useRedux";
 import { setDataOpsHubs, setSelectedDataOpsHub } from "@/store/slices/dataops/dataOpsHubSlice";
 
 export interface DataOpsHubManagementService {

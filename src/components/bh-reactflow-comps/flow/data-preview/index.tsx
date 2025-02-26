@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Terminal, Loader2 } from 'lucide-react';
-import { useAppSelector } from '@/hooks/uaeRedux';
+import { useAppSelector } from '@/hooks/useRedux';
 import { useQuery } from '@tanstack/react-query';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RootState } from "@/store/"
-import { useAppSelector } from '@/hooks/uaeRedux';
+import { useAppSelector } from '@/hooks/useRedux';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectFormData, transformFormToApiData } from './components/projectFormSchema';
 import { useProjects } from './hooks/useProjects';

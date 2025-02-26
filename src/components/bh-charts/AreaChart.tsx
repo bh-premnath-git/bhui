@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+import { colorPalettes } from "@/lib/colors"
 
 interface AreaChartProps {
   data: any[]
@@ -21,7 +22,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   data,
   xAxisDataKey,
   areas,
-  colors = ['#4B9EFF', '#45D483', '#FFB547', '#FF6B6B'],
+  colors = colorPalettes.supersetColors,
   stacked = false,
 }) => {
   return (

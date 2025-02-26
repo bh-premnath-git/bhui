@@ -1,4 +1,3 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAnalytics } from "@/context/AnalyticsContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,81 +19,101 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { colorPalettes, generateColorPalette } from "@/lib/colors";
+import { cn } from "@/lib/utils";
 
 export default function StyleEditor() {
-  const { chartStyles, setChartStyles } = useAnalytics();
+  const { chartStyles, setChartStyles, data } = useAnalytics();
 
   const chartTypes = [
     { 
       id: 'bar' as const, 
-      icon: BarChart, 
-      label: 'Bar Chart',
-      description: 'Compare values across categories',
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="12" width="4" height="8" className="fill-current"/>
+          <rect x="10" y="8" width="4" height="12" className="fill-current"/>
+          <rect x="16" y="4" width="4" height="16" className="fill-current"/>
+        </svg>
+      ),
+      label: 'Column',
       category: 'Basic'
     },
     { 
       id: 'line' as const, 
-      icon: LineChart, 
-      label: 'Line Chart',
-      description: 'Show trends over time',
-      category: 'Basic'
-    },
-    { 
-      id: 'area' as const, 
-      icon: Activity, 
-      label: 'Area Chart',
-      description: 'Visualize cumulative totals over time',
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18L9 12L14 16L20 6" className="stroke-current" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      label: 'Line',
       category: 'Basic'
     },
     { 
       id: 'pie' as const, 
-      icon: PieChart, 
-      label: 'Pie Chart',
-      description: 'Show proportions of a whole',
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 12L12 5" className="stroke-current" strokeWidth="2"/>
+          <path d="M12 12L17 17" className="stroke-current" strokeWidth="2"/>
+          <circle cx="12" cy="12" r="7" className="stroke-current" strokeWidth="2"/>
+          <path d="M12 5C15.866 5 19 8.13401 19 12C19 13.9587 18.2203 15.7295 16.9497 17" className="stroke-current" strokeWidth="2"/>
+        </svg>
+      ),
+      label: 'Pie',
       category: 'Basic'
     },
     { 
-      id: 'scatter' as const, 
-      icon: CircleDot, 
-      label: 'Scatter Plot',
-      description: 'Identify correlations between variables',
-      category: 'Advanced'
+      id: 'area' as const, 
+      icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18L9 12L14 16L20 6V18H4Z" className="fill-current opacity-20"/>
+          <path d="M4 18L9 12L14 16L20 6" className="stroke-current" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      label: 'Area',
+      category: 'Basic'
     },
-    { 
-      id: 'gauge' as const, 
-      icon: Timer, 
-      label: 'Gauge Chart',
-      description: 'Display progress towards a goal',
-      category: 'Advanced'
-    },
-    { 
-      id: 'treemap' as const, 
-      icon: LayoutGrid, 
-      label: 'Treemap',
-      description: 'Hierarchical data with nested rectangles',
-      category: 'Advanced'
-    },
-    { 
-      id: 'histogram' as const, 
-      icon: BarChart3, 
-      label: 'Histogram',
-      description: 'Show distribution of data',
-      category: 'Advanced'
-    },
-    { 
-      id: 'bubble' as const, 
-      icon: Circle, 
-      label: 'Bubble Chart',
-      description: 'Compare three dimensions of data',
-      category: 'Advanced'
-    },
-    { 
-      id: 'radar' as const, 
-      icon: Radar, 
-      label: 'Radar Chart',
-      description: 'Compare multiple variables',
-      category: 'Advanced'
-    }
+    // { 
+    //   id: 'scatter' as const, 
+    //   icon: CircleDot, 
+    //   label: 'Scatter Plot',
+    //   description: 'Identify correlations between variables',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'gauge' as const, 
+    //   icon: Timer, 
+    //   label: 'Gauge Chart',
+    //   description: 'Display progress towards a goal',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'treemap' as const, 
+    //   icon: LayoutGrid, 
+    //   label: 'Treemap',
+    //   description: 'Hierarchical data with nested rectangles',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'histogram' as const, 
+    //   icon: BarChart3, 
+    //   label: 'Histogram',
+    //   description: 'Show distribution of data',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'bubble' as const, 
+    //   icon: Circle, 
+    //   label: 'Bubble Chart',
+    //   description: 'Compare three dimensions of data',
+    //   category: 'Advanced'
+    // },
+    // { 
+    //   id: 'radar' as const, 
+    //   icon: Radar, 
+    //   label: 'Radar Chart',
+    //   description: 'Compare multiple variables',
+    //   category: 'Advanced'
+    // }
   ] as const;
 
   // Group charts by category
@@ -106,168 +125,196 @@ export default function StyleEditor() {
     return acc;
   }, {} as Record<string, typeof chartTypes>);
 
-  const colorSchemes = {
-    predefined: [
-      { 
-        id: 'sophisticated', 
-        name: 'Sophisticated',
-        colors: [
-          '#2E4053', // Deep navy
-          '#008080', // Vibrant teal
-          '#FFD700', // Warm gold
-          '#94A3B8'  // Medium slate gray (replacing light gray)
-        ] 
+  // Get number of data columns (excluding date/time columns)
+  const getDataColumnCount = () => {
+    if (!data || data.length === 0) return 4; // default fallback
+    const firstRow = data[0];
+    // Exclude date/time columns or any other metadata columns
+    return Object.keys(firstRow).filter(key => !key.toLowerCase().includes('date')).length;
+  };
+
+  const colorThemes = {
+    colorful: [
+      {
+        id: 'colorful1',
+        name: 'Colorful 1',
+        colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
       },
-      { 
-        id: 'energetic',
-        name: 'Energetic', 
-        colors: [
-          '#1E90FF', // Electric blue
-          '#FF69B4', // Bright magenta
-          '#32CD32', // Lime green
-          '#64748B'  // Cool gray (replacing light gray)
-        ] 
+      {
+        id: 'colorful2',
+        name: 'Colorful 2',
+        colors: ['#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#393b79', '#637939']
       },
-      { 
-        id: 'minimalist',
-        name: 'Minimalist', 
-        colors: [
-          '#36454F', // Charcoal gray
-          '#6495ED', // Muted blue
-          '#F08080', // Subtle coral
-          '#475569'  // Slate gray (replacing off-white)
-        ] 
+      {
+        id: 'colorful3',
+        name: 'Colorful 3',
+        colors: ['#8c6d31', '#843c39', '#7b4173', '#5254a3', '#006d2c', '#a63603']
+      },
+      {
+        id: 'colorful4',
+        name: 'Colorful 4',
+        colors: ['#3182bd', '#e6550d', '#31a354', '#756bb1', '#636363', '#6baed6']
+      },
+      {
+        id: 'colorful5',
+        name: 'Colorful 5',
+        colors: ['#9e9ac8', '#fd8d3c', '#74c476', '#969696', '#e377c2', '#7f7f7f']
       }
     ],
-    custom: [
-      { id: 'custom1', color: '#FFFFFF' },
-      { id: 'custom2', color: '#FFFFFF' },
-      { id: 'custom3', color: '#FFFFFF' }
+    monochromatic: [
+      {
+        id: 'mono_blue',
+        name: 'Blue Scale',
+        colors: ['#08519c', '#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#eff3ff']
+      },
+      {
+        id: 'mono_brown',
+        name: 'Brown Scale',
+        colors: ['#8c2d04', '#cc4c02', '#ec7014', '#fe9929', '#fec44f', '#fff7bc']
+      },
+      {
+        id: 'mono_green',
+        name: 'Green Scale',
+        colors: ['#005a32', '#238b45', '#41ab5d', '#74c476', '#a1d99b', '#c7e9c0']
+      },
+      {
+        id: 'mono_purple',
+        name: 'Purple Scale',
+        colors: ['#4a1486', '#6a51a3', '#807dba', '#9e9ac8', '#bcbddc', '#dadaeb']
+      }
     ]
   };
 
-  const handleColorSchemeChange = (scheme: typeof colorSchemes.predefined[0]) => {
-    console.log('Updating colors to:', scheme.colors);
+  const handleColorSchemeChange = (scheme: typeof colorThemes.colorful[0] | typeof colorThemes.monochromatic[0]) => {
     setChartStyles({ 
       ...chartStyles,
-      colorScheme: scheme.id as 'sophisticated' | 'energetic' | 'minimalist',
-      colors: [...scheme.colors]
+      colorScheme: scheme.id,
+      colors: scheme.colors
     });
   };
 
   return (
-    <div className="w-full">
-      <Tabs defaultValue="step1" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mb-8">
-          <TabsTrigger 
-            value="step1" 
-            className="data-[state=active]:bg-primary/10 data-[state=active]:font-medium"
-          >
-            Charts
-          </TabsTrigger>
-          <TabsTrigger value="step2">Color</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="step1">
-          <div className="space-y-8">
-            {Object.entries(chartsByCategory).map(([category, charts]) => (
-              <div key={category} className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground px-1 py-2">
-                  {category} Charts
-                </h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {charts.map(({ id, icon: Icon, label }) => (
-                    <TooltipProvider key={id}>
-                      <Tooltip delayDuration={300}>
-                        <TooltipTrigger asChild>
-                          <button
-                            className={`
-                              group relative flex items-center justify-center
-                              p-4
-                              rounded-md border border-border/50 
-                              transition-all duration-200 
-                              hover:shadow-sm hover:border-primary/50 hover:bg-primary/5
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20
-                              active:scale-[0.98]
-                              ${chartStyles.chartType === id 
-                                ? 'bg-primary/5 border-primary shadow-sm' 
-                                : 'bg-background hover:bg-muted/5'
-                              }
-                            `}
-                            onClick={() => setChartStyles({ ...chartStyles, chartType: id })}
-                          >
-                            <div className={`
-                              flex items-center justify-center
-                              w-12 h-12 rounded-md
-                              transition-colors duration-200
-                              ${chartStyles.chartType === id 
-                                ? 'bg-primary/20 text-primary' 
-                                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                              }
-                            `}>
-                              <Icon className="h-6 w-6" />
-                            </div>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="flex flex-col gap-1">
-                          <p className="font-medium">{label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Best for: {getChartUsage(id)}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
+    <div className="w-full space-y-8">
+      {/* Chart Types Section */}
+      <div className="space-y-6">
+        <h2 className="text-lg font-semibold">Chart Types</h2>
+        <div className="space-y-8">
+          {Object.entries(chartsByCategory).map(([category, charts]) => (
+            <div key={category} className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground px-1">
+                {category} Charts
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {charts.map(({ id, icon: Icon, label }) => (
+                  <TooltipProvider key={id}>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "group relative w-full p-4 rounded-lg border transition-all duration-200",
+                            "hover:shadow-sm hover:border-primary/50 hover:bg-primary/5",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+                            "active:scale-[0.98]",
+                            chartStyles.chartType === id ? 
+                              "bg-primary/5 border-primary shadow-sm" : 
+                              "bg-background hover:bg-muted/5"
+                          )}
+                          onClick={() => setChartStyles({ ...chartStyles, chartType: id })}
+                        >
+                          <div className={cn(
+                            "flex items-center justify-center",
+                            "w-full h-12 rounded-md",
+                            "transition-colors duration-200",
+                            chartStyles.chartType === id ?
+                              "text-primary" :
+                              "text-muted-foreground group-hover:text-primary"
+                          )}>
+                            <Icon />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="flex flex-col gap-1">
+                        <p className="font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Best for: {getChartUsage(id)}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
               </div>
-            ))}
-          </div>
-        </TabsContent>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <TabsContent value="step2" className="mt-6 space-y-6">
+      {/* Color Schemes Section */}
+      <div className="space-y-6 pt-4 border-t">
+        <h2 className="text-lg font-semibold">Color Schemes</h2>
+        <div className="space-y-8">
+          {/* Colorful Themes */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Select Color Theme</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {colorSchemes.predefined.map((scheme) => (
-                <Button
-                  key={scheme.id}
-                  variant="outline"
-                  className={`h-20 ${
-                    chartStyles.colorScheme === scheme.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => handleColorSchemeChange(scheme)}
+            <h3 className="text-sm font-medium text-muted-foreground px-1">
+              Colorful
+            </h3>
+            <div className="grid grid-cols-5 gap-4">
+              {colorThemes.colorful.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={cn(
+                    "p-4 rounded-lg border transition-all",
+                    "hover:shadow-md hover:border-primary/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    chartStyles.colorScheme === theme.id && "ring-2 ring-primary"
+                  )}
+                  onClick={() => handleColorSchemeChange(theme)}
                 >
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-sm font-medium">{scheme.name}</span>
-                    <div className="flex gap-2">
-                      {scheme.colors.map((color) => (
-                        <div
-                          key={color}
-                          className="w-6 h-6 rounded-full shadow-sm"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {theme.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        className="aspect-square rounded-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
                   </div>
-                </Button>
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            {colorSchemes.custom.map((slot) => (
-              <div
-                key={slot.id}
-                className="h-8 rounded border cursor-pointer"
-                style={{ backgroundColor: slot.color }}
-                onClick={() => {
-                  // Implement color picker functionality
-                }}
-              />
-            ))}
+          {/* Monochromatic */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground px-1">
+              Monochromatic
+            </h3>
+            <div className="grid grid-cols-4 gap-4">
+              {colorThemes.monochromatic.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={cn(
+                    "p-4 rounded-lg border transition-all",
+                    "hover:shadow-md hover:border-primary/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    chartStyles.colorScheme === theme.id && "ring-2 ring-primary"
+                  )}
+                  onClick={() => handleColorSchemeChange(theme)}
+                >
+                  <div className="grid grid-cols-3 gap-1">
+                    {theme.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        className="aspect-square rounded-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

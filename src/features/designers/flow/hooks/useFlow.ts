@@ -53,7 +53,6 @@ export const useFlow = () => {
         enabled,
         retry: 2
       },
-      params: { limit: 1000 }
     });
 
   // If you want to fetch a single flow by ID:

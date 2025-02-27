@@ -105,15 +105,15 @@ export const updateFlowConfiguration = createAsyncThunk(
 
 export const patchCronDeployment = createAsyncThunk(
     "flows/patchCronDeployment",
-    async (data: { flow_deployment_id: number, cron_expression: { cron_expression: string } }) => {
+    async (data: { flow_deployment_id: number, cron_expression: { cron_expression: { cron: string } } }) => {
         const response = await apiService.patch<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: `/flow/deployment/${data.flow_deployment_id}/cron/`,
+            url: `/flow/flow-deployment/${data.flow_deployment_id}`,
             data: data.cron_expression,
             usePrefix: true,
             method: 'PATCH',
             metadata: {
-                errorMessage: 'Failed to update cron schedule'
+                errorMessage: 'Failed to update cron expression'
             }
         });
         return response;
@@ -125,7 +125,7 @@ export const fetchDagParserTime = createAsyncThunk(
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.get<{ last_parsed_time: string }>({
             portNumber: CATALOG_API_PORT,
-            url: '/flow/dag/parser/time/',
+            url: '/bh_airflow/dag_parse_time/',
             params: query,
             usePrefix: true,
             method: 'GET',
@@ -332,16 +332,26 @@ const flowSlice = createSlice({
             })
             .addCase(updateFlowConfiguration.fulfilled, (state, action) => {
                 state.loading = false;
+                console.log('Update Flow Configuration - Action:', action);
+                console.log('Update Flow Configuration - Current selectedFlow:', state.selectedFlow);
+                
                 if (state.selectedFlow && state.selectedFlow.flow_config) {
                     // Update the flow_config in the selectedFlow
                     state.selectedFlow = {
                         ...state.selectedFlow,
                         flow_config: state.selectedFlow.flow_config.map(config => 
                             config.flow_config_id === action.meta.arg.flow_config_id 
-                                ? { ...config, flow_config: action.meta.arg.flow_config.flow_config }
+                                ? { 
+                                    ...config, 
+                                    // Use the actual API response if available, otherwise use the sent data
+                                    flow_config: action.payload?.flow_config?.[0]?.flow_config || 
+                                                action.meta.arg.flow_config.flow_config 
+                                  }
                                 : config
                         )
                     };
+                    
+                    console.log('Update Flow Configuration - Updated selectedFlow:', state.selectedFlow);
                 }
             })
             .addCase(updateFlowConfiguration.rejected, (state, action) => {

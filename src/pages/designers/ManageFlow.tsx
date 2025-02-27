@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GitBranch } from 'lucide-react';
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { FlowList } from '@/features/designers/ManageFlow';
@@ -10,11 +10,14 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { fetchProjects, fetchEnvironments } from '@/store/slices/designer/flowSlice';
+import { Button } from '@/components/ui/button';
+import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
 
 function ManageFlowPage() {
   const dispatch = useAppDispatch();
   const { fetchFlowsList } = useFlow();
   const flowService = useFlowManagementService();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const {
     data: flows = [],
@@ -62,7 +65,16 @@ function ManageFlowPage() {
           Icon={GitBranch}
           title="No Flows Found"
           description="Get started by creating a new flow."
+          action={
+            <Button 
+              onClick={() => setCreateDialogOpen(true)}
+              className="mt-4"
+            >
+              Create Flow
+            </Button>
+          }
         />
+        <CreateFlowDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
       </div>
     );
   }

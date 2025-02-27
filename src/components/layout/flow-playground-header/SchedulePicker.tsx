@@ -81,11 +81,14 @@ export const SchedulePicker = () => {
     const handleClear = async () => {
         if (selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
             try {
+                // Get default cron expression from the default state
+                const defaultCronExpression = convertToCron(defaultState);
+                
                 await dispatch(patchCronDeployment({
                     flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id,
-                    cron_expression: { cron_expression: "* * * * *" }
+                    cron_expression: { cron_expression:{cron: defaultCronExpression} }
                 }));
-                setCronExpression("* * * * *");
+                setCronExpression(defaultCronExpression);
                 setIntervalState(defaultState);
             } catch (error) {
                 console.error('Failed to clear cron schedule:', error);
@@ -104,7 +107,7 @@ export const SchedulePicker = () => {
             if (selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
                 await dispatch(patchCronDeployment({
                     flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id,
-                    cron_expression: { cron_expression: newCronExpression }
+                    cron_expression: { cron_expression: { cron: newCronExpression } }
                 }));
             }
         } catch (error) {

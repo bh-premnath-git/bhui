@@ -44,7 +44,8 @@ export const Inputsection = () => {
                 placeholder="Flow name..."
                 className={cn(
                     "pr-12 h-9",
-                    !isEditing && "border-transparent bg-transparent hover:border-input focus:border-input"
+                    !isEditing && "border-transparent bg-transparent hover:border-input focus:border-input",
+                    isEditing && "outline-none focus:ring-2 focus:ring-offset-0 focus:ring-black/80 border-gray-300"
                 )}
             />
             <Button

@@ -10,22 +10,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store/";
-import { updateFlowDefinition, triggerDagDeployment, setDagRunId } from '@/store/slices/designer/flowSlice';
+import { triggerDagDeployment, setDagRunId } from '@/store/slices/designer/flowSlice';
 import { toast } from 'sonner';
-
-interface Task {
-    task_id: string;
-    [key: string]: any;
-}
-
-function areAllTaskIdsValid(tasks: Task[]): boolean {
-    return tasks.every(task => !!task.task_id);
-}
 
 export const PlaybackButton = () => {
     const dispatch = useAppDispatch();
     const location = useLocation();
-    const { selectedFlow, selectedEnvironment, loading, dagParserTime } = useAppSelector((state: RootState) => state.flow);
+    const { selectedFlow, selectedEnvironment } = useAppSelector((state: RootState) => state.flow);
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -38,43 +29,6 @@ export const PlaybackButton = () => {
         }
         setPrevPathname(location.pathname);
     }, [location.pathname, prevPathname]);
-
-    const updateFlowDef = async () => {
-        if (!selectedFlow?.flow_id || isPlaying) return;
-
-        try {
-            const flowStructure = localStorage.getItem(`flow-${selectedFlow.flow_id}`);
-            if (!flowStructure) {
-                toast.error("No flow structure found");
-                return;
-            }
-
-            const parsedStructure = JSON.parse(flowStructure);
-            const flowJson = parsedStructure.nodeFormData?.map((item: any) => item.formData);
-
-            if (!areAllTaskIdsValid(flowJson)) {
-                toast.error("Please check all tasks have valid IDs");
-                return;
-            }
-
-            await dispatch(updateFlowDefinition({
-                flow_id: selectedFlow.flow_id.toString(),
-                flow_json: {
-                    flow_deployment_id: selectedFlow.flow_deployment?.[0]?.flow_deployment_id,
-                    flow_id: selectedFlow.flow_id.toString(),
-                    flow_json: { flowJson, flowStructure: parsedStructure }
-                }
-            })).unwrap();
-
-            toast.success("Flow definition updated successfully");
-        } catch (error) {
-            if ((error as Error).name === 'AbortError') {
-                console.log('Flow definition update was aborted');
-            } else {
-                toast.error("Failed to update flow definition");
-            }
-        }
-    };
 
     const deployFlow = async (): Promise<boolean> => {
         if (!selectedFlow?.flow_name || !selectedEnvironment?.airflow_env_name || !selectedEnvironment?.bh_env_name) {
@@ -110,7 +64,6 @@ export const PlaybackButton = () => {
         setIsLoading(true);
         try {
             if (!isPlaying) {
-                await updateFlowDef();
                 const success = await deployFlow();
                 if (success) {
                     setIsPlaying(true);
@@ -132,7 +85,6 @@ export const PlaybackButton = () => {
                         size="icon"
                         className="h-9 w-9"
                         onClick={handleClick}
-                        disabled={loading || !dagParserTime || isLoading}
                     >
                         {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

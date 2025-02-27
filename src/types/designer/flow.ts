@@ -23,6 +23,12 @@ export interface FlowDeployment {
     flow_json: string[];
   }
   
+  export interface FlowConfig {
+    flow_config_id: number;
+    flow_id: number;
+    flow_config: any[];
+  }
+  
   export interface Flow {
     flow_id: number;
     flow_name: string;
@@ -36,7 +42,7 @@ export interface FlowDeployment {
     bh_project_name: string;
     created_by: number | null;
     updated_at: string;
-    flow_config: string[];
+    flow_config: FlowConfig[];
     flow_definition: FlowDefinition;
   }
   
@@ -49,20 +55,21 @@ export interface FlowPaginatedResponse {
 export interface FlowMutationData {
     flow_name: string;
     flow_key?: string;
-    recipient_email: {emails: string[]};
-    notes: string;
-    tags: {
+    recipient_email?: string[];
+    notes?: string;
+    tags?: {
       tagList: Record<string, string>[];
     };
-    bh_project_id: number;
-    alert_settings: {
-      on_job_start: boolean;
-      on_job_failure: boolean;
-      on_job_success: boolean;
-      long_running: boolean;
-    };
-    flow_json: FlowDefinition | {};
-    bh_env_id: number;
+    bh_project_id?: number;
+}
+
+export interface FlowAgentConversationResponse {
+  thread_id: string;
+  flow_id: string;
+  request: string;
+  response: string;
+  created_at: string;
+  updated_at: string;
 } 
 
 // playground
@@ -248,7 +255,7 @@ export interface FlowContextType {
       nodeData: any | null;
       nodeForm: any | null;
     }[];
-  };
+  }
   selectedNodeOptimized: (flowId: string) => void;
   fullFlowOptimizzed: () => boolean;
   formdataNum: number;
@@ -257,4 +264,5 @@ export interface FlowContextType {
   setConsequentTaskDetail: (task: any, detail: any) => void;
   aiMissingData?: any;
   setAiMissingData?: React.Dispatch<React.SetStateAction<any>>;
+  updateNodeDependencies: () => void;
 }

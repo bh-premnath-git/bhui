@@ -57,7 +57,7 @@ export const useFlow = () => {
     });
 
   // If you want to fetch a single flow by ID:
-  const fetchFlowById = (flowId: string, enabled = true) =>
+  const useFetchFlowById = (flowId: string, enabled = true) =>
     getFlow({
       url: `/flow/${flowId}/`,
       queryOptions: {
@@ -122,7 +122,7 @@ export const useFlow = () => {
 
   return {
     fetchFlowsList,
-    fetchFlowById,
+    useFetchFlowById,
     createFlowMutation,
     handleCreateFlow,
     handleUpdateFlow,

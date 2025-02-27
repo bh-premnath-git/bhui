@@ -17,6 +17,8 @@ import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/Toolb
 import { CustomControls } from '@/components/bh-reactflow-comps/flow/flow/CustomControls';
 import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { ErrorState } from '@/components/shared/ErrorState';
 import 'reactflow/dist/style.css';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
 
@@ -27,8 +29,8 @@ const defaultViewport = { x: 0, y: 0, zoom: 1.8 };
 
 export const FlowCanvas = () => {
   const { id } = useParams();
-  const { fetchFlowById } = useFlowApi();
-  const flow = fetchFlowById(id || '');
+  const { useFetchFlowById } = useFlowApi();
+  const { data: flow, isLoading, isError } = useFetchFlowById(id || '');
   const dispatch = useAppDispatch();
 
   const {
@@ -152,10 +154,22 @@ export const FlowCanvas = () => {
   );
 
   useEffect(() => {
-    dispatch(setSelectedFlow(flow.data));
-    const flowdeplayment: any = { ...flow }
-    dispatch(setSelectedEnv(Number(flowdeplayment.data?.flow_deployment[0].bh_env_id)));
-  }, [dispatch])
+    if (flow) {
+      dispatch(setSelectedFlow(flow));
+      const flowdeployment = flow;
+      if (flowdeployment.flow_deployment?.[0]?.bh_env_id) {
+        dispatch(setSelectedEnv(Number(flowdeployment.flow_deployment[0].bh_env_id)));
+      }
+    }
+  }, [flow, dispatch]);
+
+  if (isLoading) {
+    return <LoadingState className='w-40 h-40' />;
+  }
+
+  if (isError) {
+    return <ErrorState title="Error loading flow" description="Please try again later" />;
+  }
 
   return (
     <div className="w-full h-full bg-background relative">

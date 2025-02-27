@@ -23,7 +23,7 @@ export const Inputsection = () => {
         if (selectedFlow && flowName !== selectedFlow.flow_name) {
             await dispatch(patchFlowOperation({
                 flowId: selectedFlow.flow_id,
-                data: { flow_name: flowName }
+                data: { flow_name: flowName, flow_key: flowName }
             }));
         }
         setIsEditing(false);

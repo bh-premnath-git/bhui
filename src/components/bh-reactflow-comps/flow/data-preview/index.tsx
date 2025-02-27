@@ -6,6 +6,9 @@ import { useAppSelector } from '@/hooks/useRedux';
 import { useQuery } from '@tanstack/react-query';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { useSidebar } from '@/context/SidebarContext';
+import { apiService } from '@/lib/api/api-service';
+import { LoadingState } from '@/components/shared/LoadingState';
+
 
 // Define the animation class
 const ANIMATION_CLASS = "translate-y-0 transition-transform duration-300 ease-out";
@@ -22,7 +25,7 @@ interface Task {
 }
 
 const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) => {
-  const dagEunID = useAppSelector((state) => state.flow.dagEunID);
+  const dagEunID = useAppSelector((state) => state.flow.dagEunID);  
   const { isExpanded } = useSidebar();
   const [logContent, setLogContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +33,13 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<string>('');
   const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(true);
+      console.log("Modal opened, isOpen:", isOpen, "dagEunID:", dagEunID);
+    }
+  }, [isOpen, dagEunID]);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,15 +53,28 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       if (!dagEunID) {
         return [];
       }
-      const params = new URLSearchParams(dagEunID);
-      const response = await fetch(`${CATALOG_API_PORT}/bh_airflow/get_dag_task_id/?${params}`, {
-        method: 'GET',
-      });
-      const data = await response.json();
-      return data.task_instances.map((item: any) => ({
-        taskid: item.task_id,
-        type: item.operator
-      }));
+      
+      try {
+        const {dag_run_id, ...other} = dagEunID;
+        const response = await apiService.get<{ task_instances: any[] }>({
+          portNumber: CATALOG_API_PORT,
+          url: '/bh_airflow/get_dag_task_id/',
+          params: dagEunID,
+          usePrefix: true,
+          method: 'GET',
+          metadata: {
+            errorMessage: 'Failed to fetch tasks'
+          }
+        });
+        
+        return response.task_instances.map((item: any) => ({
+          taskid: item.task_id,
+          type: item.operator
+        }));
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        throw error;
+      }
     },
     enabled: !!dagEunID && isOpen
   });
@@ -62,12 +85,19 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       if (!dagEunID || !selectedTask) {
         return '';
       }
-      const params = new URLSearchParams({ ...dagEunID, task_id: selectedTask });
-      const response = await fetch(`${CATALOG_API_PORT}/bh_airflow/get_dag_logs/?${params}`, {
+      
+      const response = await apiService.get<string>({
+        portNumber: CATALOG_API_PORT,
+        url: '/bh_airflow/get_dag_logs/',
+        params: { ...dagEunID, task_id: selectedTask },
+        usePrefix: true,
         method: 'GET',
+        metadata: {
+          errorMessage: 'Failed to fetch logs'
+        }
       });
-      const data = await response.text();
-      return data;
+      
+      return response;
     },
     enabled: !!dagEunID && !!selectedTask && isOpen
   });
@@ -144,8 +174,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
               <div className="p-4">
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Loading logs...</span>
+                    <LoadingState className='w-40 h-40' />
                   </div>
                 ) : error ? (
                   <div className="text-destructive font-mono text-sm">

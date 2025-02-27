@@ -46,7 +46,9 @@ export const PlaybackButton = () => {
 
             dispatch(setDagRunId({
                 dag_run_id: result.dag_run_id,
-                dag_id: selectedFlow.flow_name
+                airflow_env_name: selectedEnvironment.airflow_env_name,
+                dag_id: selectedFlow.flow_name,
+                bh_env_name: selectedEnvironment.bh_env_name
             }));
 
             toast.success("Deployment started successfully");

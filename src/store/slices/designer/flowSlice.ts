@@ -17,7 +17,7 @@ interface FlowState {
     selectedEnvironment: Environment | null;
     loading: boolean;
     error: string | null;
-    dagRunId: { dag_run_id: string; dag_id: string } | null;
+    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
 }
 
@@ -123,7 +123,7 @@ export const patchCronDeployment = createAsyncThunk(
 export const fetchDagParserTime = createAsyncThunk(
     "flows/fetchDagParserTime",
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
-        const response = await apiService.get<{ last_parsed_time: string }>({
+        const response = await apiService.get<string>({
             portNumber: CATALOG_API_PORT,
             url: '/bh_airflow/dag_parse_time/',
             params: query,
@@ -133,7 +133,7 @@ export const fetchDagParserTime = createAsyncThunk(
                 errorMessage: 'Failed to fetch DAG parser time'
             }
         });
-        return response.last_parsed_time;
+        return response;
     }
 );
 
@@ -232,8 +232,9 @@ const flowSlice = createSlice({
         setError: (state, action: PayloadAction<string | null>) => {
             state.error = action.payload;
         },
-        setDagRunId: (state, action: PayloadAction<{ dag_run_id: string; dag_id: string }>) => {
+        setDagRunId: (state, action: PayloadAction<{ airflow_env_name: string; dag_run_id: string; dag_id: string; bh_env_name: string }>) => {
             state.dagRunId = action.payload;
+            state.dagEunID = action.payload;
         },
         clearFlowAgentConversation: (state) => {
             state.flowAgentConversation = null;
@@ -296,7 +297,7 @@ const flowSlice = createSlice({
             })
             .addCase(fetchDagParserTime.fulfilled, (state, action) => {
                 state.loading = false;
-                state.dagParserTime = action.payload;
+                state.dagParserTime = action.payload as string;
             })
             .addCase(fetchDagParserTime.rejected, (state, action) => {
                 state.loading = false;
@@ -366,7 +367,14 @@ const flowSlice = createSlice({
                 state.loading = false;
                 state.dagRunId = {
                     dag_run_id: action.payload.dag_run_id,
-                    dag_id: state.selectedFlow?.flow_name || ''
+                    dag_id: state.selectedFlow?.flow_name || '',
+                    bh_env_name: state.selectedEnvironment?.bh_env_name || ''
+                };
+                // Also update dagEunID for backward compatibility
+                state.dagEunID = {
+                    dag_run_id: action.payload.dag_run_id,
+                    dag_id: state.selectedFlow?.flow_name || '',
+                    bh_env_name: state.selectedEnvironment?.bh_env_name || ''
                 };
             })
             .addCase(triggerDagDeployment.rejected, (state, action) => {

@@ -12,13 +12,14 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store/";
 import { triggerDagDeployment, setDagRunId } from '@/store/slices/designer/flowSlice';
 import { toast } from 'sonner';
+import { useFlow } from '@/context/designers/FlowContext';
 
 export const PlaybackButton = () => {
     const dispatch = useAppDispatch();
     const location = useLocation();
     const { selectedFlow, selectedEnvironment } = useAppSelector((state: RootState) => state.flow);
+    const { isPlaying, togglePlayback } = useFlow();
     
-    const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
@@ -66,10 +67,10 @@ export const PlaybackButton = () => {
             if (!isPlaying) {
                 const success = await deployFlow();
                 if (success) {
-                    setIsPlaying(true);
+                    togglePlayback();
                 }
             } else {
-                setIsPlaying(false);
+                togglePlayback();
             }
         } finally {
             setIsLoading(false);

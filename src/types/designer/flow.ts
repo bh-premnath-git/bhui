@@ -6,7 +6,7 @@ export interface FlowDeployment {
     bh_env_id: number;
     flow_version_id: number | null;
     schema_id: number;
-    cron_expression: string | null;
+    cron_expression: { cron: string } | string | null;
     flow_name: string | null;
     bh_env_name: string;
   }

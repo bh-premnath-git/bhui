@@ -180,7 +180,7 @@ export const triggerDagDeployment = createAsyncThunk(
         const response = await apiService.post<{ dag_run_id: string }>({
             portNumber: CATALOG_API_PORT,
             url: '/bh_airflow/trigger_dag/',
-            data,
+            query: `dag_id=${data.dag_id}&airflow_env_name=${data.airflow_env_name}&bh_env_name=${data.bh_env_name}`,
             usePrefix: true,
             method: 'POST',
             metadata: {

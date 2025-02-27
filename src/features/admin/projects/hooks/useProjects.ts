@@ -85,7 +85,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 
   // Create project mutation
   const createProjectMutation = createProject({
-    url: '/bh_project/create/',
+    url: '/bh_project',
     mutationOptions: {
       onSuccess: () => toast.success('Project created successfully'),
       onError: (error) => handleApiError(error, { action: 'create' }),

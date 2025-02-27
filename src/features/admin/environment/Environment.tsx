@@ -27,6 +27,3 @@ export function EnvironmentList({environments}:{environments: Environment[]}) {
       />
   );
 }
-
-
-

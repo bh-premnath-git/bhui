@@ -62,8 +62,8 @@ const updateFlowDefinitionOnServer = (
                 flow_deployment_id: selectedFlow.flow_deployment?.[0]?.flow_deployment_id,
                 flow_id: selectedFlow.flow_id.toString(),
                 flow_json: { 
-                    flowJson: JSON.stringify(flowJson), 
-                    flowStructure: JSON.stringify(parsedStructure) 
+                    flowJson: flowJson, 
+                    flowStructure: parsedStructure 
                 }
             }
         }));

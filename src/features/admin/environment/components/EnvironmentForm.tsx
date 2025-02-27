@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { FormProvider, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Form } from "@/components/ui/form"
 import { environmentFormSchema, type EnvironmentFormValues } from "./environmentFormSchema"
 import {
@@ -16,7 +15,6 @@ import {
 } from "./FormFields"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { encrypt_string } from "@/services/encryption"
 
 interface EnvironmentFormProps {
   initialData?: EnvironmentFormValues
@@ -29,30 +27,49 @@ interface EnvironmentFormProps {
   error: string | null
 }
 
-export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
+export function EnvironmentForm({ initialData, onSubmit, ...props }: EnvironmentFormProps) {
   const form = useForm<EnvironmentFormValues>({
     resolver: zodResolver(environmentFormSchema),
-      mode: "onChange", // Validate on each field change
-      reValidateMode: "onChange", // Revalidate on subsequent changes
+    mode: "onChange", // Validate on each field change
+    reValidateMode: "onChange", // Revalidate on subsequent changes
+    defaultValues: initialData || {
+      environmentName: '',
+      environment: '',
+      platform: {
+        type: '',
+        region: '',
+        zone: '',
+      },
+      credentials: {
+        publicId: '',
+        accessKey: '',
+        secretKey: '',
+        pvtKey: '',
+      },
+      advancedSettings: {
+        airflowName: '',
+        airflowBucketName: '',
+        airflowBucketUrl: '',
+      },
+      tags: [],
+    }
   });
 
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const isEditMode = props.mode === "edit";
   
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   const handleSubmit = async (data: EnvironmentFormValues) => {
     const isFormValid = await form.trigger(); // Force validation
     if (!isFormValid) return; // Exit if form is still invalid
     await onSubmit(data);
   };
-
-
-  useEffect(() => {
-    if (isEditMode) {
-      form.reset({
-
-      })
-    }
-  }, [isEditMode])
 
   useEffect(() => {
     if (props.isSubmitting) {
@@ -82,82 +99,45 @@ export function EnvironmentForm({ onSubmit, ...props }: EnvironmentFormProps) {
   return (
     <Card className="w-full max-w-8xl mx-auto border-none shadow-none">
       <CardContent>
-      <FormProvider {...form}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <EnvironmentDetailsFields control={form.control} />
-            <PlatformFields control={form.control} />
-            <CredentialsFields 
-              control={form.control}
-              onValidateToken={props.onValidate}
-              isEditMode={isEditMode}
-              isValidating={props.isValidating}
-              isTokenValidated={props.isTokenValidated}
-             />
-            <AdvancedSettingsFields control={form.control}
-            isTokenValidated={props.isTokenValidated} 
-            />
-            <TagsField form={form} />
-            {/* <Accordion type="single" collapsible defaultValue="environment-details">
-              <AccordionItem value="environment-details">
-                <AccordionTrigger className="text-lg font-semibold text-primary">Environment Details</AccordionTrigger>
-                <AccordionContent className="pt-4">
-                   <EnvironmentDetailsFields form={form} />
-                </AccordionContent>
-              </AccordionItem>
+        <FormProvider {...form}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <EnvironmentDetailsFields control={form.control} />
+              <PlatformFields control={form.control} />
+              <CredentialsFields 
+                control={form.control}
+                onValidateToken={props.onValidate || (() => Promise.resolve())}
+                isEditMode={isEditMode}
+                isValidating={props.isValidating}
+                isTokenValidated={props.isTokenValidated}
+              />
+              <AdvancedSettingsFields 
+                control={form.control}
+                isTokenValidated={props.isTokenValidated} 
+              />
+              <TagsField control={form.control} />
 
-              <AccordionItem value="platform">
-                <AccordionTrigger className="text-lg font-semibold">Select Platform</AccordionTrigger>
-                <AccordionContent className="pt-4">
-                  <PlatformFields form={form} />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="credentials">
-                <AccordionTrigger className="text-lg font-semibold">Credentials</AccordionTrigger>
-                <AccordionContent className="pt-4">
-                  <CredentialsFields 
-                  form={form} 
-                  />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="advanced-settings">
-                <AccordionTrigger className="text-lg font-semibold">Advanced Settings</AccordionTrigger>
-                <AccordionContent className="pt-4">
-                  <AdvancedSettingsFields form={form} />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="tags">
-                <AccordionTrigger className="text-lg font-semibold">Tags</AccordionTrigger>
-                <AccordionContent className="pt-4">
-                  <TagsField form={form} />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion> */}
-
-            <div className="flex justify-center pt-6">
-              <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
-                {formState === "submitting" ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {isEditMode ? "Updating..." : "Creating..."}
-                  </>
-                ) : formState === "success" ? (
-                  "Success!"
-                ) : formState === "error" ? (
-                  "Error"
-                ) : isEditMode ? (
-                  "Update Environment"
-                ) : (
-                  "Create Environment"
-                )}
-              </Button>
-            </div>
-            {props.error && <p className="text-sm text-red-500 text-center">{props.error}</p>}
-          </form>
-        </Form>
+              <div className="flex justify-center pt-6">
+                <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
+                  {formState === "submitting" ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {isEditMode ? "Updating..." : "Creating..."}
+                    </>
+                  ) : formState === "success" ? (
+                    "Success!"
+                  ) : formState === "error" ? (
+                    "Error"
+                  ) : isEditMode ? (
+                    "Update Environment"
+                  ) : (
+                    "Create Environment"
+                  )}
+                </Button>
+              </div>
+              {props.error && <p className="text-sm text-red-500 text-center">{props.error}</p>}
+            </form>
+          </Form>
         </FormProvider>
       </CardContent>
     </Card>

@@ -74,11 +74,16 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
               <button
                 key={platform.value}
                 type="button"
-                onClick={() => field.onChange(platform.value)}
+                onClick={() => {
+                  if (platform.value !== "102") { 
+                    field.onChange(platform.value);
+                  }
+                }}
                 className={`border rounded-lg p-4 flex flex-col items-center justify-center ${field.value === platform.value
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
-                  } transition-colors w-32 h-24`}
+                  } transition-colors w-32 h-24 ${platform.value === "102" ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={platform.value === "102"}
               >
                 <img
                   src={platform.image || "/placeholder.svg"}
@@ -94,7 +99,8 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
       )}
     />
   </div>
-)
+);
+
 
 interface ValidateFieldsProps {
   control: Control<EnvironmentFormValues>
@@ -244,15 +250,11 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
       : { airflowParams: null }
   );
 
-  // Update form fields when airflow data is available
   useEffect(() => {
     if (airflowData && 'SourceBucketArn' in airflowData) {
-      // Extract the bucket name from the SourceBucketArn
-      // Format: arn:aws:s3:::bucket-name
       const bucketArnParts = (airflowData as { SourceBucketArn: string }).SourceBucketArn.split(':');
       const bucketName = bucketArnParts[bucketArnParts.length - 1];
       
-      // Set form values - in the order that matches your UI requirements
       setValue("advancedSettings.airflowBucketUrl", (airflowData as unknown as { WebserverUrl: string }).WebserverUrl || '');
       setValue("advancedSettings.airflowBucketName", bucketName || '');
     }
@@ -318,49 +320,54 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
   );
 };
 
-export const TagsField = ({ form }: { form: any }) => {
-  const tags = form.watch("tags") || []
+interface Tag {
+  key: string
+  value: string
+}
 
-  const addTag = (key: string, value: string) => {
-    form.setValue("tags", [...tags, { key, value }])
-  }
-
-  const removeTag = (index: number) => {
-    const newTags = tags.filter((_: any, i: number) => i !== index)
-    form.setValue("tags", newTags)
-  }
-
+export const TagsField = ({ control }: { control: Control<EnvironmentFormValues> }) => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Add Tags</h3>
-          <p className="text-sm text-muted-foreground">
-            Add one or more tags to easily identify resources in your cloud environment
-          </p>
-        </div>
-        <AddTagDialog onAddTag={addTag} />
-      </div>
-
-      {tags.length > 0 && (
-        <div className="space-y-4">
-          {tags.map((tag: any, index: number) => (
-            <div key={index} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
-              <div className="grid gap-1 flex-1">
-                <div className="text-sm font-medium">Key</div>
-                <div className="text-sm text-muted-foreground">{tag.key}</div>
-              </div>
-              <div className="grid gap-1 flex-1">
-                <div className="text-sm font-medium">Value</div>
-                <div className="text-sm text-muted-foreground">{tag.value}</div>
-              </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => removeTag(index)}>
-                <X className="h-4 w-4" />
-              </Button>
+    <FormField
+      control={control}
+      name="tags"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Tags</FormLabel>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {field.value?.map((tag, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 text-sm bg-secondary rounded-md"
+                >
+                  <span>
+                    {tag.key}: {tag.value}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => {
+                      const newTags = [...field.value];
+                      newTags.splice(index, 1);
+                      field.onChange(newTags);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <AddTagDialog
+              onAddTag={(key, value) => {
+                field.onChange([...(field.value || []), { key, value }]);
+              }}
+            />
+          </div>
+          <FormMessage />
+        </FormItem>
       )}
-    </div>
+    />
   )
 }

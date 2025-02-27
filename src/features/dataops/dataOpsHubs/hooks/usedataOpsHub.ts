@@ -51,7 +51,8 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
       queryOptions: {
         enabled,
         retry: 2
-      }
+      },
+      params: { limit: 1000 }
     });
 
   // Fetch single job by ID

@@ -31,7 +31,7 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 
 export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch: true }) => {
   // For queries - returns Environment objects
-  const { getOne: getEnvironment, getOne: getmwaaEnvironments, getAll: getAllEnvironments } = useResource<Environment | MWAAEnvironments>(
+  const { getOne: getEnvironment, getAll: getAllEnvironments } = useResource<Environment | MWAAEnvironments>(
     'environments',
     CATALOG_API_PORT,
     true
@@ -50,7 +50,8 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     queryOptions: {
       enabled: options.shouldFetch,
       retry: 2
-    }
+    },
+    params: { limit: 1000 }
   });
 
 
@@ -84,7 +85,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   });
 
   // Update environment mutation
-  const updateEnvironmentMutation = updateEnvironment('/environment/environment', {
+  const updateEnvironmentMutation = updateEnvironment('/environment/environment/', {
     mutationOptions: {
       onSuccess: () => toast.success('Environment updated successfully'),
       onError: (error) => handleApiError(error, { action: 'update' }),
@@ -118,13 +119,13 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   const handleUpdateEnvironment = useCallback(async (id: string, data: EnvironmentMutationData) => {
     await updateEnvironmentMutation.mutateAsync({
       data,
-      params: { id }
+      url: `/environment/environment/${id}`
     });
   }, [updateEnvironmentMutation]);
 
   const handleDeleteEnvironment = useCallback(async (id: string) => {
     await deleteEnvironmentMutation.mutateAsync({
-      params: { id }
+      query: id
     });
   }, [deleteEnvironmentMutation]);
 

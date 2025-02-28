@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
+import { AGENT_PORT } from '@/config/platformenv';
 
 export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
   const { dataSourceTypes } = useAppSelector(
@@ -19,25 +20,112 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     dataSourceId: dataSourceId
   });
 
-  // Cast to the correct type to access layout_fields
+  const datatypes = dataSourceTypes?.codes_dtl || [];
   const layoutData = layoutFields ? layoutFields.layout_fields : [];
 
   const generateAllDescriptions = async () => {
     toast.info("Generating descriptions for all fields...");
+    const body = {
+      operation_type: 'column_description',
+      thread_id: 'desc_123',
+      params: {
+        source_name: layoutFields.data_src_lyt_name,
+        columns: []
+      }
+    }
+    
+    // Map to keep track of field IDs to column names
+    const fieldIdToColumnName = new Map();
+    
+    // First, set all cells to loading state and collect column data
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         try {
-          console.log("Field ID:", fieldId);
-          console.log("Row data:", cellData.rowData);
-         
-          // For now, still call the existing generateDescription method
-          await cellData.ref.current.generateDescription();
+          // Set the cell to loading state
+          cellData.ref.current.setGenerating(true);
+          
+          const dataType = datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd);
+          const column = {
+            id: fieldId,
+            name: cellData.rowData.lyt_fld_name,
+            dataType
+          }
+          
+          // Store the mapping of field ID to column name for later use
+          fieldIdToColumnName.set(cellData.rowData.lyt_fld_name, fieldId);
+          
+          body.params.columns.push(column);
         } catch (error) {
-          toast.error(`Failed to generate description for field: ${cellData.rowData.lyt_fld_name}`);
+          console.error(`Error preparing field ${fieldId}:`, error);
+          toast.error(`Failed to prepare description for field: ${cellData.rowData.lyt_fld_name}`);
+          if (cellData.ref.current) {
+            cellData.ref.current.setGenerating(false);
+          }
         }
       }
     }
-    toast.success("All descriptions generated successfully");
+    
+    try {
+      // Make the API call
+      const response: any = await apiService.post({
+        portNumber: AGENT_PORT,
+        method: 'POST',
+        url: '/pipeline_agent/generate',
+        data: body,
+        usePrefix: true,
+        metadata: {
+          errorMessage: `Failed to generate description for fields`
+        }
+      });
+      
+      console.log("Raw response:", response);
+      
+      // Parse the response
+      const parsedResponse = JSON.parse(response.result as string);
+      console.log("Parsed response:", parsedResponse);
+      
+      // Check if we have descriptions in the response
+      if (parsedResponse && parsedResponse.descriptions && Array.isArray(parsedResponse.descriptions)) {
+        let successCount = 0;
+        
+        // Process each description
+        for (const desc of parsedResponse.descriptions) {
+          const columnName = desc.column_name;
+          const description = desc.description;
+          
+          console.log(`Processing description for column ${columnName}:`, description);
+          
+          // Find the field ID for this column name
+          const fieldId = fieldIdToColumnName.get(columnName);
+          
+          if (fieldId && descriptionCellRefs.has(fieldId)) {
+            const cellData = descriptionCellRefs.get(fieldId);
+            if (cellData && cellData.ref.current) {
+              // Update the description in the cell
+              await cellData.ref.current.updateDescription(description);
+              successCount++;
+              console.log(`Updated description for field ${fieldId} (${columnName})`);
+            }
+          } else {
+            console.warn(`Could not find field ID for column name: ${columnName}`);
+          }
+        }
+        
+        toast.success(`Successfully generated ${successCount} descriptions`);
+      } else {
+        toast.error("No descriptions found in the API response");
+      }
+    } catch (error) {
+      console.error("Error generating descriptions:", error);
+      toast.error("Failed to generate descriptions");
+    } finally {
+      // Reset all cells to non-loading state
+      for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
+        if (cellData.ref.current) {
+          cellData.ref.current.setGenerating(false);
+        }
+      }
+    }
   };
 
   // Create columns with the generate description handler

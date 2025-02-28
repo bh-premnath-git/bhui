@@ -11,6 +11,7 @@ interface DescriptionCellProps {
 export interface DescriptionCellRef {
   generateDescription: () => Promise<void>;
   updateDescription: (description: string) => Promise<void>;
+  setGenerating: (isGenerating: boolean) => void;
 }
 
 export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellProps>(
@@ -40,10 +41,15 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
       return Promise.resolve();
     }, []);
 
+    const setGenerating = useCallback((isGenerating: boolean) => {
+      setIsGenerating(isGenerating);
+    }, []);
+
     useImperativeHandle(ref, () => ({
       generateDescription,
-      updateDescription
-    }), [generateDescription, updateDescription]);
+      updateDescription,
+      setGenerating
+    }), [generateDescription, updateDescription, setGenerating]);
 
     if (isGenerating) {
       return (

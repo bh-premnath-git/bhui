@@ -1,5 +1,5 @@
 
-import { Users, FolderGit2, Settings2, ArrowRight } from 'lucide-react';
+import { Users, FolderGit2, Settings2, ArrowRight, Cable } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ROUTES } from '@/config/routes';
@@ -32,6 +32,15 @@ const adminOptions = [
     buttonText: 'Manage Environments',
     link: ROUTES.ADMIN.ENVIRONMENT.INDEX.toString(),
     gradient: "from-amber-500/20 via-amber-300/20 to-yellow-500/20"
+  },
+  {
+    id: 4,
+    icon: <Cable className="w-6 h-6 text-foreground" />,
+    title: "Manage Connection",
+    desc: "Establish your database connection to improvise your data",
+    buttonText: 'Manage Connection',
+    link: ROUTES.ADMIN.CONNECTION.INDEX.toString(),
+    gradient: "from-red-500/20 via-orange-300/20 to-pink-500/20"
   }
 ];
 

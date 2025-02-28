@@ -32,6 +32,11 @@ export const ROUTES = {
       INDEX: '/admin-console/environment',
       ADD: '/admin-console/environment/add',
       EDIT: (id: string) => `/admin-console/environment/edit/${id}`
+    },
+    CONNECTION:{
+      INDEX: '/admin-console/connection',
+      ADD: '/admin-console/connection/add',
+      EDIT: (id: string) => `/admin-console/connection/edit/${id}`
     }
   }
 } as const;

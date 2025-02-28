@@ -1,9 +1,9 @@
 import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
-import { AddProject } from '@/features/admin/projects/AddProject';
+import { EditConnection } from '@/features/admin/connection/EditConnection';
 
 const ConnectionEdit = () => {
   return (
-    <AddProject />
+    <EditConnection />
   )
 }
 

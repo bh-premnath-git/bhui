@@ -26,6 +26,9 @@ const EditProject = lazy(() => import('@/pages/admin/project/ProjectEdit'));
 const Environment = lazy(() => import('@/pages/admin/environment/EnvironmentList'));
 const AddEnvironment = lazy(() => import('@/pages/admin/environment/EnvironmentAdd'));
 const EditEnvironment = lazy(() => import('@/pages/admin/environment/EnvironmentEdit'));
+const Connection = lazy(() => import('@/pages/admin/connection/ConnectionList'));
+const AddConnection = lazy(() => import ('@/pages/admin/connection/ConnectionAdd'));
+const EditConnection = lazy(() => import('@/pages/admin/connection/COnnectionEdit'));
 
 export const routerConfig: RouteObject[] = [
   {
@@ -125,6 +128,18 @@ export const routerConfig: RouteObject[] = [
   {
     path: ROUTES.ADMIN.ENVIRONMENT.EDIT(':id'),
     element: <EditEnvironment />
+  },
+  {
+    path: ROUTES.ADMIN.CONNECTION.INDEX,
+    element: <Connection />
+  },
+  {
+    path: ROUTES.ADMIN.CONNECTION.ADD,
+    element: <AddConnection />
+  },
+  {
+    path: ROUTES.ADMIN.CONNECTION.EDIT(':id'),
+    element: <EditConnection />
   },
   {
     path: '*',

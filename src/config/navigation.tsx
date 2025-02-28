@@ -12,6 +12,7 @@ import {
   Users,
   FolderGit2,
   Settings2,
+  Cable,
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -89,6 +90,12 @@ export const navigationItems: NavItem[] = [
         path: ROUTES.ADMIN.ENVIRONMENT.INDEX,
         parent: ROUTES.ADMIN.INDEX,
       },
+      {
+        title: "Manage Connections",
+        icon: Cable,
+        path: ROUTES.ADMIN.CONNECTION.INDEX,
+        parent: ROUTES.ADMIN.INDEX
+      }
     ],
   },
 ];

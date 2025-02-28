@@ -8,7 +8,7 @@ import { createFlowAgentConversationEntry, clearFlowAgentConversation } from "@/
 import { RootState } from "@/store";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
-  const { messages, addUserMessage, addAssistantMessage, clearMessages } = useChatMessages();
+  const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
   const dispatch = useAppDispatch();
   const { selectedFlow, flowAgentConversation, loading } = useAppSelector((state: RootState) => state.flow);
@@ -22,19 +22,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
 
   useEffect(() => {
     if (flowAgentConversation) {
-      const lastMessage = messages[messages.length - 1];
-      
-      // Format the message based on response type
       let formattedMessage = '';
       
       if (flowAgentConversation.status === 'error') {
         formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
       } 
       else if (flowAgentConversation.status === 'missing') {
-        // Format missing fields message
         formattedMessage = `Please provide more information for your workflow:\n\n`;
         
-        // Add missing operator fields if present
         if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
           formattedMessage += `Missing fields:\n`;
           
@@ -43,18 +38,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
           });
         }
         
-        // Add missing operators if present
         if (flowAgentConversation.operators && flowAgentConversation.operators.length > 0) {
           formattedMessage += `\nOperators: ${flowAgentConversation.operators.join(', ')}\n`;
         }
-        
-        // Add pipelines if present
         if (flowAgentConversation.pipelines && flowAgentConversation.pipelines.length > 0) {
           formattedMessage += `\nPipelines: ${flowAgentConversation.pipelines.join(', ')}`;
         }
       }
       else if (flowAgentConversation.status === 'success') {
-        // For success response with flow_definition
         formattedMessage = `Workflow created successfully!\n\n`;
         
         if (typeof flowAgentConversation.flow_definition === 'string') {
@@ -62,16 +53,11 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
         }
       }
       else if (flowAgentConversation.response) {
-        // Handle the traditional response format
         formattedMessage = flowAgentConversation.response;
-      }
-      
-      // Update the message if it's different from the current one
-      if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== formattedMessage) {
-        addAssistantMessage(formattedMessage);
-      }
+      }      
+      updateLastAssistantMessage(formattedMessage);
     }
-  }, [flowAgentConversation, messages, addAssistantMessage]);
+  }, [flowAgentConversation, updateLastAssistantMessage]);
 
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;
@@ -94,9 +80,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold">Bighammer.AI</h2>
-          
         </div>
-        
         {messages.length === 0 ? (
           <div className="mt-4 flex flex-col items-center flex-grow justify-center">
             <img src={imageSrc} alt="AI" className="w-16 h-16" />
@@ -135,7 +119,6 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
             </div>
           </ScrollArea>
         )}
-        
         <div className="flex gap-2 mt-4">
           <AIChatInput
             input={input}

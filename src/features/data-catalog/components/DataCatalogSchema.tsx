@@ -1,15 +1,16 @@
 import { DataTable } from '@/components/bh-table/data-table';
-import { createColumns, descriptionCellRefs } from '../config/layoutCloumns.config';
+import { createColumns, descriptionCellRefs, tagCellRefs } from '../config/layoutCloumns.config';
 import { useLayoutFields } from '@/features/data-catalog/hooks/uselayoutFileds';
 import About from './About';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { toast } from 'sonner';
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
 import { AGENT_PORT } from '@/config/platformenv';
+import { LayoutField, LayoutFieldTags } from '@/types/data-catalog/dataCatalog';
 
 export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
   const { dataSourceTypes } = useAppSelector(
@@ -21,9 +22,48 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
   });
 
   const datatypes = dataSourceTypes?.codes_dtl || [];
-  const layoutData = layoutFields ? layoutFields.layout_fields : [];
+  const [layoutData, setLayoutData] = useState<LayoutField[]>([]);
+
+  // Initialize layout data when it becomes available
+  useMemo(() => {
+    if (layoutFields && layoutFields.layout_fields) {
+      setLayoutData(layoutFields.layout_fields);
+    }
+  }, [layoutFields]);
+
+  useEffect(() => {
+    for (const [fieldId, cellData] of tagCellRefs.entries()) {
+      if (cellData.ref.current) {
+        const addTagHandler = (key: string, value: string) => {
+          handleAddTag(Number(fieldId), key, value);
+        };
+        
+        const removeTagHandler = (key: string) => {
+          handleRemoveTag(Number(fieldId), key);
+        };
+        
+        const originalAddTag = cellData.ref.current.addTag;
+        const originalRemoveTag = cellData.ref.current.removeTag;
+        
+        cellData.ref.current.addTag = (key: string, value: string) => {
+          originalAddTag(key, value);          
+          addTagHandler(key, value);
+        };
+        
+        cellData.ref.current.removeTag = (key: string) => {
+          originalRemoveTag(key);          
+          removeTagHandler(key);
+        };
+      }
+    }
+  }, [layoutData]);
 
   const generateAllDescriptions = async () => {
+    if (!layoutFields) {
+      toast.error("Layout fields data is not available");
+      return;
+    }
+
     toast.info("Generating descriptions for all fields...");
     const body = {
       operation_type: 'column_description',
@@ -34,14 +74,11 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
       }
     }
     
-    // Map to keep track of field IDs to column names
     const fieldIdToColumnName = new Map();
     
-    // First, set all cells to loading state and collect column data
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         try {
-          // Set the cell to loading state
           cellData.ref.current.setGenerating(true);
           
           const dataType = datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd);
@@ -51,7 +88,6 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
             dataType
           }
           
-          // Store the mapping of field ID to column name for later use
           fieldIdToColumnName.set(cellData.rowData.lyt_fld_name, fieldId);
           
           body.params.columns.push(column);
@@ -66,7 +102,6 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     }
     
     try {
-      // Make the API call
       const response: any = await apiService.post({
         portNumber: AGENT_PORT,
         method: 'POST',
@@ -116,7 +151,42 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     }
   };
 
-  const columns = useMemo(() => createColumns(generateAllDescriptions), []);
+  const handleAddTag = useCallback((fieldId: number, key: string, value: string) => {
+    const newTags: LayoutFieldTags = {
+      tagList: { key, value }
+    };
+    
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_tags: newTags } 
+          : field
+      )
+    );
+        
+    toast.success(`Added tag ${key}: ${value}`);
+  }, []);
+  
+  const handleRemoveTag = useCallback((fieldId: number, key: string) => {
+    const emptyTags: LayoutFieldTags = {
+      tagList: { key: '', value: '' }
+    };
+    
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_tags: emptyTags } 
+          : field
+      )
+    );
+      
+    toast.success(`Removed tag ${key}`);
+  }, []);
+
+  const columns = useMemo(() => 
+    createColumns(generateAllDescriptions), 
+    [generateAllDescriptions]
+  );
 
   if (isLoading || isFetching) {
     return (

@@ -17,7 +17,7 @@ interface FlowState {
     selectedEnvironment: Environment | null;
     loading: boolean;
     error: string | null;
-    dagRunId: { dag_run_id: string; dag_id: string } | null;
+    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
 }
 
@@ -105,15 +105,15 @@ export const updateFlowConfiguration = createAsyncThunk(
 
 export const patchCronDeployment = createAsyncThunk(
     "flows/patchCronDeployment",
-    async (data: { flow_deployment_id: number, cron_expression: { cron_expression: string } }) => {
+    async (data: { flow_deployment_id: number, cron_expression: { cron_expression: { cron: string } } }) => {
         const response = await apiService.patch<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: `/flow/deployment/${data.flow_deployment_id}/cron/`,
+            url: `/flow/flow-deployment/${data.flow_deployment_id}`,
             data: data.cron_expression,
             usePrefix: true,
             method: 'PATCH',
             metadata: {
-                errorMessage: 'Failed to update cron schedule'
+                errorMessage: 'Failed to update cron expression'
             }
         });
         return response;
@@ -123,9 +123,9 @@ export const patchCronDeployment = createAsyncThunk(
 export const fetchDagParserTime = createAsyncThunk(
     "flows/fetchDagParserTime",
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
-        const response = await apiService.get<{ last_parsed_time: string }>({
+        const response = await apiService.get<string>({
             portNumber: CATALOG_API_PORT,
-            url: '/flow/dag/parser/time/',
+            url: '/bh_airflow/dag_parse_time/',
             params: query,
             usePrefix: true,
             method: 'GET',
@@ -133,7 +133,7 @@ export const fetchDagParserTime = createAsyncThunk(
                 errorMessage: 'Failed to fetch DAG parser time'
             }
         });
-        return response.last_parsed_time;
+        return response;
     }
 );
 
@@ -180,7 +180,7 @@ export const triggerDagDeployment = createAsyncThunk(
         const response = await apiService.post<{ dag_run_id: string }>({
             portNumber: CATALOG_API_PORT,
             url: '/bh_airflow/trigger_dag/',
-            data,
+            query: `dag_id=${data.dag_id}&airflow_env_name=${data.airflow_env_name}&bh_env_name=${data.bh_env_name}`,
             usePrefix: true,
             method: 'POST',
             metadata: {
@@ -232,8 +232,9 @@ const flowSlice = createSlice({
         setError: (state, action: PayloadAction<string | null>) => {
             state.error = action.payload;
         },
-        setDagRunId: (state, action: PayloadAction<{ dag_run_id: string; dag_id: string }>) => {
+        setDagRunId: (state, action: PayloadAction<{ airflow_env_name: string; dag_run_id: string; dag_id: string; bh_env_name: string }>) => {
             state.dagRunId = action.payload;
+            state.dagEunID = action.payload;
         },
         clearFlowAgentConversation: (state) => {
             state.flowAgentConversation = null;
@@ -296,7 +297,7 @@ const flowSlice = createSlice({
             })
             .addCase(fetchDagParserTime.fulfilled, (state, action) => {
                 state.loading = false;
-                state.dagParserTime = action.payload;
+                state.dagParserTime = action.payload as string;
             })
             .addCase(fetchDagParserTime.rejected, (state, action) => {
                 state.loading = false;
@@ -332,16 +333,26 @@ const flowSlice = createSlice({
             })
             .addCase(updateFlowConfiguration.fulfilled, (state, action) => {
                 state.loading = false;
+                console.log('Update Flow Configuration - Action:', action);
+                console.log('Update Flow Configuration - Current selectedFlow:', state.selectedFlow);
+                
                 if (state.selectedFlow && state.selectedFlow.flow_config) {
                     // Update the flow_config in the selectedFlow
                     state.selectedFlow = {
                         ...state.selectedFlow,
                         flow_config: state.selectedFlow.flow_config.map(config => 
                             config.flow_config_id === action.meta.arg.flow_config_id 
-                                ? { ...config, flow_config: action.meta.arg.flow_config.flow_config }
+                                ? { 
+                                    ...config, 
+                                    // Use the actual API response if available, otherwise use the sent data
+                                    flow_config: action.payload?.flow_config?.[0]?.flow_config || 
+                                                action.meta.arg.flow_config.flow_config 
+                                  }
                                 : config
                         )
                     };
+                    
+                    console.log('Update Flow Configuration - Updated selectedFlow:', state.selectedFlow);
                 }
             })
             .addCase(updateFlowConfiguration.rejected, (state, action) => {
@@ -356,7 +367,14 @@ const flowSlice = createSlice({
                 state.loading = false;
                 state.dagRunId = {
                     dag_run_id: action.payload.dag_run_id,
-                    dag_id: state.selectedFlow?.flow_name || ''
+                    dag_id: state.selectedFlow?.flow_name || '',
+                    bh_env_name: state.selectedEnvironment?.bh_env_name || ''
+                };
+                // Also update dagEunID for backward compatibility
+                state.dagEunID = {
+                    dag_run_id: action.payload.dag_run_id,
+                    dag_id: state.selectedFlow?.flow_name || '',
+                    bh_env_name: state.selectedEnvironment?.bh_env_name || ''
                 };
             })
             .addCase(triggerDagDeployment.rejected, (state, action) => {

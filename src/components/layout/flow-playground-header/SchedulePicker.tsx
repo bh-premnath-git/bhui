@@ -73,7 +73,13 @@ export const SchedulePicker = () => {
 
     useEffect(() => {
         if (selectedFlow?.flow_deployment?.[0]?.cron_expression) {
-            setCronExpression(selectedFlow.flow_deployment[0].cron_expression);
+            // Handle both string and object formats
+            const cronExp = selectedFlow.flow_deployment[0].cron_expression;
+            if (typeof cronExp === 'string') {
+                setCronExpression(cronExp);
+            } else if (typeof cronExp === 'object' && cronExp.cron) {
+                setCronExpression(cronExp.cron);
+            }
             // TODO: Parse cron expression to interval state if needed
         }
     }, [selectedFlow?.flow_deployment]);
@@ -81,11 +87,14 @@ export const SchedulePicker = () => {
     const handleClear = async () => {
         if (selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
             try {
+                // Get default cron expression from the default state
+                const defaultCronExpression = convertToCron(defaultState);
+                
                 await dispatch(patchCronDeployment({
                     flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id,
-                    cron_expression: { cron_expression: "* * * * *" }
+                    cron_expression: { cron_expression:{cron: defaultCronExpression} }
                 }));
-                setCronExpression("* * * * *");
+                setCronExpression(defaultCronExpression);
                 setIntervalState(defaultState);
             } catch (error) {
                 console.error('Failed to clear cron schedule:', error);
@@ -104,7 +113,7 @@ export const SchedulePicker = () => {
             if (selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
                 await dispatch(patchCronDeployment({
                     flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id,
-                    cron_expression: { cron_expression: newCronExpression }
+                    cron_expression: { cron_expression: { cron: newCronExpression } }
                 }));
             }
         } catch (error) {

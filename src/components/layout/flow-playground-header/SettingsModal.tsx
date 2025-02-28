@@ -10,10 +10,10 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { patchFlowOperation, updateFlowConfiguration } from '@/store/slices/designer/flowSlice';
 import { RootState } from "@/store/";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 // Types
@@ -156,58 +156,62 @@ export const SettingsModal = () => {
     if (isOpen && selectedFlow) {
       // Initialize with data from selectedFlow
       setNotes(selectedFlow.notes || "");
-      
+
       // Transform the tags from Record<string, string>[] to { key: string; value: string }[]
       const transformedTags = {
-        tagList: Array.isArray(selectedFlow.tags?.tagList) 
+        tagList: Array.isArray(selectedFlow.tags?.tagList)
           ? selectedFlow.tags.tagList.map((tag: Record<string, string>) => {
-              // Extract the first key-value pair from the record
-              const key = Object.keys(tag)[0] || '';
-              const value = tag[key] || '';
-              return { key, value };
-            })
+            // Extract the first key-value pair from the record
+            const key = Object.keys(tag)[0] || '';
+            const value = tag[key] || '';
+            return { key, value };
+          })
           : []
       };
       setTags(transformedTags);
 
-      const existingConfigs = selectedFlow?.flow_config?.[0]?.flow_config;
-      if (existingConfigs && Array.isArray(existingConfigs)) {
-        // Create a new array with the correct type structure
-        const formattedConfigs: ConfigItem[] = [];
-        
-        // Process each config item
-        existingConfigs.forEach((config: any) => {
-          if (config && typeof config === 'object') {
-            // Case 1: If it already has key and value properties
-            if ('key' in config && 'value' in config) {
-              formattedConfigs.push({
+      console.log('Flow config from selectedFlow:', selectedFlow);
+
+      let configData: ConfigItem[] = [{ key: '', value: '' }];
+
+      if (selectedFlow?.flow_config?.length > 0) {
+        const flowConfigData = selectedFlow.flow_config[0]?.flow_config;
+
+        if (Array.isArray(flowConfigData) && flowConfigData.length > 0) {
+          // Process each config item with more logging
+          configData = flowConfigData.map((config: any) => {
+            console.log('Processing config item:', config);
+
+            // Handle case where config is already in the correct format
+            if (config && typeof config === 'object' && 'key' in config && 'value' in config) {
+              return {
                 key: String(config.key),
                 value: String(config.value)
-              });
-            } 
-            // Case 2: If it's a record object with arbitrary keys
-            else {
+              };
+            }
+            // Handle case where config is a key-value object
+            else if (config && typeof config === 'object') {
               const keys = Object.keys(config);
               if (keys.length > 0) {
                 const key = keys[0];
-                formattedConfigs.push({
+                return {
                   key: key,
                   value: String(config[key] || '')
-                });
+                };
               }
             }
+
+            // Default empty item if we couldn't process
+            return { key: '', value: '' };
+          }).filter((item: ConfigItem) => item.key !== '' || item.value !== '');
+
+          // If all items were filtered out, add a default empty one
+          if (configData.length === 0) {
+            configData = [{ key: '', value: '' }];
           }
-        });
-        
-        // If we couldn't extract any valid configs, provide a default
-        if (formattedConfigs.length === 0) {
-          formattedConfigs.push({ key: '', value: '' });
         }
-        
-        setConfigs(formattedConfigs);
-      } else {
-        setConfigs([{ key: '', value: '' }]);
       }
+      setConfigs(configData);
     }
   }, [isOpen, selectedFlow]);
 
@@ -239,13 +243,13 @@ export const SettingsModal = () => {
     try {
       // Transform tags back to the format expected by the API
       const transformedTags = tags.tagList.map(tag => ({ [tag.key]: tag.value }));
-      
+
       // Save general settings
       const settingsPayload = {
         notes,
         tags: { tagList: transformedTags },
       };
-      
+
       await dispatch(patchFlowOperation({
         flowId: selectedFlow.flow_id,
         data: settingsPayload
@@ -255,9 +259,24 @@ export const SettingsModal = () => {
       if (activeTab === "configuration") {
         const flow_config_id = selectedFlow?.flow_config?.[0]?.flow_config_id;
         if (flow_config_id) {
+          // Log what we're saving
+          console.log('Saving flow configuration:', configs);
+
+          // Clean up the configs before saving - remove any empty entries
+          const cleanedConfigs = configs.filter(config =>
+            config.key.trim() !== '' || config.value.trim() !== ''
+          );
+
+          // Add a default empty config if all were removed
+          const configsToSave = cleanedConfigs.length > 0 ?
+            cleanedConfigs :
+            [{ key: '', value: '' }];
+
+          console.log('Cleaned configs to save:', configsToSave);
+
           await dispatch(updateFlowConfiguration({
             flow_config_id,
-            flow_config: { flow_config: configs }
+            flow_config: { flow_config: configsToSave }
           }));
         }
       }

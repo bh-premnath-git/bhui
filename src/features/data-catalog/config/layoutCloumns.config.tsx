@@ -1,15 +1,21 @@
 import { createRef } from 'react';
 import type { ColumnDefWithFilters } from "@/types/table"; 
-import { DataSourceLayout } from "@/types/data-catalog/dataCatalog";
+import { LayoutField } from "@/types/data-catalog/dataCatalog";
 import { Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { DescriptionCell, DescriptionCellRef } from "../components/DescriptionCell";
 import { TagCell } from "../components/TagCell";
 
-// Keep track of all description cell refs
-const descriptionCellRefs = new Map<string | number, React.RefObject<DescriptionCellRef>>();
+// Keep track of all description cell refs and their corresponding row data
+export interface CellRefData {
+  ref: React.RefObject<DescriptionCellRef>;
+  rowData: LayoutField;
+}
 
-export const columns: ColumnDefWithFilters<DataSourceLayout>[] = [
+export const descriptionCellRefs = new Map<string | number, CellRefData>();
+
+// Function to create columns with generate descriptions handler
+export const createColumns = (generateDescriptions?: () => Promise<void>): ColumnDefWithFilters<LayoutField>[] => [
   {
     id: 'lyt_fld_name',
     accessorKey: 'lyt_fld_name',
@@ -23,11 +29,21 @@ export const columns: ColumnDefWithFilters<DataSourceLayout>[] = [
     enableColumnFilter: false,
     cell: ({ getValue, row }) => {
       const fieldId = row.original.lyt_fld_id;
+      const rowData = row.original;
+      
       // Create or get existing ref for this cell
       if (!descriptionCellRefs.has(fieldId)) {
-        descriptionCellRefs.set(fieldId, createRef<DescriptionCellRef>());
+        descriptionCellRefs.set(fieldId, {
+          ref: createRef<DescriptionCellRef>(),
+          rowData
+        });
+      } else {
+        // Update row data in case it changed
+        const existingData = descriptionCellRefs.get(fieldId)!;
+        existingData.rowData = rowData;
       }
-      const ref = descriptionCellRefs.get(fieldId)!;
+      
+      const ref = descriptionCellRefs.get(fieldId)!.ref;
       
       return (
         <DescriptionCell 
@@ -37,20 +53,15 @@ export const columns: ColumnDefWithFilters<DataSourceLayout>[] = [
         />
       );
     },
-    headerButton: {
-      icon: Gavel,
-      onClick: async () => {
-        toast.info("Generating descriptions for all fields...");
-        // Generate descriptions for all cells
-        for (const ref of descriptionCellRefs.values()) {
-          if (ref.current) {
-            await ref.current.generateDescription();
-          }
-        }
-        toast.success("All descriptions generated successfully");
-      },
-      tooltip: "Generate descriptions for all fields using AI",
-    },
+    ...(generateDescriptions && {
+      headerButton: {
+        icon: Gavel,
+        onClick: async () => {
+          await generateDescriptions();
+        },
+        tooltip: "Generate descriptions for all fields using AI",
+      }
+    })
   },
   {
     id: 'lyt_fld_tags',
@@ -82,3 +93,6 @@ export const columns: ColumnDefWithFilters<DataSourceLayout>[] = [
     enableColumnFilter: false,
   },
 ];
+
+// Default columns with no description generation
+export const columns = createColumns();

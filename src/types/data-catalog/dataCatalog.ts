@@ -9,6 +9,12 @@ export interface DataSourceMetadata {
 }
 
 export interface DataSourceLayout {
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  is_deleted: boolean;
+  deleted_by: string | null;
   data_src_lyt_id: number;
   data_src_lyt_name: string;
   data_src_lyt_fmt_cd: number;
@@ -30,13 +36,7 @@ export interface DataSourceLayout {
   data_src_is_history_required: boolean | null;
   data_src_id: number;
   data_src_lyt_key: string;
-  layout_fields: LayoutField[]; // This is the array you want to display in your table
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  updated_by: string | null;
-  is_deleted: boolean | null;
-  deleted_by: string | null;
+  layout_fields: LayoutField[]; 
 }
 
 export interface DataSource {
@@ -81,8 +81,18 @@ export interface DataSourceMutationData {
   total_customer: number;
 }
 
+export interface LayoutFieldTags {
+  user: string;
+}
+
 export interface LayoutField {
-  lyt_fld_id: string | number;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  is_deleted: boolean;
+  deleted_by: string | null;
+  lyt_fld_id: number;
   lyt_fld_name: string;
   lyt_fld_desc: string;
   lyt_fld_order: number;
@@ -90,15 +100,7 @@ export interface LayoutField {
   lyt_fld_start: number;
   lyt_fld_length: number;
   lyt_fld_data_type_cd: number;
-  lyt_fld_tags: Record<string, string>;
+  lyt_fld_tags: LayoutFieldTags;
   lyt_id: number;
   lyt_fld_key: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  updated_by: string | null;
-  is_deleted: boolean | null;
-  deleted_by: string | null;
 }
-
-

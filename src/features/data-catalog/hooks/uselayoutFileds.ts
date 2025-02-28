@@ -1,5 +1,5 @@
 import { useResource } from "@/hooks/api/useResource";
-import { DataSourceLayout, LayoutField } from "@/types/data-catalog/dataCatalog";
+import { DataSourceLayout } from "@/types/data-catalog/dataCatalog";
 import { toast } from "sonner";
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import { useEffect } from "react";
@@ -11,7 +11,7 @@ interface UseLayoutFieldsOptions {
 
 export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch: true }) => {
     // For queries - returns DataSourceLayout array which contains layout fields
-    const { getAll: getAllLayoutFields } = useResource<DataSourceLayout[]>(
+    const { getAll: getAllLayoutFields } = useResource<DataSourceLayout>(
         'datasource_layout',
         CATALOG_API_PORT,
         true

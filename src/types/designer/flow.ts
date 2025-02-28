@@ -67,7 +67,11 @@ export interface FlowAgentConversationResponse {
   thread_id: string;
   flow_id: string;
   request: string;
-  response: string;
+  response?: string;
+  status?: 'success' | 'error' | 'missing';
+  flow_definition?: string | Record<string, string[]>;
+  operators?: string[];
+  pipelines?: string[];
   created_at: string;
   updated_at: string;
 } 

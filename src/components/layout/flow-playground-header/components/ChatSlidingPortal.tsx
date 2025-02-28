@@ -13,7 +13,6 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
   const dispatch = useAppDispatch();
   const { selectedFlow, flowAgentConversation, loading } = useAppSelector((state: RootState) => state.flow);
 
-  // Clear messages when the portal is closed
   useEffect(() => {
     if (!isOpen) {
       clearMessages();
@@ -21,13 +20,55 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     }
   }, [isOpen, clearMessages, dispatch]);
 
-  // Update messages when flow agent conversation changes
   useEffect(() => {
-    if (flowAgentConversation && flowAgentConversation.response) {
-      // Check if this is a new response by comparing with the last message
+    if (flowAgentConversation) {
       const lastMessage = messages[messages.length - 1];
-      if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== flowAgentConversation.response) {
-        addAssistantMessage(flowAgentConversation.response);
+      
+      // Format the message based on response type
+      let formattedMessage = '';
+      
+      if (flowAgentConversation.status === 'error') {
+        formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
+      } 
+      else if (flowAgentConversation.status === 'missing') {
+        // Format missing fields message
+        formattedMessage = `Please provide more information for your workflow:\n\n`;
+        
+        // Add missing operator fields if present
+        if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
+          formattedMessage += `Missing fields:\n`;
+          
+          Object.entries(flowAgentConversation.flow_definition).forEach(([operator, fields]) => {
+            formattedMessage += `- ${operator}: ${fields.join(', ')}\n`;
+          });
+        }
+        
+        // Add missing operators if present
+        if (flowAgentConversation.operators && flowAgentConversation.operators.length > 0) {
+          formattedMessage += `\nOperators: ${flowAgentConversation.operators.join(', ')}\n`;
+        }
+        
+        // Add pipelines if present
+        if (flowAgentConversation.pipelines && flowAgentConversation.pipelines.length > 0) {
+          formattedMessage += `\nPipelines: ${flowAgentConversation.pipelines.join(', ')}`;
+        }
+      }
+      else if (flowAgentConversation.status === 'success') {
+        // For success response with flow_definition
+        formattedMessage = `Workflow created successfully!\n\n`;
+        
+        if (typeof flowAgentConversation.flow_definition === 'string') {
+          formattedMessage += flowAgentConversation.flow_definition;
+        }
+      }
+      else if (flowAgentConversation.response) {
+        // Handle the traditional response format
+        formattedMessage = flowAgentConversation.response;
+      }
+      
+      // Update the message if it's different from the current one
+      if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== formattedMessage) {
+        addAssistantMessage(formattedMessage);
       }
     }
   }, [flowAgentConversation, messages, addAssistantMessage]);
@@ -35,17 +76,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;
 
-    // Add user message to chat
     addUserMessage(input);
     
-    // Add temporary loading message
     addAssistantMessage("Thinking...");
     
-    // Send request to flow agent
     await dispatch(createFlowAgentConversationEntry({
       flow_id: selectedFlow.flow_id.toString(),
       request: input,
-      thread_id: selectedFlow.flow_id.toString() // Using flow_id as thread_id
+      thread_id: selectedFlow.flow_id.toString()
     }));
     
     setInput("");

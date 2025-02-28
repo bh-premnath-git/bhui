@@ -18,7 +18,7 @@ import { LazyLoading } from "./components/shared/LazyLoading";
 import { KeycloakProvider } from "./context/KeycloakContext";
 import 'reactflow/dist/style.css';
 import { useAppDispatch } from "@/hooks/useRedux";
-import { fetchGithubProviders } from "./store/slices/globalGitSlice";
+import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
 
 const queryClient = new QueryClient();
@@ -88,6 +88,7 @@ function AppInitializer() {
 
   useEffect(() => {
     dispatch(fetchGithubProviders());
+    dispatch(fetchDataSourceTypes());
   }, [dispatch]);
 
   return null;

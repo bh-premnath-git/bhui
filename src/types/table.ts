@@ -38,6 +38,7 @@ export interface DataTableProps<TData> {
   pagination?: boolean
   toolbarConfig?: TToolbarConfig
   onRowClick?: (row: Row<TData>) => void
+  generateDescriptions?: () => Promise<void>
 }
 
 export interface StatusMetric {

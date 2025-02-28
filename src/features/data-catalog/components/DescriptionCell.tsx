@@ -1,8 +1,10 @@
 import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
-import { AlertCircle, Edit, Check, X } from "lucide-react";
+import { AlertCircle, Edit, Check, X, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface DescriptionCellProps {
   value: string | undefined;
@@ -11,12 +13,12 @@ interface DescriptionCellProps {
 
 export interface DescriptionCellRef {
   updateDescription: (description: string) => Promise<void>;
-  setGenerating: (isGenerating: boolean) => void;
+  setLoading: (isLoading: boolean) => void;
 }
 
 export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellProps>(
   function DescriptionCell({ value: initialValue, fieldId }, ref) {
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [generatedValue, setGeneratedValue] = useState<string | undefined>();
     const [editValue, setEditValue] = useState<string>('');
@@ -26,14 +28,14 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
       return Promise.resolve();
     }, []);
 
-    const setGeneratingState = useCallback((generating: boolean) => {
-      setIsGenerating(generating);
+    const setLoadingState = useCallback((loading: boolean) => {
+      setIsLoading(loading);
     }, []);
 
     useImperativeHandle(ref, () => ({
       updateDescription,
-      setGenerating: setGeneratingState
-    }), [updateDescription, setGeneratingState]);
+      setLoading: setLoadingState
+    }), [updateDescription, setLoadingState]);
 
     const handleStartEdit = () => {
       const currentValue = generatedValue || initialValue || '';
@@ -47,15 +49,19 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
     };
 
     const handleSaveEdit = () => {
-      updateDescription(editValue);
+      if (editValue.trim() !== '') {
+        setGeneratedValue(editValue);
+        // In a real application, you would call an API to update the description
+        toast.success("Description updated");
+      }
       setIsEditing(false);
     };
 
-    if (isGenerating) {
+    if (isLoading) {
       return (
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <span className="animate-spin">⏳</span>
-          <span>Generating description...</span>
+        <div className="flex items-center text-muted-foreground">
+          <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" />
+          Generating description...
         </div>
       );
     }
@@ -66,8 +72,8 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
           <Textarea
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            className="min-h-[100px] text-sm"
-            placeholder="Enter description..."
+            className="min-h-[100px] resize-none"
+            placeholder="Enter a description..."
           />
           <div className="flex justify-end gap-2">
             <Button
@@ -94,14 +100,24 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
     }
 
     const displayValue = generatedValue || initialValue;
+    const isEmpty = !displayValue || displayValue.trim() === '';
 
-    if (!displayValue) {
+    if (isEmpty) {
       return (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center text-muted-foreground gap-2">
-            <AlertCircle className="h-4 w-4" />
-            <span>No description available</span>
-          </div>
+        <div className="flex justify-between items-center">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center text-muted-foreground">
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  <span className="text-sm">No description available</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Click the edit button to add a description</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant="ghost"
             size="sm"
@@ -115,24 +131,15 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
     }
 
     return (
-      <div className="flex items-center justify-between">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="max-w-[300px] truncate">
-                {displayValue}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-[400px] whitespace-pre-wrap">{displayValue}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <div className="group flex justify-between">
+        <div className={cn("text-sm leading-relaxed", isEmpty && "text-muted-foreground")}>
+          {displayValue}
+        </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleStartEdit}
-          className="h-6 w-6 p-0"
+          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Edit className="h-3.5 w-3.5" />
         </Button>

@@ -10,9 +10,9 @@ import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
 import { AGENT_PORT } from '@/config/platformenv';
-import { LayoutField, LayoutFieldTags } from '@/types/data-catalog/dataCatalog';
+import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
 
-export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
+export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
   const { dataSourceTypes } = useAppSelector(
     (state: RootState) => state.global
   );
@@ -30,6 +30,38 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
       setLayoutData(layoutFields.layout_fields);
     }
   }, [layoutFields]);
+
+  // Prepare the API request body for description generation
+  const descriptionApiBody = useMemo(() => {
+    if (!layoutFields) return null;
+
+    return {
+      operation_type: 'column_description',
+      thread_id: 'desc_123',
+      params: {
+        source_name: layoutFields.data_src_lyt_name,
+        columns: []
+      }
+    };
+  }, [layoutFields]);
+
+  // Map to keep track of field IDs to column names
+  const fieldIdToColumnMap = useMemo(() => {
+    const map = new Map<string, { fieldId: string | number, columnName: string, dataType: any }>();
+    
+    if (!layoutData.length || !datatypes.length) return map;
+
+    layoutData.forEach(field => {
+      const dataType = datatypes.find(dt => dt.id === field.lyt_fld_data_type_cd);
+      map.set(field.lyt_fld_name, {
+        fieldId: field.lyt_fld_id,
+        columnName: field.lyt_fld_name,
+        dataType
+      });
+    });
+
+    return map;
+  }, [layoutData, datatypes]);
 
   useEffect(() => {
     // Register event handlers for all tag cells
@@ -76,48 +108,40 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
 
   const generateAllDescriptions = async () => {
     if (!layoutFields) {
-      toast.error("Layout fields data is not available");
+      toast.error("Layout data not available");
       return;
     }
 
     toast.info("Generating descriptions for all fields...");
-    const body = {
-      operation_type: 'column_description',
-      thread_id: 'desc_123',
-      params: {
-        source_name: layoutFields.data_src_lyt_name,
-        columns: []
-      }
-    }
     
-    const fieldIdToColumnName = new Map();
+    // Clone the API body to avoid mutating the memoized value
+    const body = { ...descriptionApiBody };
     
+    if (!body) return;
+    
+    // Reset columns array
+    body.params.columns = [];
+
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         try {
-          cellData.ref.current.setGenerating(true);
+          cellData.ref.current.setLoading(true);
           
-          const dataType = datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd);
           const column = {
             id: fieldId,
             name: cellData.rowData.lyt_fld_name,
-            dataType
+            dataType: datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd)
           }
-          
-          fieldIdToColumnName.set(cellData.rowData.lyt_fld_name, fieldId);
           
           body.params.columns.push(column);
         } catch (error) {
           console.error(`Error preparing field ${fieldId}:`, error);
-          toast.error(`Failed to prepare description for field: ${cellData.rowData.lyt_fld_name}`);
-          if (cellData.ref.current) {
-            cellData.ref.current.setGenerating(false);
-          }
         }
       }
     }
-    
+
     try {
+      
       const response: any = await apiService.post({
         portNumber: AGENT_PORT,
         method: 'POST',
@@ -134,17 +158,17 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
       if (parsedResponse && parsedResponse.descriptions && Array.isArray(parsedResponse.descriptions)) {
         let successCount = 0;
         
-      
         for (const desc of parsedResponse.descriptions) {
           const columnName = desc.column_name;
           const description = desc.description;
           
-          const fieldId = fieldIdToColumnName.get(columnName);
+          const fieldInfo = fieldIdToColumnMap.get(columnName);
           
-          if (fieldId && descriptionCellRefs.has(fieldId)) {
-            const cellData = descriptionCellRefs.get(fieldId);
+          if (fieldInfo && descriptionCellRefs.has(fieldInfo.fieldId)) {
+            const cellData = descriptionCellRefs.get(fieldInfo.fieldId);
             if (cellData && cellData.ref.current) {
               await cellData.ref.current.updateDescription(description);
+              cellData.ref.current.setLoading(false);
               successCount++;
             }
           } else {
@@ -155,13 +179,21 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
         toast.success(`Successfully generated ${successCount} descriptions`);
       } else {
         toast.error("No descriptions found in the API response");
+        // Set loading to false for all cells
+        for (const cellData of descriptionCellRefs.values()) {
+          if (cellData.ref.current) {
+            cellData.ref.current.setLoading(false);
+          }
+        }
       }
     } catch (error) {
-      toast.error("Failed to generate descriptions");
-    } finally {
-      for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
+      console.error("Error generating descriptions:", error);
+      toast.error("Error generating descriptions");
+      
+      // Set loading to false for all cells
+      for (const cellData of descriptionCellRefs.values()) {
         if (cellData.ref.current) {
-          cellData.ref.current.setGenerating(false);
+          cellData.ref.current.setLoading(false);
         }
       }
     }
@@ -218,6 +250,21 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     [generateAllDescriptions]
   );
 
+  // Prepare columns data for About component
+  const columnsForAbout = useMemo(() => {
+    if (!layoutData.length || !datatypes.length) return [];
+    
+    return layoutData.map(field => {
+      const dataType = datatypes.find(dt => dt.id === field.lyt_fld_data_type_cd);
+      return {
+        id: field.lyt_fld_id,
+        name: field.lyt_fld_name,
+        description: field.lyt_fld_desc,
+        dataType
+      };
+    });
+  }, [layoutData, datatypes]);
+
   if (isLoading || isFetching) {
     return (
       <div className="mt-6">
@@ -259,7 +306,10 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
           )}
         </div>
         <div className="w-[300px]">
-          <About />
+          <About
+            selectedSource={selectedSource}
+            columns={columnsForAbout}
+          />
         </div>
       </div>
     </div>

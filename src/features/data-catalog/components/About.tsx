@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast, Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
+import { DataSource } from '@/types/data-catalog/dataCatalog';
 
 interface DescriptionSectionProps {
   description: string;
@@ -473,8 +474,8 @@ function AddLinkDialog({
   );
 }
 
-export default function About({ initialData = {} as AboutData }) {
-  const defaultDescription = initialData.description ?? 'Sample Description about the data source. This needs to be updated by the user.';
+export default function About({ initialData = {} as AboutData, selectedSource, columns }: { initialData?: AboutData, selectedSource: DataSource, columns: any }) {
+  const defaultDescription = selectedSource.data_src_desc ?? 'Sample Description about the data source.';
   const [descriptionState, setDescriptionState] = useState({
     current: defaultDescription,
     original: defaultDescription

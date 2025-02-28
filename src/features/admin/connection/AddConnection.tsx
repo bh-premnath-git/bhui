@@ -154,7 +154,7 @@ export const AddConnection = () => {
   useEffect(() => {
     const loadConnectionSchema = async () => {
       try {
-        const schema = await import('../components/BuildPipeLineComps/json/Connection.json');
+        const schema = await import('@/components/bh-reactflow-comps/builddata/json/Connection.json');
         setConnectionSchema(schema);
       } catch (error) {
         console.error('Error loading connection schema:', error);
@@ -194,13 +194,13 @@ export const AddConnection = () => {
           let schema: any;
           switch (selectedType.toLowerCase()) {
             case 'postgres':
-              schema = await import('../components/BuildPipeLineComps/json/postgres.json');
+              schema = await import('@/components/bh-reactflow-comps/builddata/json/postgres.json');
               break;
             case 'bigquery':
-              schema = await import('../components/BuildPipeLineComps/json/bigquery.json');
+              schema = await import('@/components/bh-reactflow-comps/builddata/json/bigquery.json');
               break;
             case 'snowflake':
-              schema = await import('../components/BuildPipeLineComps/json/snowflake.json');
+              schema = await import('@/components/bh-reactflow-comps/builddata/json/snowflake.json');
               break;
             case 'local':
               // Create a simple schema for local connection

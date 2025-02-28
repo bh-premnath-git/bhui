@@ -32,6 +32,7 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
   }, [layoutFields]);
 
   useEffect(() => {
+    // Register event handlers for all tag cells
     for (const [fieldId, cellData] of tagCellRefs.entries()) {
       if (cellData.ref.current) {
         const addTagHandler = (key: string, value: string) => {
@@ -53,6 +54,21 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
         cellData.ref.current.removeTag = (key: string) => {
           originalRemoveTag(key);          
           removeTagHandler(key);
+        };
+      }
+    }
+
+    // Register event handlers for description cells
+    for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
+      if (cellData.ref.current) {
+        const originalUpdateDescription = cellData.ref.current.updateDescription;
+        
+        cellData.ref.current.updateDescription = async (description: string) => {
+          // Call the original method to update the UI
+          await originalUpdateDescription(description);
+          
+          // Update our central state
+          handleUpdateDescription(Number(fieldId), description);
         };
       }
     }
@@ -181,6 +197,20 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     );
       
     toast.success(`Removed tag ${key}`);
+  }, []);
+
+  const handleUpdateDescription = useCallback((fieldId: number, description: string) => {
+    // Update the layoutData state
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_desc: description } 
+          : field
+      )
+    );
+    
+    // In a real application, you would make an API call here to update the backend
+    toast.success(`Updated description for field ${fieldId}`);
   }, []);
 
   const columns = useMemo(() => 

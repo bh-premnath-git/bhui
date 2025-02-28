@@ -88,7 +88,7 @@ export const TagCell = forwardRef<TagCellRef, TagCellProps>(
               className="h-4 w-4 p-0 hover:bg-transparent hover:text-destructive"
               onClick={() => removeTag(key)}
             >
-              <X className="h-3 w-3" />
+              <X className="h-2.5 w-2.5" />
             </Button>
           </Badge>
         ))}
@@ -118,7 +118,7 @@ export const TagCell = forwardRef<TagCellRef, TagCellProps>(
               className="h-6 w-6 p-0"
               onClick={handleCancelEdit}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           </div>
         ) : (

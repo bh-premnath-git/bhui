@@ -1,6 +1,5 @@
 import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { AlertCircle } from "lucide-react";
-import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DescriptionCellProps {
@@ -9,7 +8,6 @@ interface DescriptionCellProps {
 }
 
 export interface DescriptionCellRef {
-  generateDescription: () => Promise<void>;
   updateDescription: (description: string) => Promise<void>;
   setGenerating: (isGenerating: boolean) => void;
 }
@@ -19,41 +17,24 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedValue, setGeneratedValue] = useState<string | undefined>();
 
-    const generateDescription = useCallback(async () => {
-      if (isGenerating) return;
-      
-      setIsGenerating(true);
-      try {
-        // TODO: Replace with actual API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const newDescription = `Generated description for field: ${fieldId}. This is a placeholder that should be replaced with AI-generated content.`;
-        setGeneratedValue(newDescription);
-      } catch (error) {
-        toast.error(`Failed to generate description for field ${fieldId}`);
-      } finally {
-        setIsGenerating(false);
-      }
-    }, [fieldId, isGenerating]);
-
     const updateDescription = useCallback(async (description: string) => {
-      // Update the description directly without generating
+      // Update the description directly
       setGeneratedValue(description);
       return Promise.resolve();
     }, []);
 
-    const setGenerating = useCallback((isGenerating: boolean) => {
-      setIsGenerating(isGenerating);
+    const setGeneratingState = useCallback((generating: boolean) => {
+      setIsGenerating(generating);
     }, []);
 
     useImperativeHandle(ref, () => ({
-      generateDescription,
       updateDescription,
-      setGenerating
-    }), [generateDescription, updateDescription, setGenerating]);
+      setGenerating: setGeneratingState
+    }), [updateDescription, setGeneratingState]);
 
     if (isGenerating) {
       return (
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center gap-1 text-muted-foreground">
           <span className="animate-spin">⏳</span>
           <span>Generating description...</span>
         </div>

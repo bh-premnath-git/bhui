@@ -78,33 +78,23 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
         }
       });
       
-      console.log("Raw response:", response);
-      
-      // Parse the response
       const parsedResponse = JSON.parse(response.result as string);
-      console.log("Parsed response:", parsedResponse);
       
-      // Check if we have descriptions in the response
       if (parsedResponse && parsedResponse.descriptions && Array.isArray(parsedResponse.descriptions)) {
         let successCount = 0;
         
-        // Process each description
+      
         for (const desc of parsedResponse.descriptions) {
           const columnName = desc.column_name;
           const description = desc.description;
           
-          console.log(`Processing description for column ${columnName}:`, description);
-          
-          // Find the field ID for this column name
           const fieldId = fieldIdToColumnName.get(columnName);
           
           if (fieldId && descriptionCellRefs.has(fieldId)) {
             const cellData = descriptionCellRefs.get(fieldId);
             if (cellData && cellData.ref.current) {
-              // Update the description in the cell
               await cellData.ref.current.updateDescription(description);
               successCount++;
-              console.log(`Updated description for field ${fieldId} (${columnName})`);
             }
           } else {
             console.warn(`Could not find field ID for column name: ${columnName}`);
@@ -116,10 +106,8 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
         toast.error("No descriptions found in the API response");
       }
     } catch (error) {
-      console.error("Error generating descriptions:", error);
       toast.error("Failed to generate descriptions");
     } finally {
-      // Reset all cells to non-loading state
       for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
         if (cellData.ref.current) {
           cellData.ref.current.setGenerating(false);
@@ -128,7 +116,6 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     }
   };
 
-  // Create columns with the generate description handler
   const columns = useMemo(() => createColumns(generateAllDescriptions), []);
 
   if (isLoading || isFetching) {

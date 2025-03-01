@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export function AddConnection() {
+export function 
+AddConnection() {
   const { connectionTypes, isLoading } = useConnectionType();
   const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
   const [activeTab, setActiveTab] = useState<string>("source");

@@ -1,70 +1,79 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { useSelectedType } from '@/hooks/useOtherTypes';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import schema from '@/pages/designers/flow-playground/data/flow_schema.json';
 
 interface MissingFieldsFormProps {
   flowDefinition: Record<string, string[]>;
   onSubmit: (values: Record<string, Record<string, string>>) => void;
+  initialValues?: Record<string, Record<string, string>>;
 }
 
 export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({ 
   flowDefinition, 
-  onSubmit 
+  onSubmit,
+  initialValues = {} 
 }) => {
-  // Initialize form values
-  const [formValues, setFormValues] = useState<Record<string, Record<string, string>>>(() => {
-    const initialValues: Record<string, Record<string, string>> = {};
+  const [formValues, setFormValues] = useState<Record<string, Record<string, string>>>({});
+  const [fieldTypeMapping, setFieldTypeMapping] = useState<Record<string, Record<string, string>>>({});
+
+  // Initialize form values from flowDefinition and initialValues
+  useEffect(() => {
+    const initialFormValues: Record<string, Record<string, string>> = {};
     
     Object.entries(flowDefinition).forEach(([operator, fields]) => {
-      initialValues[operator] = {};
+      initialFormValues[operator] = initialFormValues[operator] || {};
+      
       fields.forEach(field => {
-        initialValues[operator][field] = '';
+        // Use initialValues if available, otherwise empty string
+        if (initialValues[operator] && initialValues[operator][field] !== undefined) {
+          initialFormValues[operator][field] = initialValues[operator][field];
+        } else {
+          initialFormValues[operator][field] = '';
+        }
       });
     });
     
-    return initialValues;
-  });
+    setFormValues(initialFormValues);
+  }, [flowDefinition, initialValues]);
 
-  // Extract all operator-field pairs to create a stable array for hooks
-  const operatorFieldPairs = useMemo(() => {
-    const pairs: { operator: string; field: string }[] = [];
-    
-    Object.entries(flowDefinition).forEach(([operator, fields]) => {
-      fields.forEach(field => {
-        pairs.push({ 
-          operator: operator.toLowerCase(), 
-          field 
-        });
-      });
-    });
-    
-    return pairs;
-  }, [flowDefinition]);
-
-  // Create a mapping of field types using hooks at the top level
-  const fieldTypeMapping = useMemo(() => {
+  // Process schema to get field types
+  useEffect(() => {
     const mapping: Record<string, Record<string, string>> = {};
+    const schemaData = schema.properties?.tasks?.items?.oneOf || [];
     
-    operatorFieldPairs.forEach(({ operator, field }) => {
-      const originalOperator = Object.keys(flowDefinition)
-        .find(key => key.toLowerCase() === operator);
+    Object.keys(flowDefinition).forEach(operator => {
+      mapping[operator] = mapping[operator] || {};
+      const operatorLowerCase = operator.toLowerCase();
       
-      if (!originalOperator) return;
+      // Find the operator in the schema
+      const operatorSchema = schemaData.find((item: any) => {
+        try {
+          return item.properties?.type?.enum?.[0]?.toLowerCase() === operatorLowerCase;
+        } catch {
+          return false;
+        }
+      });
       
-      if (!mapping[originalOperator]) {
-        mapping[originalOperator] = {};
+      if (operatorSchema && operatorSchema.properties) {
+        // Map each field to its type
+        flowDefinition[operator].forEach(field => {
+          const fieldSchema = operatorSchema.properties[field];
+          if (fieldSchema) {
+            if (fieldSchema.type) {
+              mapping[operator][field] = fieldSchema.type;
+            } else if (fieldSchema.items && fieldSchema.items.type) {
+              mapping[operator][field] = `array:${fieldSchema.items.type}`;
+            }
+          }
+        });
       }
-      
-      // Use the hook for each operator-field pair
-      const fieldInfo = useSelectedType(operator, field);
-      mapping[originalOperator][field] = fieldInfo?.ui_properties?.type || 'text';
     });
     
-    return mapping;
-  }, [operatorFieldPairs, flowDefinition]);
+    setFieldTypeMapping(mapping);
+  }, [flowDefinition]);
 
   const handleInputChange = (operator: string, field: string, value: string) => {
     setFormValues(prev => ({
@@ -81,34 +90,83 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     onSubmit(formValues);
   };
 
+  // Render form fields based on their types
+  const renderField = (operator: string, field: string) => {
+    const fieldType = fieldTypeMapping[operator]?.[field] || 'string';
+    const value = formValues[operator]?.[field] || '';
+    
+    // Handle array types
+    if (fieldType.startsWith('array:')) {
+      return (
+        <Input
+          key={`${operator}-${field}`}
+          id={`${operator}-${field}`}
+          value={value}
+          onChange={(e) => handleInputChange(operator, field, e.target.value)}
+          placeholder={`Enter comma-separated ${field} values`}
+          className="h-8 text-sm"
+        />
+      );
+    }
+    
+    // Handle different primitive types
+    switch (fieldType) {
+      case 'integer':
+      case 'number':
+        return (
+          <Input
+            key={`${operator}-${field}`}
+            id={`${operator}-${field}`}
+            type="number"
+            value={value}
+            onChange={(e) => handleInputChange(operator, field, e.target.value)}
+            placeholder={`Enter ${field}`}
+            className="h-8 text-sm"
+          />
+        );
+      case 'boolean':
+        return (
+          <select
+            id={`${operator}-${field}`}
+            value={value}
+            onChange={(e) => handleInputChange(operator, field, e.target.value)}
+            className="w-full p-2 border rounded-md h-8 text-sm"
+          >
+            <option value="">Select...</option>
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        );
+      default:
+        return (
+          <Input
+            key={`${operator}-${field}`}
+            id={`${operator}-${field}`}
+            value={value}
+            onChange={(e) => handleInputChange(operator, field, e.target.value)}
+            placeholder={`Enter ${field}`}
+            className="h-8 text-sm"
+          />
+        );
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {Object.entries(flowDefinition).map(([operator, fields]) => (
-        <Card key={operator} className="bg-gray-50 border-gray-200">
-          <CardHeader className="pb-2">
+        <Card key={operator}>
+          <CardHeader>
             <CardTitle className="text-sm font-medium">{operator}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {fields.map(field => {
-              // Get the field type from our pre-computed mapping
-              const fieldType = fieldTypeMapping[operator]?.[field] || 'text';
-              
-              return (
-                <div key={field} className="grid gap-1.5">
-                  <Label htmlFor={`${operator}-${field}`} className="text-xs">
-                    {field} {fieldType !== 'text' && `(${fieldType})`}
-                  </Label>
-                  <Input
-                    id={`${operator}-${field}`}
-                    value={formValues[operator][field]}
-                    onChange={(e) => handleInputChange(operator, field, e.target.value)}
-                    placeholder={`Enter ${field}`}
-                    className="h-8 text-sm"
-                    type={fieldType === 'number' ? 'number' : 'text'}
-                  />
-                </div>
-              );
-            })}
+            {fields.map(field => (
+              <div key={field} className="grid gap-1.5">
+                <Label htmlFor={`${operator}-${field}`} className="text-xs">
+                  {field}
+                </Label>
+                {renderField(operator, field)}
+              </div>
+            ))}
           </CardContent>
         </Card>
       ))}

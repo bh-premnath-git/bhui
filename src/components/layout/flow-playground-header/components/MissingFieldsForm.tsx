@@ -170,7 +170,7 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
           </CardContent>
         </Card>
       ))}
-      <Button type="submit" className="w-full">Submit</Button>
+      <Button variant="ghost" type="submit" className="w-full">Submit</Button>
     </form>
   );
 };

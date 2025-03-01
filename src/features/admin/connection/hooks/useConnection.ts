@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { debounce, get } from 'lodash';
+import { debounce } from 'lodash';
 import { Connection, ConnectionType, ConnectionValue } from '@/types/admin/connection';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
-
 interface UseConnectionsOptions {
     shouldFetch?: boolean;
     connectionId?: string;
@@ -58,20 +57,13 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         isError: boolean;
     };
 
-    return {
-        connections: connectionResponse || [],
-        isLoading,
-        isFetching,
-        isError
-    };
-
     const {
         data: connnectionResponses,
         isLoading: isConnectionLoading,
         isFetching: isConnectionFetching,
         isError: isConnectionError
-    } = options.connectionId ? getAllConnection({
-        url: `/environment/environment/${options.connectionId}/`,
+    } = options.connectionId ? getConnection({
+        url: `/connection_registry/connection_config/${options.connectionId}/`,
         queryOptions: {
             enabled: !!options.connectionId,
             retry: 2
@@ -84,9 +76,60 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         };
 
     const createConnectionMutation = createConnection({
-        url: '/connection_registry/connection_config/'
-    })
-};
+        url: '/connection_registry/connection_config/',
+        mutationOptions: {
+            onSuccess: () => toast.success('Connection created successfully'),
+            onError: (error) => handleApiError(error, { action: 'create', context: 'connection' })
+        },
+    });
+
+    const updateCOnnectionMutation = updateConnection('/connection_registry/connection_config/', {
+        mutationOptions: {
+            onSuccess: () => toast.success('Connection Updated successfully'),
+            onError: (error) => handleApiError(error, { action: 'update', context: 'connection' })
+        },
+    });
+
+    const deleteConnectionMutation = removeConnection('/connection_registry/connection_config/', {
+        mutationOptions: {
+            onSuccess: () => toast.success('Connection Deleted Successfully'),
+            onError: (error) => handleApiError(error, { action: 'delete', context: 'connection' })
+        },
+    });
+
+    const handleCreateConnection = useCallback(async (data: ConnectionValue) => {
+        await createConnectionMutation.mutateAsync({
+            data
+        });
+    }, [createConnectionMutation]);
+
+    const handleUpdateConnection = useCallback(async (id: string, data: ConnectionValue) => {
+        await updateCOnnectionMutation.mutateAsync({
+            data,
+            params: { id }
+        });
+    }, [updateCOnnectionMutation]);
+
+    const handleDeleteConnection = useCallback(async (id: string) => {
+        await deleteConnectionMutation.mutateAsync({
+            params: { id }
+        });
+    }, [deleteConnectionMutation]);
+
+    return {
+        connections: connectionResponse || [],
+        isLoading,
+        isFetching,
+        isError,
+        connnectionResponses,
+        isConnectionLoading,
+        isConnectionFetching,
+        isConnectionError,
+        handleCreateConnection,
+        handleUpdateConnection,
+        handleDeleteConnection
+    };
+}
 
 
 export function useConnectionSearch() {
@@ -161,7 +204,8 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
         };
 
     return {
-        connectionTypes: connectionTypes || ConnectionType,
+        connectionTypes: Array.isArray(connectionTypes) ? connectionTypes : 
+                        ConnectionType ? [ConnectionType] : [],
         isLoading,
         isFetching,
         isError,

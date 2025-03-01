@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-export function DatabaseConnection() {
+export function 
+DatabaseConnection() {
   const { databaseConfig, setDatabaseConfig, setStep } = useImport();
   const { connectToDatabase } = useDatabase();
 

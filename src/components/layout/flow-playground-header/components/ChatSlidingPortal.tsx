@@ -6,17 +6,20 @@ import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { createFlowAgentConversationEntry, clearFlowAgentConversation } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
+import { MissingFieldsForm } from "./MissingFieldsForm";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
   const dispatch = useAppDispatch();
   const { selectedFlow, flowAgentConversation, loading } = useAppSelector((state: RootState) => state.flow);
+  const [showMissingFieldsForm, setShowMissingFieldsForm] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       clearMessages();
       dispatch(clearFlowAgentConversation());
+      setShowMissingFieldsForm(false);
     }
   }, [isOpen, clearMessages, dispatch]);
 
@@ -26,27 +29,26 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       
       if (flowAgentConversation.status === 'error') {
         formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
+        setShowMissingFieldsForm(false);
       } 
       else if (flowAgentConversation.status === 'missing') {
-        formattedMessage = `Please provide more information for your workflow:\n\n`;
+        formattedMessage = `Please provide the following information for your workflow:`;
         
+        // Show the form for missing fields instead of text representation
         if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
-          formattedMessage += `Missing fields:\n`;
-          
-          Object.entries(flowAgentConversation.flow_definition).forEach(([operator, fields]) => {
-            formattedMessage += `- ${operator}: ${fields.join(', ')}\n`;
-          });
+          setShowMissingFieldsForm(true);
         }
         
-        if (flowAgentConversation.operators && flowAgentConversation.operators.length > 0) {
-          formattedMessage += `\nOperators: ${flowAgentConversation.operators.join(', ')}\n`;
+        if (flowAgentConversation.operators && Array.isArray(flowAgentConversation.operators) && flowAgentConversation.operators.length > 0) {
+          formattedMessage += `\n\nOperators: ${flowAgentConversation.operators.join(', ')}`;
         }
-        if (flowAgentConversation.pipelines && flowAgentConversation.pipelines.length > 0) {
+        if (flowAgentConversation.pipelines && Array.isArray(flowAgentConversation.pipelines) && flowAgentConversation.pipelines.length > 0) {
           formattedMessage += `\nPipelines: ${flowAgentConversation.pipelines.join(', ')}`;
         }
       }
       else if (flowAgentConversation.status === 'success') {
         formattedMessage = `Workflow created successfully!\n\n`;
+        setShowMissingFieldsForm(false);
         
         if (typeof flowAgentConversation.flow_definition === 'string') {
           formattedMessage += flowAgentConversation.flow_definition;
@@ -54,6 +56,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       }
       else if (flowAgentConversation.response) {
         formattedMessage = flowAgentConversation.response;
+        setShowMissingFieldsForm(false);
       }      
       updateLastAssistantMessage(formattedMessage);
     }
@@ -73,6 +76,32 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     }));
     
     setInput("");
+  };
+
+  const handleFormSubmit = async (values: Record<string, Record<string, string>>) => {
+    if (!selectedFlow?.flow_id) return;
+    
+    // Format the form values into a message
+    const formattedValues = Object.entries(values)
+      .map(([operator, fields]) => {
+        const fieldEntries = Object.entries(fields)
+          .map(([field, value]) => `${field}: ${value}`)
+          .join(', ');
+        return `${operator}: { ${fieldEntries} }`;
+      })
+      .join('\n');
+    
+    addUserMessage(`Submitted form values:\n${formattedValues}`);
+    addAssistantMessage("Processing your input...");
+    
+    // Send the form values to the backend using the existing createFlowAgentConversationEntry action
+    await dispatch(createFlowAgentConversationEntry({
+      flow_id: selectedFlow.flow_id.toString(),
+      request: `Form submission:\n${formattedValues}`,
+      thread_id: selectedFlow.flow_id.toString()
+    }));
+    
+    setShowMissingFieldsForm(false);
   };
 
   return (
@@ -102,6 +131,20 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                     }`}
                   >
                     {message.content}
+                    
+                    {/* Display the form after the assistant message if needed */}
+                    {message.role === "assistant" && 
+                     i === messages.length - 1 && 
+                     showMissingFieldsForm && 
+                     flowAgentConversation?.flow_definition && 
+                     typeof flowAgentConversation.flow_definition === 'object' && (
+                      <div className="mt-4">
+                        <MissingFieldsForm 
+                          flowDefinition={flowAgentConversation.flow_definition as Record<string, string[]>} 
+                          onSubmit={handleFormSubmit} 
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -125,7 +168,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
             onChange={setInput}
             onSend={handleSend}
             placeholder="Ask about your flow..."
-            disabled={loading || !selectedFlow}
+            disabled={loading || !selectedFlow || showMissingFieldsForm}
           />
         </div>
       </SheetContent>

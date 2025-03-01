@@ -43,7 +43,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         true
     );
 
-    const { data: connectionResponse, isLoading, isFetching, isError } = getAllConnection({
+    const { data: connectionResponse, isLoading, isFetching, isError, refetch } = getAllConnection({
         url: '/connection_registry/connection_config/list/',
         queryOptions: {
             enabled: options.shouldFetch,
@@ -55,6 +55,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         isLoading: boolean;
         isFetching: boolean;
         isError: boolean;
+        refetch: () => void;
     };
 
     const {
@@ -112,7 +113,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
 
     const handleDeleteConnection = useCallback(async (id: string) => {
         await deleteConnectionMutation.mutateAsync({
-            params: { id }
+            url: `/connection_registry/connection_config/${id}`
         });
     }, [deleteConnectionMutation]);
 
@@ -127,7 +128,8 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         isConnectionError,
         handleCreateConnection,
         handleUpdateConnection,
-        handleDeleteConnection
+        handleDeleteConnection,
+        refetch
     };
 }
 

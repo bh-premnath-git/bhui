@@ -11,12 +11,14 @@ import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
 import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 import taskDetailSlice from './slices/dataops/taskDetailSlice';
 import globalReducer from './slices/globalGitSlice';
+import connectionReducer from './slices/admin/connection'
 
 export const store = configureStore({
   reducer: {
     users: usersReducer,
     projects: projectsReducer,
     environments: environmentsReducer,
+    connections: connectionReducer,
     datasource: dataSourceReducer,
     pipeline: pipelineReducer,
     flow: flowReducer,

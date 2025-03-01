@@ -1,16 +1,18 @@
 import { DataTable } from '@/components/bh-table/data-table';
-import { createColumns, descriptionCellRefs } from '../config/layoutCloumns.config';
+import { createColumns, descriptionCellRefs, tagCellRefs } from '../config/layoutCloumns.config';
 import { useLayoutFields } from '@/features/data-catalog/hooks/uselayoutFileds';
 import About from './About';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { toast } from 'sonner';
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
+import { AGENT_PORT } from '@/config/platformenv';
+import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
 
-export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
+export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
   const { dataSourceTypes } = useAppSelector(
     (state: RootState) => state.global
   );
@@ -19,29 +21,249 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
     dataSourceId: dataSourceId
   });
 
-  // Cast to the correct type to access layout_fields
-  const layoutData = layoutFields ? layoutFields.layout_fields : [];
+  const datatypes = dataSourceTypes?.codes_dtl || [];
+  const [layoutData, setLayoutData] = useState<LayoutField[]>([]);
+
+  // Initialize layout data when it becomes available
+  useMemo(() => {
+    if (layoutFields && layoutFields.layout_fields) {
+      setLayoutData(layoutFields.layout_fields);
+    }
+  }, [layoutFields]);
+
+  // Prepare the API request body for description generation
+  const descriptionApiBody = useMemo(() => {
+    if (!layoutFields) return null;
+
+    return {
+      operation_type: 'column_description',
+      thread_id: 'desc_123',
+      params: {
+        source_name: layoutFields.data_src_lyt_name,
+        columns: []
+      }
+    };
+  }, [layoutFields]);
+
+  // Map to keep track of field IDs to column names
+  const fieldIdToColumnMap = useMemo(() => {
+    const map = new Map<string, { fieldId: string | number, columnName: string, dataType: any }>();
+    
+    if (!layoutData.length || !datatypes.length) return map;
+
+    layoutData.forEach(field => {
+      const dataType = datatypes.find(dt => dt.id === field.lyt_fld_data_type_cd);
+      map.set(field.lyt_fld_name, {
+        fieldId: field.lyt_fld_id,
+        columnName: field.lyt_fld_name,
+        dataType
+      });
+    });
+
+    return map;
+  }, [layoutData, datatypes]);
+
+  useEffect(() => {
+    // Register event handlers for all tag cells
+    for (const [fieldId, cellData] of tagCellRefs.entries()) {
+      if (cellData.ref.current) {
+        const addTagHandler = (key: string, value: string) => {
+          handleAddTag(Number(fieldId), key, value);
+        };
+        
+        const removeTagHandler = (key: string) => {
+          handleRemoveTag(Number(fieldId), key);
+        };
+        
+        const originalAddTag = cellData.ref.current.addTag;
+        const originalRemoveTag = cellData.ref.current.removeTag;
+        
+        cellData.ref.current.addTag = (key: string, value: string) => {
+          originalAddTag(key, value);          
+          addTagHandler(key, value);
+        };
+        
+        cellData.ref.current.removeTag = (key: string) => {
+          originalRemoveTag(key);          
+          removeTagHandler(key);
+        };
+      }
+    }
+
+    // Register event handlers for description cells
+    for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
+      if (cellData.ref.current) {
+        const originalUpdateDescription = cellData.ref.current.updateDescription;
+        
+        cellData.ref.current.updateDescription = async (description: string) => {
+          // Call the original method to update the UI
+          await originalUpdateDescription(description);
+          
+          // Update our central state
+          handleUpdateDescription(Number(fieldId), description);
+        };
+      }
+    }
+  }, [layoutData]);
 
   const generateAllDescriptions = async () => {
+    if (!layoutFields) {
+      toast.error("Layout data not available");
+      return;
+    }
+
     toast.info("Generating descriptions for all fields...");
+    
+    // Clone the API body to avoid mutating the memoized value
+    const body = { ...descriptionApiBody };
+    
+    if (!body) return;
+    
+    // Reset columns array
+    body.params.columns = [];
+
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         try {
-          console.log("Field ID:", fieldId);
-          console.log("Row data:", cellData.rowData);
-         
-          // For now, still call the existing generateDescription method
-          await cellData.ref.current.generateDescription();
+          cellData.ref.current.setLoading(true);
+          
+          const column = {
+            id: fieldId,
+            name: cellData.rowData.lyt_fld_name,
+            dataType: datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd)
+          }
+          
+          body.params.columns.push(column);
         } catch (error) {
-          toast.error(`Failed to generate description for field: ${cellData.rowData.lyt_fld_name}`);
+          console.error(`Error preparing field ${fieldId}:`, error);
         }
       }
     }
-    toast.success("All descriptions generated successfully");
+
+    try {
+      
+      const response: any = await apiService.post({
+        portNumber: AGENT_PORT,
+        method: 'POST',
+        url: '/pipeline_agent/generate',
+        data: body,
+        usePrefix: true,
+        metadata: {
+          errorMessage: `Failed to generate description for fields`
+        }
+      });
+      
+      const parsedResponse = JSON.parse(response.result as string);
+      
+      if (parsedResponse && parsedResponse.descriptions && Array.isArray(parsedResponse.descriptions)) {
+        let successCount = 0;
+        
+        for (const desc of parsedResponse.descriptions) {
+          const columnName = desc.column_name;
+          const description = desc.description;
+          
+          const fieldInfo = fieldIdToColumnMap.get(columnName);
+          
+          if (fieldInfo && descriptionCellRefs.has(fieldInfo.fieldId)) {
+            const cellData = descriptionCellRefs.get(fieldInfo.fieldId);
+            if (cellData && cellData.ref.current) {
+              await cellData.ref.current.updateDescription(description);
+              cellData.ref.current.setLoading(false);
+              successCount++;
+            }
+          } else {
+            console.warn(`Could not find field ID for column name: ${columnName}`);
+          }
+        }
+        
+        toast.success(`Successfully generated ${successCount} descriptions`);
+      } else {
+        toast.error("No descriptions found in the API response");
+        // Set loading to false for all cells
+        for (const cellData of descriptionCellRefs.values()) {
+          if (cellData.ref.current) {
+            cellData.ref.current.setLoading(false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error generating descriptions:", error);
+      toast.error("Error generating descriptions");
+      
+      // Set loading to false for all cells
+      for (const cellData of descriptionCellRefs.values()) {
+        if (cellData.ref.current) {
+          cellData.ref.current.setLoading(false);
+        }
+      }
+    }
   };
 
-  // Create columns with the generate description handler
-  const columns = useMemo(() => createColumns(generateAllDescriptions), []);
+  const handleAddTag = useCallback((fieldId: number, key: string, value: string) => {
+    const newTags: LayoutFieldTags = {
+      tagList: { key, value }
+    };
+    
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_tags: newTags } 
+          : field
+      )
+    );
+        
+    toast.success(`Added tag ${key}: ${value}`);
+  }, []);
+  
+  const handleRemoveTag = useCallback((fieldId: number, key: string) => {
+    const emptyTags: LayoutFieldTags = {
+      tagList: { key: '', value: '' }
+    };
+    
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_tags: emptyTags } 
+          : field
+      )
+    );
+      
+    toast.success(`Removed tag ${key}`);
+  }, []);
+
+  const handleUpdateDescription = useCallback((fieldId: number, description: string) => {
+    // Update the layoutData state
+    setLayoutData(prevData => 
+      prevData.map(field => 
+        field.lyt_fld_id === fieldId 
+          ? { ...field, lyt_fld_desc: description } 
+          : field
+      )
+    );
+    
+    // In a real application, you would make an API call here to update the backend
+    toast.success(`Updated description for field ${fieldId}`);
+  }, []);
+
+  const columns = useMemo(() => 
+    createColumns(generateAllDescriptions), 
+    [generateAllDescriptions]
+  );
+
+  // Prepare columns data for About component
+  const columnsForAbout = useMemo(() => {
+    if (!layoutData.length || !datatypes.length) return [];
+    
+    return layoutData.map(field => {
+      const dataType = datatypes.find(dt => dt.id === field.lyt_fld_data_type_cd);
+      return {
+        id: field.lyt_fld_id,
+        name: field.lyt_fld_name,
+        description: field.lyt_fld_desc,
+        dataType
+      };
+    });
+  }, [layoutData, datatypes]);
 
   if (isLoading || isFetching) {
     return (
@@ -84,7 +306,10 @@ export function DataCatalogSchema({ dataSourceId }: { dataSourceId: number }) {
           )}
         </div>
         <div className="w-[300px]">
-          <About />
+          <About
+            selectedSource={selectedSource}
+            columns={columnsForAbout}
+          />
         </div>
       </div>
     </div>

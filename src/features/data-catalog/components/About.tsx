@@ -22,6 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast, Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
+import { DataSource } from '@/types/data-catalog/dataCatalog';
+import { apiService } from '@/lib/api/api-service';
+import { AGENT_PORT } from '@/config/platformenv';
 
 interface DescriptionSectionProps {
   description: string;
@@ -473,8 +476,8 @@ function AddLinkDialog({
   );
 }
 
-export default function About({ initialData = {} as AboutData }) {
-  const defaultDescription = initialData.description ?? 'Sample Description about the data source. This needs to be updated by the user.';
+export default function About({ initialData = {} as AboutData, selectedSource, columns }: { initialData?: AboutData, selectedSource: DataSource, columns: any }) {
+  const defaultDescription = selectedSource.data_src_desc ?? 'Sample Description about the data source.';
   const [descriptionState, setDescriptionState] = useState({
     current: defaultDescription,
     original: defaultDescription
@@ -483,8 +486,7 @@ export default function About({ initialData = {} as AboutData }) {
   const [botStatus, setBotStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);
-
+  const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);  
   const {
     links,
     owners,
@@ -503,11 +505,33 @@ export default function About({ initialData = {} as AboutData }) {
   const handleGenerateWithBot = async () => {
     setBotStatus('loading');
     try {
-      // Simulating bot API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const body = {
+        operation_type: 'datasource_description',
+        thread_id: 'desc_123',
+        params: {
+          source_name: selectedSource.data_src_name,
+          fields: columns,
+        },
+      };    
+      
+      const descriptionResponse:any = await apiService.post(
+        {
+          portNumber: AGENT_PORT,
+          method: 'POST',
+          url: '/pipeline_agent/generate',
+          data: body,
+          usePrefix: true,
+          metadata: {
+            errorMessage: `Failed to generate description for about`
+          }
+        }
+      );
+      
+      const desContent = JSON.parse(descriptionResponse.result).description;
+
       setDescriptionState(prev => ({
         ...prev,
-        current: 'Generated description from bot...'
+        current: desContent
       }));
       setBotStatus('success');
       toast.success('Description updated by Bot');

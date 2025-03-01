@@ -82,7 +82,7 @@ export interface DataSourceMutationData {
 }
 
 export interface LayoutFieldTags {
-  user: string;
+  tagList: { key: string; value: string };
 }
 
 export interface LayoutField {

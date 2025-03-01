@@ -6,72 +6,124 @@ import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { createFlowAgentConversationEntry, clearFlowAgentConversation } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
+import { MissingFieldsForm } from "./MissingFieldsForm";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
-  const { messages, addUserMessage, addAssistantMessage, clearMessages } = useChatMessages();
+  const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
   const dispatch = useAppDispatch();
   const { selectedFlow, flowAgentConversation, loading } = useAppSelector((state: RootState) => state.flow);
+  // Store the form definition separately so we can keep it even after success
+  const [savedFormDefinition, setSavedFormDefinition] = useState<Record<string, string[]> | null>(null);
+  // Store the form values to preserve them between submissions
+  const [savedFormValues, setSavedFormValues] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     if (!isOpen) {
       clearMessages();
       dispatch(clearFlowAgentConversation());
+      setSavedFormDefinition(null);
+      setSavedFormValues({});
     }
   }, [isOpen, clearMessages, dispatch]);
 
+  // Extract form definition and values from a successful JSON response
+  const extractFromJson = (jsonString: string) => {
+    try {
+      // Try to parse the JSON
+      const parsedJson = JSON.parse(jsonString);
+      
+      if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
+        // Create a form definition from the tasks
+        const formDef: Record<string, string[]> = {};
+        const formValues: Record<string, Record<string, string>> = {};
+        
+        parsedJson.tasks.forEach((task: any) => {
+          if (task.type && typeof task.type === 'string') {
+            const fields: string[] = [];
+            const values: Record<string, string> = {};
+            
+            // Extract all fields except type, module_name, task_id, and depends_on
+            Object.keys(task).forEach(key => {
+              if (!['type', 'module_name', 'task_id', 'depends_on'].includes(key)) {
+                fields.push(key);
+                
+                // Store the value
+                if (task[key] !== undefined) {
+                  // Handle arrays by joining with commas
+                  if (Array.isArray(task[key])) {
+                    values[key] = task[key].join(', ');
+                  } else {
+                    values[key] = String(task[key]);
+                  }
+                }
+              }
+            });
+            
+            if (fields.length > 0) {
+              formDef[task.type] = fields;
+              formValues[task.type] = values;
+            }
+          }
+        });
+        
+        return {
+          formDef: Object.keys(formDef).length > 0 ? formDef : null,
+          formValues: Object.keys(formValues).length > 0 ? formValues : {}
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing JSON response:', error);
+    }
+    
+    return { formDef: null, formValues: {} };
+  };
+
   useEffect(() => {
     if (flowAgentConversation) {
-      const lastMessage = messages[messages.length - 1];
-      
-      // Format the message based on response type
       let formattedMessage = '';
+      let shouldUpdateMessage = true;
       
       if (flowAgentConversation.status === 'error') {
         formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
       } 
       else if (flowAgentConversation.status === 'missing') {
-        // Format missing fields message
-        formattedMessage = `Please provide more information for your workflow:\n\n`;
+        formattedMessage = `Please provide the following information for your workflow:`;
         
-        // Add missing operator fields if present
+        // Save the form definition for later use
         if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
-          formattedMessage += `Missing fields:\n`;
-          
-          Object.entries(flowAgentConversation.flow_definition).forEach(([operator, fields]) => {
-            formattedMessage += `- ${operator}: ${fields.join(', ')}\n`;
-          });
+          setSavedFormDefinition(flowAgentConversation.flow_definition as Record<string, string[]>);
         }
         
-        // Add missing operators if present
-        if (flowAgentConversation.operators && flowAgentConversation.operators.length > 0) {
-          formattedMessage += `\nOperators: ${flowAgentConversation.operators.join(', ')}\n`;
+        if (flowAgentConversation.operators && Array.isArray(flowAgentConversation.operators) && flowAgentConversation.operators.length > 0) {
+          formattedMessage += `\n\nOperators: ${flowAgentConversation.operators.join(', ')}`;
         }
-        
-        // Add pipelines if present
-        if (flowAgentConversation.pipelines && flowAgentConversation.pipelines.length > 0) {
+        if (flowAgentConversation.pipelines && Array.isArray(flowAgentConversation.pipelines) && flowAgentConversation.pipelines.length > 0) {
           formattedMessage += `\nPipelines: ${flowAgentConversation.pipelines.join(', ')}`;
         }
       }
       else if (flowAgentConversation.status === 'success') {
-        // For success response with flow_definition
-        formattedMessage = `Workflow created successfully!\n\n`;
+        // Don't show the success message in chat, but process the form definition
+        shouldUpdateMessage = false;
         
         if (typeof flowAgentConversation.flow_definition === 'string') {
-          formattedMessage += flowAgentConversation.flow_definition;
+          // Try to extract form definition and values from successful JSON response
+          const { formDef, formValues } = extractFromJson(flowAgentConversation.flow_definition);
+          if (formDef) {
+            setSavedFormDefinition(formDef);
+            setSavedFormValues(formValues);
+          }
         }
       }
       else if (flowAgentConversation.response) {
-        // Handle the traditional response format
         formattedMessage = flowAgentConversation.response;
       }
       
-      // Update the message if it's different from the current one
-      if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== formattedMessage) {
-        addAssistantMessage(formattedMessage);
+      if (shouldUpdateMessage) {
+        updateLastAssistantMessage(formattedMessage);
       }
     }
-  }, [flowAgentConversation, messages, addAssistantMessage]);
+  }, [flowAgentConversation, updateLastAssistantMessage]);
 
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;
@@ -89,14 +141,43 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     setInput("");
   };
 
+  const handleFormSubmit = async (values: Record<string, Record<string, string>>) => {
+    if (!selectedFlow?.flow_id) return;
+    
+    // Save the form values for future use
+    setSavedFormValues(values);
+    
+    // Format the form values into a message
+    const formattedValues = Object.entries(values)
+      .map(([operator, fields]) => {
+        const fieldEntries = Object.entries(fields)
+          .map(([field, value]) => `${field}: ${value}`)
+          .join(', ');
+        return `${operator}: { ${fieldEntries} }`;
+      })
+      .join('\n');
+    
+    addUserMessage(`Submitted form values:\n${formattedValues}`);
+    addAssistantMessage("Processing your input...");
+    
+    // Send the form values to the backend using the existing createFlowAgentConversationEntry action
+    try {
+      await dispatch(createFlowAgentConversationEntry({
+        flow_id: selectedFlow.flow_id.toString(),
+        request: `Form submission:\n${formattedValues}`,
+        thread_id: selectedFlow.flow_id.toString()
+      }));
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold">Bighammer.AI</h2>
-          
         </div>
-        
         {messages.length === 0 ? (
           <div className="mt-4 flex flex-col items-center flex-grow justify-center">
             <img src={imageSrc} alt="AI" className="w-16 h-16" />
@@ -132,10 +213,23 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                   </div>
                 </div>
               )}
+              
+              {/* Always show the form at the bottom if we have a form definition */}
+              {savedFormDefinition && !loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] w-full">
+                    <h3 className="font-medium mb-2">Workflow Form</h3>
+                    <MissingFieldsForm 
+                      flowDefinition={savedFormDefinition} 
+                      onSubmit={handleFormSubmit}
+                      initialValues={savedFormValues}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </ScrollArea>
         )}
-        
         <div className="flex gap-2 mt-4">
           <AIChatInput
             input={input}

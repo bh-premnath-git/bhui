@@ -15,7 +15,12 @@ export interface DataSourceType {
   dtl_desc: string;
   dtl_id_filter: number;
 }
-
+export interface DataTypeId {
+  codes_dtl: DataSourceType[]
+  description: string;
+  id: number;
+  type_cd: string;
+}
 export interface GithubProvidersResponse {
   id: number;
   description: string;
@@ -25,7 +30,7 @@ export interface GithubProvidersResponse {
 
 interface GlobalState {
   githubProviders: GithubProvidersResponse | null;
-  dataSourceTypes: DataSourceType[] | null;
+  dataSourceTypes: DataTypeId | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -56,14 +61,14 @@ export const fetchGithubProviders = createAsyncThunk(
 export const fetchDataSourceTypes = createAsyncThunk(
   "global/fetchDataSourceTypes",
   async () => {
-    const response = await apiService.get<DataSourceType[]>({
+    const response = await apiService.get<DataTypeId>({
       portNumber: CATALOG_API_PORT,
       url: '/codes_hdr/13',
-      usePrefix: true,
       method: 'GET',
+      usePrefix: true,
       metadata: {
-        errorMessage: 'Failed to fetch data source types'
-      }
+        errorMessage: 'Failed to fetch data source types.',
+      },
     });
     return response;
   }
@@ -96,14 +101,14 @@ const globalSlice = createSlice({
       })
       .addCase(
         fetchDataSourceTypes.fulfilled,
-        (state, action: PayloadAction<DataSourceType[]>) => {
+        (state, action: PayloadAction<DataTypeId>) => {
           state.isLoading = false;
           state.dataSourceTypes = action.payload;
         }
       )
-      .addCase(fetchDataSourceTypes.rejected, (state, action) => {
+      .addCase(fetchDataSourceTypes.rejected, (state, action: any) => {
         state.isLoading = false;
-        state.error = action.error.message || "Failed to fetch data source types";
+        state.error = action.error.message || 'Failed to fetch data source types';
       });
   },
 });

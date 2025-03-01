@@ -18,7 +18,7 @@ export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch:
     );
 
     // List layout fields with data source filter
-    const { data: layouts, isLoading, isFetching, isError, error } = getAllLayoutFields({
+    const { data: layouts, isLoading, isFetching, isError, error, refetch } = getAllLayoutFields({
         url: '/data_source_layout/list_full/',
         params: options.dataSourceId ? { data_src_id: options.dataSourceId } : undefined,
         queryOptions: {
@@ -44,5 +44,6 @@ export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch:
         isLoading,
         isFetching,
         isError,
+        refetch, 
     };    
 };

@@ -1,10 +1,11 @@
 import { createRef } from 'react';
 import type { ColumnDefWithFilters } from "@/types/table"; 
-import { LayoutField } from "@/types/data-catalog/dataCatalog";
+import { LayoutField, LayoutFieldTags } from "@/types/data-catalog/dataCatalog";
 import { Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { DescriptionCell, DescriptionCellRef } from "../components/DescriptionCell";
-import { TagCell } from "../components/TagCell";
+import { TagCell, TagCellRef } from "../components/TagCell";
+import { Button } from "@/components/ui/button";
 
 // Keep track of all description cell refs and their corresponding row data
 export interface CellRefData {
@@ -14,8 +15,20 @@ export interface CellRefData {
 
 export const descriptionCellRefs = new Map<string | number, CellRefData>();
 
-// Function to create columns with generate descriptions handler
-export const createColumns = (generateDescriptions?: () => Promise<void>): ColumnDefWithFilters<LayoutField>[] => [
+// Keep track of all tag cell refs
+export interface TagCellRefData {
+  ref: React.RefObject<TagCellRef>;
+  rowData: LayoutField;
+}
+
+export const tagCellRefs = new Map<string | number, TagCellRefData>();
+
+export const createColumns = (
+  generateDescriptions?: () => Promise<void>,
+  updateFieldTags?: (fieldId: number, key: string, value: string) => void,
+  removeFieldTags?: (fieldId: number, key: string) => void,
+  handleDataUpdate?: (rowId: number, columnId: string, value: any) => void
+): ColumnDefWithFilters<LayoutField>[] => [
   {
     id: 'lyt_fld_name',
     accessorKey: 'lyt_fld_name',
@@ -25,12 +38,26 @@ export const createColumns = (generateDescriptions?: () => Promise<void>): Colum
   {
     id: 'lyt_fld_desc',
     accessorKey: 'lyt_fld_desc',
-    header: 'Description',
-    enableColumnFilter: false,
+    header: () => (
+      <div className="flex items-center justify-between">
+        <span>Description</span>
+        {generateDescriptions && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={generateDescriptions}
+            className="h-6 w-6 p-0"
+            title="Generate descriptions for all fields"
+          >
+            <Gavel className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    ),
     cell: ({ getValue, row }) => {
       const fieldId = row.original.lyt_fld_id;
       const rowData = row.original;
-      
+            
       // Create or get existing ref for this cell
       if (!descriptionCellRefs.has(fieldId)) {
         descriptionCellRefs.set(fieldId, {
@@ -53,40 +80,36 @@ export const createColumns = (generateDescriptions?: () => Promise<void>): Colum
         />
       );
     },
-    ...(generateDescriptions && {
-      headerButton: {
-        icon: Gavel,
-        onClick: async () => {
-          await generateDescriptions();
-        },
-        tooltip: "Generate descriptions for all fields using AI",
-      }
-    })
+    enableColumnFilter: false,
   },
   {
     id: 'lyt_fld_tags',
     accessorKey: 'lyt_fld_tags',
     header: 'Tags',
-    cell: ({ getValue, row, table }) => {
-      const tags = getValue() as Record<string, string> || {};
+    cell: ({ getValue, row }) => {
+      const fieldId = row.original.lyt_fld_id;
+      const tags = getValue() as LayoutFieldTags | undefined;
+      const rowData = row.original;
       
-      const handleAddTag = (key: string, value: string) => {
-        const newTags = { ...tags, [key]: value };
-        // Here you would typically update the data in your table/backend
-        toast.success(`Added tag ${key}: ${value}`);
-      };
-
-      const handleRemoveTag = (key: string) => {
-        const { [key]: removed, ...newTags } = tags;
-        // Here you would typically update the data in your table/backend
-        toast.success(`Removed tag ${key}`);
-      };
-
+      // Create or get existing ref for this cell
+      if (!tagCellRefs.has(fieldId)) {
+        tagCellRefs.set(fieldId, {
+          ref: createRef<TagCellRef>(),
+          rowData
+        });
+      } else {
+        // Update row data in case it changed
+        const existingData = tagCellRefs.get(fieldId)!;
+        existingData.rowData = rowData;
+      }
+      
+      const ref = tagCellRefs.get(fieldId)!.ref;
+      
       return (
         <TagCell
+          ref={ref}
           tags={tags}
-          onAddTag={handleAddTag}
-          onRemoveTag={handleRemoveTag}
+          fieldId={fieldId}
         />
       );
     },

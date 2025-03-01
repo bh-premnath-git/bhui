@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface FormFieldsProps {
@@ -46,19 +46,33 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
 
   const renderPasswordField = (key: string, field: any, fieldKey: string, formField: any, isRequired: boolean) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [showDescription, setShowDescription] = useState(false);
     
     return (
       <FormItem key={fieldKey}>
-        <FormLabel>
-          {field.title || key}
-          {isRequired && <span className="text-destructive ml-1">*</span>}
-        </FormLabel>
+        <div className="flex items-center">
+          <FormLabel>
+            {field.title || key}
+            {isRequired && <span className="text-destructive ml-1">*</span>}
+          </FormLabel>
+          {field.description && (
+            <button
+              type="button"
+              className="ml-1 text-muted-foreground"
+              onClick={() => setShowDescription(!showDescription)}
+            >
+              <HelpCircle size={16} />
+            </button>
+          )}
+        </div>
+        {showDescription && field.description && (
+          <FormDescription>{field.description}</FormDescription>
+        )}
         <div className="relative">
           <FormControl>
             <Input
               {...formField}
               type={showPassword ? 'text' : 'password'}
-              placeholder={field.description || `Enter ${field.title || key}`}
             />
           </FormControl>
           <button
@@ -69,9 +83,6 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
-        {field.description && (
-          <FormDescription>{field.description}</FormDescription>
-        )}
         <FormMessage />
       </FormItem>
     );
@@ -80,6 +91,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
   const renderField = (key: string, field: any) => {
     const fieldKey = parentKey ? `${parentKey}.${key}` : key;
     const isRequired = schema.required?.includes(key);
+    const [showDescription, setShowDescription] = useState(false);
 
     // Skip internal fields or those marked as advanced if not in advanced mode
     if (key.startsWith('_') || key === 'name') {
@@ -88,9 +100,9 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
 
     if (field.type === 'object' && field.properties) {
       return (
-        <div key={fieldKey} className="space-y-4 mt-4">
+        <div key={fieldKey} className="space-y-4">
           <h3 className="text-lg font-semibold">{field.title || key}</h3>
-          <div className="bg-muted/30 p-4 rounded-lg">
+          <div className="p-4 rounded-lg">
             <FormFields schema={field} form={form} parentKey={fieldKey} />
           </div>
         </div>
@@ -111,17 +123,31 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           if (field.enum) {
             return (
               <FormItem>
-                <FormLabel>
-                  {field.title || key}
-                  {isRequired && <span className="text-destructive ml-1">*</span>}
-                </FormLabel>
+                <div className="flex items-center">
+                  <FormLabel>
+                    {field.title || key}
+                    {isRequired && <span className="text-destructive ml-1">*</span>}
+                  </FormLabel>
+                  {field.description && (
+                    <button
+                      type="button"
+                      className="ml-1 text-muted-foreground"
+                      onClick={() => setShowDescription(!showDescription)}
+                    >
+                      <HelpCircle size={16} />
+                    </button>
+                  )}
+                </div>
+                {showDescription && field.description && (
+                  <FormDescription>{field.description}</FormDescription>
+                )}
                 <Select
                   value={formField.value?.toString() || ''}
                   onValueChange={formField.onChange}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.title || key}`} />
+                      <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -132,9 +158,6 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                {field.description && (
-                  <FormDescription>{field.description}</FormDescription>
-                )}
                 <FormMessage />
               </FormItem>
             );
@@ -142,11 +165,20 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
 
           if (field.type === 'boolean') {
             return (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                <div className="space-y-0.5">
+              <FormItem className="flex flex-row items-center justify-between p-3">
+                <div className="space-y-0.5 flex items-center">
                   <FormLabel>{field.title || key}</FormLabel>
                   {field.description && (
-                    <FormDescription>{field.description}</FormDescription>
+                    <button
+                      type="button"
+                      className="ml-1 text-muted-foreground"
+                      onClick={() => setShowDescription(!showDescription)}
+                    >
+                      <HelpCircle size={16} />
+                    </button>
+                  )}
+                  {showDescription && field.description && (
+                    <FormDescription className="ml-2">{field.description}</FormDescription>
                   )}
                 </div>
                 <FormControl>
@@ -162,20 +194,30 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           if (field.type === 'string' && (field.format === 'json' || key.includes('json'))) {
             return (
               <FormItem>
-                <FormLabel>
-                  {field.title || key}
-                  {isRequired && <span className="text-destructive ml-1">*</span>}
-                </FormLabel>
+                <div className="flex items-center">
+                  <FormLabel>
+                    {field.title || key}
+                    {isRequired && <span className="text-destructive ml-1">*</span>}
+                  </FormLabel>
+                  {field.description && (
+                    <button
+                      type="button"
+                      className="ml-1 text-muted-foreground"
+                      onClick={() => setShowDescription(!showDescription)}
+                    >
+                      <HelpCircle size={16} />
+                    </button>
+                  )}
+                </div>
+                {showDescription && field.description && (
+                  <FormDescription>{field.description}</FormDescription>
+                )}
                 <FormControl>
                   <Textarea
                     {...formField}
-                    placeholder={field.description || `Enter ${field.title || key}`}
                     className="font-mono h-48 resize-y"
                   />
                 </FormControl>
-                {field.description && (
-                  <FormDescription>{field.description}</FormDescription>
-                )}
                 <FormMessage />
               </FormItem>
             );
@@ -184,20 +226,30 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           // Default input field
           return (
             <FormItem>
-              <FormLabel>
-                {field.title || key}
-                {isRequired && <span className="text-destructive ml-1">*</span>}
-              </FormLabel>
+              <div className="flex items-center">
+                <FormLabel>
+                  {field.title || key}
+                  {isRequired && <span className="text-destructive ml-1">*</span>}
+                </FormLabel>
+                {field.description && (
+                  <button
+                    type="button"
+                    className="ml-1 text-muted-foreground"
+                    onClick={() => setShowDescription(!showDescription)}
+                  >
+                    <HelpCircle size={16} />
+                  </button>
+                )}
+              </div>
+              {showDescription && field.description && (
+                <FormDescription>{field.description}</FormDescription>
+              )}
               <FormControl>
                 <Input
                   {...formField}
                   type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
-                  placeholder={field.description || `Enter ${field.title || key}`}
                 />
               </FormControl>
-              {field.description && (
-                <FormDescription>{field.description}</FormDescription>
-              )}
               <FormMessage />
             </FormItem>
           );
@@ -206,7 +258,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     );
   };
 
-  // If we have more than one category, use accordion
+  // If we have more than one category, use accordion without borders
   if (Object.keys(fieldsByCategory).length > 1) {
     return (
       <Accordion type="single" collapsible className="w-full">
@@ -214,7 +266,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           if (fields.length === 0) return null;
           
           return (
-            <AccordionItem key={category} value={category}>
+            <AccordionItem key={category} value={category} className="border-none">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center">
                   <span>{category}</span>
@@ -224,7 +276,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4 pt-2">
+                <div className="space-y-4">
                   {fields.map(({ key, field }) => renderField(key, field))}
                 </div>
               </AccordionContent>
@@ -235,7 +287,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     );
   }
 
-  // Otherwise render fields directly
+  // Otherwise render fields directly without separations
   return (
     <div className="space-y-6">
       {Object.entries(schema.properties).map(([key, value]) => renderField(key, value))}

@@ -8,7 +8,8 @@
       "host",
       "port",
       "database",
-      "username"
+      "username",
+      "password"
     ],
     "properties": {
       "host": {
@@ -21,7 +22,7 @@
       "port": {
         "title": "Port",
         "description": "Port of the database.",
-        "type": "integer",
+        "type": "string",
         "minimum": 0,
         "maximum": 65536,
         "default": 5432,

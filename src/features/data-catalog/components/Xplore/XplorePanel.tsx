@@ -14,12 +14,15 @@ export default function XplorePanel() {
     <div className="flex h-full">
       {/* Main content area - always visible */}
       <div className={`flex-1 flex flex-col ${showSidebar ? 'border-r' : ''}`}>
-        <div className="flex-1 p-4 overflow-auto">
-          <AnalyticsPanel />
+        {/* Make the content area scrollable but keep the chat input fixed */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-4 pb-20"> {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
+            <AnalyticsPanel />
+          </div>
         </div>
         
-        {/* Chat input area - always visible at bottom */}
-        <div className="p-4 border-t">
+        {/* Chat input area - fixed at bottom */}
+        <div className="p-4 border-t bg-background sticky bottom-0 z-10 shadow-md">
           <AIChat compact={true} />
         </div>
       </div>

@@ -96,11 +96,6 @@ export default function AnalyticsPanel() {
               I couldn't find any relevant data for "{currentQuestion}". 
               Try refining your question or asking about a different topic.
             </p>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" onClick={() => fetchData("")}>
-                Show default data
-              </Button>
-            </div>
           </div>
         </Card>
       </div>

@@ -73,31 +73,65 @@ export const saveChatSession = async (session: Partial<ChatSession>): Promise<Ch
   };
 };
 
-// New interface for conversation context
+// Enhance the ConversationContext interface to track more contextual information
+
 export interface ConversationContext {
   recentQuestions: string[];
   recentTables: string[];
   recentMetrics: string[];
   currentConnection: string;
+  currentTopic?: string; // Add topic tracking
+  relatedEntities?: string[]; // Track related business entities
+  analysisHistory?: Array<{
+    question: string;
+    result: string;
+    timestamp: number;
+  }>; // Track past analyses
 }
 
-// Initialize default context
+// Initialize with enhanced default context
 let conversationContext: ConversationContext = {
   recentQuestions: [],
   recentTables: [],
   recentMetrics: [],
-  currentConnection: "snowflake-dw"
+  currentConnection: "snowflake-dw",
+  currentTopic: undefined,
+  relatedEntities: [],
+  analysisHistory: []
 };
 
-// New function to get conversation context
-export const getConversationContext = (): ConversationContext => {
-  return {...conversationContext};
+// New function to determine conversation topic
+export const determineConversationTopic = (question: string): string => {
+  if (question.toLowerCase().includes('sales')) return 'sales';
+  if (question.toLowerCase().includes('customer')) return 'customers';
+  if (question.toLowerCase().includes('product')) return 'products';
+  if (question.toLowerCase().includes('region') || question.toLowerCase().includes('location')) return 'geography';
+  if (question.toLowerCase().includes('time') || question.toLowerCase().includes('trend')) return 'time analysis';
+  return 'general';
 };
 
-// New function to update conversation context
+// Enhanced update context function
 export const updateConversationContext = (
-  partialContext: Partial<ConversationContext>
+  partialContext: Partial<ConversationContext>,
+  question?: string
 ): ConversationContext => {
+  // If a new question is provided, determine its topic
+  if (question) {
+    const topic = determineConversationTopic(question);
+    partialContext.currentTopic = topic;
+    
+    // Add to analysis history
+    if (!partialContext.analysisHistory) {
+      partialContext.analysisHistory = [];
+    }
+    
+    partialContext.analysisHistory.push({
+      question,
+      result: 'analyzed',
+      timestamp: Date.now()
+    });
+  }
+  
   conversationContext = {
     ...conversationContext,
     ...partialContext
@@ -111,42 +145,150 @@ export const updateConversationContext = (
   return {...conversationContext};
 };
 
-// Enhanced function to fetch dashboard data with context
-export const fetchDashboardData = async (
-  question: string, 
-  useContext: boolean = true
-): Promise<DashboardData | null> => {
+// Enhanced function to fetch dashboard data with better conversation handling
+
+export const fetchDashboardData = async (question: string, useContext = true): Promise<DashboardData | null> => {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1500));
   
-  // Add question to context
+  // Update conversation context with this question
   if (useContext) {
     updateConversationContext({
-      recentQuestions: [...conversationContext.recentQuestions, question]
+      currentTopic: question,
+      recentQuestions: [...conversationContext.recentQuestions, question].slice(-5)
     });
   }
   
-  // Handle conversational follow-up questions
-  if (useContext && conversationContext.recentQuestions.length > 1) {
-    // Example of context-aware handling
+  // Check if this is a follow-up question
+  const isFollowUp = useContext && 
+    (question.toLowerCase().includes("why") || 
+     question.toLowerCase().includes("explain") || 
+     question.toLowerCase().includes("compare") ||
+     question.toLowerCase().includes("tell me more"));
+  
+  if (isFollowUp && conversationContext.recentQuestions.length > 1) {
+    // Get the previous question to provide context
     const prevQuestion = conversationContext.recentQuestions[conversationContext.recentQuestions.length - 2];
     
-    if (
-      (question.toLowerCase().includes('compare') || 
-       question.toLowerCase().includes('difference') ||
-       question.toLowerCase().includes('versus')) && 
-      prevQuestion
-    ) {
-      return generateComparisonData(prevQuestion, question);
+    // For "why" questions, generate a detailed analysis
+    if (question.toLowerCase().includes("why")) {
+      // Add more detailed explanation
+      return {
+        title: "Detailed Analysis:",
+        description: "An in-depth look at the data you requested",
+        timeRange: "Current Quarter",
+        brands: ["Category A", "Category B", "Category C"],
+        recommendedChartType: "bar",
+        metrics: [
+          {
+            brand: "Overall",
+            value: 285000,
+            trend: "+5.2%",
+            status: "increase"
+          }
+        ],
+        salesData: [
+          {
+            date: "Jan",
+            "Category A": 95000,
+            "Category B": 85000,
+            "Category C": 0
+          },
+          {
+            date: "Feb",
+            "Category A": 92000,
+            "Category B": 88000,
+            "Category C": 0
+          },
+          {
+            date: "Mar",
+            "Category A": 98000,
+            "Category B": 90000,
+            "Category C": 0
+          }
+        ],
+        explanation: [
+          "Here's a more detailed analysis of your query:",
+          "The trend shows a consistent pattern of growth over the analyzed period.",
+          "Key factors influencing this trend include seasonal variations and market conditions.",
+          "When breaking down by demographic segments, we see the strongest performance in the 25-34 age group.",
+          "Geographical distribution shows concentration in urban centers, with particular strength in coastal regions."
+        ],
+        sqlQuery: generateSQLQuery(question)
+      };
     }
     
-    if (question.toLowerCase().includes('why') || 
-        question.toLowerCase().includes('explain') ||
-        question.toLowerCase().includes('more detail')) {
-      return enhancePreviousResponse(prevQuestion);
+    // For comparison questions
+    if (question.toLowerCase().includes("compare")) {
+      return generateComparisonData(prevQuestion, question);
     }
   }
+  
+  // Process standard questions
+  return processStandardQuestion(question);
+};
 
+// Helper for replacing pronouns with contextual entities
+const replacePronouns = (question: string, entities: string[]): string => {
+  // Simple implementation - replace common pronouns with the most recent entity
+  const mostRecentEntity = entities[entities.length - 1];
+  return question
+    .replace(/\b(it|this|that)\b/gi, mostRecentEntity)
+    .replace(/\b(they|them|these|those)\b/gi, entities.join(' and '));
+};
+
+// Function to generate trend analysis based on topic
+const generateTrendAnalysis = (question: string, topic: string): DashboardData => {
+  // This would generate trend analysis based on the question and topic
+  // For now, we'll return a mock response
+  const brands = topic === 'sales' ? ["Q1", "Q2", "Q3", "Q4"] :
+                topic === 'products' ? ["Product A", "Product B", "Product C"] :
+                topic === 'geography' ? ["North", "South", "East", "West"] :
+                ["Category 1", "Category 2", "Category 3"];
+                
+  return {
+    title: `Trend Analysis: ${topic.charAt(0).toUpperCase() + topic.slice(1)}`,
+    description: `Analyzing trends in ${topic} over time`,
+    timeRange: "Last 12 Months",
+    brands,
+    recommendedChartType: "line",
+    metrics: brands.map((brand, index) => ({
+      brand,
+      value: 100000 + (index * 25000),
+      trend: `+${5 + index}%`,
+      status: "increase"
+    })),
+    salesData: generateTrendData(brands),
+    explanation: [
+      `This trend analysis shows how ${topic} have changed over the past year.`,
+      `We can observe consistent growth patterns across all ${topic} categories.`,
+      `The most significant growth was in the last quarter, likely due to seasonal factors.`
+    ],
+    sqlQuery: generateSQLQuery(question)
+  };
+};
+
+// Helper to generate trend data
+const generateTrendData = (categories: string[]): any[] => {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return months.map(month => {
+    const dataPoint: any = { date: month };
+    categories.forEach((category, index) => {
+      // Generate some random but increasing data
+      const baseValue = 100000 + (index * 20000);
+      const monthIndex = months.indexOf(month);
+      const growthFactor = 1 + (monthIndex * 0.02);
+      dataPoint[category] = Math.floor(baseValue * growthFactor);
+    });
+    return dataPoint;
+  });
+};
+
+// Function to process standard questions
+const processStandardQuestion = (question: string): DashboardData | null => {
+  // Here we would process standard questions without special context handling
+  // This is where your existing question handling logic would go
+  
   // Special handling for chat history questions
   if (question === "Show me sales by region") {
     return {
@@ -613,7 +755,7 @@ const generateComparisonData = (
         brand: "Previous Query",
         value: 285000,
         trend: "baseline",
-        status: "neutral"
+        status: "stable"
       },
       {
         brand: "Current Query",
@@ -728,4 +870,82 @@ ORDER BY 1, 2;`;
 FROM sales 
 WHERE sale_date >= date_sub(CURRENT_DATE, INTERVAL 30 DAY)
 LIMIT 100;`;
+};
+
+// Add a function to intelligently recommend chart types
+
+export const recommendChartType = (
+  data: any[],
+  question: string,
+  brands: string[]
+): string => {
+  // Default to bar chart
+  let recommendedType = 'bar';
+  
+  // Check if this is time series data (has dates)
+  const hasTimeSeries = data.some(d => 
+    d.date || 
+    Object.keys(d).some(k => 
+      k.toLowerCase().includes('date') || 
+      k.toLowerCase().includes('time') || 
+      k.toLowerCase().includes('year') ||
+      k.toLowerCase().includes('month')
+    )
+  );
+  
+  // Check how many series we have
+  const seriesCount = brands.length;
+  
+  // Check if question implies certain charts
+  const questionLower = question.toLowerCase();
+  
+  if (questionLower.includes('distribution') || 
+      questionLower.includes('breakdown') || 
+      questionLower.includes('proportion')) {
+    return 'pie';
+  }
+  
+  if (questionLower.includes('trend') || 
+      questionLower.includes('over time') || 
+      questionLower.includes('progression')) {
+    return hasTimeSeries ? 'line' : 'bar';
+  }
+  
+  if (questionLower.includes('accumulation') || 
+      questionLower.includes('cumulative')) {
+    return 'area';
+  }
+  
+  if (questionLower.includes('correlation') || 
+      questionLower.includes('relationship')) {
+    return 'scatter';
+  }
+  
+  // Check data characteristics
+  if (hasTimeSeries) {
+    // For time series data with multiple series
+    if (seriesCount > 3) {
+      // Stacked area charts are good for many series over time
+      return 'area';
+    } else {
+      // Line charts are good for few series over time
+      return 'line';
+    }
+  } else {
+    // For non-time series data
+    if (seriesCount <= 10) {
+      // Bar charts are good for comparisons with limited categories
+      return 'bar';
+    } else {
+      // Pie charts can handle many categories but become hard to read
+      return 'treemap';
+    }
+  }
+  
+  return recommendedType;
+};
+
+// Add this function to get conversation context
+export const getConversationContext = (): ConversationContext => {
+  return {...conversationContext};
 };

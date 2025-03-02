@@ -19,19 +19,51 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import QuickStyleControls from "./QuickStyleControls";
 
+// Add this function before the component
+function saveDashboard(dashboard: any) {
+  // In a real app, this would save to a backend
+  console.log("Saving dashboard:", dashboard);
+  
+  // Generate a random ID for the saved dashboard
+  const id = `dashboard-${Date.now()}`;
+  
+  // Store in localStorage for demo purposes
+  const savedDashboards = JSON.parse(localStorage.getItem('savedDashboards') || '[]');
+  savedDashboards.push({
+    id,
+    ...dashboard,
+    savedAt: new Date().toISOString()
+  });
+  localStorage.setItem('savedDashboards', JSON.stringify(savedDashboards));
+  
+  // Return the dashboard with ID
+  return {
+    id,
+    ...dashboard
+  };
+}
+
 export default function AnalyticsPanel({ 
   dashboardData: propsDashboardData,
   showHeader = true,
   chartStyles: propsChartStyles,
   viewMode: propsViewMode = "chart",
-  onViewModeChange
+  onViewModeChange,
+  isolatedMode = false
 }: { 
   dashboardData?: any,
   showHeader?: boolean,
   chartStyles?: ChartStyles,
   viewMode?: "chart" | "table" | "sql",
-  onViewModeChange?: (mode: "chart" | "table" | "sql") => void
+  onViewModeChange?: (mode: "chart" | "table" | "sql") => void,
+  isolatedMode?: boolean
 }) {
+  // Use local state for everything when in isolated mode
+  const [localViewMode, setLocalViewMode] = useState(propsViewMode);
+  const [localChartStyles, setLocalChartStyles] = useState(propsChartStyles || defaultChartStyles);
+  const [localActiveFilters, setLocalActiveFilters] = useState<string[]>([]);
+  
+  // Get context values only if not in isolated mode
   const { 
     dashboardData: contextDashboardData,
     isLoading,
@@ -52,30 +84,35 @@ export default function AnalyticsPanel({
   const navigate = useNavigate();
   const [context] = useState(getConversationContext());
 
-  // Use props data if provided, otherwise fall back to context data
+  // Use either props or context based on isolated mode
   const dashboardData = propsDashboardData || contextDashboardData;
-  const [localChartStyles, setLocalChartStyles] = useState(propsChartStyles || { ...contextChartStyles });
+  const effectiveViewMode = isolatedMode ? localViewMode : (propsViewMode || contextViewMode);
+  const effectiveChartStyles = isolatedMode ? localChartStyles : (propsChartStyles || contextChartStyles);
+  const effectiveActiveFilters = isolatedMode ? localActiveFilters : activeFilters;
 
   const handleFilterClick = (brand: string) => {
-    setActiveFilters((prevFilters: string[]) => {
+    const updateFilters = (prevFilters: string[]) => {
       const isSelected = prevFilters.includes(brand);
       if (isSelected) {
-        const newFilters = prevFilters.filter(f => f !== brand);
-        toast.error(`Removed ${brand} from filters`);
-        return newFilters;
+        return prevFilters.filter(f => f !== brand);
       } else {
-        toast.success(`Added ${brand} to filters`);
         return [...prevFilters, brand];
       }
-    });
+    };
+    
+    if (isolatedMode) {
+      setLocalActiveFilters(updateFilters);
+    } else {
+      setActiveFilters(updateFilters);
+    }
   };
 
   const handleSave = (type: 'existing' | 'new') => {
     const dashboard = {
       name: dashboardData.title,
       data: dashboardData.salesData,
-      styles: localChartStyles,
-      type: viewMode as 'chart' | 'table',
+      styles: effectiveChartStyles,
+      type: effectiveViewMode as 'chart' | 'table',
     };
     
     const savedDashboard = saveDashboard(dashboard);
@@ -87,11 +124,18 @@ export default function AnalyticsPanel({
     navigate(`/saved-dashboard/${savedDashboard.id}`);
   };
 
-  // Use the provided viewMode prop rather than context
+  // Handle view mode changes
   const handleViewModeChange = (mode: "chart" | "table" | "sql") => {
+    console.log("Changing view mode to:", mode);
+    
     if (onViewModeChange) {
+      // If we have an external handler, use it
       onViewModeChange(mode);
+    } else if (isolatedMode) {
+      // If we're in isolated mode, use local state
+      setLocalViewMode(mode);
     } else {
+      // Otherwise use context
       setContextViewMode(mode);
     }
   };
@@ -132,10 +176,10 @@ export default function AnalyticsPanel({
     );
   }
 
-  const filteredData = activeFilters.length > 0
+  const filteredData = effectiveActiveFilters.length > 0
     ? dashboardData.salesData.map(row => {
         const filteredRow = { date: row.date };
-        activeFilters.forEach(filter => {
+        effectiveActiveFilters.forEach(filter => {
           filteredRow[filter] = row[filter];
         });
         return filteredRow;
@@ -163,7 +207,7 @@ export default function AnalyticsPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Tabs value={propsViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
+          <Tabs value={effectiveViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
             <TabsList>
               <TabsTrigger value="chart">Chart</TabsTrigger>
               <TabsTrigger value="table">Table</TabsTrigger>
@@ -190,31 +234,31 @@ export default function AnalyticsPanel({
       {dashboardData.metrics && dashboardData.metrics.length > 0 && (
         <StatsCards 
           metrics={dashboardData.metrics}
-          activeFilter={activeFilters.join(',')}
+          activeFilter={effectiveActiveFilters.join(',')}
           onFilterClick={handleFilterClick}
           formatCurrency={formatCurrency}
         />
       )}
 
       <QuickStyleControls 
-        chartStyles={localChartStyles} 
+        chartStyles={effectiveChartStyles} 
         setChartStyles={updateLocalChartStyles} 
       />
 
-      <Tabs value={propsViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
+      <Tabs value={effectiveViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
         <TabsContent value="chart">
           <AnalyticsChart 
             data={filteredData}
-            activeFilter={activeFilters.join(',')}
+            activeFilter={effectiveActiveFilters.join(',')}
             formatCurrency={formatCurrency}
-            chartStyles={localChartStyles}
+            chartStyles={effectiveChartStyles}
           />
         </TabsContent>
 
         <TabsContent value="table">
           <AnalyticsTable 
             data={currentData}
-            activeFilter={activeFilters.join(',')}
+            activeFilter={effectiveActiveFilters.join(',')}
             currentPage={currentPage}
             totalPages={totalPages}
             onPreviousPage={() => setCurrentPage(Math.max(currentPage - 1, 1))}

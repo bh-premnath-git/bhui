@@ -19,11 +19,13 @@ interface VisualHistoryItem {
   dashboardData: any;
   chartStyles: any;
   viewMode: "chart" | "table" | "sql";
+  isFollowUp: boolean;
+  relatedToId?: string;
 }
 
 export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   const [activeTab, setActiveTab] = useState<string>("bighammer");
-  const { messages } = useChatMessages();
+  const { messages, clearMessages } = useChatMessages();
   const { 
     dashboardData, 
     currentQuestion, 
@@ -32,40 +34,140 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     chartStyles, 
     setChartStyles,
     viewMode,
-    setViewMode
+    setViewMode,
+    resetAnalytics
   } = useAnalytics();
   
   // State for visualization history
   const [visualHistory, setVisualHistory] = useState<VisualHistoryItem[]>([]);
   
-  // Process data and add to history
+  // Add a state to track questions that are already being processed
+  const [processedQuestions, setProcessedQuestions] = useState<Set<string>>(new Set());
+  
+  // Completely isolate each visualization
+
+  // Add this function to create a completely isolated copy of a visualization item
+  const createIsolatedVisualization = (question: string, data: any, styles: any) => {
+    return {
+      id: `vis-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      question,
+      timestamp: new Date(),
+      dashboardData: structuredClone(data),
+      chartStyles: structuredClone(styles),
+      viewMode: "chart",
+      isFollowUp: question.toLowerCase().includes("why") || 
+                  question.toLowerCase().includes("explain") ||
+                  question.toLowerCase().includes("compare") ||
+                  question.toLowerCase().includes("tell me more")
+    };
+  };
+
+  // Modify the visualization history effect
   useEffect(() => {
-    if (dashboardData && currentQuestion && currentQuestion.trim() !== "") {
-      console.log("Adding visualization to history with data:", dashboardData);
-      
-      // Ensure complete data
-      const processedDashboardData = {
-        ...dashboardData,
-        salesData: dashboardData.salesData || generateFallbackData(dashboardData.brands || ["Category A", "Category B", "Category C"]),
-        sqlQuery: dashboardData.sqlQuery || generateDefaultSqlQuery(currentQuestion)
-      };
-      
-      const existingItem = visualHistory.find(item => item.question === currentQuestion);
-      if (!existingItem) {
-        setVisualHistory(prev => [
-          ...prev,
-          {
-            id: `vis-${Date.now()}`,
-            question: currentQuestion,
-            timestamp: new Date(),
-            dashboardData: processedDashboardData,
-            chartStyles: { ...chartStyles },
-            viewMode: "chart"
-          }
-        ]);
-      }
+    // Only process if we have dashboard data and a question
+    if (!dashboardData || !currentQuestion || currentQuestion.trim() === "") {
+      return;
     }
-  }, [dashboardData, currentQuestion, chartStyles]);
+    
+    // Skip if this question is already being processed (prevents duplicates)
+    if (processedQuestions.has(currentQuestion)) {
+      console.log("Skipping already processed question:", currentQuestion);
+      return;
+    }
+    
+    console.log("Processing visualization for:", currentQuestion);
+    
+    // Mark this question as being processed
+    setProcessedQuestions(prev => new Set(prev).add(currentQuestion));
+    
+    // Always create a new visualization for each question to ensure isolation
+    const newVisualization = createIsolatedVisualization(
+      currentQuestion,
+      dashboardData,
+      chartStyles
+    );
+    
+    // Add the new visualization to history without modifying existing ones
+    setVisualHistory(prev => [...prev, newVisualization]);
+    
+  }, [dashboardData, currentQuestion]);
+
+  // Add a cleanup effect for processed questions
+  useEffect(() => {
+    // Clear processed questions when messages change
+    // This ensures we can process the same question again in a new conversation
+    if (messages.length === 0) {
+      setProcessedQuestions(new Set());
+    }
+  }, [messages.length]);
+
+  // Listen for processing-question events
+  useEffect(() => {
+    const handleProcessingQuestion = (event: CustomEvent) => {
+      const { question } = event.detail;
+      console.log("Processing question event:", question);
+      
+      // Store the current state of visualizations to restore if needed
+      window.sessionStorage.setItem('xplorer:visualHistory', JSON.stringify(visualHistory));
+    };
+    
+    const handleQuestionProcessed = (event: CustomEvent) => {
+      const { question, success } = event.detail;
+      console.log("Question processed event:", question, success);
+      
+      // If processing failed, restore the previous state
+      if (!success) {
+        const savedHistory = window.sessionStorage.getItem('xplorer:visualHistory');
+        if (savedHistory) {
+          setVisualHistory(JSON.parse(savedHistory));
+        }
+      }
+    };
+    
+    window.addEventListener('xplorer:processing-question', handleProcessingQuestion as EventListener);
+    window.addEventListener('xplorer:question-processed', handleQuestionProcessed as EventListener);
+    
+    return () => {
+      window.removeEventListener('xplorer:processing-question', handleProcessingQuestion as EventListener);
+      window.removeEventListener('xplorer:question-processed', handleQuestionProcessed as EventListener);
+    };
+  }, [visualHistory]);
+
+  // Listen for new chat events - only clear history on explicit new chat
+  useEffect(() => {
+    const handleNewChat = () => {
+      // Clear visualization history
+      setVisualHistory([]);
+      
+      // Reset analytics state if needed
+      if (typeof resetAnalytics === 'function') {
+        resetAnalytics();
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('xplorer:new-chat', handleNewChat);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('xplorer:new-chat', handleNewChat);
+    };
+  }, [resetAnalytics]);
+
+  // In XplorePanel.tsx - Add a listener for clearing processed questions
+
+  useEffect(() => {
+    const handleClearProcessedQuestions = () => {
+      console.log("Clearing processed questions");
+      setProcessedQuestions(new Set());
+    };
+    
+    window.addEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
+    
+    return () => {
+      window.removeEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
+    };
+  }, []);
 
   // Helper functions
   const generateDefaultSqlQuery = (question: string) => {
@@ -185,12 +287,17 @@ LIMIT 100;`;
                           </p>
                         </div>
                         <div className="p-4">
+                          {/* Use a completely isolated AnalyticsPanel for each visualization */}
                           <AnalyticsPanel 
-                            dashboardData={item.dashboardData} 
+                            dashboardData={structuredClone(item.dashboardData)} 
                             showHeader={true}
-                            chartStyles={item.chartStyles}
+                            chartStyles={structuredClone(item.chartStyles)}
                             viewMode={item.viewMode}
-                            onViewModeChange={(mode) => updateViewMode(item.id, mode)} 
+                            onViewModeChange={(mode) => updateViewMode(item.id, mode)}
+                            // Force complete re-render with a unique key
+                            key={`panel-${item.id}-${Math.random()}`}
+                            // Ensure isolated mode is enabled
+                            isolatedMode={true}
                           />
                         </div>
                       </CardContent>

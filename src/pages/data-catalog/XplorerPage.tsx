@@ -1,8 +1,7 @@
-import { Xplorer } from "@/features/data-catalog/Xplorer"
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { Helmet } from "react-helmet";
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
-import { Helmet } from "react-helmet";
+import Xplorer from "@/features/data-catalog/components/Xplore/Xplorer";
 
 const XplorerPage = () => {
   return (
@@ -20,4 +19,4 @@ const XplorerPage = () => {
   )
 }
 
-export default withPageErrorBoundary(XplorerPage, 'XplorerPage'); 
+export default XplorerPage; 

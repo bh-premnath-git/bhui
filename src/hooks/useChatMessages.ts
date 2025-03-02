@@ -1,43 +1,31 @@
-import create from 'zustand';
+import { useState } from 'react';
 
-export interface Message {
-  role: "user" | "assistant";
+type MessageRole = 'user' | 'assistant';
+
+interface Message {
+  role: MessageRole;
   content: string;
 }
 
-interface ChatStore {
-  messages: Message[];
-  addMessage: (message: Message) => void;
-  addUserMessage: (content: string) => void;
-  addAssistantMessage: (content: string) => void;
-  updateLastAssistantMessage: (content: string) => void;
-  clearMessages: () => void;
-}
+export const useChatMessages = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
 
-export const useChatMessages = create<ChatStore>((set) => ({
-  messages: [],
-  addMessage: (message) => 
-    set((state) => ({ messages: [...state.messages, message] })),
-  addUserMessage: (content) =>
-    set((state) => ({ 
-      messages: [...state.messages, { role: "user", content }] 
-    })),
-  addAssistantMessage: (content) =>
-    set((state) => ({ 
-      messages: [...state.messages, { role: "assistant", content }] 
-    })),
-  updateLastAssistantMessage: (content) =>
-    set((state) => {
-      const newMessages = [...state.messages];
-      // Find the last assistant message
-      for (let i = newMessages.length - 1; i >= 0; i--) {
-        if (newMessages[i].role === "assistant") {
-          newMessages[i] = { ...newMessages[i], content };
-          return { messages: newMessages };
-        }
-      }
-      // If no assistant message found, add a new one
-      return { messages: [...newMessages, { role: "assistant", content }] };
-    }),
-  clearMessages: () => set({ messages: [] }),
-}));
+  const addUserMessage = (content: string) => {
+    setMessages(prev => [...prev, { role: 'user', content }]);
+  };
+
+  const addAssistantMessage = (content: string) => {
+    setMessages(prev => [...prev, { role: 'assistant', content }]);
+  };
+
+  const clearMessages = () => {
+    setMessages([]);
+  };
+
+  return {
+    messages,
+    addUserMessage,
+    addAssistantMessage,
+    clearMessages
+  };
+};

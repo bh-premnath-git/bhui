@@ -1,50 +1,82 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { GenericData, DashboardData } from "@/types/dataops/data-ops-hub.d";
-import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
-import { fetchData, fetchDashboardData } from "@/api/analytics-api";
-import { defaultChartStyles } from "@/features/data-catalog/components/Xplore/StyleEditor";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchDashboardData } from '@/api/analytics-api';
+import { defaultChartStyles } from '@/features/data-catalog/components/Xplore/StyleEditor';
+import type { DashboardData, ChartStyles } from '@/types/dataops/data-ops-hub.d';
 
 interface AnalyticsContextType {
-  dashboardData: DashboardData | undefined;
+  dashboardData: DashboardData | null;
   isLoading: boolean;
   error: Error | null;
-  viewMode: "chart" | "table";
-  setViewMode: (mode: "chart" | "table") => void;
-  selectedTimeRange: string;
-  setSelectedTimeRange: (range: string) => void;
+  viewMode: 'chart' | 'table';
+  setViewMode: (mode: 'chart' | 'table') => void;
+  formatCurrency: (value: number) => string;
   activeFilters: string[];
   setActiveFilters: React.Dispatch<React.SetStateAction<string[]>>;
-  formatCurrency: (value: number | undefined) => string;
   chartStyles: ChartStyles;
-  setChartStyles: (styles: ChartStyles) => void;
-  availableBrands: string[];
+  setChartStyles: React.Dispatch<React.SetStateAction<ChartStyles>>;
   currentPage: number;
-  setCurrentPage: (page: number) => void;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;
+  fetchData: (question: string) => Promise<void>;
+  currentQuestion: string;
 }
 
-export const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
+const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
-export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
-  const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
-  const [selectedTimeRange, setSelectedTimeRange] = useState("7days");
+export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
   const [chartStyles, setChartStyles] = useState<ChartStyles>(defaultChartStyles);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentQuestion, setCurrentQuestion] = useState<string>("");
+  const itemsPerPage = 5;
 
-  const { data: dashboardData, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: fetchDashboardData
-  });
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
-  const formatCurrency = useCallback((value: number | undefined): string => {
-    if (value === undefined || value === null) return '$0';
-    return `$${value.toLocaleString()}`;
+  const fetchData = async (question: string) => {
+    setIsLoading(true);
+    setError(null);
+    setCurrentQuestion(question);
+    
+    try {
+      const data = await fetchDashboardData(question);
+      setDashboardData(data);
+      
+      // Reset filters when data changes
+      setActiveFilters([]);
+      
+      // Set recommended chart type if available
+      if (data?.recommendedChartType) {
+        setChartStyles(prev => ({
+          ...prev,
+          chartType: data.recommendedChartType || 'bar'
+        }));
+      }
+      
+      // Default to chart view for new data
+      setViewMode('chart');
+      
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('An unknown error occurred'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    fetchData("");
   }, []);
-
-  const availableBrands = ["Dole", "Frieda's", "Goya", "Chiquita"];
 
   return (
     <AnalyticsContext.Provider
@@ -54,28 +86,27 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         error,
         viewMode,
         setViewMode,
-        selectedTimeRange,
-        setSelectedTimeRange,
+        formatCurrency,
         activeFilters,
         setActiveFilters,
-        formatCurrency,
         chartStyles,
         setChartStyles,
-        availableBrands,
         currentPage,
         setCurrentPage,
         itemsPerPage,
+        fetchData,
+        currentQuestion
       }}
     >
       {children}
     </AnalyticsContext.Provider>
   );
-}
+};
 
-export function useAnalytics() {
+export const useAnalytics = () => {
   const context = useContext(AnalyticsContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAnalytics must be used within an AnalyticsProvider');
   }
   return context;
-}
+};

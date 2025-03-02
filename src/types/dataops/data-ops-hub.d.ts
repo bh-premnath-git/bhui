@@ -61,4 +61,5 @@ export interface DashboardData {
   metrics?: DashboardMetric[];
   salesData: GenericData[];
   explanation?: string | string[];
+  recommendedChartType?: ChartType;
 }

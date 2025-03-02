@@ -6,13 +6,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAnalytics } from "@/context/AnalyticsContext";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import StatsCards from "./analytics/StatsCards";
 import AnalyticsChart from "./analytics/AnalyticsChart";
 import AnalyticsTable from "./analytics/AnalyticsTable";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function AnalyticsPanel() {
   const { 
@@ -27,7 +28,9 @@ export default function AnalyticsPanel() {
     chartStyles,
     currentPage,
     setCurrentPage,
-    itemsPerPage
+    itemsPerPage,
+    fetchData,
+    currentQuestion
   } = useAnalytics();
   
   const navigate = useNavigate();
@@ -63,7 +66,7 @@ export default function AnalyticsPanel() {
     navigate(`/saved-dashboard/${savedDashboard.id}`);
   };
 
-  if (isLoading || !dashboardData) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -75,6 +78,31 @@ export default function AnalyticsPanel() {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-destructive">
         <p>Error loading data. Please try again later.</p>
+      </div>
+    );
+  }
+
+  // Handle the case when no data is available (null response from API)
+  if (!dashboardData) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-8">
+          <div className="flex flex-col items-center justify-center text-center space-y-4">
+            <div className="rounded-full bg-muted p-3">
+              <SearchIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium">No data available for this query</h3>
+            <p className="text-muted-foreground max-w-md">
+              I couldn't find any relevant data for "{currentQuestion}". 
+              Try refining your question or asking about a different topic.
+            </p>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => fetchData("")}>
+                Show default data
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }

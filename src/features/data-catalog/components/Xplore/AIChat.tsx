@@ -4,6 +4,7 @@ import { useChatMessages } from "@/hooks/useChatMessages";
 import { PanelLayout } from "./shared/PanelLayout";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { Card } from "@/components/ui/card";
+import { useAnalytics } from "@/context/AnalyticsContext";
 
 interface AIChatProps {
   compact?: boolean;
@@ -13,12 +14,21 @@ interface AIChatProps {
 export default function AIChat({ compact = false, showHistory = false }: AIChatProps) {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
+  const { fetchData } = useAnalytics();
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
+    // Add user message to chat
     addUserMessage(input);
-    addAssistantMessage("I'm analyzing your request about: " + input);
+    
+    // Fetch data based on the question
+    await fetchData(input);
+    
+    // Add assistant response
+    addAssistantMessage("I've analyzed your request about: " + input);
+    
+    // Clear input
     setInput("");
   };
 

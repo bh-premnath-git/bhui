@@ -1,14 +1,16 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AIChat from "./AIChat";
 import SQLViewer from "./SQLViewer";
 import StyleEditor from "./StyleEditor";
 import AnalyticsPanel from "./AnalyticsPanel";
 import { MessageSquare, Database, Paintbrush } from "lucide-react";
+import { useChatMessages } from "@/hooks/useChatMessages";
 
 export default function XplorePanel() {
   const [activeTab, setActiveTab] = useState<string>("bighammer");
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
+  const { messages } = useChatMessages();
 
   return (
     <div className="flex h-full">
@@ -17,7 +19,31 @@ export default function XplorePanel() {
         {/* Make the content area scrollable but keep the chat input fixed */}
         <div className="flex-1 overflow-auto">
           <div className="p-4 pb-20"> {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
-            <AnalyticsPanel />
+            {messages.length > 0 ? (
+              <div className="space-y-4">
+                {/* Current conversation */}
+                <div className="space-y-3">
+                  {messages.map((message, i) => (
+                    <div
+                      key={i}
+                      className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
+                    >
+                      <div
+                        className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                          message.role === "assistant"
+                            ? "bg-muted text-foreground"
+                            : "bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <AnalyticsPanel />
+            )}
           </div>
         </div>
         

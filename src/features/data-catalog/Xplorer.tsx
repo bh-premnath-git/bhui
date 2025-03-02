@@ -1,15 +1,16 @@
-import AnalyticsPanel from "./components/Xplore/AnalyticsPanel";
-import ToolsPanel from "./components/Xplore/ToolsPanel";
+import { useState } from "react";
+import XplorePanel from "./components/Xplore/XplorePanel";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export const Xplorer = () => {
-    return (
-        <div className="flex min-h-screen bg-background">
-          <div className="flex-1 p-2 ml-8 border-r">
-            <AnalyticsPanel />
-          </div>
-          <div className="w-[450px]">
-            <ToolsPanel />
-          </div>
-        </div>
-      );
+export function Xplorer() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  return (
+    <div className="h-screen flex flex-col">
+      <main className="flex-1 overflow-hidden">
+        <XplorePanel />
+      </main>
+    </div>
+  );
 }

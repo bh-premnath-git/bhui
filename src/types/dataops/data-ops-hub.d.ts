@@ -58,6 +58,7 @@ export interface DashboardData {
   description: string;
   timeRange: string;
   brands: string[];
-  metrics: DashboardMetric[];
+  metrics?: DashboardMetric[];
   salesData: GenericData[];
+  explanation?: string | string[];
 }

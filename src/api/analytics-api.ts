@@ -70,6 +70,12 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
         Goya: 8500,
         Chiquita: 7800,
       },
+    ],
+    explanation: [
+      "Based on the daily sales data for the last 7 days, Dole consistently outperforms other brands with the highest sales figures, averaging $11,420 per day.",
+      "Frieda's shows a concerning downward trend of -2.1%, which may require attention to marketing or distribution strategies for this brand.",
+      "Goya and Chiquita both show modest growth, with Goya performing slightly better at +1.8% compared to Chiquita's +0.5%.",
+      "The highest sales day for all brands was January 29th, suggesting a potential weekly pattern where sales peak towards the end of the week."
     ]
   };
 };

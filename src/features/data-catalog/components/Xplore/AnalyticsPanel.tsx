@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import StatsCards from "./analytics/StatsCards";
 import AnalyticsChart from "./analytics/AnalyticsChart";
 import AnalyticsTable from "./analytics/AnalyticsTable";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function AnalyticsPanel() {
   const { 
@@ -125,12 +126,15 @@ export default function AnalyticsPanel() {
         </div>
       </div>
 
-      <StatsCards 
-        metrics={dashboardData.metrics}
-        activeFilter={activeFilters.join(',')}
-        onFilterClick={handleFilterClick}
-        formatCurrency={formatCurrency}
-      />
+      {/* Only show stats cards if metrics are available in the response */}
+      {dashboardData.metrics && dashboardData.metrics.length > 0 && (
+        <StatsCards 
+          metrics={dashboardData.metrics}
+          activeFilter={activeFilters.join(',')}
+          onFilterClick={handleFilterClick}
+          formatCurrency={formatCurrency}
+        />
+      )}
 
       <Tabs value={viewMode}>
         <TabsContent value="chart">
@@ -153,6 +157,24 @@ export default function AnalyticsPanel() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Add detailed explanation section */}
+      {dashboardData.explanation && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-2">Analysis</h3>
+            <div className="text-muted-foreground space-y-2">
+              {typeof dashboardData.explanation === 'string' ? (
+                <p>{dashboardData.explanation}</p>
+              ) : (
+                dashboardData.explanation.map((paragraph, idx) => (
+                  <p key={idx}>{paragraph}</p>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -119,7 +119,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
         updateLastAssistantMessage(formattedMessage);
       }
     }
-  }, [flowAgentConversation, updateLastAssistantMessage, dispatch]);
+  }, [flowAgentConversation]);
 
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;

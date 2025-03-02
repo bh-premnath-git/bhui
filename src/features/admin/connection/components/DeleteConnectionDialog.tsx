@@ -12,35 +12,35 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader, Trash2 } from "lucide-react";
-import { useFlow } from '@/features/designers/flow/hooks/useFlow';
-import type { Flow } from "@/types/designer/flow";
+import { useConnections } from '@/features/admin/connection/hooks/useConnection';
+import type { Connection } from "@/types/admin/connection";
 
-type DeleteFlowDialogProps = {
+type DeleteConnectionDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
 };
 
-export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDialogProps) {
-    const selectedFlow = useAppSelector((state: RootState) => state.flow.selectedFlow) as Flow | null;
+export function DeleteConnectionDialog({ open, onOpenChange, onSuccess }: DeleteConnectionDialogProps) {
+    const selectedConnection = useAppSelector((state: RootState) => state.connections.selectedconnection as Connection | null);
     const [confirmationInput, setConfirmationInput] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
-    const { handleDeleteFlow } = useFlow();
+    const { handleDeleteConnection } = useConnections();
     
 
     const handleDelete = async () => {
-        if (!selectedFlow) return;
+        if (!selectedConnection) return;
         setIsDeleting(true);
         try {
-            await handleDeleteFlow(selectedFlow.flow_id.toString());
+            await handleDeleteConnection(selectedConnection.id.toString());
             onOpenChange(false);
             onSuccess?.();
         } finally {
             setIsDeleting(false);
-        }
+        } 
     }
 
-    if (!selectedFlow) return null;
+    if (!selectedConnection) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,11 +48,11 @@ export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDi
                 <DialogHeader>
                     <DialogTitle>Confirm Delete</DialogTitle>
                 </DialogHeader>
-                <p>This action cannot be undone. This will permanently delete the <span className="font-semibold">{selectedFlow.flow_name}</span> flow and all of its data.</p>
+                <p>This action cannot be undone. This will permanently delete the <span className="font-semibold">{selectedConnection.connection_config_name}</span> connection and all of its data.</p>
                 <div className="space-y-4">
                     <div>
                         <Label htmlFor="confirm" className="text-sm font-medium">
-                            Please type <span className="font-semibold">{selectedFlow.flow_name}</span> to confirm.
+                            Please type <span className="font-semibold">{selectedConnection.connection_config_name}</span> to confirm.
                         </Label>
                         <Input
                             id="confirm"
@@ -67,7 +67,7 @@ export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDi
                     <Button
                         variant="destructive"
                         onClick={handleDelete}
-                        disabled={confirmationInput !== selectedFlow.flow_name || isDeleting}
+                        disabled={confirmationInput !== selectedConnection.connection_config_name || isDeleting}
                     >
                         {isDeleting ? (
                             <>

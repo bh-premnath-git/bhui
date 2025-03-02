@@ -791,14 +791,13 @@ const generateComparisonData = (
 };
 
 // Helper for enhancing previous response with more details
-const enhancePreviousResponse = (prevQuestion: string): DashboardData | null => {
-  // This would fetch more detailed data about the previous question
-  // For now, return a modified version of the existing response
+const enhancePreviousResponse = async (prevQuestion: string): Promise<DashboardData | null> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 400));
   
-  // Create a mock base data object instead of using a comment in code
-  const baseData = {
-    title: `Analysis: ${prevQuestion}`,
-    description: "Analysis of your query",
+  return {
+    title: "Detailed Analysis:",
+    description: "An in-depth look at the data you requested",
     timeRange: "Current Quarter",
     brands: ["Category A", "Category B", "Category C"],
     recommendedChartType: "bar",
@@ -814,34 +813,21 @@ const enhancePreviousResponse = (prevQuestion: string): DashboardData | null => 
       {
         date: "Jan",
         "Category A": 95000,
-        "Category B": 87000
+        "Category B": 85000,
+        "Category C": 0
       },
       {
         date: "Feb",
         "Category A": 92000,
-        "Category B": 89000
-      },
-      {
-        date: "Mar",
-        "Category A": 98000,
-        "Category B": 91000
+        "Category B": 88000,
+        "Category C": 0
       }
-    ]
-  };
-  
-  // Add more detailed explanation
-  return {
-    ...baseData,
-    title: `Detailed Analysis: ${prevQuestion}`,
-    description: "An in-depth look at the data you requested",
-    explanation: [
-      "Here's a more detailed analysis of your query:",
-      "The trend shows a consistent pattern of growth over the analyzed period.",
-      "Key factors influencing this trend include seasonal variations and market conditions.",
-      "When breaking down by demographic segments, we see the strongest performance in the 25-34 age group.",
-      "Geographical distribution shows concentration in urban centers, with particular strength in coastal regions."
     ],
-    sqlQuery: generateSQLQuery(prevQuestion)
+    explanation: [
+      "Based on your previous question about sales performance",
+      "Here's a more detailed breakdown showing the trend"
+    ],
+    sqlQuery: "SELECT * FROM sales_data WHERE date >= '2024-01-01'"
   };
 };
 

@@ -221,11 +221,11 @@ function OwnersSection({ owners, onRemoveOwner }: { owners: Owner[]; onRemoveOwn
             <AvatarFallback className="bg-gray-200 text-gray-800">
               {owner.name.split(' ').length > 1
                 ? owner.name
-                    .split(' ')
-                    .map((n) => n[0].toUpperCase())
-                    .join('')
+                  .split(' ')
+                  .map((n) => n[0].toUpperCase())
+                  .join('')
                 : owner.name[0].toUpperCase() +
-                  owner.name[owner.name.length - 1].toUpperCase()}
+                owner.name[owner.name.length - 1].toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
@@ -341,13 +341,13 @@ function AddOwnerDialog({
   );
 }
 
-function AddTagDialog({ 
-  open, 
-  onClose, 
-  onAddTag 
-}: { 
-  open: boolean; 
-  onClose: () => void; 
+function AddTagDialog({
+  open,
+  onClose,
+  onAddTag
+}: {
+  open: boolean;
+  onClose: () => void;
   onAddTag: (tag: string) => void;
 }) {
   const [newTag, setNewTag] = useState('');
@@ -477,6 +477,19 @@ function AddLinkDialog({
 }
 
 export default function About({ initialData = {} as AboutData, selectedSource, columns }: { initialData?: AboutData, selectedSource: DataSource, columns: any }) {
+  const {
+    links,
+    owners,
+    tags,
+    lastUpdated,
+    handleSaveDescription,
+    handleAddLink,
+    handleAddOwner,
+    handleAddTag,
+    handleRemoveLink,
+    handleRemoveOwner,
+    handleRemoveTag,
+  } = useAboutData(initialData);
   const defaultDescription = selectedSource.data_src_desc ?? 'Sample Description about the data source.';
   const [descriptionState, setDescriptionState] = useState({
     current: defaultDescription,
@@ -486,19 +499,8 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
   const [botStatus, setBotStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);  
-  const {
-    links,
-    owners,
-    tags,
-    lastUpdated,
-    handleAddLink,
-    handleAddOwner,
-    handleAddTag,
-    handleRemoveLink,
-    handleRemoveOwner,
-    handleRemoveTag,
-  } = useAboutData(initialData);
+  const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);
+
 
   const hasChanges = descriptionState.current !== descriptionState.original;
 
@@ -512,9 +514,9 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
           source_name: selectedSource.data_src_name,
           fields: columns,
         },
-      };    
-      
-      const descriptionResponse:any = await apiService.post(
+      };
+
+      const descriptionResponse: any = await apiService.post(
         {
           portNumber: AGENT_PORT,
           method: 'POST',
@@ -526,7 +528,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
           }
         }
       );
-      
+
       const desContent = JSON.parse(descriptionResponse.result).description;
 
       setDescriptionState(prev => ({
@@ -550,6 +552,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
       ...prev,
       original: prev.current
     }));
+    handleSaveDescription(selectedSource.data_src_id, descriptionState.current);
     toast.success('Description saved');
   };
 
@@ -558,6 +561,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
       ...prev,
       original: prev.current
     }));
+    handleSaveDescription(selectedSource.data_src_id, descriptionState.current);
     setIsEditingDesc(false);
     toast.success('Description saved');
   };

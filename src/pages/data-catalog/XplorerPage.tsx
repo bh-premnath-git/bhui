@@ -1,15 +1,11 @@
-import { Helmet } from "react-helmet";
+import { Xplorer } from "@/features/data-catalog/Xplorer"
+import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
-import Xplorer from "@/features/data-catalog/components/Xplore/Xplorer";
 
 const XplorerPage = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Data Explorer</title>
-      </Helmet>
-      
+    <div className="min-h-screen p-6 bg-background">
       <AnalyticsProvider>
         <DashboardProvider>
           <Xplorer />
@@ -19,4 +15,4 @@ const XplorerPage = () => {
   )
 }
 
-export default XplorerPage; 
+export default withPageErrorBoundary(XplorerPage, 'XploreerPage');

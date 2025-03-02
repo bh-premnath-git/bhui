@@ -7,11 +7,9 @@ import AnalyticsPanel from "./AnalyticsPanel";
 import { MessageSquare, Database, Paintbrush, BarChart, LineChart as LineChartIcon } from "lucide-react";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAnalytics } from "@/context/AnalyticsContext";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import SuggestedQuestions from "./SuggestedQuestions";
 
-// Interface for storing visualization history
 interface VisualHistoryItem {
   id: string;
   question: string;
@@ -25,97 +23,73 @@ interface VisualHistoryItem {
 
 export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   const [activeTab, setActiveTab] = useState<string>("bighammer");
-  const { messages, clearMessages } = useChatMessages();
-  const { 
-    dashboardData, 
-    currentQuestion, 
-    isLoading, 
-    error, 
-    chartStyles, 
-    setChartStyles,
-    viewMode,
-    setViewMode,
+  const { messages } = useChatMessages();
+  const {
+    dashboardData,
+    currentQuestion,
+    isLoading,
+    error,
+    chartStyles,
     resetAnalytics
   } = useAnalytics();
-  
-  // State for visualization history
+
   const [visualHistory, setVisualHistory] = useState<VisualHistoryItem[]>([]);
-  
-  // Add a state to track questions that are already being processed
+
   const [processedQuestions, setProcessedQuestions] = useState<Set<string>>(new Set());
-  
-  // Completely isolate each visualization
 
-  // Add this function to create a completely isolated copy of a visualization item
-  const createIsolatedVisualization = (question: string, data: any, styles: any) => {
-    return {
-      id: `vis-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      question,
-      timestamp: new Date(),
-      dashboardData: structuredClone(data),
-      chartStyles: structuredClone(styles),
-      viewMode: "chart",
-      isFollowUp: question.toLowerCase().includes("why") || 
-                  question.toLowerCase().includes("explain") ||
-                  question.toLowerCase().includes("compare") ||
-                  question.toLowerCase().includes("tell me more")
-    };
-  };
+  const createIsolatedVisualization = (question: string, data: any, styles: any): VisualHistoryItem => ({
+    id: `vis-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    question,
+    timestamp: new Date(),
+    dashboardData: structuredClone(data),
+    chartStyles: structuredClone(styles),
+    viewMode: "chart" as const,
+    isFollowUp: question.toLowerCase().includes("why") ||
+      question.toLowerCase().includes("explain") ||
+      question.toLowerCase().includes("compare") ||
+      question.toLowerCase().includes("tell me more")
+  });
 
-  // Modify the visualization history effect
   useEffect(() => {
-    // Only process if we have dashboard data and a question
     if (!dashboardData || !currentQuestion || currentQuestion.trim() === "") {
       return;
     }
-    
-    // Skip if this question is already being processed (prevents duplicates)
+
     if (processedQuestions.has(currentQuestion)) {
       console.log("Skipping already processed question:", currentQuestion);
       return;
     }
-    
+
     console.log("Processing visualization for:", currentQuestion);
-    
-    // Mark this question as being processed
+
     setProcessedQuestions(prev => new Set(prev).add(currentQuestion));
-    
-    // Always create a new visualization for each question to ensure isolation
+
     const newVisualization = createIsolatedVisualization(
       currentQuestion,
       dashboardData,
       chartStyles
     );
-    
-    // Add the new visualization to history without modifying existing ones
+
     setVisualHistory(prev => [...prev, newVisualization]);
-    
+
   }, [dashboardData, currentQuestion]);
 
-  // Add a cleanup effect for processed questions
   useEffect(() => {
-    // Clear processed questions when messages change
-    // This ensures we can process the same question again in a new conversation
     if (messages.length === 0) {
       setProcessedQuestions(new Set());
     }
   }, [messages.length]);
 
-  // Listen for processing-question events
   useEffect(() => {
     const handleProcessingQuestion = (event: CustomEvent) => {
       const { question } = event.detail;
       console.log("Processing question event:", question);
-      
-      // Store the current state of visualizations to restore if needed
       window.sessionStorage.setItem('xplorer:visualHistory', JSON.stringify(visualHistory));
     };
-    
+
     const handleQuestionProcessed = (event: CustomEvent) => {
       const { question, success } = event.detail;
       console.log("Question processed event:", question, success);
-      
-      // If processing failed, restore the previous state
       if (!success) {
         const savedHistory = window.sessionStorage.getItem('xplorer:visualHistory');
         if (savedHistory) {
@@ -123,71 +97,43 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
         }
       }
     };
-    
+
     window.addEventListener('xplorer:processing-question', handleProcessingQuestion as EventListener);
     window.addEventListener('xplorer:question-processed', handleQuestionProcessed as EventListener);
-    
+
     return () => {
       window.removeEventListener('xplorer:processing-question', handleProcessingQuestion as EventListener);
       window.removeEventListener('xplorer:question-processed', handleQuestionProcessed as EventListener);
     };
   }, [visualHistory]);
 
-  // Listen for new chat events - only clear history on explicit new chat
   useEffect(() => {
     const handleNewChat = () => {
-      // Clear visualization history
       setVisualHistory([]);
-      
-      // Reset analytics state if needed
       if (typeof resetAnalytics === 'function') {
         resetAnalytics();
       }
     };
-    
-    // Add event listener
+
     window.addEventListener('xplorer:new-chat', handleNewChat);
-    
-    // Clean up
+
     return () => {
       window.removeEventListener('xplorer:new-chat', handleNewChat);
     };
   }, [resetAnalytics]);
-
-  // In XplorePanel.tsx - Add a listener for clearing processed questions
 
   useEffect(() => {
     const handleClearProcessedQuestions = () => {
       console.log("Clearing processed questions");
       setProcessedQuestions(new Set());
     };
-    
+
     window.addEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
-    
+
     return () => {
       window.removeEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
     };
   }, []);
-
-  // Helper functions
-  const generateDefaultSqlQuery = (question: string) => {
-    return `-- Generated SQL for: ${question}
-SELECT *
-FROM sales
-WHERE date >= CURRENT_DATE - INTERVAL '30 days'
-LIMIT 100;`;
-  };
-
-  const generateFallbackData = (brands) => {
-    const months = ["Jan", "Feb", "Mar"];
-    return months.map(month => {
-      const dataPoint = { date: month };
-      brands.forEach(brand => {
-        dataPoint[brand] = Math.floor(Math.random() * 500000) + 100000;
-      });
-      return dataPoint;
-    });
-  };
 
   const handleSelectQuestion = (question: string) => {
     const inputField = document.querySelector('input[placeholder*="Ask a question"]') as HTMLInputElement;
@@ -198,14 +144,13 @@ LIMIT 100;`;
   };
 
   const updateViewMode = (id: string, mode: "chart" | "table" | "sql") => {
-    setVisualHistory(prev => 
-      prev.map(item => 
+    setVisualHistory(prev =>
+      prev.map(item =>
         item.id === id ? { ...item, viewMode: mode } : item
       )
     );
   };
 
-  // ChatGPT-like layout with a single scrollable area
   return (
     <div className="flex h-screen flex-col w-full overflow-hidden">
       {/* Main content - the ONLY scrolling container */}
@@ -213,19 +158,19 @@ LIMIT 100;`;
         <div className={`flex h-full ${showSidebar ? 'pr-96' : ''}`}>
           {/* Main content panel */}
           <div className="flex-1 relative min-w-0">
-            <div className="px-4 pb-24 pt-4 max-w-5xl mx-auto">
+            <div className="px-4 pb-4 pt-4 max-w-5xl mx-auto">
               {visualHistory.length === 0 ? (
                 <div className="space-y-8">
                   {/* Welcome screen content */}
-                  <div className="text-center pt-10 pb-6">
+                  <div className="text-center pt-1 pb-2">
                     <h1 className="text-3xl font-bold mb-2">Data Explorer</h1>
                     <p className="text-muted-foreground max-w-md mx-auto">
                       Ask questions about your data in natural language to generate visualizations and insights.
                     </p>
                   </div>
-                  
+
                   <div className="max-w-3xl mx-auto">
-                    <Card className="border-2 border-dashed p-6">
+                    <Card className="border-2 border-dashed p-2">
                       <CardContent className="p-6 flex items-center gap-8">
                         <div className="grid grid-cols-2 gap-4 flex-1">
                           <div className="flex items-center gap-2 text-sm">
@@ -248,15 +193,14 @@ LIMIT 100;`;
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   <div className="max-w-3xl mx-auto">
-                    <h2 className="text-lg font-semibold mb-4">Try asking:</h2>
+                    <h2 className="text-lg font-semibold mb-1">Try asking:</h2>
                     <SuggestedQuestions onSelectQuestion={handleSelectQuestion} />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* Render the chat history followed by visualizations */}
                   <div className="space-y-4">
                     {messages.map((message, i) => (
                       <div
@@ -264,21 +208,18 @@ LIMIT 100;`;
                         className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
                       >
                         <div
-                          className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                            message.role === "assistant"
+                          className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === "assistant"
                               ? "bg-muted text-foreground"
                               : "bg-primary text-primary-foreground"
-                          }`}
+                            }`}
                         >
                           {message.content}
                         </div>
                       </div>
                     ))}
                   </div>
-                  
-                  {/* Visualizations */}
                   {visualHistory.map((item, index) => (
-                    <Card key={item.id} className="mb-8 overflow-hidden">
+                    <Card key={item.id} className="mb-2 overflow-hidden">
                       <CardContent className="p-0">
                         <div className="bg-muted p-4 border-b">
                           <h3 className="font-medium">{item.question}</h3>
@@ -286,31 +227,28 @@ LIMIT 100;`;
                             {item.timestamp.toLocaleTimeString()}
                           </p>
                         </div>
-                        <div className="p-4">
-                          {/* Use a completely isolated AnalyticsPanel for each visualization */}
-                          <AnalyticsPanel 
-                            dashboardData={structuredClone(item.dashboardData)} 
+                        <div className="p-1">
+                          <AnalyticsPanel
+                            dashboardData={structuredClone(item.dashboardData)}
                             showHeader={true}
                             chartStyles={structuredClone(item.chartStyles)}
                             viewMode={item.viewMode}
                             onViewModeChange={(mode) => updateViewMode(item.id, mode)}
-                            // Force complete re-render with a unique key
                             key={`panel-${item.id}-${Math.random()}`}
-                            // Ensure isolated mode is enabled
                             isolatedMode={true}
                           />
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                  
+
                   {/* Loading state */}
                   {isLoading && (
                     <div className="flex items-center justify-center p-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                   )}
-                  
+
                   {/* Error state */}
                   {error && (
                     <div className="p-4 text-destructive">
@@ -322,7 +260,6 @@ LIMIT 100;`;
             </div>
           </div>
 
-          {/* Sidebar - absolute positioned to avoid scrollbar issues */}
           {showSidebar && (
             <div className="w-96 border-l absolute right-0 top-0 bottom-0 bg-background">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
@@ -346,15 +283,15 @@ LIMIT 100;`;
                     </div>
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="bighammer" className="flex-1 p-4 overflow-auto">
                   <AIChat showHistory={true} />
                 </TabsContent>
-                
+
                 <TabsContent value="styling" className="flex-1 p-4 overflow-auto">
                   <StyleEditor />
                 </TabsContent>
-                
+
                 <TabsContent value="sql" className="flex-1 p-4 overflow-auto">
                   <SQLViewer />
                 </TabsContent>
@@ -363,11 +300,11 @@ LIMIT 100;`;
           )}
         </div>
       </div>
-      
+
       {/* Fixed bottom input - always visible */}
-      <div className="border-t bg-background sticky bottom-0 z-50 w-full">
+      <div className="border-t bg-background sticky bottom-4 z-50 w-full">
         <div className={`mx-auto ${showSidebar ? 'pr-96' : ''}`}>
-          <div className="py-3 px-4 max-w-5xl mx-auto">
+          <div className="py-0 px-0 max-w-5xl mx-auto">
             <AIChat compact={true} />
           </div>
         </div>

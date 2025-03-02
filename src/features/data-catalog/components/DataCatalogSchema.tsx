@@ -9,7 +9,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_PORT } from '@/config/platformenv';
+import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
 import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
 
 export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
@@ -24,14 +24,12 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
   const datatypes = dataSourceTypes?.codes_dtl || [];
   const [layoutData, setLayoutData] = useState<LayoutField[]>([]);
 
-  // Initialize layout data when it becomes available
   useMemo(() => {
     if (layoutFields && layoutFields.layout_fields) {
       setLayoutData(layoutFields.layout_fields);
     }
   }, [layoutFields]);
 
-  // Prepare the API request body for description generation
   const descriptionApiBody = useMemo(() => {
     if (!layoutFields) return null;
 
@@ -45,10 +43,9 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     };
   }, [layoutFields]);
 
-  // Map to keep track of field IDs to column names
   const fieldIdToColumnMap = useMemo(() => {
     const map = new Map<string, { fieldId: string | number, columnName: string, dataType: any }>();
-    
+
     if (!layoutData.length || !datatypes.length) return map;
 
     layoutData.forEach(field => {
@@ -64,42 +61,37 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
   }, [layoutData, datatypes]);
 
   useEffect(() => {
-    // Register event handlers for all tag cells
     for (const [fieldId, cellData] of tagCellRefs.entries()) {
       if (cellData.ref.current) {
         const addTagHandler = (key: string, value: string) => {
           handleAddTag(Number(fieldId), key, value);
         };
-        
+
         const removeTagHandler = (key: string) => {
           handleRemoveTag(Number(fieldId), key);
         };
-        
+
         const originalAddTag = cellData.ref.current.addTag;
         const originalRemoveTag = cellData.ref.current.removeTag;
-        
+
         cellData.ref.current.addTag = (key: string, value: string) => {
-          originalAddTag(key, value);          
+          originalAddTag(key, value);
           addTagHandler(key, value);
         };
-        
+
         cellData.ref.current.removeTag = (key: string) => {
-          originalRemoveTag(key);          
+          originalRemoveTag(key);
           removeTagHandler(key);
         };
       }
     }
 
-    // Register event handlers for description cells
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         const originalUpdateDescription = cellData.ref.current.updateDescription;
-        
+
         cellData.ref.current.updateDescription = async (description: string) => {
-          // Call the original method to update the UI
           await originalUpdateDescription(description);
-          
-          // Update our central state
           handleUpdateDescription(Number(fieldId), description);
         };
       }
@@ -113,26 +105,24 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     }
 
     toast.info("Generating descriptions for all fields...");
-    
-    // Clone the API body to avoid mutating the memoized value
+
     const body = { ...descriptionApiBody };
-    
+
     if (!body) return;
-    
-    // Reset columns array
+
     body.params.columns = [];
 
     for (const [fieldId, cellData] of descriptionCellRefs.entries()) {
       if (cellData.ref.current) {
         try {
           cellData.ref.current.setLoading(true);
-          
+
           const column = {
             id: fieldId,
             name: cellData.rowData.lyt_fld_name,
             dataType: datatypes.find((dt) => dt.id === cellData.rowData.lyt_fld_data_type_cd)
           }
-          
+
           body.params.columns.push(column);
         } catch (error) {
           console.error(`Error preparing field ${fieldId}:`, error);
@@ -141,7 +131,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     }
 
     try {
-      
+
       const response: any = await apiService.post({
         portNumber: AGENT_PORT,
         method: 'POST',
@@ -152,18 +142,18 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
           errorMessage: `Failed to generate description for fields`
         }
       });
-      
+
       const parsedResponse = JSON.parse(response.result as string);
-      
+
       if (parsedResponse && parsedResponse.descriptions && Array.isArray(parsedResponse.descriptions)) {
         let successCount = 0;
-        
+
         for (const desc of parsedResponse.descriptions) {
           const columnName = desc.column_name;
           const description = desc.description;
-          
+
           const fieldInfo = fieldIdToColumnMap.get(columnName);
-          
+
           if (fieldInfo && descriptionCellRefs.has(fieldInfo.fieldId)) {
             const cellData = descriptionCellRefs.get(fieldInfo.fieldId);
             if (cellData && cellData.ref.current) {
@@ -175,11 +165,10 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
             console.warn(`Could not find field ID for column name: ${columnName}`);
           }
         }
-        
+
         toast.success(`Successfully generated ${successCount} descriptions`);
       } else {
         toast.error("No descriptions found in the API response");
-        // Set loading to false for all cells
         for (const cellData of descriptionCellRefs.values()) {
           if (cellData.ref.current) {
             cellData.ref.current.setLoading(false);
@@ -189,8 +178,6 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     } catch (error) {
       console.error("Error generating descriptions:", error);
       toast.error("Error generating descriptions");
-      
-      // Set loading to false for all cells
       for (const cellData of descriptionCellRefs.values()) {
         if (cellData.ref.current) {
           cellData.ref.current.setLoading(false);
@@ -199,61 +186,93 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     }
   };
 
+  const saveDescriptions = useCallback(async () => {
+    // Make sure we have a valid layout ID before proceeding
+    if (!layoutFields?.data_src_lyt_id) {
+      toast.error('Cannot save descriptions: Layout ID not available');
+      return;
+    }
+
+    const descriptions: Array<{ lyt_fld_id: string | number; lyt_fld_desc: string }> = [];
+
+    descriptionCellRefs.forEach((cellData, fieldId) => {
+      if (cellData.ref.current) {
+        descriptions.push({
+          lyt_fld_id: fieldId,
+          lyt_fld_desc: cellData.ref.current.getValue() || ''
+        });
+      }
+    });
+
+    if (layoutFields?.data_src_lyt_id) {
+      await apiService.patch({
+        portNumber: CATALOG_API_PORT,
+        url: `/layout_fields/descriptions/${layoutFields?.data_src_lyt_id}`,
+        data: { descriptions: descriptions },
+        usePrefix: true,
+        method: 'PATCH',
+        metadata: {
+          errorMessage: 'Failed to update flow definition'
+        }
+      })
+    }
+    toast.success('Description updated successfully');
+  }, [layoutFields?.data_src_lyt_id]);
+
   const handleAddTag = useCallback((fieldId: number, key: string, value: string) => {
     const newTags: LayoutFieldTags = {
       tagList: { key, value }
     };
-    
-    setLayoutData(prevData => 
-      prevData.map(field => 
-        field.lyt_fld_id === fieldId 
-          ? { ...field, lyt_fld_tags: newTags } 
+
+    setLayoutData(prevData =>
+      prevData.map(field =>
+        field.lyt_fld_id === fieldId
+          ? { ...field, lyt_fld_tags: newTags }
           : field
       )
     );
-        
+
     toast.success(`Added tag ${key}: ${value}`);
   }, []);
-  
+
   const handleRemoveTag = useCallback((fieldId: number, key: string) => {
     const emptyTags: LayoutFieldTags = {
       tagList: { key: '', value: '' }
     };
-    
-    setLayoutData(prevData => 
-      prevData.map(field => 
-        field.lyt_fld_id === fieldId 
-          ? { ...field, lyt_fld_tags: emptyTags } 
+
+    setLayoutData(prevData =>
+      prevData.map(field =>
+        field.lyt_fld_id === fieldId
+          ? { ...field, lyt_fld_tags: emptyTags }
           : field
       )
     );
-      
+
     toast.success(`Removed tag ${key}`);
   }, []);
 
   const handleUpdateDescription = useCallback((fieldId: number, description: string) => {
     // Update the layoutData state
-    setLayoutData(prevData => 
-      prevData.map(field => 
-        field.lyt_fld_id === fieldId 
-          ? { ...field, lyt_fld_desc: description } 
+    setLayoutData(prevData =>
+      prevData.map(field =>
+        field.lyt_fld_id === fieldId
+          ? { ...field, lyt_fld_desc: description }
           : field
       )
     );
-    
-    // In a real application, you would make an API call here to update the backend
+
     toast.success(`Updated description for field ${fieldId}`);
   }, []);
 
-  const columns = useMemo(() => 
-    createColumns(generateAllDescriptions), 
-    [generateAllDescriptions]
+  const columns = useMemo(() =>
+    createColumns(generateAllDescriptions, saveDescriptions),
+    [generateAllDescriptions, saveDescriptions]
   );
 
   // Prepare columns data for About component
   const columnsForAbout = useMemo(() => {
     if (!layoutData.length || !datatypes.length) return [];
-    
+
     return layoutData.map(field => {
       const dataType = datatypes.find(dt => dt.id === field.lyt_fld_data_type_cd);
       return {
@@ -308,6 +327,9 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
         <div className="w-[300px]">
           <About
             selectedSource={selectedSource}
+            initialData={{
+              description: selectedSource?.data_src_desc
+            }}
             columns={columnsForAbout}
           />
         </div>

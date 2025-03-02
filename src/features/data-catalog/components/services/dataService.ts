@@ -1,7 +1,7 @@
-import { mockApiCall } from './apiService';
+import { mockApiCall, saveDescription } from './apiService';
 
-export const saveDescription = async (description: string) => {
-  return mockApiCall({ description });
+export const saveDescriptionServ = async (id: number, description: string) => {
+  return saveDescription(id, description);
 };
 
 export const addLink = async (link: { url: string; title: string }) => {

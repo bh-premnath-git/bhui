@@ -20,6 +20,7 @@ export const CatalagSlideWrapper: FC<CatalagSlideWrapperProps> = ({
   onOpenChange,
   selectedRow,
 }) => {
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
@@ -33,7 +34,8 @@ export const CatalagSlideWrapper: FC<CatalagSlideWrapperProps> = ({
             Detailed view of the data catalog source.
           </SheetDescription>
         </SheetHeader>
-        <DataCatalogSchema dataSourceId={selectedRow?.data_src_id} selectedSource={selectedRow} />
+        <DataCatalogSchema dataSourceId={selectedRow?.data_src_id}
+        selectedSource={selectedRow} />
       </SheetContent>
     </Sheet>
   );

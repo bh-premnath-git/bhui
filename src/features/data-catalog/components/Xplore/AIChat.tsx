@@ -22,8 +22,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { fetchDatabaseConnections, fetchChatHistory, getConversationContext, updateConversationContext } from "@/api/analytics-api";
-import { DatabaseConnection, ChatSession, ConversationContext } from "@/types/dataops/data-ops-hub.d";
+import { 
+  fetchDatabaseConnections, 
+  fetchChatHistory, 
+  getConversationContext, 
+  updateConversationContext,
+  type ConversationContext 
+} from "@/api/analytics-api";
+import type { DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
 
 interface AIChatProps {
   compact?: boolean;

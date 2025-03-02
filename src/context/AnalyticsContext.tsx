@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { fetchDashboardData } from '@/api/analytics-api';
-import { defaultChartStyles } from '@/features/data-catalog/components/Xplore/StyleEditor';
+import { fetchDashboardData, updateConversationContext } from '@/api/analytics-api';
+import { defaultChartStyles, ChartType } from '@/features/data-catalog/components/Xplore/StyleEditor';
 import type { DashboardData, ChartStyles } from '@/types/dataops/data-ops-hub.d';
 
 interface AnalyticsContextType {
@@ -17,7 +17,7 @@ interface AnalyticsContextType {
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;
-  fetchData: (question: string) => Promise<void>;
+  fetchData: (question: string, useContext?: boolean) => Promise<DashboardData | null>;
   currentQuestion: string;
   resetAnalytics: () => void;
 }
@@ -71,7 +71,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (data?.recommendedChartType && !useContext) {
           setChartStyles(prev => ({
             ...prev,
-            chartType: data.recommendedChartType || 'bar'
+            chartType: (data.recommendedChartType as ChartType) || 'bar',
           }));
         }
       }

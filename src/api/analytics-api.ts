@@ -1,4 +1,77 @@
-import { GenericData, DashboardData } from "@/types/dataops/data-ops-hub.d";
+import { GenericData, DashboardData, DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
+
+// Stub response for database connections
+export const fetchDatabaseConnections = async (): Promise<DatabaseConnection[]> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  return [
+    { id: "postgres-prod", name: "PostgreSQL (Production)", type: "postgres" },
+    { id: "snowflake-dw", name: "Snowflake Data Warehouse", type: "snowflake" },
+    { id: "bigquery-analytics", name: "BigQuery Analytics", type: "bigquery" },
+    { id: "mysql-app", name: "MySQL App Database", type: "mysql" }
+  ];
+};
+
+// Stub response for chat history
+export const fetchChatHistory = async (): Promise<ChatSession[]> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  return [
+    { 
+      id: "recent-1", 
+      title: "Sales analysis by region", 
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      connection: "snowflake-dw",
+      messages: [
+        { role: "user", content: "Show me sales by region" },
+        { role: "assistant", content: "I've analyzed your request about: Show me sales by region" }
+      ],
+      lastQuestion: "Show me sales by region"
+    },
+    { 
+      id: "recent-2", 
+      title: "Customer retention metrics", 
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      connection: "bigquery-analytics",
+      messages: [
+        { role: "user", content: "What's our customer retention rate?" },
+        { role: "assistant", content: "I've analyzed your request about: What's our customer retention rate?" }
+      ],
+      lastQuestion: "What's our customer retention rate?"
+    },
+    {
+      id: "recent-3",
+      title: "Product usage analytics",
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      connection: "bigquery-analytics",
+      messages: [
+        { role: "user", content: "How has our product usage changed over time?" },
+        { role: "assistant", content: "I've analyzed your request about: How has our product usage changed over time?" }
+      ],
+      lastQuestion: "How has our product usage changed over time?"
+    }
+  ];
+};
+
+// Stub response for saving a chat session
+export const saveChatSession = async (session: Partial<ChatSession>): Promise<ChatSession> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 400));
+  
+  // Generate a new ID if one isn't provided
+  const id = session.id || `session-${Date.now()}`;
+  
+  return {
+    id,
+    title: session.title || "Untitled Chat",
+    timestamp: new Date().toISOString(),
+    connection: session.connection || "bigquery-analytics",
+    messages: session.messages || [],
+    lastQuestion: session.lastQuestion || ""
+  };
+};
 
 export const fetchDashboardData = async (question: string): Promise<DashboardData | null> => {
   // Simulate API delay

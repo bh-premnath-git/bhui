@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { PanelLayout } from "./shared/PanelLayout";
-import { AIChatInput } from "@/components/shared/AIChatInput";
+import { AIChatInput } from "./AIChatInput";
 import { Card } from "@/components/ui/card";
 import { useAnalytics } from "@/context/AnalyticsContext";
 import { 
@@ -22,8 +22,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { fetchDatabaseConnections, fetchChatHistory } from "@/api/analytics-api";
-import { DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
+import { fetchDatabaseConnections, fetchChatHistory, getConversationContext, updateConversationContext } from "@/api/analytics-api";
+import { DatabaseConnection, ChatSession, ConversationContext } from "@/types/dataops/data-ops-hub.d";
 
 interface AIChatProps {
   compact?: boolean;
@@ -33,7 +33,7 @@ interface AIChatProps {
 export default function AIChat({ compact = false, showHistory = false }: AIChatProps) {
   const { messages, setMessages, addUserMessage, addAssistantMessage, clearMessages } = useChatMessages();
   const [input, setInput] = useState("");
-  const { fetchData } = useAnalytics();
+  const { fetchData, resetAnalytics } = useAnalytics();
   const [selectedConnection, setSelectedConnection] = useState<string>("bigquery-analytics"); // Default connection
   const [isNewChat, setIsNewChat] = useState<boolean>(true);
   const [selectedChatSession, setSelectedChatSession] = useState<string>("");
@@ -41,6 +41,8 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [contextEnabled, setContextEnabled] = useState<boolean>(true);
+  const [conversationContext, setConversationContext] = useState(getConversationContext());
 
   // Fetch connections and chat history on component mount
   useEffect(() => {
@@ -70,6 +72,47 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     }
   }, [messages.length]);
 
+  // New function to generate more intelligent assistant responses
+  const generateAssistantResponse = (question: string, data: any | null, context: ConversationContext): string => {
+    if (!data) {
+      return `I couldn't find any relevant data for "${question}". Try refining your question or asking about a different topic.`;
+    }
+    
+    // Check if this is a follow-up question
+    const isFollowUp = context.recentQuestions.length > 1;
+    
+    // Generate different responses based on context
+    if (isFollowUp) {
+      const prevQuestion = context.recentQuestions[context.recentQuestions.length - 2];
+      
+      // For comparison questions
+      if (question.toLowerCase().includes('compare') || 
+          question.toLowerCase().includes('difference') ||
+          question.toLowerCase().includes('versus')) {
+        return `Based on your previous question about "${prevQuestion}", I've analyzed the comparison you requested: ${data.explanation[0]}`;
+      }
+      
+      // For elaboration questions
+      if (question.toLowerCase().includes('why') || 
+          question.toLowerCase().includes('explain') ||
+          question.toLowerCase().includes('more detail')) {
+        return `To elaborate on "${prevQuestion}": ${data.explanation.join(' ')}`;
+      }
+      
+      // For trend analysis
+      if (question.toLowerCase().includes('trend') ||
+          question.toLowerCase().includes('over time')) {
+        return `I've analyzed the trends based on our conversation about ${context.currentTopic}: ${data.explanation[0]}`;
+      }
+      
+      // Default follow-up response
+      return `Following up on our discussion about ${context.currentTopic || prevQuestion}, I've analyzed your question: "${question}"`;
+    }
+    
+    // Initial question response
+    return `I've analyzed your question about ${data.title.toLowerCase()}: ${data.explanation[0]}`;
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -80,35 +123,111 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
       return;
     }
 
-    // Add user message to chat
-    addUserMessage(input);
-    
     // Store the current input before clearing it
     const currentQuestion = input;
+    
+    // Add user message to chat
+    addUserMessage(currentQuestion);
     
     // Clear input immediately for better UX
     setInput("");
     
-    // Fetch data based on the question
+    // Update connection in context if it has changed
+    if (selectedConnection !== conversationContext.currentConnection) {
+      updateConversationContext({ currentConnection: selectedConnection });
+      setConversationContext(getConversationContext());
+    }
+    
+    // Determine if this is a follow-up question
+    const isFollowUp = messages.length > 0;
+    
+    // Fetch data based on the question, with context if enabled
     try {
-      await fetchData(currentQuestion);
+      // For follow-up questions, we need to preserve context
+      const contextToUse = isFollowUp && contextEnabled;
+      
+      // Create a custom event to notify that a new question is being processed
+      window.dispatchEvent(new CustomEvent('xplorer:processing-question', { 
+        detail: { question: currentQuestion, isFollowUp: contextToUse }
+      }));
+      
+      const result = await fetchData(currentQuestion, contextToUse);
+      
+      // Get updated context after fetchData modifies it
+      const updatedContext = getConversationContext();
+      setConversationContext(updatedContext);
+      
+      // Generate a more intelligent response
+      const assistantResponse = generateAssistantResponse(
+        currentQuestion, 
+        result, 
+        updatedContext
+      );
       
       // Add assistant response
-      addAssistantMessage("I've analyzed your request about: " + currentQuestion);
+      addAssistantMessage(assistantResponse);
+      
+      // Mark as not a new chat anymore
+      if (isNewChat) {
+        setIsNewChat(false);
+      }
+      
+      // Notify that the question has been processed
+      window.dispatchEvent(new CustomEvent('xplorer:question-processed', { 
+        detail: { question: currentQuestion, success: true }
+      }));
     } catch (error) {
       console.error("Error fetching data:", error);
       addAssistantMessage("I encountered an error analyzing your request. Please try again.");
+      
+      // Notify that the question processing failed
+      window.dispatchEvent(new CustomEvent('xplorer:question-processed', { 
+        detail: { question: currentQuestion, success: false }
+      }));
     }
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    console.log("Starting new chat...");
+    
+    // Clear messages
     clearMessages();
+    
+    // Reset state
     setIsNewChat(true);
     setSelectedChatSession("");
+    
+    // Reset conversation context
+    updateConversationContext({
+      currentTopic: "",
+      recentQuestions: [],
+      recentTables: [],
+      recentMetrics: [],
+      currentConnection: selectedConnection,
+      relatedEntities: [],
+      analysisHistory: []
+    });
+    setConversationContext(getConversationContext());
+    
     // Don't reset the connection if one is already selected
     if (!selectedConnection) {
       setShowConnectionSelector(true);
     }
+    
+    // Force a reset of the analytics state
+    if (resetAnalytics) {
+      resetAnalytics();
+    }
+    
+    // Trigger navigation back to home page
+    // This will use the event system to communicate with parent components
+    const newChatEvent = new CustomEvent('xplorer:new-chat');
+    window.dispatchEvent(newChatEvent);
+    
+    // Clear processed questions in XplorePanel
+    window.dispatchEvent(new CustomEvent('xplorer:clear-processed-questions'));
+    
+    console.log("New chat initialized");
   };
 
   const handleSelectSession = (sessionId: string) => {
@@ -206,6 +325,18 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {/* Context toggle - new */}
+        <button
+          onClick={() => setContextEnabled(!contextEnabled)}
+          className={`text-xs px-2 py-1 rounded ${
+            contextEnabled 
+              ? 'bg-primary/10 text-primary' 
+              : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          {contextEnabled ? 'Context: ON' : 'Context: OFF'}
+        </button>
         
         {/* Chat input */}
         <div className="flex-1">

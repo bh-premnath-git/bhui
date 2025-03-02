@@ -50,7 +50,7 @@ export interface DashboardMetric {
   brand: string;
   value: number;
   trend: string;
-  status: 'increase' | 'decrease' | 'stable';
+  status: "increase" | "decrease" | "stable" | "neutral";
 }
 
 export interface DashboardData {
@@ -58,10 +58,12 @@ export interface DashboardData {
   description: string;
   timeRange: string;
   brands: string[];
-  metrics?: DashboardMetric[];
-  salesData: GenericData[];
-  explanation?: string | string[];
-  recommendedChartType?: ChartType;
+  recommendedChartType: string;
+  metrics: DashboardMetric[];
+  salesData: any[];
+  explanation: string[];
+  sqlQuery?: string;
+  tableName?: string;
 }
 
 export interface DatabaseConnection {

@@ -1,5 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface DashboardMetric {
+  brand: string;
+  value: number;
+  trend: string;
+  status: 'increase' | 'decrease' | 'neutral';
+}
+
 interface StatsCardsProps {
   metrics: DashboardMetric[];
   activeFilter: string;

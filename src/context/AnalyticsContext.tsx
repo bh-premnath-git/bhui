@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchDashboardData } from '@/api/analytics-api';
 import { defaultChartStyles } from '@/features/data-catalog/components/Xplore/StyleEditor';
 import type { DashboardData, ChartStyles } from '@/types/dataops/data-ops-hub.d';
@@ -19,6 +19,7 @@ interface AnalyticsContextType {
   itemsPerPage: number;
   fetchData: (question: string) => Promise<void>;
   currentQuestion: string;
+  resetAnalytics: () => void;
 }
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
@@ -43,35 +44,74 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }).format(value);
   };
 
-  const fetchData = async (question: string) => {
+  const fetchData = async (question: string, useContext = true) => {
     setIsLoading(true);
     setError(null);
+    
+    // Always update the current question
     setCurrentQuestion(question);
     
     try {
-      const data = await fetchDashboardData(question);
-      setDashboardData(data);
+      // Pass the context flag to the API
+      const data = await fetchDashboardData(question, useContext);
       
-      // Reset filters when data changes
-      setActiveFilters([]);
-      
-      // Set recommended chart type if available
-      if (data?.recommendedChartType) {
-        setChartStyles(prev => ({
-          ...prev,
-          chartType: data.recommendedChartType || 'bar'
-        }));
+      if (data) {
+        // Create a deep copy of the data to prevent reference issues
+        const dataCopy = structuredClone(data);
+        
+        // Update dashboard data without affecting previous visualizations
+        setDashboardData(dataCopy);
+        
+        // Don't reset filters for follow-up questions
+        if (!useContext) {
+          setActiveFilters([]);
+        }
+        
+        // Set chart type only if recommended and not a follow-up
+        if (data?.recommendedChartType && !useContext) {
+          setChartStyles(prev => ({
+            ...prev,
+            chartType: data.recommendedChartType || 'bar'
+          }));
+        }
       }
       
-      // Default to chart view for new data
-      setViewMode('chart');
-      
+      // Return the data for the component to use
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('An unknown error occurred'));
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
+
+  const resetAnalytics = useCallback(() => {
+    console.log("Resetting analytics state...");
+    
+    // Reset all relevant state
+    setDashboardData(null);
+    setCurrentQuestion("");
+    setActiveFilters([]);
+    setCurrentPage(1);
+    setViewMode('chart');
+    setChartStyles({...defaultChartStyles});
+    setError(null);
+    setIsLoading(false);
+    
+    // Also reset the conversation context
+    updateConversationContext({
+      currentTopic: "",
+      recentQuestions: [],
+      recentTables: [],
+      recentMetrics: [],
+      currentConnection: "",
+      relatedEntities: [],
+      analysisHistory: []
+    }, "");
+    
+    console.log("Analytics state reset complete");
+  }, []);
 
   // Initial data load
   useEffect(() => {
@@ -95,7 +135,8 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setCurrentPage,
         itemsPerPage,
         fetchData,
-        currentQuestion
+        currentQuestion,
+        resetAnalytics,
       }}
     >
       {children}

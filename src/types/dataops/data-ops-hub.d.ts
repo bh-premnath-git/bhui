@@ -58,6 +58,29 @@ export interface DashboardData {
   description: string;
   timeRange: string;
   brands: string[];
-  metrics: DashboardMetric[];
+  metrics?: DashboardMetric[];
   salesData: GenericData[];
+  explanation?: string | string[];
+  recommendedChartType?: ChartType;
+}
+
+export interface DatabaseConnection {
+  id: string;
+  name: string;
+  type: string;
+  icon?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: string;
+  connection: string;
+  messages: ChatMessage[];
+  lastQuestion: string;
 }

@@ -53,10 +53,7 @@ export default function XplorePanel() {
             </TabsList>
             
             <TabsContent value="bighammer" className="flex-1 p-4 overflow-auto">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Chat History</h3>
-                <AIChat showHistory={true} />
-              </div>
+              <AIChat showHistory={true} />
             </TabsContent>
             
             <TabsContent value="styling" className="flex-1 p-4 overflow-auto">

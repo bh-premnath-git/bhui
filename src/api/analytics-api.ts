@@ -4,6 +4,143 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
 
+  // Special handling for chat history questions
+  if (question === "Show me sales by region") {
+    return {
+      title: "Sales by Geographic Region",
+      description: "Regional sales breakdown for the current quarter",
+      timeRange: "Q1 2023",
+      brands: ["North America", "Europe", "Asia", "Latin America", "Africa"],
+      recommendedChartType: "bar",
+      metrics: [
+        {
+          brand: "North America",
+          value: 425000,
+          trend: "+8.2%",
+          status: "increase"
+        },
+        {
+          brand: "Europe",
+          value: 352000,
+          trend: "+5.7%",
+          status: "increase"
+        },
+        {
+          brand: "Asia",
+          value: 312000,
+          trend: "+12.3%",
+          status: "increase"
+        },
+        {
+          brand: "Latin America",
+          value: 185000,
+          trend: "+3.8%",
+          status: "increase"
+        },
+        {
+          brand: "Africa",
+          value: 97000,
+          trend: "+15.2%",
+          status: "increase"
+        }
+      ],
+      salesData: [
+        {
+          date: "Jan",
+          "North America": 135000,
+          "Europe": 112000,
+          "Asia": 95000,
+          "Latin America": 58000,
+          "Africa": 28000
+        },
+        {
+          date: "Feb",
+          "North America": 142000,
+          "Europe": 118000,
+          "Asia": 102000,
+          "Latin America": 62000,
+          "Africa": 32000
+        },
+        {
+          date: "Mar",
+          "North America": 148000,
+          "Europe": 122000,
+          "Asia": 115000,
+          "Latin America": 65000,
+          "Africa": 37000
+        }
+      ],
+      explanation: [
+        "North America remains our strongest market with $425,000 in sales this quarter, showing steady growth of 8.2%.",
+        "Asia is our fastest-growing region with a 12.3% increase, driven by expansion in emerging markets.",
+        "Africa, while still our smallest market, shows the highest growth rate at 15.2%, indicating significant potential for future expansion.",
+        "All regions are showing positive growth trends, with the company's overall regional sales increasing by 9.1% compared to the previous quarter."
+      ]
+    };
+  }
+  
+  if (question === "What's our customer retention rate?") {
+    return {
+      title: "Customer Retention Analysis",
+      description: "Customer retention metrics over the past year",
+      timeRange: "Last 12 months",
+      brands: ["New Customers", "Returning Customers", "Churned Customers"],
+      recommendedChartType: "area",
+      metrics: [
+        {
+          brand: "Retention Rate",
+          value: 78,
+          trend: "+3.5%",
+          status: "increase"
+        },
+        {
+          brand: "Churn Rate",
+          value: 22,
+          trend: "-3.5%",
+          status: "decrease"
+        },
+        {
+          brand: "Customer Lifetime",
+          value: 36,
+          trend: "+2.8%",
+          status: "increase"
+        }
+      ],
+      salesData: [
+        {
+          date: "Q2 2022",
+          "New Customers": 2500,
+          "Returning Customers": 8200,
+          "Churned Customers": 1950
+        },
+        {
+          date: "Q3 2022",
+          "New Customers": 2650,
+          "Returning Customers": 8400,
+          "Churned Customers": 1850
+        },
+        {
+          date: "Q4 2022",
+          "New Customers": 3100,
+          "Returning Customers": 8750,
+          "Churned Customers": 1800
+        },
+        {
+          date: "Q1 2023",
+          "New Customers": 2900,
+          "Returning Customers": 9200,
+          "Churned Customers": 1650
+        }
+      ],
+      explanation: [
+        "Our overall customer retention rate has improved to 78%, representing a 3.5% increase over the past year.",
+        "The churn rate has correspondingly decreased to 22%, with the most significant improvements in the enterprise segment.",
+        "Average customer lifetime has increased to 36 months, indicating stronger long-term customer relationships.",
+        "The Q4 2022 - Q1 2023 period shows the most substantial improvement, likely due to the loyalty program introduced in November."
+      ]
+    };
+  }
+
   // Question 1: Employee data with column chart
   if (question.toLowerCase().includes("question1") || question.toLowerCase().includes("employee")) {
     return {

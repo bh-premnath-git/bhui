@@ -24,6 +24,7 @@ export const useChatMessages = () => {
 
   return {
     messages,
+    setMessages,
     addUserMessage,
     addAssistantMessage,
     clearMessages

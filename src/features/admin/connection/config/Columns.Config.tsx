@@ -24,7 +24,7 @@ const columns: ColumnDefWithFilters<Connection>[] = [
     columnHelper.accessor('connection_status', {
         header: 'Status',
         cell: ({ row }) => {
-        const type = row.getValue('status') as string;
+        const type = row.getValue('connection_status') as string;
         return (
             <Badge className={`capitalize ${type === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
             {type}

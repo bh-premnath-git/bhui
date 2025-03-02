@@ -73,9 +73,79 @@ export const saveChatSession = async (session: Partial<ChatSession>): Promise<Ch
   };
 };
 
-export const fetchDashboardData = async (question: string): Promise<DashboardData | null> => {
+// New interface for conversation context
+export interface ConversationContext {
+  recentQuestions: string[];
+  recentTables: string[];
+  recentMetrics: string[];
+  currentConnection: string;
+}
+
+// Initialize default context
+let conversationContext: ConversationContext = {
+  recentQuestions: [],
+  recentTables: [],
+  recentMetrics: [],
+  currentConnection: "snowflake-dw"
+};
+
+// New function to get conversation context
+export const getConversationContext = (): ConversationContext => {
+  return {...conversationContext};
+};
+
+// New function to update conversation context
+export const updateConversationContext = (
+  partialContext: Partial<ConversationContext>
+): ConversationContext => {
+  conversationContext = {
+    ...conversationContext,
+    ...partialContext
+  };
+  
+  // Limit recent questions to last 5
+  if (conversationContext.recentQuestions.length > 5) {
+    conversationContext.recentQuestions = conversationContext.recentQuestions.slice(-5);
+  }
+  
+  return {...conversationContext};
+};
+
+// Enhanced function to fetch dashboard data with context
+export const fetchDashboardData = async (
+  question: string, 
+  useContext: boolean = true
+): Promise<DashboardData | null> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Add question to context
+  if (useContext) {
+    updateConversationContext({
+      recentQuestions: [...conversationContext.recentQuestions, question]
+    });
+  }
+  
+  // Handle conversational follow-up questions
+  if (useContext && conversationContext.recentQuestions.length > 1) {
+    // Example of context-aware handling
+    const prevQuestion = conversationContext.recentQuestions[conversationContext.recentQuestions.length - 2];
+    
+    if (
+      (question.toLowerCase().includes('compare') || 
+       question.toLowerCase().includes('difference') ||
+       question.toLowerCase().includes('versus')) && 
+      prevQuestion
+    ) {
+      return generateComparisonData(prevQuestion, question);
+    }
+    
+    if (question.toLowerCase().includes('why') || 
+        question.toLowerCase().includes('explain') ||
+        question.toLowerCase().includes('more detail')) {
+      return enhancePreviousResponse(prevQuestion);
+    }
+  }
 
   // Special handling for chat history questions
   if (question === "Show me sales by region") {
@@ -148,7 +218,8 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "Asia is our fastest-growing region with a 12.3% increase, driven by expansion in emerging markets.",
         "Africa, while still our smallest market, shows the highest growth rate at 15.2%, indicating significant potential for future expansion.",
         "All regions are showing positive growth trends, with the company's overall regional sales increasing by 9.1% compared to the previous quarter."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
   
@@ -210,7 +281,8 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "The churn rate has correspondingly decreased to 22%, with the most significant improvements in the enterprise segment.",
         "Average customer lifetime has increased to 36 months, indicating stronger long-term customer relationships.",
         "The Q4 2022 - Q1 2023 period shows the most substantial improvement, likely due to the loyalty program introduced in November."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
 
@@ -285,7 +357,8 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "Marketing shows a concerning downward trend of -2.1%, which may require attention to team dynamics or workload distribution.",
         "HR and Sales both show steady improvement, with HR showing a stronger growth trajectory at +3.2%.",
         "Overall, most departments are showing positive performance trends, with the company average increasing by 1.8% over the quarter."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
   
@@ -356,7 +429,8 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "Beauty products show the strongest growth at +15.7%, suggesting increasing consumer interest in this category.",
         "Groceries is the only category showing a decline (-3.1%), which may be due to increased competition in this space.",
         "The top three categories (Electronics, Clothing, and Home Goods) account for over 75% of our total revenue."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
   
@@ -429,7 +503,8 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "Mobile App usage has grown significantly (+32.5%), reflecting the ongoing shift to mobile-first user behavior.",
         "Desktop Client usage continues to decline (-15.2%), as users migrate to web and mobile platforms.",
         "Overall, total product usage across all platforms has increased by 27.8% over the past year, with the strongest growth in the last quarter."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
   
@@ -514,7 +589,143 @@ export const fetchDashboardData = async (question: string): Promise<DashboardDat
         "Frieda's shows a concerning downward trend of -2.1%, which may require attention to marketing or distribution strategies for this brand.",
         "Goya and Chiquita both show modest growth, with Goya performing slightly better at +1.8% compared to Chiquita's +0.5%.",
         "The highest sales day for all brands was January 29th, suggesting a potential weekly pattern where sales peak towards the end of the week."
-      ]
+      ],
+      sqlQuery: generateSQLQuery(question)
     };
   }
+};
+
+// Helper for generating comparison data
+const generateComparisonData = (
+  prevQuestion: string, 
+  currentQuestion: string
+): DashboardData => {
+  // This would generate comparison data based on the previous and current questions
+  // For now, we'll return a mock response
+  return {
+    title: `Comparison Analysis: ${currentQuestion}`,
+    description: `Comparing data based on your questions about "${prevQuestion}" and "${currentQuestion}"`,
+    timeRange: "Current Quarter",
+    brands: ["Previous Query", "Current Query"],
+    recommendedChartType: "bar",
+    metrics: [
+      {
+        brand: "Previous Query",
+        value: 285000,
+        trend: "baseline",
+        status: "neutral"
+      },
+      {
+        brand: "Current Query",
+        value: 325000,
+        trend: "+14.0%",
+        status: "increase"
+      }
+    ],
+    salesData: [
+      {
+        date: "Jan",
+        "Previous Query": 95000,
+        "Current Query": 108000
+      },
+      {
+        date: "Feb",
+        "Previous Query": 92000,
+        "Current Query": 105000
+      },
+      {
+        date: "Mar",
+        "Previous Query": 98000,
+        "Current Query": 112000
+      }
+    ],
+    explanation: [
+      `This comparison shows the relationship between your questions about "${prevQuestion}" and "${currentQuestion}".`,
+      "The current query shows a 14% increase over the previous query's results.",
+      "This suggests a significant positive correlation between these two metrics."
+    ],
+    sqlQuery: generateSQLQuery(currentQuestion)
+  };
+};
+
+// Helper for enhancing previous response with more details
+const enhancePreviousResponse = (prevQuestion: string): DashboardData | null => {
+  // This would fetch more detailed data about the previous question
+  // For now, return a modified version of the existing response
+  
+  // Create a mock base data object instead of using a comment in code
+  const baseData = {
+    title: `Analysis: ${prevQuestion}`,
+    description: "Analysis of your query",
+    timeRange: "Current Quarter",
+    brands: ["Category A", "Category B", "Category C"],
+    recommendedChartType: "bar",
+    metrics: [
+      {
+        brand: "Overall",
+        value: 285000,
+        trend: "+5.2%",
+        status: "increase"
+      }
+    ],
+    salesData: [
+      {
+        date: "Jan",
+        "Category A": 95000,
+        "Category B": 87000
+      },
+      {
+        date: "Feb",
+        "Category A": 92000,
+        "Category B": 89000
+      },
+      {
+        date: "Mar",
+        "Category A": 98000,
+        "Category B": 91000
+      }
+    ]
+  };
+  
+  // Add more detailed explanation
+  return {
+    ...baseData,
+    title: `Detailed Analysis: ${prevQuestion}`,
+    description: "An in-depth look at the data you requested",
+    explanation: [
+      "Here's a more detailed analysis of your query:",
+      "The trend shows a consistent pattern of growth over the analyzed period.",
+      "Key factors influencing this trend include seasonal variations and market conditions.",
+      "When breaking down by demographic segments, we see the strongest performance in the 25-34 age group.",
+      "Geographical distribution shows concentration in urban centers, with particular strength in coastal regions."
+    ],
+    sqlQuery: generateSQLQuery(prevQuestion)
+  };
+};
+
+// Helper function to generate SQL based on the question
+const generateSQLQuery = (question: string): string => {
+  if (question.toLowerCase().includes('sales by region')) {
+    return `SELECT region, SUM(revenue) as total_revenue
+FROM sales
+JOIN customers ON sales.customer_id = customers.id
+GROUP BY region
+ORDER BY total_revenue DESC;`;
+  }
+  
+  if (question.toLowerCase().includes('trends')) {
+    return `SELECT date_trunc('month', sale_date) as month,
+       product_category,
+       SUM(revenue) as monthly_revenue
+FROM sales
+WHERE sale_date >= date_trunc('year', CURRENT_DATE)
+GROUP BY 1, 2
+ORDER BY 1, 2;`;
+  }
+  
+  // Default SQL for other queries
+  return `SELECT * 
+FROM sales 
+WHERE sale_date >= date_sub(CURRENT_DATE, INTERVAL 30 DAY)
+LIMIT 100;`;
 };

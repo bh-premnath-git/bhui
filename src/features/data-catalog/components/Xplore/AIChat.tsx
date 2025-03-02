@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { fetchDatabaseConnections, fetchChatHistory } from "@/api/analytics-api";
+import { fetchDatabaseConnections, fetchChatHistory, getConversationContext, updateConversationContext } from "@/api/analytics-api";
 import { DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
 
 interface AIChatProps {
@@ -41,6 +41,8 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [contextEnabled, setContextEnabled] = useState<boolean>(true);
+  const [conversationContext, setConversationContext] = useState(getConversationContext());
 
   // Fetch connections and chat history on component mount
   useEffect(() => {
@@ -89,12 +91,28 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     // Clear input immediately for better UX
     setInput("");
     
-    // Fetch data based on the question
+    // Update connection in context if it has changed
+    if (selectedConnection !== conversationContext.currentConnection) {
+      updateConversationContext({ currentConnection: selectedConnection });
+      setConversationContext(getConversationContext());
+    }
+    
+    // Fetch data based on the question, with context if enabled
     try {
-      await fetchData(currentQuestion);
+      await fetchData(currentQuestion, contextEnabled);
       
       // Add assistant response
-      addAssistantMessage("I've analyzed your request about: " + currentQuestion);
+      if (messages.length > 0 && contextEnabled) {
+        addAssistantMessage(
+          `Based on our conversation about ${conversationContext.recentQuestions.join(", ")}, ` +
+          `I've analyzed your request: ${currentQuestion}`
+        );
+      } else {
+        addAssistantMessage("I've analyzed your request about: " + currentQuestion);
+      }
+      
+      // Update local context state
+      setConversationContext(getConversationContext());
     } catch (error) {
       console.error("Error fetching data:", error);
       addAssistantMessage("I encountered an error analyzing your request. Please try again.");
@@ -206,6 +224,18 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {/* Context toggle - new */}
+        <button
+          onClick={() => setContextEnabled(!contextEnabled)}
+          className={`text-xs px-2 py-1 rounded ${
+            contextEnabled 
+              ? 'bg-primary/10 text-primary' 
+              : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          {contextEnabled ? 'Context: ON' : 'Context: OFF'}
+        </button>
         
         {/* Chat input */}
         <div className="flex-1">

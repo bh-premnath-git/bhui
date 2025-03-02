@@ -43,7 +43,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }).format(value);
   };
 
-  const fetchData = async (question: string) => {
+  const fetchData = async (question: string, useContext = true) => {
     setIsLoading(true);
     setError(null);
     setCurrentQuestion(question);

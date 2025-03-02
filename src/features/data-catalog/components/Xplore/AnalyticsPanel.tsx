@@ -14,18 +14,34 @@ import AnalyticsChart from "./analytics/AnalyticsChart";
 import AnalyticsTable from "./analytics/AnalyticsTable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getConversationContext } from "@/api/analytics-api";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import QuickStyleControls from "./QuickStyleControls";
 
-export default function AnalyticsPanel() {
+export default function AnalyticsPanel({ 
+  dashboardData: propsDashboardData,
+  showHeader = true,
+  chartStyles: propsChartStyles,
+  viewMode: propsViewMode = "chart",
+  onViewModeChange
+}: { 
+  dashboardData?: any,
+  showHeader?: boolean,
+  chartStyles?: ChartStyles,
+  viewMode?: "chart" | "table" | "sql",
+  onViewModeChange?: (mode: "chart" | "table" | "sql") => void
+}) {
   const { 
-    dashboardData,
+    dashboardData: contextDashboardData,
     isLoading,
     error,
-    viewMode, 
-    setViewMode,
+    viewMode: contextViewMode, 
+    setViewMode: setContextViewMode,
     formatCurrency, 
     activeFilters, 
     setActiveFilters,
-    chartStyles,
+    chartStyles: contextChartStyles,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -34,6 +50,11 @@ export default function AnalyticsPanel() {
   } = useAnalytics();
   
   const navigate = useNavigate();
+  const [context] = useState(getConversationContext());
+
+  // Use props data if provided, otherwise fall back to context data
+  const dashboardData = propsDashboardData || contextDashboardData;
+  const [localChartStyles, setLocalChartStyles] = useState(propsChartStyles || { ...contextChartStyles });
 
   const handleFilterClick = (brand: string) => {
     setActiveFilters((prevFilters: string[]) => {
@@ -53,7 +74,7 @@ export default function AnalyticsPanel() {
     const dashboard = {
       name: dashboardData.title,
       data: dashboardData.salesData,
-      styles: chartStyles,
+      styles: localChartStyles,
       type: viewMode as 'chart' | 'table',
     };
     
@@ -64,6 +85,15 @@ export default function AnalyticsPanel() {
     });
 
     navigate(`/saved-dashboard/${savedDashboard.id}`);
+  };
+
+  // Use the provided viewMode prop rather than context
+  const handleViewModeChange = (mode: "chart" | "table" | "sql") => {
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    } else {
+      setContextViewMode(mode);
+    }
   };
 
   if (isLoading) {
@@ -117,9 +147,15 @@ export default function AnalyticsPanel() {
   const endIndex = startIndex + itemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
 
+  // Handle updates to chart styles within this panel only
+  const updateLocalChartStyles = (newStyles) => {
+    setLocalChartStyles(prev => ({ ...prev, ...newStyles }));
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header with controls */}
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold">{dashboardData.title}</h1>
           <p className="text-muted-foreground">
@@ -127,10 +163,11 @@ export default function AnalyticsPanel() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Tabs defaultValue={viewMode} onValueChange={(v) => setViewMode(v as "chart" | "table")}>
+          <Tabs value={propsViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
             <TabsList>
               <TabsTrigger value="chart">Chart</TabsTrigger>
               <TabsTrigger value="table">Table</TabsTrigger>
+              <TabsTrigger value="sql">SQL</TabsTrigger>
             </TabsList>
           </Tabs>
           <DropdownMenu>
@@ -159,12 +196,18 @@ export default function AnalyticsPanel() {
         />
       )}
 
-      <Tabs value={viewMode}>
+      <QuickStyleControls 
+        chartStyles={localChartStyles} 
+        setChartStyles={updateLocalChartStyles} 
+      />
+
+      <Tabs value={propsViewMode} onValueChange={(v) => handleViewModeChange(v as "chart" | "table" | "sql")}>
         <TabsContent value="chart">
           <AnalyticsChart 
             data={filteredData}
             activeFilter={activeFilters.join(',')}
             formatCurrency={formatCurrency}
+            chartStyles={localChartStyles}
           />
         </TabsContent>
 
@@ -178,6 +221,26 @@ export default function AnalyticsPanel() {
             onNextPage={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
             formatCurrency={formatCurrency}
           />
+        </TabsContent>
+        
+        <TabsContent value="sql">
+          <Card className="col-span-4">
+            <CardContent className="p-6">
+              <pre className="bg-muted p-4 rounded-md overflow-auto text-sm">
+                {dashboardData.sqlQuery || 
+                  `SELECT * \nFROM ${dashboardData.tableName || "sales"} \nWHERE date >= '${dashboardData.timeRange || "Last 30 days"}' \nLIMIT 100;`}
+              </pre>
+              <div className="flex justify-end mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigator.clipboard.writeText(dashboardData.sqlQuery || '')}
+                >
+                  Copy SQL
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -193,6 +256,35 @@ export default function AnalyticsPanel() {
                 dashboardData.explanation.map((paragraph, idx) => (
                   <p key={idx}>{paragraph}</p>
                 ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add conversation context section */}
+      {dashboardData.explanation && context.recentQuestions.length > 1 && (
+        <Card className="mt-4">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-2">Conversation Context</h3>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground">Recent questions:</span>
+                {context.recentQuestions.map((q, i) => (
+                  <Badge key={i} variant="outline" className="text-xs">
+                    {q}
+                  </Badge>
+                ))}
+              </div>
+              {context.recentTables.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm text-muted-foreground">Tables explored:</span>
+                  {context.recentTables.map((t, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </div>
           </CardContent>

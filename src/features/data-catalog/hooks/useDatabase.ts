@@ -1,44 +1,109 @@
-import { useImport } from '@/context/datacatalog/ImportContext';
-import type { DatabaseConfig } from '@/context/datacatalog/ImportContext';
+"use client";
 
-export function useDatabase() {
-  const { setSchemas, setTables, schemas, tables } = useImport();
+import { useResource } from "@/hooks/api/useResource";
+import { CATALOG_API_PORT } from "@/config/platformenv";
+import { useCallback } from "react";
+import { toast } from "sonner";
 
-  const connectToDatabase = async (config: DatabaseConfig) => {
-    // In a real application, this would connect to your actual database
-    // For demo purposes, we'll simulate a connection
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSchemas(['public', 'auth', 'storage']);
-    return true;
-  };
+interface useDatabaseOption {
+  shouldFetch?: boolean;
+  connectionId?: string;
+  schema?: string;
+  projectId?: string;
+}
 
-  const fetchTables = async (schema: string) => {
-    // Simulate fetching tables for the selected schema
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const newTables = [
-      { name: 'users', columns: ['id', 'name', 'email'] },
-      { name: 'products', columns: ['id', 'title', 'price'] },
-      { name: 'orders', columns: ['id', 'user_id', 'total'] },
-    ];
-    setTables(newTables);
-    return newTables;
-  };
+interface ApiErrorOptions {
+  action: "create" | "update" | "delete" | "fetch";
+  context?: string;
+  silent?: boolean;
+}
 
-  const fetchTableData = async (schema: string, table: string) => {
-    // Simulate fetching table data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return [
-      { id: 1, name: 'John Doe', email: 'john@example.com' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-      { id: 3, name: 'Bob Johnson', email: 'bob@example.com' },
-    ];
-  };
+const handleApiError = (error: unknown, options: ApiErrorOptions) => {
+  const { action, context = "import data source", silent = false } = options;
+  const errorMessage = `Failed to ${action} ${context}`;
+  console.error(`${errorMessage}:`, error);
+  if (!silent) {
+    toast.error(errorMessage);
+  }
+  throw error;
+};
+
+export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) => {
+  const { getOne, create: createImportSource } = useResource<string[]>(
+    "import_db_catalog/connection_config",
+    CATALOG_API_PORT,
+    true
+  );
+
+  const fetchSchema = useCallback(
+    async (connectionId: string): Promise<string[]> => {
+      try {
+        const response = await getOne({
+          url: `/import_db_catalog/connection_config/${connectionId}/get-schemas`,
+          queryOptions: {
+            enabled: true,
+            retry: 2,
+          },
+        }).refetch();
+
+        return (response.data as unknown as string[]) || [];
+      } catch (error) {
+        console.error("Error fetching schemas:", error);
+        return [];
+      }
+    },
+    [getOne]
+  );
+
+  const fetchTable = useCallback(
+    async (connectionId: string, schema: string): Promise<string[]> => {
+      try {
+        const response = await getOne({
+          url: `/import_db_catalog/connection_config/${connectionId}/schemas/${schema}/tables`,
+          queryOptions: {
+            enabled: true,
+            retry: 2,
+          },
+        }).refetch();
+
+        return (response.data as unknown as string[]) || [];
+      } catch (error) {
+        console.error("Error fetching tables:", error);
+        return [];
+      }
+    },
+    [getOne]
+  );
+
+  const createImportSourceMutation = createImportSource({
+    mutationOptions: {
+      onSuccess: () => toast.success("Data source imported successfully!"),
+      onError: (error) => handleApiError(error, { action: "create" }),
+    },
+  });
+
+  const handleCreateImportSource = useCallback(
+    async (connectionId: string, projectId: string, schema: string, createDescription: boolean, data: string[]) => {
+      try {
+        await createImportSourceMutation.mutateAsync({
+          url: `/import_db_catalog/connection_config/${connectionId}/create_data_source`,
+          data,
+          params: {
+            bh_project_id: projectId,
+            create_description: createDescription,
+            schema,
+          },
+        });
+      } catch (error) {
+        handleApiError(error, { action: "create", context: "data source creation" });
+      }
+    },
+    [createImportSourceMutation]
+  );
 
   return {
-    schemas,
-    tables,
-    connectToDatabase,
-    fetchTables,
-    fetchTableData,
+    fetchSchema,
+    fetchTable,
+    handleCreateImportSource,
   };
-}
+};

@@ -159,7 +159,6 @@ export function ConnectionForm({
 
       await handleCreateConnection(connectionData);
       toast.success('Connection created successfully');
-      // Redirect to connections index page instead of just going back
       navigate(ROUTES.ADMIN.CONNECTION.INDEX);
     } catch (error) {
       console.error('Failed to create connection:', error);

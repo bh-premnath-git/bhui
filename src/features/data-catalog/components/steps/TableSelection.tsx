@@ -1,64 +1,65 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+// components/TableSelection.tsx
+import React, { useEffect, useState } from 'react';
+import { Table2, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useImport } from '@/context/datacatalog/ImportContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { useDatabase } from '../../hooks/useDatabase';
 
-// Dummy data for tables
-const dummyTables = [
-  { id: 1, name: 'customers', description: 'Customer information table' },
-  { id: 2, name: 'orders', description: 'Order details and history' },
-  { id: 3, name: 'products', description: 'Product catalog and inventory' },
-  { id: 4, name: 'employees', description: 'Employee records' },
-  { id: 5, name: 'suppliers', description: 'Supplier information' },
-  { id: 6, name: 'transactions', description: 'Financial transactions' },
-  { id: 7, name: 'inventory', description: 'Inventory tracking' },
-  { id: 8, name: 'shipping', description: 'Shipping details and tracking' },
-  { id: 9, name: 'returns', description: 'Product returns and exchanges' },
-  { id: 10, name: 'analytics', description: 'Analytics and reporting data' },
-];
+interface TableSelectionProps {
+  selectedConnection: string;
+  selectedSchema: string;
+  tables: string[];
+  setTables: (tables: string[]) => void;
+  selectedTables: string[];
+  toggleTable: (tableName: string) => void;
+  toggleAll: () => void;
+  isImporting: boolean;
+  onSubmit: (data: string[], createDescription: boolean) => Promise<void>
+}
 
-export function TableSelection() {
-  const { setStep } = useImport();
-  const [selectedTables, setSelectedTables] = useState<number[]>([]);
+export const TableSelection: React.FC<TableSelectionProps> = ({
+  selectedConnection,
+  selectedSchema,
+  tables,
+  setTables,
+  selectedTables,
+  toggleTable,
+  toggleAll,
+  isImporting,
+  onSubmit,
+}) => {
+  debugger
+  const [createDescription, setCreateDescription] = useState(false);
+  const { fetchTable } = useDatabase();
+  const data = fetchTable(selectedConnection, selectedSchema).then(result => {
+    setTables(result)
+  })
 
-  const handlePrevious = () => {
-    setStep(3);
-  };
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
-  const handleNext = () => {
-    // In a real implementation, you would save the selected tables to context
-    setStep(5);
-  };
-
-  const toggleTable = (tableId: number) => {
-    setSelectedTables(prev => 
-      prev.includes(tableId) 
-        ? prev.filter(id => id !== tableId) 
-        : [...prev, tableId]
-    );
-  };
-
-  const toggleAll = () => {
-    if (selectedTables.length === dummyTables.length) {
-      setSelectedTables([]);
-    } else {
-      setSelectedTables(dummyTables.map(table => table.id));
+  const handleSubmit = async () => {
+    try {
+      setFormState("submitting");
+      await onSubmit(selectedTables, createDescription);
+      setFormState("success");
+    } catch (error) {
+      setFormState("error");
     }
   };
 
   return (
-    <div className="w-full max-w-3xl">
-      <h2 className="text-2xl font-bold mb-6">Select Tables to Import</h2>
-      <p className="text-gray-600 mb-6">
-        Select one or more tables from the schema to import into your data catalog.
-      </p>
+    <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+      <div className="flex items-center">
+        <Table2 className="h-5 w-5 mr-2 text-primary" />
+        <h2 className="text-lg font-semibold">Select Tables</h2>
+      </div>
 
       <div className="mb-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="select-all" 
-            checked={selectedTables.length === dummyTables.length}
+          <Checkbox
+            id="select-all"
+            checked={selectedTables.length === tables.length && tables.length > 0}
             onCheckedChange={toggleAll}
           />
           <label htmlFor="select-all" className="text-sm font-medium">
@@ -66,41 +67,58 @@ export function TableSelection() {
           </label>
         </div>
         <div className="text-sm text-gray-500">
-          {selectedTables.length} of {dummyTables.length} selected
+          {selectedTables.length} of {tables.length} selected
         </div>
       </div>
 
       <ScrollArea className="h-[300px] border rounded-md p-4">
         <div className="space-y-2">
-          {dummyTables.map((table) => (
-            <div key={table.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-              <Checkbox 
-                id={`table-${table.id}`} 
-                checked={selectedTables.includes(table.id)}
-                onCheckedChange={() => toggleTable(table.id)}
-              />
-              <div>
-                <label htmlFor={`table-${table.id}`} className="font-medium cursor-pointer">
-                  {table.name}
+          {tables.map((table) => (
+            <div key={table} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id={`table-${table}`}
+                  checked={selectedTables.includes(table)}
+                  onCheckedChange={() => toggleTable(table)}
+                />
+                <label htmlFor={`table-${table}`} className="font-medium cursor-pointer">
+                  {table}
                 </label>
-                <p className="text-sm text-gray-500">{table.description}</p>
               </div>
             </div>
           ))}
         </div>
       </ScrollArea>
 
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={handlePrevious}>
-          Previous
-        </Button>
-        <Button 
-          onClick={handleNext} 
-          disabled={selectedTables.length === 0}
-        >
-          Next
-        </Button>
+      <div className="flex items-center space-x-4">
+        <Checkbox
+          id="create-description"
+          checked={createDescription}
+          onCheckedChange={() => setCreateDescription(!createDescription)}
+        />
+        <label htmlFor="create-description" className="text-sm font-medium">
+          Create Description for Tables
+        </label>
       </div>
+
+      {selectedTables.length > 0 && (
+        <div className="pt-4">
+          <Button
+            onClick={handleSubmit}
+            disabled={isImporting}
+            className="min-w-[120px]"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Importing Metadata...
+              </>
+            ) : (
+              "Import Metadata"
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
-} 
+};

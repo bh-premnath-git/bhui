@@ -104,3 +104,15 @@ export interface LayoutField {
   lyt_id: number;
   lyt_fld_key: string;
 }
+
+export interface DataSourceSchema {
+  data: string[];
+}
+
+export interface DataSourceSchemaTable{
+  data: string[];
+}
+
+export interface ImportDataSource{
+  data: string[];
+}

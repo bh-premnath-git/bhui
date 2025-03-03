@@ -3,12 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { useState } from 'react';
 import { ConnectionForm } from './components/ConnectionForm';
 import { ConnectionType } from '@/types/admin/connection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function 
 AddConnection() {

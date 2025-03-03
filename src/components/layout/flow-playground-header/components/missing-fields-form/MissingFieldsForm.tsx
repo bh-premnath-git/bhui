@@ -6,12 +6,14 @@ import { updateFormValues } from '@/store/slices/designer/flowSlice';
 import { MissingFieldsFormProps, FormState, OperatorFieldPair, FieldTypeInfo } from './types';
 import { getOperatorSchema, validateField } from './utils';
 import { OperatorCard } from './OperatorCard';
+import { removeUndefined } from '@/lib/object';
 
 export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
   flowDefinition,
   onSubmit,
   initialValues = {}
 }) => {
+  const selectedEnvironment = useAppSelector(state => state.flow.selectedEnvironment);
   const dispatch = useAppDispatch();
   const storeFormValues = useAppSelector(state => state.flow.formValues);
   const [formState, setFormState] = useState<FormState>({
@@ -41,14 +43,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
           const fieldSchema = operatorSchema.properties[field];
           if (fieldSchema) {
             const isMandatory = fieldSchema.ui_properties?.mandatory === true || requiredFields.includes(field);
-            
-            console.log(`Field: ${operator}.${field}`, {
-              ui_properties: fieldSchema.ui_properties,
-              method: fieldSchema.enum,
-              type: fieldSchema.type || (fieldSchema.items && `array:${fieldSchema.items.type}`) || 'string',
-              required: isMandatory
-            });
-
             let fieldType = 'string';
             if (fieldSchema.type) {
               fieldType = fieldSchema.type;
@@ -59,15 +53,16 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
             mapping[operator][field] = {
               type: fieldType,
               required: isMandatory,
-              uiProperties: {
+              uiProperties: removeUndefined({
                 propertyName: fieldSchema.ui_properties?.property_name,
                 uiType: fieldSchema.ui_properties?.ui_type,
                 order: fieldSchema.ui_properties?.order,
                 spanCol: fieldSchema.ui_properties?.spancol,
                 groupKey: fieldSchema.ui_properties?.group_key,
                 default: fieldSchema.ui_properties?.default,
-                endpoint: fieldSchema.ui_properties?.endpoint
-              }
+                endpoint: fieldSchema.ui_properties?.endpoint,
+                selectOptions: fieldSchema.enum
+              })
             };
           }
         });

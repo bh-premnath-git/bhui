@@ -5,8 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { 
-  createFlowAgentConversationEntry, 
+import { useFlow } from "@/context/designers/FlowContext";
+import {
+  createFlowAgentConversationEntry,
   clearFlowAgentConversation,
   setFormDefinition,
   setFormValues,
@@ -19,11 +20,12 @@ import { User } from "lucide-react";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
+  const { setAiflowStrructre } = useFlow();
   const dispatch = useAppDispatch();
   const [input, setInput] = useState("");
-  const { 
-    selectedFlow, 
-    flowAgentConversation, 
+  const {
+    selectedFlow,
+    flowAgentConversation,
     loading,
     formDefinition,
     formValues
@@ -39,7 +41,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
 
   const extractFromJson = (jsonString: string) => {
     try {
-      const parsedJson = JSON.parse(jsonString);
+      const cleanJsonString = jsonString.replace(/```json\n|\n```/g, '');
+      const parsedJson = JSON.parse(cleanJsonString);
 
       if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
         const formDef: Record<string, string[]> = {};
@@ -105,12 +108,12 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       }
       else if (flowAgentConversation.status === 'success') {
         shouldUpdateMessage = false;
-
         if (typeof flowAgentConversation.flow_definition === 'string') {
           const { formDef, formValues: extractedValues } = extractFromJson(flowAgentConversation.flow_definition);
           if (formDef) {
             dispatch(setFormDefinition(formDef));
-            dispatch(setFormValues(extractedValues));
+            dispatch(setFormValues(extractedValues))
+            setAiflowStrructre(flowAgentConversation.flow_definition)
           }
         }
       }
@@ -205,8 +208,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                   <div
                     className={cn(
                       "rounded-lg px-4 py-2 max-w-[80%] relative",
-                      message.role === "assistant" 
-                        ? "bg-gray-100 text-black" 
+                      message.role === "assistant"
+                        ? "bg-gray-100 text-black"
                         : "bg-primary text-primary-foreground",
                       // Add a tail to the message bubble
                       message.role === "assistant"

@@ -15,6 +15,7 @@ export interface FieldTypeInfo {
     groupKey?: string;
     default?: string;
     endpoint?: string;
+    selectOptions?: Array<string | number>;
   };
   options?: Array<{
     label: string;

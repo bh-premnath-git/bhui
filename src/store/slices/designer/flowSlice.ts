@@ -416,7 +416,9 @@ const flowSlice = createSlice({
                 } else if (action.payload.status === 'success' && 
                            typeof action.payload.flow_definition === 'string') {
                     try {
-                        const parsedJson = JSON.parse(action.payload.flow_definition);
+                        // Clean the JSON string by removing markdown code block markers
+                        const cleanJsonString = action.payload.flow_definition.replace(/```json\n|\n```/g, '');
+                        const parsedJson = JSON.parse(cleanJsonString);
                         if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
                             const formDef: Record<string, string[]> = {};
                             const formValues: Record<string, Record<string, string>> = {};

@@ -8,7 +8,12 @@ import { useDataCatalogManagementService } from '@/features/data-catalog/service
 import { CatalagSlideWrapper } from './components/CatalagSlideWrapper';
 import { ROUTES } from '@/config/routes';
 
-export function DataCatalog({ datasources }: { datasources: any[] }) {
+interface DataCatalogProps {
+  datasources: any[];
+  onRefetch: () => void;
+}
+
+export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
   const { handleNavigation } = useNavigation();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataSource | undefined>();
@@ -19,6 +24,13 @@ export function DataCatalog({ datasources }: { datasources: any[] }) {
     setIsSheetOpen(true);
     dataCatalogSrv.selectDatasource(row.original);
   }
+
+  // Refetch data when sheet is closed
+  useEffect(() => {
+    if (!isSheetOpen && onRefetch) {
+      onRefetch();
+    }
+  }, [isSheetOpen, onRefetch]);
 
   useEffect(() => {
     const handleOpenImportSource = () => {

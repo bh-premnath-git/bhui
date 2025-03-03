@@ -14,6 +14,7 @@ interface DescriptionCellProps {
 export interface DescriptionCellRef {
   updateDescription: (description: string) => Promise<void>;
   setLoading: (isLoading: boolean) => void;
+  getValue: () => string;
 }
 
 export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellProps>(
@@ -32,13 +33,19 @@ export const DescriptionCell = forwardRef<DescriptionCellRef, DescriptionCellPro
       setIsLoading(loading);
     }, []);
 
+    const getValue = useCallback(() => {
+      const currentValue = generatedValue || initialValue || '';
+      return currentValue;
+    }, [generatedValue, initialValue]);
+
     useImperativeHandle(ref, () => ({
       updateDescription,
-      setLoading: setLoadingState
-    }), [updateDescription, setLoadingState]);
+      setLoading: setLoadingState,
+      getValue
+    }), [updateDescription, setLoadingState, getValue]);
 
     const handleStartEdit = () => {
-      const currentValue = generatedValue || initialValue || '';
+      const currentValue = getValue();
       setEditValue(currentValue);
       setIsEditing(true);
     };

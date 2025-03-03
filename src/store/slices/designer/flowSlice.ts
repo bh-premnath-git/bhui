@@ -19,6 +19,8 @@ interface FlowState {
     error: string | null;
     dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
+    formDefinition: Record<string, string[]> | null;
+    formValues: Record<string, Record<string, string>>;
 }
 
 const initialState: FlowState = {
@@ -35,6 +37,8 @@ const initialState: FlowState = {
     error: null,
     dagRunId: null,
     flowAgentConversation: null,
+    formDefinition: null,
+    formValues: {},
 };
 
 export const fetchProjects = createAsyncThunk(
@@ -191,7 +195,6 @@ export const triggerDagDeployment = createAsyncThunk(
     }
 );
 
-
 export const createFlowAgentConversationEntry = createAsyncThunk(
     "flows/createFlowAgentConversationEntry",
     async (data: { flow_id: string; request: string; thread_id: string }) => {
@@ -238,6 +241,23 @@ const flowSlice = createSlice({
         },
         clearFlowAgentConversation: (state) => {
             state.flowAgentConversation = null;
+        },
+        setFormDefinition: (state, action: PayloadAction<Record<string, string[]> | null>) => {
+            state.formDefinition = action.payload;
+        },
+        setFormValues: (state, action: PayloadAction<Record<string, Record<string, string>>>) => {
+            state.formValues = action.payload;
+        },
+        updateFormValues: (state, action: PayloadAction<{ operator: string; field: string; value: string }>) => {
+            const { operator, field, value } = action.payload;
+            if (!state.formValues[operator]) {
+                state.formValues[operator] = {};
+            }
+            state.formValues[operator][field] = value;
+        },
+        clearFormStates: (state) => {
+            state.formDefinition = null;
+            state.formValues = {};
         },
     },
     extraReducers: (builder) => {
@@ -388,6 +408,52 @@ const flowSlice = createSlice({
             .addCase(createFlowAgentConversationEntry.fulfilled, (state, action) => {
                 state.loading = false;
                 state.flowAgentConversation = action.payload;
+                
+                // Automatically update form definition when conversation is fulfilled
+                if (action.payload.status === 'missing' && action.payload.flow_definition && 
+                    typeof action.payload.flow_definition === 'object') {
+                    state.formDefinition = action.payload.flow_definition as Record<string, string[]>;
+                } else if (action.payload.status === 'success' && 
+                           typeof action.payload.flow_definition === 'string') {
+                    try {
+                        const parsedJson = JSON.parse(action.payload.flow_definition);
+                        if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
+                            const formDef: Record<string, string[]> = {};
+                            const formValues: Record<string, Record<string, string>> = {};
+
+                            parsedJson.tasks.forEach((task: any) => {
+                                if (task.type && typeof task.type === 'string') {
+                                    const fields: string[] = [];
+                                    const values: Record<string, string> = {};
+                                    Object.keys(task).forEach(key => {
+                                        if (!['type', 'module_name', 'task_id', 'depends_on'].includes(key)) {
+                                            fields.push(key);
+                                            if (task[key] !== undefined) {
+                                                if (Array.isArray(task[key])) {
+                                                    values[key] = task[key].join(', ');
+                                                } else {
+                                                    values[key] = String(task[key]);
+                                                }
+                                            }
+                                        }
+                                    });
+
+                                    if (fields.length > 0) {
+                                        formDef[task.type] = fields;
+                                        formValues[task.type] = values;
+                                    }
+                                }
+                            });
+
+                            if (Object.keys(formDef).length > 0) {
+                                state.formDefinition = formDef;
+                                state.formValues = formValues;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error parsing JSON response:', error);
+                    }
+                }
             })
             .addCase(createFlowAgentConversationEntry.rejected, (state, action) => {
                 state.loading = false;
@@ -396,5 +462,18 @@ const flowSlice = createSlice({
     },
 });
 
-export const { setFlows, setSelectedFlow, setSelectedProject, setSelectedEnv, setLoading, setError, setDagRunId, clearFlowAgentConversation } = flowSlice.actions;
+export const { 
+    setFlows, 
+    setSelectedFlow, 
+    setSelectedProject, 
+    setSelectedEnv, 
+    setLoading, 
+    setError, 
+    setDagRunId, 
+    clearFlowAgentConversation,
+    setFormDefinition,
+    setFormValues,
+    updateFormValues,
+    clearFormStates
+} = flowSlice.actions;
 export default flowSlice.reducer;

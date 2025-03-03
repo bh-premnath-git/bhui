@@ -19,19 +19,16 @@ export function FlowPlaygroundHeader() {
           <Inputsection />
           <SettingsModal />
         </div>
-
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-4">
             <EnvironmentSelect />
             <SchedulePicker />
           </div>
-
           <div className="flex items-center gap-4">
             <DeployingPart />
             <CommitPart />
             <PlaybackButton />
           </div>
-
           <div className="border-l border-border pl-6">
             <AIButton />
           </div>

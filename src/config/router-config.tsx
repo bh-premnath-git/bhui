@@ -5,7 +5,7 @@ import { ROUTES } from './routes';
 // Lazy load all pages
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const DataCatalog = lazy(() => import('@/pages/data-catalog'));
-const XploreerPage = lazy(() => import('@/pages/data-catalog/XploreerPage'));
+const XploreerPage = lazy(() => import('@/pages/data-catalog/XplorerPage'));
 const DatasourceImport = lazy(() => import('@/pages/data-catalog/DatasourceImport'));
 const DesignerDashboard = lazy(() => import('@/pages/designers/DesignerDashboard'));
 const BuildDataPipeline = lazy(() => import('@/pages/designers/BuildDataPipeline'));

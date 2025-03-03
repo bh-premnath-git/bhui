@@ -1,19 +1,38 @@
-import { useState } from 'react';
-import { saveDescription, addLink, addOwner, addTag } from '@/features/data-catalog/components/services/dataService';
+import { useState, useEffect } from 'react';
+import { saveDescriptionServ, addLink, addOwner, addTag } from '@/features/data-catalog/components/services/dataService';
 import { toast } from 'sonner';
 import { Owner, Link, AboutData } from '@/features/data-catalog/types';
 
 export function useAboutData(initialData: AboutData) {
-  const [description, setDescription] = useState(initialData.description || '');
-  const [owners, setOwners] = useState<Owner[]>(initialData.owners || []);
-  const [links, setLinks] = useState<Link[]>(initialData.links || []);
-  const [tags, setTags] = useState<string[]>(initialData.tags || []);
+  const [description, setDescription] = useState<string>('');
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [links, setLinks] = useState<Link[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Update state when initialData changes
+  useEffect(() => {
+    setDescription(initialData.description || '');
+    setOwners(initialData.owners || []);
+    setLinks(initialData.links || []);
+    setTags(initialData.tags || []);
+  }, [initialData]);
+
+  const handleSaveDescription = async (id: number, description: string) => {
+    try {
+      await saveDescriptionServ(id, description);
+      setDescription(description);
+      setLastUpdated(new Date());
+      toast.success('Description saved successfully');
+    } catch (error) {
+      toast.error('Failed to save description');
+    }
+  };
 
   const handleAddLink = async (newLink: Link) => {
     try {
       await addLink(newLink);
-      setLinks([...links, newLink]);
+      setLinks(prevLinks => [...prevLinks, newLink]);
       setLastUpdated(new Date());
       toast.success('Link added successfully');
     } catch (error) {
@@ -28,7 +47,7 @@ export function useAboutData(initialData: AboutData) {
         id: Math.random().toString(36).substr(2, 9),
       };
       await addOwner(owner);
-      setOwners([...owners, owner]);
+      setOwners(prevOwners => [...prevOwners, owner]);
       setLastUpdated(new Date());
       toast.success('Owner added successfully');
     } catch (error) {
@@ -39,7 +58,7 @@ export function useAboutData(initialData: AboutData) {
   const handleAddTag = async (newTag: string) => {
     try {
       await addTag(newTag);
-      setTags([...tags, newTag]);
+      setTags(prevTags => [...prevTags, newTag]);
       setLastUpdated(new Date());
       toast.success('Tag added successfully');
     } catch (error) {
@@ -48,17 +67,17 @@ export function useAboutData(initialData: AboutData) {
   };
 
   const handleRemoveLink = (index: number) => {
-    setLinks(links.filter((_, i) => i !== index));
+    setLinks(prevLinks => prevLinks.filter((_, i) => i !== index));
     setLastUpdated(new Date());
   };
 
   const handleRemoveOwner = (id: string) => {
-    setOwners(owners.filter(owner => owner.id !== id));
+    setOwners(prevOwners => prevOwners.filter(owner => owner.id !== id));
     setLastUpdated(new Date());
   };
 
   const handleRemoveTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index));
+    setTags(prevTags => prevTags.filter((_, i) => i !== index));
     setLastUpdated(new Date());
   };
 
@@ -68,6 +87,7 @@ export function useAboutData(initialData: AboutData) {
     links,
     tags,
     lastUpdated,
+    handleSaveDescription,
     handleAddLink,
     handleAddOwner,
     handleAddTag,

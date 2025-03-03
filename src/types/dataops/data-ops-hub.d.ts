@@ -50,7 +50,7 @@ export interface DashboardMetric {
   brand: string;
   value: number;
   trend: string;
-  status: 'increase' | 'decrease' | 'stable';
+  status: "increase" | "decrease" | "stable" | "neutral";
 }
 
 export interface DashboardData {
@@ -58,6 +58,31 @@ export interface DashboardData {
   description: string;
   timeRange: string;
   brands: string[];
+  recommendedChartType: string;
   metrics: DashboardMetric[];
-  salesData: GenericData[];
+  salesData: any[];
+  explanation: string[];
+  sqlQuery?: string;
+  tableName?: string;
+}
+
+export interface DatabaseConnection {
+  id: string;
+  name: string;
+  type: string;
+  icon?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: string;
+  connection: string;
+  messages: ChatMessage[];
+  lastQuestion: string;
 }

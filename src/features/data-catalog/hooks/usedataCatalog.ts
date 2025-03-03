@@ -45,31 +45,36 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
   );
 
   // List data sources with pagination
-  const fetchDataSourceList = (enabled = true) =>
-    getAllDataSources({
-      url: '/data_source/list/',
-      queryOptions: {
-        enabled,
-        retry: 2
-      },
-      params: {limit:1000}
-    });
+  const result = getAllDataSources({
+    url: '/data_source/list/',
+    queryOptions: {
+      enabled: true,
+      retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: true
+    },
+    params: {limit:1000}
+  });
 
   // If you want to fetch a single data source by ID
-  const fetchDataSourceById = (dataSourceId: string, enabled = true) =>
-    getDataSource({
-      url: `/data_source/${dataSourceId}/`,
-      queryOptions: {
-        enabled,
-        retry: 2
-      }
-    });
+  const { data: datasource, isLoading: isDataSourceLoading, isFetching: isDataSourceFetching, isError: isDataSourceError } = getDataSource({
+    url: `/data_source/${options.dataSourceId}/`,
+    queryOptions: {
+      enabled: options.shouldFetch && !!options.dataSourceId,
+      retry: 2,
+      refetchOnWindowFocus: false
+    }
+  });
 
   // Create data source mutation
   const createDataSourceMutation = createDataSource({
     url: '/data_source/create/',
     mutationOptions: {
-      onSuccess: () => toast.success('Data source created successfully'),
+      onSuccess: () => {
+        toast.success('Data source created successfully');
+        result.refetch();
+      },
       onError: (error) => handleApiError(error, { action: 'create' }),
     },
   });
@@ -77,7 +82,10 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
   // Update data source mutation
   const updateDataSourceMutation = updateDataSource('/data_source', {
     mutationOptions: {
-      onSuccess: () => toast.success('Data source updated successfully'),
+      onSuccess: () => {
+        toast.success('Data source updated successfully');
+        result.refetch();
+      },
       onError: (error) => handleApiError(error, { action: 'update' }),
     },
   });
@@ -85,7 +93,10 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
   // Delete data source mutation
   const deleteDataSourceMutation = removeDataSource('/data_source', {
     mutationOptions: {
-      onSuccess: () => toast.success('Data source deleted successfully'),
+      onSuccess: () => {
+        toast.success('Data source deleted successfully');
+        result.refetch();
+      },
       onError: (error) => handleApiError(error, { action: 'delete' }),
     },
   });
@@ -110,31 +121,17 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     });
   }, [deleteDataSourceMutation]);
 
-  // Get current data source list if shouldFetch is true
-  const { data: datasources, isLoading, isFetching, isError } = fetchDataSourceList(options.shouldFetch);
-
-  // Get single data source if ID is provided
-  const { 
-    data: datasource,
-    isLoading: isDataSourceLoading,
-    isFetching: isDataSourceFetching,
-    isError: isDataSourceError 
-  } = fetchDataSourceById(options.dataSourceId || '', options.shouldFetch && !!options.dataSourceId);
-
   return {
     // Query results
-    datasources: datasources || [],
+    datasources: result.data || [],
     datasource: datasource?.[0] || null,
-    isLoading,
-    isFetching,
-    isError,
+    isLoading: result.isLoading,
+    isFetching: result.isFetching,
+    isError: result.isError,
     isDataSourceLoading,
     isDataSourceFetching,
     isDataSourceError,
-
-    // Query functions
-    fetchDataSourceList,
-    fetchDataSourceById,
+    refetch: result.refetch,
 
     // Mutation handlers
     handleCreateDataSource,

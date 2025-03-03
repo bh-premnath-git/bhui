@@ -1,56 +1,58 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { createFlowAgentConversationEntry, clearFlowAgentConversation } from "@/store/slices/designer/flowSlice";
+import { 
+  createFlowAgentConversationEntry, 
+  clearFlowAgentConversation,
+  setFormDefinition,
+  setFormValues,
+  clearFormStates
+} from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
-import { MissingFieldsForm } from "./MissingFieldsForm";
+import { MissingFieldsForm } from "./missing-fields-form";
+import { cn } from "@/lib/utils";
+import { User } from "lucide-react";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
-  const [input, setInput] = useState("");
   const dispatch = useAppDispatch();
-  const { selectedFlow, flowAgentConversation, loading } = useAppSelector((state: RootState) => state.flow);
-  // Store the form definition separately so we can keep it even after success
-  const [savedFormDefinition, setSavedFormDefinition] = useState<Record<string, string[]> | null>(null);
-  // Store the form values to preserve them between submissions
-  const [savedFormValues, setSavedFormValues] = useState<Record<string, Record<string, string>>>({});
+  const [input, setInput] = useState("");
+  const { 
+    selectedFlow, 
+    flowAgentConversation, 
+    loading,
+    formDefinition,
+    formValues
+  } = useAppSelector((state: RootState) => state.flow);
 
   useEffect(() => {
     if (!isOpen) {
       clearMessages();
       dispatch(clearFlowAgentConversation());
-      setSavedFormDefinition(null);
-      setSavedFormValues({});
+      dispatch(clearFormStates());
     }
   }, [isOpen, clearMessages, dispatch]);
 
-  // Extract form definition and values from a successful JSON response
   const extractFromJson = (jsonString: string) => {
     try {
-      // Try to parse the JSON
       const parsedJson = JSON.parse(jsonString);
-      
+
       if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
-        // Create a form definition from the tasks
         const formDef: Record<string, string[]> = {};
         const formValues: Record<string, Record<string, string>> = {};
-        
+
         parsedJson.tasks.forEach((task: any) => {
           if (task.type && typeof task.type === 'string') {
             const fields: string[] = [];
             const values: Record<string, string> = {};
-            
-            // Extract all fields except type, module_name, task_id, and depends_on
             Object.keys(task).forEach(key => {
               if (!['type', 'module_name', 'task_id', 'depends_on'].includes(key)) {
                 fields.push(key);
-                
-                // Store the value
                 if (task[key] !== undefined) {
-                  // Handle arrays by joining with commas
                   if (Array.isArray(task[key])) {
                     values[key] = task[key].join(', ');
                   } else {
@@ -59,14 +61,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                 }
               }
             });
-            
+
             if (fields.length > 0) {
               formDef[task.type] = fields;
               formValues[task.type] = values;
             }
           }
         });
-        
+
         return {
           formDef: Object.keys(formDef).length > 0 ? formDef : null,
           formValues: Object.keys(formValues).length > 0 ? formValues : {}
@@ -75,7 +77,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     } catch (error) {
       console.error('Error parsing JSON response:', error);
     }
-    
+
     return { formDef: null, formValues: {} };
   };
 
@@ -83,18 +85,17 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     if (flowAgentConversation) {
       let formattedMessage = '';
       let shouldUpdateMessage = true;
-      
+
       if (flowAgentConversation.status === 'error') {
         formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
-      } 
+      }
       else if (flowAgentConversation.status === 'missing') {
         formattedMessage = `Please provide the following information for your workflow:`;
-        
-        // Save the form definition for later use
+
         if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
-          setSavedFormDefinition(flowAgentConversation.flow_definition as Record<string, string[]>);
+          dispatch(setFormDefinition(flowAgentConversation.flow_definition as Record<string, string[]>));
         }
-        
+
         if (flowAgentConversation.operators && Array.isArray(flowAgentConversation.operators) && flowAgentConversation.operators.length > 0) {
           formattedMessage += `\n\nOperators: ${flowAgentConversation.operators.join(', ')}`;
         }
@@ -103,51 +104,47 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
         }
       }
       else if (flowAgentConversation.status === 'success') {
-        // Don't show the success message in chat, but process the form definition
         shouldUpdateMessage = false;
-        
+
         if (typeof flowAgentConversation.flow_definition === 'string') {
-          // Try to extract form definition and values from successful JSON response
-          const { formDef, formValues } = extractFromJson(flowAgentConversation.flow_definition);
+          const { formDef, formValues: extractedValues } = extractFromJson(flowAgentConversation.flow_definition);
           if (formDef) {
-            setSavedFormDefinition(formDef);
-            setSavedFormValues(formValues);
+            dispatch(setFormDefinition(formDef));
+            dispatch(setFormValues(extractedValues));
           }
         }
       }
       else if (flowAgentConversation.response) {
         formattedMessage = flowAgentConversation.response;
       }
-      
+
       if (shouldUpdateMessage) {
         updateLastAssistantMessage(formattedMessage);
       }
     }
-  }, [flowAgentConversation, updateLastAssistantMessage]);
+  }, [flowAgentConversation]);
 
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;
 
     addUserMessage(input);
-    
+
     addAssistantMessage("Thinking...");
-    
+
     await dispatch(createFlowAgentConversationEntry({
       flow_id: selectedFlow.flow_id.toString(),
       request: input,
       thread_id: selectedFlow.flow_id.toString()
     }));
-    
+
     setInput("");
   };
 
   const handleFormSubmit = async (values: Record<string, Record<string, string>>) => {
     if (!selectedFlow?.flow_id) return;
-    
-    // Save the form values for future use
-    setSavedFormValues(values);
-    
-    // Format the form values into a message
+
+    dispatch(setFormValues(values));
+
     const formattedValues = Object.entries(values)
       .map(([operator, fields]) => {
         const fieldEntries = Object.entries(fields)
@@ -156,11 +153,10 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
         return `${operator}: { ${fieldEntries} }`;
       })
       .join('\n');
-    
+
     addUserMessage(`Submitted form values:\n${formattedValues}`);
     addAssistantMessage("Processing your input...");
-    
-    // Send the form values to the backend using the existing createFlowAgentConversationEntry action
+
     try {
       await dispatch(createFlowAgentConversationEntry({
         flow_id: selectedFlow.flow_id.toString(),
@@ -176,7 +172,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
         <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-lg font-semibold">Bighammer.AI</h2>
+          <h2 className="text-sm font-semibold">Bighammer.AI</h2>
         </div>
         {messages.length === 0 ? (
           <div className="mt-4 flex flex-col items-center flex-grow justify-center">
@@ -185,44 +181,70 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4 mt-4">
-            <div className="space-y-4">
+            <div className="space-y-6">
               {messages.map((message, i) => (
                 <div
                   key={i}
-                  className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
+                  className={cn(
+                    "flex items-start gap-3",
+                    message.role === "assistant" ? "flex-row" : "flex-row-reverse"
+                  )}
                 >
+                  {message.role === "assistant" ? (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={imageSrc} />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Avatar className="h-8 w-8 bg-primary">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div
-                    className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                    className={cn(
+                      "rounded-lg px-4 py-2 max-w-[80%] relative",
+                      message.role === "assistant" 
+                        ? "bg-gray-100 text-black" 
+                        : "bg-primary text-primary-foreground",
+                      // Add a tail to the message bubble
                       message.role === "assistant"
-                        ? "bg-gray-100 text-black"
-                        : "bg-black text-white"
-                    }`}
+                        ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
+                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
+                    )}
                   >
-                    {message.content}
+                    <div className="whitespace-pre-wrap">{message.content}</div>
                   </div>
                 </div>
               ))}
               {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%]">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={imageSrc} />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
                     </div>
                   </div>
                 </div>
               )}
-              
-              {/* Always show the form at the bottom if we have a form definition */}
-              {savedFormDefinition && !loading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] w-full">
-                    <h3 className="font-medium mb-2">Workflow Form</h3>
-                    <MissingFieldsForm 
-                      flowDefinition={savedFormDefinition} 
+              {formDefinition && !loading && (
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={imageSrc} />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
+                    <h3 className="font-medium mb-2">Flow Form</h3>
+                    <MissingFieldsForm
+                      flowDefinition={formDefinition}
                       onSubmit={handleFormSubmit}
-                      initialValues={savedFormValues}
+                      initialValues={formValues}
                     />
                   </div>
                 </div>

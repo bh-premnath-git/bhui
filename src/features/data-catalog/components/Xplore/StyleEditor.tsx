@@ -1,25 +1,10 @@
 import { useAnalytics } from "@/context/AnalyticsContext";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { 
-  BarChart, 
-  LineChart, 
-  PieChart,
-  Activity, // For Area Chart
-  CircleDot, // For Scatter Plot
-  Timer, // For Gauge
-  LayoutGrid, // For Treemap
-  BarChart3, // For Histogram
-  Circle, // For Bubble Chart
-  Radar // For Radar Chart
-} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { colorPalettes, generateColorPalette } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 import type { ChartStyles } from "@/types/dataops/data-ops-hub.d";
 
@@ -54,11 +39,11 @@ const StyleIcon = () => (
 );
 
 export default function StyleEditor() {
-  const { chartStyles, setChartStyles, data } = useAnalytics();
+  const { chartStyles, setChartStyles, dashboardData } = useAnalytics();
 
   const chartTypes = [
     { 
-      id: 'bar' as const, 
+      id: 'bar', 
       icon: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="12" width="4" height="8" className="fill-current"/>
@@ -70,7 +55,7 @@ export default function StyleEditor() {
       category: 'Basic'
     },
     { 
-      id: 'line' as const, 
+      id: 'line', 
       icon: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 18L9 12L14 16L20 6" className="stroke-current" strokeWidth="2" strokeLinecap="round"/>
@@ -80,7 +65,7 @@ export default function StyleEditor() {
       category: 'Basic'
     },
     { 
-      id: 'pie' as const, 
+      id: 'pie', 
       icon: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 12L12 5" className="stroke-current" strokeWidth="2"/>
@@ -93,7 +78,7 @@ export default function StyleEditor() {
       category: 'Basic'
     },
     { 
-      id: 'area' as const, 
+      id: 'area', 
       icon: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 18L9 12L14 16L20 6V18H4Z" className="fill-current opacity-20"/>
@@ -103,49 +88,7 @@ export default function StyleEditor() {
       label: 'Area',
       category: 'Basic'
     },
-    // { 
-    //   id: 'scatter' as const, 
-    //   icon: CircleDot, 
-    //   label: 'Scatter Plot',
-    //   description: 'Identify correlations between variables',
-    //   category: 'Advanced'
-    // },
-    // { 
-    //   id: 'gauge' as const, 
-    //   icon: Timer, 
-    //   label: 'Gauge Chart',
-    //   description: 'Display progress towards a goal',
-    //   category: 'Advanced'
-    // },
-    // { 
-    //   id: 'treemap' as const, 
-    //   icon: LayoutGrid, 
-    //   label: 'Treemap',
-    //   description: 'Hierarchical data with nested rectangles',
-    //   category: 'Advanced'
-    // },
-    // { 
-    //   id: 'histogram' as const, 
-    //   icon: BarChart3, 
-    //   label: 'Histogram',
-    //   description: 'Show distribution of data',
-    //   category: 'Advanced'
-    // },
-    // { 
-    //   id: 'bubble' as const, 
-    //   icon: Circle, 
-    //   label: 'Bubble Chart',
-    //   description: 'Compare three dimensions of data',
-    //   category: 'Advanced'
-    // },
-    // { 
-    //   id: 'radar' as const, 
-    //   icon: Radar, 
-    //   label: 'Radar Chart',
-    //   description: 'Compare multiple variables',
-    //   category: 'Advanced'
-    // }
-  ] as const;
+  ];
 
   // Group charts by category
   const chartsByCategory = chartTypes.reduce((acc, chart) => {
@@ -158,8 +101,8 @@ export default function StyleEditor() {
 
   // Get number of data columns (excluding date/time columns)
   const getDataColumnCount = () => {
-    if (!data || data.length === 0) return 4; // default fallback
-    const firstRow = data[0];
+    if (!dashboardData?.salesData || dashboardData.salesData.length === 0) return 4; // default fallback
+    const firstRow = dashboardData.salesData[0];
     // Exclude date/time columns or any other metadata columns
     return Object.keys(firstRow).filter(key => !key.toLowerCase().includes('date')).length;
   };
@@ -167,7 +110,7 @@ export default function StyleEditor() {
   const colorThemes = {
     colorful: [
       {
-        id: 'colorful1' as const,
+        id: 'colorful1',
         name: 'Colorful 1',
         colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
       },
@@ -194,7 +137,7 @@ export default function StyleEditor() {
     ],
     monochromatic: [
       {
-        id: 'mono_blue' as const,
+        id: 'mono_blue',
         name: 'Blue Scale',
         colors: ['#08519c', '#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#eff3ff']
       },
@@ -214,12 +157,12 @@ export default function StyleEditor() {
         colors: ['#4a1486', '#6a51a3', '#807dba', '#9e9ac8', '#bcbddc', '#dadaeb']
       }
     ]
-  } as const;
+  };
 
   const handleColorSchemeChange = (scheme: typeof colorThemes.colorful[0] | typeof colorThemes.monochromatic[0]) => {
     setChartStyles({ 
       ...chartStyles,
-      colorScheme: scheme.id,
+      colorScheme: scheme.id as ColorScheme,
       colors: scheme.colors
     });
   };
@@ -252,7 +195,7 @@ export default function StyleEditor() {
                               "bg-primary/5 border-primary shadow-sm" : 
                               "bg-background hover:bg-muted/5"
                           )}
-                          onClick={() => setChartStyles({ ...chartStyles, chartType: id })}
+                          onClick={() => setChartStyles({ ...chartStyles, chartType: id as ChartType })}
                         >
                           <div className={cn(
                             "flex items-center justify-center",

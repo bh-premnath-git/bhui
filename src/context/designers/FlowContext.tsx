@@ -423,6 +423,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
           const valData: any = parsedValue[1];
           if (!Array.isArray(valData.tasks)) return;
 
+          // Store node IDs for edge creation
+          const nodeIds: string[] = [];
           const edgesToAdd: Edge[] = [];
 
           valData.tasks.forEach((task: any, index: number) => {
@@ -433,7 +435,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               (op: any) => op.type === task.type
             );
 
+            // Create consistent node ID using task_id or index
             const nodeId = `task-${task.task_id ?? index}`;
+            nodeIds.push(nodeId);
 
             addNode({
               id: nodeId,
@@ -464,34 +468,30 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               ...task,
             });
 
+            // Connect current node to previous node
             if (index > 0) {
-              const sourceId = `task-${valData.tasks[index - 1].id ?? index - 1}`;
-              console.log("sourceId", sourceId);
+              const sourceId = nodeIds[index - 1];
               const targetId = nodeId;
-              const edgeExists = edges.some(
-                (e) => e.source === sourceId && e.target === targetId
-              );
-              if (!edgeExists) {
-                edgesToAdd.push({
-                  id: `e${sourceId}-${targetId}`,
-                  source: sourceId,
-                  target: targetId,
-                  type: 'smoothstep',
-                });
-              }
+              
+              edgesToAdd.push({
+                id: `e${sourceId}-${targetId}`,
+                source: sourceId,
+                target: targetId,
+                type: 'smoothstep',
+              });
             }
           });
 
-          setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
-
+          // Add edges after all nodes are created
+          setTimeout(() => {
+            setEdges(edgesToAdd);
+          }, 100);
         }
       } catch (err) {
-        console.error("err", err);
-
-        return
+        console.error("Error creating flow structure:", err);
       }
     },
-    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta]
+    [addNode, moduleTypes, updateNodeFormData, setEdges, setNodes]
   );
 
 

@@ -29,14 +29,32 @@ export const TableSelection: React.FC<TableSelectionProps> = ({
   isImporting,
   onSubmit,
 }) => {
-  debugger
   const [createDescription, setCreateDescription] = useState(false);
   const { fetchTable } = useDatabase();
-  const data = fetchTable(selectedConnection, selectedSchema).then(result => {
-    setTables(result)
-  })
-
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTables = async () => {
+      if (!selectedConnection || !selectedSchema) return;
+      
+      try {
+        const result = await fetchTable(selectedConnection, selectedSchema);
+        if (isMounted) {
+          setTables(result);
+        }
+      } catch (error) {
+        console.error("Failed to load tables:", error);
+      }
+    };
+
+    loadTables();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedConnection, selectedSchema, fetchTable, setTables]);
 
   const handleSubmit = async () => {
     try {

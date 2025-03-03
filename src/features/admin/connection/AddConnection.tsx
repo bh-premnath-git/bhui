@@ -53,8 +53,8 @@ AddConnection() {
   // Filter connections by type and search term
   const filteredConnections = connectionTypes?.filter(type => 
     type.connection_type === activeTab && 
-    type.connection_display_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    (type.connection_display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+  ) ?? [];
 
   const handleCardClick = (type: ConnectionType) => {
     if (!connectionConfigName.trim()) {

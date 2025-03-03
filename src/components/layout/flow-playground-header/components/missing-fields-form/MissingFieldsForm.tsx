@@ -18,8 +18,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     values: {},
     errors: {}
   });
-
-  // Compute operator-field pairs only when flowDefinition changes
   const operatorFieldPairs = useMemo(() => {
     const pairs: OperatorFieldPair[] = [];
     Object.entries(flowDefinition).forEach(([operator, fields]) => {
@@ -28,7 +26,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     return pairs;
   }, [flowDefinition]);
 
-  // Extract field type and UI information from schema
   const fieldTypeMapping = useMemo(() => {
     const mapping: Record<string, Record<string, FieldTypeInfo>> = {};
     const schemaData = schema.properties?.tasks?.items?.oneOf || [];
@@ -40,20 +37,14 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       if (operatorSchema && operatorSchema.properties) {
         const requiredFields = operatorSchema.required || [];
         
-        // Log operator schema info (can be removed in production)
-        console.log(`Operator: ${operator}`, {
-          required: requiredFields,
-          properties: Object.keys(operatorSchema.properties)
-        });
-        
         fields.forEach(field => {
           const fieldSchema = operatorSchema.properties[field];
           if (fieldSchema) {
             const isMandatory = fieldSchema.ui_properties?.mandatory === true || requiredFields.includes(field);
             
-            // Log field ui_properties (can be removed in production)
             console.log(`Field: ${operator}.${field}`, {
               ui_properties: fieldSchema.ui_properties,
+              method: fieldSchema.enum,
               type: fieldSchema.type || (fieldSchema.items && `array:${fieldSchema.items.type}`) || 'string',
               required: isMandatory
             });
@@ -86,7 +77,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     return mapping;
   }, [operatorFieldPairs]);
 
-  // Extract colors for operators
   const operatorColors = useMemo(() => {
     const colors: Record<string, string> = {};
     const schemaData = schema.properties?.tasks?.items?.oneOf || [];
@@ -103,7 +93,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     return colors;
   }, [operatorFieldPairs]);
 
-  // Initialize form values and errors
   useEffect(() => {
     const initialFormValues: Record<string, Record<string, string>> = {};
     const initialFormErrors: Record<string, Record<string, boolean>> = {};
@@ -113,7 +102,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       initialFormErrors[operator] = initialFormErrors[operator] || {};
 
       fields.forEach(field => {
-        // Use initialValues if available, otherwise default values or empty string
         if (initialValues[operator] && initialValues[operator][field] !== undefined) {
           initialFormValues[operator][field] = initialValues[operator][field];
         } else if (storeFormValues[operator] && storeFormValues[operator][field] !== undefined) {
@@ -124,7 +112,6 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
           initialFormValues[operator][field] = '';
         }
         
-        // Initialize error states for required fields
         const isRequired = fieldTypeMapping[operator]?.[field]?.required || false;
         const isEmpty = !initialFormValues[operator][field];
         initialFormErrors[operator][field] = isRequired && isEmpty;
@@ -137,9 +124,7 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
     });
   }, [flowDefinition, initialValues, storeFormValues, operatorFieldPairs, fieldTypeMapping]);
 
-  // Handle field changes
   const handleInputChange = (operator: string, field: string, value: string) => {
-    // Update local form state
     setFormState(prev => ({
       values: {
         ...prev.values,
@@ -157,17 +142,13 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       }
     }));
 
-    // Update Redux store
     dispatch(updateFormValues({ operator, field, value }));
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let hasErrors = false;
     const newErrors: Record<string, Record<string, boolean>> = {};
-
-    // Validate all fields
     Object.entries(formState.values).forEach(([operator, fields]) => {
       newErrors[operator] = {};
       Object.entries(fields).forEach(([field, value]) => {
@@ -179,13 +160,11 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       });
     });
 
-    // Update error states
     setFormState(prev => ({
       ...prev,
       errors: newErrors
     }));
 
-    // Submit if no errors
     if (!hasErrors) {
       onSubmit(formState.values);
     }

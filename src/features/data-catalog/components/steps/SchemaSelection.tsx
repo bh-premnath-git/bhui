@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { 
   Select,
@@ -29,11 +29,37 @@ export const SchemaSelection: React.FC<SchemaSelectionProps> = ({
   setSchemas
 }) => {
   const { fetchSchema } = useDatabase();
-  const data = fetchSchema(selectedConnection).then(result => {
-    setSchemas(result)
-  })
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load schemas when connection changes
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSchemas = async () => {
+      if (!selectedConnection) return;
+      
+      try {
+        setIsLoading(true);
+        const result = await fetchSchema(selectedConnection);
+        if (isMounted) {
+          setSchemas(result);
+        }
+      } catch (error) {
+        console.error("Failed to load schemas:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSchemas();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedConnection, fetchSchema, setSchemas]);
  
-  
   return (
     <div className="space-y-4 pl-6 border-l-2 border-gray-200">
       <div className="flex items-center">
@@ -42,6 +68,7 @@ export const SchemaSelection: React.FC<SchemaSelectionProps> = ({
       </div>
       <Select
         value={selectedSchema}
+        disabled={isLoading}
         onValueChange={(value) => {
           setSelectedSchema(value);
           setSelectedTables([]);
@@ -49,7 +76,7 @@ export const SchemaSelection: React.FC<SchemaSelectionProps> = ({
         }}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a schema" />
+          <SelectValue placeholder={isLoading ? "Loading schemas..." : "Select a schema"} />
         </SelectTrigger>
         <SelectContent>
           {schemas.map((schema) => (
@@ -62,6 +89,3 @@ export const SchemaSelection: React.FC<SchemaSelectionProps> = ({
     </div>
   );
 };
-
-
-

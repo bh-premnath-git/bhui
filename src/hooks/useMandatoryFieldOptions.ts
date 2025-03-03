@@ -31,11 +31,6 @@ export const useMandatoryFieldOptions = (fieldSchema: FieldSchema, envId: string
         return;
       }
 
-      // Skip if field already has an endpoint
-      if (fieldSchema.ui_properties.endpoint) {
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
 

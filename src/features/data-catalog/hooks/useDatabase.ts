@@ -1,6 +1,6 @@
 "use client";
 
-import { useResource } from "@/hooks/api/useResource";
+import { apiService } from "@/lib/api/api-service";
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -29,76 +29,66 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 };
 
 export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) => {
-  const { getOne, create: createImportSource } = useResource<string[]>(
-    "import_db_catalog/connection_config",
-    CATALOG_API_PORT,
-    true
-  );
-
   const fetchSchema = useCallback(
     async (connectionId: string): Promise<string[]> => {
+      if (!connectionId) return [];
+      
       try {
-        const response = await getOne({
+        const response = await apiService.get<string[]>({
+          portNumber: CATALOG_API_PORT,
+          method: 'GET',
           url: `/import_db_catalog/connection_config/${connectionId}/get-schemas`,
-          queryOptions: {
-            enabled: true,
-            retry: 2,
-          },
-        }).refetch();
-
-        return (response.data as unknown as string[]) || [];
+          usePrefix: true
+        });
+        return response || [];
       } catch (error) {
         console.error("Error fetching schemas:", error);
+        handleApiError(error, { action: "fetch", context: "database schemas", silent: true });
         return [];
       }
     },
-    [getOne]
+    []
   );
 
   const fetchTable = useCallback(
     async (connectionId: string, schema: string): Promise<string[]> => {
       try {
-        const response = await getOne({
+        const response = await apiService.get<string[]>({
+          portNumber: CATALOG_API_PORT,
+          method: 'GET',
           url: `/import_db_catalog/connection_config/${connectionId}/schemas/${schema}/tables`,
-          queryOptions: {
-            enabled: true,
-            retry: 2,
-          },
-        }).refetch();
-
-        return (response.data as unknown as string[]) || [];
+          usePrefix: true
+        });
+        return response || [];
       } catch (error) {
         console.error("Error fetching tables:", error);
         return [];
       }
     },
-    [getOne]
+    []
   );
-
-  const createImportSourceMutation = createImportSource({
-    mutationOptions: {
-      onSuccess: () => toast.success("Data source imported successfully!"),
-      onError: (error) => handleApiError(error, { action: "create" }),
-    },
-  });
 
   const handleCreateImportSource = useCallback(
     async (connectionId: string, projectId: string, schema: string, createDescription: boolean, data: string[]) => {
       try {
-        await createImportSourceMutation.mutateAsync({
+        await apiService.post({
+          portNumber: CATALOG_API_PORT,
+          method: 'POST',
           url: `/import_db_catalog/connection_config/${connectionId}/create_data_source`,
+          usePrefix: true,
           data,
           params: {
             bh_project_id: projectId,
             create_description: createDescription,
             schema,
-          },
+          }
         });
+        toast.success("Data source imported successfully!");
       } catch (error) {
         handleApiError(error, { action: "create", context: "data source creation" });
       }
     },
-    [createImportSourceMutation]
+    []
   );
 
   return {

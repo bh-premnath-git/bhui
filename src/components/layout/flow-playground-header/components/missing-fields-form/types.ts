@@ -16,6 +16,12 @@ export interface FieldTypeInfo {
     default?: string;
     endpoint?: string;
   };
+  options?: Array<{
+    label: string;
+    value: string | number;
+    description?: string;
+  }>;
+  isLoading?: boolean;
 }
 
 export interface OperatorFieldPair {

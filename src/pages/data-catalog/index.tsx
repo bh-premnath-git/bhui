@@ -10,25 +10,28 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { Database  } from 'lucide-react';
 
 function DataCatalogPage() {
-    const { datasources, isLoading, isFetching, isError } = useDataCatalog();
+    const { datasources, isLoading, isFetching, isError, refetch } = useDataCatalog({
+      shouldFetch: true
+    });
     const dataCatalogSrv = useDataCatalogManagementService();
+    
     useEffect(() => {
         if(datasources && datasources.length > 0){
             dataCatalogSrv.setDatasources(datasources);
         }
-    }, []);
+    }, [datasources, dataCatalogSrv]);
 
     if (isError) return <ErrorState message="Something went wrong" />;
 
-    if (isLoading) {
+    if (isLoading || !datasources) {
         return (
           <div className="p-6">
             <TableSkeleton />
           </div>
         );
-      }
+    }
 
-      if (datasources?.length === 0) {
+    if (datasources.length === 0) {
         return (
           <div className="p-6">
             <EmptyState
@@ -38,7 +41,7 @@ function DataCatalogPage() {
             />
           </div>
         );
-      }
+    }
 
     return (
         <div className="p-6">
@@ -48,10 +51,12 @@ function DataCatalogPage() {
                     <LoadingState className='w-40 h-40' />
                   </div>
                 )}
-                <DataCatalog datasources={datasources || []} />
+                <DataCatalog 
+                  datasources={datasources} 
+                  onRefetch={refetch}
+                />
             </div>
         </div>
-        
     );
 }
 

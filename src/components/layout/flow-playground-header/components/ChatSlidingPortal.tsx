@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
@@ -13,6 +14,8 @@ import {
 } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
+import { cn } from "@/lib/utils";
+import { User } from "lucide-react";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
@@ -178,37 +181,65 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4 mt-4">
-            <div className="space-y-4">
+            <div className="space-y-6">
               {messages.map((message, i) => (
                 <div
                   key={i}
-                  className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
+                  className={cn(
+                    "flex items-start gap-3",
+                    message.role === "assistant" ? "flex-row" : "flex-row-reverse"
+                  )}
                 >
+                  {message.role === "assistant" ? (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={imageSrc} />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Avatar className="h-8 w-8 bg-primary">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div
-                    className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === "assistant"
-                        ? "bg-gray-100 text-black"
-                        : "bg-black text-white"
-                      }`}
+                    className={cn(
+                      "rounded-lg px-4 py-2 max-w-[80%] relative",
+                      message.role === "assistant" 
+                        ? "bg-gray-100 text-black" 
+                        : "bg-primary text-primary-foreground",
+                      // Add a tail to the message bubble
+                      message.role === "assistant"
+                        ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
+                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
+                    )}
                   >
-                    {message.content}
+                    <div className="whitespace-pre-wrap">{message.content}</div>
                   </div>
                 </div>
               ))}
               {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%]">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={imageSrc} />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
                     </div>
                   </div>
                 </div>
               )}
-
               {formDefinition && !loading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] w-full">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={imageSrc} />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
                     <h3 className="font-medium mb-2">Flow Form</h3>
                     <MissingFieldsForm
                       flowDefinition={formDefinition}

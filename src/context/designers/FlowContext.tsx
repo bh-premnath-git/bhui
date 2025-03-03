@@ -392,7 +392,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       return updatedFormData;
     });
     
-    console.log("Updated dependencies based on edges");
   }, [selectedFlowId, edges, setNodeFormData]);
   
   // Call updateNodeDependencies whenever edges change

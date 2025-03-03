@@ -22,7 +22,6 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import 'reactflow/dist/style.css';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
 
-
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.8 };

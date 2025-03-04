@@ -55,15 +55,11 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
       return;
     }
 
-    if (processedQuestions.has(currentQuestion)) {
-      console.log("Skipping already processed question:", currentQuestion);
-      return;
-    }
-
     console.log("Processing visualization for:", currentQuestion);
 
-    setProcessedQuestions(prev => new Set(prev).add(currentQuestion));
-
+    // Don't check processed questions set anymore - allow reprocessing 
+    // even if we've seen this question before
+    
     const newVisualization = createIsolatedVisualization(
       currentQuestion,
       dashboardData,
@@ -72,7 +68,7 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
     setVisualHistory(prev => [...prev, newVisualization]);
 
-  }, [dashboardData, currentQuestion]);
+  }, [dashboardData, currentQuestion, chartStyles]);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -84,7 +80,15 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     const handleProcessingQuestion = (event: CustomEvent) => {
       const { question } = event.detail;
       console.log("Processing question event:", question);
+      
+      // Store current visual history in case we need to revert
       window.sessionStorage.setItem('xplorer:visualHistory', JSON.stringify(visualHistory));
+      
+      // If it's already in processed questions but we're explicitly processing it again,
+      // we should allow it (happens when loading from history)
+      if (processedQuestions.has(question)) {
+        console.log("Re-processing previously processed question:", question);
+      }
     };
 
     const handleQuestionProcessed = (event: CustomEvent) => {
@@ -105,7 +109,7 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
       window.removeEventListener('xplorer:processing-question', handleProcessingQuestion as EventListener);
       window.removeEventListener('xplorer:question-processed', handleQuestionProcessed as EventListener);
     };
-  }, [visualHistory]);
+  }, [visualHistory, processedQuestions]);
 
   useEffect(() => {
     const handleNewChat = () => {
@@ -152,10 +156,10 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   };
 
   return (
-    <div className="flex h-screen flex-col w-full overflow-hidden">
+    <div className="flex flex-col w-full overflow-hidden">
       {/* Main content - the ONLY scrolling container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className={`flex h-full ${showSidebar ? 'pr-96' : ''}`}>
+        <div className={`flex ${showSidebar ? 'pr-96' : ''}`}>
           {/* Main content panel */}
           <div className="flex-1 relative min-w-0">
             <div className="px-4 pb-4 pt-4 max-w-5xl mx-auto">

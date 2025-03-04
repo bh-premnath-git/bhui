@@ -239,16 +239,51 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   const handleSelectSession = (sessionId: string) => {
     const session = chatHistory.find(s => s.id === sessionId);
     if (session) {
-      // Load the chat history
-      setMessages(session.messages);
-      // Set the connection
+      console.log("Loading chat session:", session.id, "with last question:", session.lastQuestion);
+      
+      // First clear everything to reset state
+      resetAnalytics();
+      
+      // Set selected connection immediately
       setSelectedConnection(session.connection);
+      
       // Mark as existing chat
       setIsNewChat(false);
+      
       // Set selected session
       setSelectedChatSession(sessionId);
-      // Load the last question's data
-      fetchData(session.lastQuestion);
+      
+      // Clear processed questions to allow re-processing
+      window.dispatchEvent(new CustomEvent('xplorer:clear-processed-questions'));
+      
+      // Load the messages after a small delay to ensure proper sequencing
+      setTimeout(() => {
+        // Load the chat history
+        setMessages(session.messages);
+        
+        // Now trigger visualization with proper events
+        window.dispatchEvent(new CustomEvent('xplorer:processing-question', { 
+          detail: { question: session.lastQuestion, isFollowUp: false }
+        }));
+        
+        // Then fetch the data after another small delay
+        setTimeout(() => {
+          fetchData(session.lastQuestion, false)
+            .then(result => {
+              console.log("Successfully fetched data for session:", result);
+              // Notify that the question has been processed successfully
+              window.dispatchEvent(new CustomEvent('xplorer:question-processed', { 
+                detail: { question: session.lastQuestion, success: true }
+              }));
+            })
+            .catch(error => {
+              console.error("Error fetching data for session:", error);
+              window.dispatchEvent(new CustomEvent('xplorer:question-processed', { 
+                detail: { question: session.lastQuestion, success: false }
+              }));
+            });
+        }, 100);
+      }, 100);
     }
   };
 

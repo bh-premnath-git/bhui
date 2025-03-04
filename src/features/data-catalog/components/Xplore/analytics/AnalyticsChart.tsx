@@ -30,26 +30,28 @@ export default function AnalyticsChart({
   const { dashboardData } = useAnalytics();
   const [chartData, setChartData] = useState([]);
   
-  // Enhanced debugging
-  console.log("Chart component rendering with data:", data);
-  console.log("Chart styles:", chartStyles);
-  
-  // Improved effect to process and ensure data
+  // Enhanced effect to process and ensure data
   useEffect(() => {
-    // Check if we have real data
-    if (data && data.length > 0) {
-      console.log("Using provided data for chart:", data);
-      setChartData(data);
-    } else {
-      // Create fallback sample data if none provided
-      console.log("Creating sample data for chart");
-      const sampleData = [
-        { date: "Jan", "North America": 425000, "Europe": 352000, "Asia": 312000, "Latin America": 185000, "Africa": 97000 },
-        { date: "Feb", "North America": 430000, "Europe": 365000, "Asia": 325000, "Latin America": 190000, "Africa": 99000 },
-        { date: "Mar", "North America": 445000, "Europe": 372000, "Asia": 340000, "Latin America": 195000, "Africa": 102000 }
-      ];
-      setChartData(sampleData);
+    if (!data) {
+      console.warn("AnalyticsChart: No data provided");
+      return;
     }
+    
+    if (data.length === 0) {
+      console.warn("AnalyticsChart: Empty data array provided");
+      return;
+    }
+    
+    console.log("AnalyticsChart: Processing data for chart:", data.length, "rows");
+    console.log("AnalyticsChart: First data item sample:", data[0]);
+    
+    // Set chart data with timeout to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setChartData(data);
+      console.log("AnalyticsChart: Chart data set with", data.length, "rows");
+    }, 0);
+    
+    return () => clearTimeout(timer);
   }, [data]);
   
   // Use dataKeys for chart rendering - enhanced to handle edge cases

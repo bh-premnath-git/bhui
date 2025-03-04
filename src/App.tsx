@@ -15,7 +15,7 @@ import { routerConfig } from "@/config/router-config";
 import { ErrorBoundary } from "react-error-boundary";
 import { Button } from "./components/ui/button";
 import { LazyLoading } from "./components/shared/LazyLoading";
-import { KeycloakProvider } from "./context/KeycloakContext";
+import { KeycloakProvider, useKeycloakAuth } from "./context/KeycloakContext";
 import 'reactflow/dist/style.css';
 import { useAppDispatch } from "@/hooks/useRedux";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
@@ -83,15 +83,31 @@ const router = createBrowserRouter([
   }
 ]);
 
+// Modified to use authentication state
 function AppInitializer() {
   const dispatch = useAppDispatch();
+  const { isAuthenticated } = useKeycloakAuth();
 
   useEffect(() => {
-    dispatch(fetchGithubProviders());
-    dispatch(fetchDataSourceTypes());
-  }, [dispatch]);
+    // Only fetch data when authenticated
+    if (isAuthenticated) {
+      console.log('User authenticated, fetching provider data');
+      dispatch(fetchGithubProviders());
+      dispatch(fetchDataSourceTypes());
+    }
+  }, [dispatch, isAuthenticated]);
 
   return null;
+}
+
+function AuthenticatedApp() {
+  return (
+    <ThemeProvider>
+      <AppInitializer />
+      <RouterProvider router={router} />
+      <Toaster position="top-right" />
+    </ThemeProvider>
+  );
 }
 
 const App = () => (
@@ -108,11 +124,7 @@ const App = () => (
       >
         <KeycloakProvider>
           <TooltipProvider>
-            <ThemeProvider>
-              <AppInitializer />
-              <RouterProvider router={router} />
-              <Toaster position="top-right" />
-            </ThemeProvider>
+            <AuthenticatedApp />
           </TooltipProvider>
         </KeycloakProvider>
       </ErrorBoundary>

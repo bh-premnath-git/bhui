@@ -55,7 +55,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
             await handleCreateFlow({
                 flow_name: data.basicInformation.flowName,
                 notes: '',
-                recipient_email: { emails: data.monitorSettings.recipientEmails || [] },
+                recipient_email: data.monitorSettings.recipientEmails || [],
                 tags: {
                     tagList: data.additionalDetails.tags.map(tag => ({ value: tag }))
                 },

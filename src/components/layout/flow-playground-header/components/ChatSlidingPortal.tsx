@@ -30,7 +30,6 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     loading,
     formDefinition,
     formValues,
-    dependencies,
     error
   } = useAppSelector((state: RootState) => state.flow);
 

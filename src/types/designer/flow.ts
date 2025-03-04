@@ -61,6 +61,14 @@ export interface FlowMutationData {
       tagList: Record<string, string>[];
     };
     bh_project_id?: number;
+    alert_settings?: {
+      on_job_start?: boolean;
+      on_job_failure?: boolean;
+      on_job_success?: boolean;
+      long_running?: boolean;
+    };
+    flow_json?: Record<string, any>;
+    bh_env_id?: number;
 }
 
 export interface FlowAgentConversationResponse {

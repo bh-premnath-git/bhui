@@ -157,17 +157,13 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
   return (
     <div className="flex flex-col w-full overflow-hidden">
-      {/* Main content - the ONLY scrolling container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className={`flex ${showSidebar ? 'pr-96' : ''}`}>
-          {/* Main content panel */}
-          <div className="flex-1 relative min-w-0">
+          <div className="flex-1 h-[calc(100vh-12rem)] relative min-w-0">
             <div className="px-4 pb-4 pt-4 max-w-5xl mx-auto">
               {visualHistory.length === 0 ? (
                 <div className="space-y-8">
-                  {/* Welcome screen content */}
                   <div className="text-center pt-1 pb-2">
-                    <h1 className="text-3xl font-bold mb-2">Data Explorer</h1>
                     <p className="text-muted-foreground max-w-md mx-auto">
                       Ask questions about your data in natural language to generate visualizations and insights.
                     </p>

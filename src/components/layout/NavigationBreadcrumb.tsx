@@ -24,6 +24,13 @@ export function NavigationBreadcrumb() {
 
     if (currentPath === "/") return items;
 
+    // Special case for xplorer
+    if (currentPath === "/data-catalog/xplorer") {
+      items.push({ title: "Data Catalog", path: "/data-catalog" });
+      items.push({ title: "Xplorer", path: "/data-catalog/xplorer" });
+      return items;
+    }
+
     const pathSegments = currentPath.split("/").filter(Boolean);
     let currentPathBuild = "";
 

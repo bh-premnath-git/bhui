@@ -5,7 +5,6 @@ import { useLocation } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import { BuildPlaygroundHeader } from "./BuildPlaygroundHeader";
 import { FlowPlaygroundHeader } from "./FlowPlaygroundHeader";
-import { FlowProvider } from "@/context/designers/FlowContext";
 
 export function Header() {
   const { isExpanded } = useSidebar();

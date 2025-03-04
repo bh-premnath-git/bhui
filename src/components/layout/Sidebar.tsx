@@ -27,6 +27,7 @@ export function Sidebar() {
     logout();
   };
 
+  
   return (
     <div
       className={cn(

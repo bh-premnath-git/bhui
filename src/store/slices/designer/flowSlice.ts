@@ -21,6 +21,7 @@ interface FlowState {
     flowAgentConversation: FlowAgentConversationResponse | null;
     formDefinition: Record<string, string[]> | null;
     formValues: Record<string, Record<string, string>>;
+    dependencies: Record<string, string[]>; // Task dependencies tracking
 }
 
 const initialState: FlowState = {
@@ -39,6 +40,7 @@ const initialState: FlowState = {
     flowAgentConversation: null,
     formDefinition: null,
     formValues: {},
+    dependencies: {}, // Initialize empty dependencies
 };
 
 export const fetchProjects = createAsyncThunk(
@@ -259,6 +261,9 @@ const flowSlice = createSlice({
             state.formDefinition = null;
             state.formValues = {};
         },
+        setTaskDependencies: (state, action: PayloadAction<Record<string, string[]>>) => {
+            state.dependencies = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -476,6 +481,7 @@ export const {
     setFormDefinition,
     setFormValues,
     updateFormValues,
-    clearFormStates
+    clearFormStates,
+    setTaskDependencies
 } = flowSlice.actions;
 export default flowSlice.reducer;

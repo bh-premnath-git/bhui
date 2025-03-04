@@ -4,22 +4,26 @@ import schema from '@/pages/designers/flow-playground/data/flow_schema.json';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { updateFormValues } from '@/store/slices/designer/flowSlice';
 import { MissingFieldsFormProps, FormState, OperatorFieldPair, FieldTypeInfo } from './types';
-import { getOperatorSchema, validateField } from './utils';
+import { getOperatorSchema, validateField, parseFieldValue } from './utils';
 import { OperatorCard } from './OperatorCard';
 import { removeUndefined } from '@/lib/object';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
   flowDefinition,
   onSubmit,
   initialValues = {}
 }) => {
-  const selectedEnvironment = useAppSelector(state => state.flow.selectedEnvironment);
   const dispatch = useAppDispatch();
   const storeFormValues = useAppSelector(state => state.flow.formValues);
+  const dependencies = useAppSelector(state => state.flow.dependencies || {});
   const [formState, setFormState] = useState<FormState>({
     values: {},
     errors: {}
   });
+  const [dependencyWarnings, setDependencyWarnings] = useState<Record<string, string[]>>({});
+
   const operatorFieldPairs = useMemo(() => {
     const pairs: OperatorFieldPair[] = [];
     Object.entries(flowDefinition).forEach(([operator, fields]) => {
@@ -69,7 +73,7 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       }
     });
 
-    return mapping;
+    return removeUndefined(mapping);
   }, [operatorFieldPairs]);
 
   const operatorColors = useMemo(() => {
@@ -87,6 +91,47 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
 
     return colors;
   }, [operatorFieldPairs]);
+
+  // Check field dependencies when form values change
+  useEffect(() => {
+    // This function verifies if field values have dependencies on other fields
+    const checkDependencies = () => {
+      const warnings: Record<string, string[]> = {};
+      
+      // Skip if no dependencies are defined
+      if (!dependencies || Object.keys(dependencies).length === 0) {
+        return warnings;
+      }
+
+      // Iterate through each operator's fields
+      Object.entries(formState.values).forEach(([operator, fields]) => {
+        // Check if this operator has dependencies
+        Object.entries(fields).forEach(([field, value]) => {
+          const fieldKey = `${operator}.${field}`;
+          
+          // Check if this field is referenced in dependencies
+          Object.entries(dependencies).forEach(([taskId, deps]) => {
+            if (deps.includes(fieldKey)) {
+              // This field is depended on by another task/field
+              // Check if the value is valid for a dependency
+              const parsedValue = parseFieldValue(value);
+              if (!parsedValue || (typeof parsedValue === 'string' && !parsedValue.trim())) {
+                // Field has empty/invalid value but is depended on
+                if (!warnings[operator]) {
+                  warnings[operator] = [];
+                }
+                warnings[operator].push(`Field "${field}" is required by dependencies`);
+              }
+            }
+          });
+        });
+      });
+      
+      return warnings;
+    };
+    
+    setDependencyWarnings(checkDependencies());
+  }, [formState.values, dependencies]);
 
   useEffect(() => {
     const initialFormValues: Record<string, Record<string, string>> = {};
@@ -160,13 +205,37 @@ export const MissingFieldsForm: React.FC<MissingFieldsFormProps> = ({
       errors: newErrors
     }));
 
-    if (!hasErrors) {
-      onSubmit(formState.values);
+    // Don't submit if there are validation errors
+    if (hasErrors) {
+      return;
     }
+
+    // Check if we have dependency warnings and handle them
+    const hasWarnings = Object.values(dependencyWarnings).some(warnings => warnings.length > 0);
+    // Even with warnings, we'll submit - but could add a confirmation here if needed
+
+    onSubmit(formState.values);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Display dependency warnings if any */}
+      {Object.entries(dependencyWarnings).map(([operator, warnings]) => 
+        warnings.length > 0 ? (
+          <Alert key={operator} variant="default" className="bg-amber-50 border-amber-200">
+            <InfoIcon className="h-4 w-4 text-amber-400" />
+            <AlertTitle>Dependency Warning: {operator}</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc pl-5 text-sm">
+                {warnings.map((warning, idx) => (
+                  <li key={idx}>{warning}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : null
+      )}
+
       {operatorFieldPairs.map(({ operator, fields }) => (
         <OperatorCard
           key={operator}

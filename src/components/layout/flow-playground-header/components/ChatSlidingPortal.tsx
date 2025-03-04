@@ -11,7 +11,8 @@ import {
   clearFlowAgentConversation,
   setFormDefinition,
   setFormValues,
-  clearFormStates
+  clearFormStates,
+  setTaskDependencies
 } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
@@ -28,7 +29,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     flowAgentConversation,
     loading,
     formDefinition,
-    formValues
+    formValues,
+    dependencies
   } = useAppSelector((state: RootState) => state.flow);
 
   useEffect(() => {
@@ -47,17 +49,25 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       if (parsedJson && parsedJson.tasks && Array.isArray(parsedJson.tasks)) {
         const formDef: Record<string, string[]> = {};
         const formValues: Record<string, Record<string, string>> = {};
+        const dependencies: Record<string, string[]> = {};
 
         parsedJson.tasks.forEach((task: any) => {
           if (task.type && typeof task.type === 'string') {
             const fields: string[] = [];
             const values: Record<string, string> = {};
+            
+            if (task.depends_on && Array.isArray(task.depends_on)) {
+              dependencies[task.task_id] = task.depends_on;
+            }
+            
             Object.keys(task).forEach(key => {
               if (!['type', 'module_name', 'task_id', 'depends_on'].includes(key)) {
                 fields.push(key);
                 if (task[key] !== undefined) {
                   if (Array.isArray(task[key])) {
-                    values[key] = task[key].join(', ');
+                    values[key] = JSON.stringify(task[key]);
+                  } else if (typeof task[key] === 'object') {
+                    values[key] = JSON.stringify(task[key]);
                   } else {
                     values[key] = String(task[key]);
                   }
@@ -74,14 +84,15 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
 
         return {
           formDef: Object.keys(formDef).length > 0 ? formDef : null,
-          formValues: Object.keys(formValues).length > 0 ? formValues : {}
+          formValues: Object.keys(formValues).length > 0 ? formValues : {},
+          dependencies
         };
       }
     } catch (error) {
       console.error('Error parsing JSON response:', error);
     }
 
-    return { formDef: null, formValues: {} };
+    return { formDef: null, formValues: {}, dependencies: {} };
   };
 
   useEffect(() => {
@@ -109,11 +120,18 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       else if (flowAgentConversation.status === 'success') {
         shouldUpdateMessage = false;
         if (typeof flowAgentConversation.flow_definition === 'string') {
-          const { formDef, formValues: extractedValues } = extractFromJson(flowAgentConversation.flow_definition);
+          const { formDef, formValues: extractedValues, dependencies } = extractFromJson(flowAgentConversation.flow_definition);
           if (formDef) {
             dispatch(setFormDefinition(formDef));
-            dispatch(setFormValues(extractedValues))
-            setAiflowStrructre(flowAgentConversation.flow_definition)
+            dispatch(setFormValues(extractedValues));
+            
+            // Store dependencies in Redux store if needed
+            if (dependencies && Object.keys(dependencies).length > 0) {
+              dispatch(setTaskDependencies(dependencies));
+              console.log('Task dependencies:', dependencies);
+            }
+            
+            setAiflowStrructre(flowAgentConversation.flow_definition);
           }
         }
       }
@@ -148,10 +166,26 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
 
     dispatch(setFormValues(values));
 
+    // Format form values for display, with special handling for JSON values
     const formattedValues = Object.entries(values)
       .map(([operator, fields]) => {
         const fieldEntries = Object.entries(fields)
-          .map(([field, value]) => `${field}: ${value}`)
+          .map(([field, value]) => {
+            // Try to parse any JSON string values
+            let displayValue = value;
+            if (value && typeof value === 'string' && 
+                (value.startsWith('[') || value.startsWith('{'))) {
+              try {
+                const parsed = JSON.parse(value);
+                displayValue = Array.isArray(parsed) 
+                  ? `[${parsed.map(item => typeof item === 'object' ? '...' : item).join(', ')}]`
+                  : '{...}';
+              } catch (e) {
+                // If parsing fails, use the original string
+              }
+            }
+            return `${field}: ${displayValue}`;
+          })
           .join(', ');
         return `${operator}: { ${fieldEntries} }`;
       })
@@ -163,7 +197,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     try {
       await dispatch(createFlowAgentConversationEntry({
         flow_id: selectedFlow.flow_id.toString(),
-        request: `Form submission:\n${formattedValues}`,
+        request: `Form submission:\n${JSON.stringify(values)}`,
         thread_id: selectedFlow.flow_id.toString()
       }));
     } catch (error) {

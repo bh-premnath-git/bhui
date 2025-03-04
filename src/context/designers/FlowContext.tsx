@@ -5,7 +5,8 @@ import {
   NodeChange,
   EdgeChange,
   applyNodeChanges,
-  applyEdgeChanges, ReactFlowInstance
+  applyEdgeChanges, ReactFlowInstance,
+  MarkerType
 } from 'reactflow';
 import {
   FlowContextType,
@@ -118,6 +119,22 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     prevNodeFn
   );
 
+  const clearFlow = useCallback(() => {
+    if (selectedFlowId) {
+      // Clear localStorage
+      LocalStorageService.removeItem(`flow-${selectedFlowId}`);
+      
+      // Clear application state
+      setNodes([]);
+      setEdges([]);
+      setNodeFormData([]);
+      setSelectedNode(null);
+      setIsSaved(true);
+      setIsDirty(false);
+      
+      console.log(`Flow ${selectedFlowId} cleared from localStorage and state`);
+    }
+  }, [selectedFlowId]);
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
@@ -423,8 +440,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
           const valData: any = parsedValue[1];
           if (!Array.isArray(valData.tasks)) return;
 
-          // Store node IDs for edge creation
-          const nodeIds: string[] = [];
           const edgesToAdd: Edge[] = [];
 
           valData.tasks.forEach((task: any, index: number) => {
@@ -435,9 +450,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               (op: any) => op.type === task.type
             );
 
-            // Create consistent node ID using task_id or index
             const nodeId = `task-${task.task_id ?? index}`;
-            nodeIds.push(nodeId);
 
             addNode({
               id: nodeId,
@@ -468,30 +481,44 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               ...task,
             });
 
-            // Connect current node to previous node
             if (index > 0) {
-              const sourceId = nodeIds[index - 1];
+              const sourceId = `task-${valData.tasks[index - 1].task_id ?? index - 1}`;
+              console.log("sourceId", sourceId);
               const targetId = nodeId;
-              
               edgesToAdd.push({
                 id: `e${sourceId}-${targetId}`,
                 source: sourceId,
                 target: targetId,
-                type: 'smoothstep',
+                type: 'custom',
+                style: { stroke: '#888' },
+                markerStart: {
+                  type: MarkerType.ArrowClosed,
+                  width: 34,
+                  height: 20,
+                  color: '#94a3b8',
+                  orient: 'auto-start',
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  width: 34,
+                  height: 20,
+                  color: '#94a3b8',
+                  orient: 'auto-start',
+                },
               });
             }
           });
 
-          // Add edges after all nodes are created
-          setTimeout(() => {
-            setEdges(edgesToAdd);
-          }, 100);
+          setEdges((prevEdges) => [...prevEdges, ...edgesToAdd]);
+          setTimeout(() => saveFlow(), 0);
         }
       } catch (err) {
-        console.error("Error creating flow structure:", err);
+        console.error("err", err);
+
+        return
       }
     },
-    [addNode, moduleTypes, updateNodeFormData, setEdges, setNodes]
+    [addNode, edges, moduleTypes, nodes, setEdges, updateNodeMeta, saveFlow]
   );
 
 
@@ -607,7 +634,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setConsequentTaskDetail,
     aiMissingData,
     setAiMissingData,
-    updateNodeDependencies
+    updateNodeDependencies,
+    clearFlow
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

@@ -122,6 +122,20 @@ export const FlowCanvas = () => {
               target: targetHandle.nodeId,
               type: 'custom',
               style: { stroke: '#888' },
+              markerStart: {
+                type: MarkerType.ArrowClosed,
+                width: 34,
+                height: 20,
+                color: '#94a3b8',
+                orient: 'auto-start',
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 34,
+                height: 20,
+                color: '#94a3b8',
+                orient: 'auto-start',
+              },
             }];
           }
         }

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { FieldGroupProps } from './types';
 import { useAppSelector } from '@/hooks/useRedux';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { parseFieldValue } from './utils';
 
 export const FieldGroup: React.FC<FieldGroupProps> = ({ 
   operator,
@@ -19,10 +22,16 @@ export const FieldGroup: React.FC<FieldGroupProps> = ({
 
   const renderField = (field: string) => {
     const fieldInfo = fieldTypeMapping[operator]?.[field];
-    const value = formValues[operator]?.[field] || '';
+    const rawValue = formValues[operator]?.[field] || '';
     const hasError = formErrors[operator]?.[field] || false;
     const isRequired = fieldInfo?.required;
     const uiProperties = fieldInfo?.uiProperties;
+    const fieldType = fieldInfo?.type || 'string';
+
+    // Parse value if it's a JSON string
+    const parsedValue = parseFieldValue(rawValue);
+    const isJsonValue = typeof parsedValue !== 'string' && 
+                        (Array.isArray(parsedValue) || typeof parsedValue === 'object');
 
     // Get dynamic options if endpoint is provided
     const { options = [], isLoading } = useDropdownOptions(
@@ -33,11 +42,56 @@ export const FieldGroup: React.FC<FieldGroupProps> = ({
     // Determine final options: either from endpoint or static enum values
     const fieldOptions = options.length > 0 ? options : (uiProperties?.selectOptions || []);
 
+    const renderArrayInput = () => {
+      const arrayValue = Array.isArray(parsedValue) ? parsedValue : [];
+      
+      return (
+        <div className="space-y-2">
+          <Textarea
+            value={rawValue}
+            onChange={(e) => onChange(operator, field, e.target.value)}
+            className={`${hasError ? 'border-red-500' : ''} font-mono text-xs`}
+            placeholder="Enter JSON array"
+          />
+          {Array.isArray(parsedValue) && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {parsedValue.map((item, index) => (
+                <Badge key={index} variant="outline">
+                  {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const renderObjectInput = () => {
+      return (
+        <Textarea
+          value={rawValue}
+          onChange={(e) => onChange(operator, field, e.target.value)}
+          className={`${hasError ? 'border-red-500' : ''} font-mono text-xs`}
+          placeholder="Enter JSON object"
+        />
+      );
+    };
+
     const renderInput = () => {
+      // Check if the field contains JSON data (array or object)
+      if (isJsonValue) {
+        if (Array.isArray(parsedValue)) {
+          return renderArrayInput();
+        } else {
+          return renderObjectInput();
+        }
+      }
+
+      // Handle select fields with options
       if (fieldOptions.length > 0) {
         return (
           <Select
-            value={value}
+            value={rawValue}
             onValueChange={(newValue) => onChange(operator, field, newValue)}
             disabled={isLoading}
           >
@@ -55,10 +109,22 @@ export const FieldGroup: React.FC<FieldGroupProps> = ({
         );
       }
 
+      // For multiline text or large text fields
+      if (fieldType.includes('text') || (uiProperties?.uiType === 'textarea')) {
+        return (
+          <Textarea
+            value={rawValue}
+            onChange={(e) => onChange(operator, field, e.target.value)}
+            className={hasError ? 'border-red-500' : ''}
+          />
+        );
+      }
+
+      // Default to simple input
       return (
         <Input
           type="text"
-          value={value}
+          value={rawValue}
           onChange={(e) => onChange(operator, field, e.target.value)}
           className={hasError ? 'border-red-500' : ''}
         />

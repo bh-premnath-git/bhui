@@ -1,3 +1,5 @@
+// Import polyfill first to ensure it's loaded before any Keycloak operations
+import './services/crypto-polyfill';
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'

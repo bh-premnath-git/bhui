@@ -60,7 +60,8 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
         const authenticated = await keycloak.init({
           onLoad: "login-required",
           checkLoginIframe: true,
-          pkceMethod: "S256",
+          // Try without PKCE first
+          // pkceMethod: "S256",
         });
 
         setIsAuthenticated(authenticated);

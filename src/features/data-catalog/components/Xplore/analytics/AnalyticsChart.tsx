@@ -222,13 +222,20 @@ export default function AnalyticsChart({
         case 'scatter':
           // Ensure we have at least 2 data series for scatter plot
           if (dataKeys.length >= 2) {
+            // Transform the data to work with ScatterChart
+            const scatterData = formattedData.map(item => ({
+              x: item[dataKeys[0]],
+              y: item[dataKeys[1]]
+            }));
+            
             return (
               <ScatterChart 
-                data={formattedData}
-                xAxisDataKey={xAxisDataKey}
-                yAxisDataKey={dataKeys[0]}
-                groups={dataKeys.slice(1)}
-                colors={chartStyles.colors || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']}
+                data={scatterData}
+                xKey={dataKeys[0]}
+                yKey={dataKeys[1]}
+                name={`${dataKeys[0]} vs ${dataKeys[1]}`}
+                width="100%"
+                height={300}
               />
             );
           } else {

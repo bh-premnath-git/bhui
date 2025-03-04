@@ -30,7 +30,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     loading,
     formDefinition,
     formValues,
-    dependencies
+    dependencies,
+    error
   } = useAppSelector((state: RootState) => state.flow);
 
   useEffect(() => {
@@ -40,6 +41,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
       dispatch(clearFormStates());
     }
   }, [isOpen, clearMessages, dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      console.log('Flow error detected:', error);
+      // Update the last assistant message to show the error
+      updateLastAssistantMessage(`Error: ${error}. Please try again or modify your request.`);
+    }
+  }, [error, updateLastAssistantMessage]);
 
   const extractFromJson = (jsonString: string) => {
     try {
@@ -149,7 +158,6 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     if (!input.trim() || !selectedFlow?.flow_id) return;
 
     addUserMessage(input);
-
     addAssistantMessage("Thinking...");
 
     await dispatch(createFlowAgentConversationEntry({
@@ -194,15 +202,11 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     addUserMessage(`Submitted form values:\n${formattedValues}`);
     addAssistantMessage("Processing your input...");
 
-    try {
-      await dispatch(createFlowAgentConversationEntry({
-        flow_id: selectedFlow.flow_id.toString(),
-        request: `Form submission:\n${JSON.stringify(values)}`,
-        thread_id: selectedFlow.flow_id.toString()
-      }));
-    } catch (error) {
-      console.error('Error submitting form:', error);
-    }
+    await dispatch(createFlowAgentConversationEntry({
+      flow_id: selectedFlow.flow_id.toString(),
+      request: `Form submission:\n${JSON.stringify(values)}`,
+      thread_id: selectedFlow.flow_id.toString()
+    }));
   };
 
   return (

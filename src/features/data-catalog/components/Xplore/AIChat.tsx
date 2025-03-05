@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { PanelLayout } from "./shared/PanelLayout";
@@ -31,30 +31,53 @@ import {
 import type { ChatSession } from "@/types/dataops/data-ops-hub.d";
 import { useConnections } from "@/features/admin/connection/hooks/useConnection";
 import { useXplore } from "@/features/data-catalog/hooks/useXplore";
+import { LazyLoading } from "@/components/shared/LazyLoading";
+import { toast } from "sonner";
 
 interface AIChatProps {
   compact?: boolean;
   showHistory?: boolean;
 }
 
+interface Message {
+  role: 'assistant' | 'user';
+  content: string;
+}
 
 export default function AIChat({ compact = false, showHistory = false }: AIChatProps) {
   const { connections, isLoading: connectionsLoading } = useConnections();
-  const { createConversation } = useXplore();
-  const [input, setInput] = useState<string>("")
+  const { createConversation, streamConversation } = useXplore();
+  const [input, setInput] = useState<string>("");
   const [selectedConnection, setSelectedConnection] = useState<number | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
   
   // Get the selected connection object
   const currentConnection = selectedConnection 
     ? connections?.find(conn => conn.id === Number(selectedConnection)) 
     : connections?.[0];
 
+  // Select the first connection when connections are loaded
+  useEffect(() => {
+    if (!connectionsLoading && connections && connections.length > 0 && !selectedConnection) {
+      setSelectedConnection(Number(connections[0].id));
+      console.log("Selected first connection:", connections[0].id);
+    }
+  }, [connections, connectionsLoading, selectedConnection]);
+
   // Initialize a new chat when the component mounts
   useEffect(() => {
     startNewChat();
+    
+    // Cleanup any active streams when component unmounts
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
   }, []);
 
   // Start a new chat conversation and get a thread_id
@@ -67,38 +90,139 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
       console.log("New chat started with thread_id:", response.data.thread_id);
     } catch (error) {
       console.error("Failed to start new chat:", error);
+      toast.error("Failed to start new chat");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !threadId) return;
+    if (!input.trim() || !threadId) {
+      return;
+    }
+    
+    if (!selectedConnection) {
+      toast.error("Please select a connection first");
+      return;
+    }
     
     try {
-      setIsLoading(true);
       const userMessage = input;
       
       // Add user message to UI immediately
-      setMessages(prev => [...prev, `User: ${userMessage}`]);
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       
       // Clear input
       setInput("");
       
-      // TODO: Send the message to the conversation API with the thread_id
-      // This would be implementation once you have the sendMessage function
-      // const response = await sendMessage(threadId, userMessage);
-      // setMessages(prev => [...prev, `AI: ${response.data.message}`]);
+      // Start streaming indicator
+      setIsStreaming(true);
+      console.log("Starting stream with:", {
+        connectionId: selectedConnection,
+        message: userMessage,
+        threadId
+      });
+      
+      // Store assistant's message content as it streams in
+      let assistantMessage = "";
+      
+      // Add an initial assistant message placeholder
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      
+      // Start the stream
+      cleanupRef.current = streamConversation(
+        selectedConnection,
+        userMessage,
+        threadId,
+        (chunk) => {
+          console.log("Received chunk:", chunk);
+          
+          try {
+            // Try to parse the JSON chunk
+            const parsedChunk = JSON.parse(chunk);
+            const content = parsedChunk.content || chunk;
+            console.log("Parsed content:", content);
+            
+            // Append the new content to the assistant's message
+            assistantMessage += content;
+            
+            // Update the messages array with the latest content
+            setMessages(prev => {
+              const newMessages = [...prev];
+              // Get the last message (should be the assistant's)
+              const lastIndex = newMessages.length - 1;
+              
+              if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                // Update existing assistant message
+                newMessages[lastIndex] = {
+                  ...newMessages[lastIndex],
+                  content: assistantMessage
+                };
+              }
+              
+              return newMessages;
+            });
+          } catch (e) {
+            console.error("Error parsing chunk:", e);
+            // If parsing fails, just append the raw chunk
+            assistantMessage += chunk;
+            
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastIndex = newMessages.length - 1;
+              
+              if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                newMessages[lastIndex] = {
+                  ...newMessages[lastIndex],
+                  content: assistantMessage
+                };
+              }
+              
+              return newMessages;
+            });
+          }
+        },
+        // On completion
+        () => {
+          console.log("Stream completed");
+          setIsStreaming(false);
+          cleanupRef.current = null;
+        },
+        // On error
+        (error) => {
+          console.error("Stream error:", error);
+          setIsStreaming(false);
+          cleanupRef.current = null;
+          
+          // Update the assistant message to show the error
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastIndex = newMessages.length - 1;
+            
+            if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: "Sorry, I encountered an error while processing your request."
+              };
+            }
+            
+            return newMessages;
+          });
+          
+          toast.error("Error receiving message from AI");
+        }
+      );
     } catch (error) {
       console.error("Failed to send message:", error);
-    } finally {
-      setIsLoading(false);
+      setIsStreaming(false);
+      toast.error("Failed to send message");
     }
-  }
+  };
 
   const handleSelectConnection = (connectionId: number) => {
     setSelectedConnection(connectionId);
-  }
+    console.log("Selected connection:", connectionId);
+  };
 
   if (compact) {
     return (
@@ -165,7 +289,7 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             onChange={setInput}
             onSend={handleSend}
             placeholder="Ask a question about your data..."
-            disabled={isLoading || !threadId}
+            disabled={isLoading || isStreaming || !threadId}
           />
         </div>
       </div>
@@ -175,40 +299,86 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   if (!showHistory) {
     return (
       <PanelLayout>
-        <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 p-2 bg-muted rounded-md">
-          <Database className="h-4 w-4" />
-          <span>Connected to: {
-            connectionsLoading 
-              ? "Loading..." 
-              : currentConnection?.connection_config_name || "No connection selected"
-          }</span>
+        <div className="text-sm text-muted-foreground mb-4 flex items-center justify-between p-2 bg-muted rounded-md">
+          <div className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            <span>Connected to: {
+              connectionsLoading 
+                ? "Loading..." 
+                : currentConnection?.connection_config_name || "No connection selected"
+            }</span>
+          </div>
+          {selectedConnection === null && connections?.length > 0 && (
+            <Select onValueChange={(value) => handleSelectConnection(Number(value))}>
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue placeholder="Select connection" />
+              </SelectTrigger>
+              <SelectContent>
+                {connections.map((conn) => (
+                  <SelectItem key={conn.id} value={String(conn.id)}>
+                    {conn.connection_config_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
-            {messages.length > 0 ? (
-              messages.map((message, index) => (
-                <div 
-                  key={index} 
-                  className={`flex ${message.startsWith('User:') ? 'justify-end' : 'justify-start'}`}
-                >
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <LazyLoading />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.length > 0 ? (
+                messages.map((message, index) => (
                   <div 
-                    className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                      message.startsWith('User:') 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-foreground'
-                    }`}
+                    key={index} 
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {message}
+                    <div className="flex items-start gap-2 max-w-[80%]">
+                      {message.role === 'assistant' && (
+                        <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
+                          <Bot className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div 
+                        className={`rounded-lg px-4 py-2 ${
+                          message.role === 'user' 
+                            ? 'bg-primary text-primary-foreground rounded-br-none' 
+                            : 'bg-muted text-foreground rounded-bl-none'
+                        }`}
+                      >
+                        {message.content || (message.role === 'assistant' && isStreaming ? 'Thinking...' : '')}
+                      </div>
+                      {message.role === 'user' && (
+                        <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
+                          <User className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  {isLoading ? "Starting new chat..." : "No messages yet. Start by asking a question below."}
+                </div>
+              )}
+              {isStreaming && messages.length === 0 && (
+                <div className="flex justify-start">
+                  <div className="flex items-start gap-2 max-w-[80%]">
+                    <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                    <div className="rounded-lg px-4 py-2 bg-muted text-foreground rounded-bl-none animate-pulse">
+                      AI is thinking...
+                    </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                {isLoading ? "Starting new chat..." : "No messages yet. Start by asking a question below."}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
 
         <div className="flex gap-2 mt-auto">
@@ -217,7 +387,7 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             onChange={setInput}
             onSend={handleSend}
             placeholder="Ask a question about your data..."
-            disabled={isLoading || !threadId}
+            disabled={isLoading || isStreaming || !threadId}
           />
         </div>
       </PanelLayout>
@@ -234,7 +404,11 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
         disabled={isLoading}
       >
         <PlusCircle className="h-4 w-4" />
-        <span>{isLoading ? "Starting..." : "New Chat"}</span>
+        <span>{isLoading ? (
+          <div className="flex items-center gap-2">
+            <span>Starting...</span>
+          </div>
+        ) : "New Chat"}</span>
       </Button>
 
       <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 p-2 bg-muted rounded-md">
@@ -251,7 +425,11 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
       <div className="space-y-3">
         <div className="text-sm font-medium text-muted-foreground">Recent Chats</div>
         <div className="text-center text-muted-foreground py-2">
-          {connectionsLoading ? "Loading..." : "No recent chats"}
+          {connectionsLoading ? (
+            <div className="flex justify-center">
+              <LazyLoading />
+            </div>
+          ) : "No recent chats"}
         </div>
       </div>
     </div>

@@ -17,7 +17,6 @@ const KeycloakContext = createContext<KeycloakContextProps>({
 export function useKeycloakAuth() {
   return useContext(KeycloakContext);
 }
-
 export function KeycloakProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState<any>(null);

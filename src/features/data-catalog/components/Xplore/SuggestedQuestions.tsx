@@ -10,7 +10,8 @@ export default function SuggestedQuestions({ onSelectQuestion }: SuggestedQuesti
     "Compare product performance between 2022 and 2023",
     "Show me customer retention by cohort",
     "What are our top 5 performing products?",
-    "Analyze revenue trends by customer segment"
+    "Analyze revenue trends by customer segment",
+    "List top 10 expensive products"
   ];
   
   return (
@@ -31,4 +32,4 @@ export default function SuggestedQuestions({ onSelectQuestion }: SuggestedQuesti
       </div>
     </div>
   );
-} 
+}

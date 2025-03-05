@@ -140,11 +140,10 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   }, []);
 
   const handleSelectQuestion = (question: string) => {
-    const inputField = document.querySelector('input[placeholder*="Ask a question"]') as HTMLInputElement;
-    if (inputField) {
-      inputField.value = question;
-      inputField.focus();
-    }
+    const event = new CustomEvent('xplorer:set-question', { 
+      detail: { question } 
+    });
+    window.dispatchEvent(event);
   };
 
   const updateViewMode = (id: string, mode: "chart" | "table" | "sql") => {

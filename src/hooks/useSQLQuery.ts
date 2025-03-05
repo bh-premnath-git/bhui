@@ -1,4 +1,4 @@
-import create from 'zustand';
+import {create} from 'zustand';
 
 const DEFAULT_QUERY = `SELECT 
   DATE_TRUNC('day', order_date) as sale_date,

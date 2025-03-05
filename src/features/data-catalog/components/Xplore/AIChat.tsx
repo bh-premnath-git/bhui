@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { PanelLayout } from "./shared/PanelLayout";
@@ -54,11 +54,47 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const hasInitializedRef = useRef<boolean>(false);
+  const prevConnectionRef = useRef<number | null>(null); // Track the previous connection
+  const messagesEndRef = useRef<HTMLDivElement | null>(null); // Reference for auto-scrolling
+  const inputDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // For input debouncing
   
   // Get the selected connection object
   const currentConnection = selectedConnection 
     ? connections?.find(conn => conn.id === Number(selectedConnection)) 
     : connections?.[0];
+
+  // Define startNewChat function before using it in useEffect
+  const startNewChat = useCallback(async () => {
+    // Don't check for selectedConnection here, we might want to initialize the threadId anyway
+    if (isLoading) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Log the state before starting
+      console.log("Starting new chat with connection:", selectedConnection);
+      
+      const response = await createConversation();
+      
+      // Only update if we got a valid thread_id
+      if (response.data.thread_id) {
+        setThreadId(response.data.thread_id);
+        setMessages([]);
+        console.log("New chat started with thread_id:", response.data.thread_id);
+      } else {
+        console.error("No thread_id returned from createConversation");
+        toast.error("Failed to start new chat: No thread ID returned");
+      }
+    } catch (error) {
+      console.error("Failed to start new chat:", error);
+      toast.error("Failed to start new chat");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [createConversation, isLoading, selectedConnection]);
 
   // Select the first connection when connections are loaded
   useEffect(() => {
@@ -68,37 +104,91 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     }
   }, [connections, connectionsLoading, selectedConnection]);
 
-  // Initialize a new chat when the component mounts
+  // Initialize a new chat only once when the component mounts
   useEffect(() => {
-    startNewChat();
+    if (!hasInitializedRef.current && !isLoading && !threadId) {
+      console.log("Initializing first chat session");
+      startNewChat();
+      hasInitializedRef.current = true;
+    }
     
     // Cleanup any active streams when component unmounts
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
       }
+      
+      // Clear any debounce timeouts
+      if (inputDebounceTimeoutRef.current) {
+        clearTimeout(inputDebounceTimeoutRef.current);
+      }
+    };
+  }, [isLoading, threadId, startNewChat]);
+
+  // Start a new chat when the connection changes - but NOT when threadId changes
+  useEffect(() => {
+    // Only proceed if the connection has actually changed from a previous value
+    if (hasInitializedRef.current && selectedConnection && prevConnectionRef.current !== selectedConnection) {
+      console.log("Connection changed from", prevConnectionRef.current, "to", selectedConnection, "starting new chat");
+      startNewChat();
+    }
+    
+    // Update the previous connection reference
+    prevConnectionRef.current = selectedConnection;
+  }, [selectedConnection, startNewChat]); // Removed threadId from dependencies
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  // Listen for question selection events
+  useEffect(() => {
+    const handleSetQuestion = (event: CustomEvent) => {
+      const { question } = event.detail;
+      setInput(question); // This properly updates the React state
+      
+      // Focus the input field if needed
+      const inputField = document.querySelector('input[placeholder*="Ask a question"]') as HTMLInputElement;
+      if (inputField) {
+        inputField.focus();
+      }
+    };
+
+    window.addEventListener('xplorer:set-question', handleSetQuestion as EventListener);
+    
+    return () => {
+      window.removeEventListener('xplorer:set-question', handleSetQuestion as EventListener);
     };
   }, []);
 
-  // Start a new chat conversation and get a thread_id
-  const startNewChat = async () => {
-    try {
-      setIsLoading(true);
-      const response = await createConversation();
-      setThreadId(response.data.thread_id);
-      setMessages([]);
-      console.log("New chat started with thread_id:", response.data.thread_id);
-    } catch (error) {
-      console.error("Failed to start new chat:", error);
-      toast.error("Failed to start new chat");
-    } finally {
-      setIsLoading(false);
+  // Debounced input handler
+  const handleInputChange = (value: string) => {
+    // Clear any existing timeout
+    if (inputDebounceTimeoutRef.current) {
+      clearTimeout(inputDebounceTimeoutRef.current);
     }
+    
+    // Set a new timeout
+    inputDebounceTimeoutRef.current = setTimeout(() => {
+      setInput(value);
+    }, 300); // 300ms debounce delay
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !threadId) {
+    if (!input.trim()) {
       return;
+    }
+    
+    if (!threadId) {
+      console.log("No thread ID available, attempting to start a new chat");
+      await startNewChat();
+      if (!threadId) {
+        toast.error("Unable to start a chat. Please try again.");
+        return;
+      }
     }
     
     if (!selectedConnection) {
@@ -220,9 +310,17 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   };
 
   const handleSelectConnection = (connectionId: number) => {
+    if (connectionId === selectedConnection) {
+      return; // Prevent unnecessary re-selection
+    }
+    
     setSelectedConnection(connectionId);
     console.log("Selected connection:", connectionId);
   };
+
+  // Debug the disabled state
+  const isInputDisabled = isLoading || isStreaming;
+  console.log("Input disabled state:", { isLoading, isStreaming, threadId, isInputDisabled });
 
   if (compact) {
     return (
@@ -269,7 +367,11 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="flex items-center gap-2"
-              onSelect={startNewChat}
+              onSelect={() => {
+                console.log("Manual new chat request");
+                hasInitializedRef.current = false;
+                startNewChat();
+              }}
             >
               <PlusCircle className="h-4 w-4" />
               <span>New Chat</span>
@@ -289,7 +391,7 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             onChange={setInput}
             onSend={handleSend}
             placeholder="Ask a question about your data..."
-            disabled={isLoading || isStreaming || !threadId}
+            disabled={isInputDisabled}
           />
         </div>
       </div>
@@ -377,6 +479,8 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
                   </div>
                 </div>
               )}
+              {/* Auto-scroll anchor element */}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
@@ -384,10 +488,10 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
         <div className="flex gap-2 mt-auto">
           <AIChatInput
             input={input}
-            onChange={setInput}
+            onChange={handleInputChange} // Use debounced handler
             onSend={handleSend}
             placeholder="Ask a question about your data..."
-            disabled={isLoading || isStreaming || !threadId}
+            disabled={isInputDisabled}
           />
         </div>
       </PanelLayout>
@@ -400,7 +504,11 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
         variant="outline"
         size="sm"
         className="flex items-center gap-1 w-full justify-center"
-        onClick={startNewChat}
+        onClick={() => {
+          console.log("Manual new chat request");
+          hasInitializedRef.current = false;
+          startNewChat();
+        }}
         disabled={isLoading}
       >
         <PlusCircle className="h-4 w-4" />

@@ -21,10 +21,6 @@ interface ConversationResponse {
     }
 }
 
-interface StreamConversationResponse {
-    data: any; // Define a more specific type based on the actual response structure
-}
-
 type StreamCallback = (chunk: string) => void;
 
 const handleApiError = (error: unknown, options: ApiErrorOptions) => {
@@ -69,8 +65,6 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
             const { signal } = controller;
             const baseUrl = `${API_DOMAIN}:${AGENT_PORT}${API_PREFIX_URL}`;
             const url = `${baseUrl}/conversation/conversation/query/stream?connection_config_id=${conversationId}`;
-
-            // Start the stream
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -86,26 +80,18 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-
-                    // Get the reader from the response body stream
                     const reader = response.body?.getReader();
                     if (!reader) {
                         throw new Error('Failed to get stream reader');
                     }
-
-                    // Process the stream
                     const processStream = ({ done, value }: ReadableStreamReadResult<Uint8Array>) => {
-                        // If the stream is done, call the completion callback
                         if (done) {
                             if (onComplete) onComplete();
                             return;
                         }
 
-                        // Decode the chunk and split by newlines
                         const chunk = new TextDecoder().decode(value);
-
                         try {
-                            // Process each line in the chunk
                             const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
                             for (const line of lines) {
@@ -117,16 +103,12 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
                             }
                         } catch (e) {
                             console.error('Error parsing SSE chunk:', e);
-                            onChunk(chunk); // If parsing fails, just pass the raw chunk
+                            onChunk(chunk);
                         }
-
-                        // Continue reading
                         reader.read().then(processStream).catch(err => {
                             if (onError) onError(err);
                         });
                     };
-
-                    // Start reading the stream
                     reader.read().then(processStream).catch(err => {
                         if (onError) onError(err);
                     });

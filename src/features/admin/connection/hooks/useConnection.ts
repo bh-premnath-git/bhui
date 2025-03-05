@@ -4,6 +4,7 @@ import { debounce } from 'lodash';
 import { Connection, ConnectionType, ConnectionValue } from '@/types/admin/connection';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
+
 interface UseConnectionsOptions {
     shouldFetch?: boolean;
     connectionId?: string;
@@ -51,7 +52,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         },
         params: { limit: 1000 }
     }) as {
-        data: Connection;
+        data: Connection[];
         isLoading: boolean;
         isFetching: boolean;
         isError: boolean;
@@ -132,7 +133,6 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         refetch
     };
 }
-
 
 export function useConnectionSearch() {
     const { getOne: searchConnection } = useResource<Connection[]>(

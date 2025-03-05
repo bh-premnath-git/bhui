@@ -1,8 +1,6 @@
-import { GenericData, DashboardData, DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
+import {  DashboardData, DatabaseConnection, ChatSession } from "@/types/dataops/data-ops-hub.d";
 
-// Stub response for database connections
 export const fetchDatabaseConnections = async (): Promise<DatabaseConnection[]> => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300));
   
   return [
@@ -13,9 +11,7 @@ export const fetchDatabaseConnections = async (): Promise<DatabaseConnection[]> 
   ];
 };
 
-// Stub response for chat history
 export const fetchChatHistory = async (): Promise<ChatSession[]> => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
   return [
@@ -55,12 +51,9 @@ export const fetchChatHistory = async (): Promise<ChatSession[]> => {
   ];
 };
 
-// Stub response for saving a chat session
 export const saveChatSession = async (session: Partial<ChatSession>): Promise<ChatSession> => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 400));
   
-  // Generate a new ID if one isn't provided
   const id = session.id || `session-${Date.now()}`;
   
   return {
@@ -73,23 +66,21 @@ export const saveChatSession = async (session: Partial<ChatSession>): Promise<Ch
   };
 };
 
-// Enhance the ConversationContext interface to track more contextual information
 
 export interface ConversationContext {
   recentQuestions: string[];
   recentTables: string[];
   recentMetrics: string[];
   currentConnection: string;
-  currentTopic?: string; // Add topic tracking
-  relatedEntities?: string[]; // Track related business entities
+  currentTopic?: string;
+  relatedEntities?: string[];
   analysisHistory?: Array<{
     question: string;
     result: string;
     timestamp: number;
-  }>; // Track past analyses
+  }>;
 }
 
-// Initialize with enhanced default context
 let conversationContext: ConversationContext = {
   recentQuestions: [],
   recentTables: [],
@@ -100,7 +91,6 @@ let conversationContext: ConversationContext = {
   analysisHistory: []
 };
 
-// New function to determine conversation topic
 export const determineConversationTopic = (question: string): string => {
   if (question.toLowerCase().includes('sales')) return 'sales';
   if (question.toLowerCase().includes('customer')) return 'customers';
@@ -110,17 +100,14 @@ export const determineConversationTopic = (question: string): string => {
   return 'general';
 };
 
-// Enhanced update context function
 export const updateConversationContext = (
   partialContext: Partial<ConversationContext>,
   question?: string
 ): ConversationContext => {
-  // If a new question is provided, determine its topic
   if (question) {
     const topic = determineConversationTopic(question);
     partialContext.currentTopic = topic;
     
-    // Add to analysis history
     if (!partialContext.analysisHistory) {
       partialContext.analysisHistory = [];
     }
@@ -137,7 +124,6 @@ export const updateConversationContext = (
     ...partialContext
   };
   
-  // Limit recent questions to last 5
   if (conversationContext.recentQuestions.length > 5) {
     conversationContext.recentQuestions = conversationContext.recentQuestions.slice(-5);
   }
@@ -145,13 +131,10 @@ export const updateConversationContext = (
   return {...conversationContext};
 };
 
-// Enhanced function to fetch dashboard data with better conversation handling
 
 export const fetchDashboardData = async (question: string, useContext = true): Promise<DashboardData | null> => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1500));
   
-  // Update conversation context with this question
   if (useContext) {
     updateConversationContext({
       currentTopic: question,
@@ -159,7 +142,6 @@ export const fetchDashboardData = async (question: string, useContext = true): P
     });
   }
   
-  // Check if this is a follow-up question
   const isFollowUp = useContext && 
     (question.toLowerCase().includes("why") || 
      question.toLowerCase().includes("explain") || 
@@ -167,12 +149,9 @@ export const fetchDashboardData = async (question: string, useContext = true): P
      question.toLowerCase().includes("tell me more"));
   
   if (isFollowUp && conversationContext.recentQuestions.length > 1) {
-    // Get the previous question to provide context
     const prevQuestion = conversationContext.recentQuestions[conversationContext.recentQuestions.length - 2];
     
-    // For "why" questions, generate a detailed analysis
     if (question.toLowerCase().includes("why")) {
-      // Add more detailed explanation
       return {
         title: "Detailed Analysis:",
         description: "An in-depth look at the data you requested",
@@ -218,78 +197,16 @@ export const fetchDashboardData = async (question: string, useContext = true): P
       };
     }
     
-    // For comparison questions
     if (question.toLowerCase().includes("compare")) {
       return generateComparisonData(prevQuestion, question);
     }
   }
   
-  // Process standard questions
   return processStandardQuestion(question);
 };
 
-// Helper for replacing pronouns with contextual entities
-const replacePronouns = (question: string, entities: string[]): string => {
-  // Simple implementation - replace common pronouns with the most recent entity
-  const mostRecentEntity = entities[entities.length - 1];
-  return question
-    .replace(/\b(it|this|that)\b/gi, mostRecentEntity)
-    .replace(/\b(they|them|these|those)\b/gi, entities.join(' and '));
-};
-
-// Function to generate trend analysis based on topic
-const generateTrendAnalysis = (question: string, topic: string): DashboardData => {
-  // This would generate trend analysis based on the question and topic
-  // For now, we'll return a mock response
-  const brands = topic === 'sales' ? ["Q1", "Q2", "Q3", "Q4"] :
-                topic === 'products' ? ["Product A", "Product B", "Product C"] :
-                topic === 'geography' ? ["North", "South", "East", "West"] :
-                ["Category 1", "Category 2", "Category 3"];
-                
-  return {
-    title: `Trend Analysis: ${topic.charAt(0).toUpperCase() + topic.slice(1)}`,
-    description: `Analyzing trends in ${topic} over time`,
-    timeRange: "Last 12 Months",
-    brands,
-    recommendedChartType: "line",
-    metrics: brands.map((brand, index) => ({
-      brand,
-      value: 100000 + (index * 25000),
-      trend: `+${5 + index}%`,
-      status: "increase"
-    })),
-    salesData: generateTrendData(brands),
-    explanation: [
-      `This trend analysis shows how ${topic} have changed over the past year.`,
-      `We can observe consistent growth patterns across all ${topic} categories.`,
-      `The most significant growth was in the last quarter, likely due to seasonal factors.`
-    ],
-    sqlQuery: generateSQLQuery(question)
-  };
-};
-
-// Helper to generate trend data
-const generateTrendData = (categories: string[]): any[] => {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return months.map(month => {
-    const dataPoint: any = { date: month };
-    categories.forEach((category, index) => {
-      // Generate some random but increasing data
-      const baseValue = 100000 + (index * 20000);
-      const monthIndex = months.indexOf(month);
-      const growthFactor = 1 + (monthIndex * 0.02);
-      dataPoint[category] = Math.floor(baseValue * growthFactor);
-    });
-    return dataPoint;
-  });
-};
-
-// Function to process standard questions
 const processStandardQuestion = (question: string): DashboardData | null => {
-  // Here we would process standard questions without special context handling
-  // This is where your existing question handling logic would go
   
-  // Special handling for chat history questions
   if (question === "Show me sales by region") {
     return {
       title: "Sales by Geographic Region",
@@ -428,7 +345,6 @@ const processStandardQuestion = (question: string): DashboardData | null => {
     };
   }
 
-  // Question 1: Employee data with column chart
   if (question.toLowerCase().includes("question1") || question.toLowerCase().includes("employee")) {
     return {
       title: "Employee Performance by Department",
@@ -504,7 +420,6 @@ const processStandardQuestion = (question: string): DashboardData | null => {
     };
   }
   
-  // Question 2: Sales data with pie chart
   else if (question.toLowerCase().includes("question2") || question.toLowerCase().includes("sales")) {
     return {
       title: "Revenue Distribution by Product Category",
@@ -576,7 +491,6 @@ const processStandardQuestion = (question: string): DashboardData | null => {
     };
   }
   
-  // Question 3: Product data with area chart
   else if (question.toLowerCase().includes("question3") || question.toLowerCase().includes("product")) {
     return {
       title: "Product Usage Trends Over Time",
@@ -650,12 +564,10 @@ const processStandardQuestion = (question: string): DashboardData | null => {
     };
   }
   
-  // Question 4: No data available
   else if (question.toLowerCase().includes("question4")) {
     return null;
   }
   
-  // Default response (original sales data)
   else {
     return {
       title: "Daily Sales by Brand",
@@ -737,13 +649,10 @@ const processStandardQuestion = (question: string): DashboardData | null => {
   }
 };
 
-// Helper for generating comparison data
 const generateComparisonData = (
   prevQuestion: string, 
   currentQuestion: string
 ): DashboardData => {
-  // This would generate comparison data based on the previous and current questions
-  // For now, we'll return a mock response
   return {
     title: `Comparison Analysis: ${currentQuestion}`,
     description: `Comparing data based on your questions about "${prevQuestion}" and "${currentQuestion}"`,
@@ -790,48 +699,6 @@ const generateComparisonData = (
   };
 };
 
-// Helper for enhancing previous response with more details
-const enhancePreviousResponse = async (prevQuestion: string): Promise<DashboardData | null> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 400));
-  
-  return {
-    title: "Detailed Analysis:",
-    description: "An in-depth look at the data you requested",
-    timeRange: "Current Quarter",
-    brands: ["Category A", "Category B", "Category C"],
-    recommendedChartType: "bar",
-    metrics: [
-      {
-        brand: "Overall",
-        value: 285000,
-        trend: "+5.2%",
-        status: "increase"
-      }
-    ],
-    salesData: [
-      {
-        date: "Jan",
-        "Category A": 95000,
-        "Category B": 85000,
-        "Category C": 0
-      },
-      {
-        date: "Feb",
-        "Category A": 92000,
-        "Category B": 88000,
-        "Category C": 0
-      }
-    ],
-    explanation: [
-      "Based on your previous question about sales performance",
-      "Here's a more detailed breakdown showing the trend"
-    ],
-    sqlQuery: "SELECT * FROM sales_data WHERE date >= '2024-01-01'"
-  };
-};
-
-// Helper function to generate SQL based on the question
 const generateSQLQuery = (question: string): string => {
   if (question.toLowerCase().includes('sales by region')) {
     return `SELECT region, SUM(revenue) as total_revenue
@@ -851,24 +718,19 @@ GROUP BY 1, 2
 ORDER BY 1, 2;`;
   }
   
-  // Default SQL for other queries
   return `SELECT * 
 FROM sales 
 WHERE sale_date >= date_sub(CURRENT_DATE, INTERVAL 30 DAY)
 LIMIT 100;`;
 };
 
-// Add a function to intelligently recommend chart types
-
 export const recommendChartType = (
   data: any[],
   question: string,
   brands: string[]
 ): string => {
-  // Default to bar chart
   let recommendedType = 'bar';
   
-  // Check if this is time series data (has dates)
   const hasTimeSeries = data.some(d => 
     d.date || 
     Object.keys(d).some(k => 
@@ -879,10 +741,8 @@ export const recommendChartType = (
     )
   );
   
-  // Check how many series we have
   const seriesCount = brands.length;
   
-  // Check if question implies certain charts
   const questionLower = question.toLowerCase();
   
   if (questionLower.includes('distribution') || 
@@ -907,23 +767,16 @@ export const recommendChartType = (
     return 'scatter';
   }
   
-  // Check data characteristics
   if (hasTimeSeries) {
-    // For time series data with multiple series
     if (seriesCount > 3) {
-      // Stacked area charts are good for many series over time
       return 'area';
     } else {
-      // Line charts are good for few series over time
       return 'line';
     }
   } else {
-    // For non-time series data
     if (seriesCount <= 10) {
-      // Bar charts are good for comparisons with limited categories
       return 'bar';
     } else {
-      // Pie charts can handle many categories but become hard to read
       return 'treemap';
     }
   }
@@ -931,7 +784,6 @@ export const recommendChartType = (
   return recommendedType;
 };
 
-// Add this function to get conversation context
 export const getConversationContext = (): ConversationContext => {
   return {...conversationContext};
 };

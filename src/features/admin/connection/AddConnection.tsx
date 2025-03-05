@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { useConnectionType } from './hooks/useConnection';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { useState } from 'react';
 import { ConnectionForm } from './components/ConnectionForm';
 import { ConnectionType } from '@/types/admin/connection';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';

@@ -7,7 +7,7 @@ ensureCryptoPolyfill();
 
 // Check for secure context
 if (typeof window !== 'undefined' && window.isSecureContext === false) {
-  console.warn('Running in insecure context. Keycloak may not work properly with HTTP.');
+  console.warn('Running in insecure context. Keycloak requires secure context (HTTPS) for full functionality.');
 }
 
 const initOptions: KeycloakConfig = {
@@ -17,43 +17,6 @@ const initOptions: KeycloakConfig = {
 };
 
 // Create a singleton Keycloak instance
-let keycloak: any = null;
-
-try {
-  keycloak = new Keycloak(initOptions);
-} catch (error) {
-  console.error('Failed to initialize Keycloak:', error);
-  // Create a mock keycloak object for fallback
-  keycloak = {
-    init: () => Promise.resolve(false),
-    login: () => {
-      window.location.href = '/login-fallback';
-      return Promise.resolve();
-    },
-    logout: () => {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authenticated');
-      sessionStorage.removeItem('user');
-      window.location.href = '/login';
-      return Promise.resolve();
-    },
-    updateToken: () => Promise.resolve(false),
-    token: null,
-    idTokenParsed: null
-  };
-}
-
-// Add error handling
-const originalLogin = keycloak.login;
-keycloak.login = function(...args) {
-  try {
-    return originalLogin.apply(this, args);
-  } catch (error) {
-    console.error('Keycloak login error:', error);
-    // Handle gracefully - redirect to fallback login page
-    window.location.href = '/login-fallback';
-    return Promise.resolve();
-  }
-};
+const keycloak = new Keycloak(initOptions);
 
 export { keycloak };

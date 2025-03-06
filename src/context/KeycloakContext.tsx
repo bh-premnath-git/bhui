@@ -7,7 +7,6 @@ interface KeycloakContextProps {
   isAuthenticated: boolean;
   userData?: any;
   logout: () => void;
-  loginFallback: (userData: any) => void;
   isSecureContext: boolean;
 }
 
@@ -15,13 +14,13 @@ const KeycloakContext = createContext<KeycloakContextProps>({
   isAuthenticated: false,
   userData: null,
   logout: () => { },
-  loginFallback: () => { },
   isSecureContext: true
 });
 
 export function useKeycloakAuth() {
   return useContext(KeycloakContext);
 }
+
 export function KeycloakProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState<any>(null);
@@ -39,24 +38,10 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem("authenticated");
     sessionStorage.removeItem("user");
     
-    // Try keycloak logout if available
-    try {
-      keycloak.logout({
-        redirectUri: KEYCLOAK_REDIRECT_URI + "login",
-      });
-    } catch (error) {
-      console.error("Keycloak logout failed, using fallback:", error);
-      // Fallback to manual redirect
-      window.location.href = "/login";
-    }
-  }, []);
-  
-  // Add fallback login method
-  const loginFallback = useCallback((userData: any) => {
-    setIsAuthenticated(true);
-    setUserData(userData);
-    sessionStorage.setItem("authenticated", "true");
-    sessionStorage.setItem("user", JSON.stringify(userData));
+    // Try keycloak logout
+    keycloak.logout({
+      redirectUri: KEYCLOAK_REDIRECT_URI + "login",
+    });
   }, []);
 
   const startTokenRefresh = useCallback(() => {
@@ -89,23 +74,7 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
   }, [logout]);
 
   useEffect(() => {
-    // Check for fallback authentication first
-    const fallbackAuth = sessionStorage.getItem("authenticated");
-    if (fallbackAuth === "true") {
-      const storedUser = sessionStorage.getItem("user");
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          setUserData(userData);
-          setIsAuthenticated(true);
-          return; // Skip Keycloak init if using fallback auth
-        } catch (e) {
-          console.error("Failed to parse user data:", e);
-        }
-      }
-    }
-
-    // Proceed with Keycloak auth if no fallback
+    // Proceed with Keycloak auth
     try {
       keycloak
         .init({
@@ -128,29 +97,20 @@ export function KeycloakProvider({ children }: { children: React.ReactNode }) {
         })
         .catch((error) => {
           console.error("Keycloak initialization error:", error);
-          
-          // Redirect to fallback login if Keycloak fails
-          if (!isSecureContext) {
-            console.warn("Redirecting to fallback login due to insecure context");
-            window.location.href = "/login-fallback";
-          }
         });
     } catch (error) {
       console.error("Critical Keycloak error:", error);
-      // Redirect to fallback if Keycloak throws
-      window.location.href = "/login-fallback";
     }
-  }, [startTokenRefresh, isSecureContext]);
+  }, [startTokenRefresh]);
 
   const contextValue = useMemo(
     () => ({
       isAuthenticated,
       userData,
       logout,
-      loginFallback,
       isSecureContext
     }),
-    [isAuthenticated, userData, logout, loginFallback, isSecureContext]
+    [isAuthenticated, userData, logout, isSecureContext]
   );
 
   return (

@@ -29,7 +29,6 @@ const EditEnvironment = lazy(() => import('@/pages/admin/environment/Environment
 const Connection = lazy(() => import('@/pages/admin/connection/ConnectionList'));
 const AddConnection = lazy(() => import ('@/pages/admin/connection/ConnectionAdd'));
 const EditConnection = lazy(() => import('@/pages/admin/connection/COnnectionEdit'));
-import LoginFallback from '@/components/auth/LoginFallback';
 
 export const routerConfig: RouteObject[] = [
   {
@@ -141,11 +140,6 @@ export const routerConfig: RouteObject[] = [
   {
     path: ROUTES.ADMIN.CONNECTION.EDIT(':id'),
     element: <EditConnection />
-  },
-  // Add the fallback login route
-  {
-    path: "/login-fallback",
-    element: <LoginFallback />
   },
   {
     path: '*',

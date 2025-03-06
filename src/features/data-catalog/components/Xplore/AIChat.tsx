@@ -1,19 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChatMessages } from "@/hooks/useChatMessages";
-import { PanelLayout } from "./shared/PanelLayout";
 import { AIChatInput } from "./AIChatInput";
-import { Card } from "@/components/ui/card";
-import { useAnalytics } from "@/context/AnalyticsContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Database, ChevronDown, User, Bot } from "lucide-react";
+import { PlusCircle, Database, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,29 +10,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import {
-  fetchChatHistory,
-  getConversationContext,
-  updateConversationContext,
-  type ConversationContext
-} from "@/api/analytics-api";
-import type { ChatSession } from "@/types/dataops/data-ops-hub.d";
 import { useConnections } from "@/features/admin/connection/hooks/useConnection";
 import { useXplore } from "@/features/data-catalog/hooks/useXplore";
-import { LazyLoading } from "@/components/shared/LazyLoading";
 import { toast } from "sonner";
+import { Message } from "./ResponseDisplay";
 
 interface AIChatProps {
   compact?: boolean;
   showHistory?: boolean;
+  onStreamStart?: () => void;
+  onStreamData?: (message: Message) => void;
+  onStreamEnd?: () => void;
 }
 
-interface Message {
-  role: 'assistant' | 'user';
-  content: string;
-}
-
-export default function AIChat({ compact = false, showHistory = false }: AIChatProps) {
+export default function AIChat({
+  compact = false,
+  showHistory = false,
+  onStreamStart,
+  onStreamData,
+  onStreamEnd
+}: AIChatProps) {
   const { connections, isLoading: connectionsLoading } = useConnections();
   const { createConversation, streamConversation } = useXplore();
   const [input, setInput] = useState<string>("");
@@ -53,37 +38,33 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const hasInitializedRef = useRef<boolean>(false);
-  const prevConnectionRef = useRef<number | null>(null); // Track the previous connection
-  const messagesEndRef = useRef<HTMLDivElement | null>(null); // Reference for auto-scrolling
-  const inputDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // For input debouncing
-  
-  // Get the selected connection object
-  const currentConnection = selectedConnection 
-    ? connections?.find(conn => conn.id === Number(selectedConnection)) 
+  const prevConnectionRef = useRef<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const assistantMessageRef = useRef<string>("");
+
+  const currentConnection = selectedConnection
+    ? connections?.find(conn => conn.id === Number(selectedConnection))
     : connections?.[0];
 
-  // Define startNewChat function before using it in useEffect
   const startNewChat = useCallback(async () => {
-    // Don't check for selectedConnection here, we might want to initialize the threadId anyway
     if (isLoading) {
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
-      // Log the state before starting
       console.log("Starting new chat with connection:", selectedConnection);
-      
+
       const response = await createConversation();
-      
-      // Only update if we got a valid thread_id
       if (response.data.thread_id) {
         setThreadId(response.data.thread_id);
         setMessages([]);
         console.log("New chat started with thread_id:", response.data.thread_id);
+        window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
       } else {
         console.error("No thread_id returned from createConversation");
         toast.error("Failed to start new chat: No thread ID returned");
@@ -96,7 +77,6 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     }
   }, [createConversation, isLoading, selectedConnection]);
 
-  // Select the first connection when connections are loaded
   useEffect(() => {
     if (!connectionsLoading && connections && connections.length > 0 && !selectedConnection) {
       setSelectedConnection(Number(connections[0].id));
@@ -104,53 +84,73 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     }
   }, [connections, connectionsLoading, selectedConnection]);
 
-  // Initialize a new chat only once when the component mounts
   useEffect(() => {
     if (!hasInitializedRef.current && !isLoading && !threadId) {
       console.log("Initializing first chat session");
       startNewChat();
       hasInitializedRef.current = true;
     }
-    
-    // Cleanup any active streams when component unmounts
+
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
       }
-      
-      // Clear any debounce timeouts
+
       if (inputDebounceTimeoutRef.current) {
         clearTimeout(inputDebounceTimeoutRef.current);
       }
     };
   }, [isLoading, threadId, startNewChat]);
 
-  // Start a new chat when the connection changes - but NOT when threadId changes
   useEffect(() => {
-    // Only proceed if the connection has actually changed from a previous value
     if (hasInitializedRef.current && selectedConnection && prevConnectionRef.current !== selectedConnection) {
       console.log("Connection changed from", prevConnectionRef.current, "to", selectedConnection, "starting new chat");
       startNewChat();
     }
-    
-    // Update the previous connection reference
     prevConnectionRef.current = selectedConnection;
-  }, [selectedConnection, startNewChat]); // Removed threadId from dependencies
-  
-  // Auto-scroll to bottom when messages change
+  }, [selectedConnection, startNewChat]);
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Listen for question selection events
+  const handleStreamStart = useCallback(() => {
+    console.log("Stream started");
+    setIsStreaming(true);
+    if (onStreamStart) {
+      onStreamStart();
+    }
+  }, [onStreamStart]);
+
+  const handleStreamData = useCallback(
+    (content: string) => {
+      setIsStreaming(true);
+      assistantMessageRef.current = content;
+
+      // Notify parent of new data as it comes in
+      if (onStreamData) {
+        onStreamData({
+          role: "assistant",
+          content,
+        });
+      }
+    },
+    [onStreamData]
+  );
+
+  useEffect(() => {
+    if (messages.length > 0 && onStreamData && isStreaming) {
+      const lastMessage = messages[messages.length - 1];
+      onStreamData(lastMessage);
+    }
+  }, [isStreaming, onStreamData, messages]);
+
   useEffect(() => {
     const handleSetQuestion = (event: CustomEvent) => {
       const { question } = event.detail;
-      setInput(question); // This properly updates the React state
-      
-      // Focus the input field if needed
+      setInput(question);
       const inputField = document.querySelector('input[placeholder*="Ask a question"]') as HTMLInputElement;
       if (inputField) {
         inputField.focus();
@@ -158,30 +158,30 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
     };
 
     window.addEventListener('xplorer:set-question', handleSetQuestion as EventListener);
-    
+
     return () => {
       window.removeEventListener('xplorer:set-question', handleSetQuestion as EventListener);
     };
   }, []);
 
-  // Debounced input handler
   const handleInputChange = (value: string) => {
-    // Clear any existing timeout
     if (inputDebounceTimeoutRef.current) {
       clearTimeout(inputDebounceTimeoutRef.current);
     }
-    
-    // Set a new timeout
     inputDebounceTimeoutRef.current = setTimeout(() => {
       setInput(value);
-    }, 300); // 300ms debounce delay
+    }, 300);
   };
 
   const handleSend = async () => {
     if (!input.trim()) {
       return;
     }
-    
+
+    // Reset assistant message reference for new conversation
+    assistantMessageRef.current = "";
+
+    // Validate necessary connections
     if (!threadId) {
       console.log("No thread ID available, attempting to start a new chat");
       await startNewChat();
@@ -190,137 +190,132 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
         return;
       }
     }
-    
+
     if (!selectedConnection) {
       toast.error("Please select a connection first");
       return;
     }
-    
+
     try {
-      const userMessage = input;
-      
-      // Add user message to UI immediately
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      
+      setError(null);
+
+      // Add user message to the UI
+      const userMessage = input.trim();
+      const newMessage = { role: 'user' as const, content: userMessage };
+      setMessages(prev => [...prev, newMessage]);
+
       // Clear input
       setInput("");
-      
-      // Start streaming indicator
-      setIsStreaming(true);
+
+      // Signal stream start
+      handleStreamStart();
+
+      // Add assistant placeholder for better UX
+      const assistantPlaceholder = { role: 'assistant' as const, content: '' };
+      setMessages(prev => [...prev, assistantPlaceholder]);
+
       console.log("Starting stream with:", {
         connectionId: selectedConnection,
-        message: userMessage,
+        question: userMessage,
         threadId
       });
-      
-      // Store assistant's message content as it streams in
-      let assistantMessage = "";
-      
-      // Add an initial assistant message placeholder
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      
-      // Start the stream
+
+      // Handle the streaming conversation
       cleanupRef.current = streamConversation(
         selectedConnection,
         userMessage,
         threadId,
         (chunk) => {
-          console.log("Received chunk:", chunk);
-          
           try {
-            // Try to parse the JSON chunk
-            const parsedChunk = JSON.parse(chunk);
-            const content = parsedChunk.content || chunk;
-            console.log("Parsed content:", content);
-            
-            // Append the new content to the assistant's message
-            assistantMessage += content;
-            
-            // Update the messages array with the latest content
+            // Process the streaming chunk
+            let content = chunk;
+            try {
+              const parsedChunk = JSON.parse(chunk);
+              content = parsedChunk.content || chunk;
+            } catch (e) {
+              // If not valid JSON, use the raw chunk
+              content = chunk;
+            }
+
+            // Update the assistant message reference
+            assistantMessageRef.current += content;
+
+            // Update messages state
             setMessages(prev => {
               const newMessages = [...prev];
-              // Get the last message (should be the assistant's)
               const lastIndex = newMessages.length - 1;
-              
+
               if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-                // Update existing assistant message
                 newMessages[lastIndex] = {
                   ...newMessages[lastIndex],
-                  content: assistantMessage
+                  content: assistantMessageRef.current
                 };
               }
-              
+
               return newMessages;
             });
+
+            // Notify parent of stream data
+            handleStreamData(assistantMessageRef.current);
           } catch (e) {
-            console.error("Error parsing chunk:", e);
-            // If parsing fails, just append the raw chunk
-            assistantMessage += chunk;
-            
-            setMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              
-              if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: assistantMessage
-                };
-              }
-              
-              return newMessages;
-            });
+            console.error("Error processing stream chunk:", e);
           }
         },
-        // On completion
         () => {
           console.log("Stream completed");
           setIsStreaming(false);
           cleanupRef.current = null;
+          if (onStreamEnd) {
+            onStreamEnd();
+          }
         },
-        // On error
         (error) => {
           console.error("Stream error:", error);
+          setError(error.message || "An error occurred during streaming");
           setIsStreaming(false);
           cleanupRef.current = null;
-          
-          // Update the assistant message to show the error
+
+          const errorMessage = {
+            role: 'assistant' as const,
+            content: "Sorry, I encountered an error while processing your request."
+          };
+
           setMessages(prev => {
             const newMessages = [...prev];
             const lastIndex = newMessages.length - 1;
-            
+
             if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-              newMessages[lastIndex] = {
-                ...newMessages[lastIndex],
-                content: "Sorry, I encountered an error while processing your request."
-              };
+              newMessages[lastIndex] = errorMessage;
             }
-            
             return newMessages;
           });
-          
+
+          if (onStreamEnd) {
+            onStreamEnd();
+          }
+
           toast.error("Error receiving message from AI");
         }
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to send message:", error);
+      setError(error.message || "An error occurred");
       setIsStreaming(false);
+      if (onStreamEnd) {
+        onStreamEnd();
+      }
       toast.error("Failed to send message");
     }
   };
 
   const handleSelectConnection = (connectionId: number) => {
     if (connectionId === selectedConnection) {
-      return; // Prevent unnecessary re-selection
+      return;
     }
-    
     setSelectedConnection(connectionId);
-    console.log("Selected connection:", connectionId);
   };
 
-  // Debug the disabled state
   const isInputDisabled = isLoading || isStreaming;
-  console.log("Input disabled state:", { isLoading, isStreaming, threadId, isInputDisabled });
 
   if (compact) {
     return (
@@ -331,8 +326,8 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
               <div className="flex items-center gap-1 text-xs">
                 <Database className="h-3 w-3" />
                 <span className="truncate max-w-[120px]">
-                  {connectionsLoading 
-                    ? "Loading..." 
+                  {connectionsLoading
+                    ? "Loading..."
                     : currentConnection?.connection_config_name || "Select Connection"}
                 </span>
                 <ChevronDown className="h-3 w-3 ml-1" />
@@ -347,7 +342,7 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
               </DropdownMenuItem>
             ) : connections?.length ? (
               connections.map((connection) => (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   key={connection.id}
                   className="flex items-center gap-2"
                   onSelect={() => handleSelectConnection(Number(connection.id))}
@@ -363,12 +358,10 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             )}
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
-            {/* Chat history items placeholder */}
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="flex items-center gap-2"
               onSelect={() => {
-                console.log("Manual new chat request");
                 hasInitializedRef.current = false;
                 startNewChat();
               }}
@@ -378,17 +371,10 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <button
-          className="text-xs px-2 py-1 rounded"
-        >
-          {/* Context toggle placeholder */}
-        </button>
-
         <div className="flex-1">
           <AIChatInput
             input={input}
-            onChange={setInput}
+            onChange={handleInputChange}
             onSend={handleSend}
             placeholder="Ask a question about your data..."
             disabled={isInputDisabled}
@@ -397,149 +383,4 @@ export default function AIChat({ compact = false, showHistory = false }: AIChatP
       </div>
     );
   }
-
-  if (!showHistory) {
-    return (
-      <PanelLayout>
-        <div className="text-sm text-muted-foreground mb-4 flex items-center justify-between p-2 bg-muted rounded-md">
-          <div className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <span>Connected to: {
-              connectionsLoading 
-                ? "Loading..." 
-                : currentConnection?.connection_config_name || "No connection selected"
-            }</span>
-          </div>
-          {selectedConnection === null && connections?.length > 0 && (
-            <Select onValueChange={(value) => handleSelectConnection(Number(value))}>
-              <SelectTrigger className="w-[180px] h-8 text-xs">
-                <SelectValue placeholder="Select connection" />
-              </SelectTrigger>
-              <SelectContent>
-                {connections.map((conn) => (
-                  <SelectItem key={conn.id} value={String(conn.id)}>
-                    {conn.connection_config_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        <ScrollArea className="flex-1 pr-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-40">
-              <LazyLoading />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.length > 0 ? (
-                messages.map((message, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className="flex items-start gap-2 max-w-[80%]">
-                      {message.role === 'assistant' && (
-                        <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
-                          <Bot className="h-4 w-4" />
-                        </div>
-                      )}
-                      <div 
-                        className={`rounded-lg px-4 py-2 ${
-                          message.role === 'user' 
-                            ? 'bg-primary text-primary-foreground rounded-br-none' 
-                            : 'bg-muted text-foreground rounded-bl-none'
-                        }`}
-                      >
-                        {message.content || (message.role === 'assistant' && isStreaming ? 'Thinking...' : '')}
-                      </div>
-                      {message.role === 'user' && (
-                        <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
-                          <User className="h-4 w-4" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  {isLoading ? "Starting new chat..." : "No messages yet. Start by asking a question below."}
-                </div>
-              )}
-              {isStreaming && messages.length === 0 && (
-                <div className="flex justify-start">
-                  <div className="flex items-start gap-2 max-w-[80%]">
-                    <div className="bg-primary text-primary-foreground rounded-full p-1 mt-1">
-                      <Bot className="h-4 w-4" />
-                    </div>
-                    <div className="rounded-lg px-4 py-2 bg-muted text-foreground rounded-bl-none animate-pulse">
-                      AI is thinking...
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Auto-scroll anchor element */}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </ScrollArea>
-
-        <div className="flex gap-2 mt-auto">
-          <AIChatInput
-            input={input}
-            onChange={handleInputChange} // Use debounced handler
-            onSend={handleSend}
-            placeholder="Ask a question about your data..."
-            disabled={isInputDisabled}
-          />
-        </div>
-      </PanelLayout>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Button
-        variant="outline"
-        size="sm"
-        className="flex items-center gap-1 w-full justify-center"
-        onClick={() => {
-          console.log("Manual new chat request");
-          hasInitializedRef.current = false;
-          startNewChat();
-        }}
-        disabled={isLoading}
-      >
-        <PlusCircle className="h-4 w-4" />
-        <span>{isLoading ? (
-          <div className="flex items-center gap-2">
-            <span>Starting...</span>
-          </div>
-        ) : "New Chat"}</span>
-      </Button>
-
-      <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 p-2 bg-muted rounded-md">
-        <Database className="h-4 w-4" />
-        <span>
-          Connected to: {
-            connectionsLoading 
-              ? "Loading..." 
-              : currentConnection?.connection_config_name || "No connection selected"
-          }
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        <div className="text-sm font-medium text-muted-foreground">Recent Chats</div>
-        <div className="text-center text-muted-foreground py-2">
-          {connectionsLoading ? (
-            <div className="flex justify-center">
-              <LazyLoading />
-            </div>
-          ) : "No recent chats"}
-        </div>
-      </div>
-    </div>
-  );
 }

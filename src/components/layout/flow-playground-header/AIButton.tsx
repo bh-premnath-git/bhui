@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChatSlidingPortal } from './components/ChatSlidingPortal'
-import ai from "/assets/ai/ai.webp"
+import ai from "/assets/ai/ai.svg"
 
 export const AIButton = () => {
     const [isChatOpen, setIsChatOpen] = useState(false)

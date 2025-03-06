@@ -1,14 +1,15 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import AIChat from "./AIChat";
 import SQLViewer from "./SQLViewer";
 import StyleEditor from "./StyleEditor";
 import AnalyticsPanel from "./AnalyticsPanel";
-import { MessageSquare, Database, Paintbrush, BarChart, LineChart as LineChartIcon } from "lucide-react";
+import { MessageSquare, Database, BarChart, LineChart as LineChartIcon } from "lucide-react";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAnalytics } from "@/context/AnalyticsContext";
 import { Card, CardContent } from "@/components/ui/card";
 import SuggestedQuestions from "./SuggestedQuestions";
+import ResponseDisplay, { Message } from "./ResponseDisplay";
+import { AIStreamingResponse, parseStreamingResponse, processAIResponse } from "./utils";
 
 interface VisualHistoryItem {
   id: string;
@@ -22,7 +23,6 @@ interface VisualHistoryItem {
 }
 
 export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
-  const [activeTab, setActiveTab] = useState<string>("bighammer");
   const { messages } = useChatMessages();
   const {
     dashboardData,
@@ -34,6 +34,9 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   } = useAnalytics();
 
   const [visualHistory, setVisualHistory] = useState<VisualHistoryItem[]>([]);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [isStreamingChat, setIsStreamingChat] = useState(false);
+  const [responseData, setResponseData] = useState<AIStreamingResponse[]>([]);
 
   const [processedQuestions, setProcessedQuestions] = useState<Set<string>>(new Set());
 
@@ -57,9 +60,6 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
     console.log("Processing visualization for:", currentQuestion);
 
-    // Don't check processed questions set anymore - allow reprocessing 
-    // even if we've seen this question before
-    
     const newVisualization = createIsolatedVisualization(
       currentQuestion,
       dashboardData,
@@ -81,11 +81,8 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
       const { question } = event.detail;
       console.log("Processing question event:", question);
       
-      // Store current visual history in case we need to revert
       window.sessionStorage.setItem('xplorer:visualHistory', JSON.stringify(visualHistory));
       
-      // If it's already in processed questions but we're explicitly processing it again,
-      // we should allow it (happens when loading from history)
       if (processedQuestions.has(question)) {
         console.log("Re-processing previously processed question:", question);
       }
@@ -113,10 +110,12 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
   useEffect(() => {
     const handleNewChat = () => {
+      resetAnalytics();
       setVisualHistory([]);
-      if (typeof resetAnalytics === 'function') {
-        resetAnalytics();
-      }
+      setChatMessages([]);
+      setResponseData([]);
+      setIsStreamingChat(false);
+      console.log("New chat initiated - reset to initial state");
     };
 
     window.addEventListener('xplorer:new-chat', handleNewChat);
@@ -154,13 +153,72 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     );
   };
 
+  const handleStreamStart = () => {
+    setIsStreamingChat(true);
+  };
+
+  const handleStreamData = (message: Message) => {
+    setChatMessages(prev => {
+      // Check if we already have this exact message to avoid duplicate updates
+      const messageExists = prev.some((msg, idx) => 
+        idx === prev.length - 1 && 
+        msg.role === message.role && 
+        msg.content === message.content
+      );
+      
+      if (messageExists) {
+        return prev;
+      }
+      
+      // If message with same role exists at the end, replace it
+      // Otherwise add new message
+      const lastMessageSameRole = prev.length > 0 && 
+        prev[prev.length - 1].role === message.role;
+        
+      if (lastMessageSameRole) {
+        return [
+          ...prev.slice(0, prev.length - 1),
+          message
+        ];
+      } else {
+        return [...prev, message];
+      }
+    });
+
+    // Try to parse structured data from assistant messages
+    if (message.role === 'assistant' && message.content) {
+      try {
+        // Use the parseStreamingResponse utility to extract structured data
+        const parsedResponses = parseStreamingResponse(message.content);
+        
+        if (parsedResponses.length > 0) {
+          // Update the responseData state with the parsed responses
+          setResponseData(parsedResponses);
+          
+          // Potentially update the chat message with a more readable version
+          const readableContent = processAIResponse(message.content);
+          
+          // If there's readable content and it's different from the raw message,
+          // we could update the last message, but for now we'll leave as is to avoid
+          // unnecessarily overwriting the original content
+        }
+      } catch (error) {
+        console.error("Error processing streaming data:", error);
+      }
+    }
+  };
+
+  const handleStreamEnd = () => {
+    setIsStreamingChat(false);
+  };
+
   return (
     <div className="flex flex-col w-full overflow-hidden">
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className={`flex ${showSidebar ? 'pr-96' : ''}`}>
           <div className="flex-1 h-[calc(100vh-12rem)] relative min-w-0">
             <div className="px-4 pb-4 pt-4 max-w-5xl mx-auto">
-              {visualHistory.length === 0 ? (
+              {visualHistory.length === 0 && chatMessages.length === 0 ? (
                 <div className="space-y-8">
                   <div className="text-center pt-1 pb-2">
                     <p className="text-muted-foreground max-w-md mx-auto">
@@ -200,49 +258,14 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  <div className="space-y-4">
-                    {messages.map((message, i) => (
-                      <div
-                        key={`msg-${i}`}
-                        className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
-                      >
-                        <div
-                          className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === "assistant"
-                              ? "bg-muted text-foreground"
-                              : "bg-primary text-primary-foreground"
-                            }`}
-                        >
-                          {message.content}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {visualHistory.map((item, index) => (
-                    <Card key={item.id} className="mb-2 overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="bg-muted p-4 border-b">
-                          <h3 className="font-medium">{item.question}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {item.timestamp.toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <div className="p-1">
-                          <AnalyticsPanel
-                            dashboardData={structuredClone(item.dashboardData)}
-                            showHeader={true}
-                            chartStyles={structuredClone(item.chartStyles)}
-                            viewMode={item.viewMode}
-                            onViewModeChange={(mode) => updateViewMode(item.id, mode)}
-                            key={`panel-${item.id}-${Math.random()}`}
-                            isolatedMode={true}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
+                  <ResponseDisplay 
+                    data={responseData} 
+                    isStreaming={isStreamingChat}
+                    messages={chatMessages}
+                  />
+                 
                   {/* Loading state */}
-                  {isLoading && (
+                  {(isLoading || isStreamingChat) && chatMessages.length === 0 && (
                     <div className="flex items-center justify-center p-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
@@ -258,56 +281,20 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
               )}
             </div>
           </div>
-
-          {showSidebar && (
-            <div className="w-96 border-l absolute right-0 top-0 bottom-0 bg-background">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                <TabsList className="w-full justify-start p-0 h-12 rounded-none border-b">
-                  <TabsTrigger value="bighammer">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>BigHammer AI</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="styling">
-                    <div className="flex items-center gap-2">
-                      <Paintbrush className="h-4 w-4" />
-                      <span>Styling</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="sql">
-                    <div className="flex items-center gap-2">
-                      <Database className="h-4 w-4" />
-                      <span>SQL</span>
-                    </div>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="bighammer" className="flex-1 p-4 overflow-auto">
-                  <AIChat showHistory={true} />
-                </TabsContent>
-
-                <TabsContent value="styling" className="flex-1 p-4 overflow-auto">
-                  <StyleEditor />
-                </TabsContent>
-
-                <TabsContent value="sql" className="flex-1 p-4 overflow-auto">
-                  <SQLViewer />
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Fixed bottom input - always visible */}
       <div className="border-t bg-background sticky bottom-4 z-50 w-full">
         <div className={`mx-auto ${showSidebar ? 'pr-96' : ''}`}>
           <div className="py-0 px-0 max-w-5xl mx-auto">
-            <AIChat compact={true} />
+            <AIChat 
+              compact={true} 
+              onStreamStart={handleStreamStart}
+              onStreamData={handleStreamData}
+              onStreamEnd={handleStreamEnd}
+            />
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}

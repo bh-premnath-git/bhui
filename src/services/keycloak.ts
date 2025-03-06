@@ -17,7 +17,31 @@ const initOptions: KeycloakConfig = {
 };
 
 // Create a singleton Keycloak instance
-const keycloak = new Keycloak(initOptions);
+let keycloak: any = null;
+
+try {
+  keycloak = new Keycloak(initOptions);
+} catch (error) {
+  console.error('Failed to initialize Keycloak:', error);
+  // Create a mock keycloak object for fallback
+  keycloak = {
+    init: () => Promise.resolve(false),
+    login: () => {
+      window.location.href = '/login-fallback';
+      return Promise.resolve();
+    },
+    logout: () => {
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authenticated');
+      sessionStorage.removeItem('user');
+      window.location.href = '/login';
+      return Promise.resolve();
+    },
+    updateToken: () => Promise.resolve(false),
+    token: null,
+    idTokenParsed: null
+  };
+}
 
 // Add error handling
 const originalLogin = keycloak.login;
@@ -26,11 +50,9 @@ keycloak.login = function(...args) {
     return originalLogin.apply(this, args);
   } catch (error) {
     console.error('Keycloak login error:', error);
-    // Handle gracefully - maybe redirect to a fallback login page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login-fallback';
-    }
-    throw error;
+    // Handle gracefully - redirect to fallback login page
+    window.location.href = '/login-fallback';
+    return Promise.resolve();
   }
 };
 

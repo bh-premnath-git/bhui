@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import AIChat from "./AIChat";
 import SQLViewer from "./SQLViewer";
 import StyleEditor from "./StyleEditor";
-import AnalyticsPanel from "./AnalyticsPanel";
 import { MessageSquare, Database, BarChart, LineChart as LineChartIcon } from "lucide-react";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAnalytics } from "@/context/AnalyticsContext";

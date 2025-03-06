@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronDown, ChevronUp, Loader2, Copy, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Copy, Check, AlertCircle } from 'lucide-react';
 import { AIStreamingResponse, ResponseType } from './utils';
 
 export interface Message {
@@ -22,6 +22,11 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
   
   // Group responses by type
   const organizedResponses = useMemo(() => {
+    // Skip empty data
+    if (!data || data.length === 0) {
+      return {} as Record<ResponseType, AIStreamingResponse | undefined>;
+    }
+    
     const result: Record<ResponseType, AIStreamingResponse | undefined> = {
       EXPLANATION: undefined,
       SQL: undefined,
@@ -32,7 +37,7 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
     
     // Get the latest of each type
     data.forEach(response => {
-      if (response.response_type) {
+      if (response && response.response_type) {
         result[response.response_type] = response;
       }
     });
@@ -76,7 +81,11 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
             >
               {message.role === 'assistant' && (!message.content || message.content.trim() === '') && isStreaming
                 ? <span className="animate-pulse">Thinking...</span>
-                : message.content
+                : (
+                  <div className="whitespace-pre-line">
+                    {message.content || ""}
+                  </div>
+                )
               }
             </div>
           </div>
@@ -86,7 +95,7 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
   };
   
   // If there's no data but we're streaming, show loading state
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className={`space-y-4 ${className}`}>
         {renderChatMessages()}
@@ -177,7 +186,7 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
                   {/* Chart implementation would go here */}
                   <div className="flex items-center justify-center h-full bg-muted rounded-md text-muted-foreground">
                     {typeof chartContent === 'object' ? (
-                      <div className="p-4">
+                      <div className="p-4 w-full">
                         <h3 className="text-sm font-medium mb-2">{chartContent.title || 'Chart Visualization'}</h3>
                         {chartContent.description && (
                           <p className="text-xs mb-4">{chartContent.description}</p>
@@ -187,7 +196,11 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
                         </pre>
                       </div>
                     ) : (
-                      <p>Chart visualization: {chartContent}</p>
+                      <div className="flex items-center justify-center flex-col p-4">
+                        <AlertCircle className="h-6 w-6 mb-2" />
+                        <p className="text-sm">Chart data format not recognized</p>
+                        <p className="text-xs mt-2">{String(chartContent)}</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -218,7 +231,7 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
                           {tableContent.rows && tableContent.rows.map((row: any[], rowIdx: number) => (
                             <tr key={rowIdx} className={rowIdx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                               {row.map((cell, cellIdx) => (
-                                <td key={cellIdx} className="p-2 border border-border">{cell}</td>
+                                <td key={cellIdx} className="p-2 border border-border">{cell !== null && cell !== undefined ? String(cell) : ''}</td>
                               ))}
                             </tr>
                           ))}
@@ -226,11 +239,17 @@ export default function ResponseDisplay({ data = [], className = '', isStreaming
                       </table>
                     </div>
                   ) : (
-                    <pre className="text-xs p-4 bg-muted rounded-md whitespace-pre-wrap">
-                      {typeof tableContent === 'string' 
-                        ? tableContent 
-                        : JSON.stringify(tableContent, null, 2)}
-                    </pre>
+                    <div className="text-xs p-4 bg-muted rounded-md">
+                      <div className="flex items-center mb-2 text-muted-foreground">
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        <span>Table data format not recognized</span>
+                      </div>
+                      <pre className="whitespace-pre-wrap mt-2">
+                        {typeof tableContent === 'string' 
+                          ? tableContent 
+                          : JSON.stringify(tableContent, null, 2)}
+                      </pre>
+                    </div>
                   )}
                 </div>
                 {isStreaming && (

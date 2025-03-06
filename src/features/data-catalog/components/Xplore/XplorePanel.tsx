@@ -9,7 +9,7 @@ import { useAnalytics } from "@/context/AnalyticsContext";
 import { Card, CardContent } from "@/components/ui/card";
 import SuggestedQuestions from "./SuggestedQuestions";
 import ResponseDisplay, { Message } from "./ResponseDisplay";
-import { AIStreamingResponse, parseStreamingResponse, processAIResponse } from "./utils";
+import { AIStreamingResponse, parseStreamingResponse } from "./utils";
 
 interface VisualHistoryItem {
   id: string;
@@ -188,19 +188,9 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     // Try to parse structured data from assistant messages
     if (message.role === 'assistant' && message.content) {
       try {
-        // Use the parseStreamingResponse utility to extract structured data
-        const parsedResponses = parseStreamingResponse(message.content);
-        
+        const parsedResponses = parseStreamingResponse(message.content);        
         if (parsedResponses.length > 0) {
-          // Update the responseData state with the parsed responses
           setResponseData(parsedResponses);
-          
-          // Potentially update the chat message with a more readable version
-          const readableContent = processAIResponse(message.content);
-          
-          // If there's readable content and it's different from the raw message,
-          // we could update the last message, but for now we'll leave as is to avoid
-          // unnecessarily overwriting the original content
         }
       } catch (error) {
         console.error("Error processing streaming data:", error);

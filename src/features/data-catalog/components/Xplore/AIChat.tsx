@@ -43,7 +43,6 @@ export default function AIChat({
   const hasInitializedRef = useRef<boolean>(false);
   const prevConnectionRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const inputDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const assistantMessageRef = useRef<string>("");
 
   const currentConnection = selectedConnection
@@ -94,10 +93,6 @@ export default function AIChat({
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
-      }
-
-      if (inputDebounceTimeoutRef.current) {
-        clearTimeout(inputDebounceTimeoutRef.current);
       }
     };
   }, [isLoading, threadId, startNewChat]);
@@ -165,12 +160,7 @@ export default function AIChat({
   }, []);
 
   const handleInputChange = (value: string) => {
-    if (inputDebounceTimeoutRef.current) {
-      clearTimeout(inputDebounceTimeoutRef.current);
-    }
-    inputDebounceTimeoutRef.current = setTimeout(() => {
-      setInput(value);
-    }, 300);
+    setInput(value);
   };
 
   const handleSend = async () => {

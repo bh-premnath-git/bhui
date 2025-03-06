@@ -20,8 +20,17 @@ export default defineConfig(({ mode }) => {
   },
   optimizeDeps: {
     include: [
-      'reactflow'
+      'reactflow',
+      'crypto-browserify',
+      'buffer',
+      'process'
     ],
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis'
+      },
+    },
   },
   plugins: [
     react(),
@@ -29,6 +38,29 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Provide Node polyfills for crypto-browserify
+      buffer: 'buffer',
+      process: 'process',
+      stream: 'stream-browserify',
+      util: 'util',
+      crypto: 'crypto-browserify',
+    },
+  },
+  define: {
+    // Polyfill for global Buffer & process
+    global: 'globalThis',
+    'process.env': process.env,
+    'process.browser': true,
+    'process.version': '"v16.0.0"',
+  },
+  build: {
+    rollupOptions: {
+      // Add external dependencies to output bundle
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'keycloak-js'],
+        },
+      },
     },
   },
 }});

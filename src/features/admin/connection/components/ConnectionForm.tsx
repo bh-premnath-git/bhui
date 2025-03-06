@@ -73,7 +73,7 @@ export function ConnectionForm({
       dataset_id: '',
       credentials_json: '',
       host: '',
-      port: connectionName.toLowerCase() === 'mysql' ? 3306 : 5432,
+      port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
       database: '',
       username: '',
       password: '',
@@ -121,7 +121,7 @@ export function ConnectionForm({
     if (type === 'oracle') {
       return {
         host: data.host || '',
-        port: data.port || 1521,
+        port: data.port || '1521',
         service_name: data.service_name || '',
         sid: data.sid || '',
         username: data.username || '',

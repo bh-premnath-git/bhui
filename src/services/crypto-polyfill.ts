@@ -1,213 +1,186 @@
-import CryptoJS from 'crypto-js';
-
-// Create a more aggressive polyfill for the Web Crypto API
-const ensureCryptoPolyfill = () => {
-  // Only proceed if in a browser environment
+// Use a window-level polyfill approach for complete module compatibility
+const setupCryptoPolyfill = () => {
   if (typeof window === 'undefined') return;
 
-  console.log('Applying Web Crypto polyfill...');
+  // Polyfill CommonJS globals for crypto-browserify
+  if (typeof window.exports === 'undefined') {
+    // @ts-ignore - intentionally adding exports
+    window.exports = {};
+  }
+  
+  if (typeof window.module === 'undefined') {
+    // @ts-ignore - intentionally adding module
+    window.module = { exports: window.exports };
+  }
+  
+  if (typeof window.require === 'undefined') {
+    // @ts-ignore - intentionally adding require
+    window.require = function(modulePath: string) {
+      // Basic implementation to handle common modules
+      if (modulePath === 'crypto') return window.crypto;
+      return {};
+    };
+  }
 
-  // Create full polyfill implementations
-  const getRandomValues = (array: Uint8Array) => {
-    const words = CryptoJS.lib.WordArray.random(array.length);
-    const bytes = words.words;
-    
-    for (let i = 0; i < array.length; i++) {
-      array[i] = ((bytes[Math.floor(i / 4)] >>> ((3 - (i % 4)) * 8)) & 0xff);
-    }
-    return array;
-  };
-
-  const subtlePolyfill = {
-    digest: async (algorithm: string, data: ArrayBuffer) => {
-      console.log(`Polyfill digest called with algorithm: ${algorithm}`);
-      const dataWords = CryptoJS.lib.WordArray.create(
-        new Uint8Array(data)
-      );
-      
-      let hash;
-      if (algorithm === 'SHA-256' || algorithm.toLowerCase() === 'sha-256') {
-        hash = CryptoJS.SHA256(dataWords);
-      } else if (algorithm === 'SHA-1' || algorithm.toLowerCase() === 'sha-1') {
-        hash = CryptoJS.SHA1(dataWords);
-      } else {
-        console.error(`Algorithm ${algorithm} not supported by the polyfill`);
-        throw new Error(`Algorithm ${algorithm} not supported by the polyfill`);
-      }
-      
-      const hashWords = hash.words;
-      const hashBuffer = new ArrayBuffer(hash.sigBytes);
-      const hashView = new DataView(hashBuffer);
-      
-      for (let i = 0; i < hash.sigBytes / 4; i++) {
-        hashView.setUint32(i * 4, hashWords[i], false);
-      }
-      
-      return hashBuffer;
-    },
-    // Stub implementations for other methods required by Keycloak
-    generateKey: async () => {
-      console.log('Polyfill generateKey called');
-      return {}; // Return empty object instead of null
-    },
-    encrypt: async () => {
-      console.log('Polyfill encrypt called');
-      return {}; // Return empty object instead of null
-    },
-    decrypt: async () => {
-      console.log('Polyfill decrypt called');
-      return {}; // Return empty object instead of null
-    },
-    sign: async () => {
-      console.log('Polyfill sign called');
-      return new ArrayBuffer(0); // Return empty buffer
-    },
-    verify: async () => {
-      console.log('Polyfill verify called');
-      return true; // Return true by default
-    },
-    deriveBits: async () => {
-      console.log('Polyfill deriveBits called');
-      return new ArrayBuffer(0); // Return empty buffer
-    },
-    deriveKey: async () => {
-      console.log('Polyfill deriveKey called');
-      return {}; // Return empty object
-    },
-    unwrapKey: async () => {
-      console.log('Polyfill unwrapKey called');
-      return {}; // Return empty object
-    },
-    wrapKey: async () => {
-      console.log('Polyfill wrapKey called');
-      return new ArrayBuffer(0); // Return empty buffer
-    },
-    importKey: async (format, keyData) => {
-      console.log(`Polyfill importKey called with format: ${format}`);
-      return { type: 'secret', extractable: true, algorithm: { name: 'HMAC' }, usages: ['sign', 'verify'] };
-    },
-    exportKey: async () => {
-      console.log('Polyfill exportKey called');
-      return new ArrayBuffer(0); // Return empty buffer
-    }
-  };
-
-  // Create fallback crypto object if needed
-  const cryptoFallback = {
-    subtle: subtlePolyfill,
-    getRandomValues: getRandomValues
-  };
-
+  console.log('Checking crypto availability...');
+  
   try {
-    // First, attempt to fix window.crypto if it doesn't exist
-    if (!window.crypto) {
-      console.warn('Web Crypto API not available, applying full polyfill');
-      // @ts-ignore - force define crypto
-      window.crypto = cryptoFallback;
-    }
-
-    // Next, ensure subtle exists
-    if (!window.crypto.subtle) {
-      console.warn('Web Crypto subtle API not available, applying subtle polyfill');
-      // @ts-ignore - force define subtle
-      window.crypto.subtle = subtlePolyfill;
-    }
-
-    // Ensure getRandomValues exists
-    if (!window.crypto.getRandomValues) {
-      console.warn('getRandomValues not available, applying polyfill');
-      // @ts-ignore - force define getRandomValues
-      window.crypto.getRandomValues = getRandomValues;
-    }
-
-    // At this point window.crypto, window.crypto.subtle, and window.crypto.getRandomValues should exist
-    console.log('Web Crypto polyfill successfully applied');
+    // Import crypto-browserify dynamically to avoid direct reference
+    import('crypto-browserify').then(cryptoBrowserify => {
+      // Check if window.crypto is available
+      if (!window.crypto || !window.crypto.subtle) {
+        console.log('Web Crypto API not fully available, applying crypto-browserify shim');
+        
+        // Create a minimal Web Crypto API adapter using crypto-browserify
+        const cryptoShim = {
+          getRandomValues: (array: Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array) => {
+            const bytes = cryptoBrowserify.randomBytes(array.length);
+            for (let i = 0; i < array.length; i++) {
+              array[i] = bytes[i];
+            }
+            return array;
+          },
+          
+          subtle: {
+            digest: async (algorithm: string | { name: string }, data: ArrayBuffer) => {
+              // Handle different algorithm parameter formats
+              let algo: string;
+              if (typeof algorithm === 'string') {
+                algo = algorithm.toLowerCase().replace('-', '');
+              } else if (algorithm && typeof algorithm === 'object' && 'name' in algorithm) {
+                algo = algorithm.name.toLowerCase().replace('-', '');
+              } else {
+                console.error('Invalid algorithm parameter:', algorithm);
+                algo = 'sha256'; // Default to SHA-256
+              }
+                
+              const hash = cryptoBrowserify.createHash(algo);
+              hash.update(new Uint8Array(data));
+              
+              return new Uint8Array(hash.digest()).buffer;
+            },
+            
+            // Default implementations for other methods Keycloak might use
+            generateKey: async () => ({}),
+            encrypt: async () => ({}),
+            decrypt: async () => ({}),
+            sign: async () => new ArrayBuffer(0),
+            verify: async () => true,
+            deriveBits: async () => new ArrayBuffer(0),
+            deriveKey: async () => ({}),
+            unwrapKey: async () => ({}),
+            wrapKey: async () => new ArrayBuffer(0),
+            importKey: async () => ({ 
+              type: 'secret', 
+              extractable: true, 
+              algorithm: { name: 'HMAC' }, 
+              usages: ['sign', 'verify'] 
+            }),
+            exportKey: async () => new ArrayBuffer(0)
+          }
+        };
+        
+        // Apply the shim if needed
+        if (!window.crypto) {
+          // @ts-ignore - we're intentionally adding crypto
+          window.crypto = cryptoShim;
+          console.log('Added window.crypto shim using crypto-browserify');
+        } else if (!window.crypto.subtle) {
+          // @ts-ignore - we're intentionally adding subtle
+          window.crypto.subtle = cryptoShim.subtle;
+          console.log('Added window.crypto.subtle shim using crypto-browserify');
+        } else if (!window.crypto.getRandomValues) {
+          // @ts-ignore - we're intentionally adding getRandomValues
+          window.crypto.getRandomValues = cryptoShim.getRandomValues;
+          console.log('Added window.crypto.getRandomValues shim using crypto-browserify');
+        }
+        
+        console.log('Crypto shim successfully applied');
+      } else {
+        console.log('Web Crypto API is available, no shim needed');
+      }
+    }).catch(err => {
+      console.error('Failed to import crypto-browserify:', err);
+    });
   } catch (e) {
-    console.error('Failed to apply crypto polyfill:', e);
-    
-    // Last-ditch effort - attempt to create a global fallback object
-    try {
-      // @ts-ignore - define a global fallback
-      window.cryptoFallback = cryptoFallback;
-      console.warn('Created window.cryptoFallback as a last resort');
-    } catch (e2) {
-      console.error('Failed to create fallback crypto object:', e2);
-    }
+    console.error('Error setting up crypto polyfill:', e);
   }
 };
 
-// Install a patch for Keycloak to use our polyfill
+/**
+ * Function to patch Keycloak's crypto functionality
+ * Mostly used for monitoring and hijacking crypto methods to prevent errors
+ */
 const patchKeycloakCrypto = () => {
   if (typeof window === 'undefined') return;
   
-  // Save original APIs
-  const originalCrypto = window.crypto;
-  const originalSubtle = window.crypto?.subtle;
-  const originalGetRandomValues = window.crypto?.getRandomValues;
-  
-  // Create monitoring and hijacking for crypto methods
-  const monitorMethod = (obj: any, methodName: string, fallback: Function) => {
-    const original = obj[methodName];
-    obj[methodName] = function(...args: any[]) {
-      try {
-        // Try the original implementation
-        return original.apply(obj, args);
-      } catch (e) {
-        console.warn(`Original ${methodName} failed, using fallback`, e);
-        // Fall back to our implementation
-        return fallback.apply(obj, args);
-      }
-    };
+  // Helper to monitor and wrap methods for better error handling
+  const monitorMethod = <T extends object, K extends keyof T>(
+    obj: T, 
+    methodName: K, 
+    fallbackFn?: (...args: any[]) => any
+  ) => {
+    const originalMethod = obj[methodName];
+    
+    if (typeof originalMethod === 'function') {
+      // @ts-ignore - need to override with monitored version
+      obj[methodName] = function(...args: any[]) {
+        try {
+          const result = originalMethod.apply(this, args);
+          return result;
+        } catch (error) {
+          console.error(`Error in ${String(methodName)}:`, error);
+          if (fallbackFn) {
+            console.log(`Using fallback for ${String(methodName)}`);
+            return fallbackFn(...args);
+          }
+          throw error;
+        }
+      };
+    }
   };
-  
-  // Apply the crypto polyfill
-  ensureCryptoPolyfill();
   
   // Patch window.crypto methods in case they throw errors
   if (window.crypto && window.crypto.subtle) {
     try {
-      // @ts-ignore - Access subtle and patch methods
       const subtle = window.crypto.subtle;
-      monitorMethod(subtle, 'digest', async (algorithm: string, data: ArrayBuffer) => {
-        console.log('Fallback digest being used');
-        const dataWords = CryptoJS.lib.WordArray.create(new Uint8Array(data));
-        const hash = algorithm.includes('SHA-256') 
-          ? CryptoJS.SHA256(dataWords) 
-          : CryptoJS.SHA1(dataWords);
-        
-        const hashWords = hash.words;
-        const hashBuffer = new ArrayBuffer(hash.sigBytes);
-        const hashView = new DataView(hashBuffer);
-        
-        for (let i = 0; i < hash.sigBytes / 4; i++) {
-          hashView.setUint32(i * 4, hashWords[i], false);
+      monitorMethod(subtle, 'digest', async (algorithm: any, data: ArrayBuffer) => {
+      const cryptoBrowserify = await import('crypto-browserify');
+        let algo: string;
+        if (typeof algorithm === 'string') {
+          algo = algorithm.toLowerCase().replace('-', '');
+        } else if (algorithm && typeof algorithm === 'object' && 'name' in algorithm) {
+          algo = algorithm.name.toLowerCase().replace('-', '');
+        } else {
+          console.error('Invalid algorithm parameter:', algorithm);
+          algo = 'sha256'; // Default to SHA-256
         }
         
-        return hashBuffer;
+        const hash = cryptoBrowserify.createHash(algo);
+        hash.update(new Uint8Array(data));
+        
+        return new Uint8Array(hash.digest()).buffer;
       });
     } catch (e) {
       console.error('Failed to patch crypto.subtle methods:', e);
     }
   }
   
-  // Define a global helper function to check if crypto is available
-  // This can be used directly in the Keycloak adapter
-  // @ts-ignore - define a global helper
-  window.isCryptoAvailable = () => {
-    return window.crypto && 
-           window.crypto.subtle && 
-           typeof window.crypto.getRandomValues === 'function';
-  };
-  
-  console.log('Crypto patching complete. Window.crypto available:', 
-    window.crypto !== undefined,
-    'subtle available:', window.crypto?.subtle !== undefined,
-    'getRandomValues available:', typeof window.crypto?.getRandomValues === 'function'
-  );
+  // Also patch window.crypto.getRandomValues if needed
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    monitorMethod(window.crypto, 'getRandomValues', async (array) => {
+      console.log('Fallback getRandomValues being used');
+      const cryptoBrowserify = await import('crypto-browserify');
+      const bytes = cryptoBrowserify.randomBytes(array.length);
+      for (let i = 0; i < array.length; i++) {
+        array[i] = bytes[i];
+      }
+      return array;
+    });
+  }
 };
 
-// Execute immediately
-patchKeycloakCrypto();
+setupCryptoPolyfill();
+setTimeout(patchKeycloakCrypto, 100);
 
-// Also export to allow explicit call
-export { ensureCryptoPolyfill, patchKeycloakCrypto };
+export { setupCryptoPolyfill as applyCryptoShim, patchKeycloakCrypto };

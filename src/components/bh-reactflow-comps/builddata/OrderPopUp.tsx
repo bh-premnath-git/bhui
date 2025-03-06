@@ -1,161 +1,140 @@
-import React, { useState, useEffect } from "react"
-import { Search, X } from "lucide-react"
-import SchemaTable from "./SchemaTable"
-import OnboardTaggingStep from "./OnboardTaggingStep"
-import PreviewTable from "./PreviewTable"
-import { ReaderOptionsForm } from "./ReaderOptionsForm"
-import { useConnectionConfigQuery } from "@/lib/hooks/useConnectionConfig"
-
-// shadcn/ui imports
+import React, { useState, useEffect } from "react";
+import SchemaTable from "./SchemaTable";
+import OnboardTaggingStep from "./OnboardTaggingStep";
+import { ReaderOptionsForm } from "./ReaderOptionsForm";
+import { useSelector } from "react-redux";
+import { Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover"
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 
-// Example: a custom input component or your own from shadcn
-import { Input } from "@/components/ui/input"
-
-interface OrderPopUpProps {
-  isOpen: boolean
-  onClose: () => void
-  source: any
-  nodeId: any
-  onSourceUpdate: (data: any) => void
-}
-
-export default function OrderPopUp({
-  isOpen,
-  onClose,
-  source,
-  nodeId,
-  onSourceUpdate,
-}: OrderPopUpProps) {
-  const [selected, setSelected] = React.useState(0)
-  const [initialData, setInitialData] = useState<any>(null)
-
-  // For the Help popover
-  const [popoverOpen, setPopoverOpen] = useState(false)
-
-  const { data: configData } = useConnectionConfigQuery(
-    {
-      id: source?.connection_config_id || '',
-    },
-    {
-      enabled: !!source?.connection_config_id
-    }
-  );
-
+export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
+  const [selected, setSelected] = React.useState(0);
+  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
+  const [initialData, setInitialData] = useState(null);
+  const { pipelineJson } = useSelector((state: any) => state.autoSave.pipelineJsonData);
+  console.log(pipelineJson, "pipelineJson")
+  const handleClose2 = () => {
+    setAnchorEl(null);
+  };
   useEffect(() => {
-    if (configData) {
-      const data = {
-        ...configData,
-        sourceId: source?.data_src_id,
-        connectionConfigId: source?.connection_config_id
+    if (source) {
+      console.log(source)
+      let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
+      console.log(pipelineJsonData, "pipelineJson")
+      const initialData = {
+        reader_name: pipelineJsonData?.name || source?.data_src_desc || '',
+        name: pipelineJsonData?.name || source?.data_src_name || '',
+        source: {
+          type: pipelineJsonData?.source_type || (source?.connection_type === 'FILE' ? 'File' : source?.connection_type) || '',
+          source_name: pipelineJsonData?.name || source?.data_src_name || '',
+          file_name: pipelineJsonData?.file_name || source?.file_name || '',
+          bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
+          data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
+          file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
+
+          connection: {
+            connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
+            type: pipelineJsonData?.connection?.type || source?.connection_type || '',
+            file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
+            connection_name: pipelineJsonData?.connection?.connection_name || source?.connection_config?.connection_name || '',
+            file_type: pipelineJsonData?.connection?.file_type || source?.file_type || ''
+          }
+        }
       };
-      setInitialData(data);
-    } else if (source?.data_src_id) {
-      setInitialData({ sourceId: source?.data_src_id });
+      setInitialData(initialData);
     }
-  }, [configData, source]);
+  }, [source]);
+  const open = Boolean(anchorEl);
+  const id = open ? 'simple-popover' : undefined;
 
-  const handleClose = () => {
-    onClose()
-  }
 
-  const handleClick = (index: number) => {
-    setSelected(index)
+  const handleClick = (index: any) => {
+    setSelected(index);
     switch (index) {
       case 0:
-        console.log("Schema button clicked")
-        break
+        handleSchemaClick();
+        break;
       case 1:
-        console.log("Tag button clicked")
-        break
+        handleTagClick();
+        break;
       case 2:
-        console.log("Preview button clicked")
-        break
+        handlePreviewClick();
+        break;
       default:
-        break
+        break;
     }
-  }
+  };
+  const handleSchemaClick = () => {
+    console.log("Schema button clicked");
+  };
+
+  const handleTagClick = () => {
+    console.log("Tag button clicked");
+  };
+
+  const handlePreviewClick = () => {
+    console.log("Preview button clicked");
+  };
+  const handleClose = () => {
+    onClose();
+  };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) handleClose()
-      }}
-    >
-      <DialogContent className="p-0 w-[1000px] h-[800px] max-h-[90vh] overflow-auto">
-        {/* You can optionally wrap this in <DialogHeader> if you want a consistent layout */}
-        <div className="flex flex-col p-3 bg-white h-full">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-scroll ">
           {/* Header */}
-          <div className="flex justify-between items-center text-black mb-2">
-            {/* Replace MUI Typography with any heading or paragraph */}
-            <DialogHeader className="p-0">
-              <DialogTitle className="text-base font-bold mb-0">
-                Orders
-              </DialogTitle>
-            </DialogHeader>
-            <X onClick={handleClose} className="cursor-pointer" />
-          </div>
+          <DialogHeader className="flex justify-start items-center text-black">
+            <div className="flex flex-col">
+              <DialogTitle>{source?.data_src_name}</DialogTitle>
+              <p className="text-sm font-bold">{source?.data_src_desc}</p>
+            </div>
+          </DialogHeader>
 
-          {/* Tabs */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-2">
             <div className="flex">
-              {["Reader Options", "Schema", "Tag", "Preview"].map((label, index) => (
+              {['Reader Options', 'Schema', 'Tag'].map((label, index) => (
                 <button
                   key={label}
                   onClick={() => handleClick(index)}
                   className={`
-                    px-6 py-2 text-sm font-medium transition-all duration-200
-                    ${
-                      selected === index
-                        ? "bg-black text-white border-b-2 border-black rounded"
-                        : "text-gray-600 border-b-2 border-transparent hover:border-gray-300"
+                  px-6 py-2 text-sm font-medium
+                  ${selected === index
+                      ? 'bg-black text-white border-b-2 border-black rounded'
+                      : 'text-gray-600 border-b-2 border-transparent hover:border-gray-300'
                     }
-                  `}
+                  transition-all duration-200
+              `}
                 >
                   {label}
                 </button>
               ))}
             </div>
 
-            {/* Popover for "How Can I Help You?" */}
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="px-3 py-1 text-sm font-medium rounded hover:bg-gray-100"
-                  // e.g. a "Help" button or icon
-                >
-                  Help
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" side="bottom" className="p-0 w-64">
+            {/* Popover */}
+            <Popover
+              open={open}
+              onOpenChange={handleClose2}
+            >
+              <PopoverContent>
                 <div className="flex flex-col">
                   <div className="bg-gradient-to-r from-violet-500 via-blue-500 via-purple-500 to-pink-300 text-white">
                     <p className="p-4">How Can I Help You Today?</p>
                   </div>
                   <div className="m-4">
                     <div className="relative">
-                      <Input
+                      <input
                         autoFocus
                         type="search"
                         id="search"
                         placeholder="Search By Keywords"
-                        className="pl-10"
+                        className="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <Search
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        size="18"
-                      />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     </div>
                   </div>
                 </div>
@@ -164,22 +143,24 @@ export default function OrderPopUp({
           </div>
 
           {/* Content Section */}
-          <div className="mt-4 flex-1">
+          <div className="">
             {selected === 0 && (
               <ReaderOptionsForm
-                onSubmit={() => {}}
+                onSubmit={() => { }}
                 onClose={onClose}
                 initialData={initialData}
                 nodeId={nodeId}
-                onSourceUpdate={onSourceUpdate}
+                onSourceUpdate={(updatedSource) => {
+                  onSourceUpdate(updatedSource);
+                  // The changes will be saved automatically by the auto-save mechanism
+                }}
               />
             )}
             {selected === 1 && <SchemaTable initialData={initialData} />}
             {selected === 2 && <OnboardTaggingStep />}
-            {selected === 3 && <PreviewTable />}
+            {/* {selected === 3 && <PreviewTable />} */}
           </div>
-        </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

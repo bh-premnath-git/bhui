@@ -5,6 +5,8 @@ interface AutoSaveState {
     lastSaved: string | null;
     hasUnsavedChanges: boolean;
     pipeLineNameData: any;
+    pipelineJsonData: any;
+
 }
 
 const initialState: AutoSaveState = {
@@ -12,6 +14,8 @@ const initialState: AutoSaveState = {
     lastSaved: null,
     hasUnsavedChanges: false,
     pipeLineNameData: {},
+    pipelineJsonData: {},
+
 };
 
 const autoSaveSlice = createSlice({
@@ -38,8 +42,11 @@ const autoSaveSlice = createSlice({
         setPipeLineName: (state, action) => {
             state.pipeLineNameData = action.payload;
         },
+        setPipelineJson: (state, action) => {
+            state.pipelineJsonData = action.payload;
+        },
     },
 });
 
-export const { setSaving, setSaved, setSaveError, setUnsavedChanges, setPipeLineName } = autoSaveSlice.actions;
+export const { setSaving, setSaved, setSaveError, setUnsavedChanges, setPipeLineName,setPipelineJson } = autoSaveSlice.actions;
 export default autoSaveSlice.reducer; 

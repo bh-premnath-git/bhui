@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { apiService } from "@/lib/api/api-service"
 
 // API client setup
 const apiClient = axios.create({
@@ -64,16 +65,19 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   } = useInfiniteQuery({
     queryKey: dataSourceKeys.list(),
     queryFn: async ({ pageParam = 1 }) => {
-      const { data } = await apiClient.get('/data_source/list/', {
-        params: {
-          offset: (pageParam - 1) * ITEMS_PER_PAGE,
-          limit: ITEMS_PER_PAGE,
-          order_desc: false,
-        }
-      });
+      const data =await apiService.get({
+        portNumber: CATALOG_API_PORT,
+        url: '/data_source/list/',
+        usePrefix: true,
+        method: 'GET',
+        metadata: {
+            errorMessage: 'Failed to fetch projects'
+        },
+        params: {limit: 1000}
+    })
       return data;
     },
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage:any, allPages) => {
       return lastPage?.length === ITEMS_PER_PAGE ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1
@@ -81,7 +85,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
 
   // Flatten and filter data sources
   const dataSources = data?.pages.flat() || [];
-  const filteredSources = dataSources.filter((source) =>
+  const filteredSources = dataSources.filter((source:any) =>
     source.data_src_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

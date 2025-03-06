@@ -13,6 +13,8 @@ interface DataSourceState {
   project: Project[];
   selectedProject: Project | null;
   selectedConnection: Connection | null;
+  connectionConfigList: any[];
+
 }
 
 const initialState: DataSourceState = {
@@ -24,6 +26,8 @@ const initialState: DataSourceState = {
   selectedConnection: null,
   loading: false,
   error: null,
+  connectionConfigList: [],
+
 };
 
 export const fetchProjects = createAsyncThunk(
@@ -61,7 +65,22 @@ export const fetchConnections = createAsyncThunk(
 );
 
 
-
+export const getConnectionConfigList = createAsyncThunk(
+  "catalog/connection",
+  async (params: any) => {
+    const response = await apiService.get<any[]>({
+      portNumber: CATALOG_API_PORT,
+      url: '/connection_registry/connection_config/list/',
+      usePrefix: true,
+      method: 'GET',
+      metadata: {
+        errorMessage: 'Failed to fetch connection config list'
+      },
+      params: params
+    });
+    return response;
+  }
+);
 
 const dataSourceSlice = createSlice({
   name: 'datasource',
@@ -111,6 +130,18 @@ const dataSourceSlice = createSlice({
     .addCase(fetchConnections.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || null;
+    })
+    .addCase(getConnectionConfigList.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(getConnectionConfigList.fulfilled, (state, action: PayloadAction<any[]>) => {
+      state.loading = false;
+      state.connectionConfigList = action.payload;
+    })
+    .addCase(getConnectionConfigList.rejected, (state, action: PayloadAction<any>) => {
+      state.loading = false;
+      state.error = action.payload;
     });
 }});
 

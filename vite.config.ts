@@ -49,6 +49,10 @@ export default defineConfig(({ mode }) => {
   define: {
     // Polyfill for global Buffer & process
     global: 'globalThis',
+    // Polyfill CommonJS exports for ESM compatibility
+    exports: '{}',
+    module: '{}',
+    require: 'function(modulePath) { return window[modulePath] || {} }',
     'process.env': process.env,
     'process.browser': true,
     'process.version': '"v16.0.0"',

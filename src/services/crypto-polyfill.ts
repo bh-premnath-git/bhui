@@ -1,5 +1,7 @@
-// Import the crypto-browserify module
-import cryptoBrowserify from 'crypto-browserify';
+// Import the crypto-browserify module in a way that works with ESM
+import * as cryptoBrowserifyModule from 'crypto-browserify';
+// Ensure we have a proper export object regardless of module system
+const cryptoBrowserify = (cryptoBrowserifyModule.default || cryptoBrowserifyModule) as typeof cryptoBrowserifyModule;
 
 /**
  * Apply crypto-browserify as a polyfill for the Web Crypto API

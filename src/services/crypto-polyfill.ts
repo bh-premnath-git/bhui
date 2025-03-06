@@ -145,12 +145,7 @@ const patchKeycloakCrypto = () => {
     try {
       const subtle = window.crypto.subtle;
       monitorMethod(subtle, 'digest', async (algorithm: any, data: ArrayBuffer) => {
-        console.log('Fallback digest being used');
-        
-        // Import crypto-browserify dynamically
-        const cryptoBrowserify = await import('crypto-browserify');
-        
-        // Handle different algorithm parameter formats
+      const cryptoBrowserify = await import('crypto-browserify');
         let algo: string;
         if (typeof algorithm === 'string') {
           algo = algorithm.toLowerCase().replace('-', '');
@@ -185,10 +180,7 @@ const patchKeycloakCrypto = () => {
   }
 };
 
-// Execute in the correct order - first setup the polyfill, then patch Keycloak
-// We use setTimeout to ensure setupCryptoPolyfill completes first
 setupCryptoPolyfill();
 setTimeout(patchKeycloakCrypto, 100);
 
-// Export functions for explicit calls
 export { setupCryptoPolyfill as applyCryptoShim, patchKeycloakCrypto };

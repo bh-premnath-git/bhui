@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SuggestedQuestions from "./SuggestedQuestions";
 import ResponseDisplay, { Message } from "./ResponseDisplay";
 import { AIStreamingResponse, parseStreamingResponse } from "./utils";
+import SessionHistory from "./SessionHistory";
 
 interface VisualHistoryItem {
   id: string;
@@ -20,6 +21,12 @@ interface VisualHistoryItem {
   viewMode: "chart" | "table" | "sql";
   isFollowUp: boolean;
   relatedToId?: string;
+}
+
+// Add a MessageWithResponses interface to track responses with each message
+interface MessageWithResponses {
+  message: Message;
+  responses: AIStreamingResponse[];
 }
 
 export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
@@ -37,8 +44,21 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [isStreamingChat, setIsStreamingChat] = useState(false);
   const [responseData, setResponseData] = useState<AIStreamingResponse[]>([]);
+  
+  // Track responses for the history and current message
+  const [messageHistory, setMessageHistory] = useState<MessageWithResponses[]>([]);
+  const [currentResponses, setCurrentResponses] = useState<AIStreamingResponse[]>([]);
+  
+  // Track whether streaming has completed successfully for the current message
+  const [streamCompleted, setStreamCompleted] = useState(true);
+  
+  // Track currently selected message index for viewing history
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
 
   const [processedQuestions, setProcessedQuestions] = useState<Set<string>>(new Set());
+  
+  // Track if we're in a new chat session (no messages yet)
+  const [isNewChatSession, setIsNewChatSession] = useState(true);
 
   const createIsolatedVisualization = (question: string, data: any, styles: any): VisualHistoryItem => ({
     id: `vis-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -67,7 +87,7 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     );
 
     setVisualHistory(prev => [...prev, newVisualization]);
-
+    setIsNewChatSession(false);
   }, [dashboardData, currentQuestion, chartStyles]);
 
   useEffect(() => {
@@ -108,56 +128,60 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
     };
   }, [visualHistory, processedQuestions]);
 
-  useEffect(() => {
-    const handleNewChat = () => {
-      resetAnalytics();
-      setVisualHistory([]);
-      setChatMessages([]);
-      setResponseData([]);
-      setIsStreamingChat(false);
-      console.log("New chat initiated - reset to initial state");
-    };
-
-    window.addEventListener('xplorer:new-chat', handleNewChat);
-
-    return () => {
-      window.removeEventListener('xplorer:new-chat', handleNewChat);
-    };
-  }, [resetAnalytics]);
-
-  useEffect(() => {
-    const handleClearProcessedQuestions = () => {
-      console.log("Clearing processed questions");
-      setProcessedQuestions(new Set());
-    };
-
-    window.addEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
-
-    return () => {
-      window.removeEventListener('xplorer:clear-processed-questions', handleClearProcessedQuestions);
-    };
-  }, []);
-
-  const handleSelectQuestion = (question: string) => {
+  const onMessageSend = (message: string) => {
+    if (!message || message.trim() === "") return;
+  
+    // Add user message
+    setChatMessages(prev => [...prev, { role: "user", content: message }]);
+    
+    // Reset streaming state for new message
+    setStreamCompleted(false);
+    setCurrentResponses([]);
+    
+    // Automatically select the latest message when a new one is sent
+    setSelectedMessageIndex(null);
+    
+    // Mark that we're no longer in a new chat session
+    setIsNewChatSession(false);
+    
+    console.log("User message sent:", message);
+    
+    // Dispatch event for AIChat component using the existing event system
     const event = new CustomEvent('xplorer:set-question', { 
-      detail: { question } 
+      detail: { question: message } 
     });
     window.dispatchEvent(event);
   };
 
-  const updateViewMode = (id: string, mode: "chart" | "table" | "sql") => {
-    setVisualHistory(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, viewMode: mode } : item
-      )
-    );
-  };
+  useEffect(() => {
+    // Listen for new-chat events from AIChat to reset local state
+    const handleNewChat = () => {
+      console.log("New chat event received from AIChat");
+      resetAnalytics();
+      setVisualHistory([]);
+      setChatMessages([]);
+      setMessageHistory([]);
+      setCurrentResponses([]);
+      setResponseData([]);
+      setIsStreamingChat(false);
+      setStreamCompleted(true);
+      setSelectedMessageIndex(null);
+      setIsNewChatSession(true);
+    };
+
+    window.addEventListener('xplorer:new-chat', handleNewChat);
+    return () => {
+      window.removeEventListener('xplorer:new-chat', handleNewChat);
+    };
+  }, [resetAnalytics]);
 
   const handleStreamStart = () => {
     setIsStreamingChat(true);
   };
 
   const handleStreamData = (message: Message) => {
+    setIsStreamingChat(true);
+    
     setChatMessages(prev => {
       // Check if we already have this exact message to avoid duplicate updates
       const messageExists = prev.some((msg, idx) => 
@@ -181,6 +205,8 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
           message
         ];
       } else {
+        // Mark that we're no longer in a new session when receiving messages
+        setIsNewChatSession(false);
         return [...prev, message];
       }
     });
@@ -191,6 +217,10 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
         const parsedResponses = parseStreamingResponse(message.content);        
         if (parsedResponses.length > 0) {
           setResponseData(parsedResponses);
+          setCurrentResponses(parsedResponses);
+          
+          // Ensure we're marking as not completed since we're still streaming
+          setStreamCompleted(false);
         }
       } catch (error) {
         console.error("Error processing streaming data:", error);
@@ -200,7 +230,81 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
   const handleStreamEnd = () => {
     setIsStreamingChat(false);
+    setStreamCompleted(true);
+    
+    // When streaming ends, add the current message and its responses to history
+    const currentMessage = chatMessages[chatMessages.length - 1];
+    if (currentMessage && currentMessage.role === 'assistant' && currentResponses.length > 0) {
+      setMessageHistory(prev => {
+        // Check if this message is already in history to avoid duplicates
+        const exists = prev.some(item => 
+          item.message.content === currentMessage.content && 
+          item.message.role === currentMessage.role
+        );
+        
+        if (!exists) {
+          return [...prev, { message: currentMessage, responses: currentResponses }];
+        }
+        return prev;
+      });
+    }
+    
+    console.log("Stream completed");
   };
+  
+  // Handle selecting a message from history
+  const handleMessageSelect = (index: number) => {
+    setSelectedMessageIndex(index === selectedMessageIndex ? null : index);
+  };
+
+  // Get the responses to display based on selection
+  const getDisplayResponses = () => {
+    // If a specific message is selected and it's an assistant message
+    if (selectedMessageIndex !== null && 
+        chatMessages[selectedMessageIndex]?.role === 'assistant') {
+      
+      // Find matching responses in history
+      const selectedMessage = chatMessages[selectedMessageIndex];
+      const historyItem = messageHistory.find(
+        item => item.message.content === selectedMessage.content
+      );
+      
+      if (historyItem) {
+        return historyItem.responses;
+      }
+      return [];
+    }
+    
+    // Otherwise show current responses if no specific message is selected
+    return selectedMessageIndex === null ? responseData : [];
+  };
+
+  // Get messages to display based on selection
+  const getDisplayMessages = () => {
+    if (selectedMessageIndex === null) {
+      // Show all messages if nothing selected
+      return chatMessages;
+    }
+    
+    // Show just the selected message and its context
+    const userMessageIndex = selectedMessageIndex % 2 === 0 
+      ? selectedMessageIndex 
+      : Math.max(0, selectedMessageIndex - 1);
+    
+    const assistantMessageIndex = selectedMessageIndex % 2 === 0 
+      ? Math.min(chatMessages.length - 1, selectedMessageIndex + 1) 
+      : selectedMessageIndex;
+    
+    // Return the user message and its corresponding assistant response
+    return [
+      chatMessages[userMessageIndex],
+      ...(assistantMessageIndex < chatMessages.length ? [chatMessages[assistantMessageIndex]] : [])
+    ];
+  };
+
+  // Determine if we should show the empty state or chat
+  const shouldShowEmptyState = isNewChatSession || 
+    (visualHistory.length === 0 && chatMessages.length === 0);
 
   return (
     <div className="flex flex-col w-full overflow-hidden">
@@ -208,7 +312,7 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
         <div className={`flex ${showSidebar ? 'pr-96' : ''}`}>
           <div className="flex-1 h-[calc(100vh-12rem)] relative min-w-0">
             <div className="px-4 pb-4 pt-4 max-w-5xl mx-auto">
-              {visualHistory.length === 0 && chatMessages.length === 0 ? (
+              {shouldShowEmptyState ? (
                 <div className="space-y-8">
                   <div className="text-center pt-1 pb-2">
                     <p className="text-muted-foreground max-w-md mx-auto">
@@ -243,30 +347,40 @@ export default function XplorePanel({ showSidebar }: { showSidebar: boolean }) {
 
                   <div className="max-w-3xl mx-auto">
                     <h2 className="text-lg font-semibold mb-1">Try asking:</h2>
-                    <SuggestedQuestions onSelectQuestion={handleSelectQuestion} />
+                    <SuggestedQuestions onSelectQuestion={onMessageSend} />
                   </div>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <ResponseDisplay 
-                    data={responseData} 
-                    isStreaming={isStreamingChat}
+                <div className="space-y-4">
+                  {/* Session History - re-added component */}
+                  <SessionHistory 
                     messages={chatMessages}
+                    messageHistory={messageHistory}
+                    onMessageSelect={handleMessageSelect}
+                    selectedMessageIndex={selectedMessageIndex}
                   />
-                 
-                  {/* Loading state */}
-                  {(isLoading || isStreamingChat) && chatMessages.length === 0 && (
-                    <div className="flex items-center justify-center p-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  )}
+                
+                  <div className="space-y-8">
+                    <ResponseDisplay 
+                      data={getDisplayResponses()} 
+                      isStreaming={isStreamingChat && selectedMessageIndex === null}
+                      messages={getDisplayMessages()}
+                    />
+                   
+                    {/* Loading state */}
+                    {(isLoading || isStreamingChat) && chatMessages.length === 0 && (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    )}
 
-                  {/* Error state */}
-                  {error && (
-                    <div className="p-4 text-destructive">
-                      <p>Error processing your request. Please try again.</p>
-                    </div>
-                  )}
+                    {/* Error state */}
+                    {error && (
+                      <div className="p-4 text-destructive">
+                        <p>Error processing your request. Please try again.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

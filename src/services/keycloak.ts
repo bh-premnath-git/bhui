@@ -1,13 +1,13 @@
 import Keycloak, { KeycloakConfig } from 'keycloak-js';
 import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from '@/config/platformenv';
-import { patchKeycloakCrypto } from './crypto-polyfill';
+import { applyCryptoShim } from './crypto-polyfill';
 
-// Ensure crypto polyfill is applied before Keycloak is initialized
-patchKeycloakCrypto();
+// Ensure crypto shim is applied before Keycloak is initialized
+applyCryptoShim();
 
 // Check for secure context
 if (typeof window !== 'undefined' && window.isSecureContext === false) {
-  console.warn('Running in insecure context. Keycloak requires secure context (HTTPS) for full functionality.');
+  console.warn('Running in insecure context. Using crypto-browserify as a shim for the Web Crypto API.');
 }
 
 // Define standard config options

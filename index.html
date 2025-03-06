@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -9,6 +8,55 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Bighammer AI</title>
+    <!-- Crypto API Polyfill -->
+    <script>
+      (function() {
+        try {
+          console.log("Applying early crypto polyfill...");
+          if (!window.crypto) {
+            window.crypto = {};
+            console.log("Created window.crypto object");
+          }
+          
+          if (!window.crypto.subtle) {
+            window.crypto.subtle = {
+              digest: async function(algorithm, data) { 
+                console.log("Polyfill digest called with algorithm:", algorithm);
+                return new ArrayBuffer(32); 
+              },
+              generateKey: async function() { return {}; },
+              encrypt: async function() { return {}; },
+              decrypt: async function() { return {}; },
+              sign: async function() { return new ArrayBuffer(0); },
+              verify: async function() { return true; },
+              deriveBits: async function() { return new ArrayBuffer(0); },
+              deriveKey: async function() { return {}; },
+              unwrapKey: async function() { return {}; },
+              wrapKey: async function() { return new ArrayBuffer(0); },
+              importKey: async function() { 
+                return { type: 'secret', extractable: true, algorithm: { name: 'HMAC' }, usages: ['sign', 'verify'] };
+              },
+              exportKey: async function() { return new ArrayBuffer(0); }
+            };
+            console.log("Created window.crypto.subtle polyfill");
+          }
+          
+          if (!window.crypto.getRandomValues) {
+            window.crypto.getRandomValues = function(array) {
+              for (let i = 0; i < array.length; i++) {
+                array[i] = Math.floor(Math.random() * 256);
+              }
+              return array;
+            };
+            console.log("Created window.crypto.getRandomValues polyfill");
+          }
+          
+          console.log("Early crypto polyfill successfully applied");
+        } catch(e) {
+          console.error("Failed to apply early crypto polyfill:", e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

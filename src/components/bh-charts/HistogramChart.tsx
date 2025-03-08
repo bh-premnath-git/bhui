@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface HistogramChartProps {
   data: Array<number | string>;

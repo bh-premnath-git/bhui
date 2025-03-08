@@ -1,11 +1,45 @@
-import XplorePanel from "./components/Xplore/XplorePanel";
+import { ChatMessage } from './components/Xplore/chat-message';
+import { ChatInput } from './components/Xplore/chat-input';
+import { WelcomeScreen } from './components/Xplore/xplore-welcome-screen';
+import { useAnalytics } from '@/context/AnalyticsContext';
+import { useSuggestedQuestions } from '@/hooks/useSuggestedQuestions';
+import { Toaster } from 'sonner';
 
 export function Xplorer() {
+  const { messages, isStreaming, handleSubmitQuestion, handleSuggestedQuestion } = useAnalytics();
+  const { questions: suggestedQuestions } = useSuggestedQuestions();
+  const suggestedQuestionsArray = suggestedQuestions.map(q => q.text);
+
   return (
-    <div className="flex flex-col">
-      <main className="flex-1 overflow-hidden">
-        <XplorePanel showSidebar={false} />
-      </main>
-    </div>
+    <>
+      <div className="flex h-screen bg-background">    
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {messages.length === 0 ? (
+              <WelcomeScreen 
+                suggestedQuestions={suggestedQuestionsArray}
+                onSuggestedQuestion={handleSuggestedQuestion}
+              />
+            ) : (
+              <div className="pb-[200px] pt-4">
+                {messages.map((message) => (
+                  <ChatMessage key={message.id} message={message} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t bg-background p-4">
+            <div className="mx-auto max-w-2xl">
+              <ChatInput
+                isLoading={isStreaming}
+                onSubmit={handleSubmitQuestion}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <Toaster />
+    </>
   );
 }

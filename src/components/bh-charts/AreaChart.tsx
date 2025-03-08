@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface AreaChartProps {
   data: any[]
@@ -17,7 +17,7 @@ interface AreaChartProps {
   areas: string[]
   colors?: string[]
   stacked?: boolean
-  config?: Record<string, any> // Additional configuration options
+  config?: Record<string, any>
   isMultiSeries?: boolean
 }
 
@@ -37,21 +37,51 @@ export const AreaChart: React.FC<AreaChartProps> = ({
     return data.map(item => {
       const newItem = { ...item };
       areas.forEach(key => {
-        // Remove currency symbols and convert to number
-        if (typeof newItem[key] === 'string') {
-          // Remove $ and , from values like $12,100
-          newItem[key] = Number(newItem[key].replace(/[$,]/g, ''));
-        }
-        
-        // If still not a number, default to 0
-        if (isNaN(newItem[key])) {
-          newItem[key] = 0;
+        if (isMultiSeries && typeof item[key] === 'object') {
+          // Handle multidimensional data where each area is an object with multiple series
+          Object.entries(item[key]).forEach(([series, value]) => {
+            // Create a new key combining area and series name
+            const seriesKey = `${key}_${series}`;
+            newItem[seriesKey] = typeof value === 'string' 
+              ? Number(value.replace(/[$,]/g, ''))
+              : Number(value);
+
+            if (isNaN(newItem[seriesKey])) {
+              newItem[seriesKey] = 0;
+            }
+          });
+        } else {
+          // Handle single series data
+          if (typeof newItem[key] === 'string') {
+            newItem[key] = Number(newItem[key].replace(/[$,]/g, ''));
+          }
+          
+          if (isNaN(newItem[key])) {
+            newItem[key] = 0;
+          }
         }
       });
       return newItem;
     });
-  }, [data, areas]);
+  }, [data, areas, isMultiSeries]);
   
+  // Get all series keys for multidimensional data
+  const seriesKeys = useMemo(() => {
+    if (!isMultiSeries) return areas;
+    
+    const keys: string[] = [];
+    areas.forEach(area => {
+      if (data[0] && typeof data[0][area] === 'object') {
+        Object.keys(data[0][area]).forEach(series => {
+          keys.push(`${area}_${series}`);
+        });
+      } else {
+        keys.push(area);
+      }
+    });
+    return keys;
+  }, [data, areas, isMultiSeries]);
+
   if (!processedData.length) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
@@ -68,8 +98,8 @@ export const AreaChart: React.FC<AreaChartProps> = ({
     let max = -Infinity;
     
     processedData.forEach(item => {
-      areas.forEach(area => {
-        const value = Number(item[area]);
+      seriesKeys.forEach(key => {
+        const value = Number(item[key]);
         if (!isNaN(value)) {
           min = Math.min(min, value);
           max = Math.max(max, value);
@@ -82,7 +112,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
     max = max === -Infinity ? 100 : Math.ceil(max * 1.1);
     
     return { min, max };
-  }, [processedData, areas]);
+  }, [processedData, seriesKeys]);
 
   // Handle formatter based on config
   const formatter = (value: any) => {
@@ -93,6 +123,18 @@ export const AreaChart: React.FC<AreaChartProps> = ({
     
     // Default to dollar formatter
     return [`$${Number(value).toLocaleString()}`, ""];
+  };
+
+  // Get display name for a series key
+  const getSeriesDisplayName = (key: string) => {
+    if (!isMultiSeries) {
+      return config.labels?.[areas.indexOf(key)] || key;
+    }
+    
+    const [area, series] = key.split('_');
+    const areaIndex = areas.indexOf(area);
+    const seriesLabel = config.labels?.[areaIndex]?.[series] || series;
+    return `${config.labels?.[areaIndex]?.name || area} - ${seriesLabel}`;
   };
 
   return (
@@ -120,12 +162,12 @@ export const AreaChart: React.FC<AreaChartProps> = ({
           }}
         />
         <Legend />
-        {areas.map((area, index) => (
+        {seriesKeys.map((key, index) => (
           <Area
-            key={area}
+            key={key}
             type="monotone"
-            dataKey={area}
-            name={config.labels && config.labels[index] ? config.labels[index] : area}
+            dataKey={key}
+            name={getSeriesDisplayName(key)}
             fill={colors[index % colors.length]}
             stroke={colors[index % colors.length]}
             strokeWidth={2}

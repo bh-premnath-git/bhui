@@ -48,12 +48,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   // Check if the setting is applicable to the current chart type
   const isSettingApplicable = (setting: string): boolean => {
     const nonGridCharts = ['pie', 'donut', 'gauge'];
-    const nonAxisCharts = ['pie', 'donut', 'gauge', 'radar', 'treemap'];
     const stackableCharts = ['bar', 'area'];
     
     switch (setting) {
       case 'showGrid': 
         return !nonGridCharts.includes(currentType);
+      case 'showAxis':
+        return !['pie', 'donut', 'gauge', 'radar', 'treemap'].includes(currentType);
       case 'horizontal': 
         return currentType === 'bar';
       case 'stacked': 
@@ -74,6 +75,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     switch (setting) {
       case 'showLegend':
       case 'showGrid':
+      case 'showAxis':
         return config[setting] !== false; // Default to true
       case 'showLabels':
       case 'horizontal':
@@ -123,6 +125,15 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 label="Show Grid" 
                 isChecked={getSettingValue('showGrid')}
                 onChange={(checked) => handleToggleSetting('showGrid', checked)}
+              />
+            )}
+
+            {/* Show Axis */}
+            {isSettingApplicable('showAxis') && (
+              <SettingToggle 
+                label="Show Axis" 
+                isChecked={getSettingValue('showAxis')}
+                onChange={(checked) => handleToggleSetting('showAxis', checked)}
               />
             )}
             

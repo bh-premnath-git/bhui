@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface BarChartProps {
   data: any[]
@@ -18,6 +18,8 @@ interface BarChartProps {
   colors?: string[]
   config?: Record<string, any>
   isMultiSeries?: boolean
+  xAxisLabel?: string
+  yAxisLabel?: string
 }
 
 export const BarChart: React.FC<BarChartProps> = ({ 
@@ -26,7 +28,9 @@ export const BarChart: React.FC<BarChartProps> = ({
   bars, 
   colors = colorPalettes.supersetColors,
   config = {},
-  isMultiSeries = false
+  isMultiSeries = false,
+  xAxisLabel,
+  yAxisLabel
 }) => {
   // Convert string values to numbers for chart rendering
   const processedData = useMemo(() => {
@@ -35,21 +39,51 @@ export const BarChart: React.FC<BarChartProps> = ({
     return data.map(item => {
       const newItem = { ...item };
       bars.forEach(key => {
-        // Remove currency symbols and convert to number
-        if (typeof newItem[key] === 'string') {
-          // Remove $ and , from values like $12,100
-          newItem[key] = Number(newItem[key].replace(/[$,]/g, ''));
-        }
-        
-        // If still not a number, default to 0
-        if (isNaN(newItem[key])) {
-          newItem[key] = 0;
+        if (isMultiSeries && typeof item[key] === 'object') {
+          // Handle multidimensional data where each bar is an object with multiple series
+          Object.entries(item[key]).forEach(([series, value]) => {
+            // Create a new key combining bar and series name
+            const seriesKey = `${key}_${series}`;
+            newItem[seriesKey] = typeof value === 'string' 
+              ? Number(value.replace(/[$,]/g, ''))
+              : Number(value);
+
+            if (isNaN(newItem[seriesKey])) {
+              newItem[seriesKey] = 0;
+            }
+          });
+        } else {
+          // Handle single series data
+          if (typeof newItem[key] === 'string') {
+            newItem[key] = Number(newItem[key].replace(/[$,]/g, ''));
+          }
+          
+          if (isNaN(newItem[key])) {
+            newItem[key] = 0;
+          }
         }
       });
       return newItem;
     });
-  }, [data, bars]);
+  }, [data, bars, isMultiSeries]);
   
+  // Get all series keys for multidimensional data
+  const seriesKeys = useMemo(() => {
+    if (!isMultiSeries) return bars;
+    
+    const keys: string[] = [];
+    bars.forEach(bar => {
+      if (data[0] && typeof data[0][bar] === 'object') {
+        Object.keys(data[0][bar]).forEach(series => {
+          keys.push(`${bar}_${series}`);
+        });
+      } else {
+        keys.push(bar);
+      }
+    });
+    return keys;
+  }, [data, bars, isMultiSeries]);
+
   if (!processedData.length) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
@@ -66,8 +100,8 @@ export const BarChart: React.FC<BarChartProps> = ({
     let max = -Infinity;
     
     processedData.forEach(item => {
-      bars.forEach(bar => {
-        const value = Number(item[bar]);
+      seriesKeys.forEach(key => {
+        const value = Number(item[key]);
         if (!isNaN(value)) {
           min = Math.min(min, value);
           max = Math.max(max, value);
@@ -80,7 +114,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     max = max === -Infinity ? 100 : Math.ceil(max * 1.1);
     
     return { min, max };
-  }, [processedData, bars]);
+  }, [processedData, seriesKeys]);
 
   // Handle formatter based on config
   const formatter = (value: any) => {
@@ -93,6 +127,18 @@ export const BarChart: React.FC<BarChartProps> = ({
     return [`$${Number(value).toLocaleString()}`, ""];
   };
 
+  // Get display name for a series key
+  const getSeriesDisplayName = (key: string) => {
+    if (!isMultiSeries) {
+      return config.labels?.[bars.indexOf(key)] || key;
+    }
+    
+    const [bar, series] = key.split('_');
+    const barIndex = bars.indexOf(bar);
+    const seriesLabel = config.labels?.[barIndex]?.[series] || series;
+    return `${config.labels?.[barIndex]?.name || bar} - ${seriesLabel}`;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <RechartsBarChart 
@@ -103,10 +149,12 @@ export const BarChart: React.FC<BarChartProps> = ({
         <XAxis 
           dataKey={xAxisDataKey} 
           tick={{ fontSize: 12 }}
+          label={{ value: xAxisLabel, position: 'insideBottom', offset: -10 }}
         />
         <YAxis 
           domain={[minMax.min, minMax.max]}
           tick={{ fontSize: 12 }}
+          label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: -5 }}
         />
         <Tooltip 
           formatter={formatter}
@@ -118,11 +166,11 @@ export const BarChart: React.FC<BarChartProps> = ({
           }}
         />
         <Legend />
-        {bars.map((bar, index) => (
+        {seriesKeys.map((key, index) => (
           <Bar 
-            key={bar} 
-            dataKey={bar}
-            name={config.labels && config.labels[index] ? config.labels[index] : bar}
+            key={key} 
+            dataKey={key}
+            name={getSeriesDisplayName(key)}
             fill={colors[index % colors.length]} 
             radius={[4, 4, 0, 0]} // Rounded top corners
             isAnimationActive={true}

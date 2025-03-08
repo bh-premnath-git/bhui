@@ -1,14 +1,21 @@
 import React, { useMemo } from "react"
 import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
+
+interface PieChartData {
+  name: string;
+  value: number | string;
+  color?: string;
+  [key: string]: string | number | undefined;
+}
 
 interface PieChartProps {
-  data: any[]
-  dataKey: string
-  nameKey: string
-  colors?: string[]
-  config?: Record<string, any>
-  isMultiSeries?: boolean
+  data: PieChartData[] | Record<string, PieChartData[]>;
+  dataKey: string;
+  nameKey: string;
+  colors?: string[];
+  config?: Record<string, any>;
+  isMultiSeries?: boolean;
 }
 
 export const PieChart: React.FC<PieChartProps> = ({ 
@@ -19,30 +26,42 @@ export const PieChart: React.FC<PieChartProps> = ({
   config = {},
   isMultiSeries = false
 }) => {
-  // Ensure data is properly formatted for the pie chart
+  // Process data for single and multi-series
   const processedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    if (!data || (Array.isArray(data) && data.length === 0)) return [];
     
-    return data.map(item => {
-      const newItem = { ...item };
-      
-      // Make sure the value is a number
-      if (typeof newItem[dataKey] === 'string') {
-        // Remove $ and , from values like $12,100
-        newItem[dataKey] = Number(newItem[dataKey].replace(/[$,]/g, ''));
-      }
-      
-      // If still not a number, default to 0
-      if (isNaN(newItem[dataKey])) {
-        newItem[dataKey] = 0;
-      }
-      
-      return newItem;
+    if (isMultiSeries && !Array.isArray(data)) {
+      // For multi-series, combine all series into a single dataset
+      const combinedData: PieChartData[] = [];
+      Object.entries(data).forEach(([series, items]) => {
+        items.forEach(item => {
+          const value = typeof item[dataKey] === 'string' 
+            ? Number(item[dataKey].toString().replace(/[$,]/g, ''))
+            : Number(item[dataKey]);
+            
+          combinedData.push({
+            name: `${series} - ${item[nameKey]}`,
+            value: isNaN(value) ? 0 : value,
+            series // Keep track of the series for coloring
+          });
+        });
+      });
+      return combinedData;
+    }
+    
+    // Single series processing
+    return (data as PieChartData[]).map(item => {
+      const value = typeof item[dataKey] === 'string'
+        ? Number(item[dataKey].toString().replace(/[$,]/g, ''))
+        : Number(item[dataKey]);
+        
+      return {
+        ...item,
+        [dataKey]: isNaN(value) ? 0 : value
+      };
     });
-  }, [data, dataKey]);
-  
-  console.log("PieChart rendering with processed data:", processedData);
-  
+  }, [data, dataKey, nameKey, isMultiSeries]);
+    
   // Don't render the chart if no data or all zero values
   if (!processedData.length || processedData.every(item => item[dataKey] === 0)) {
     return (
@@ -52,19 +71,28 @@ export const PieChart: React.FC<PieChartProps> = ({
     );
   }
 
+  // Get color for a cell
+  const getCellColor = (entry: PieChartData, index: number) => {
+    if (entry.color) return entry.color;
+    if (isMultiSeries && entry.series) {
+      // Use the same color for all items in the same series
+      const seriesIndex = Object.keys(data).indexOf(entry.series as string);
+      return colors[seriesIndex % colors.length];
+    }
+    return colors[index % colors.length];
+  };
+
+  // Configure formatter based on config
+  const formatter = (value: any, name: string) => {
+    const formattedValue = config.valueFormatter 
+      ? config.valueFormatter(value)
+      : `$${Number(value).toLocaleString()}`;
+    
+    return [formattedValue, name];
+  };
+
   // Determine whether to show labels based on config
   const showLabels = config.showLabels !== false;
-  
-  // Configure formatter based on config
-  const formatter = (value: any) => {
-    // Use custom formatter if provided
-    if (config.valueFormatter) {
-      return [config.valueFormatter(value), ""];
-    }
-    
-    // Default to dollar formatter
-    return [`$${Number(value).toLocaleString()}`, ""];
-  };
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -87,7 +115,12 @@ export const PieChart: React.FC<PieChartProps> = ({
           isAnimationActive={true}
         >
           {processedData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+            <Cell 
+              key={`cell-${index}`} 
+              fill={getCellColor(entry, index)}
+              stroke={config.cellStroke || "#fff"}
+              strokeWidth={config.cellStrokeWidth || 1}
+            />
           ))}
         </Pie>
         <Tooltip 

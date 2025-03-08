@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Area
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface LineChartProps {
   data: any[]
@@ -33,23 +33,57 @@ export const LineChart: React.FC<LineChartProps> = ({
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
     
+    if (isMultiSeries) {
+      // For multi-series, transform nested data structure
+      return data.map(item => {
+        const newItem: Record<string, any> = {
+          [xAxisDataKey]: item[xAxisDataKey]
+        };
+        
+        lines.forEach(line => {
+          if (typeof item[line] === 'object' && item[line] !== null) {
+            Object.entries(item[line]).forEach(([key, value]) => {
+              const processedValue = typeof value === 'string' 
+                ? Number(value.replace(/[$,]/g, '')) 
+                : Number(value);
+              newItem[`${line}_${key}`] = isNaN(processedValue) ? 0 : processedValue;
+            });
+          }
+        });
+        
+        return newItem;
+      });
+    }
+    
+    // Single series processing
     return data.map(item => {
       const newItem = { ...item };
       lines.forEach(key => {
-        // Remove currency symbols and convert to number
         if (typeof newItem[key] === 'string') {
-          // Remove $ and , from values like $12,100
           newItem[key] = Number(newItem[key].replace(/[$,]/g, ''));
         }
-        
-        // If still not a number, default to 0
         if (isNaN(newItem[key])) {
           newItem[key] = 0;
         }
       });
       return newItem;
     });
-  }, [data, lines]);
+  }, [data, lines, xAxisDataKey, isMultiSeries]);
+  
+  // Get all line keys for multi-series data
+  const allLineKeys = useMemo(() => {
+    if (!isMultiSeries) return lines;
+    
+    const keys: string[] = [];
+    lines.forEach(line => {
+      if (data[0]?.[line] && typeof data[0][line] === 'object') {
+        Object.keys(data[0][line]).forEach(key => {
+          keys.push(`${line}_${key}`);
+        });
+      }
+    });
+    return keys;
+  }, [data, lines, isMultiSeries]);
   
   if (!processedData.length) {
     return (
@@ -67,7 +101,7 @@ export const LineChart: React.FC<LineChartProps> = ({
     let max = -Infinity;
     
     processedData.forEach(item => {
-      lines.forEach(line => {
+      allLineKeys.forEach(line => {
         const value = Number(item[line]);
         if (!isNaN(value)) {
           min = Math.min(min, value);
@@ -76,22 +110,31 @@ export const LineChart: React.FC<LineChartProps> = ({
       });
     });
     
-    // Add some padding to the scale
     min = min === Infinity ? 0 : Math.floor(min * 0.9);
     max = max === -Infinity ? 100 : Math.ceil(max * 1.1);
     
     return { min, max };
-  }, [processedData, lines]);
+  }, [processedData, allLineKeys]);
 
   // Handle formatter based on config
-  const formatter = (value: any) => {
+  const formatter = (value: any, name: string) => {
     // Use custom formatter if provided
     if (config.valueFormatter) {
-      return [config.valueFormatter(value), ""];
+      return [config.valueFormatter(value), name];
     }
     
     // Default to dollar formatter
-    return [`$${Number(value).toLocaleString()}`, ""];
+    return [`$${Number(value).toLocaleString()}`, name];
+  };
+  
+  // Get display name for a line
+  const getLineName = (line: string, index: number) => {
+    if (config.labels?.[index]) return config.labels[index];
+    if (isMultiSeries) {
+      const [group, metric] = line.split('_');
+      return `${group} - ${metric}`;
+    }
+    return line;
   };
   
   // Determine if we should use Areas instead of Lines
@@ -123,28 +166,31 @@ export const LineChart: React.FC<LineChartProps> = ({
         />
         <Legend iconSize={6} />
         
-        {lines.map((line, index) => (
+        {allLineKeys.map((line, index) => (
           showArea ? (
             <Area
               key={line}
               type="monotone"
               dataKey={line}
-              name={config.labels && config.labels[index] ? config.labels[index] : line}
+              name={getLineName(line, index)}
               stroke={colors[index % colors.length]}
-              fill={`${colors[index % colors.length]}33`} // 33 is 20% opacity in hex
-              strokeWidth={2}
-              isAnimationActive={true}
+              fill={`${colors[index % colors.length]}33`}
+              strokeWidth={config.strokeWidth || 2}
+              dot={{ r: config.dotRadius || 4 }}
+              activeDot={{ r: (config.dotRadius || 4) + 2 }} 
+              isAnimationActive={config.isAnimationActive !== false}
             />
           ) : (
             <Line 
               key={line} 
               type="monotone" 
               dataKey={line}
-              name={config.labels && config.labels[index] ? config.labels[index] : line}
+              name={getLineName(line, index)}
               stroke={colors[index % colors.length]} 
-              strokeWidth={2}
-              activeDot={{ r: 6 }} 
-              isAnimationActive={true}
+              strokeWidth={config.strokeWidth || 2}
+              dot={{ r: config.dotRadius || 4 }}
+              activeDot={{ r: (config.dotRadius || 4) + 2 }} 
+              isAnimationActive={config.isAnimationActive !== false}
             />
           )
         ))}

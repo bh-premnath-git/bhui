@@ -25,7 +25,7 @@ interface AnalyticsContextType {
   isStreaming: boolean;
   handleSubmitQuestion: (question: string) => Promise<void>;
   handleSuggestedQuestion: (question: string) => void;
-  handleNewChat: () => Promise<void>;
+  handleNewChat: () => Promise<string | null>;
   threadId: string | null;
 }
 
@@ -77,9 +77,9 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const handleNewChat = useCallback(async () => {
     if (isCreatingConversation) {
-      return;
+      return null;
     }
-
+    
     try {
       setIsCreatingConversation(true);
       setMessages([]);
@@ -87,27 +87,30 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setCurrentQuestion("");
       setShouldSaveDashboard(false);
       resetStream();
-
+      
       console.log("Starting new conversation");
       const response = await createConversation();
-
+      
       if (response.data.thread_id) {
-        setThreadId(response.data.thread_id);
-        console.log("New conversation started with thread_id:", response.data.thread_id);
+        const newThreadId = response.data.thread_id;
+        console.log(`New conversation started with thread_id: ${newThreadId}`);
+        setThreadId(newThreadId);
         window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
+        return newThreadId; 
       } else {
         console.error("No thread_id returned from createConversation");
         toast.error("Failed to start new conversation: No thread ID returned");
+        return null;
       }
     } catch (error) {
       console.error("Failed to start new conversation:", error);
       toast.error("Failed to start new conversation");
+      return null;
     } finally {
       setIsCreatingConversation(false);
     }
   }, [resetStream, createConversation, isCreatingConversation]);
 
-  // Initialize thread when a connection is selected and no thread exists
   useEffect(() => {
     if (selectedConnection && !threadId && !isCreatingConversation) {
       handleNewChat();
@@ -115,14 +118,25 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [selectedConnection, threadId, isCreatingConversation, handleNewChat]);
 
   const handleSubmitQuestion = useCallback(async (question: string) => {
-    if (!threadId) {
-      await handleNewChat();
-      if (!threadId) {
+    console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
+    
+    let currentThreadId = threadId;
+    if (!currentThreadId) {
+      console.log("No active thread, creating a new conversation");
+      currentThreadId = await handleNewChat();
+      if (!currentThreadId) {
         toast.error("Unable to start conversation. Please try again.");
         return;
       }
     }
 
+    if (!selectedConnection) {
+      toast.error("No connection selected. Please select a connection first.");
+      return;
+    }
+
+    console.log(`Processing question with threadId: ${currentThreadId}, connection: ${selectedConnection}`);
+    
     setCurrentQuestion(question);
     setShouldSaveDashboard(true);
 
@@ -134,11 +148,11 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     setMessages(prev => [...prev, userMessage]);
-    await startStreaming(question);
+    await startStreaming(question, selectedConnection, currentThreadId);
 
     const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
     await addRecentChat({ name: chatName });
-  }, [startStreaming, addRecentChat, threadId, handleNewChat]);
+  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection]);
 
   const handleConnectionSelect = useCallback((connection: Connection) => {
     setSelectedConnection(connection.id);

@@ -1,12 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { QueryResult, StreamMessage, TableSchema } from '@/types/data-catalog/xplore/type';
 import { updateTableSchemas } from './useTableSchemas';
+import { useXplore } from '@/features/data-catalog/hooks/useXplore';
+import { toast } from 'sonner';
 
 export function useStreamingResponse() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedContent, setStreamedContent] = useState<string | undefined>(undefined);
   const [streamedData, setStreamedData] = useState<QueryResult[]>([]);
   const [lastExplanation, setLastExplanation] = useState<string | null>(null);
+  const [abortStreamingFunction, setAbortStreamingFunction] = useState<(() => void) | null>(null);
+  
+  const { streamConversation } = useXplore();
 
   useEffect(() => {
     const schemas: TableSchema[] = [
@@ -24,14 +29,29 @@ export function useStreamingResponse() {
     updateTableSchemas(schemas);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      // Clean up any active stream when component unmounts
+      if (abortStreamingFunction) {
+        abortStreamingFunction();
+      }
+    };
+  }, [abortStreamingFunction]);
+
   const resetStream = useCallback(() => {
+    // Abort any active stream
+    if (abortStreamingFunction) {
+      abortStreamingFunction();
+      setAbortStreamingFunction(null);
+    }
+    
     setIsStreaming(false);
     setStreamedContent(undefined);
     setStreamedData([]);
     setLastExplanation(null);
-  }, []);
+  }, [abortStreamingFunction]);
 
-  const processStreamMessage = (message: StreamMessage) => {
+  const processStreamMessage = useCallback((message: StreamMessage) => {
     if (message.meta) {
       if (message.meta.status === 'started') {
         setStreamedContent('');
@@ -143,341 +163,69 @@ export function useStreamingResponse() {
         });
         break;
     }
-  };
+  }, [lastExplanation]);
 
-  const startStreaming = useCallback(async (question: string) => {
+  const startStreaming = useCallback(async (question: string, connectionId: string, threadId: string) => {
+    // Reset current stream before starting a new one
+    if (abortStreamingFunction) {
+      abortStreamingFunction();
+      setAbortStreamingFunction(null);
+    }
+
+    if (!connectionId) {
+      toast.error("No connection selected. Please select a connection first.");
+      return;
+    }
+
+    if (!threadId) {
+      toast.error("No active conversation. Please start a new chat.");
+      return;
+    }
+
     setIsStreaming(true);
 
-    // Choose stream based on question content
-    let streamToUse;
-
-    if (question.toLowerCase().includes('sales') && question.toLowerCase().includes('compare')) {
-      streamToUse = mockMultiSeriesStream;
-    } else if (question.toLowerCase().includes('bubble') || question.toLowerCase().includes('scatter')) {
-      streamToUse = mockBubbleStream;
-    } else {
-      streamToUse = mockDefaultStream;
-    }
-
-    // Process stream
     try {
-      const mockStream = streamToUse();
-      for await (const message of mockStream) {
-        processStreamMessage(message as StreamMessage);
+      console.log(`Starting stream with question: "${question}", connectionId: ${connectionId}, threadId: ${threadId}`);
+      const parsedConnectionId = parseInt(connectionId, 10);
+      
+      if (isNaN(parsedConnectionId)) {
+        throw new Error(`Invalid connection ID: ${connectionId}`);
       }
+      
+      const abortFunction = streamConversation(
+        parsedConnectionId,
+        question,
+        threadId,
+        (jsonString: string) => {
+          try {
+            console.log("Received stream chunk:", jsonString.substring(0, 100) + (jsonString.length > 100 ? "..." : ""));
+            const messageData = JSON.parse(jsonString);
+            console.log("Parsed message type:", messageData.response_type || (messageData.meta ? "meta" : "unknown"));
+            processStreamMessage(messageData as StreamMessage);
+          } catch (error) {
+            console.error('Error parsing stream message:', error, jsonString);
+          }
+        },
+        () => {
+          console.log("Stream completed");
+          setIsStreaming(false);
+          setAbortStreamingFunction(null);
+        },
+        (error) => {
+          console.error('Stream error:', error);
+          toast.error('Error while processing your question');
+          setIsStreaming(false);
+          setAbortStreamingFunction(null);
+        }
+      );
+      
+      setAbortStreamingFunction(() => abortFunction);
     } catch (error) {
-      console.error('Error in streaming response:', error);
+      console.error('Error starting stream:', error);
+      toast.error('Failed to start conversation stream');
       setIsStreaming(false);
     }
-  }, []);
-
-  // Default stream with bar chart
-  const mockDefaultStream = async function* () {
-    const requestId = crypto.randomUUID();
-    
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'started' as const
-      },
-      data: {
-        message: "Processing has started",
-        input_question: "Show me the top 10 most expensive products"
-      }
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Add IDENTIFY messages to match real stream
-    yield {
-      response_type: "IDENTIFY" as const,
-      content: "public.products",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "SQL" as const,
-      content: "SELECT product_name AS product_name, unit_price AS unit_price FROM public.products ORDER BY unit_price DESC LIMIT 10;",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    yield {
-      response_type: "TABLE" as const,
-      content: {
-        table_name: "products",
-        column_names: ["product_name", "unit_price"],
-        column_values: [
-          ["Côte de Blaye", "263.5"],
-          ["Thüringer Rostbratwurst", "123.79"],
-          ["Mishi Kobe Niku", "97.0"],
-          ["Sir Rodney's Marmalade", "81.0"],
-          ["Carnarvon Tigers", "62.5"],
-          ["Raclette Courdavault", "55.0"],
-          ["Manjimup Dried Apples", "53.0"],
-          ["Tarte au sucre", "49.3"],
-          ["Ipoh Coffee", "46.0"],
-          ["Rössle Sauerkraut", "45.6"]
-        ]
-      },
-      timestamp: new Date().toISOString()
-    };
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    yield {
-      response_type: "CHART" as const,
-      content: `{
-        "chart_type": "bar",
-        "title": "Top 10 Most Expensive Products",
-        "description": "A bar chart displaying the top 10 most expensive products based on their unit price.",
-        "x_axis": {
-          "label": "Product Name",
-          "field": "product"
-        },
-        "y_axis": {
-          "label": "Unit Price",
-          "field": "price"
-        },
-        "data": [
-          { "product": "Côte de Blaye", "price": 263.5 },
-          { "product": "Thüringer Rostbratwurst", "price": 123.79 },
-          { "product": "Mishi Kobe Niku", "price": 97.0 },
-          { "product": "Sir Rodney's Marmalade", "price": 81.0 },
-          { "product": "Carnarvon Tigers", "price": 62.5 },
-          { "product": "Raclette Courdavault", "price": 55.0 },
-          { "product": "Manjimup Dried Apples", "price": 53.0 },
-          { "product": "Tarte au sucre", "price": 49.3 },
-          { "product": "Ipoh Coffee", "price": 46.0 },
-          { "product": "Rössle Sauerkraut", "price": 45.6 }
-        ]
-      }`,
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "EXPLANATION" as const,
-      content: "The query results show the top 10 most expensive products. The most expensive product is \"Côte de Blaye\" with a unit price of 263.5. The next most expensive are \"Thüringer Rostbratwurst\" at 123.79, and \"Mishi Kobe Niku\" at 97.0. The 10th most expensive product is \"Rössle Sauerkraut\" at 45.6.",
-      timestamp: new Date().toISOString()
-    };
-
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'completed' as const
-      },
-      data: {
-        message: "Processing has completed",
-        input_question: "Show me the top 10 most expensive products",
-        duration_ms: 5000,
-        results_summary: {
-          response_type: "CHART"
-        }
-      }
-    };
-  };
-
-  // Multi-series chart stream
-  const mockMultiSeriesStream = async function* () {
-    const requestId = crypto.randomUUID();
-    
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'started' as const
-      },
-      data: {
-        message: "Processing has started",
-        input_question: "Compare sales by region and category"
-      }
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "IDENTIFY" as const,
-      content: "public.sales",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "SQL" as const,
-      content: "SELECT category, region, SUM(sales) as total_sales FROM public.sales GROUP BY category, region ORDER BY category, region;",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    yield {
-      response_type: "CHART" as const,
-      content: `{
-        "chart_type": "bar",
-        "title": "Sales Comparison by Category and Region",
-        "description": "A comparative bar chart showing sales across different product categories and regions.",
-        "is_multi_series": true,
-        "x_axis": {
-          "label": "Category",
-          "field": "category"
-        },
-        "y_axis": {
-          "label": "Sales",
-          "field": "value"
-        },
-        "series_data": {
-          "North America": [
-            { "category": "Electronics", "value": 12500 },
-            { "category": "Clothing", "value": 8700 },
-            { "category": "Food", "value": 4300 },
-            { "category": "Home", "value": 6800 }
-          ],
-          "Europe": [
-            { "category": "Electronics", "value": 9800 },
-            { "category": "Clothing", "value": 7600 },
-            { "category": "Food", "value": 5100 },
-            { "category": "Home", "value": 4900 }
-          ],
-          "Asia": [
-            { "category": "Electronics", "value": 15600 },
-            { "category": "Clothing", "value": 6200 },
-            { "category": "Food", "value": 3800 },
-            { "category": "Home", "value": 5500 }
-          ]
-        },
-        "format": "currency"
-      }`,
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "EXPLANATION" as const,
-      content: "The chart shows sales comparison across different product categories and regions. Electronics has the highest sales in all regions, with Asia leading at $15,600, followed by North America at $12,500. Food products have the lowest sales across all regions, with Asia showing the smallest amount at $3,800.",
-      timestamp: new Date().toISOString()
-    };
-    
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'completed' as const
-      },
-      data: {
-        message: "Processing has completed",
-        input_question: "Compare sales by region and category",
-        duration_ms: 5000,
-        results_summary: {
-          response_type: "CHART"
-        }
-      }
-    };
-  };
-
-  // Bubble chart stream
-  const mockBubbleStream = async function* () {
-    const requestId = crypto.randomUUID();
-    
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'started' as const
-      },
-      data: {
-        message: "Processing has started",
-        input_question: "Show me countries by GDP, population, and area"
-      }
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "IDENTIFY" as const,
-      content: "public.countries",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "SQL" as const,
-      content: "SELECT country, gdp, population, area FROM public.countries ORDER BY gdp DESC;",
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    yield {
-      response_type: "CHART" as const,
-      content: `{
-        "chart_type": "bubble",
-        "title": "Countries by GDP, Population, and Land Area",
-        "description": "A bubble chart showing countries with GDP on the x-axis, population on the y-axis, and land area as bubble size.",
-        "x_axis": {
-          "label": "GDP (Billions USD)",
-          "field": "gdp"
-        },
-        "y_axis": {
-          "label": "Population (Millions)",
-          "field": "population"
-        },
-        "size_field": "area",
-        "data": [
-          { "country": "USA", "gdp": 21400, "population": 331, "area": 9833520 },
-          { "country": "China", "gdp": 14300, "population": 1400, "area": 9596960 },
-          { "country": "Japan", "gdp": 5100, "population": 126, "area": 377975 },
-          { "country": "Germany", "gdp": 3800, "population": 83, "area": 357022 },
-          { "country": "UK", "gdp": 2700, "population": 67, "area": 242900 },
-          { "country": "India", "gdp": 2600, "population": 1380, "area": 3287263 },
-          { "country": "France", "gdp": 2600, "population": 65, "area": 551695 },
-          { "country": "Italy", "gdp": 1900, "population": 60, "area": 301340 },
-          { "country": "Brazil", "gdp": 1800, "population": 212, "area": 8515767 },
-          { "country": "Canada", "gdp": 1700, "population": 38, "area": 9984670 }
-        ]
-      }`,
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    yield {
-      response_type: "EXPLANATION" as const,
-      content: "This bubble chart visualizes countries by their economic and demographic data. The x-axis shows GDP in billions of USD, the y-axis shows population in millions, and the bubble size represents the country's land area. The USA and China stand out with high GDP, while India has a relatively lower GDP despite its large population. Canada has a large land area but smaller population and moderate GDP.",
-      timestamp: new Date().toISOString()
-    };
-    
-    yield {
-      meta: {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        request_id: requestId,
-        status: 'completed' as const
-      },
-      data: {
-        message: "Processing has completed",
-        input_question: "Show me countries by GDP, population, and area",
-        duration_ms: 5000,
-        results_summary: {
-          response_type: "CHART"
-        }
-      }
-    };
-  };
+  }, [streamConversation, processStreamMessage, abortStreamingFunction]);
 
   return {
     isStreaming,

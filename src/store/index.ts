@@ -12,6 +12,8 @@ import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 import taskDetailSlice from './slices/dataops/taskDetailSlice';
 import globalReducer from './slices/globalGitSlice';
 import connectionReducer from './slices/admin/connection'
+import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
+import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +30,8 @@ export const store = configureStore({
     autoSave: autoSaveReducer,
     tasksetails: taskDetailSlice,
     global: globalReducer,
+    buildPipeline: buildPipelineReducer,
+    cluster: clusterReducer,
   },
 });
 

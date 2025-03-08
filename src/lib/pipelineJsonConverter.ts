@@ -2,6 +2,7 @@ import { Node, Edge } from 'reactflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import axios from 'axios';
+import { apiService } from './api/api-service';
 
 // API client setup
 const apiClient = axios.create({
@@ -20,7 +21,16 @@ export const usePipelineQuery = (id: string) => {
     return useQuery({
         queryKey: pipelineKeys.detail(id),
         queryFn: async () => {
-            const { data } = await apiClient.get(`/pipeline/${id}`);
+            const data=await apiService.get({
+                portNumber: CATALOG_API_PORT,
+                url: `/pipeline/${id}`,
+                usePrefix: true,
+                method: 'GET',
+                metadata: {
+                    errorMessage: 'Failed to fetch projects'
+                },
+                params: {limit: 1000}
+            })
             return data;
         },
     });
@@ -30,7 +40,17 @@ export const useUpdatePipelineMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, pipeline_json }: { id: string; pipeline_json: any }) => {
-            const { data } = await apiClient.patch(`/pipeline/${id}`, { pipeline_json });
+            const data =await apiService.patch({
+                portNumber: CATALOG_API_PORT,
+                url: `/pipeline/${id}`,
+                usePrefix: true,
+                method: 'PATCH',
+                data:pipeline_json,
+                metadata: {
+                    errorMessage: 'Failed to fetch projects'
+                },
+                params: {limit: 1000}
+            })
             return data;
         },
         onSuccess: (_, { id }) => {
@@ -70,201 +90,13 @@ export interface UINode extends Node {
 }
 
 // Add new interface for logs
-interface PipelineLog {
-    timestamp: string;
-    message: string;
-    level: 'info' | 'error' | 'warning';
-}
+
 
 // Modify validation result to include logs
-interface ValidationResult {
-    isValid: boolean;
-    errors: string[];
-    logs: PipelineLog[];
-}
+
 
 // Update validation function to generate logs
-const validatePipelineConnections = (nodes: UINode[], edges: Edge[]): ValidationResult => {
-    const errors: string[] = [];
-    const logs: PipelineLog[] = [];
-    const timestamp = new Date().toISOString();
 
-    // Add initial validation log
-    logs.push({
-        timestamp,
-        message: 'Starting pipeline validation...',
-        level: 'info'
-    });
-
-    // Validate overall pipeline structure
-    if (nodes.length === 0) {
-        logs.push({
-            timestamp,
-            message: 'Pipeline is empty - no nodes found',
-            level: 'error'
-        });
-        errors.push('Pipeline is empty - no nodes found');
-        return { isValid: false, errors, logs };
-    }
-
-    // Check for at least one reader and one target
-    const hasReader = nodes.some(node => node.id.startsWith('Reader_'));
-    const hasTarget = nodes.some(node => node.id.startsWith('Target_'));
-
-    if (!hasReader) {
-        logs.push({
-            timestamp,
-            message: 'Pipeline must contain at least one Reader node',
-            level: 'error'
-        });
-        errors.push('Pipeline must contain at least one Reader node');
-    } else {
-        logs.push({
-            timestamp,
-            message: 'Reader node(s) found in pipeline',
-            level: 'info'
-        });
-    }
-
-    if (!hasTarget) {
-        logs.push({
-            timestamp,
-            message: 'Pipeline must contain at least one Target node',
-            level: 'error'
-        });
-        errors.push('Pipeline must contain at least one Target node');
-    } else {
-        logs.push({
-            timestamp,
-            message: 'Target node(s) found in pipeline',
-            level: 'info'
-        });
-    }
-
-    nodes.forEach(node => {
-        // Node validation start log
-        logs.push({
-            timestamp,
-            message: `Validating node: ${node.data.title || node.data.label}`,
-            level: 'info'
-        });
-
-        // Reader node validation
-        if (node.id.startsWith('Reader_')) {
-            const hasOutput = edges.some(edge => edge.source === node.id);
-            if (!hasOutput) {
-                const error = `Reader node "${node.data.title || node.data.label}" is not connected to any transformation`;
-                errors.push(error);
-                logs.push({
-                    timestamp,
-                    message: error,
-                    level: 'error'
-                });
-            } else {
-                logs.push({
-                    timestamp,
-                    message: `Reader node "${node.data.title || node.data.label}" is properly connected`,
-                    level: 'info'
-                });
-            }
-            return;
-        }
-
-        // Target node validation
-        if (node.id.startsWith('Target_')) {
-            const hasInput = edges.some(edge => edge.target === node.id);
-            if (!hasInput) {
-                const error = `Target node "${node.data.title || node.data.label}" is not connected to any transformation`;
-                errors.push(error);
-                logs.push({
-                    timestamp,
-                    message: error,
-                    level: 'error'
-                });
-            } else {
-                logs.push({
-                    timestamp,
-                    message: `Target node "${node.data.title || node.data.label}" is properly connected`,
-                    level: 'info'
-                });
-            }
-            return;
-        }
-
-        // Transformation node validation
-        const incomingEdges = edges.filter(edge => edge.target === node.id);
-        const outgoingEdges = edges.filter(edge => edge.source === node.id);
-        const requiredInputs = node.data.ports.inputs;
-        const maxInputs = node.data.ports.maxInputs;
-
-        // Input validation
-        if (incomingEdges.length === 0) {
-            const error = `Node "${node.data.title || node.data.label}" has no input connections`;
-            errors.push(error);
-            logs.push({
-                timestamp,
-                message: error,
-                level: 'error'
-            });
-        } else if (incomingEdges.length < requiredInputs) {
-            const warning = `Node "${node.data.title || node.data.label}" requires ${requiredInputs} inputs but has only ${incomingEdges.length}`;
-            errors.push(warning);
-            logs.push({
-                timestamp,
-                message: warning,
-                level: 'warning'
-            });
-        } else if (maxInputs && incomingEdges.length > maxInputs) {
-            const error = `Node "${node.data.title || node.data.label}" exceeds maximum allowed inputs (${maxInputs})`;
-            errors.push(error);
-            logs.push({
-                timestamp,
-                message: error,
-                level: 'error'
-            });
-        } else {
-            logs.push({
-                timestamp,
-                message: `Node "${node.data.title || node.data.label}" has valid input connections (${incomingEdges.length}/${requiredInputs})`,
-                level: 'info'
-            });
-        }
-
-        // Output validation
-        if (outgoingEdges.length === 0) {
-            const error = `Node "${node.data.title || node.data.label}" has no output connections`;
-            errors.push(error);
-            logs.push({
-                timestamp,
-                message: error,
-                level: 'error'
-            });
-        } else {
-            logs.push({
-                timestamp,
-                message: `Node "${node.data.title || node.data.label}" has valid output connections`,
-                level: 'info'
-            });
-        }
-    });
-
-    // Add final validation summary
-    const successCount = logs.filter(log => log.level === 'info').length;
-    const warningCount = logs.filter(log => log.level === 'warning').length;
-    const errorCount = logs.filter(log => log.level === 'error').length;
-
-    logs.push({
-        timestamp,
-        message: `Validation complete: ${successCount} successes, ${warningCount} warnings, ${errorCount} errors`,
-        level: errors.length === 0 ? 'info' : 'error'
-    });
-
-    return {
-        isValid: errors.length === 0,
-        errors,
-        logs
-    };
-};
 
 // Add a helper function to generate unique titles
 const generateUniqueTitle = (type: string, existingTitles: Set<string>): string => {
@@ -280,276 +112,6 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
     return title;
 };
 
-export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
-    const uiNodes = nodes as UINode[];
-    
-    if (validateOnly) {
-        // Perform validation and return logs
-        const validation = validatePipelineConnections(uiNodes, edges);
-        
-        if (!validation.isValid) {
-            const error = new Error(`Pipeline is incomplete or broken:\n${validation.errors.join('\n')}`);
-            (error as any).logs = validation.logs;
-            throw error;
-        }
-        
-        // Return early if only validating
-        return validation;
-    }
-    
-    // Get ordered nodes using topological sort
-    const getOrderedNodes = () => {
-        const orderedNodes: UINode[] = [];
-        const visited = new Set<string>();
-
-        const processNode = (nodeId: string) => {
-            if (visited.has(nodeId)) return;
-            visited.add(nodeId);
-
-            // Process incoming edges first
-            const incomingEdges = edges.filter(edge => edge.target === nodeId);
-            incomingEdges.forEach(edge => {
-                if (!visited.has(edge.source)) {
-                    processNode(edge.source);
-                }
-            });
-
-            const node = uiNodes.find(n => n.id === nodeId);
-            if (node) {
-                orderedNodes.push(node);
-            }
-        };
-
-        // Start with target nodes
-        const targetNodes = uiNodes.filter(node => node.id.startsWith('Target_'));
-        targetNodes.forEach(node => {
-            processNode(node.id);
-        });
-
-        return orderedNodes;
-    };
-
-    const orderedUiNodes = getOrderedNodes();
-    
-    // Extract sources and create reader transformations
-    const sources = uiNodes
-        .filter(node => node.id.startsWith('Reader_'))
-        .map(node => ({
-            name: node.data.source.name || node.data.title,
-            source_type: "File",
-            file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
-            data_src_id: node.data.source.data_src_id,
-            connection: {
-                name: node.data.source.connection?.name || "local_connection",
-                connection_type: capitalizeFirstLetter(node.data.source.connection_type),
-                file_path_prefix: `${node.data.source.file_path_prefix}/`
-            }
-        }));
-
-    // Create reader transformations
-    const readerTransformations = uiNodes
-        .filter(node => node.id.startsWith('Reader_'))
-        .map(node => ({
-            name: node.data.title,
-            dependent_on: [],
-            transformation: "Reader",
-            source: {
-                name: node.data.source.name || node.data.title,
-                source_type: "File",
-                file_name: node.data.source.file_name,
-                connection: {
-                    name: node.data.source.connection?.name || "local_connection",
-                    connection_type: capitalizeFirstLetter(node.data.source.connection_type),
-                    file_path_prefix: node.data.source.file_path_prefix
-                }
-            },
-            read_options: {
-                header: true
-            }
-        }));
-
-    // Process regular transformations using ordered nodes
-    const regularTransformations = orderedUiNodes
-        .filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_'))
-        .map(node => {
-            // console.log(node.data.title)
-            const baseConfig = {
-                name: node.data.title, // Use the node's title as the transformation name
-                transformation: node.data.label,
-                dependent_on: edges
-                    .filter(edge => edge.target === node.id)
-                    .map(edge => {
-                        const sourceNode = uiNodes.find(n => n.id === edge.source);
-                        // console.log(sourceNode)
-                        return sourceNode?.data?.title || '';
-                    })
-            };
-
-            // Rest of the transformation configuration...
-            switch (node.data.label) {
-                case 'Aggregator':
-                    return {
-                        ...baseConfig,
-                        name: node.data.title, // Explicitly set the name
-                        group_by: node.data.transformationData?.group_by || [],
-                        aggregations: node.data.transformationData?.aggregations || [],
-                        pivot_by: node.data.transformationData?.pivot_by || []
-                    };
-                case 'Filter':
-                    return {
-                        ...baseConfig,
-                        condition: node.data.transformationData?.condition || ''
-                    };
-                case 'SQL Transformation':
-                    return {
-                        ...baseConfig,
-                        sql: node.data.transformationData?.sql || "true"
-                    };
-                case 'Joiner':
-                    return {
-                        ...baseConfig,
-                        conditions: node.data.transformationData?.conditions || [],
-                        expressions: node.data.transformationData?.expressions || [],
-                        advanced: node.data.transformationData?.advanced || {
-                            hints: []
-                        }
-                    };
-                case 'SchemaTransformation':
-                    return {
-                        ...baseConfig,
-                        derived_fields: node.data.transformationData?.derived_fields || []
-                    };
-                case 'Sorter':
-                    return {
-                        ...baseConfig,
-                        sort_columns: node.data.transformationData?.sort_columns 
-                    };
-                case 'DQ Check':
-                    return {
-                        ...baseConfig,
-                        transformation: node.data.transformationData?.transformation || "",
-                        name: node.data.transformationData?.name || "",
-                        limit: node.data.transformationData?.limit,
-                        dq_rules: node.data.transformationData?.dq_rules || []
-                    };
-                case 'Dedup':
-                    return {
-                        ...baseConfig,
-                        keep: node.data.transformationData?.keep || "any",
-                        dedup_by: node.data.transformationData?.dedup_by || [],
-                        order_by: node.data.transformationData?.order_by || []
-                    };
-                case 'Repartition':
-                    return {
-                        ...baseConfig,
-                        repartition_type: node.data.transformationData?.repartition_type || "repartition",
-                        repartition_value: node.data.transformationData?.repartition_value,
-                        override_partition: node.data.transformationData?.override_partition || "",
-                        repartition_expression: node.data.transformationData?.repartition_expression || [],
-                        limit: node.data.transformationData?.limit
-                    };
-                case 'Union':
-                    return {
-                        ...baseConfig,
-                        operation_type: node.data.transformationData?.operation_type || "union",
-                        allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
-                    };
-                case 'Select':
-                    return {
-                        ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || [],
-                        limit: node.data.transformationData?.limit || ''
-                    };
-                case 'SequenceGenerator':
-                    return {
-                        ...baseConfig,
-                        for_column_name: node.data.transformationData?.for_column_name || "",
-                        order_by: node.data.transformationData?.order_by || [],
-                        start_with: node.data.transformationData?.start_with || 1,
-                        step: node.data.transformationData?.step || ''
-                    };
-                case 'Drop':
-                    return {
-                        ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || [],
-                        pattern: node.data.transformationData?.pattern
-                    };
-                default:
-                    return {
-                        ...baseConfig,
-                        ...node.data.transformationData
-                    };
-            }
-        });
-
-    // Create target configuration and writer transformation
-    const targets = uiNodes
-        .filter(node => node.id.startsWith('Target_'))
-        .map(node => ({
-            name: "output_data",
-            type: "File",
-            connection: {
-                type: "File",
-                file_path: "examples/output.csv"
-            },
-            load_mode: "overwrite"
-        }));
-
-    // const writerTransformations = uiNodes
-    //     .filter(node => node.id.startsWith('Target_'))
-    //     .map(node => {
-    //         const lastTransformation = uiNodes
-    //             .filter(n => !n.id.startsWith('Target_'))
-    //             .slice(-1)[0];
-            
-    //         return {
-    //             name: "write_output",
-    //             dependent_on: [lastTransformation?.data.title || ""],
-    //             transformation: "Writer",
-    //             target: {
-    //                 name: "output_data",
-    //                 type: "File",
-    //                 connection: {
-    //                     type: "File",
-    //                     file_path: "examples/output.csv"
-    //                 },
-    //                 load_mode: "overwrite"
-    //             }
-    //         };
-    //     });
-console.log({
-    $schema: "https://json-schema.org/draft-07/schema#",
-    name: pipelineDtl?.pipeline_name || "sample_pipeline",
-    description: pipelineDtl?.pipeline_description || " ",
-    version: "1.0",
-    mode: "DEBUG",
-    parameters: [],
-    sources,
-    targets,
-    transformations: [
-        ...readerTransformations,
-        ...regularTransformations.filter(Boolean),
-        // ...writerTransformations
-    ]
-})
-    return {
-        pipeline_json: {
-            $schema: "https://json-schema.org/draft-07/schema#",
-            name: pipelineDtl?.pipeline_name || "sample_pipeline",
-            description: pipelineDtl?.pipeline_description || " ",
-            version: "1.0",
-            mode: "DEBUG",
-            parameters: [],
-            sources,
-            targets,
-            transformations: [
-                ...readerTransformations,
-                ...regularTransformations.filter(Boolean),
-                // ...writerTransformations
-            ]
-        }
-    };
-};
 
 
 const getNodeIcon = (type: string): string => {
@@ -726,11 +288,3 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     return { nodes, edges };
 };
 
-function capitalizeFirstLetter(str: string): string {
-    return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
-}
-
-// Update the transformation name mapping
-const getTransformationName = (type: string, title: string): string => {
-    return title || type;
-}; 

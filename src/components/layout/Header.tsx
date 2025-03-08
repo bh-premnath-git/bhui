@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import { useLocation } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
-import { BuildPlaygroundHeader } from "./BuildPlaygroundHeader";
 import { FlowPlaygroundHeader } from "./FlowPlaygroundHeader";
+import { BuildPlaygroundHeader } from "./build-playground-header/BuildPlaygroundHeader";
 
 export function Header() {
   const { isExpanded } = useSidebar();

@@ -1,0 +1,86 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Schema for Target",
+    "type": "object",
+    "title": "Target",
+    "properties": {
+        "target_name": {
+            "type": "string",
+            "description": "Target Name",
+            "minLength": 1
+        },
+        "target_type": {
+            "type": "string",
+            "enum": [
+                "File",
+                "BigQuery",
+                "PostgreSQL",
+                "Snowflake"
+            ]
+        },
+        "connection": {
+            "type": "object",
+            "items": {
+                "$ref": "Connection.json"
+            }
+        },
+        "load_mode": {
+            "type": "string",
+            "enum": [
+                "append",
+                "merge",
+                "overwrite",
+                "ignore",
+                "error"
+            ],
+            "default": "append"
+        },
+        "merge_keys": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "target_name",
+        "type",
+        "connection",
+        "load_mode"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "load_mode": {
+                        "const": "merge"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "merge_keys"
+                ]
+            }            
+        },
+        {
+            "if": {
+                "properties": {
+                    "target_type": {
+                        "const": "File"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_name": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": ["file_name"]
+            }
+        }
+    ]
+}

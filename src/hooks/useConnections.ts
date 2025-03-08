@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
 
 export interface Connection {
   id: string;
@@ -10,15 +11,7 @@ export interface RecentChat {
   name: string;
 }
 
-// Simulated API data
-const mockConnections: Connection[] = [
-  { id: "newconneection1", name: "newconneection1" },
-  { id: "newconnecton2", name: "newconnecton2" },
-  { id: "connection3", name: "Production DB" },
-  { id: "connection4", name: "Staging DB" },
-  { id: "connection5", name: "Development DB" },
-];
-
+// Mock data just for recent chats since we don't have a real API for this yet
 const mockRecentChats: RecentChat[] = [
   { id: "1", name: "Customer Analysis" },
   { id: "2", name: "Revenue Report" },
@@ -28,6 +21,7 @@ const mockRecentChats: RecentChat[] = [
 ];
 
 export function useConnections() {
+  const { connections: adminConnections, isLoading: adminLoading, isError: adminError } = useAdminConnections();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,15 +30,19 @@ export function useConnections() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Simulate API calls
-        const connectionsResponse = await Promise.resolve(mockConnections);
-        const recentChatsResponse = await Promise.resolve(mockRecentChats);
+        // Use real connections data
+        if (adminConnections && adminConnections.length > 0) {
+          // Map admin connections format to our simplified format
+          const mappedConnections: Connection[] = adminConnections.map(conn => ({
+            id: conn.id.toString(),
+            name: conn.connection_config_name || conn.id.toString()
+          }));
+          
+          setConnections(mappedConnections);
+        }
 
-        setConnections(connectionsResponse);
-        setRecentChats(recentChatsResponse);
+        // For recent chats we'll still use mock data until we have a real API
+        setRecentChats(mockRecentChats);
         setIsLoading(false);
       } catch (err) {
         setError('Failed to fetch connections and recent chats');
@@ -52,8 +50,17 @@ export function useConnections() {
       }
     };
 
-    fetchData();
-  }, []);
+    // Only fetch data when admin connections are loaded
+    if (!adminLoading) {
+      fetchData();
+    }
+  }, [adminConnections, adminLoading]);
+
+  useEffect(() => {
+    if (adminError) {
+      setError('Failed to fetch connections from database');
+    }
+  }, [adminError]);
 
   const addConnection = async (newConnection: Omit<Connection, 'id'>) => {
     try {
@@ -79,7 +86,7 @@ export function useConnections() {
         id: crypto.randomUUID(),
         ...newChat,
       };
-      setRecentChats(prev => [chat, ...prev].slice(0, 10)); // Keep only 10 most recent
+      setRecentChats(prev => [chat, ...prev].slice(0, 10));
       return chat;
     } catch (err) {
       setError('Failed to add recent chat');
@@ -90,7 +97,7 @@ export function useConnections() {
   return {
     connections,
     recentChats,
-    isLoading,
+    isLoading: isLoading || adminLoading,
     error,
     addConnection,
     addRecentChat,

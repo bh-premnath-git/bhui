@@ -5,7 +5,7 @@ import { DashboardProvider } from "@/context/DashboardContext";
 
 const XplorerPage = () => {
   return (
-    <div className="min-h-screen p-4 bg-background">
+    <div className="min-h-screen p-1 bg-background">
       <DashboardProvider>
         <AnalyticsProvider>
           <Xplorer />

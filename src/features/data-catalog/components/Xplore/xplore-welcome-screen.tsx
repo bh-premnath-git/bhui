@@ -9,15 +9,15 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ suggestedQuestions, onSuggestedQuestion }: WelcomeScreenProps) {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-      <div className="space-y-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="flex h-full flex-col items-center justify-center px-2 text-center">
+      <div className="space-y-2 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <div className="space-y-2">
           <h2 className="text-xl text-muted-foreground">
             Ask questions about your data in natural language to generate visualizations and insights
           </h2>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 mt-12 mb-8">
+        <div className="grid grid-cols-2 gap-4 mt-6 mb-4">
           <FeatureCard
             icon={<BarChart3 className="h-6 w-6" />}
             title="Compare Categories"
@@ -40,7 +40,7 @@ export function WelcomeScreen({ suggestedQuestions, onSuggestedQuestion }: Welco
           />
         </div>
 
-        <div className="w-full max-w-2xl mx-auto space-y-4">
+        <div className="w-full max-w-2xl mx-auto space-y-2">
           <h3 className="text-lg font-semibold text-foreground">Try asking:</h3>
           <div className="grid grid-cols-2 gap-2">
             {suggestedQuestions.map((question, i) => (

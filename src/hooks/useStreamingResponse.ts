@@ -485,6 +485,6 @@ export function useStreamingResponse() {
     streamedData,
     startStreaming,
     resetStream,
-    lastExplanation, // Expose the explanation to components
+    lastExplanation,
   };
 }

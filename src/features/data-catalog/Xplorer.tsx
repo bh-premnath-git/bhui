@@ -14,14 +14,14 @@ export function Xplorer() {
     <>
       <div className="flex h-screen bg-background">    
         <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto pb-14">
             {messages.length === 0 ? (
               <WelcomeScreen 
                 suggestedQuestions={suggestedQuestionsArray}
                 onSuggestedQuestion={handleSuggestedQuestion}
               />
             ) : (
-              <div className="pb-[200px] pt-4">
+              <div className="pt-4">
                 {messages.map((message) => (
                   <ChatMessage key={message.id} message={message} />
                 ))}
@@ -29,7 +29,7 @@ export function Xplorer() {
             )}
           </div>
 
-          <div className="border-t bg-background p-4">
+          <div className="border-t bg-background p-4 fixed bottom-0 left-0 right-0 z-10 shadow-md">
             <div className="mx-auto max-w-2xl">
               <ChatInput
                 isLoading={isStreaming}

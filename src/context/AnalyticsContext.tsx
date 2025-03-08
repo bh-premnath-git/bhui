@@ -3,6 +3,8 @@ import { Connection, RecentChat, useConnections } from '@/hooks/useConnections';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { Message } from '@/types/data-catalog/xplore/type';
 import { useDashboard } from './DashboardContext';
+import { useXplore } from '@/features/data-catalog/hooks/useXplore';
+import { toast } from 'sonner';
 
 interface AnalyticsContextType {
   currentQuestion: string;
@@ -23,7 +25,8 @@ interface AnalyticsContextType {
   isStreaming: boolean;
   handleSubmitQuestion: (question: string) => Promise<void>;
   handleSuggestedQuestion: (question: string) => void;
-  handleNewChat: () => void;
+  handleNewChat: () => Promise<void>;
+  threadId: string | null;
 }
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
@@ -36,6 +39,10 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [selectedName, setSelectedName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [shouldSaveDashboard, setShouldSaveDashboard] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+
+  const { createConversation } = useXplore();
 
   const {
     connections,
@@ -64,6 +71,89 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [isLoading, connections, selectedConnection, selectedRecent]);
 
+  const handleSuggestedQuestion = useCallback((question: string) => {
+    setInput(question);
+  }, []);
+
+  const handleNewChat = useCallback(async () => {
+    if (isCreatingConversation) {
+      return;
+    }
+
+    try {
+      setIsCreatingConversation(true);
+      setMessages([]);
+      setInput("");
+      setCurrentQuestion("");
+      setShouldSaveDashboard(false);
+      resetStream();
+
+      console.log("Starting new conversation");
+      const response = await createConversation();
+
+      if (response.data.thread_id) {
+        setThreadId(response.data.thread_id);
+        console.log("New conversation started with thread_id:", response.data.thread_id);
+        window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
+      } else {
+        console.error("No thread_id returned from createConversation");
+        toast.error("Failed to start new conversation: No thread ID returned");
+      }
+    } catch (error) {
+      console.error("Failed to start new conversation:", error);
+      toast.error("Failed to start new conversation");
+    } finally {
+      setIsCreatingConversation(false);
+    }
+  }, [resetStream, createConversation, isCreatingConversation]);
+
+  // Initialize thread when a connection is selected and no thread exists
+  useEffect(() => {
+    if (selectedConnection && !threadId && !isCreatingConversation) {
+      handleNewChat();
+    }
+  }, [selectedConnection, threadId, isCreatingConversation, handleNewChat]);
+
+  const handleSubmitQuestion = useCallback(async (question: string) => {
+    if (!threadId) {
+      await handleNewChat();
+      if (!threadId) {
+        toast.error("Unable to start conversation. Please try again.");
+        return;
+      }
+    }
+
+    setCurrentQuestion(question);
+    setShouldSaveDashboard(true);
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: question,
+      role: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    await startStreaming(question);
+
+    const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
+    await addRecentChat({ name: chatName });
+  }, [startStreaming, addRecentChat, threadId, handleNewChat]);
+
+  const handleConnectionSelect = useCallback((connection: Connection) => {
+    setSelectedConnection(connection.id);
+    setSelectedRecent(null);
+    setSelectedName(connection.name);
+    setThreadId(null);
+  }, []);
+
+  const handleRecentSelect = useCallback((chat: RecentChat) => {
+    setSelectedConnection("");
+    setSelectedRecent(chat.id);
+    setSelectedName(chat.name);
+    setThreadId(null);
+  }, []);
+
   useEffect(() => {
     if (streamedContent !== undefined) {
       setMessages(prev => {
@@ -72,7 +162,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (streamedContent || (streamedData && streamedData.length > 0)) {
             const existingContent = lastMessage.content || '';
             const newContent = streamedContent || '';
-            
+
             const finalContent = newContent.length < existingContent.length ? existingContent : newContent;
 
             const updatedMessage = {
@@ -84,7 +174,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           }
           return prev;
         }
-        
+
         if (streamedContent || (streamedData && streamedData.length > 0)) {
           const newMessage: Message = {
             id: crypto.randomUUID(),
@@ -111,48 +201,6 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [streamedContent, streamedData, isStreaming, currentQuestion, selectedConnection, saveDashboard, shouldSaveDashboard]);
 
-  const handleSubmitQuestion = useCallback(async (question: string) => {
-    setCurrentQuestion(question);
-    setShouldSaveDashboard(true);
-    
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: question,
-      role: 'user',
-      timestamp: new Date(),
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    await startStreaming(question);
-    
-    const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
-    await addRecentChat({ name: chatName });
-  }, [startStreaming, addRecentChat]);
-
-  const handleSuggestedQuestion = useCallback((question: string) => {
-    setInput(question);
-  }, []);
-
-  const handleNewChat = useCallback(() => {
-    setMessages([]);
-    setInput("");
-    setCurrentQuestion("");
-    setShouldSaveDashboard(false);
-    resetStream();
-  }, [resetStream]);
-
-  const handleConnectionSelect = useCallback((connection: Connection) => {
-    setSelectedConnection(connection.id);
-    setSelectedRecent(null);
-    setSelectedName(connection.name);
-  }, []);
-
-  const handleRecentSelect = useCallback((chat: RecentChat) => {
-    setSelectedConnection("");
-    setSelectedRecent(chat.id);
-    setSelectedName(chat.name);
-  }, []);
-
   const value = useMemo(() => ({
     currentQuestion,
     input,
@@ -162,7 +210,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     selectedName,
     connections,
     recentChats,
-    isLoading,
+    isLoading: isLoading || isCreatingConversation,
     error,
     handleConnectionSelect,
     handleRecentSelect,
@@ -173,6 +221,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     handleSubmitQuestion,
     handleSuggestedQuestion,
     handleNewChat,
+    threadId,
   }), [
     currentQuestion,
     input,
@@ -182,6 +231,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     connections,
     recentChats,
     isLoading,
+    isCreatingConversation,
     error,
     handleConnectionSelect,
     handleRecentSelect,
@@ -192,6 +242,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     handleSubmitQuestion,
     handleSuggestedQuestion,
     handleNewChat,
+    threadId,
   ]);
 
   return (

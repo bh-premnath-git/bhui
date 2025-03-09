@@ -91,7 +91,6 @@ function AppInitializer() {
   useEffect(() => {
     // Only fetch data when authenticated
     if (isAuthenticated) {
-      console.log('User authenticated, fetching provider data');
       dispatch(fetchGithubProviders());
       dispatch(fetchDataSourceTypes());
     }

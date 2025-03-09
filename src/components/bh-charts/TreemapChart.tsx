@@ -4,10 +4,18 @@ import {
   ResponsiveContainer,
   Tooltip
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
+
+interface TreemapData {
+  name: string;
+  value: number | string;
+  color?: string;
+  children?: TreemapData[];
+  [key: string]: any;
+}
 
 interface TreemapChartProps {
-  data: any[];
+  data: TreemapData[] | Record<string, TreemapData[]>;
   dataKey: string;
   nameKey?: string;
   colors?: string[];
@@ -25,9 +33,40 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
 }) => {
   // Process data for treemap
   const processedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    if (!data || (Array.isArray(data) && data.length === 0)) return [];
     
-    return data.map((item, index) => {
+    if (isMultiSeries && !Array.isArray(data)) {
+      // For multi-series, create a hierarchical structure
+      return Object.entries(data).map(([series, items], seriesIndex) => {
+        const seriesColor = colors[seriesIndex % colors.length];
+        
+        // Process items in this series
+        const children = items.map((item, itemIndex) => {
+          const value = typeof item[dataKey] === 'string'
+            ? Number(item[dataKey].toString().replace(/[$,]/g, ''))
+            : Number(item[dataKey]);
+            
+          return {
+            name: item[nameKey],
+            value: isNaN(value) ? 0 : value,
+            color: colors[(seriesIndex * items.length + itemIndex) % colors.length]
+          };
+        });
+        
+        // Calculate series total
+        const total = children.reduce((sum, item) => sum + (item.value as number), 0);
+        
+        return {
+          name: series,
+          value: total,
+          color: seriesColor,
+          children
+        };
+      });
+    }
+    
+    // Single series processing
+    return (data as TreemapData[]).map((item, index) => {
       const newItem = { ...item };
       
       // Ensure dataKey value is a number
@@ -47,7 +86,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       
       return newItem;
     });
-  }, [data, dataKey, colors]);
+  }, [data, dataKey, nameKey, colors, isMultiSeries]);
   
   if (!processedData.length) {
     return (
@@ -59,10 +98,15 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
 
   // Custom content for treemap cells with text labeling
   const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, value } = props;
+    const { x, y, width, height, name, value, depth } = props;
     
     // Only render text if the cell is large enough
     const shouldRenderText = width > 30 && height > 30;
+    
+    // Use different text colors and sizes based on depth
+    const textColor = depth === 1 ? "#fff" : "#000";
+    const fontSize = depth === 1 ? 12 : 10;
+    const fontWeight = depth === 1 ? "bold" : "normal";
     
     return (
       <g>
@@ -75,6 +119,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
             fill: props.color || props.fill,
             stroke: config.stroke || "#fff",
             strokeWidth: config.strokeWidth || 2,
+            fillOpacity: depth === 1 ? 1 : 0.8
           }}
         />
         {shouldRenderText && config.showLabels !== false && (
@@ -83,9 +128,9 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
               x={x + width / 2}
               y={y + height / 2 - 7}
               textAnchor="middle"
-              fill="#fff"
-              fontSize={12}
-              fontWeight="bold"
+              fill={textColor}
+              fontSize={fontSize}
+              fontWeight={fontWeight}
             >
               {props[nameKey] || name}
             </text>
@@ -93,8 +138,8 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
               x={x + width / 2}
               y={y + height / 2 + 7}
               textAnchor="middle"
-              fill="#fff"
-              fontSize={10}
+              fill={textColor}
+              fontSize={fontSize - 2}
             >
               {config.valueFormatter ? config.valueFormatter(value) : value}
             </text>
@@ -105,14 +150,14 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
   };
 
   // Handle formatter based on config
-  const formatter = (value: any) => {
+  const formatter = (value: any, name: string) => {
     // Use custom formatter if provided
     if (config.valueFormatter) {
-      return [config.valueFormatter(value), "Value"];
+      return [config.valueFormatter(value), name];
     }
     
     // Default formatter
-    return [value.toLocaleString(), "Value"];
+    return [value.toLocaleString(), name];
   };
 
   return (

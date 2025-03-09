@@ -9,10 +9,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
+
+interface RadarChartData {
+  variable: string;
+  [key: string]: string | number;
+}
 
 interface RadarChartProps {
-  data: any[];
+  data: RadarChartData[] | Record<string, RadarChartData[]>;
   variables: string[];
   groups: string[];
   colors?: string[];
@@ -30,24 +35,61 @@ export const RadarChart: React.FC<RadarChartProps> = ({
 }) => {
   // Process and validate data
   const processedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    if (!data || (Array.isArray(data) && data.length === 0)) return [];
     
-    // Convert string values to numbers
-    return data.map(item => {
+    if (isMultiSeries && !Array.isArray(data)) {
+      // For multi-series, transform data to combine all series
+      const combinedData: RadarChartData[] = variables.map(variable => {
+        const newItem: RadarChartData = { variable };
+        
+        // Process each group's data for this variable
+        groups.forEach(group => {
+          Object.entries(data).forEach(([series, items]) => {
+            const item = items.find(i => i.variable === variable);
+            if (item) {
+              const value = typeof item[group] === 'string'
+                ? Number(item[group].toString().replace(/[$,]/g, ''))
+                : Number(item[group]);
+              newItem[`${series}_${group}`] = isNaN(value) ? 0 : value;
+            }
+          });
+        });
+        
+        return newItem;
+      });
+      
+      return combinedData;
+    }
+    
+    // Single series processing
+    return (data as RadarChartData[]).map(item => {
       const newItem = { ...item };
       groups.forEach(group => {
         if (typeof newItem[group] === 'string') {
           newItem[group] = Number(newItem[group].replace(/[$,]/g, ''));
         }
-        
-        // If still not a number, default to 0
         if (isNaN(newItem[group])) {
           newItem[group] = 0;
         }
       });
       return newItem;
     });
-  }, [data, groups]);
+  }, [data, variables, groups, isMultiSeries]);
+
+  // Get all radar keys for multi-series data
+  const radarKeys = useMemo(() => {
+    if (!isMultiSeries) return groups;
+    
+    const keys: string[] = [];
+    if (!Array.isArray(data)) {
+      Object.keys(data).forEach(series => {
+        groups.forEach(group => {
+          keys.push(`${series}_${group}`);
+        });
+      });
+    }
+    return keys;
+  }, [data, groups, isMultiSeries]);
 
   if (!processedData.length) {
     return (
@@ -57,15 +99,27 @@ export const RadarChart: React.FC<RadarChartProps> = ({
     );
   }
 
+  // Get display name for a radar
+  const getRadarName = (key: string, index: number) => {
+    if (config.labels?.[index]) return config.labels[index];
+    if (isMultiSeries) {
+      const [series, group] = key.split('_');
+      return `${series} - ${group}`;
+    }
+    return key;
+  };
+
   // Handle formatter based on config
-  const formatter = (value: any) => {
+  const formatter = (value: any, name: string) => {
+    const displayName = isMultiSeries ? name.split('_')[1] : name;
+    
     // Use custom formatter if provided
     if (config.valueFormatter) {
-      return [config.valueFormatter(value), ""];
+      return [config.valueFormatter(value), displayName];
     }
     
     // Default formatter
-    return [value.toLocaleString(), ""];
+    return [value.toLocaleString(), displayName];
   };
 
   return (
@@ -80,11 +134,11 @@ export const RadarChart: React.FC<RadarChartProps> = ({
         <PolarAngleAxis dataKey="variable" tick={{ fontSize: 12 }} />
         <PolarRadiusAxis tickCount={5} />
         
-        {groups.map((group, index) => (
+        {radarKeys.map((key, index) => (
           <Radar
-            key={group}
-            name={config.labels && config.labels[index] ? config.labels[index] : group}
-            dataKey={group}
+            key={key}
+            name={getRadarName(key, index)}
+            dataKey={key}
             stroke={colors[index % colors.length]}
             fill={colors[index % colors.length]}
             fillOpacity={config.fillOpacity || 0.2}

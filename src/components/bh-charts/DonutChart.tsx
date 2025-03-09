@@ -8,14 +8,17 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
+
+interface DonutChartData {
+  name: string;
+  value: number | string;
+  color?: string;
+  [key: string]: string | number | undefined;  // Index signature for dynamic access
+}
 
 interface DonutChartProps {
-  data: Array<{
-    name: string;
-    value: number | string;
-    color?: string;
-  }>;
+  data: DonutChartData[];
   dataKey?: string;
   nameKey?: string;
   colors?: string[];
@@ -35,14 +38,15 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     
     return data.map((item, index) => {
       const newItem = { ...item };
+      const value = newItem[dataKey];
       
       // Ensure value is a number
-      if (typeof newItem[dataKey] === 'string') {
-        newItem[dataKey] = Number(newItem[dataKey].replace(/[$,]/g, ''));
+      if (typeof value === 'string') {
+        newItem[dataKey] = Number(value.replace(/[$,]/g, ''));
       }
       
       // If still not a number, default to 0
-      if (isNaN(newItem[dataKey])) {
+      if (typeof newItem[dataKey] !== 'number' || isNaN(newItem[dataKey] as number)) {
         newItem[dataKey] = 0;
       }
       
@@ -58,7 +62,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   // Calculate total for percentage display
   const total = useMemo(() => {
     if (!processedData.length) return 0;
-    return processedData.reduce((sum, item) => sum + (item[dataKey] as number), 0);
+    return processedData.reduce((sum, item) => sum + (Number(item[dataKey]) || 0), 0);
   }, [processedData, dataKey]);
 
   if (!processedData.length) {
@@ -117,7 +121,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   };
 
   // Handle formatter based on config
-  const formatter = (value: any, name: string, props: any) => {
+  const formatter = (value: any, name: string, _props: any) => {
     // Calculate percentage
     const percentage = ((value / total) * 100).toFixed(1);
     

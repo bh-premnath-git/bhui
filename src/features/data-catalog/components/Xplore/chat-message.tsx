@@ -51,15 +51,32 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return acc;
   }, []) || [];
 
+  // Process text parts to identify explanations
+  // This approach looks at the structure and length of the content
+  // rather than specific keywords which makes it more future-proof
   const processedParts = parts.map(part => {
-    if (part.type === 'text' && 
-        (part.content.toLowerCase().includes('query results') || 
-         part.content.toLowerCase().includes('most expensive') || 
-         part.content.toLowerCase().includes('price') ||
-         part.content.toLowerCase().includes('product') ||
-         part.content.toLowerCase().includes('table') ||
-         part.content.toLowerCase().includes('chart'))) {
-      return { ...part, type: 'explanation' as const };
+    if (part.type === 'text') {
+      // Heuristics for identifying explanations:
+      // 1. Content contains structured data indicators like ":" or "-" and are longer paragraphs
+      // 2. Content is concise and likely explaining data
+      // 3. Paragraphs that start with explanatory phrases
+      
+      const content = part.content.toLowerCase();
+      
+      const hasStructuredData = (content.includes(':') || content.includes('-')) && content.length > 50;
+      const hasExplanatoryStructure = /^(here|this|the|these|those|below|above|following|analysis)/i.test(content.trim());
+      const hasDataReferences = /\b(data|result|query|table|chart|information|value|record|row|column|field|metric|statistic|analysis|figure|comparison|trend|pattern|distribution)\b/i.test(content);
+      
+      // Only convert to explanation if it meets multiple criteria
+      if ((hasStructuredData && hasDataReferences) || 
+          (hasExplanatoryStructure && hasDataReferences) ||
+          // Fallback for backward compatibility with existing data
+          (content.includes('query results') || 
+           content.includes('most expensive') || 
+           content.includes('table') || 
+           content.includes('chart'))) {
+        return { ...part, type: 'explanation' as const };
+      }
     }
     return part;
   });

@@ -120,6 +120,9 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const handleSubmitQuestion = useCallback(async (question: string) => {
     console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
     
+    // Reset the stream state to clear previous responses
+    resetStream();
+    
     let currentThreadId = threadId;
     if (!currentThreadId) {
       console.log("No active thread, creating a new conversation");
@@ -140,6 +143,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCurrentQuestion(question);
     setShouldSaveDashboard(true);
 
+    // Create and add the user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: question,
@@ -147,12 +151,24 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Add a temporary loading assistant message to indicate processing
+    const tempAssistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: '',
+      role: 'assistant',
+      timestamp: new Date(),
+      isLoading: true, // Add this flag to indicate loading state
+    };
+
+    // Update the messages with both user question and loading indicator
+    setMessages(prev => [...prev, userMessage, tempAssistantMessage]);
+    
+    // Start the streaming process
     await startStreaming(question, selectedConnection, currentThreadId);
 
     const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
     await addRecentChat({ name: chatName });
-  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection]);
+  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection, resetStream]);
 
   const handleConnectionSelect = useCallback((connection: Connection) => {
     setSelectedConnection(connection.id);
@@ -171,24 +187,27 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (streamedContent !== undefined) {
       setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
-        if (lastMessage?.role === 'assistant') {
-          if (streamedContent || (streamedData && streamedData.length > 0)) {
-            const existingContent = lastMessage.content || '';
-            const newContent = streamedContent || '';
-
-            const finalContent = newContent.length < existingContent.length ? existingContent : newContent;
-
-            const updatedMessage = {
-              ...lastMessage,
-              content: finalContent,
-              data: streamedData || lastMessage.data,
-            };
-            return [...prev.slice(0, -1), updatedMessage];
-          }
-          return prev;
+        // Find the last assistant message (which should be our temporary loading message)
+        const lastAssistantIndex = [...prev].reverse().findIndex(msg => msg.role === 'assistant');
+        
+        if (lastAssistantIndex !== -1) {
+          const reversedIndex = lastAssistantIndex;
+          const actualIndex = prev.length - 1 - reversedIndex;
+          
+          // Replace the temporary loading message with actual content
+          const updatedMessages = [...prev];
+          updatedMessages[actualIndex] = {
+            ...updatedMessages[actualIndex],
+            content: streamedContent || '',
+            data: streamedData || [],
+            isLoading: false,
+            timestamp: new Date(),
+          };
+          
+          return updatedMessages;
         }
 
+        // If no assistant message found (should not happen), add a new one
         if (streamedContent || (streamedData && streamedData.length > 0)) {
           const newMessage: Message = {
             id: crypto.randomUUID(),

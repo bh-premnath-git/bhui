@@ -24,6 +24,8 @@ import {
 import { DataActionMenu } from "./data-action-menu";
 import ChartContainer from './chart-container';
 import { PanelLayout } from "@/components/shared/SharedPanel";
+import { motion } from "framer-motion";
+import { BarChart3, LayoutList } from "lucide-react";
 
 interface DataViewProps {
   result: QueryResult;
@@ -49,32 +51,50 @@ export function DataView({ result }: DataViewProps) {
   if (currentResult.type === 'table' && currentResult.data) {
     const tableData = Array.isArray(currentResult.data) ? currentResult.data : [];
     return (
-      <PanelLayout>
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-semibold">Table Results</h3>
-          <DataActionMenu result={currentResult} />
-        </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {currentResult.columns?.map((column) => (
-                  <TableHead key={column}>{column}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((row, i) => (
-                <TableRow key={i}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
+                <LayoutList className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <h3 className="text-sm font-medium">
+                {currentResult.title || "Table Results"}
+                {tableData.length > 0 && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {tableData.length} {tableData.length === 1 ? 'row' : 'rows'}
+                  </span>
+                )}
+              </h3>
+            </div>
+            <DataActionMenu result={currentResult} />
+          </div>
+          <div className="rounded-md border bg-card/70 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
                   {currentResult.columns?.map((column) => (
-                    <TableCell key={column}>{row[column]}</TableCell>
+                    <TableHead key={column} className="text-xs font-medium">{column}</TableHead>
                   ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </PanelLayout>
+              </TableHeader>
+              <TableBody>
+                {tableData.map((row, i) => (
+                  <TableRow key={i} className="hover:bg-muted/30 transition-colors">
+                    {currentResult.columns?.map((column) => (
+                      <TableCell key={column} className="text-sm py-3">{row[column]}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </PanelLayout>
+      </motion.div>
     );
   }
 
@@ -118,23 +138,34 @@ export function DataView({ result }: DataViewProps) {
       }
 
       return (
-        <PanelLayout>
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-semibold">{currentResult.title}</h3>
-            <DataActionMenu result={currentResult} />
-          </div>
-          <div className="h-[400px] w-full">
-            <ChartContainer result={currentResult} onChartChange={handleChartChange}>
-              <GaugeChart
-                value={gaugeData.value}
-                min={currentResult.min || 0}
-                max={currentResult.max || 100}
-                label={gaugeData.name}
-                config={chartConfig}
-              />
-            </ChartContainer>
-          </div>
-        </PanelLayout>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium">{currentResult.title || "Gauge Chart"}</h3>
+              </div>
+              <DataActionMenu result={currentResult} />
+            </div>
+            <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+              <ChartContainer result={currentResult} onChartChange={handleChartChange}>
+                <GaugeChart
+                  value={gaugeData.value}
+                  min={currentResult.min || 0}
+                  max={currentResult.max || 100}
+                  label={gaugeData.name}
+                  config={chartConfig}
+                />
+              </ChartContainer>
+            </div>
+          </PanelLayout>
+        </motion.div>
       );
     }
 
@@ -144,21 +175,32 @@ export function DataView({ result }: DataViewProps) {
         ? currentResult.data.map((d: ChartDataItem) => Number(d[currentResult.yAxis || 'value']))
         : [];
       return (
-        <PanelLayout>
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-semibold">{currentResult.title}</h3>
-            <DataActionMenu result={currentResult} />
-          </div>
-          <div className="h-[400px] w-full">
-            <ChartContainer result={currentResult} onChartChange={handleChartChange}>
-              <HistogramChart
-                data={histogramData}
-                bins={currentResult.bins}
-                config={chartConfig}
-              />
-            </ChartContainer>
-          </div>
-        </PanelLayout>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium">{currentResult.title || "Histogram"}</h3>
+              </div>
+              <DataActionMenu result={currentResult} />
+            </div>
+            <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+              <ChartContainer result={currentResult} onChartChange={handleChartChange}>
+                <HistogramChart
+                  data={histogramData}
+                  bins={currentResult.bins}
+                  config={chartConfig}
+                />
+              </ChartContainer>
+            </div>
+          </PanelLayout>
+        </motion.div>
       );
     }
 
@@ -313,17 +355,28 @@ export function DataView({ result }: DataViewProps) {
     };
 
     return (
-      <PanelLayout>
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-semibold">{currentResult.title}</h3>
-          <DataActionMenu result={currentResult} />
-        </div>
-        <div className="h-[400px] w-full">
-          <ChartContainer result={currentResult} onChartChange={handleChartChange}>
-            {renderChart()}
-          </ChartContainer>
-        </div>
-      </PanelLayout>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <h3 className="text-sm font-medium">{currentResult.title || "Chart"}</h3>
+            </div>
+            <DataActionMenu result={currentResult} />
+          </div>
+          <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+            <ChartContainer result={currentResult} onChartChange={handleChartChange}>
+              {renderChart()}
+            </ChartContainer>
+          </div>
+        </PanelLayout>
+      </motion.div>
     );
   }
 

@@ -8,6 +8,7 @@ export interface Message {
   role: 'user' | 'assistant';
   timestamp: Date;
   data?: QueryResult[];
+  isLoading?: boolean;
 }
 
 export interface QueryResult {

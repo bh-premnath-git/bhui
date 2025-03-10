@@ -197,8 +197,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
             className="space-y-4"
           >
             {message.data.map((result, index) => (
-              <div key={index} className="rounded-lg border bg-card p-4 shadow-sm">
-                <DataView result={result} />
+              <div key={index} className="p-4">
+                <DataView result={result} isEmbedded={true} />
               </div>
             ))}
           </motion.div>

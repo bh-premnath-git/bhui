@@ -29,6 +29,7 @@ import { BarChart3, LayoutList } from "lucide-react";
 
 interface DataViewProps {
   result: QueryResult;
+  isEmbedded?: boolean;
 }
 
 interface ChartDataItem {
@@ -40,7 +41,7 @@ interface GaugeDataItem {
   value: number;
 }
 
-export function DataView({ result }: DataViewProps) {
+export function DataView({ result, isEmbedded = false }: DataViewProps) {
   const [currentResult, setCurrentResult] = useState<QueryResult>(result);
 
   // Handle chart changes from the toolbar
@@ -56,7 +57,7 @@ export function DataView({ result }: DataViewProps) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+        <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
@@ -93,7 +94,7 @@ export function DataView({ result }: DataViewProps) {
               </TableBody>
             </Table>
           </div>
-        </PanelLayout>
+        </div>
       </motion.div>
     );
   }
@@ -143,7 +144,7 @@ export function DataView({ result }: DataViewProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+          <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
@@ -164,7 +165,7 @@ export function DataView({ result }: DataViewProps) {
                 />
               </ChartContainer>
             </div>
-          </PanelLayout>
+          </div>
         </motion.div>
       );
     }
@@ -180,7 +181,7 @@ export function DataView({ result }: DataViewProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+          <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
@@ -199,7 +200,7 @@ export function DataView({ result }: DataViewProps) {
                 />
               </ChartContainer>
             </div>
-          </PanelLayout>
+          </div>
         </motion.div>
       );
     }
@@ -360,7 +361,7 @@ export function DataView({ result }: DataViewProps) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <PanelLayout className="bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden">
+        <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
@@ -375,7 +376,7 @@ export function DataView({ result }: DataViewProps) {
               {renderChart()}
             </ChartContainer>
           </div>
-        </PanelLayout>
+        </div>
       </motion.div>
     );
   }

@@ -44,6 +44,8 @@ export default defineConfig(({ mode }) => {
       stream: 'stream-browserify',
       util: 'util',
       crypto: 'crypto-browserify',
+      // Add polyfill for node:perf_hooks
+      'node:perf_hooks': path.resolve(__dirname, './src/polyfills/perf-hooks.js'),
     },
   },
   define: {

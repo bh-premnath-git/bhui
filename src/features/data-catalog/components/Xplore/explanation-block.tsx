@@ -28,6 +28,7 @@ export function ExplanationBlock({ content, isEmbedded = false }: ExplanationBlo
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="w-full"
     >
       <div className={isEmbedded ? "bg-transparent" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
         <div className="flex items-center justify-between mb-2 px-1">
@@ -56,7 +57,7 @@ export function ExplanationBlock({ content, isEmbedded = false }: ExplanationBlo
             </Tooltip>
           </TooltipProvider>
         </div>
-        <div className="text-sm leading-relaxed whitespace-pre-wrap px-1">
+        <div className="text-sm leading-relaxed whitespace-pre-wrap px-1 break-words">
           {content}
         </div>
       </div>

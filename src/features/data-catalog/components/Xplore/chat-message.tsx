@@ -1,10 +1,10 @@
 import { Message } from "@/types/data-catalog/xplore/type";
 import { cn } from "@/lib/utils";
-import { Bot, CopyCheck, CornerUpRight, User } from "lucide-react";
+import { CopyCheck, CornerUpRight, User } from "lucide-react";
 import { DataView } from "./data-view";
 import { SqlCodeBlock } from "./sql-code-block";
 import { ExplanationBlock } from "./explanation-block";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,71 +16,94 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(message.isLoading);
+  const [hasSqlContent, setHasSqlContent] = useState(false);
   
-  // Skip rendering empty messages that aren't loading
-  if (!message.content && (!message.data || message.data.length === 0) && !message.isLoading) {
-    return null;
-  }
-
-  // Extract SQL queries and explanations from content
-  const parts = message.content?.split('\n').reduce<{ type: 'text' | 'sql' | 'explanation', content: string }[]>((acc, line) => {
-    // Skip empty lines
-    if (!line.trim()) return acc;
-
-    // Check for SQL queries
-    const sqlContent = line.replace(/^Executing SQL:\s*/, '').trim();
-    const isSql = /^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WITH|EXPLAIN|ANALYZE)\s+/i.test(sqlContent);
-    
-    if (isSql) {
-      // Add a new SQL part
-      acc.push({
-        type: 'sql',
-        content: sqlContent
-      });
-    } else {
-      const lastPart = acc[acc.length - 1];
-      if (lastPart && lastPart.type === 'text') {
-        lastPart.content += (lastPart.content && line ? '\n' : '') + line;
-      } else {
+  // Extract SQL queries and explanations from content - moved to useMemo
+  const parts = useMemo(() => {
+    return message.content?.split('\n').reduce<{ type: 'text' | 'sql' | 'explanation', content: string }[]>((acc, line) => {
+      // Skip empty lines
+      if (!line.trim()) return acc;
+  
+      // Check for SQL queries
+      const sqlContent = line.replace(/^Executing SQL:\s*/, '').trim();
+      const isSql = /^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WITH|EXPLAIN|ANALYZE)\s+/i.test(sqlContent);
+      
+      if (isSql) {
+        // Add a new SQL part
         acc.push({
-          type: 'text',
-          content: line
+          type: 'sql',
+          content: sqlContent
         });
+      } else {
+        const lastPart = acc[acc.length - 1];
+        if (lastPart && lastPart.type === 'text') {
+          lastPart.content += (lastPart.content && line ? '\n' : '') + line;
+        } else {
+          acc.push({
+            type: 'text',
+            content: line
+          });
+        }
       }
-    }
-    return acc;
-  }, []) || [];
+      return acc;
+    }, []) || [];
+  }, [message.content]);
 
-  // Process text parts to identify explanations
-  // This approach looks at the structure and length of the content
-  // rather than specific keywords which makes it more future-proof
-  const processedParts = parts.map(part => {
-    if (part.type === 'text') {
-      // Heuristics for identifying explanations:
-      // 1. Content contains structured data indicators like ":" or "-" and are longer paragraphs
-      // 2. Content is concise and likely explaining data
-      // 3. Paragraphs that start with explanatory phrases
-      
-      const content = part.content.toLowerCase();
-      
-      const hasStructuredData = (content.includes(':') || content.includes('-')) && content.length > 50;
-      const hasExplanatoryStructure = /^(here|this|the|these|those|below|above|following|analysis)/i.test(content.trim());
-      const hasDataReferences = /\b(data|result|query|table|chart|information|value|record|row|column|field|metric|statistic|analysis|figure|comparison|trend|pattern|distribution)\b/i.test(content);
-      
-      // Only convert to explanation if it meets multiple criteria
-      if ((hasStructuredData && hasDataReferences) || 
-          (hasExplanatoryStructure && hasDataReferences) ||
-          // Fallback for backward compatibility with existing data
-          (content.includes('query results') || 
-           content.includes('most expensive') || 
-           content.includes('table') || 
-           content.includes('chart'))) {
-        return { ...part, type: 'explanation' as const };
-      }
+  // Check if we have SQL content
+  useEffect(() => {
+    if (parts.some(part => part.type === 'sql')) {
+      setHasSqlContent(true);
+      setIsInitialLoading(false);
     }
-    return part;
-  });
+  }, [parts]);
+
+  // Update loading state when the message loading state changes
+  useEffect(() => {
+    if (!message.isLoading) {
+      setIsInitialLoading(false);
+    }
+  }, [message.isLoading]);
+
+  // Process text parts to identify explanations - moved to useMemo
+  const processedParts = useMemo(() => {
+    return parts.map(part => {
+      if (part.type === 'text') {
+        // Heuristics for identifying explanations:
+        // 1. Content contains structured data indicators like ":" or "-" and are longer paragraphs
+        // 2. Content is concise and likely explaining data
+        // 3. Paragraphs that start with explanatory phrases
+        
+        const content = part.content.toLowerCase();
+        
+        const hasStructuredData = (content.includes(':') || content.includes('-')) && content.length > 50;
+        const hasExplanatoryStructure = /^(here|this|the|these|those|below|above|following|analysis)/i.test(content.trim());
+        const hasDataReferences = /\b(data|result|query|table|chart|information|value|record|row|column|field|metric|statistic|analysis|figure|comparison|trend|pattern|distribution)\b/i.test(content);
+        
+        // Only convert to explanation if it meets multiple criteria
+        if ((hasStructuredData && hasDataReferences) || 
+            (hasExplanatoryStructure && hasDataReferences) ||
+            // Fallback for backward compatibility with existing data
+            (content.includes('query results') || 
+             content.includes('most expensive') || 
+             content.includes('table') || 
+             content.includes('chart'))) {
+          return { ...part, type: 'explanation' as const };
+        }
+      }
+      return part;
+    });
+  }, [parts]);
   
+  // Calculate rendering state flags - moved to useMemo for consistency
+  const { shouldRender, showLoadingAnimation, showContent } = useMemo(() => {
+    const shouldRender = message.content || (message.data && message.data.length > 0) || message.isLoading;
+    const showLoadingAnimation = isInitialLoading && !hasSqlContent;
+    const showContent = !isInitialLoading || hasSqlContent || (!message.isLoading && processedParts.length > 0);
+    
+    return { shouldRender, showLoadingAnimation, showContent };
+  }, [message.content, message.data, message.isLoading, isInitialLoading, hasSqlContent, processedParts]);
+
   const handleCopy = () => {
     if (message.content) {
       navigator.clipboard.writeText(message.content);
@@ -89,17 +112,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
   };
 
+  // Skip rendering empty messages that aren't loading - moved after all hooks
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={cn(
-        "flex w-full items-start gap-4 py-6 px-4 relative",
-        isUser ? "bg-muted/30" : "bg-background",
-        !isUser && "after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-gradient-to-b after:from-primary/20 after:to-transparent"
-      )}
-    >
+    <div className="mb-6 flex items-start gap-4 px-4 max-w-full">
       <div className={cn(
         "flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-full",
         isUser ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 ring-1 ring-primary/20 text-primary"
@@ -107,14 +126,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? (
           <User className="h-5 w-5" />
         ) : (
-          <Bot className="h-5 w-5" />
+          <img src="/assets/ai/ai.svg" alt="Bighammer AI" className="h-5 w-5" />
         )}
       </div>
       
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-3 max-w-full">
         <div className="flex justify-between items-start">
           <div className="text-sm font-medium">
-            {isUser ? 'You' : 'Xplorer AI'}
+            {isUser ? 'You' : 'Bighammer AI'}
           </div>
           {!message.isLoading && message.content && (
             <TooltipProvider>
@@ -141,7 +160,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </div>
 
         <div className={cn(
-          "relative rounded-xl p-4 shadow-sm",
+          "relative rounded-xl p-4 shadow-sm w-full",
           isUser ? "bg-primary text-primary-foreground" : "bg-card border"
         )}>
           <div className={cn(
@@ -152,12 +171,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? "border-transparent" : "",
           )} />
 
-          <AnimatePresence>
-            {/* Loading state */}
-            {message.isLoading && (
+          <AnimatePresence mode="wait">
+            {/* Loading state - only show when in initial loading and no SQL content yet */}
+            {showLoadingAnimation && (
               <motion.div 
+                key="loading"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="flex items-center space-x-2"
               >
                 <div className="flex space-x-1.5">
@@ -181,12 +202,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </motion.div>
             )}
 
-            {/* Regular content */}
-            {!message.isLoading && processedParts.length > 0 && (
+            {/* Content - show once we have SQL or loading is complete */}
+            {showContent && processedParts.length > 0 && (
               <motion.div 
+                key="content"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-4"
+                exit={{ opacity: 0 }}
+                className="space-y-4 w-full break-words"
               >
                 {processedParts.map((part, i) => {
                   if (part.type === 'sql') {
@@ -195,8 +218,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     return <ExplanationBlock key={i} content={part.content} isEmbedded={true} />;
                   } else {
                     return (
-                      <div key={i} className="prose prose-neutral dark:prose-invert max-w-none">
-                        <p className="whitespace-pre-wrap mb-2 text-sm leading-relaxed">{part.content}</p>
+                      <div key={i} className="prose prose-neutral dark:prose-invert max-w-full">
+                        <p className="whitespace-pre-wrap mb-2 text-sm leading-relaxed break-words">{part.content}</p>
                       </div>
                     );
                   }
@@ -206,15 +229,16 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </AnimatePresence>
         </div>
 
-        {!message.isLoading && message.data && message.data.length > 0 && (
+        {/* Data results - show them when we have data, regardless of loading state */}
+        {message.data && message.data.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="space-y-4"
+            className="space-y-4 w-full"
           >
             {message.data.map((result, index) => (
-              <div key={index} className="p-4">
+              <div key={index} className="w-full max-w-full break-words">
                 <DataView result={result} isEmbedded={true} />
               </div>
             ))}
@@ -226,6 +250,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

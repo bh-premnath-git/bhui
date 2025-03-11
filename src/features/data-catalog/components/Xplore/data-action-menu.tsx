@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { useDashboard } from "@/context/DashboardContext";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
+import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface DataActionMenuProps {
   result: QueryResult;
@@ -18,6 +21,7 @@ interface DataActionMenuProps {
 
 export function DataActionMenu({ result }: DataActionMenuProps) {
   const { saveToDashboard } = useDashboard();
+  const [includeDataTable, setIncludeDataTable] = useState(true);
 
   const convertChartToImage = async () => {
     const chartElement = document.querySelector('.recharts-wrapper svg');
@@ -120,39 +124,46 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
         doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, 40, chartWidth, chartHeight);
         finalY = 40 + chartHeight + 20;
 
-        // Add data table below the chart
-        const chartData = Array.isArray(result.data) ? result.data.map(item => [
-          item.name,
-          item.value.toString()
-        ]) : [];
+        // Add data table below the chart only if includeDataTable is true
+        if (includeDataTable) {
+          // Add data table below the chart - with proper null checks
+          const chartData = Array.isArray(result.data) ? result.data
+            .filter(item => item && typeof item === 'object') // Filter out null/undefined items
+            .map(item => [
+              item.name || 'N/A',
+              (item.value !== undefined && item.value !== null) ? String(item.value) : 'N/A'
+            ]) : [];
 
-        autoTable(doc, {
-          head: [[result.xAxis || 'Name', result.yAxis || 'Value']],
-          body: chartData,
-          startY: finalY,
-          margin: { top: 40 },
-          styles: { fontSize: 10 },
-          headStyles: { fillColor: [136, 132, 216] },
-          didDrawPage: (data) => {
-            if (data.cursor) {
-              finalY = data.cursor.y;
+          autoTable(doc, {
+            head: [[result.xAxis || 'Name', result.yAxis || 'Value']],
+            body: chartData,
+            startY: finalY,
+            margin: { top: 40 },
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [136, 132, 216] },
+            didDrawPage: (data) => {
+              if (data.cursor) {
+                finalY = data.cursor.y;
+              }
             }
-          }
-        });
+          });
 
-        // Add note about chart visualization
-        const note = "Note: This PDF includes both the chart visualization and the underlying data.";
-        const splitNote = doc.splitTextToSize(note, 180);
-        doc.text(splitNote, 14, finalY + 20);
+          // Add note about chart visualization
+          const note = "Note: This PDF includes both the chart visualization and the underlying data.";
+          const splitNote = doc.splitTextToSize(note, 180);
+          doc.text(splitNote, 14, finalY + 20);
+        }
       } catch (error) {
         console.error('Error generating chart PDF:', error);
         toast.error('Error generating chart PDF. Falling back to data-only view.');
         
-        // Fallback to data-only view
-        const chartData = Array.isArray(result.data) ? result.data.map(item => [
-          item.name,
-          item.value.toString()
-        ]) : [];
+        // Fallback to data-only view with proper null checks
+        const chartData = Array.isArray(result.data) ? result.data
+          .filter(item => item && typeof item === 'object') // Filter out null/undefined items
+          .map(item => [
+            item.name || 'N/A',
+            (item.value !== undefined && item.value !== null) ? String(item.value) : 'N/A'
+          ]) : [];
 
         autoTable(doc, {
           head: [[result.xAxis || 'Name', result.yAxis || 'Value']],
@@ -170,16 +181,29 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
       }
     }
 
-    // Save the PDF
-    const filename = `${title.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-    doc.save(filename);
-    toast.success("PDF downloaded successfully!");
+    // Save the PDF - use try/catch to prevent unhandled exceptions
+    try {
+      const filename = `${title.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+      doc.save(filename);
+      // Use setTimeout to avoid updating state during render
+      setTimeout(() => {
+        toast.success("PDF downloaded successfully!");
+      }, 0);
+    } catch (error) {
+      console.error('Error saving PDF:', error);
+      setTimeout(() => {
+        toast.error("Error saving PDF");
+      }, 0);
+    }
   };
 
   const handleSaveToDashboard = () => {
     if (result.type === 'chart') {
       saveToDashboard(result);
-      toast.success("Chart saved to dashboard");
+      // Use setTimeout to avoid updating state during render
+      setTimeout(() => {
+        toast.success("Chart saved to dashboard");
+      }, 0);
     }
   };
 
@@ -198,6 +222,19 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
         </DropdownMenuItem>
         {result.type === 'chart' && (
           <>
+            <div className="px-2 py-1.5 text-sm flex items-center space-x-2">
+              <Checkbox 
+                id="include-data-table" 
+                checked={includeDataTable} 
+                onCheckedChange={(checked) => setIncludeDataTable(checked as boolean)}
+              />
+              <Label 
+                htmlFor="include-data-table" 
+                className="text-xs cursor-pointer"
+              >
+                Include data table in PDF
+              </Label>
+            </div>
             <DropdownMenuItem onClick={handleDownloadImage}>
               <Image className="mr-2 h-4 w-4" />
               Download as Image

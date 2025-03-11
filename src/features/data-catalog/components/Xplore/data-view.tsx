@@ -56,6 +56,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
+        className="w-full max-w-full"
       >
         <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
           <div className="flex justify-between items-center mb-3">
@@ -74,25 +75,33 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             </div>
             <DataActionMenu result={currentResult} />
           </div>
-          <div className="rounded-md border bg-card/70 overflow-hidden">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  {currentResult.columns?.map((column) => (
-                    <TableHead key={column} className="text-xs font-medium">{column}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tableData.map((row, i) => (
-                  <TableRow key={i} className="hover:bg-muted/30 transition-colors">
+          <div className="rounded-md border bg-card/70 overflow-hidden horizontal-scrollbar">
+            <div className="max-w-full overflow-x-auto horizontal-scrollbar">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
                     {currentResult.columns?.map((column) => (
-                      <TableCell key={column} className="text-sm py-3">{row[column]}</TableCell>
+                      <TableHead key={column} className="text-xs font-medium py-2">
+                        {column}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tableData.map((row, i) => (
+                    <TableRow key={i} className={i % 2 === 0 ? "bg-background/40" : ""}>
+                      {currentResult.columns?.map((column) => (
+                        <TableCell key={column} className="text-sm py-1.5 break-words max-w-xs">
+                          {row[column] !== null && row[column] !== undefined
+                            ? String(row[column])
+                            : "-"}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -154,7 +163,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               </div>
               <DataActionMenu result={currentResult} />
             </div>
-            <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+            <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
               <ChartContainer result={currentResult} onChartChange={handleChartChange}>
                 <GaugeChart
                   value={gaugeData.value}
@@ -191,11 +200,10 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               </div>
               <DataActionMenu result={currentResult} />
             </div>
-            <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+            <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
               <ChartContainer result={currentResult} onChartChange={handleChartChange}>
                 <HistogramChart
                   data={histogramData}
-                  bins={currentResult.bins}
                   config={chartConfig}
                 />
               </ChartContainer>
@@ -371,7 +379,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             </div>
             <DataActionMenu result={currentResult} />
           </div>
-          <div className="h-[400px] w-full bg-card/70 rounded-md p-4">
+          <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
             <ChartContainer result={currentResult} onChartChange={handleChartChange}>
               {renderChart()}
             </ChartContainer>

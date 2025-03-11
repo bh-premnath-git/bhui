@@ -29,6 +29,7 @@ export function SqlCodeBlock({ sql, isEmbedded = false }: SqlCodeBlockProps) {
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="w-full"
     >
       <div className={isEmbedded ? "bg-transparent" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
         <div className="flex items-center justify-between mb-2 px-1">
@@ -57,8 +58,8 @@ export function SqlCodeBlock({ sql, isEmbedded = false }: SqlCodeBlockProps) {
             </Tooltip>
           </TooltipProvider>
         </div>
-        <div className="overflow-auto">
-          <SqlSyntaxHighlighter code={sql} className="text-sm" />
+        <div className="max-w-full overflow-x-auto horizontal-scrollbar">
+          <SqlSyntaxHighlighter code={sql} className="text-sm break-all word-break" />
         </div>
       </div>
     </motion.div>

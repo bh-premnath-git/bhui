@@ -10,7 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface BubbleChartProps {
   data: any[];
@@ -23,6 +23,9 @@ interface BubbleChartProps {
   isMultiSeries?: boolean;
 }
 
+type ProcessedDataItem = Record<string, number | string>;
+type GroupData = Record<string, ProcessedDataItem[]>;
+
 export const BubbleChart: React.FC<BubbleChartProps> = ({ 
   data, 
   xAxisDataKey,
@@ -33,38 +36,55 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
   config = {},
   isMultiSeries = false
 }) => {
-  // Process data to ensure all values are numbers
+  // Process data for single and multi-series
   const processedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    if (!data || data.length === 0) return isMultiSeries ? {} as GroupData : [] as ProcessedDataItem[];
+
+    if (isMultiSeries) {
+      // For multi-series, we need to create separate datasets for each group
+      const groupData: GroupData = {};
+      
+      data.forEach(item => {
+        groups.forEach(group => {
+          if (!groupData[group]) {
+            groupData[group] = [];
+          }
+
+          if (typeof item[group] === 'object' && item[group] !== null) {
+            // Extract x, y, and size values from the nested object
+            const seriesData: ProcessedDataItem = {
+              [xAxisDataKey]: processValue(item[group][xAxisDataKey]),
+              [yAxisDataKey]: processValue(item[group][yAxisDataKey]),
+              [sizeKey]: processValue(item[group][sizeKey], 1000),
+              name: item.name || item[xAxisDataKey], // Preserve name for tooltip
+            };
+            groupData[group].push(seriesData);
+          }
+        });
+      });
+
+      return groupData;
+    }
     
-    return data.map(item => {
-      const newItem = { ...item };
-      
-      // Ensure x-axis value is a number
-      if (typeof newItem[xAxisDataKey] === 'string') {
-        newItem[xAxisDataKey] = Number(newItem[xAxisDataKey].replace(/[$,]/g, ''));
-      }
-      
-      // Ensure y-axis value is a number
-      if (typeof newItem[yAxisDataKey] === 'string') {
-        newItem[yAxisDataKey] = Number(newItem[yAxisDataKey].replace(/[$,]/g, ''));
-      }
-      
-      // Ensure size value is a number
-      if (typeof newItem[sizeKey] === 'string') {
-        newItem[sizeKey] = Number(newItem[sizeKey].replace(/[$,]/g, ''));
-      }
-      
-      // If still not numbers, default to 0
-      if (isNaN(newItem[xAxisDataKey])) newItem[xAxisDataKey] = 0;
-      if (isNaN(newItem[yAxisDataKey])) newItem[yAxisDataKey] = 0;
-      if (isNaN(newItem[sizeKey])) newItem[sizeKey] = 1000; // Default bubble size
-      
-      return newItem;
-    });
-  }, [data, xAxisDataKey, yAxisDataKey, sizeKey]);
+    // Single series processing
+    return data.map(item => ({
+      ...item,
+      [xAxisDataKey]: processValue(item[xAxisDataKey]),
+      [yAxisDataKey]: processValue(item[yAxisDataKey]),
+      [sizeKey]: processValue(item[sizeKey], 1000),
+    })) as ProcessedDataItem[];
+  }, [data, xAxisDataKey, yAxisDataKey, sizeKey, groups, isMultiSeries]);
+
+  // Helper function to process numeric values
+  const processValue = (value: any, defaultValue: number = 0): number => {
+    if (typeof value === 'string') {
+      const processed = Number(value.replace(/[$,]/g, ''));
+      return isNaN(processed) ? defaultValue : processed;
+    }
+    return typeof value === 'number' ? value : defaultValue;
+  };
   
-  if (!processedData.length) {
+  if (!processedData || (isMultiSeries ? Object.keys(processedData).length === 0 : processedData.length === 0)) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
         No data available for bubble chart
@@ -73,7 +93,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
   }
 
   // Handle formatter based on config
-  const formatter = (value: any, name: string, props: any) => {
+  const formatter = (value: any, name: string, _props: any) => {
     // Use custom formatter if provided
     if (config.valueFormatter) {
       return [config.valueFormatter(value), name];
@@ -81,6 +101,23 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
     
     // Default formatter
     return [value.toLocaleString(), name];
+  };
+
+  // Get display name for a group
+  const getGroupDisplayName = (group: string, index: number) => {
+    if (!isMultiSeries) {
+      return config.labels?.[index] || group;
+    }
+    
+    return config.labels?.[index]?.name || group;
+  };
+
+  // Get data for a specific group
+  const getGroupData = (group: string): ProcessedDataItem[] => {
+    if (isMultiSeries) {
+      return (processedData as GroupData)[group] || [];
+    }
+    return processedData as ProcessedDataItem[];
   };
 
   // Determine if grid should be shown
@@ -124,8 +161,8 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
         {groups.map((group, index) => (
           <Scatter
             key={group}
-            name={config.labels && config.labels[index] ? config.labels[index] : group}
-            data={processedData}
+            name={getGroupDisplayName(group, index)}
+            data={getGroupData(group)}
             fill={colors[index % colors.length]}
           />
         ))}

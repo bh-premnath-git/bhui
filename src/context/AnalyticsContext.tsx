@@ -1,144 +1,266 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { fetchDashboardData, updateConversationContext } from '@/api/analytics-api';
-import { defaultChartStyles, ChartType } from '@/features/data-catalog/components/Xplore/StyleEditor';
-import type { DashboardData, ChartStyles } from '@/types/dataops/data-ops-hub.d';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { Connection, RecentChat, useConnections } from '@/hooks/useConnections';
+import { useStreamingResponse } from '@/hooks/useStreamingResponse';
+import { Message } from '@/types/data-catalog/xplore/type';
+import { useDashboard } from './DashboardContext';
+import { useXplore } from '@/features/data-catalog/hooks/useXplore';
+import { toast } from 'sonner';
 
 interface AnalyticsContextType {
-  dashboardData: DashboardData | null;
-  isLoading: boolean;
-  error: Error | null;
-  viewMode: 'chart' | 'table';
-  setViewMode: (mode: 'chart' | 'table') => void;
-  formatCurrency: (value: number) => string;
-  activeFilters: string[];
-  setActiveFilters: React.Dispatch<React.SetStateAction<string[]>>;
-  chartStyles: ChartStyles;
-  setChartStyles: React.Dispatch<React.SetStateAction<ChartStyles>>;
-  currentPage: number;
-  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
-  itemsPerPage: number;
-  fetchData: (question: string, useContext?: boolean) => Promise<DashboardData | null>;
   currentQuestion: string;
-  resetAnalytics: () => void;
+  input: string;
+  setInput: (input: string) => void;
+  selectedConnection: string;
+  selectedRecent: string | null;
+  selectedName: string;
+  connections: Connection[];
+  recentChats: RecentChat[];
+  isLoading: boolean;
+  error: string | null;
+  handleConnectionSelect: (connection: Connection) => void;
+  handleRecentSelect: (chat: RecentChat) => void;
+  addConnection: (connection: Omit<Connection, 'id'>) => Promise<Connection>;
+  addRecentChat: (chat: Omit<RecentChat, 'id'>) => Promise<RecentChat>;
+  messages: Message[];
+  isStreaming: boolean;
+  handleSubmitQuestion: (question: string) => Promise<void>;
+  handleSuggestedQuestion: (question: string) => void;
+  handleNewChat: () => Promise<string | null>;
+  threadId: string | null;
 }
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
 export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [chartStyles, setChartStyles] = useState<ChartStyles>(defaultChartStyles);
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
-  const itemsPerPage = 5;
+  const [input, setInput] = useState("");
+  const [selectedConnection, setSelectedConnection] = useState("");
+  const [selectedRecent, setSelectedRecent] = useState<string | null>(null);
+  const [selectedName, setSelectedName] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [shouldSaveDashboard, setShouldSaveDashboard] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const { createConversation } = useXplore();
 
-  const fetchData = async (question: string, useContext = true) => {
-    setIsLoading(true);
-    setError(null);
-    
-    // Always update the current question
-    setCurrentQuestion(question);
+  const {
+    connections,
+    recentChats,
+    isLoading,
+    error,
+    addConnection,
+    addRecentChat,
+  } = useConnections();
+
+  const {
+    isStreaming,
+    streamedContent,
+    streamedData,
+    startStreaming,
+    resetStream,
+  } = useStreamingResponse();
+
+  const { saveDashboard } = useDashboard();
+
+  useEffect(() => {
+    if (!isLoading && connections.length > 0 && !selectedConnection && !selectedRecent) {
+      const defaultConnection = connections[0];
+      setSelectedConnection(defaultConnection.id);
+      setSelectedName(defaultConnection.name);
+    }
+  }, [isLoading, connections, selectedConnection, selectedRecent]);
+
+  const handleSuggestedQuestion = useCallback((question: string) => {
+    setInput(question);
+  }, []);
+
+  const handleNewChat = useCallback(async () => {
+    if (isCreatingConversation) {
+      return null;
+    }
     
     try {
-      // Pass the context flag to the API
-      const data = await fetchDashboardData(question, useContext);
+      setIsCreatingConversation(true);
+      setMessages([]);
+      setInput("");
+      setCurrentQuestion("");
+      setShouldSaveDashboard(false);
+      resetStream();
       
-      if (data) {
-        // Create a deep copy of the data to prevent reference issues
-        const dataCopy = structuredClone(data);
-        
-        // Update dashboard data without affecting previous visualizations
-        setDashboardData(dataCopy);
-        
-        // Don't reset filters for follow-up questions
-        if (!useContext) {
-          setActiveFilters([]);
-        }
-        
-        // Set chart type only if recommended and not a follow-up
-        if (data?.recommendedChartType && !useContext) {
-          setChartStyles(prev => ({
-            ...prev,
-            chartType: (data.recommendedChartType as ChartType) || 'bar',
-          }));
-        }
+      console.log("Starting new conversation");
+      const response = await createConversation();
+      
+      if (response.data.thread_id) {
+        const newThreadId = response.data.thread_id;
+        console.log(`New conversation started with thread_id: ${newThreadId}`);
+        setThreadId(newThreadId);
+        window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
+        return newThreadId; 
+      } else {
+        console.error("No thread_id returned from createConversation");
+        toast.error("Failed to start new conversation: No thread ID returned");
+        return null;
       }
-      
-      // Return the data for the component to use
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('An unknown error occurred'));
+    } catch (error) {
+      console.error("Failed to start new conversation:", error);
+      toast.error("Failed to start new conversation");
       return null;
     } finally {
-      setIsLoading(false);
+      setIsCreatingConversation(false);
     }
-  };
+  }, [resetStream, createConversation, isCreatingConversation]);
 
-  const resetAnalytics = useCallback(() => {
-    console.log("Resetting analytics state...");
-    
-    // Reset all relevant state
-    setDashboardData(null);
-    setCurrentQuestion("");
-    setActiveFilters([]);
-    setCurrentPage(1);
-    setViewMode('chart');
-    setChartStyles({...defaultChartStyles});
-    setError(null);
-    setIsLoading(false);
-    
-    // Also reset the conversation context
-    updateConversationContext({
-      currentTopic: "",
-      recentQuestions: [],
-      recentTables: [],
-      recentMetrics: [],
-      currentConnection: "",
-      relatedEntities: [],
-      analysisHistory: []
-    }, "");
-    
-    console.log("Analytics state reset complete");
-  }, []);
-
-  // Initial data load
   useEffect(() => {
-    fetchData("");
+    if (selectedConnection && !threadId && !isCreatingConversation) {
+      handleNewChat();
+    }
+  }, [selectedConnection, threadId, isCreatingConversation, handleNewChat]);
+
+  const handleSubmitQuestion = useCallback(async (question: string) => {
+    console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
+    
+    let currentThreadId = threadId;
+    if (!currentThreadId) {
+      console.log("No active thread, creating a new conversation");
+      currentThreadId = await handleNewChat();
+      if (!currentThreadId) {
+        toast.error("Unable to start conversation. Please try again.");
+        return;
+      }
+    }
+
+    if (!selectedConnection) {
+      toast.error("No connection selected. Please select a connection first.");
+      return;
+    }
+
+    console.log(`Processing question with threadId: ${currentThreadId}, connection: ${selectedConnection}`);
+    
+    setCurrentQuestion(question);
+    setShouldSaveDashboard(true);
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: question,
+      role: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    await startStreaming(question, selectedConnection, currentThreadId);
+
+    const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
+    await addRecentChat({ name: chatName });
+  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection]);
+
+  const handleConnectionSelect = useCallback((connection: Connection) => {
+    setSelectedConnection(connection.id);
+    setSelectedRecent(null);
+    setSelectedName(connection.name);
+    setThreadId(null);
   }, []);
+
+  const handleRecentSelect = useCallback((chat: RecentChat) => {
+    setSelectedConnection("");
+    setSelectedRecent(chat.id);
+    setSelectedName(chat.name);
+    setThreadId(null);
+  }, []);
+
+  useEffect(() => {
+    if (streamedContent !== undefined) {
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage?.role === 'assistant') {
+          if (streamedContent || (streamedData && streamedData.length > 0)) {
+            const existingContent = lastMessage.content || '';
+            const newContent = streamedContent || '';
+
+            const finalContent = newContent.length < existingContent.length ? existingContent : newContent;
+
+            const updatedMessage = {
+              ...lastMessage,
+              content: finalContent,
+              data: streamedData || lastMessage.data,
+            };
+            return [...prev.slice(0, -1), updatedMessage];
+          }
+          return prev;
+        }
+
+        if (streamedContent || (streamedData && streamedData.length > 0)) {
+          const newMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: streamedContent || '',
+            data: streamedData || [],
+            timestamp: new Date(),
+          };
+          return [...prev, newMessage];
+        }
+        return prev;
+      });
+
+      if (!isStreaming && streamedData?.length > 0 && shouldSaveDashboard) {
+        setShouldSaveDashboard(false);
+        saveDashboard({
+          name: currentQuestion.slice(0, 30) + (currentQuestion.length > 30 ? '...' : ''),
+          content: streamedContent || '',
+          data: streamedData,
+          timestamp: new Date(),
+          connectionId: selectedConnection,
+        });
+      }
+    }
+  }, [streamedContent, streamedData, isStreaming, currentQuestion, selectedConnection, saveDashboard, shouldSaveDashboard]);
+
+  const value = useMemo(() => ({
+    currentQuestion,
+    input,
+    setInput,
+    selectedConnection,
+    selectedRecent,
+    selectedName,
+    connections,
+    recentChats,
+    isLoading: isLoading || isCreatingConversation,
+    error,
+    handleConnectionSelect,
+    handleRecentSelect,
+    addConnection,
+    addRecentChat,
+    messages,
+    isStreaming,
+    handleSubmitQuestion,
+    handleSuggestedQuestion,
+    handleNewChat,
+    threadId,
+  }), [
+    currentQuestion,
+    input,
+    selectedConnection,
+    selectedRecent,
+    selectedName,
+    connections,
+    recentChats,
+    isLoading,
+    isCreatingConversation,
+    error,
+    handleConnectionSelect,
+    handleRecentSelect,
+    addConnection,
+    addRecentChat,
+    messages,
+    isStreaming,
+    handleSubmitQuestion,
+    handleSuggestedQuestion,
+    handleNewChat,
+    threadId,
+  ]);
 
   return (
-    <AnalyticsContext.Provider
-      value={{
-        dashboardData,
-        isLoading,
-        error,
-        viewMode,
-        setViewMode,
-        formatCurrency,
-        activeFilters,
-        setActiveFilters,
-        chartStyles,
-        setChartStyles,
-        currentPage,
-        setCurrentPage,
-        itemsPerPage,
-        fetchData,
-        currentQuestion,
-        resetAnalytics,
-      }}
-    >
+    <AnalyticsContext.Provider value={value}>
       {children}
     </AnalyticsContext.Provider>
   );

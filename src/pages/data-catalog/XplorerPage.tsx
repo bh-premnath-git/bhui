@@ -5,14 +5,14 @@ import { DashboardProvider } from "@/context/DashboardContext";
 
 const XplorerPage = () => {
   return (
-    <div className="min-h-screen p-6 bg-background">
-      <AnalyticsProvider>
-        <DashboardProvider>
+    <div className="min-h-screen p-1 bg-background">
+      <DashboardProvider>
+        <AnalyticsProvider>
           <Xplorer />
-        </DashboardProvider>
-      </AnalyticsProvider>
+        </AnalyticsProvider>
+      </DashboardProvider>
     </div>
   )
 }
 
-export default withPageErrorBoundary(XplorerPage, 'XploreerPage');
+export default withPageErrorBoundary(XplorerPage, 'XplorerPage');

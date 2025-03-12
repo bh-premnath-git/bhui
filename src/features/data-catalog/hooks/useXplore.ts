@@ -95,7 +95,6 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
                             const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
                             for (const line of lines) {
-                                // SSE format typically starts with "data: "
                                 if (line.startsWith('data:')) {
                                     const jsonStr = line.slice(5).trim();
                                     onChunk(jsonStr);

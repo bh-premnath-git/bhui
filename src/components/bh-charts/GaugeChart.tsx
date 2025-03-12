@@ -6,7 +6,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface GaugeChartProps {
   value: number | string;
@@ -82,7 +82,7 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({
           </Pie>
           <Tooltip 
             formatter={(value, name) => {
-              if (name === 'Value') {
+              if (name === value) {
                 return [displayValue, label || 'Value'];
               }
               return [null, ''];

@@ -19,7 +19,6 @@ interface ChartToolbarProps {
 const ChartToolbar: React.FC<ChartToolbarProps> = ({
   currentType,
   selectedTheme,
-  vizId,
   onChartTypeChange,
   onColorThemeChange,
   onSettingChange,
@@ -69,7 +68,7 @@ const ChartToolbar: React.FC<ChartToolbarProps> = ({
   const ChartTypeIcon = getCurrentChartTypeIcon();
 
   return (
-    <div className={`absolute top-0 right-0 z-10 flex bg-background/80 backdrop-blur-sm rounded-md p-1 border border-border/30 shadow-md ${className}`}>
+    <div className={`flex items-center ${className}`}>
       {/* Chart Type Dropdown */}
       <ChartTypeDropdown
         isOpen={chartTypeDropdownOpen}

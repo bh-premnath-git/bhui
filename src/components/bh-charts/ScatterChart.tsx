@@ -1,4 +1,4 @@
-import React, { useMemo, FC } from "react"
+import { useMemo, FC } from "react"
 import {
   ScatterChart as RechartsScatterChart,
   Scatter,
@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts"
-import { colorPalettes } from "@/lib/colors"
+import { colorPalettes } from "@/components/bh-charts"
 
 interface ScatterChartProps {
   data: Array<{ [key: string]: any }>;
@@ -132,7 +132,7 @@ export const ScatterChart: FC<ScatterChartProps> = ({
           data={processedData}
           fill={colors[0]}
         >
-          {config.useMultipleColors !== false && processedData.map((entry, index) => (
+          {config.useMultipleColors !== false && processedData.map((_entry, index) => (
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Scatter>

@@ -6,7 +6,18 @@ import { TableContent } from "./table-content"
 import { TablePagination } from "./table-pagination"
 import type { DataTableProps } from "@/types/table"
 
-export function DataTable<TData>({
+interface DataTableProps<T> {
+  data: T[];
+  columns: any[];
+  topVariant?: "simple" | "status";
+  headerFilter?: string;
+  pagination?: boolean;
+  toolbarConfig?: any;
+  onRowClick?: (row: any) => void;
+  getRowClassName?: (index: number) => string;
+}
+
+export function DataTable<T>({
   data,
   columns,
   topVariant = "simple",
@@ -14,7 +25,8 @@ export function DataTable<TData>({
   pagination = true,
   toolbarConfig,
   onRowClick,
-}: DataTableProps<TData>) {
+  getRowClassName,
+}: DataTableProps<T>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [isInitialized, setIsInitialized] = React.useState(false)
@@ -53,7 +65,7 @@ export function DataTable<TData>({
         <StatusTopSection table={table} toolbarConfig={toolbarConfig} headerFilter={headerFilter} />
       )}
 
-      <TableContent table={table} onRowClick={onRowClick} />
+      <TableContent table={table} onRowClick={onRowClick} getRowClassName={getRowClassName} />
 
       {pagination && <TablePagination table={table} />}
     </div>

@@ -8,13 +8,12 @@ import flowReducer from './slices/designer/flowSlice';
 import dataopshubReducer from './slices/dataops/dataOpsHubSlice';
 import alertHubReducer from './slices/dataops/alertHubSlice';
 import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
-import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 import taskDetailSlice from './slices/dataops/taskDetailSlice';
 import globalReducer from './slices/globalGitSlice';
 import connectionReducer from './slices/admin/connection'
 import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
-
+import canvasReducer from './slices/designer/buildPipeLine/dataPipeLineCanvasSlice'
 export const store = configureStore({
   reducer: {
     users: usersReducer,
@@ -27,12 +26,18 @@ export const store = configureStore({
     dataOpsHub: dataopshubReducer,
     alertHub: alertHubReducer,
     layoutField: layoutFiedlReducer,
-    autoSave: autoSaveReducer,
     tasksetails: taskDetailSlice,
     global: globalReducer,
     buildPipeline: buildPipelineReducer,
     cluster: clusterReducer,
+    canvas: canvasReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredPaths: ["canvas.debuggedNodes"],
+      },
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

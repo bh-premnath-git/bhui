@@ -3,6 +3,11 @@ import { useReactFlow } from "reactflow";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
 import PipeLinePopUp from "./pipeLinePopUp";
 import { HiChartBar } from "react-icons/hi";
+import { useDispatch } from "react-redux";
+import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { AppDispatch } from '@/store';
+import { Loader } from 'lucide-react';
+
 const edgeStyles = {
     stroke: '#b1b1b7',
     strokeWidth: 2,
@@ -59,19 +64,28 @@ export const CustomEdge = memo(({
 }: CustomEdgeProps) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isMetricsOpen, setIsMetricsOpen] = useState(false);
+    const [isEdgeLoading, setIsEdgeLoading] = useState(false);
 
     const { setEdges, getNode } = useReactFlow();
-    const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery({
+    const dispatch = useDispatch<AppDispatch>();
+    console.log(transformationCounts,"transformationCounts")
+    // Memoize the query parameters to prevent unnecessary re-renders
+    const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
-        transformationName: getNode(source)?.data.title
-    });
+        transformationName: getNode(source)?.data.title,
+        // Only enable the query when the metrics dialog is open
+        enabled: isMetricsOpen
+    }), [pipelineDtl?.pipeline_name, source, getNode, isMetricsOpen]);
+
+    const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
 
     const sourceNode = getNode(source);
+    console.log(sourceNode,"sourceNode")
     
     const rowCount = transformationCounts.find(
-        (t) => t.transformationName === sourceNode?.data.label?.toLowerCase()
+        (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
     )?.rowCount;
-
+console.log(rowCount,"rowCount")
     const edgeCenter = useMemo(() => ({
         x: (sourceX + targetX) / 2,
         y: (sourceY + targetY) / 2,
@@ -85,9 +99,22 @@ export const CustomEdge = memo(({
                   ${targetX} ${targetY}`;
     }, [sourceX, sourceY, targetX, targetY]);
 
-    const handleMetricsClick = (e: React.MouseEvent) => {
+    const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        setIsMetricsOpen(true);
+        // Only proceed if rowCount exists (meaning the node is in debug list)
+        if (rowCount) {
+            setIsMetricsOpen(true);
+            setIsEdgeLoading(true);
+            try {
+                console.log(sourceNode?.data.title, "sourceNode?.data.title");
+                await dispatch(fetchTransformationOutput({
+                    pipelineName: pipelineDtl?.pipeline_name,
+                    transformationName: sourceNode?.data.title
+                }));
+            } finally {
+                setIsEdgeLoading(false);
+            }
+        }
     };
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
@@ -128,6 +155,7 @@ export const CustomEdge = memo(({
                 onMetricsClick={handleMetricsClick}
                 onRemove={handleEdgeRemove}
                 onHoverChange={setIsHovered}
+                isLoading={isEdgeLoading}
             />
 
             {/* Metrics Dialog */}
@@ -148,6 +176,7 @@ interface EdgeControlsProps {
     onMetricsClick: (e: React.MouseEvent) => void;
     onRemove: (e: React.MouseEvent) => void;
     onHoverChange: (isHovered: boolean) => void;
+    isLoading: boolean;
 }
 
 const EdgeControls: React.FC<EdgeControlsProps> = ({
@@ -156,7 +185,8 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     rowCount,
     onMetricsClick,
     onRemove,
-    onHoverChange
+    onHoverChange,
+    isLoading
 }) => (
     <foreignObject
         width={120}
@@ -169,7 +199,7 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
         onMouseLeave={() => onHoverChange(false)}
     >
         <div className="flex items-center justify-between w-full">
-            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} />
+            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} />
             <RemoveButton isHovered={isHovered} onClick={onRemove} />
         </div>
     </foreignObject>
@@ -178,25 +208,44 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
 interface MetricsButtonProps {
     rowCount?: number;
     onClick: (e: React.MouseEvent) => void;
+    isLoading?: boolean;
 }
 
-const MetricsButton: React.FC<MetricsButtonProps> = ({ rowCount, onClick }) => (
-    <div className="flex items-center">
-        {rowCount && (
-            <div className="flex flex-col items-center ml-8">
-                <button
-                    className="w-3 h-3"
-                    onClick={onClick}
-                >
-                    <HiChartBar className="w-3 h-3 text-emerald-600" />
-                </button>
-                <span style={{ fontSize: '6px' }} className="font-medium text-gray-700 min-w-[24px] text-center">
-                    {rowCount} rows
-                </span>
-            </div>
-        )}
-    </div>
-);
+const MetricsButton: React.FC<MetricsButtonProps & { isLoading?: boolean }> = ({ 
+    rowCount, 
+    onClick, 
+    isLoading 
+}) => {
+    const handleMetricsClick = (e: React.MouseEvent) => {
+        // Only trigger onClick if rowCount exists (meaning debug list is not empty)
+        if (rowCount) {
+            onClick(e);
+        }
+    };
+
+    return (
+        <div className="flex items-center">
+            {rowCount && (
+                <div className="flex flex-col items-center ml-8">
+                    <button
+                        className="w-3 h-3"
+                        onClick={handleMetricsClick}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <Loader size={12} className="animate-spin text-emerald-600" />
+                        ) : (
+                            <HiChartBar className="w-3 h-3 text-emerald-600" />
+                        )}
+                    </button>
+                    <span style={{ fontSize: '6px' }} className="font-medium text-gray-700 min-w-[24px] text-center">
+                        {rowCount} rows
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface RemoveButtonProps {
     isHovered: boolean;

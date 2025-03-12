@@ -53,18 +53,23 @@ const safeArray = (value: any) => Array.isArray(value) ? value : [];
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
   const initialFormValues = useMemo(() => generateInitialValues(schema, initialValues, currentNodeId), [schema, initialValues, currentNodeId]);
 
-  const { control, handleSubmit, setValue, watch } = useForm<FormValues>({
+  // Add resolver to handle validation and form state
+  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: initialFormValues,
-    mode: 'onChange'
+    mode: 'onChange',
   });
 
-  if (!schema) {
-    return null;
-  }
+  // Watch all form values
+  const formValues = watch();
 
-const dispatch=useDispatch<AppDispatch>();
+  // Add logging to track form values
+  useEffect(() => {
+    console.log('Form values changed:', formValues);
+  }, [formValues]);
+
+  const dispatch=useDispatch<AppDispatch>();
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '')) {
+    if (!['SchemaTransformation', 'Joiner', 'Filter'].includes(schema?.title || '')) {
       return;
     }
     try {
@@ -75,20 +80,50 @@ const dispatch=useDispatch<AppDispatch>();
 
       if (response?.result) {
         const parsedResult = JSON.parse(response.result);
-        setValue(fieldName, parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression);
+        console.log('Setting expression value:', { fieldName, value: parsedResult });
+        
+        const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+        setValue(fieldName, expressionValue, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
+        setFieldValue(fieldName, expressionValue);
+        
+        const currentValues = watch();
+        console.log('Form values after setting:', { ...currentValues, [fieldName]: expressionValue });
       }
     } catch (error) {
       console.error('Error generating expression:', error);
       setValue(fieldName, '');
+      setFieldValue(fieldName, '');
     }
-  }, [schema?.title, sourceColumns]);
+  }, [schema?.title, sourceColumns, setValue, watch, dispatch]);
 
-  const onSubmitForm = (values: any) => {
-    onSubmit({ ...values, nodeId: currentNodeId });
+  // Update onSubmitForm to properly handle the form values
+  const onSubmitForm = (values: FormValues) => {
+    console.log('Raw form values before cleaning:', values);
+
+    const cleanValues = Object.entries(values).reduce((acc, [key, value]) => {
+      console.log(`Processing field ${key}:`, { value, type: typeof value });
+      // Keep all non-null values, including empty strings for expression fields
+      if (value !== undefined && value !== null) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    console.log('Final cleaned values:', cleanValues);
+    onSubmit({ ...cleanValues, nodeId: currentNodeId });
   };
 
+  // Add form state debugging (optional, remove in production)
+  useEffect(() => {
+    console.log('Current Form State:', formValues);
+  }, [formValues]);
+
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)}>
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
       <FormContent
         control={control}
         schema={schema}
@@ -99,6 +134,12 @@ const dispatch=useDispatch<AppDispatch>();
         nodes={nodes}
         edges={edges}
       />
+      
+      {/* <div className="flex justify-end mt-4">
+        <Button type="submit">
+          Save Changes
+        </Button>
+      </div> */}
     </form>
   );
 };
@@ -260,6 +301,7 @@ const FormContent: React.FC<{
     const fetchSuggestions = async () => {
       try {
         const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+        console.log(suggestions,"suggestions")
         setColumnSuggestions(suggestions);
         // Increment key to force re-render of FormField components
         setSuggestionKey(prev => prev + 1);
@@ -536,25 +578,37 @@ const FormContent: React.FC<{
         name={fieldKey}
         control={control}
         defaultValue={fieldSchema.default || ''}
-        render={({ field, fieldState: { error } }) => (
-          <FormField
-            fieldSchema={fieldSchema}
-            name={fieldKey}
-            fieldKey={fieldKey}
-            value={field.value}
-            onChange={field.onChange}
-            isExpression={isExpression}
-            sourceColumns={sourceColumns}
-            additionalColumns={columnSuggestions}
-            error={error?.message}
-            required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
-            onExpressionClick={() => {
-              if (isExpression) {
-                onExpressionClick(field.name || fieldKey, field.onChange, fieldKey);
-              }
-            }}
-          />
-        )}
+        render={({ field }) => {
+          console.log(`Rendering field ${fieldKey} with value:`, field.value);
+          return (
+            <FormField
+              fieldSchema={fieldSchema}
+              name={field.name}
+              fieldKey={fieldKey}
+              value={field.value}
+              onChange={(newValue) => {
+                console.log(`Field ${fieldKey} changing to:`, newValue);
+                field.onChange(newValue);
+              }}
+              isExpression={isExpression}
+              sourceColumns={sourceColumns}
+              additionalColumns={columnSuggestions.map(colName => ({
+                name: colName,
+                dataType: 'string'
+              }))}
+              required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
+              onExpressionClick={() => {
+                if (isExpression) {
+                  onExpressionClick(
+                    field.name || fieldKey,
+                    (value: any) => field.onChange(value),
+                    fieldKey
+                  );
+                }
+              }}
+            />
+          );
+        }}
       />
     );
   };

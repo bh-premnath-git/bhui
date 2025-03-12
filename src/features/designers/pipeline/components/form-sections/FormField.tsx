@@ -11,7 +11,7 @@ interface FormFieldProps {
   name: string;
   fieldKey: string;
   enumValues?: string[];
-  value: string;
+  value: string | { expression: string };
   isExpression?: boolean;
   required?: boolean;
   onExpressionClick?: () => void;
@@ -61,6 +61,15 @@ const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
   };
 };
 
+// Add these styles at the top of the file
+const expressionEditorStyles = {
+  wrapper: 'relative rounded-md border border-gray-300 shadow-sm hover:border-gray-400 focus-within:border-gray-400 my-2',
+  header: 'flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50',
+  headerTitle: 'text-sm font-medium text-gray-700',
+  editorContainer: 'p-0.5 bg-white',
+  editor: 'min-h-[200px] max-h-[400px] overflow-auto'
+};
+
 export const FormField: React.FC<FormFieldProps> = React.memo(({
   fieldSchema,
   name,
@@ -92,6 +101,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
     </span>
   ), [fieldKey, required]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    if (value && typeof value === 'object' && 'expression' in value) {
+      onChange({ ...value as Record<string, unknown>, expression: newValue });
+    } else {
+      onChange(newValue);
+    }
+  };
+console.log(additionalColumns,"sourceColumns")
   if (enumValues) {
     return (  
       <Controller
@@ -103,7 +121,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
             <Select>
               <SelectTrigger
                 {...field}
-                required={required}
+                // required={required}
                 disabled={disabled}
                 className={`block w-full mt-1 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                 aria-label={`Select ${fieldKey}`}
@@ -126,59 +144,45 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   }
 
   return (
-    <Controller
-      control={control}
-      name={name}
-      rules={{ validate: onValidate }}
-      render={({ field }) => (
-        isExpression ? (
-          <div
-            role="textbox"
-            aria-label={`SQL expression editor for ${fieldKey}`}
-            onClick={() => !disabled && onExpressionClick?.()}
-            className={`cursor-pointer ${disabled ? 'opacity-50' : ''}`}
-            tabIndex={0}
-            onFocus={(e) => {
-              e.stopPropagation();
-            }}
-          >
+    <div className="form-field">
+      {isExpression ? (
+        <div className={expressionEditorStyles.wrapper}>
+          {/* <div className={expressionEditorStyles.header}>
+            <span className={expressionEditorStyles.headerTitle}>Expression Editor</span>
+            <button
+              type="button"
+              onClick={() => onExpressionClick?.()}
+              className="px-2 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Generate
+            </button>
+          </div> */}
+          <div className={expressionEditorStyles.editorContainer}>
             <MonacoEditor
-              className='w-full shadow-sm border-gray-300 rounded-sm'
-              height="100px"
-              defaultLanguage="sql"
-              value={value}
-              loading={<div>Loading...</div>}
-              beforeMount={(monaco) => {
-                // Define custom SQL theme
-                monaco.editor.defineTheme('sqlTheme', {
-                  base: 'vs',
-                  inherit: true,
-                  rules: [],
-                  colors: {
-                    'editor.background': '#FAFAFA',
-                  }
-                });
-
-                // Add custom CSS for suggestion widget
-                const styleSheet = document.createElement('style');
-                styleSheet.textContent = `
-                  .monaco-editor .suggest-widget {
-                    width: 150px !important;
-                    background-color: #fff !important;
-                  }
-                `;
-                document.head.appendChild(styleSheet);
+              height="200px"
+              language="sql"
+              theme="vs-light"
+              value={typeof value === 'object' && 'expression' in value ? value.expression : value}
+              onChange={(newValue) => onChange(newValue || '')}
+              options={{
+                minimap: { enabled: false },
+                lineNumbers: 'off',
+                folding: false,
+                wordWrap: 'on',
+                contextmenu: false,
+                scrollBeyondLastLine: false
               }}
               onMount={(editor, monaco) => {
                 try {
                   setIsEditorReady(true);
-                  
+
                   // Register SQL language features if not already registered
                   if (!monaco.languages.getLanguages().some(lang => lang.id === 'sql')) {
                     monaco.languages.register({ id: 'sql' });
-                    
+
                     // Add SQL syntax highlighting
                     monaco.languages.setMonarchTokensProvider('sql', {
+
                       defaultToken: '',
                       tokenPostfix: '.sql',
                       ignoreCase: true,
@@ -268,10 +272,11 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                           [/\s+/, 'white']
                         ]
                       }
+                      // ... existing token provider setup ...
                     });
                   }
 
-                  // Register completion provider with a single registration
+                  // Register completion provider
                   const disposable = monaco.languages.registerCompletionItemProvider('sql', {
                     triggerCharacters: [' ', '.', '(', ',', '['],
                     provideCompletionItems: (model, position) => {
@@ -299,6 +304,9 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                         }
                       });
 
+                      // Debugging: Log sourceColumns
+                      console.log('Source Columns:', sourceColumns);
+
                       // Add source columns suggestions
                       sourceColumns.forEach(col => {
                         if (!wordInfo.word || col.name.toLowerCase().includes(wordInfo.word.toLowerCase())) {
@@ -313,13 +321,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                         }
                       });
 
-                      // Add additional columns suggestions (without duplicating)
+                      // Debugging: Log additionalColumns
+                      console.log('Additional Columns:', additionalColumns);
+
+                      // Add additional columns suggestions
                       const processedColumns = new Set(sourceColumns.map(col => col.name));
                       const normalizedAdditionalColumns = (additionalColumns as Array<any>).map(normalizeColumn);
                       normalizedAdditionalColumns.forEach(col => {
-                        // Only add if not already in sourceColumns
                         if (!processedColumns.has(col.name) && 
-                            (!wordInfo.word || col.name.toLowerCase().includes(wordInfo.word.toLowerCase()))) {
+                          (!wordInfo.word || col.name.toLowerCase().includes(wordInfo.word.toLowerCase()))) {
                           suggestions.set(`additional-${col.name}`, {
                             label: col.name,
                             kind: monaco.languages.CompletionItemKind.Field,
@@ -342,16 +352,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                     editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
                   });
 
-                  // Inside the onMount function, update the editor configuration
-                  editor.addCommand(monaco.KeyCode.Tab, () => {
-                    if (isExpression) {
-                      onBlur?.();  // Call onBlur when Tab is pressed
-                    }
-                  });
-
-                  editor.focus();
-
-                  // Make sure to dispose of the completion provider when unmounting
+                  // Ensure to dispose of the completion provider when unmounting
                   return () => {
                     disposable.dispose();
                   };
@@ -360,71 +361,28 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                   setEditorError(error?.message || 'Error initializing editor');
                 }
               }}
-              onChange={(newValue) => {
-                setValue(name, newValue);
-                if (onValidate) {
-                  const error = onValidate(newValue);
-                  setError(name, { type: 'manual', message: error });
-                }
-              }}
-              options={{
-                minimap: { enabled: false },
-                automaticLayout: true,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                theme: 'sqlTheme',
-                fontSize: 13,
-                padding: { top: 8, bottom: 8 },
-                scrollbar: { vertical: 'visible', horizontal: 'visible' },
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                overviewRulerLanes: 0,
-                renderLineHighlight: 'none',
-                quickSuggestions: {
-                  other: true,
-                  comments: false,
-                  strings: true
-                },
-                suggestOnTriggerCharacters: true,
-                acceptSuggestionOnCommitCharacter: true,
-                acceptSuggestionOnEnter: 'on',
-                suggest: {
-                  showIcons: true,
-                  showStatusBar: true,
-                  preview: true,
-                  showInlineDetails: true,
-                  filterGraceful: true,
-                  selectionMode: 'always',
-                },
-                bracketPairColorization: { enabled: true },
-                matchBrackets: 'always',
-                autoClosingBrackets: 'always',
-                autoClosingQuotes: 'always',
-                readOnly: false,
-                ariaLabel: `SQL expression editor for ${fieldKey}`,
-                tabCompletion: 'on',
-                snippetSuggestions: 'none',
-                renderValidationDecorations: 'on',
-                fixedOverflowWidgets: true,
-              }}
             />
-            {editorError && (
-              <div className="text-red-500 text-sm mt-1">{editorError}</div>
-            )}
           </div>
-        ) : (
-          <Input
-            {...field}
-            placeholder={`Enter ${fieldKey}`}
-            value={value}
-            required={required}
-            disabled={disabled}
-            className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
-            aria-label={fieldKey}
-          />
-        )
+        </div>
+      ) : (
+        <Controller
+          control={control}
+          name={name}
+          rules={{ validate: onValidate }}
+          render={({ field }) => (
+            <Input
+              {...field}
+              placeholder={`Enter ${fieldKey}`}
+              value={typeof value === 'object' && 'expression' in value ? value.expression : value}
+              required={required}
+              disabled={disabled}
+              className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+              aria-label={fieldKey}
+            />
+          )}
+        />
       )}
-    />
+    </div>
   );
 });
 

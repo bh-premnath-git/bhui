@@ -1,9 +1,7 @@
 import { lazy } from 'react';
-import { Navigate, RouteObject, Route } from 'react-router-dom';
+import { Navigate, RouteObject } from 'react-router-dom';
 import { ROUTES } from './routes';
 
-// Lazy load all pages
-const NotFound = lazy(() => import('@/pages/NotFound'));
 const DataCatalog = lazy(() => import('@/pages/data-catalog'));
 const XplorerPage = lazy(() => import('@/pages/data-catalog/XplorerPage'));
 const DatasourceImport = lazy(() => import('@/pages/data-catalog/DatasourceImport'));
@@ -141,8 +139,4 @@ export const routerConfig: RouteObject[] = [
     path: ROUTES.ADMIN.CONNECTION.EDIT(':id'),
     element: <EditConnection />
   },
-  {
-    path: '*',
-    element: <NotFound />
-  }
 ];

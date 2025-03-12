@@ -20,6 +20,7 @@ import 'reactflow/dist/style.css';
 import { useAppDispatch } from "@/hooks/useRedux";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
+import { PipelineProvider, usePipelineContext } from "./context/designers/DataPipelineContext";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,8 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
 
 function RootLayout() {
   const { isExpanded } = useSidebar();
+  const {lastSaved}=usePipelineContext();
+  console.log(lastSaved,"lastSaved")
 
   return (
     <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
@@ -73,9 +76,11 @@ const router = createBrowserRouter([
     element: (
       <ReactFlowProvider>
         <FlowProvider>
+          <PipelineProvider>
           <SidebarProvider>
             <RootLayout />
           </SidebarProvider>
+          </PipelineProvider>
         </FlowProvider>
       </ReactFlowProvider>
     ),
@@ -124,7 +129,7 @@ const App = () => (
       >
         <KeycloakProvider>
           <TooltipProvider>
-            <AuthenticatedApp />
+              <AuthenticatedApp />
           </TooltipProvider>
         </KeycloakProvider>
       </ErrorBoundary>

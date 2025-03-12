@@ -114,6 +114,7 @@ export const getInitialFormState = (
                 })) || [],
                 transformation: transformation.transformation || ''
             };
+        
 
         default:
             return transformation.name ? {
@@ -121,4 +122,47 @@ export const getInitialFormState = (
                 name: transformation.name
             } : {};
     }
+};
+
+
+
+export const getNodeIcon = (type: string): string => {
+    const iconMap: { [key: string]: string } = {
+        Reader: '/assets/buildPipeline/6.svg',
+        Target: '/assets/buildPipeline/7.svg',
+        Filter: '/assets/buildPipeline/display/filter.svg',
+        Joiner: '/assets/buildPipeline/display/join.svg',
+        Ship: '/assets/buildPipeline/display/ship.svg',
+        SchemaTransformation: '/assets/buildPipeline/28.svg',
+        Sorter: '/assets/buildPipeline/squre/1.svg',
+        Aggregator: '/assets/buildPipeline/squre/2.svg',
+        'DQ Check': '/assets/buildPipeline/squre/4.svg',
+        Dedup: '/assets/buildPipeline/squre/5.svg',
+        Repartition: '/assets/buildPipeline/squre/6.svg',
+        'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
+        Union: '/assets/buildPipeline/squre/8.svg',
+        Select: '/assets/buildPipeline/squre/11.svg',
+        SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
+        Drop: '/assets/buildPipeline/squre/13.svg'
+    };
+    return iconMap[type] || '/assets/buildPipeline/default.svg';
+};
+
+export const getNodePorts = (type: string) => {
+    const portsMap: { [key: string]: { inputs: number; outputs: number; maxInputs: number | 'unlimited' } } = {
+        Reader: { inputs: 0, outputs: 1, maxInputs: 0 },
+        Target: { inputs: 1, outputs: 0, maxInputs: 1 },
+        Filter: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Joiner: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        Ship: { inputs: 1, outputs: 1, maxInputs: 1 },
+        SchemaTransformation: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Sorter: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Aggregator: { inputs: 1, outputs: 1, maxInputs: 1 },
+        'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
+        Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
+        'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
+        Union: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
+    };
+    return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };
 };

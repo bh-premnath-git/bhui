@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import sourceSchema from "./json/Source.json";
 import readerSchema from "./json/Reader.json";
 import csvOptionsSchema from "./json/CSVOptions.json";
@@ -6,26 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {  Info } from "lucide-react";
 import { toast } from "sonner";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
+import { FormData, ReaderFormField } from "./components/form/reader-form-field";
 
 
-const schemaReferences: Record<string, any> = {
+const schemaReferences: Record<string, typeof sourceSchema | typeof csvOptionsSchema> = {
     "schemas/Source.json": sourceSchema,
     "transformations/readers/CSVOptions.json": csvOptionsSchema,
 };
@@ -34,22 +21,6 @@ interface FormSchema {
     type: string;
     properties: Record<string, any>;
     allOf?: any[];
-}
-
-interface FormData {
-    name?: string;
-    source?: {
-        type?: string;
-        connection?: {
-            connection_config_id?: number;
-            [key: string]: any;
-        };
-        [key: string]: any;
-    };
-    file_type?: string;
-    query?: string;
-    read_options?: Record<string, any>;
-    [key: string]: any;
 }
 
 interface ReaderOptionsFormProps {
@@ -61,41 +32,7 @@ interface ReaderOptionsFormProps {
 }
 
 
-const isFieldRequired = (
-    fieldName: string,
-    schema: any,
-    path: string[],
-    currentFormData: FormData
-) => {
-    if (Array.isArray(readerSchema.required) && readerSchema.required.includes(fieldName)) {
-        return true;
-    }
 
-    if (Array.isArray(schema.required) && schema.required.includes(fieldName)) {
-        return true;
-    }
-
-    if (path[0] === 'source') {
-        const sourceType = currentFormData.source?.type;
-        if (sourceType) {
-            const sourceCondition = sourceSchema.allOf?.find(
-                condition => condition.if.properties.type.const === sourceType
-            );
-
-            if (sourceCondition?.then?.required?.includes(fieldName)) {
-                return true;
-            }
-        }
-
-        if (sourceSchema.required?.includes(fieldName)) {
-            return true;
-        }
-    }
-
-  
-
-    return false;
-};
 
 const formatFieldName = (fieldName: string) => {
     return fieldName
@@ -106,12 +43,6 @@ const formatFieldName = (fieldName: string) => {
         .join(" ");
 };
 
-const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
-    <div className="flex items-center gap-1">
-        {formatFieldName(fieldName)}
-        <span className="text-red-500">*</span>
-    </div>
-);
 
 
 const getSourceTypeFields = (sourceType: string) => {
@@ -126,6 +57,28 @@ const getSourceTypeFields = (sourceType: string) => {
     };
 };
 
+const validateFormData = (schema: FormSchema, formData: FormData): string[] => {
+    const missingFields: string[] = [];
+    
+    const validateFields = (schema: any, path: string[] = []) => {
+        Object.entries(schema.properties || {}).forEach(([key, fieldSchema]: [string, any]) => {
+            const fullPath = [...path, key];
+            const fieldValue = fullPath.reduce((acc, curr) => acc?.[curr], formData);
+
+            if (fieldSchema.required && !fieldValue) {
+                missingFields.push(fullPath.join('.'));
+            }
+
+            if (fieldSchema.type === 'object') {
+                validateFields(fieldSchema, fullPath);
+            }
+        });
+    };
+
+    validateFields(schema);
+    return missingFields;
+};
+
 
 export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     onSubmit,
@@ -135,39 +88,38 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     nodeId
 }) => {
     const dispatch = useAppDispatch();
-    const [formData, setFormData] = useState<FormData>({});
+    const [formData, setFormData] = useState<FormData>(initialData || {});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(readerSchema);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const {connectionConfigList} = useAppSelector((state) => state.datasource);
+    const { connectionConfigList } = useAppSelector((state) => state.datasource);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
-console.log(initialData,"initialData")
-console.log(connectionConfigList,"connectionConfigList")
+
     useEffect(() => {
         if (initialData) {
-            // Ensure file_type is set from the source object
             setFormData({
                 ...initialData,
                 file_type: initialData.source?.file_type || initialData.file_type
             });
-            // Set selected connection based on initial data
-            if (initialData.source?.connection?.connection_config_id) {
-                const selectedConn = connectionConfigList.find(
-                    conn => conn.id === initialData.source.connection.connection_config_id
-                );
-                setSelectedConnection(selectedConn);
-            }
+
+            const selectedConn = connectionConfigList.find(
+                conn => conn.id === initialData.source?.connection?.connection_config_id
+            );
+            setSelectedConnection(selectedConn);
         }
     }, [initialData, connectionConfigList]);
 
     useEffect(() => {
-        dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
+        const fetchConnectionConfigs = async () => {
+            try {
+                await dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
+            } catch (error) {
+                console.error('Error fetching connection configs:', error);
+                toast.error('Failed to load connection configurations');
+            }
+        };
+
+        fetchConnectionConfigs();
     }, [dispatch]);
-
-    
-
-    useEffect(() => {
-        resolveSchema();
-    }, [formData]);
 
     const resolveFileTypeSchema = (schema: any) => {
         const fileTypeCondition = readerSchema.allOf?.find(
@@ -203,30 +155,23 @@ console.log(connectionConfigList,"connectionConfigList")
         return schema;
     };
 
-
-    const resolveSchema = async () => {
+    const resolveSchema = useCallback(async () => {
         let resolvedSchema = { ...readerSchema };
 
-        const resolutionQueue = [
-            {
-                condition: () => formData.source?.type,
-                resolver: () => resolveSourceTypeSchema(resolvedSchema)
-            },
-            {
-                condition: () => formData.source?.type === 'File' && formData.file_type,
-                resolver: () => resolveFileTypeSchema(resolvedSchema)
-            }
-          
-        ];
+        if (formData.source?.type) {
+            resolvedSchema = resolveSourceTypeSchema(resolvedSchema);
+        }
 
-        for (const step of resolutionQueue) {
-            if (step.condition()) {
-                resolvedSchema = await step.resolver();
-            }
+        if (formData.source?.type === 'File' && formData.file_type) {
+            resolvedSchema = resolveFileTypeSchema(resolvedSchema);
         }
 
         setCurrentSchema(resolvedSchema);
-    };
+    }, [formData.source?.type, formData.file_type]);
+
+    useEffect(() => {
+        resolveSchema();
+    }, [resolveSchema]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
         const { name, value } = e.target;
@@ -283,177 +228,21 @@ console.log(connectionConfigList,"connectionConfigList")
     };
    
 
-    const renderField = (fieldName: string, fieldSchema: any, path: string[] = []): React.ReactNode => {
-        if (!fieldSchema) return null;
-
-
-        if (fieldSchema.$ref) {
-            const referencedSchema = schemaReferences[fieldSchema.$ref];
-            if (referencedSchema && referencedSchema.properties) {
-                return (
-                    <div key={fieldName} className="col-span-3 border p-4 ">
-                        <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(referencedSchema.properties).map(
-                                ([name, schema]: [string, any]) =>
-                                    renderField(name, schema, [...path, fieldName])
-                            )}
-                        </div>
-                    </div>
-                );
-            }
-        }
-
-        const fieldValue = path.reduce(
-            (obj, key) => (obj?.[key] || {}),
-            formData
-        )[fieldName];
-
-        if (fieldSchema.enum) {
-            return (
-                <div key={fieldName} className="mb-4">
-                    <Label>
-                        {isFieldRequired(fieldName, fieldSchema, path, formData) ? (
-                            <RequiredFieldLabel fieldName={fieldSchema.title || fieldName} />
-                        ) : (
-                            fieldSchema.title || formatFieldName(fieldName)
-                        )}
-                    </Label>
-                    <select
-                        name={fieldName}
-                        value={fieldValue || ""}
-                        onChange={(e) => handleChange(e, path)}
-                        className={`w-full p-2 border rounded bg-white shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue ? 'border-red-500' : ''
-                            }`}
-                    >
-                        <option value="">Select {formatFieldName(fieldName)}</option>
-                        {fieldSchema.enum.map((option: string) => (
-                            <option key={option} value={option}>
-                                {option}
-                            </option>
-                        ))}
-                    </select>
-                    {errors[fieldName] && (
-                        <p className="text-red-500 text-sm">{errors[fieldName]}</p>
-                    )}
-                </div>
-
-            );
-        }
-
-        
-
-        if (fieldName.toLowerCase() === 'connection' && fieldSchema.endpoint) {
-            return (
-                <div key={fieldName} className="space-y-4">
-                    <div className="w-full space-y-1">
-                        <Label className="text-xs font-medium text-gray-700">
-                            Connection
-                            {isFieldRequired(fieldName, fieldSchema, path, formData) && (
-                                <span className="text-red-500 ml-0.5">*</span>
-                            )}
-                        </Label>
-                        <select
-                            name="connection_config_id"
-                            value={formData.source?.connection?.connection_config_id || ""}
-                            onChange={(e) => handleChange(e, path)}
-                            className="w-full h-8 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                            <option value="">Select Connection</option>
-                            {connectionConfigList.map((conn) => (
-                                <option key={conn.id} value={conn.id}>
-                                    {conn.connection_config_name} ({conn.custom_metadata?.type})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Show file_path_prefix input when type is Local */}
-                    {selectedConnection?.custom_metadata?.type === 'Local' && (
-                        <div className="w-full space-y-1">
-                            <Label className="text-xs font-medium text-gray-700">
-                                File Path Prefix
-                            </Label>
-                            <Input
-                                name="file_path_prefix"
-                                value={formData.source?.connection?.file_path_prefix || selectedConnection?.custom_metadata?.file_path_prefix || ""}
-                                onChange={(e) => handleChange(e, path)}
-                                className="h-8 text-sm"
-                                placeholder="Enter file path prefix"
-                            />
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        return (
-            <div key={fieldName} className="w-full space-y-1">
-                <div className="flex items-center gap-1.5">
-                    <Label className="text-xs font-medium text-gray-700">
-                        {fieldSchema.title || formatFieldName(fieldName)}
-                        {isFieldRequired(fieldName, fieldSchema, path, formData) && (
-                            <span className="text-red-500 ml-0.5">*</span>
-                        )}
-                    </Label>
-                    {fieldSchema.description && (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="text-xs max-w-xs">{fieldSchema.description}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
-                </div>
-                <Input
-                    type={fieldSchema.bh_secret ? "password" : fieldSchema.type === "number" ? "number" : "text"}
-                    name={fieldName}
-                    value={fieldValue || ""}
-                    onChange={(e) => handleChange(e, path)}
-                    placeholder={`Enter ${formatFieldName(fieldName)}`}
-                    className="h-8 text-sm"
-                />
-                {errors[fieldName] && (
-                    <p className="text-xs text-red-500">{errors[fieldName]}</p>
-                )}
-            </div>
-        );
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const missingFields: string[] = [];
-        const validateFields = (schema: any, path: string[] = []) => {
-            Object.entries(schema.properties || {}).forEach(([key, fieldSchema]: [string, any]) => {
-                const fullPath = [...path, key];
-                const fieldValue = fullPath.reduce((acc, curr) => acc?.[curr], formData);
-
-                if (fieldSchema.required && !fieldValue) {
-                    missingFields.push(fullPath.join('.'));
-                }
-
-                if (fieldSchema.type === 'object') {
-                    validateFields(fieldSchema, fullPath);
-                }
-            });
-        };
-
-        validateFields(currentSchema);
+        const missingFields = validateFormData(currentSchema, formData);
 
         if (missingFields.length > 0) {
-            setErrors(missingFields.reduce((acc, field) => {
-                acc[field] = 'This field is required';
-                return acc;
-            }, {} as Record<string, string>));
-
+            setErrors(missingFields.reduce((acc, field) => ({
+                ...acc,
+                [field]: 'This field is required'
+            }), {}));
+            
             toast.error('Please fill out all required fields.');
             return;
         }
-        
+
         try {
             const connectionData = connectionConfigList.find(conn => 
                 conn.id === formData.source?.connection?.connection_config_id
@@ -482,10 +271,7 @@ console.log(connectionConfigList,"connectionConfigList")
                 }
             };
 
-            if (onSourceUpdate) {
-                onSourceUpdate(sourceData);
-            }
-
+            onSourceUpdate?.(sourceData);
             onClose?.();
             toast.success("Reader configuration saved successfully");
         } catch (error) {
@@ -511,10 +297,10 @@ console.log(connectionConfigList,"connectionConfigList")
                             <h3 className="text-sm font-medium text-gray-700 mb-3">Basic Information</h3>
                             <div className="grid grid-cols-2 gap-6">
                                 {currentSchema.properties.reader_name && (
-                                    <div>{renderField('reader_name', currentSchema.properties.reader_name)}</div>
+                                    <div>{ReaderFormField({ fieldName: 'reader_name', fieldSchema: currentSchema.properties.reader_name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
                                 )}
                                 {currentSchema.properties.name && (
-                                    <div>{renderField('name', currentSchema.properties.name)}</div>
+                                    <div>{ReaderFormField({ fieldName: 'name', fieldSchema: currentSchema.properties.name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
                                 )}
                             </div>
                         </div>
@@ -523,14 +309,14 @@ console.log(connectionConfigList,"connectionConfigList")
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="text-sm font-medium text-gray-700 mb-3">Source Configuration</h3>
                             <div className="space-y-4">
-                                <div>{renderField('source', currentSchema.properties.source)}</div>
+                                <div>{ReaderFormField({ fieldName: 'source', fieldSchema: currentSchema.properties.source, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
 
                                 {formData.source?.type && (
                                     <>
                                         {/* File Type Selection */}
                                         {formData.source.type === 'File' && (
                                             <div className="mb-4">
-                                                {renderField('file_type', currentSchema.properties.file_type)}
+                                                {ReaderFormField({ fieldName: 'file_type', fieldSchema: currentSchema.properties.file_type, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
                                             </div>
                                         )}
 
@@ -539,7 +325,7 @@ console.log(connectionConfigList,"connectionConfigList")
                                             {Object.entries(getSourceTypeFields(formData.source.type).properties)
                                                 .map(([fieldName, schema]: [string, any]) => (
                                                     <div key={fieldName}>
-                                                        {renderField(fieldName, schema, ['source'])}
+                                                        {ReaderFormField({ fieldName, fieldSchema: schema, path: ['source'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
                                                     </div>
                                                 ))}
                                         </div>
@@ -551,7 +337,7 @@ console.log(connectionConfigList,"connectionConfigList")
                                                 <div className="grid grid-cols-3 gap-6">
                                                     {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
                                                         <div key={key}>
-                                                            {renderField(key, schema, ['read_options'])}
+                                                            {ReaderFormField({ fieldName: key, fieldSchema: schema, path: ['read_options'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
                                                         </div>
                                                     ))}
                                                 </div>

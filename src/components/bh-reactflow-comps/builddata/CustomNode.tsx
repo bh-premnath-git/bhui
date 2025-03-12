@@ -79,9 +79,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         }
  
         if (formData) {
-            // debugger
-            // console.log(formData.target,"formData")  
-            // console.log(data,"data")
             const { isValid, warnings } = validateFormData(formData, nodeSchema, false,data.label?.toLowerCase()=="target"? formData.target:null);
             setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
             setValidationMessages(warnings);

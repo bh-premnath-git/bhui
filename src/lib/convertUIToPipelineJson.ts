@@ -2,6 +2,7 @@ import { Node, Edge } from 'reactflow';
 import { UINode } from './pipelineJsonConverter';
 import { validatePipelineConnections } from './validatePipelineConnections';
 
+
 export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
     const uiNodes = nodes as UINode[];
     
@@ -52,23 +53,27 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     };
 
     const orderedUiNodes = getOrderedNodes();
-    
+    console.log(uiNodes,"orderedUiNodes")
     // Extract sources and create reader transformations
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
             name: node.data.source.name || node.data.title,
             source_type: "File",
-            file_name: `${node.data.source.file_path_prefix}/${node.data.source.file_name}`,
+            file_name: `${node.data.source.file_name}`,
             data_src_id: node.data.source.data_src_id,
             connection: {
                 name: node.data.source.connection?.name || "local_connection",
                 connection_type: capitalizeFirstLetter(node.data.source.connection_type),
-                file_path_prefix: `${node.data.source.file_path_prefix}/`
+                file_path_prefix: `${node.data.source.file_path_prefix}`,
+                file_type: node.data.source.file_type?.toLowerCase(),
+                connection_config_id: node.data.source.connection?.connection_config_id
             }
         }));
 
     // Create reader transformations
+    console.log(uiNodes)
+    // debugger;e
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
@@ -76,25 +81,26 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             dependent_on: [],
             transformation: "Reader",
             source: {
-                name: node.data.source.name || node.data.title,
+                name: node.data.source.data_src_name || node.data.title,
                 source_type: "File",
                 file_name: node.data.source.file_name,
                 connection: {
                     name: node.data.source.connection?.name || "local_connection",
                     connection_type: capitalizeFirstLetter(node.data.source.connection_type),
-                    file_path_prefix: node.data.source.file_path_prefix
+                    file_path_prefix: node.data.source.file_path_prefix,
+                    file_type: node.data.source.file_type?.toLowerCase(),
+                    connection_config_id: node.data.source.connection?.connection_config_id
                 }
             },
             read_options: {
                 header: true
             }
         }));
-
     // Process regular transformations using ordered nodes
     const regularTransformations = orderedUiNodes
-        .filter(node => !node.id.startsWith('Reader_') && !node.id.startsWith('Target_'))
+        .filter(node => !node.id.startsWith('Reader_') )
         .map(node => {
-            // console.log(node.data.title)
+            console.log(node.data)
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
                 transformation: node.data.label,
@@ -196,6 +202,31 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         column_list: node.data.transformationData?.column_list || [],
                         pattern: node.data.transformationData?.pattern
                     };
+                case 'Target':
+                    console.log(node.data)
+                    return {
+                        ...baseConfig,
+                        name: node.data.title,
+                        transformation: "Target",
+                        target: {
+                            name: node.data.source.name,
+                            target_type: node.data.source.target_type,
+                            target_name: node.data.source.target_name,
+                            connection: {
+                                name: node.data.source.connection?.name,
+                                connection_type: node.data.source.connection?.connection_type,
+                                file_path_prefix: node.data.source.connection?.file_path_prefix,
+                                connection_config_id: node.data.source.connection?.connection_config_id
+                            },
+                            file_name: node.data.source.file_name,
+                            load_mode: node.data.source.load_mode
+                        },
+                        file_type: node.data?.source?.file_type?.toLowerCase(),
+                        write_options: node.data.transformationData?.write_options || {
+                            header: true,
+                            sep: "|"
+                        },
+                    };
                 default:
                     return {
                         ...baseConfig,
@@ -206,54 +237,32 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 
     // Create target configuration and writer transformation
     const targets = uiNodes
-        .filter(node => node.id.startsWith('Target_'))
-        .map(node => ({
-            name: "output_data",
-            type: "File",
+    .filter(node => node.id.startsWith('Target_'))
+    .map(node => ({
+        name: node?.data.source?.name,
+        type: node?.data.source?.target_type,
+        connection: {
+            type: node.data.source.connection?.connection_type,
+            file_path: node.data.source.connection?.file_path_prefix,
+        },
+        load_mode: node.data.source.load_mode,
+        target: {
+            target_type: node?.data.source?.target_type,
+            target_name: node?.data.source?.target_name,
+            name: node?.data.source?.name,
             connection: {
-                type: "File",
-                file_path: "examples/output.csv"
+                type: node?.data.source?.connection?.connection_type,
+                file_path: node?.data.source?.connection?.file_path_prefix ,
+                connection_config_id: node?.data.source?.connection?.connection_config_id,
+                name: node?.data.source?.connection?.name,
             },
-            load_mode: "overwrite"
-        }));
+            load_mode: node?.data.source?.load_mode,
+            file_name: node?.data.source?.file_name,
+            file_type: node?.data.source?.file_type?.toLowerCase(),
+        }
+    }));
 
-    // const writerTransformations = uiNodes
-    //     .filter(node => node.id.startsWith('Target_'))
-    //     .map(node => {
-    //         const lastTransformation = uiNodes
-    //             .filter(n => !n.id.startsWith('Target_'))
-    //             .slice(-1)[0];
-            
-    //         return {
-    //             name: "write_output",
-    //             dependent_on: [lastTransformation?.data.title || ""],
-    //             transformation: "Writer",
-    //             target: {
-    //                 name: "output_data",
-    //                 type: "File",
-    //                 connection: {
-    //                     type: "File",
-    //                     file_path: "examples/output.csv"
-    //                 },
-    //                 load_mode: "overwrite"
-    //             }
-    //         };
-    //     });
-console.log({
-    $schema: "https://json-schema.org/draft-07/schema#",
-    name: pipelineDtl?.pipeline_name || "sample_pipeline",
-    description: pipelineDtl?.pipeline_description || " ",
-    version: "1.0",
-    mode: "DEBUG",
-    parameters: [],
-    sources,
-    targets,
-    transformations: [
-        ...readerTransformations,
-        ...regularTransformations.filter(Boolean),
-        // ...writerTransformations
-    ]
-})
+   
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -272,6 +281,7 @@ console.log({
         }
     };
 };
+
 
 
 function capitalizeFirstLetter(str: string): string {

@@ -402,8 +402,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                 file_path_prefix: formData.target?.connection?.file_path_prefix,
                                 connection_config_id: formData.target?.connection?.connection_config_id
                             },
-                            file_name: formData.target?.file_name || "output.csv",
-                            load_mode: formData.target?.load_mode || "append"
+                            file_name: formData.target?.file_name ,
+                            load_mode: formData.target?.load_mode 
                         },
                         transformationData: {
                             ...formData, 

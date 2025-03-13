@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { ConnectionPageLayout } from './components/ConnectionPageLayout';
 
 export function 
 AddConnection() {
@@ -66,6 +67,7 @@ AddConnection() {
   };
 
   return (
+    <ConnectionPageLayout description='Establish your database connection here.'>
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Add New Connection</CardTitle>
@@ -153,5 +155,6 @@ AddConnection() {
         )}
       </CardContent>
     </Card>
+    </ConnectionPageLayout>
   );
 }

@@ -127,7 +127,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   const handleUpdateProject = useCallback(async (id: string, data: ProjectMutationData) => {
     await updateProjectMutation.mutateAsync({
       data,
-      params: { id }
+      url: `/bh_project/${id}`
     });
   }, [updateProjectMutation]);
 

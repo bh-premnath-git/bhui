@@ -43,15 +43,34 @@ export function ConnectionForm({
     const loadSchema = async () => {
       setIsLoading(true);
       try {
-        const module = await import(
-          `@/components/bh-reactflow-comps/builddata/json/${connectionName.toLowerCase()}.json`
-        );
-        if (module?.default?.connectionSpecification) {
-          setSchema(module.default.connectionSpecification);
+        // Special handling for local connection type
+        if (connectionName.toLowerCase() === 'local') {
+          const localSchema = {
+            connectionSpecification: {
+              properties: {
+                file_path_prefix: {
+                  type: "string",
+                  title: "File Path Prefix",
+                  description: "The path prefix for local files",
+                  minLength: 1
+                }
+              },
+              required: ["file_path_prefix"]
+            }
+          };
+          setSchema(localSchema.connectionSpecification);
         } else {
-          console.error('Invalid schema format:', module);
-          setSchema(null);
-          toast.error('Invalid schema format');
+          // Load schema from file for other connection types
+          const module = await import(
+            `@/components/bh-reactflow-comps/builddata/json/${connectionName.toLowerCase()}.json`
+          );
+          if (module?.default?.connectionSpecification) {
+            setSchema(module.default.connectionSpecification);
+          } else {
+            console.error('Invalid schema format:', module);
+            setSchema(null);
+            toast.error('Invalid schema format');
+          }
         }
       } catch (error) {
         console.error('Failed to load schema:', error);
@@ -69,6 +88,7 @@ export function ConnectionForm({
     resolver: schema ? zodResolver(generateFormSchema(schema)) : undefined,
     defaultValues: {
       name: `${connectionDisplayName} Connection`,
+      file_path_prefix: '',
       project_id: '',
       dataset_id: '',
       credentials_json: '',
@@ -79,6 +99,24 @@ export function ConnectionForm({
       password: '',
     }
   });
+
+  // Reset form when schema changes
+  useEffect(() => {
+    if (schema) {
+      form.reset({
+        name: `${connectionDisplayName} Connection`,
+        file_path_prefix: '',
+        project_id: '',
+        dataset_id: '',
+        credentials_json: '',
+        host: '',
+        port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
+        database: '',
+        username: '',
+        password: '',
+      });
+    }
+  }, [schema, connectionDisplayName, connectionName, form]);
 
   const getConfigUnionForType = (connectionName: string, data: any) => {
     const type = connectionName.toLowerCase();
@@ -126,7 +164,14 @@ export function ConnectionForm({
         sid: data.sid || '',
         username: data.username || '',
         password: data.password || '',
-        db_schema: data.db_schema || '',
+        db_schema: data.db_schema || 'None',
+        source_type: type
+      };
+    }
+    
+    if (type === 'local') {
+      return {
+        file_path_prefix: data.file_path_prefix || '',
         source_type: type
       };
     }
@@ -223,6 +268,9 @@ export function ConnectionForm({
       </div>
     );
   }
+
+  // Debug schema
+  console.log('Current schema:', schema);
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">

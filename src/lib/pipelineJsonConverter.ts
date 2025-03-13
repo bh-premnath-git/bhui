@@ -139,7 +139,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             console.log(sourceDetails)
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
-
+console.log(updatedDetails,"updatedDetails")
             const nodeId = `Reader_${index + 1}`;
             const title = source.name;
             existingTitles.add(title);

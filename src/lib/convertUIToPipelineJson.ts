@@ -72,6 +72,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         }));
 
     // Create reader transformations
+    // debugger;
     console.log(uiNodes)
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))

@@ -11,12 +11,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent } from "@/components/ui/popover";
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
 export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
   const [selected, setSelected] = React.useState(0);
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
   const [initialData, setInitialData] = useState(null);
-  const { pipelineJson } = useSelector((state: any) => state.autoSave.pipelineJsonData);
+  const { pipelineJson } = usePipelineContext();
+  console.log(pipelineJson, "pipelineJson")
+  // const { pipelineJson } = useSelector((state: any) => state.buildPipeline.pipelineJsonData);
   console.log(pipelineJson, "pipelineJson")
   const handleClose2 = () => {
     setAnchorEl(null);
@@ -86,7 +89,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-scroll ">
+      <DialogContent className="max-w-[1200px] h-[750px] px-20 overflow-scroll ">
           {/* Header */}
           <DialogHeader className="flex justify-start items-center text-black">
             <div className="flex flex-col">

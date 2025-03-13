@@ -1,6 +1,6 @@
 import { RootState } from '@/store';
 import { useParams } from 'react-router-dom';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronLeft, Edit, Link, Database, Zap} from 'lucide-react'
@@ -13,47 +13,66 @@ import { ParameterModal } from './ParameterModal'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from './ClusterConfigDialog'
 import { apiService } from '@/lib/api/api-service';
-import { setUnsavedChanges } from '@/store/slices/designer/features/autoSaveSlice';
+// import { setUnsavedChanges } from '@/store/slices/designer/features/autoSaveSlice';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
 export function BuildPlaygroundHeader() {
-  const { buildPipeLineDtl } = useSelector(
-    (state: RootState) => state.buildPipeline
-  );
+  console.log("BuildPlaygroundHeader rendered");
   const { id } = useParams();
-
-  console.log(id)
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { isSaving, lastSaved, hasUnsavedChanges,pipeLineNameData } = useSelector((state: RootState) => state.autoSave);
-  const [pipeLineName, setPipeLineName]:any = useState(pipeLineNameData?.pipeLineName);
-  const [tempPipeLineName, setTempPipeLineName]:any = useState(pipeLineNameData?.pipeLineName);
+  
+  const { 
+    pipelineName: contextPipelineName, 
+    setUnsavedChanges, 
+    setSaving, 
+    setSaved, 
+    setPipeLineName,
+    setLastSaved,
+    lastSaved,
+    isSaving,
+    hasUnsavedChanges,
+  } = usePipelineContext();
+console.log(contextPipelineName,lastSaved,"contextPipelineName")
+  const localState = useMemo(() => ({
+    isSaving,
+    lastSaved,
+    hasUnsavedChanges,
+    pipelineName: contextPipelineName?.pipeLineName,
+    
+  }), [isSaving, lastSaved, hasUnsavedChanges, contextPipelineName]);
+  console.log(lastSaved,"localState",isSaving)
+  
+  const [localPipelineName, setLocalPipelineName] = useState(contextPipelineName?.pipeLineName || '');
+  const [tempPipelineName, setTempPipelineName] = useState(contextPipelineName?.pipeLineName || '');
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
 
-  
+  const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
-  const renderSaveStatus = () => {
-   
-    if (isSaving) {
-      return (
-        <AutoSaveChanges />
-      );
+  useEffect(() => {
+    if (contextPipelineName?.pipeLineName) {
+      setLocalPipelineName(contextPipelineName.pipeLineName);
+      setTempPipelineName(contextPipelineName.pipeLineName);
+    } else if (buildPipeLineDtl?.pipeline_name) {
+      setLocalPipelineName(buildPipeLineDtl.pipeline_name);
+      setTempPipelineName(buildPipeLineDtl.pipeline_name);
     }
+  }, [buildPipeLineDtl?.pipeline_name, contextPipelineName?.pipeLineName]);
 
-    if (lastSaved) {
-      return (
-        <LastSave lastSaved={lastSaved} />
-      );
+
+  const renderSaveStatus = useMemo(() => {
+    if (localState.isSaving) {
+      return <AutoSaveChanges />;
     }
-
-    return (
-      <AutoSaveDefault />
-    );
-  };
+    if (localState.lastSaved) {
+      return <LastSave lastSaved={localState.lastSaved} />;
+    }
+    return <AutoSaveDefault />;
+  }, [localState]);
 
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
@@ -63,44 +82,36 @@ export function BuildPlaygroundHeader() {
     }
   };
 
-  useEffect(() => {
-    if (pipeLineNameData?.pipeLineName) {
-      setPipeLineName(pipeLineNameData.pipeLineName);
-      setTempPipeLineName(pipeLineNameData.pipeLineName);
-    } else if (buildPipeLineDtl?.pipeline_name) {
-      setPipeLineName(buildPipeLineDtl.pipeline_name);
-      setTempPipeLineName(buildPipeLineDtl.pipeline_name);
-    }
-  }, [buildPipeLineDtl?.pipeline_name, pipeLineNameData?.pipeLineName]);
-
   const handleNameEdit = () => {
     setIsEditing(true);
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTempPipeLineName(e.target.value);
+    setTempPipelineName(e.target.value);
   };
 
   const handleNameSubmit = async () => {
-    if (tempPipeLineName.trim() && tempPipeLineName !== pipeLineName) {
+    if (tempPipelineName.trim() && tempPipelineName !== localPipelineName) {
+      setSaving();
       try {
         await apiService.patch({
           portNumber: CATALOG_API_PORT,
-          url: `/pipeline/${id}}`,
+          url: `/pipeline/${id}`,
           usePrefix: true,
           method: 'PATCH',
-          data: { pipeline_name: tempPipeLineName }
+          data: { pipeline_name: tempPipelineName }
         });
         
-        setPipeLineName(tempPipeLineName);
-        dispatch(setPipeLineName({ pipeLineName: tempPipeLineName }));
-        dispatch(setUnsavedChanges());
+        setLocalPipelineName(tempPipelineName);
+        setPipeLineName({ pipeLineName: tempPipelineName });
+        setSaved();
       } catch (error) {
         console.error("Error updating pipeline name:", error);
-        setTempPipeLineName(pipeLineName);
+        setTempPipelineName(localPipelineName);
+        setUnsavedChanges();
       }
     } else {
-      setTempPipeLineName(pipeLineName);
+      setTempPipelineName(localPipelineName);
     }
     setIsEditing(false);
   };
@@ -109,7 +120,7 @@ export function BuildPlaygroundHeader() {
     if (e.key === 'Enter') {
       handleNameSubmit();
     } else if (e.key === 'Escape') {
-      setTempPipeLineName(pipeLineName);
+      setTempPipelineName(localPipelineName);
       setIsEditing(false);
     }
   };
@@ -127,14 +138,14 @@ export function BuildPlaygroundHeader() {
 
             <Separator orientation="vertical" className="h-6" />
 
-            {renderSaveStatus()}
+            {renderSaveStatus}
 
             <div className="relative flex-grow sm:w-40">
               {isEditing ? (
                 <Input
                   type="text"
                   className="pr-8"
-                  value={tempPipeLineName}
+                  value={tempPipelineName}
                   onChange={handleNameChange}
                   onBlur={handleNameSubmit}
                   onKeyDown={handleKeyDown}
@@ -143,7 +154,7 @@ export function BuildPlaygroundHeader() {
                 />
               ) : (
                 <div className="flex items-center">
-                  <span className="flex-grow truncate pr-8">{pipeLineName}</span>
+                  <span className="flex-grow truncate pr-8">{localPipelineName}</span>
                   <Button 
                     variant="ghost" 
                     size="icon" 

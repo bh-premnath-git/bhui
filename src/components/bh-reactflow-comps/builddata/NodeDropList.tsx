@@ -3,7 +3,7 @@ import { Node } from "@/types/designer/features/formTypes"
 import { X } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store/"
-import { setUnsavedChanges } from "@/store/slices/designer/features/autoSaveSlice"
+// import { setUnsavedChanges } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice"
 import { CATALOG_API_PORT } from "@/config/platformenv"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import axios from "axios"
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { apiService } from "@/lib/api/api-service"
+import { usePipelineContext } from "@/context/designers/DataPipelineContext"
 
 // API client setup
 const apiClient = axios.create({
@@ -50,11 +51,11 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   addNodeToHistory,
 }) => {
   const dispatch = useDispatch()
-  const { hasUnsavedChanges } = useSelector((state: RootState) => state.autoSave)
 
   const [dropdownVisible, setDropdownVisible] = useState<string | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const { setUnsavedChanges } = usePipelineContext();
 
   const {
     data,
@@ -104,7 +105,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   }
 
   const handleButtonClick = (node: Node) => {
-    dispatch(setUnsavedChanges())
+    setUnsavedChanges()
     if (node.ui_properties.module_name === "Reader") {
       setDropdownVisible((prev) =>
         prev === node.ui_properties.module_name ? null : node.ui_properties.module_name

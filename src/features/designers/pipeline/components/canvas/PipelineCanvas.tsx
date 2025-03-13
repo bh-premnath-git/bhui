@@ -25,7 +25,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
   const defaultViewport = { x: 0, y: 0, zoom: 0.7 };
 
   return (
-    <div style={{ height: '65vh', width: '100%' }}>
+    <div style={{ height: '7  5vh', width: '100%' }}>
       <ReactFlow
         nodes={nodes.map(node => ({
           ...node,

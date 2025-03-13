@@ -9,7 +9,7 @@
         },
         "type": {
             "type": "string",
-            "endpoint": "/connection_registry/list/?connection_type=source"
+            "endpoint": "connection_registry/list/?connection_type=source&offset=0&limit=1000&order_desc=false"
         }
     },
     "required": [

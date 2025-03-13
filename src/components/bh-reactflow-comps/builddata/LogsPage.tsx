@@ -58,6 +58,21 @@ export const Terminal: React.FC<TerminalProps> = ({
     }
   }, [isOpen, defaultHeight])
 
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.setAttribute('data-scroll-locked', '1');
+      document.body.style.pointerEvents = 'auto !important';
+    } else {
+      document.body.removeAttribute('data-scroll-locked');
+      document.body.style.pointerEvents = 'auto !important';
+    }
+
+    return () => {
+      // Clean up the attribute when the component is unmounted or when isOpen changes
+      document.body.removeAttribute('data-scroll-locked');
+    };
+  }, [isOpen]);
+
   const handleMinimize = () => {
     setIsMinimized(true)
     setIsMaximized(false)
@@ -89,19 +104,20 @@ export const Terminal: React.FC<TerminalProps> = ({
       <SheetContent
         // Anchor it to the bottom
         side="bottom"
-        // We’ll override a lot of styles via Tailwind classes:
+        // We'll override a lot of styles via Tailwind classes:
         className={cn(
           "p-0", // remove default padding
           "border-t", // top border
           "rounded-t-lg", // top corners
           "overflow-hidden", // clip content
           "transition-[height] duration-300 ease-in-out", // animate height
+          "disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
         )}
         // We'll set the inline style for our dynamic height
         style={{
-          // If you prefer to rely entirely on tailwind breakpoints,
-          // you can keep it purely in classes, but for a simple replication:
           height,
+          zIndex: 9999, // Ensure the terminal is above other elements
+          pointerEvents: isOpen && document.body.getAttribute('data-scroll-locked') === '1' ? 'auto' : 'none', // Allow interactions when open and data-scroll-locked is "1"
         }}
       >
         {/* Header-like area */}
@@ -129,7 +145,7 @@ export const Terminal: React.FC<TerminalProps> = ({
 
             {/* Title centered */}
             <SheetHeader className="flex-1 text-center">
-              <SheetTitle className="text-sm text-neutral-600">
+              <SheetTitle className="text-sm text-neutral-600 p-2">
                 {title}
               </SheetTitle>
             </SheetHeader>
@@ -143,7 +159,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                 setActiveTab(val as "terminal" | "proples")
               }
             >
-              <TabsList className="border-b bg-neutral-100">
+              <TabsList className="border-b bg-neutral-100 w-full text-start justify-start">
                 <TabsTrigger
                   value="terminal"
                   className="px-4 py-1 text-sm"

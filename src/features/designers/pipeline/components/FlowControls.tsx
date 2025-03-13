@@ -136,7 +136,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     <>
       <div
         className="flex items-center bg-white rounded-xl shadow-lg border border-gray-100 p-1.5 gap-1"
-        style={{ zIndex: 99999 }}
+        style={{ zIndex: 100001 }}
       >
         {actions.map((action, index) => (
           <React.Fragment key={action.key}>
@@ -218,6 +218,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         title="Pipeline Logs"
         terminalLogs={terminalLogs}
         proplesLogs={proplesLogs}
+        
       />
     </>
   )

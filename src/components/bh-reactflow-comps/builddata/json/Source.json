@@ -20,7 +20,7 @@
         },
         "connection": {
             "type": "object",
-            "$ref": "Connection.json",
+            "endpoint": "/connection_registry/connection_config/list/",
             "order": 3
         }
     },

@@ -19,6 +19,8 @@ import { useEffect } from 'react';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { DataTable } from '@/components/bh-table/data-table';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
 
 function SchemaTable({ initialData }: any) {
     const [openDialog, setOpenDialog] = React.useState(false);
@@ -26,6 +28,11 @@ function SchemaTable({ initialData }: any) {
     const [selectedDataType, setSelectedDataType] = React.useState('');
     const [tableData, setTableData] = React.useState<any[]>([]);
     const [isLoading, setIsLoading] = React.useState(false);
+    const { dataSourceTypes } = useAppSelector((state: RootState) => state.global);
+
+    // Ensure dataSourceTypes is an array
+    const dataTypeOptions = Array.isArray(dataSourceTypes) ? dataSourceTypes : [];
+
     console.log(initialData)
     useEffect(() => {
         const fetchData = async () => {
@@ -64,93 +71,61 @@ function SchemaTable({ initialData }: any) {
         }
     }, [initialData?.source?.data_src_id]);
 
-    // Update dataTypeOptions to match your numeric codes
-    const dataTypeOptions = [
-        { value: '1203', label: 'String' },
-        { value: '1202', label: 'Number' },
-        // ... add other data type mappings as needed ...
-    ];
-
-    // Column definitions
     const columns = [
         {
             accessorKey: 'name',
             header: 'Field Name',
-            enableColumnFilter: true,
+            enableColumnFilter: false,
         },
         {
             accessorKey: 'datatype',
             header: 'Data Type',
-            enableColumnFilter: true,
-            cell: ({ row }) => (
-                <Select value={row.original.datatype} onValueChange={(value) => setSelectedDataType(value)}>
-                    <SelectTrigger className="w-[150px] h-[28px]">
-                        <SelectValue placeholder="Select type">
-                            {dataTypeOptions.find(opt => opt.value === row.original.datatype)?.label || 'Select type'}
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {dataTypeOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            )
+            enableColumnFilter: false,
+            cell: ({ row }) => {
+                // Ensure dataSourceTypes is an array before using find
+                const dataType = dataTypeOptions.find(type => type.id.toString() === row.datatype);
+                return <span>{dataType?.dtl_desc || 'unknown'}</span>;
+            }
         },
         {
             accessorKey: 'primarykey',
             header: 'Primary Key',
-            enableColumnFilter: true,
+            enableColumnFilter: false,
             cell: ({ row }) => (
                 <input 
                     type="checkbox"
                     checked={row.original.primarykey}
-                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-600"
+                    disabled
+                    className="h-4 w-4 rounded border-gray-300 text-gray-400 cursor-not-allowed"
                 />
             )
         },
         {
             accessorKey: 'optional',
             header: 'Optional',
-            enableColumnFilter: true,
+            enableColumnFilter: false,
             cell: ({ row }) => (
                 <input 
                     type="checkbox"
-                    defaultChecked={row.original.optional}
-                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-600"
+                    checked={row.original.optional}
+                    disabled
+                    className="h-4 w-4 rounded border-gray-300 text-gray-400 cursor-not-allowed"
                 />
             )
         },
         {
             accessorKey: 'description',
             header: 'Description',
-            enableColumnFilter: true,
+            enableColumnFilter: false,
             cell: ({ row }) => (
-                <button
-                    onClick={() => setOpenDialog(true)}
-                    className="text-blue-500 hover:text-blue-700"
-                >
-                    {row.original.description || "Add"}
-                </button>
+                <span className="text-gray-600">
+                    {row.original.description || "No description"}
+                </span>
             )
         },
     ];
 
-    const getDescription = (text: string) => {
-        switch (text) {
-            case 'Eliminate Duplicate Records':
-                return 'Automatically removes any duplicate entries from your dataset';
-            case 'Trim All Columns':
-                return 'Removes leading and trailing whitespace from all text fields';
-            case 'Eliminate Records without Primary Key':
-                return 'Ensures data integrity by removing records with missing primary keys';
-            default:
-                return '';
-        }
-    };
-console.log(tableData,"tableData")
+    
     return (
         <div className="">
             {isLoading ? (

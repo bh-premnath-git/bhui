@@ -87,6 +87,8 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     onSourceUpdate,
     nodeId
 }) => {
+    console.log(initialData, "initialData");
+
     const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<FormData>(initialData || {});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(readerSchema);
@@ -98,7 +100,13 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         if (initialData) {
             setFormData({
                 ...initialData,
-                file_type: initialData.source?.file_type || initialData.file_type
+                file_type: initialData.source?.connection?.file_type.toUpperCase() || initialData.file_type,
+                source: {
+                    ...initialData.source,
+                    connection: {
+                        ...initialData.source.connection
+                    }
+                }
             });
 
             const selectedConn = connectionConfigList.find(
@@ -281,7 +289,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col h-full w-full max-w-5xl mx-auto bg-white">
+        <form onSubmit={handleSubmit} className="flex flex-col h-[750px] w-full max-w-5xl mx-auto bg-white">
             <Card className="shadow-md border border-gray-200 my-2">
                 <CardContent className="p-6 ">
                     {/* Header Section */}
@@ -291,7 +299,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     </div>
 
                     {/* Form Content */}
-                    <div className="space-y-6">
+                    <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
                         {/* Basic Info Section */}
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="text-sm font-medium text-gray-700 mb-3">Basic Information</h3>

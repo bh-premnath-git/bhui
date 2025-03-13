@@ -21,7 +21,7 @@ export const pipelineKeys = {
 export const usePipelineQuery = (id: string) => {
     // if(!id){
         return useQuery({
-            queryKey: id ? pipelineKeys.detail(id) : [],
+            queryKey: pipelineKeys.detail(id),
             queryFn: async () => {
                 const data=await apiService.get({
                     portNumber: CATALOG_API_PORT,
@@ -35,6 +35,7 @@ export const usePipelineQuery = (id: string) => {
                 })
                 return data;
             },
+            enabled: !!id,
         });
     // }
     

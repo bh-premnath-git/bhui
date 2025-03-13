@@ -19,7 +19,7 @@ import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
 export function BuildPlaygroundHeader() {
-  console.log("BuildPlaygroundHeader rendered");
+  // console.log("BuildPlaygroundHeader rendered");
   const { id } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ export function BuildPlaygroundHeader() {
     isSaving,
     hasUnsavedChanges,
   } = usePipelineContext();
-console.log(contextPipelineName,lastSaved,"contextPipelineName")
+// console.log(contextPipelineName,lastSaved,"contextPipelineName")
   const localState = useMemo(() => ({
     isSaving,
     lastSaved,
@@ -43,7 +43,7 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
     pipelineName: contextPipelineName?.pipeLineName,
     
   }), [isSaving, lastSaved, hasUnsavedChanges, contextPipelineName]);
-  console.log(lastSaved,"localState",isSaving)
+  // console.log(lastSaved,"localState",isSaving)
   
   const [localPipelineName, setLocalPipelineName] = useState(contextPipelineName?.pipeLineName || '');
   const [tempPipelineName, setTempPipelineName] = useState(contextPipelineName?.pipeLineName || '');
@@ -91,8 +91,10 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
   };
 
   const handleNameSubmit = async () => {
+    // alert(tempPipelineName)
     if (tempPipelineName.trim() && tempPipelineName !== localPipelineName) {
       setSaving();
+      // alert(id)
       try {
         await apiService.patch({
           portNumber: CATALOG_API_PORT,

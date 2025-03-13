@@ -19,22 +19,25 @@ export const pipelineKeys = {
 
 // Query functions
 export const usePipelineQuery = (id: string) => {
-    return useQuery({
-        queryKey: pipelineKeys.detail(id),
-        queryFn: async () => {
-            const data=await apiService.get({
-                portNumber: CATALOG_API_PORT,
-                url: `/pipeline/${id}`,
-                usePrefix: true,
-                method: 'GET',
-                metadata: {
-                    errorMessage: 'Failed to fetch projects'
-                },
-                params: {limit: 1000}
-            })
-            return data;
-        },
-    });
+    // if(!id){
+        return useQuery({
+            queryKey: id ? pipelineKeys.detail(id) : [],
+            queryFn: async () => {
+                const data=await apiService.get({
+                    portNumber: CATALOG_API_PORT,
+                    url: `/pipeline/${id}`,
+                    usePrefix: true,
+                    method: 'GET',
+                    metadata: {
+                        errorMessage: 'Failed to fetch projects'
+                    },
+                    params: {limit: 1000}
+                })
+                return data;
+            },
+        });
+    // }
+    
 };
 
 export const useUpdatePipelineMutation = () => {
@@ -64,7 +67,11 @@ export const useTransformationCountQuery = (pipelineName: string) => {
     return useQuery({
         queryKey: pipelineKeys.transformationCount(pipelineName),
         queryFn: async () => {
-            const { data } = await apiClient.get('/pipeline/debug/get_transformation_count', {
+            const data  = await apiService.get({
+                portNumber: CATALOG_API_PORT,
+                url: '/pipeline/debug/get_transformation_count',
+                usePrefix: true,
+                method: 'GET',
                 params: { pipeline_name: pipelineName }
             });
             return data;

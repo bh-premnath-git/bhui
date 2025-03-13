@@ -68,7 +68,7 @@ export const CustomEdge = memo(({
 
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
-    console.log(transformationCounts,"transformationCounts")
+    // console.log(transformationCounts,"transformationCounts")
     // Memoize the query parameters to prevent unnecessary re-renders
     const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
@@ -80,12 +80,12 @@ export const CustomEdge = memo(({
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
 
     const sourceNode = getNode(source);
-    console.log(sourceNode,"sourceNode")
+    // console.log(sourceNode,"sourceNode")
     
     const rowCount = transformationCounts.find(
         (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
     )?.rowCount;
-console.log(rowCount,"rowCount")
+// console.log(rowCount,"rowCount")
     const edgeCenter = useMemo(() => ({
         x: (sourceX + targetX) / 2,
         y: (sourceY + targetY) / 2,

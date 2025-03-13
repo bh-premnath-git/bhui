@@ -34,7 +34,6 @@ const BuildPlayGround: React.FC = () => {
         nodes,edges,selectedSchema,sourceColumns,isFormOpen,showLeavePrompt,ctrlDTimeout,hasUnsavedChanges,setShowLogs,
         setLastSaved,lastSaved
     }=usePipelineContext()
-  console.log(lastSaved,"lastSaved")
   const onError = useCallback((id: string) => {
       // console.log('Flow Error:', id);
   }, []);

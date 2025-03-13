@@ -209,17 +209,17 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         name: node.data.title,
                         transformation: "Target",
                         target: {
-                            name: node.data.source.name,
-                            target_type: node.data.source.target_type,
-                            target_name: node.data.source.target_name,
+                            name: node.data.source?.name,
+                            target_type: node.data.source?.target_type,
+                            target_name: node.data.source?.target_name,
                             connection: {
-                                name: node.data.source.connection?.name,
-                                connection_type: node.data.source.connection?.connection_type,
-                                file_path_prefix: node.data.source.connection?.file_path_prefix,
-                                connection_config_id: node.data.source.connection?.connection_config_id
+                                name: node.data.source?.connection?.name,
+                                connection_type: node.data.source?.connection?.connection_type,
+                                file_path_prefix: node.data.source?.connection?.file_path_prefix,
+                                connection_config_id: node.data.source?.connection?.connection_config_id
                             },
-                            file_name: node.data.source.file_name,
-                            load_mode: node.data.source.load_mode
+                            file_name: node.data.source?.file_name,
+                            load_mode: node.data.source?.load_mode
                         },
                         file_type: node.data?.source?.file_type?.toLowerCase(),
                         write_options: node.data.transformationData?.write_options || {
@@ -242,10 +242,10 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         name: node?.data.source?.name,
         type: node?.data.source?.target_type,
         connection: {
-            type: node.data.source.connection?.connection_type,
-            file_path: node.data.source.connection?.file_path_prefix,
+            type: node?.data.source?.connection?.connection_type,
+            file_path: node?.data.source?.connection?.file_path_prefix,
         },
-        load_mode: node.data.source.load_mode,
+        load_mode: node?.data.source?.load_mode,
         target: {
             target_type: node?.data.source?.target_type,
             target_name: node?.data.source?.target_name,

@@ -271,7 +271,8 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             file_path_prefix: formData.source?.connection?.file_path_prefix,
                             file_type: formData?.file_type,
                             connection_config: {
-                                connection_name: formData.source?.connection?.connection_name
+                                connection_name: formData.source?.connection?.connection_name,
+                                file_type: formData?.file_type
                             },
                             custom_metadata: formData
                         }

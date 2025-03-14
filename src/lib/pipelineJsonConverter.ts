@@ -5,10 +5,6 @@ import axios from 'axios';
 import { apiService } from './api/api-service';
 import { getNodeIcon, getNodePorts } from './transformationUtils';
 
-// API client setup
-const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
-});
 
 // Query keys
 export const pipelineKeys = {
@@ -137,6 +133,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             })
           
             console.log(sourceDetails)
+            // debugger
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
 console.log(updatedDetails,"updatedDetails")
@@ -157,18 +154,21 @@ console.log(updatedDetails,"updatedDetails")
                     ports: getNodePorts('Reader'),
                     source:{
                         "name": updatedDetails.name??sourceDetails.data_src_name,
+                        "data_src_desc": updatedDetails.name??sourceDetails.name,
                         "reader_name": updatedDetails.reader_name??sourceDetails.data_src_name,
                         "source_type": sourceDetails.connection_type,
                         "file_name": updatedDetails.file_name??sourceDetails.file_name,
                         "data_src_id": updatedDetails.data_src_id??sourceDetails.data_src_id,
                         "project_id": sourceDetails.bh_project_id,
                         "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
-                        "file_type": updatedDetails.file_type??sourceDetails.file_type,
+                        "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
                         "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
                         "connection": {
                             "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
-                            "connection_type": updatedDetails?.connection_type??sourceDetails.connection?.connection_type,
-                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name
+                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
+                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+
                         }
                     }
                 },

@@ -70,11 +70,11 @@ console.log(initialValues,"initialValues")
         }],
         expressions: initialValues.expressions?.map(item=>{
           return {
-            name: item?.target_column,
+            name: item?.target_column || item?.name,
             expression: item?.expression
           }
         }) || [],
-        advanced: baseValues?.advanced?.hints ?baseValues?.advanced?.hints :baseValues?.advanced?.hints || []
+        advanced: baseValues?.advanced?.hints ? baseValues?.advanced?.hints :baseValues?.advanced?.hints?baseValues?.advanced?.hints:baseValues?.advanced || []
       };
 
     case 'Repartition':

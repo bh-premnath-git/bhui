@@ -31,6 +31,7 @@ const EdgeMetricsDialog: React.FC<EdgeMetricsDialogProps> = ({
             open={isOpen}
             handleClose={onClose}
             transformData={metricsData?.[0]?.rows ?? []}
+            pipelineName={metricsData?.[0]?.name??''}
         />
     );
 };

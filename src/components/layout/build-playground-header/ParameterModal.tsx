@@ -6,6 +6,8 @@ import { Plus, X, Save, Loader } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { apiService } from '@/lib/api/api-service';
 import { CATALOG_API_PORT } from '@/config/platformenv';
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from 'sonner';
 
 interface ParameterModalProps {
   isOpen: boolean;
@@ -85,6 +87,19 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
   };
 
   const handleSave = async () => {
+    // Check for duplicate keys
+    const keys = parameters.map(param => param.key);
+    const hasDuplicateKey = keys.some((key, index) => keys.indexOf(key) !== index);
+
+    if (hasDuplicateKey) {
+      toast.error("Key value already exists");
+      // Toaster({
+      //   message: "Key value already exists",
+      //   // Add any additional toast options here
+      // });
+      return; // Exit the function to prevent API call
+    }
+
     setIsSaving(true);
     try {
       for (const param of parameters) {
@@ -123,7 +138,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg">
+      <DialogContent className="sm:max-w-[600px] bg-white/95 backdrop-blur-sm border-0 shadow-lg m-12">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold tracking-tight">
             {type === 'pipeline' ? 'Pipeline Parameters' : 'Spark Parameters'}
@@ -132,8 +147,8 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
             Configure your {type} parameters
           </p>
         </DialogHeader>
-
-        <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
+        <Toaster />
+        <div className="min-h-[300px] max-h-[400px] overflow-y-auto p-2">
           <div className="space-y-4">
             <div className="flex text-sm font-medium text-gray-500 px-3">
               <div className="w-1/2">Key</div>
@@ -147,12 +162,14 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
                   value={param.key}
                   onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
                   className="w-1/2"
+                  required
                 />
                 <Input
                   placeholder="Value"
                   value={param.value}
                   onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
                   className="w-1/2"
+                  required
                 />
                 <Button
                   variant="ghost"
@@ -182,7 +199,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
           <Button
             type="button"
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || parameters.some(param => !param.key || !param.value)}
             className="bg-black hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
           >
             {isSaving ? (

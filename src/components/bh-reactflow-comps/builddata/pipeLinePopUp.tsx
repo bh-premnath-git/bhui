@@ -20,12 +20,14 @@ interface PipeLinePopUpProps {
     open: boolean
     handleClose: () => void
     transformData: any[]
+    pipelineName: string
 }
 
 export default function PipeLinePopUp({
     open,
     handleClose,
     transformData,
+    pipelineName
 }: PipeLinePopUpProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [openFilter, setOpenFilter] = useState(false)
@@ -36,7 +38,8 @@ export default function PipeLinePopUp({
     const columns: ColumnDef<any>[] = Object.keys(transformData[0] || {}).map((key) => ({
         accessorKey: key,
         header: key,
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+
     }));
 
     const toolbarConfig: TToolbarConfig = {
@@ -88,48 +91,19 @@ export default function PipeLinePopUp({
             }}
         >
             {/* Dialog content container */}
-            <DialogContent className="max-w-[1200px] p-0">
+            <DialogContent className="max-w-[1300px] p-0">
                 {/* If !isExpanded => top portion with table */}
                 {!isExpanded && (
                     <div className="p-4">
                         {/* Header */}
-                        <DialogHeader className="p-0 flex justify-between items-center mb-2">
-                            <DialogTitle className="font-semibold text-lg">
-                                Test_pipeline 1 (out)
+                        <DialogHeader style={{textAlign: 'left'}}>
+                            <DialogTitle className="font-semibold text-lg text-start ">
+                                {pipelineName}
                             </DialogTitle>
-                            <X
-                                onClick={handleClose}
-                                className="cursor-pointer text-xl"
-                            />
+                            
                         </DialogHeader>
 
-                        {/* Controls */}
-                        <div className="flex justify-between items-center mb-2">
-                            <div className="flex gap-4 items-center text-black font-semibold">
-                                <div
-                                    onClick={() => setOpenFilter(true)}
-                                    className="flex items-center cursor-pointer hover:text-gray-700"
-                                >
-                                    <Filter className="mr-2" size={18} />
-                                    Filter
-                                </div>
-                                <div
-                                    onClick={handleSortOpen}
-                                    className="flex items-center cursor-pointer hover:text-gray-700"
-                                >
-                                    <Filter className="mr-2" size={18} />
-                                    Sort
-                                </div>
-                            </div>
-
-                            {/* CSV download icon */}
-                            <div
-                                className="cursor-pointer"
-                                onClick={() => downloadCSV(transformData)}
-                            >
-                                <img src="/assets/buildPipeline/downArrow.png" alt="csv" />
-                            </div>
-                        </div>
+                        
 
                         {/* Table */}
                         <div className="overflow-auto" style={{ minWidth: "1200px" }}>

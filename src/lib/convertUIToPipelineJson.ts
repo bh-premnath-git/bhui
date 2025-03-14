@@ -64,7 +64,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             data_src_id: node.data.source.data_src_id,
             connection: {
                 name: node.data.source.connection?.name || "local_connection",
-                connection_type: capitalizeFirstLetter(node.data.source.connection_type),
+                connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||capitalizeFirstLetter(node.data.source.connection_type),
                 file_path_prefix: `${node.data.source.file_path_prefix}`,
                 file_type: node.data.source.file_type?.toLowerCase(),
                 connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
@@ -86,7 +86,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 file_name: node.data.source.file_name,
                 connection: {
                     name: node.data.source.connection?.name || "local_connection",
-                    connection_type: capitalizeFirstLetter(node.data.source.connection_type),
+                    connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||capitalizeFirstLetter(node.data.source.connection_type),
                     file_path_prefix: node.data.source.file_path_prefix,
                     file_type: node.data.source.file_type?.toLowerCase(),
                     connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
@@ -122,7 +122,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         ...baseConfig,
                         name: node.data.title, // Explicitly set the name
                         group_by: Array.isArray(node.data.transformationData?.group_by)
-                            ? node.data.transformationData?.group_by.map(item => item.group_by)
+                            ? node.data.transformationData?.group_by.map(item => item?.group_by)
                             : [],
                         aggregate: node.data.transformationData?.aggregations || [],
                         pivot: node.data.transformationData?.pivot_by || []
@@ -138,6 +138,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         sql: node.data.transformationData?.sql || "true"
                     };
                 case 'Joiner':
+                    // debugger
                     console.log(node.data.transformationData)
                     return {
                         ...baseConfig,

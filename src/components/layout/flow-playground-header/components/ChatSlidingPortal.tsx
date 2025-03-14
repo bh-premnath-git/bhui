@@ -210,7 +210,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
+      <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full" style={{zIndex: 10000000}}>
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-sm font-semibold">Bighammer.AI</h2>
         </div>

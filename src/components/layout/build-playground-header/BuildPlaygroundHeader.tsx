@@ -17,6 +17,7 @@ import { apiService } from '@/lib/api/api-service';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { AIButton } from '../flow-playground-header';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
@@ -132,7 +133,7 @@ export function BuildPlaygroundHeader() {
   };
 
   return (
-    <div className="bg-[#F4F4F4] w-[100%] p-2">
+    <div className="bg-[#fff] w-[100%] p-2">
       <TooltipProvider>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -221,7 +222,9 @@ export function BuildPlaygroundHeader() {
                 <p>Spark Parameters</p>
               </TooltipContent>
             </Tooltip>
-            
+            <div className="border-l border-border pl-6 " style={{zIndex: 10000000}}>
+            <AIButton />
+          </div>
           </div>
           
         </div>
@@ -236,6 +239,7 @@ export function BuildPlaygroundHeader() {
         onClose={() => setIsSparkParamOpen(false)} 
         type="spark" 
       />
+      
     </div>
   )
 }

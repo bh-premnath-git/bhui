@@ -50,6 +50,7 @@ export function BuildPlaygroundHeader() {
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
@@ -91,10 +92,13 @@ export function BuildPlaygroundHeader() {
   };
 
   const handleNameSubmit = async () => {
-    // alert(tempPipelineName)
-    if (tempPipelineName.trim() && tempPipelineName !== localPipelineName) {
+    if (!tempPipelineName.trim()) {
+      setErrorMessage("Pipeline name is required.");
+      return;
+    }
+    setErrorMessage(''); // Clear error message if validation passes
+    if (tempPipelineName !== localPipelineName) {
       setSaving();
-      // alert(id)
       try {
         await apiService.patch({
           portNumber: CATALOG_API_PORT,
@@ -128,7 +132,7 @@ export function BuildPlaygroundHeader() {
   };
 
   return (
-    <div className="bg-[#F4F4F4] w-[100%]">
+    <div className="bg-[#F4F4F4] w-[100%] p-2">
       <TooltipProvider>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -166,6 +170,11 @@ export function BuildPlaygroundHeader() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                </div>
+              )}
+              {errorMessage && (
+                <div className="text-red-500 text-sm mt-1">
+                  {errorMessage}
                 </div>
               )}
             </div>

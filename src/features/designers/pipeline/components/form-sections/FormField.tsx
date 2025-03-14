@@ -399,6 +399,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
       <Controller
         control={control}
         name={name}
+        defaultValue={value || ''}
         rules={{ validate: onValidate }}
         render={({ field }) => (
           <Input

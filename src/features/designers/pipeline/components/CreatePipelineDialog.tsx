@@ -9,6 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useFieldArray } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
+import { FormField } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
 
 interface BuildPipeLineCreatePopupProps {
     handleClose: () => void;
@@ -57,6 +61,57 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const renderDedupFields = (control: any) => {
+        const { fields: dedupByFields, append: appendDedupBy, remove: removeDedupBy } = useFieldArray({
+            control,
+            name: 'dedup_by'
+        });
+
+        return (
+            <div>
+                {dedupByFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 mb-2">
+                        <Controller
+                            name={`dedup_by.${index}`}
+                            control={control}
+                            render={({ field }) => (
+                                <FormField
+                                    fieldSchema={{
+                                        type: 'string',
+                                        title: 'Dedup By',
+                                        properties: {}
+                                    }}
+                                    name={field.name}
+                                    fieldKey={`dedup_by.${index}`}
+                                    value={field.value ?? ''}
+                                    required={true}
+                                    onChange={field.onChange}
+                                    onBlur={field.onBlur}
+                                    isExpression={false}
+                                    additionalColumns={[]}
+                                />
+                            )}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => removeDedupBy(index)}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <span className="text-xl">×</span>
+                        </button>
+                    </div>
+                ))}
+                <Button
+                    type="button"
+                    onClick={() => appendDedupBy('')}
+                    className="text-green-600 font-bold"
+                >
+                    Add Dedup By
+                </Button>
+            </div>
+        );
     };
 
     if (isLoading) return <div>loading ...</div>;

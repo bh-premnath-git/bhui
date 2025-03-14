@@ -88,7 +88,7 @@
     {
       "ui_properties": {
         "module_name": "DQ Check",
-        "color": "#000",
+        "color": "rgb(233, 111, 74)",
         "icon": "/assets/buildPipeline/squre/4.svg",
         "ports": {
           "inputs": 1,

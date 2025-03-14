@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { Toggle } from '@/components/ui/toggle';
+import { Input } from '@/components/ui/input';
 
 type ArraySchema = {
   items: Record<string, any>;
@@ -63,8 +64,27 @@ const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
-  const initialFormValues = useMemo(() => generateInitialValues(schema, initialValues, currentNodeId), [schema, initialValues, currentNodeId]);
+  const initialFormValues = useMemo(() => {
+    const values:any = generateInitialValues(schema, initialValues, currentNodeId);
 
+    // Ensure pivot_values is initialized as an array
+    if (!Array.isArray(values.pivot_values)) {
+      values.pivot_values = [];
+    }
+
+    // Ensure group_by is initialized with at least one empty object
+    if (!Array.isArray(values.group_by) || values.group_by.length === 0) {
+      values.group_by = [{ group_by: '' }];
+    }
+
+    // Ensure pivot_by is initialized with at least one empty object
+    if (!Array.isArray(values.pivot_by) || values.pivot_by.length === 0) {
+      values.pivot_by = [{ pivot_column: '', pivot_values: [''] }];
+    }
+
+    return values;
+  }, [schema, initialValues, currentNodeId]);
+console.log(initialFormValues,"initialFormValues")
   // Update form configuration to include all fields
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: initialFormValues,
@@ -77,22 +97,13 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
   const dispatch=useDispatch<AppDispatch>();
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner', 'Filter'].includes(schema?.title || '')) {
+    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '')) {
       return;
     }
     try {
-      if (!sourceColumns?.length) {
-        throw new Error('Source columns are required');
-      }
+      const schemaString = sourceColumns.map(col => `${col.name}: ${col.dataType.toLowerCase()}`).join(', ');
 
-      const schemaString = sourceColumns
-        .map(col => `${col.name}: ${col.dataType.toLowerCase()}`)
-        .join(', ');
-
-      const response:any = await dispatch(generatePipelineAgent({ 
-        schemaString, 
-        targetColumn 
-      })).unwrap();
+      const response: any = await dispatch(generatePipelineAgent({ schemaString, targetColumn })).unwrap();
 
       if (!response?.result) {
         throw new Error('Invalid response from expression generator');
@@ -219,8 +230,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     console.log('Current Form State:', formValues);
   }, [formValues]);
 
+ 
+
   return (
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+      {/* {schema.title === 'Dedup' && renderDedupFields(control)} */}
       <FormContent
         control={control}
         schema={schema}
@@ -324,6 +338,54 @@ const renderArrayFields = (
                     </div>
                   )}
                 />
+              );
+            }
+
+            // Check if the field is pivot_values and render it as an array
+            if (fieldKey === 'pivot_values' && fieldSchema.type === 'array') {
+              return (
+                <div key={`${section}.${index}.${fieldKey}`} className="flex-1">
+                  <Controller
+                    name={`${section}.${index}.${fieldKey}`}
+                    control={control}
+                    defaultValue={[]}
+                    render={({ field }) => (
+                      <div>
+                        {Array.isArray(field.value) ? field.value.map((value: string, valueIndex: number) => (
+                          <div key={valueIndex} className="flex items-center gap-2 mb-1">
+                            <Input
+                              type="text"
+                              value={value}
+                              onChange={(e) => {
+                                const newValue = [...field.value];
+                                newValue[valueIndex] = e.target.value;
+                                field.onChange(newValue);
+                              }}
+                              className="form-input"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newValue = field.value.filter((_: string, i: number) => i !== valueIndex);
+                                field.onChange(newValue);
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              <span className="text-xl">×</span>
+                            </button>
+                          </div>
+                        )) : null}
+                        <Button
+                          type="button"
+                          onClick={() => field.onChange([...field.value, ''])}
+                          className="text-green-600 font-bold"
+                        >
+                          Add Value
+                        </Button>
+                      </div>
+                    )}
+                  />
+                </div>
               );
             }
 
@@ -440,17 +502,14 @@ const FormContent: React.FC<{
     if (schema.title === 'Repartition') {
       const repartitionType = watch('repartition_type');
       
-      // Find the matching condition in the schema
       const matchingCondition = schema.anyOf?.find(condition => 
         condition.if?.properties?.repartition_type?.const === repartitionType
       );
 
       if (matchingCondition) {
-        // For fields that should only be shown for specific repartition types
         if (fieldKey === 'repartition_expression') {
           return ['hash_repartition', 'repartition_by_range'].includes(repartitionType);
         }
-        // For repartition_value
         if (fieldKey === 'repartition_value') {
           return ['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(repartitionType);
         }

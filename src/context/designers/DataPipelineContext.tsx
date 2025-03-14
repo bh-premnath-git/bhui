@@ -365,7 +365,7 @@ console.log(response.pipeline_json,"response")
                     }));
 
                     // Your save logic here
-                    const pipeline_json = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
+                    const pipeline_json:any = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
                     await apiService.patch({
                         portNumber: CATALOG_API_PORT,
@@ -374,6 +374,7 @@ console.log(response.pipeline_json,"response")
                         method: 'PATCH',
                         data: pipeline_json
                     });
+                    setPipelineJson(pipeline_json?.pipeline_json);
 
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly

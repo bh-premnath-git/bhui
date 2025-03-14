@@ -168,7 +168,7 @@
               "ui-hint": "expression"
             },
             "join_type": {
-              "type": "string",
+              "type": "select",
               "minLength": 1,
               "enum": [
                 "inner",
@@ -245,7 +245,7 @@
               "minLength": 1
             },
             "order": {
-              "type": "string",
+              "type": "select",
               "enum": [
                 "asc",
                 "desc"
@@ -352,7 +352,7 @@
                 "minLength": 1
               },
               "order": {
-                "type": "string",
+                "type": "select",
                 "enum": [
                   "asc",
                   "desc"

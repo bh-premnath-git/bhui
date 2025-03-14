@@ -67,7 +67,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 connection_type: capitalizeFirstLetter(node.data.source.connection_type),
                 file_path_prefix: `${node.data.source.file_path_prefix}`,
                 file_type: node.data.source.file_type?.toLowerCase(),
-                connection_config_id: node.data.source.connection?.connection_config_id
+                connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
             }
         }));
 
@@ -89,7 +89,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     connection_type: capitalizeFirstLetter(node.data.source.connection_type),
                     file_path_prefix: node.data.source.file_path_prefix,
                     file_type: node.data.source.file_type?.toLowerCase(),
-                    connection_config_id: node.data.source.connection?.connection_config_id
+                    connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
                 }
             },
             read_options: {
@@ -116,12 +116,16 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             // Rest of the transformation configuration...
             switch (node.data.label) {
                 case 'Aggregator':
+                console.log(node.data.transformationData)
+
                     return {
                         ...baseConfig,
                         name: node.data.title, // Explicitly set the name
-                        group_by: node.data.transformationData?.group_by || [],
-                        aggregations: node.data.transformationData?.aggregations || [],
-                        pivot_by: node.data.transformationData?.pivot_by || []
+                        group_by: Array.isArray(node.data.transformationData?.group_by)
+                            ? node.data.transformationData?.group_by.map(item => item.group_by)
+                            : [],
+                        aggregate: node.data.transformationData?.aggregations || [],
+                        pivot: node.data.transformationData?.pivot_by || []
                     };
                 case 'Filter':
                     return {
@@ -134,13 +138,24 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         sql: node.data.transformationData?.sql || "true"
                     };
                 case 'Joiner':
+                    console.log(node.data.transformationData)
                     return {
                         ...baseConfig,
                         conditions: node.data.transformationData?.conditions || [],
-                        expressions: node.data.transformationData?.expressions || [],
-                        advanced: node.data.transformationData?.advanced || {
-                            hints: []
-                        }
+                        expressions: node.data.transformationData?.expressions?.map(item=>{
+                            return {
+                                target_column: item?.name,
+                                expression: item?.expression
+                            }
+                        }) || [],
+                        advanced: Array.isArray(node.data.transformationData?.advanced) ?
+                            {
+                                hints: node.data.transformationData.advanced.map(item => ({
+                                    join_input: item?.join_input,
+                                    hint_type: item?.hint_type
+                                }))
+                            }
+                            : { hints: [] }
                     };
                 case 'SchemaTransformation':
                     return {

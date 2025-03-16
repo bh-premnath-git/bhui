@@ -5,6 +5,7 @@ import * as monaco from 'monaco-editor';
 import { Schema } from '../../types/formTypes';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Toggle } from '@/components/ui/toggle';
 
 interface FormFieldProps {
   fieldSchema: Schema;
@@ -40,12 +41,6 @@ const SQL_KEYWORDS = [
   'UPPER', 'LOWER', 'LENGTH', 'REPLACE', 'ROUND',
   'COUNT', 'SUM', 'AVG', 'MIN', 'MAX'
 ];
-
-// Define the handleEditorError function
-const handleEditorError = (error: any) => {
-  console.error('Error loading Monaco Editor:', error);
-  // Optionally, you can display a user-friendly message or take other actions
-};
 
 // Add this helper function to normalize column format
 const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
@@ -91,79 +86,71 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   const [isEditorReady, setIsEditorReady] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);
 
-  // Memoized label to prevent unnecessary rerenders
-  const label = React.useMemo(() => (
-    <span>
-      {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ')}
-      {required && <span style={{ color: 'red' }} aria-label="required field"> *</span>}
-    </span>
-  ), [fieldKey, required]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    if (value && typeof value === 'object' && 'expression' in value) {
-      onChange({ ...value as Record<string, unknown>, expression: newValue });
-    } else {
-      onChange(newValue);
-    }
-  };
-console.log(additionalColumns,"sourceColumns")
-  if (enumValues) {
-    return (  
-      <Controller
-        control={control}
-        name={name}
-        rules={{ validate: onValidate }}
-        render={({ field }) => (
-          <div className="relative">
-            <Select>
-              <SelectTrigger
-                {...field}
-                // required={required}
+  // Check for select type
+  const isSelectField = 
+    fieldSchema?.type === 'select' || 
+    (enumValues && enumValues.length > 0);
+
+  // If it's a select field, use the Select component
+  if (isSelectField && !isExpression) {
+    const options = enumValues || fieldSchema?.enum || [];
+    
+    return (
+      <div className="form-field">
+        <Controller
+          control={control}
+          name={name}
+          defaultValue={value || ''}
+          render={({ field }) => (
+            <div className="relative">
+              <Select
+                defaultValue={field.value}
+                onValueChange={(newValue) => {
+                  field.onChange(newValue);
+                  onChange?.(newValue);
+                }}
                 disabled={disabled}
-                className={`block w-full mt-1 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
-                aria-label={`Select ${fieldKey}`}
               >
-                <SelectValue placeholder={`Select ${fieldKey}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {enumValues.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {error && <span className="text-red-500 text-sm">{typeof error === 'string' ? error : error?.message}</span>}
-          </div>
-        )}
-      />
+                <SelectTrigger 
+                  className={`w-full mt-1 ${error ? 'border-red-500' : 'border-gray-300'}`}
+                >
+                  <SelectValue placeholder={`Select ${fieldKey}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((option: string) => (
+                    <SelectItem key={option} value={option}>
+                      {option.replace(/_/g, ' ').split(' ').map(word =>
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                      ).join(' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {error && (
+                <span className="text-red-500 text-sm">
+                  {typeof error === 'string' ? error : error?.message}
+                </span>
+              )}
+            </div>
+          )}
+        />
+      </div>
     );
   }
 
-  return (
-    <div className="form-field">
-      {isExpression ? (
+  // Handle expression fields
+  if (isExpression) {
+    return (
+      <div className="form-field">
         <div className={expressionEditorStyles.wrapper}>
-          {/* <div className={expressionEditorStyles.header}>
-            <span className={expressionEditorStyles.headerTitle}>Expression Editor</span>
-            <button
-              type="button"
-              onClick={() => onExpressionClick?.()}
-              className="px-2 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90"
-            >
-              Generate
-            </button>
-          </div> */}
           <div className={expressionEditorStyles.editorContainer}>
             <MonacoEditor
               height="200px"
               language="sql"
               theme="vs-light"
               value={typeof value === 'object' && 'expression' in value ? value.expression : value}
-              onChange={(newValue) => onChange(newValue || '')}
+              onChange={(newValue) => onChange?.(newValue || '')}
               options={{
                 minimap: { enabled: false },
                 lineNumbers: 'off',
@@ -305,7 +292,6 @@ console.log(additionalColumns,"sourceColumns")
                       });
 
                       // Debugging: Log sourceColumns
-                      console.log('Source Columns:', sourceColumns);
 
                       // Add source columns suggestions
                       sourceColumns.forEach(col => {
@@ -321,8 +307,6 @@ console.log(additionalColumns,"sourceColumns")
                         }
                       });
 
-                      // Debugging: Log additionalColumns
-                      console.log('Additional Columns:', additionalColumns);
 
                       // Add additional columns suggestions
                       const processedColumns = new Set(sourceColumns.map(col => col.name));
@@ -364,23 +348,80 @@ console.log(additionalColumns,"sourceColumns")
             />
           </div>
         </div>
-      ) : (
+      </div>
+    );
+  }
+
+  // Default input field
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    if (value && typeof value === 'object' && 'expression' in value) {
+      onChange?.({ ...value as Record<string, unknown>, expression: newValue });
+    } else {
+      onChange?.(newValue);
+    }
+  };
+
+  // Inside the FormField component, before the return statement
+  if (fieldSchema.type === 'boolean') {
+    return (
+      <div className="form-field">
         <Controller
           control={control}
           name={name}
-          rules={{ validate: onValidate }}
+          defaultValue={value || false}
           render={({ field }) => (
-            <Input
-              {...field}
-              placeholder={`Enter ${fieldKey}`}
-              value={typeof value === 'object' && 'expression' in value ? value.expression : value}
-              required={required}
-              disabled={disabled}
+            <Toggle
+              pressed={field.value}
+              onPressedChange={(pressed) => {
+                field.onChange(pressed);
+                onChange?.(pressed);
+              }}
               className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
               aria-label={fieldKey}
-            />
+              disabled={disabled}
+            >
+              {field.value ? 'On' : 'Off'}
+            </Toggle>
           )}
         />
+        {error && (
+          <span className="text-red-500 text-sm">
+            {typeof error === 'string' ? error : error?.message}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="form-field">
+      <Controller
+        control={control}
+        name={name}
+        defaultValue={value || ''}
+        rules={{ validate: onValidate }}
+        render={({ field }) => (
+          <Input
+            {...field}
+            value={field.value || ''}
+            onChange={(e) => {
+              field.onChange(e);
+              handleInputChange(e);
+            }}
+            placeholder={`Enter ${fieldKey}`}
+            required={required}
+            disabled={disabled}
+            className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+            aria-label={fieldKey}
+            onBlur={onBlur}
+          />
+        )}
+      />
+      {error && (
+        <span className="text-red-500 text-sm">
+          {typeof error === 'string' ? error : error?.message}
+        </span>
       )}
     </div>
   );

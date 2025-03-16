@@ -34,7 +34,6 @@ const BuildPlayGround: React.FC = () => {
         nodes,edges,selectedSchema,sourceColumns,isFormOpen,showLeavePrompt,ctrlDTimeout,hasUnsavedChanges,setShowLogs,
         setLastSaved,lastSaved
     }=usePipelineContext()
-  console.log(lastSaved,"lastSaved")
   const onError = useCallback((id: string) => {
       // console.log('Flow Error:', id);
   }, []);
@@ -66,7 +65,7 @@ const BuildPlayGround: React.FC = () => {
       )
   }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
       setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet, handleSourceUpdate, pipelineDtl]);
-console.log(transformationCounts,"transformationCounts")
+// console.log(transformationCounts,"transformationCounts")
 
   const edgeTypes = useMemo(() => ({
       default: (props: any) => (

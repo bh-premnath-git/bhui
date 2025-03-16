@@ -15,7 +15,8 @@ export const generateInitialValues = (schema: Schema | null, initialValues: any,
     nodeId: currentNodeId,
     ...(initialValues || {}) // Handle case where initialValues is null/undefined
   };
-
+console.log(baseValues,"baseValues")
+console.log(initialValues,"initialValues")
   switch (schema.title) {
     case 'Sorter':
       return {
@@ -35,17 +36,15 @@ export const generateInitialValues = (schema: Schema | null, initialValues: any,
       };
 
     case 'Aggregator':
+      console.log(baseValues)
+      console.log(baseValues.group_by)
       return {
         ...baseValues,
-        group_by: baseValues.group_by || [],
+        group_by: baseValues.group_by.map(item=>{return {group_by:item}}) || [],
         aggregations: (baseValues.aggregations?.length > 0)
           ? baseValues.aggregations
-          : [{
-              column: '',
-              function: '',
-              alias: ''
-            }],
-        pivot_by: baseValues.pivot_by || []
+          : [],
+        pivot_by: baseValues.pivot || []
       };
 
     case 'SchemaTransformation':
@@ -60,6 +59,8 @@ export const generateInitialValues = (schema: Schema | null, initialValues: any,
       };
 
     case 'Joiner':
+      console.log(initialValues)
+      console.log(baseValues)
       return {
         ...baseValues,
         conditions: initialValues.conditions || [{
@@ -67,17 +68,13 @@ export const generateInitialValues = (schema: Schema | null, initialValues: any,
           join_condition: '',
           join_type: 'left'
         }],
-        expressions: initialValues.expressions?.map((expr: any) => ({
-          name: expr?.target_column || '',
-          expression: expr?.expression || ''
-        })) || [{
-          name: '',
-          expression: ''
-        }],
-        advanced: initialValues.advanced?.hints || [{
-          join_input: '',
-          hint_type: 'broadcast'
-        }]
+        expressions: initialValues.expressions?.map(item=>{
+          return {
+            name: item?.target_column || item?.name,
+            expression: item?.expression
+          }
+        }) || [],
+        advanced: baseValues?.advanced?.hints ? baseValues?.advanced?.hints :baseValues?.advanced?.hints?baseValues?.advanced?.hints:baseValues?.advanced || []
       };
 
     case 'Repartition':

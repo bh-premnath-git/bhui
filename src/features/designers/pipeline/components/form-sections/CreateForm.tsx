@@ -22,14 +22,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { Toggle } from '@/components/ui/toggle';
+import { Input } from '@/components/ui/input';
 
 type ArraySchema = {
   items: Record<string, any>;
   minItems?: number;
 };
 
-type FormValues = Record<string, any>;
-
+interface FormValues extends Record<string, any> {
+  derived_fields?: Array<{
+    name: string;
+    expression: string;
+  }>;
+  repartition_type?: string;
+  repartition_value?: number;
+  repartition_expression?: string;
+  column_list?: Array<{
+    name: string;
+    expression: string;
+  }>;
+}
 
 interface CreateFormProps {
   schema: Schema | null;
@@ -51,9 +64,28 @@ const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
-  const initialFormValues = useMemo(() => generateInitialValues(schema, initialValues, currentNodeId), [schema, initialValues, currentNodeId]);
+  const initialFormValues = useMemo(() => {
+    const values:any = generateInitialValues(schema, initialValues, currentNodeId);
 
-  // Add resolver to handle validation and form state
+    // Ensure pivot_values is initialized as an array
+    if (!Array.isArray(values.pivot_values)) {
+      values.pivot_values = [];
+    }
+
+    // Ensure group_by is initialized with at least one empty object
+    if (!Array.isArray(values.group_by) || values.group_by.length === 0) {
+      values.group_by = [{ group_by: '' }];
+    }
+
+    // Ensure pivot_by is initialized with at least one empty object
+    if (!Array.isArray(values.pivot_by) || values.pivot_by.length === 0) {
+      values.pivot_by = [{ pivot_column: '', pivot_values: [''] }];
+    }
+
+    return values;
+  }, [schema, initialValues, currentNodeId]);
+console.log(initialFormValues,"initialFormValues")
+  // Update form configuration to include all fields
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: initialFormValues,
     mode: 'onChange',
@@ -62,68 +94,147 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
   // Watch all form values
   const formValues = watch();
 
-  // Add logging to track form values
-  useEffect(() => {
-    console.log('Form values changed:', formValues);
-  }, [formValues]);
 
   const dispatch=useDispatch<AppDispatch>();
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner', 'Filter'].includes(schema?.title || '')) {
+    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '')) {
       return;
     }
     try {
-      const schemaString = sourceColumns.map(col => 
-        `${col.name}: ${col.dataType.toLowerCase()}`
-      ).join(', ');
-      const response:any = await dispatch(generatePipelineAgent({ schemaString, targetColumn })).unwrap();
+      const schemaString = sourceColumns.map(col => `${col.name}: ${col.dataType.toLowerCase()}`).join(', ');
 
-      if (response?.result) {
-        const parsedResult = JSON.parse(response.result);
-        console.log('Setting expression value:', { fieldName, value: parsedResult });
-        
-        const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
-        setValue(fieldName, expressionValue, {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true
-        });
-        setFieldValue(fieldName, expressionValue);
-        
-        const currentValues = watch();
-        console.log('Form values after setting:', { ...currentValues, [fieldName]: expressionValue });
+      const response: any = await dispatch(generatePipelineAgent({ schemaString, targetColumn })).unwrap();
+
+      if (!response?.result) {
+        throw new Error('Invalid response from expression generator');
       }
+
+      const parsedResult = JSON.parse(response.result);
+      const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+      
+      setValue(fieldName, expressionValue, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
+      setFieldValue(fieldName, expressionValue);
     } catch (error) {
       console.error('Error generating expression:', error);
       setValue(fieldName, '');
       setFieldValue(fieldName, '');
     }
-  }, [schema?.title, sourceColumns, setValue, watch, dispatch]);
+  }, [schema?.title, sourceColumns, setValue, dispatch]);
 
-  // Update onSubmitForm to properly handle the form values
+  // Update onSubmitForm to properly handle nested form values
   const onSubmitForm = (values: FormValues) => {
     console.log('Raw form values before cleaning:', values);
 
+    // Add validation before cleaning
+    if (!schema) {
+      console.error('Schema is required');
+      return;
+    }
+
+    // Validate required fields based on schema type
+    if (schema.title === 'SchemaTransformation') {
+      // Only validate if derived_fields exists and has items
+      if (values.derived_fields?.length) {
+        // Filter out empty fields first
+        const nonEmptyFields = values.derived_fields.filter(
+          field => field.name?.trim() || field.expression?.trim()
+        );
+        
+        // If we have any non-empty fields, validate them
+        if (nonEmptyFields.length > 0) {
+          const invalidFields = nonEmptyFields.filter(
+            field => !field.name?.trim() || !field.expression?.trim()
+          );
+          if (invalidFields.length > 0) {
+            console.error('All non-empty derived fields must have both name and expression');
+            return;
+          }
+        }
+      }
+    }
+
     const cleanValues = Object.entries(values).reduce((acc, [key, value]) => {
       console.log(`Processing field ${key}:`, { value, type: typeof value });
-      // Keep all non-null values, including empty strings for expression fields
-      if (value !== undefined && value !== null) {
+      
+      // Special handling for SchemaTransformation derived_fields
+      if (key === 'derived_fields' && Array.isArray(value)) {
+        // Filter out items where either name or expression is empty
+        const cleanedFields = value.filter(item => 
+          item.name?.trim() && item.expression?.trim()
+        );
+        
+        if (cleanedFields.length > 0) {
+          acc[key] = cleanedFields;
+        }
+        return acc;
+      }
+      
+      // Handle other array fields
+      if (Array.isArray(value)) {
+        // Filter out empty array items
+        const cleanedArray = value.filter(item => {
+          if (typeof item === 'object') {
+            // Check if any property has a non-empty value
+            return Object.values(item).some(v => 
+              v !== '' && v !== null && v !== undefined && String(v).trim() !== ''
+            );
+          }
+          return item !== '' && item !== null && item !== undefined && String(item).trim() !== '';
+        });
+        
+        if (cleanedArray.length > 0) {
+          acc[key] = cleanedArray;
+        }
+      }
+      // Handle object fields
+      else if (value !== null && typeof value === 'object') {
+        const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
+          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
+            objAcc[objKey] = objValue;
+          }
+          return objAcc;
+        }, {} as Record<string, any>);
+        
+        if (Object.keys(cleanObj).length > 0) {
+          acc[key] = cleanObj;
+        }
+      }
+      // Handle primitive values
+      else if (value !== undefined && value !== null && value !== '' && String(value).trim() !== '') {
         acc[key] = value;
       }
+      
       return acc;
     }, {} as Record<string, any>);
+
+    // Update SchemaTransformation validation
+    if (schema.title === 'SchemaTransformation') {
+      // Only require derived_fields if it's specified as required in the schema
+      const isDerivedFieldsRequired = Array.isArray(schema.required) && schema.required.includes('derived_fields');
+      if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
+        console.error('SchemaTransformation requires at least one valid derived field');
+        return;
+      }
+    }
 
     console.log('Final cleaned values:', cleanValues);
     onSubmit({ ...cleanValues, nodeId: currentNodeId });
   };
 
-  // Add form state debugging (optional, remove in production)
+  // Add form state debugging
   useEffect(() => {
     console.log('Current Form State:', formValues);
   }, [formValues]);
 
+ 
+
   return (
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+      {/* {schema.title === 'Dedup' && renderDedupFields(control)} */}
       <FormContent
         control={control}
         schema={schema}
@@ -135,11 +246,15 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         edges={edges}
       />
       
-      {/* <div className="flex justify-end mt-4">
-        <Button type="submit">
-          Save Changes
+      <div className="mt-2">
+        <Button
+          type="submit"
+          variant="default"
+          className="w-full"
+        >
+          Save
         </Button>
-      </div> */}
+      </div>
     </form>
   );
 };
@@ -160,6 +275,14 @@ const renderArrayFields = (
   const { fields, append, remove } = useFieldArray({
     control,
     name: section,
+    rules: {
+      required: arraySchema.minItems ? `Minimum ${arraySchema.minItems} items required` : undefined,
+      validate: {
+        minItems: (value) => 
+          !arraySchema.minItems || (value?.length >= arraySchema.minItems) || 
+          `Minimum ${arraySchema.minItems} items required`,
+      }
+    }
   });
 
   const itemProperties = arraySchema.items.properties || arraySchema.items;
@@ -185,62 +308,121 @@ const renderArrayFields = (
       {fields.map((field, index) => (
         <div key={field.id} className="flex gap-2 mb-2">
           {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => {
-            const defaultValue = fieldSchema.enum ? fieldSchema.enum[0] :
-              fieldSchema.type === 'boolean' ? false :
-                fieldSchema.type === 'number' ? 0 : '';
-
             const isExpression = fieldSchema?.type === 'expression' ||
               (fieldSchema?.['ui-hint'] === 'expression') ||
               (section === 'expressions' && fieldKey === 'expression') ||
               (fieldKey === 'join_condition');
 
-            // Add check for autocomplete type
-            const isAutocomplete = fieldSchema?.type === 'autocomplete';
+            // Handle boolean fields
+            if (fieldSchema.type === 'boolean') {
+              return (
+                <Controller
+                  key={`${section}.${index}.${fieldKey}`}
+                  name={`${section}.${index}.${fieldKey}`}
+                  control={control}
+                  defaultValue={fieldSchema.default || false}
+                  render={({ field: { value, onChange } }) => (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">
+                        {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ')}
+                      </label>
+                      <Toggle
+                        pressed={value}
+                        onPressedChange={onChange}
+                        aria-label={fieldKey}
+                      >
+                        {value ? 'On' : 'Off'}
+                      </Toggle>
+                    </div>
+                  )}
+                />
+              );
+            }
+
+            // Check if the field is pivot_values and render it as an array
+            if (fieldKey === 'pivot_values' && fieldSchema.type === 'array') {
+              return (
+                <div key={`${section}.${index}.${fieldKey}`} className="flex-1">
+                  <Controller
+                    name={`${section}.${index}.${fieldKey}`}
+                    control={control}
+                    defaultValue={[]}
+                    render={({ field }) => (
+                      <div>
+                        {Array.isArray(field.value) ? field.value.map((value: string, valueIndex: number) => (
+                          <div key={valueIndex} className="flex items-center gap-2 mb-1">
+                            <Input
+                              type="text"
+                              value={value}
+                              onChange={(e) => {
+                                const newValue = [...field.value];
+                                newValue[valueIndex] = e.target.value;
+                                field.onChange(newValue);
+                              }}
+                              className="form-input"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newValue = field.value.filter((_: string, i: number) => i !== valueIndex);
+                                field.onChange(newValue);
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              <span className="text-xl">×</span>
+                            </button>
+                          </div>
+                        )) : null}
+                        <Button
+                          type="button"
+                          onClick={() => field.onChange([...field.value, ''])}
+                          className="text-green-600 font-bold"
+                        >
+                          Add Value
+                        </Button>
+                      </div>
+                    )}
+                  />
+                </div>
+              );
+            }
 
             return (
               <Controller
+                key={`${section}.${index}.${fieldKey}`}
                 name={`${section}.${index}.${fieldKey}`}
                 control={control}
-                defaultValue={field[fieldKey] ?? defaultValue}
-                render={({ field }) => (
+                defaultValue={fieldSchema.default || ''}
+                rules={{
+                  required: requiredFields.includes(fieldKey)
+                }}
+                render={({ field: { onChange, value, name } }) => (
                   <div className="flex-1">
-                    {isAutocomplete ? (
-                      <Autocomplete
-                        options={columnSuggestions}
-                        value={field.value || ''}
-                        onChange={(newValue) => {
-                          field.onChange(newValue);
-                        }}
-                        renderInput={(params) => (
-                          <div ref={params.InputProps.ref}>
-                            <input
-                              {...params.inputProps}
-                              className=" h-10 p-2 border border-gray-300 rounded"
-                            />
-                          </div>
-                        )}
-                      />
-                    ) : (
-                      <FormField
-                        fieldSchema={{ 
-                          type: fieldSchema.type || 'select',
-                          enum: fieldSchema.enum || ['asc', 'desc'],
-                          title: fieldSchema.title || '',
-                          properties: fieldSchema.properties || {}
-                        }}
-                        name={`${section}.${index}.${fieldKey}`}
-                        fieldKey={fieldKey}
-                        value={field.value ?? defaultValue}
-                        isExpression={isExpression}
-                        additionalColumns={columnSuggestions.map(colName => ({
-                          name: colName,
-                          dataType: 'string'
-                        }))}
-                        sourceColumns={sourceColumns}
-                        required={requiredFields.includes(fieldKey)}
-                        onExpressionClick={() => onExpressionClick(field.name || fieldKey, field.onChange, `${section}.${index}.${fieldKey}`)}
-                      />
-                    )}
+                    <FormField
+                      fieldSchema={{ 
+                        type: fieldSchema.type,
+                        enum: fieldSchema.enum,
+                        title: fieldSchema.title || '',
+                        properties: fieldSchema.properties || {}
+                      }}
+                      name={name}
+                      fieldKey={fieldKey}
+                      value={value}
+                      onChange={(e: any) => {
+                        const newValue = e.target?.value ?? e;
+                        onChange(newValue);
+                      }}
+                      isExpression={isExpression}
+                      additionalColumns={columnSuggestions.map(colName => ({
+                        name: colName,
+                        dataType: 'string'
+                      }))}
+                      sourceColumns={sourceColumns}
+                      required={requiredFields.includes(fieldKey)}
+                      onExpressionClick={() => onExpressionClick(name || fieldKey, onChange, `${section}.${index}.${fieldKey}`)}
+                    />
                   </div>
                 )}
               />
@@ -266,7 +448,8 @@ const renderArrayFields = (
               ...acc,
               [key]: itemProperties[key].enum ?
                 (itemProperties[key].default || itemProperties[key].enum[0]) :
-                itemProperties[key].type === 'boolean' ? false : ''
+                itemProperties[key].type === 'boolean' ? false :
+                itemProperties[key].type === 'number' ? 0 : ''
             }),
             {}
           );
@@ -319,17 +502,14 @@ const FormContent: React.FC<{
     if (schema.title === 'Repartition') {
       const repartitionType = watch('repartition_type');
       
-      // Find the matching condition in the schema
       const matchingCondition = schema.anyOf?.find(condition => 
         condition.if?.properties?.repartition_type?.const === repartitionType
       );
 
       if (matchingCondition) {
-        // For fields that should only be shown for specific repartition types
         if (fieldKey === 'repartition_expression') {
           return ['hash_repartition', 'repartition_by_range'].includes(repartitionType);
         }
-        // For repartition_value
         if (fieldKey === 'repartition_value') {
           return ['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(repartitionType);
         }
@@ -563,52 +743,85 @@ const FormContent: React.FC<{
   // Update renderField to properly handle different field types
   const renderField = (
     fieldKey: string, 
-    fieldSchema: any, 
+    fieldSchema: Schema, 
     control: any, 
     parentKey?: string
   ) => {
+    if (!fieldSchema || typeof fieldSchema !== 'object') {
+      console.error(`Invalid schema for field ${fieldKey}`);
+      return null;
+    }
+
     const isExpression = fieldSchema.type === 'expression' || 
                         fieldSchema['ui-hint'] === 'expression' ||
                         (fieldKey === 'condition' && fieldSchema.type === 'string') ||
                         (fieldKey === 'sql' && fieldSchema.type === 'string') ||
                         (fieldKey === 'join_condition' && fieldSchema.type === 'string');
 
+    // Special handling for boolean fields
+    if (fieldSchema.type === 'boolean') {
+      return (
+        <Controller
+          name={fieldKey}
+          control={control}
+          defaultValue={fieldSchema.default || false}
+          render={({ field: { value, onChange } }) => (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">
+                {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
+              </label>
+              <Toggle
+                pressed={value}
+                onPressedChange={onChange}
+                aria-label={fieldKey}
+              >
+                {value ? 'On' : 'Off'}
+              </Toggle>
+            </div>
+          )}
+        />
+      );
+    }
+
+    // Existing rendering logic for other field types
     return (
       <Controller
         name={fieldKey}
         control={control}
         defaultValue={fieldSchema.default || ''}
-        render={({ field }) => {
-          console.log(`Rendering field ${fieldKey} with value:`, field.value);
-          return (
-            <FormField
-              fieldSchema={fieldSchema}
-              name={field.name}
-              fieldKey={fieldKey}
-              value={field.value}
-              onChange={(newValue) => {
-                console.log(`Field ${fieldKey} changing to:`, newValue);
-                field.onChange(newValue);
-              }}
-              isExpression={isExpression}
-              sourceColumns={sourceColumns}
-              additionalColumns={columnSuggestions.map(colName => ({
-                name: colName,
-                dataType: 'string'
-              }))}
-              required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
-              onExpressionClick={() => {
-                if (isExpression) {
-                  onExpressionClick(
-                    field.name || fieldKey,
-                    (value: any) => field.onChange(value),
-                    fieldKey
-                  );
-                }
-              }}
-            />
-          );
+        rules={{
+          required: isFieldRequired(fieldKey, fieldSchema, parentKey)
         }}
+        render={({ field: { onChange, value, name } }) => (
+          <FormField
+            fieldSchema={fieldSchema}
+            name={name}
+            fieldKey={fieldKey}
+            value={value}
+            onChange={(e: any) => {
+              const newValue = e.target?.value ?? e;
+              onChange(newValue);
+            }}
+            isExpression={isExpression}
+            sourceColumns={sourceColumns}
+            additionalColumns={columnSuggestions.map(colName => ({
+              name: colName,
+              dataType: 'string'
+            }))}
+            required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
+            onExpressionClick={() => {
+              if (isExpression) {
+                onExpressionClick(
+                  name || fieldKey,
+                  onChange,
+                  fieldKey
+                );
+              }
+            }}
+          />
+        )}
       />
     );
   };
@@ -944,15 +1157,7 @@ const FormContent: React.FC<{
         </div>
       )}
 
-      <div className="mt-2">
-        <Button
-          type="submit"
-          variant="default"
-          className="w-full"
-        >
-          Save
-        </Button>
-      </div>
+      
     </div>
   );
 };

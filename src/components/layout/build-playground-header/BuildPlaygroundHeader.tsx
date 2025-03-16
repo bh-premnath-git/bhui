@@ -17,9 +17,10 @@ import { apiService } from '@/lib/api/api-service';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { AIButton } from '../flow-playground-header';
 
 export function BuildPlaygroundHeader() {
-  console.log("BuildPlaygroundHeader rendered");
+  // console.log("BuildPlaygroundHeader rendered");
   const { id } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export function BuildPlaygroundHeader() {
     isSaving,
     hasUnsavedChanges,
   } = usePipelineContext();
-console.log(contextPipelineName,lastSaved,"contextPipelineName")
+// console.log(contextPipelineName,lastSaved,"contextPipelineName")
   const localState = useMemo(() => ({
     isSaving,
     lastSaved,
@@ -43,13 +44,14 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
     pipelineName: contextPipelineName?.pipeLineName,
     
   }), [isSaving, lastSaved, hasUnsavedChanges, contextPipelineName]);
-  console.log(lastSaved,"localState",isSaving)
+  // console.log(lastSaved,"localState",isSaving)
   
   const [localPipelineName, setLocalPipelineName] = useState(contextPipelineName?.pipeLineName || '');
   const [tempPipelineName, setTempPipelineName] = useState(contextPipelineName?.pipeLineName || '');
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
@@ -91,7 +93,12 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
   };
 
   const handleNameSubmit = async () => {
-    if (tempPipelineName.trim() && tempPipelineName !== localPipelineName) {
+    if (!tempPipelineName.trim()) {
+      setErrorMessage("Pipeline name is required.");
+      return;
+    }
+    setErrorMessage(''); // Clear error message if validation passes
+    if (tempPipelineName !== localPipelineName) {
       setSaving();
       try {
         await apiService.patch({
@@ -126,7 +133,7 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
   };
 
   return (
-    <div className="bg-[#F4F4F4] w-[100%]">
+    <div className="bg-[#fff] w-[100%] p-2">
       <TooltipProvider>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -164,6 +171,11 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                </div>
+              )}
+              {errorMessage && (
+                <div className="text-red-500 text-sm mt-1">
+                  {errorMessage}
                 </div>
               )}
             </div>
@@ -210,7 +222,9 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
                 <p>Spark Parameters</p>
               </TooltipContent>
             </Tooltip>
-            
+            <div className="border-l border-border pl-6 " style={{zIndex: 10000000}}>
+            <AIButton />
+          </div>
           </div>
           
         </div>
@@ -225,6 +239,7 @@ console.log(contextPipelineName,lastSaved,"contextPipelineName")
         onClose={() => setIsSparkParamOpen(false)} 
         type="spark" 
       />
+      
     </div>
   )
 }

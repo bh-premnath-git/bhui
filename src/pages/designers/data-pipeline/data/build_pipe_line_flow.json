@@ -44,13 +44,7 @@
             "text": "Transform",
             "title": "Transform"
         },
-        {
-            "id": 7,
-            "icon": "/assets/buildPipeline/display/ship.svg",
-            "expandIcon": "#c049c0",
-            "text": "Ship",
-            "title": "Ship"
-        },
+        
         {
             "id": 8,
             "icon": "/assets/buildPipeline/28.svg",

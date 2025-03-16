@@ -168,7 +168,7 @@
               "ui-hint": "expression"
             },
             "join_type": {
-              "type": "string",
+              "type": "select",
               "minLength": 1,
               "enum": [
                 "inner",
@@ -206,7 +206,7 @@
               "minLength": 1
             },
             "hint_type": {
-              "type": "string",
+              "type": "select",
               "minLength": 1,
               "enum": [
                 "broadcast",
@@ -241,10 +241,11 @@
           "type": "array",
           "items": {
             "column": {
-              "type": "string"
+              "type": "autocomplete",
+              "minLength": 1
             },
             "order": {
-              "type": "string",
+              "type": "select",
               "enum": [
                 "asc",
                 "desc"
@@ -263,7 +264,7 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
-      "ui_type": "tab-container",
+      "ui_type": "object",
       "title": "DQ Check",
       "properties": {
         "transformation": {
@@ -323,7 +324,7 @@
       "ui_type": "object",
       "properties": {
         "keep": {
-          "type": "string",
+          "type": "select",
           "minLength": 1,
           "enum": [
             "any",
@@ -351,7 +352,7 @@
                 "minLength": 1
               },
               "order": {
-                "type": "string",
+                "type": "select",
                 "enum": [
                   "asc",
                   "desc"
@@ -698,7 +699,7 @@
             ],
             "properties": {
               "column_list": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               }
             }

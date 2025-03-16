@@ -2,7 +2,7 @@ import { CATALOG_API_PORT } from "@/config/platformenv";
 import { apiService } from "@/lib/api/api-service";
 
 export const mockApiCall = async (data: any) => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 100000));
   return { success: true };
 };
 

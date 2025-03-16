@@ -20,7 +20,7 @@ import 'reactflow/dist/style.css';
 import { useAppDispatch } from "@/hooks/useRedux";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
-import { PipelineProvider, usePipelineContext } from "./context/designers/DataPipelineContext";
+import { PipelineProvider } from "./context/designers/DataPipelineContext";
 
 const queryClient = new QueryClient();
 
@@ -42,10 +42,9 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
 
 function RootLayout() {
   const { isExpanded } = useSidebar();
-  const {lastSaved}=usePipelineContext();
-  console.log(lastSaved,"lastSaved")
 
   return (
+    <PipelineProvider>
     <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
       <Sidebar />
       <div className={`col-start-2 col-span-1 transition-all duration-300 ${isExpanded ? "ml-64" : "ml-20"}`}>
@@ -67,6 +66,7 @@ function RootLayout() {
         </main>
       </div>
     </div>
+    </PipelineProvider>
   );
 }
 
@@ -76,11 +76,11 @@ const router = createBrowserRouter([
     element: (
       <ReactFlowProvider>
         <FlowProvider>
-          <PipelineProvider>
+          {/* <PipelineProvider> */}
           <SidebarProvider>
             <RootLayout />
           </SidebarProvider>
-          </PipelineProvider>
+          {/* </PipelineProvider> */}
         </FlowProvider>
       </ReactFlowProvider>
     ),

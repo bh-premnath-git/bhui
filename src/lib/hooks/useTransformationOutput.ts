@@ -39,6 +39,7 @@ export const useTransformationOutputQuery = ({
             const response:any = await apiService.get({
                 portNumber: CATALOG_API_PORT,
                 url: '/pipeline/debug/get_transformation_output',
+                usePrefix: true,
                 params: {
                     pipeline_name: pipelineName,
                     transformation_name: transformationName?.toLowerCase(),

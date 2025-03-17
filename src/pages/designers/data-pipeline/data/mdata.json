@@ -568,7 +568,7 @@
       "ui_type": "object",
       "properties": {
         "operation_type": {
-          "type": "string",
+          "type": "select",
           "enum": [
             "union",
             "intersect_all",

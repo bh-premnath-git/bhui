@@ -603,13 +603,16 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
 
   const handleUpdateConnection = async () => {
     try {
+      let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
+      console.log(connectionConfig);
       await apiService.patch({
         url: `/data_source/${selectedSource.data_src_id}`,
         portNumber: CATALOG_API_PORT,
         method: 'PATCH',
         usePrefix: true,
         data: {
-          connection_config_id: parseInt(selectedConnection!, 10)
+          connection_config_id: parseInt(selectedConnection!, 10),
+          file_path_prefix: connectionConfig?.custom_metadata?.file_path_prefix
         },
         metadata: {
           successMessage: 'Connection updated successfully',

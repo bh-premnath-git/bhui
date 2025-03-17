@@ -30,7 +30,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
       let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
       console.log(pipelineJsonData, "pipelineJson")
       const initialData = {
-        reader_name: source?.name || pipelineJsonData?.name ||  '',
+        reader_name: source?.data_src_name || pipelineJsonData?.name ||  '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
         source: {
           type: pipelineJsonData?.source_type || (source?.connection_type === 'FILE' ? 'File' : source?.connection_type) || '',

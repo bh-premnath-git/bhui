@@ -422,11 +422,11 @@ const renderArrayFields = (
                         onChange(newValue);
                       }}
                       isExpression={isExpression}
-                      additionalColumns={columnSuggestions.map(colName => ({
+                      sourceColumns={columnSuggestions.map(colName => ({
                         name: colName,
                         dataType: 'string'
                       }))}
-                      sourceColumns={sourceColumns}
+                      // sourceColumns={sourceColumns}
                       required={requiredFields.includes(fieldKey)}
                       onExpressionClick={() => onExpressionClick(name || fieldKey, onChange, `${section}.${index}.${fieldKey}`)}
                     />
@@ -844,6 +844,8 @@ const FormContent: React.FC<{
         setColumnSuggestions(suggestions);
         // Increment key to force re-render of FormField components
         setSuggestionKey(prev => prev + 1);
+
+        console.log(columnSuggestions,"columnSuggestions")
       } catch (error) {
         console.error('Error getting column suggestions:', error);
         setColumnSuggestions([]);
@@ -1001,11 +1003,11 @@ const FormContent: React.FC<{
                       name={`${fieldKey}.${index}.${itemKey}`}
                       value={field.value }
                       isExpression={isExpression}
-                      additionalColumns={columnSuggestions.map(colName => ({
+                      sourceColumns={columnSuggestions.map(colName => ({
                         name: colName,
                         dataType: 'string'
                       }))}
-                      sourceColumns={sourceColumns}
+                      // sourceColumns={sourceColumns}
                       required={fieldSchema.items.required?.includes(itemKey)}
                       onExpressionClick={() => {
                         if (isExpression) {
@@ -1178,8 +1180,8 @@ const FormContent: React.FC<{
               onChange(newValue);
             }}
             isExpression={isExpression}
-            sourceColumns={sourceColumns}
-            additionalColumns={columnSuggestions.map(colName => ({
+            // sourceColumns={sourceColumns}
+            sourceColumns={columnSuggestions.map(colName => ({
               name: colName,
               dataType: 'string'
             }))}
@@ -1264,90 +1266,102 @@ const FormContent: React.FC<{
   };
 
   // Add specific handling for Select node type
-  const renderSelectFields = (control: any, sourceColumns: SourceColumn[]) => {
+  const renderSelectFields = (control: any, sourceColumns: SourceColumn[], schema: Schema) => {
     const { fields, append, remove } = useFieldArray({
       control,
       name: "column_list"
     });
 
+    // Get the column list schema properties
+    const columnListSchema = schema.properties.column_list;
+    const itemProperties = columnListSchema?.items?.properties || {};
+    const requiredFields = columnListSchema?.items?.required || [];
+
     return (
       <div className="space-y-6">
-        <div className="mb-4">
-          <Controller
-            name="transformation"
-            control={control}
-            defaultValue=""
-            render={({ field }) => (
-              <FormField
-                fieldSchema={{
-                  type: 'string',
-                  title: 'Transformation',
-                  properties: {}
-                }}
-                name={field.name}
-                value={field.value}
-                onChange={field.onChange}
-                required={true}
-                fieldKey="transformation"
-              />
-            )}
-          />
-        </div>
+        {/* Render transformation field if it exists in schema */}
+        {schema.properties.transformation && (
+          <div className="mb-4">
+            <Controller
+              name="transformation"
+              control={control}
+              defaultValue=""
+              render={({ field }) => (
+                <FormField
+                  fieldSchema={schema.properties.transformation}
+                  name={field.name}
+                  value={field.value}
+                  onChange={field.onChange}
+                  // required={schema.required.includes('transformation')}
+                  fieldKey="transformation"
+                />
+              )}
+            />
+          </div>
+        )}
         
         <div className="space-y-4">
+          {/* Column headers */}
+          <div className="flex gap-2 mb-2">
+            {Object.entries(itemProperties).map(([key, value]) => (
+              <div key={key} className="flex-1 font-medium">
+                {key.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
+              </div>
+            ))}
+            <div className="w-8"></div>
+          </div>
+
+          {/* Column list fields */}
           {fields.map((field, index) => (
             <div key={field.id} className="flex gap-2 mb-2">
-              <Controller
-                name={`column_list.${index}.name`}
-                control={control}
-                render={({ field }) => (
-                  <FormField
-                    fieldSchema={{
-                      type: 'string',
-                      title: 'Column Name',
-                      properties: {}
-                    }}
-                    name={field.name}
-                    value={field.value}
-                    onChange={field.onChange}
-                    required={true}
-                    fieldKey="name"
+              {Object.entries(itemProperties).map(([key, fieldSchema]: [string, any]) => (
+                <div key={key} className="flex-1">
+                  <Controller
+                    name={`column_list.${index}.${key}`}
+                    control={control}
+                    render={({ field }) => (
+                      <FormField
+                        fieldSchema={{
+                          ...fieldSchema,
+                          title: key.split('_').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                          ).join(' ')
+                        }}
+                        name={field.name}
+                        value={field.value}
+                        onChange={field.onChange}
+                        isExpression={fieldSchema['ui-hint'] === 'expression'}
+                        required={requiredFields.includes(key)}
+                        fieldKey={key}
+                        sourceColumns={sourceColumns}
+                      />
+                    )}
                   />
-                )}
-              />
-              <Controller
-                name={`column_list.${index}.expression`}
-                control={control}
-                render={({ field }) => (
-                  <FormField
-                    fieldSchema={{
-                      type: 'expression',
-                      title: 'Expression',
-                      properties: {}
-                    }}
-                    name={field.name}
-                    value={field.value}
-                    onChange={field.onChange}
-                    isExpression={true}
-                    required={true}
-                    fieldKey="expression"
-                    sourceColumns={sourceColumns}
-                  />
-                )}
-              />
+                </div>
+              ))}
               <button
                 type="button"
                 onClick={() => remove(index)}
-                className="text-gray-500 hover:text-gray-700"
+                className="w-8 text-gray-500 hover:text-gray-700 flex items-center justify-center"
               >
                 <span className="text-xl">×</span>
               </button>
             </div>
           ))}
+
+          {/* Add button */}
           <Button
             type="button"
-            onClick={() => append({ name: '', expression: '' })}
-            className="text-green-600 font-bold"
+            onClick={() => {
+              const defaultValues = Object.keys(itemProperties).reduce((acc, key) => ({
+                ...acc,
+                [key]: itemProperties[key].default || ''
+              }), {});
+              append(defaultValues);
+            }}
+            className="text-green-600 font-bold w-full"
           >
             Add Column
           </Button>
@@ -1457,11 +1471,11 @@ const FormContent: React.FC<{
           render={({ field }) => (
             <FormField
               fieldSchema={{
-                type: fieldSchema.type,
+                ...fieldSchema,
+                properties: {},
                 title: fieldKey.split('_').map(word => 
                   word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' '),
-                properties: {}
+                ).join(' ')
               }}
               name={field.name}
               value={field.value}
@@ -1499,7 +1513,7 @@ const FormContent: React.FC<{
       {schema.title === 'Dedup' ? (
         renderDedupFields(control, schema)
       ) : schema.title === 'Select' ? (
-        renderSelectFields(control, sourceColumns)
+        renderSelectFields(control, sourceColumns, schema)
       ) : schema.title === 'SequenceGenerator' ? (
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (

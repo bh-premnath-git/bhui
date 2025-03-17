@@ -99,7 +99,7 @@ export const ReaderFormField: React.FC<{
     selectedConnection?: any;
     disabled?: boolean;
     disableList?: string[];
-}> = ({ fieldName, fieldSchema, path, formData, onChange, errors, connectionConfigList, selectedConnection, disabled, disableList=['connection','source_name','file_type'] }) => {
+}> = ({ fieldName, fieldSchema, path, formData, onChange, errors, connectionConfigList, selectedConnection, disabled, disableList=[] }) => {
     if (!fieldSchema) return null;
 
     const isFieldDisabled = disabled || (disableList && disableList.includes(fieldName));

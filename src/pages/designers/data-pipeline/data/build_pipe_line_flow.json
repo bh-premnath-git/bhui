@@ -81,12 +81,7 @@
             "line": "/assets/buildPipeline/Line 7.png",
             "title": "Lookup"
         },
-        {
-            "id": 4,
-            "lead": "/assets/buildPipeline/squre/4.svg",
-            "line": "/assets/buildPipeline/Line 7.png",
-            "title": "DQ Check"
-        },
+        
         {
             "id": 5,
             "lead": "/assets/buildPipeline/squre/5.svg",

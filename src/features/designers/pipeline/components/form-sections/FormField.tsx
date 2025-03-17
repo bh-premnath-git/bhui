@@ -75,8 +75,10 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   required,
   onExpressionClick,
   onBlur,
-  sourceColumns = [],
-  additionalColumns = [],
+  sourceColumns = [
+],
+  additionalColumns = [
+],
   error,
   disabled,
   onValidate,
@@ -86,7 +88,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   const [isEditorReady, setIsEditorReady] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);
 
-
+console.log(sourceColumns,"sourceColumns")
   // Check for select type
   const isSelectField = 
     fieldSchema?.type === 'select' || 
@@ -163,185 +165,82 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
                 selectionHighlight: false,
+                suggest: {
+                  showWords: false,
+                  snippetsPreventQuickSuggestions: false,
+                  showProperties: true,
+                  showFunctions: true,
+                }
               }}
               onMount={(editor, monaco) => {
                 try {
                   setIsEditorReady(true);
 
-                  // Register SQL language features if not already registered
-                  if (!monaco.languages.getLanguages().some(lang => lang.id === 'sql')) {
-                    monaco.languages.register({ id: 'sql' });
-
-                    // Add SQL syntax highlighting
-                    monaco.languages.setMonarchTokensProvider('sql', {
-
-                      defaultToken: '',
-                      tokenPostfix: '.sql',
-                      ignoreCase: true,
-
-                      keywords: [
-                        // SQL Keywords
-                        'SELECT', 'FROM', 'WHERE', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
-                        'AND', 'OR', 'NOT', 'IN', 'LIKE', 'BETWEEN', 'IS', 'NULL', 'TRUE', 'FALSE',
-                        'ORDER', 'BY', 'GROUP', 'HAVING', 'ASC', 'DESC', 'DISTINCT', 'LIMIT',
-                        // PostgreSQL Functions
-                        'CONCAT', 'CONCAT_WS', 'COALESCE', 'NULLIF', 'CAST', 'SUBSTRING', 'TRIM',
-                        'UPPER', 'LOWER', 'INITCAP', 'LENGTH', 'REPLACE', 'ROUND', 'TO_CHAR',
-                        'TO_DATE', 'DATE_PART', 'NOW', 'CURRENT_TIMESTAMP', 'EXTRACT', 'ARRAY',
-                        'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'STRING_AGG', 'ARRAY_AGG'
-                      ],
-
-                      builtins: [
-                        'int', 'integer', 'text', 'char', 'varchar', 'date', 'timestamp',
-                        'boolean', 'bool', 'float', 'double', 'decimal', 'numeric'
-                      ],
-
-                      operators: [
-                        '=', '<=>', '>=', '>', '<=', '<', '<>', '!=', '||', '+', '-', '*', '/',
-                        '&', '|', '^', '%', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'IS NOT',
-                        'IS NULL', 'IS NOT NULL', 'BETWEEN', 'NOT BETWEEN'
-                      ],
-
-                      symbols: /[=><!~?:&|+\-*\/\^%]+/,
-
-                      tokenizer: {
-                        root: [
-                          // Identifiers and keywords
-                          [/[a-zA-Z_]\w*/, {
-                            cases: {
-                              '@keywords': 'keyword',
-                              '@builtins': 'type',
-                              '@default': 'identifier'
-                            }
-                          }],
-
-                          // Whitespace
-                          { include: '@whitespace' },
-
-                          // Delimiters and operators
-                          [/[{}()\[\]]/, '@brackets'],
-                          [/@symbols/, {
-                            cases: {
-                              '@operators': 'operator',
-                              '@default': 'delimiter'
-                            }
-                          }],
-
-                          // Numbers
-                          [/\d*\.\d+([eE][-+]?\d+)?/, 'number.float'],
-                          [/\d+/, 'number'],
-
-                          // Strings
-                          [/'([^'\\]|\\.)*$/, 'string.invalid'],
-                          [/'/, { token: 'string.quote', bracket: '@open', next: '@string' }],
-                          [/"([^"\\]|\\.)*$/, 'string.invalid'],
-                          [/"/, { token: 'string.quote', bracket: '@open', next: '@string_double' }],
-
-                          // Comments
-                          [/--.*$/, 'comment'],
-                          [/\/\*/, { token: 'comment.quote', next: '@comment' }]
-                        ],
-
-                        string: [
-                          [/[^']+/, 'string'],
-                          [/''/, 'string'],
-                          [/'/, { token: 'string.quote', bracket: '@close', next: '@pop' }]
-                        ],
-
-                        string_double: [
-                          [/[^"]+/, 'string'],
-                          [/""/, 'string'],
-                          [/"/, { token: 'string.quote', bracket: '@close', next: '@pop' }]
-                        ],
-
-                        comment: [
-                          [/[^/*]+/, 'comment'],
-                          [/\*\//, { token: 'comment.quote', next: '@pop' }],
-                          [/[/*]/, 'comment']
-                        ],
-
-                        whitespace: [
-                          [/\s+/, 'white']
-                        ]
-                      }
-                      // ... existing token provider setup ...
-                    });
-                  }
-
-                  // Register completion provider
+                  // Register completion provider first
                   const disposable = monaco.languages.registerCompletionItemProvider('sql', {
-                    triggerCharacters: [' ', '.', '(', ',', '['],
+                    triggerCharacters: [' ', '.', '(', ',', '[', '"', "'"],
                     provideCompletionItems: (model, position) => {
-                      const wordInfo = model.getWordUntilPosition(position);
+                      const word = model.getWordUntilPosition(position);
                       const range = {
                         startLineNumber: position.lineNumber,
                         endLineNumber: position.lineNumber,
-                        startColumn: wordInfo.startColumn,
-                        endColumn: wordInfo.endColumn
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
                       };
 
-                      const suggestions = new Map();
+                      const suggestions: monaco.languages.CompletionItem[] = [];
 
-                      // Add SQL Keywords suggestions
+                      // Add SQL Keywords
                       SQL_KEYWORDS.forEach(keyword => {
-                        if (!wordInfo.word || keyword.toLowerCase().includes(wordInfo.word.toLowerCase())) {
-                          suggestions.set(`keyword-${keyword}`, {
-                            label: keyword,
-                            kind: monaco.languages.CompletionItemKind.Keyword,
-                            insertText: keyword,
-                            detail: 'SQL Keyword',
-                            documentation: { value: `SQL Keyword: ${keyword}` },
-                            range
-                          });
-                        }
+                        suggestions.push({
+                          label: keyword,
+                          kind: monaco.languages.CompletionItemKind.Keyword,
+                          insertText: keyword,
+                          range: range
+                        });
                       });
 
-                      // Debugging: Log sourceColumns
-
-                      // Add source columns suggestions
-                      sourceColumns.forEach(col => {
-                        if (!wordInfo.word || col.name.toLowerCase().includes(wordInfo.word.toLowerCase())) {
-                          suggestions.set(`source-${col.name}`, {
+                      // Add source columns
+                      if (sourceColumns) {
+                        sourceColumns.forEach(col => {
+                          suggestions.push({
                             label: col.name,
                             kind: monaco.languages.CompletionItemKind.Field,
                             insertText: col.name,
-                            detail: `(${col.dataType})`,
-                            documentation: { value: `**${col.name}**\nType: ${col.dataType}` },
-                            range
+                            detail: `Source Column (${col.dataType})`,
+                            range: range
                           });
-                        }
-                      });
+                        });
+                      }
 
-
-                      // Add additional columns suggestions
-                      const processedColumns = new Set(sourceColumns.map(col => col.name));
-                      const normalizedAdditionalColumns = (additionalColumns as Array<any>).map(normalizeColumn);
-                      normalizedAdditionalColumns.forEach(col => {
-                        if (!processedColumns.has(col.name) && 
-                          (!wordInfo.word || col.name.toLowerCase().includes(wordInfo.word.toLowerCase()))) {
-                          suggestions.set(`additional-${col.name}`, {
+                      // Add additional columns
+                      if (additionalColumns) {
+                        const columns = Array.isArray(additionalColumns) 
+                          ? additionalColumns.map(normalizeColumn)
+                          : [];
+                        
+                        columns.forEach(col => {
+                          suggestions.push({
                             label: col.name,
                             kind: monaco.languages.CompletionItemKind.Field,
                             insertText: col.name,
-                            detail: `(${col.dataType})`,
-                            documentation: { value: `**${col.name}**\nAdditional Column` },
-                            range
+                            detail: `Additional Column (${col.dataType})`,
+                            range: range
                           });
-                        }
-                      });
+                        });
+                      }
 
                       return {
-                        suggestions: Array.from(suggestions.values())
+                        suggestions: suggestions
                       };
                     }
                   });
 
-                  // Add command for manual trigger
+                  // Trigger suggestions manually with Ctrl+Space
                   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
                     editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
                   });
 
-                  // Ensure to dispose of the completion provider when unmounting
                   return () => {
                     disposable.dispose();
                   };

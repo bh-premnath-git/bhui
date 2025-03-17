@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { lazy } from 'react';
 import * as monaco from 'monaco-editor';
@@ -23,6 +23,7 @@ interface FormFieldProps {
   disabled?: boolean;
   onValidate?: (value: string) => string | undefined;
   onChange?: (...event: any[]) => void;
+  onKeyDown?: (event: React.KeyboardEvent) => void;
 }
 
 interface SourceColumn {
@@ -54,7 +55,7 @@ const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
     name: col.name,
     dataType: col.dataType || 'string'
   };
-};
+}; 
 
 // Add these styles at the top of the file
 const expressionEditorStyles = {
@@ -75,20 +76,131 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   required,
   onExpressionClick,
   onBlur,
-  sourceColumns = [
-],
+  sourceColumns = [],
   additionalColumns = [
 ],
   error,
-  disabled,
+  disabled, 
   onValidate,
-  onChange,
+  onChange, 
+  onKeyDown,
 }) => {
   const { control, setValue, setError, formState: { errors } } = useForm();
   const [isEditorReady, setIsEditorReady] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);
+  const completionProviderRef = React.useRef<monaco.IDisposable | null>(null);
+  const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = React.useRef<typeof monaco | null>(null);
 
-console.log(sourceColumns,"sourceColumns")
+  useEffect(() => {
+    if (isEditorReady && editorRef.current && monacoRef.current && isExpression) {
+      // Dispose of the previous completion provider
+      if (completionProviderRef.current) {
+        completionProviderRef.current.dispose();
+      }
+
+      // Register new completion provider with updated sourceColumns
+      completionProviderRef.current = monacoRef.current.languages.registerCompletionItemProvider('sql', {
+        triggerCharacters: [' ', '.', '(', ',', '[', '"', "'"],
+        provideCompletionItems: (model, position) => {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn
+          };
+
+          const suggestions: monaco.languages.CompletionItem[] = [];
+
+          // Add columns first
+          if (Array.isArray(sourceColumns)) {
+            sourceColumns.forEach(col => {
+              suggestions.push({
+                label: col.name,
+                kind: monacoRef.current!.languages.CompletionItemKind.Field,
+                insertText: col.name,
+                detail: `Column (${col.dataType})`,
+                documentation: {
+                  value: `**${col.name}**\nType: ${col.dataType}`
+                },
+                range: range,
+                sortText: '0' + col.name
+              });
+            });
+          }
+
+          // Add SQL Keywords
+          SQL_KEYWORDS.forEach(keyword => {
+            suggestions.push({
+              label: keyword,
+              kind: monacoRef.current!.languages.CompletionItemKind.Keyword,
+              insertText: keyword,
+              detail: 'SQL Keyword',
+              documentation: {
+                value: `SQL Keyword: ${keyword}`
+              },
+              range: range,
+              sortText: '1' + keyword // Keywords appear after columns
+            });
+          });
+
+          // Add additional columns
+          if (additionalColumns && additionalColumns.length > 0) {
+            const processedColumns = new Set(sourceColumns.map(col => col.name));
+            const normalizedColumns = (additionalColumns as Array<any>).map(normalizeColumn);
+            
+            normalizedColumns.forEach(col => {
+              if (!processedColumns.has(col.name)) {
+                suggestions.push({
+                  label: col.name,
+                  kind: monacoRef.current!.languages.CompletionItemKind.Field,
+                  insertText: col.name,
+                  detail: `Additional Column (${col.dataType})`,
+                  documentation: {
+                    value: `**${col.name}**\nType: ${col.dataType}`
+                  },
+                  range: range,
+                  sortText: '2' + col.name // Additional columns appear last
+                });
+              }
+            });
+          }
+
+          return { suggestions };
+        }
+      });
+    }
+
+    return () => {
+      if (completionProviderRef.current) {
+        completionProviderRef.current.dispose();
+      }
+    };
+  }, [isEditorReady, sourceColumns, isExpression]);
+
+  // Update the MonacoEditor onMount handler
+  const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
+    try {
+      editorRef.current = editor;
+      monacoRef.current = monaco;
+      setIsEditorReady(true);
+
+      // Register SQL language if not already registered
+      if (!monaco.languages.getLanguages().some(lang => lang.id === 'sql')) {
+        monaco.languages.register({ id: 'sql' });
+      }
+
+      // Add command for manual trigger
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
+        editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
+      });
+    } catch (error) {
+      console.error('Error in Monaco Editor:', error);
+      setEditorError(error?.message || 'Error initializing editor');
+    }
+  };
+
   // Check for select type
   const isSelectField = 
     fieldSchema?.type === 'select' || 
@@ -144,8 +256,16 @@ console.log(sourceColumns,"sourceColumns")
   // Handle expression fields
   if (isExpression) {
     return (
-      <div className="form-field">
-        <div className={expressionEditorStyles.wrapper}>
+<div
+            role="textbox"
+            aria-label={`SQL expression editor for ${fieldKey}`}
+            onClick={() => !disabled && onExpressionClick?.()}
+            className={`cursor-pointer ${disabled ? 'opacity-50' : ''}`}
+            tabIndex={0}
+            onFocus={(e) => {
+              e.stopPropagation();
+            }}
+          >        <div className={expressionEditorStyles.wrapper}>
           <div className={expressionEditorStyles.editorContainer}>
             <MonacoEditor
               height="100px"
@@ -165,91 +285,31 @@ console.log(sourceColumns,"sourceColumns")
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
                 selectionHighlight: false,
+                quickSuggestions: {
+                  other: true,
+                  comments: false,
+                  strings: true
+                },
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnCommitCharacter: true,
+                acceptSuggestionOnEnter: 'on',
                 suggest: {
-                  showWords: false,
-                  snippetsPreventQuickSuggestions: false,
+                  showWords: true,
                   showProperties: true,
                   showFunctions: true,
+                  showIcons: true,
+                  showStatusBar: true,
+                  preview: true,
+                  showInlineDetails: true,
+                  filterGraceful: true,
+                  selectionMode: 'always'
                 }
               }}
-              onMount={(editor, monaco) => {
-                try {
-                  setIsEditorReady(true);
-
-                  // Register completion provider first
-                  const disposable = monaco.languages.registerCompletionItemProvider('sql', {
-                    triggerCharacters: [' ', '.', '(', ',', '[', '"', "'"],
-                    provideCompletionItems: (model, position) => {
-                      const word = model.getWordUntilPosition(position);
-                      const range = {
-                        startLineNumber: position.lineNumber,
-                        endLineNumber: position.lineNumber,
-                        startColumn: word.startColumn,
-                        endColumn: word.endColumn
-                      };
-
-                      const suggestions: monaco.languages.CompletionItem[] = [];
-
-                      // Add SQL Keywords
-                      SQL_KEYWORDS.forEach(keyword => {
-                        suggestions.push({
-                          label: keyword,
-                          kind: monaco.languages.CompletionItemKind.Keyword,
-                          insertText: keyword,
-                          range: range
-                        });
-                      });
-
-                      // Add source columns
-                      if (sourceColumns) {
-                        sourceColumns.forEach(col => {
-                          suggestions.push({
-                            label: col.name,
-                            kind: monaco.languages.CompletionItemKind.Field,
-                            insertText: col.name,
-                            detail: `Source Column (${col.dataType})`,
-                            range: range
-                          });
-                        });
-                      }
-
-                      // Add additional columns
-                      if (additionalColumns) {
-                        const columns = Array.isArray(additionalColumns) 
-                          ? additionalColumns.map(normalizeColumn)
-                          : [];
-                        
-                        columns.forEach(col => {
-                          suggestions.push({
-                            label: col.name,
-                            kind: monaco.languages.CompletionItemKind.Field,
-                            insertText: col.name,
-                            detail: `Additional Column (${col.dataType})`,
-                            range: range
-                          });
-                        });
-                      }
-
-                      return {
-                        suggestions: suggestions
-                      };
-                    }
-                  });
-
-                  // Trigger suggestions manually with Ctrl+Space
-                  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
-                    editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
-                  });
-
-                  return () => {
-                    disposable.dispose();
-                  };
-                } catch (error) {
-                  console.error('Error in Monaco Editor:', error);
-                  setEditorError(error?.message || 'Error initializing editor');
-                }
-              }}
+              onMount={handleEditorMount}
             />
+            {editorError && (
+              <div className="text-red-500 text-sm mt-1">{editorError}</div>
+            )}
           </div>
         </div>
       </div>
@@ -319,6 +379,7 @@ console.log(sourceColumns,"sourceColumns")
             className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
             aria-label={fieldKey}
             onBlur={onBlur}
+            onKeyDown={onKeyDown}
           />
         )}
       />

@@ -20,6 +20,7 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
   const dataCatalogSrv = useDataCatalogManagementService();
 
   const onRowClickHandler = (row: Row<DataSource>) => {
+    console.log(row.original);
     setSelectedRow(row.original);
     setIsSheetOpen(true);
     dataCatalogSrv.selectDatasource(row.original);

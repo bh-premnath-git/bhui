@@ -417,7 +417,7 @@ export const generatePipelineAgent = createAsyncThunk(
     try {
       const response = await apiService.post({
         portNumber: '8090',
-        url: '/api/v1/pipeline_agent/generate',
+        url: '/pipeline_agent/generate',
         usePrefix: true,
         method: 'POST',
         data: {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { FormField } from './FormField';
 import { Info } from 'lucide-react';
@@ -103,34 +103,210 @@ console.log(initialFormValues,"initialFormValues")
 
 
   const dispatch=useDispatch<AppDispatch>();
+  // Add debounce state and ref
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedFields, setGeneratedFields] = useState<Set<string>>(new Set());
+
+  // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '')) {
+    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '') || 
+        isGenerating || 
+        generatedFields.has(fieldName)) {
       return;
     }
-    try {
-      const schemaString = sourceColumns.map(col => `${col.name}: ${col.dataType.toLowerCase()}`).join(', ');
 
-      const response: any = await dispatch(generatePipelineAgent({ schemaString, targetColumn })).unwrap();
+    setIsGenerating(true);
+    try {
+      const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+      const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+      
+      // Get the actual target column name
+      let actualTargetColumn = '';
+      
+      if (schema?.title === 'SchemaTransformation') {
+        const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const derivedFields = watch('derived_fields');
+          actualTargetColumn = derivedFields[index]?.name || '';
+        }
+      } else if (schema?.title === 'Joiner') {
+        actualTargetColumn = watch('join_column');
+      }
+
+      if (!actualTargetColumn) {
+        console.warn('No target column specified');
+        return;
+      }
+
+      const response: any = await dispatch(generatePipelineAgent({ 
+        schemaString, 
+        targetColumn: actualTargetColumn 
+      })).unwrap();
 
       if (!response?.result) {
         throw new Error('Invalid response from expression generator');
       }
 
-      const parsedResult = JSON.parse(response.result);
-      const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
-      
-      setValue(fieldName, expressionValue, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true
-      });
-      setFieldValue(fieldName, expressionValue);
+      try {
+        const parsedResult = JSON.parse(response.result);
+        const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+        
+        // Set the expression value in the form
+        if (schema?.title === 'SchemaTransformation') {
+          const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const derivedFields = [...(watch('derived_fields') || [])];
+            derivedFields[index] = {
+              ...derivedFields[index],
+              expression: expressionValue
+            };
+            setValue('derived_fields', derivedFields, {
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true
+            });
+          }
+        } else if (schema?.title === 'Joiner') {
+          setValue('join_condition', expressionValue, {
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true
+          });
+        }
+
+        // Mark this field as having been generated
+        setGeneratedFields(prev => new Set(prev).add(fieldName));
+
+      } catch (error) {
+        console.error('Error parsing response:', error);
+        throw new Error('Invalid response format from expression generator');
+      }
     } catch (error) {
       console.error('Error generating expression:', error);
-      setValue(fieldName, '');
-      setFieldValue(fieldName, '');
+      // Clear the expression field in case of error
+      if (schema?.title === 'SchemaTransformation') {
+        const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const derivedFields = [...(watch('derived_fields') || [])];
+          derivedFields[index] = {
+            ...derivedFields[index],
+            expression: ''
+          };
+          setValue('derived_fields', derivedFields);
+        }
+      } else if (schema?.title === 'Joiner') {
+        setValue('join_condition', '');
+      }
+    } finally {
+      setIsGenerating(false);
     }
-  }, [schema?.title, sourceColumns, setValue, dispatch]);
+  }, [schema?.title, sourceColumns, setValue, dispatch, watch, isGenerating, generatedFields]);
+
+  // Reset generated fields when form is reset or component unmounts
+  useEffect(() => {
+    return () => {
+      setGeneratedFields(new Set());
+    };
+  }, []);
+
+  // Add new function to handle tab key press
+  const handleExpressionTabPress = useCallback(async (
+    event: React.KeyboardEvent,
+    targetColumn: string,
+    setFieldValue: (field: string, value: any) => void,
+    fieldName: string
+  ) => {
+    if (event.key === 'Tab' && !event.shiftKey) {
+      event.preventDefault();
+      if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '')) {
+        return;
+      }
+
+      try {
+        const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+        const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+        
+        // Get the actual target column name
+        let actualTargetColumn = '';
+        
+        if (schema?.title === 'SchemaTransformation') {
+          const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const derivedFields = watch('derived_fields');
+            actualTargetColumn = derivedFields[index]?.name || '';
+          }
+        } else if (schema?.title === 'Joiner') {
+          actualTargetColumn = watch('join_column');
+        }
+
+        if (!actualTargetColumn) {
+          console.warn('No target column specified');
+          return;
+        }
+
+        const response: any = await dispatch(generatePipelineAgent({ 
+          schemaString, 
+          targetColumn: actualTargetColumn 
+        })).unwrap();
+
+        if (!response?.result) {
+          throw new Error('Invalid response from expression generator');
+        }
+
+        try {
+          const parsedResult = JSON.parse(response.result);
+          const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+          
+          if (schema?.title === 'SchemaTransformation') {
+            const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+            if (match) {
+              const index = parseInt(match[1]);
+              const derivedFields = [...(watch('derived_fields') || [])];
+              derivedFields[index] = {
+                ...derivedFields[index],
+                expression: expressionValue
+              };
+              setValue('derived_fields', derivedFields, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            }
+          } else if (schema?.title === 'Joiner') {
+            setValue('join_condition', expressionValue, {
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing response:', error);
+          throw new Error('Invalid response format from expression generator');
+        }
+      } catch (error) {
+        console.error('Error generating expression:', error);
+        // Clear the expression field in case of error
+        if (schema?.title === 'SchemaTransformation') {
+          const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const derivedFields = [...(watch('derived_fields') || [])];
+            derivedFields[index] = {
+              ...derivedFields[index],
+              expression: ''
+            };
+            setValue('derived_fields', derivedFields);
+          }
+        } else if (schema?.title === 'Joiner') {
+          setValue('join_condition', '');
+        }
+      }
+    }
+  }, [schema?.title, currentNodeId, nodes, edges, dispatch, watch, setValue]);
 
   // Update onSubmitForm to properly handle nested form values
   const onSubmitForm = (values: FormValues) => {
@@ -840,18 +1016,15 @@ const FormContent: React.FC<{
     const fetchSuggestions = async () => {
       try {
         const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
-        console.log(suggestions,"suggestions")
+        console.log('Fetched suggestions:', suggestions); // Add this debug log
         setColumnSuggestions(suggestions);
-        // Increment key to force re-render of FormField components
         setSuggestionKey(prev => prev + 1);
-
-        console.log(columnSuggestions,"columnSuggestions")
       } catch (error) {
         console.error('Error getting column suggestions:', error);
         setColumnSuggestions([]);
       }
     };
-
+  
     fetchSuggestions();
   }, [currentNodeId, nodes, edges]);
 
@@ -1180,7 +1353,6 @@ const FormContent: React.FC<{
               onChange(newValue);
             }}
             isExpression={isExpression}
-            // sourceColumns={sourceColumns}
             sourceColumns={columnSuggestions.map(colName => ({
               name: colName,
               dataType: 'string'
@@ -1193,6 +1365,11 @@ const FormContent: React.FC<{
                   onChange,
                   fieldKey
                 );
+              }
+            }}
+            onKeyDown={(e) => {
+              if (isExpression) {
+                // handleExpressionTabPress(e, name || fieldKey, onChange, fieldKey);
               }
             }}
           />

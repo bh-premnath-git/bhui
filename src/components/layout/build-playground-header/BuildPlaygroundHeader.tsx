@@ -101,13 +101,16 @@ export function BuildPlaygroundHeader() {
     if (tempPipelineName !== localPipelineName) {
       setSaving();
       try {
-        await apiService.patch({
-          portNumber: CATALOG_API_PORT,
-          url: `/pipeline/${id}`,
-          usePrefix: true,
-          method: 'PATCH',
-          data: { pipeline_name: tempPipelineName }
-        });
+        if(id){
+          await apiService.patch({
+            portNumber: CATALOG_API_PORT,
+            url: `/pipeline/${id}`,
+            usePrefix: true,
+            method: 'PATCH',
+            data: { pipeline_name: tempPipelineName }
+          });
+        }
+        
         
         setLocalPipelineName(tempPipelineName);
         setPipeLineName({ pipeLineName: tempPipelineName });

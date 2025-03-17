@@ -87,6 +87,20 @@ export const createColumns = (
       enableColumnFilter: false,
     },
     {
+      id: 'lyt_fld_data_type_cd',
+      accessorKey: 'lyt_fld_data_type_cd',
+      header: 'Data Type',
+      cell: ({ getValue }) => {
+        const value = getValue() as number;
+        const dataTypeMap: { [key: number]: string } = {
+          1: 'Integer',
+          2: 'String',
+          3: 'Boolean',
+        };
+        return dataTypeMap[value] || 'String';
+      },
+    },
+    {
       id: 'lyt_fld_tags',
       accessorKey: 'lyt_fld_tags',
       header: 'Tags',

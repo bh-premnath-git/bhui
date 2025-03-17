@@ -42,7 +42,7 @@ export const useTransformationOutputQuery = ({
                 usePrefix: true,
                 params: {
                     pipeline_name: pipelineName,
-                    transformation_name: transformationName?.toLowerCase(),
+                    transformation_name: transformationName,
                     page,
                     page_size: pageSize,
                 },

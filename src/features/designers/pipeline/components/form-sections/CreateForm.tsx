@@ -64,26 +64,33 @@ const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 
 const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
-  const initialFormValues = useMemo(() => {
-    const values:any = generateInitialValues(schema, initialValues, currentNodeId);
-
-    // Ensure pivot_values is initialized as an array
-    if (!Array.isArray(values.pivot_values)) {
-      values.pivot_values = [];
+  const initialFormValues:any = useMemo(() => {
+    const values = generateInitialValues(schema, initialValues,currentNodeId);
+    
+    // Add specific initialization for Dedup form
+    if (schema?.title === 'Dedup') {
+      return {
+        keep: 'any',
+        dedup_by: [''],
+        order_by: [],
+        ...values
+      };
     }
-
-    // Ensure group_by is initialized with at least one empty object
-    if (!Array.isArray(values.group_by) || values.group_by.length === 0) {
-      values.group_by = [{ group_by: '' }];
+    
+    // Add specific initialization for Repartition form
+    if (schema?.title === 'Repartition') {
+      return {
+        repartition_type: 'repartition',
+        repartition_value: '',
+        override_partition: '',
+        repartition_expression: [],
+        limit: '',
+        ...values
+      };
     }
-
-    // Ensure pivot_by is initialized with at least one empty object
-    if (!Array.isArray(values.pivot_by) || values.pivot_by.length === 0) {
-      values.pivot_by = [{ pivot_column: '', pivot_values: [''] }];
-    }
-
+    
     return values;
-  }, [schema, initialValues, currentNodeId]);
+  }, [schema, initialValues]);
 console.log(initialFormValues,"initialFormValues")
   // Update form configuration to include all fields
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
@@ -463,6 +470,355 @@ const renderArrayFields = (
   );
 };
 
+const renderDedupFields = (control: any, schema: Schema) => {
+  const {watch} = useForm();
+  const keepValue = watch('keep');
+  const isOrderByRequired = ['first', 'last'].includes(keepValue);
+
+  // Use the hooks instead of components
+  const { fields: dedupFields, append: appendDedup, remove: removeDedup } = useFieldArray({
+    control,
+    name: "dedup_by"
+  });
+
+  const { fields: orderFields, append: appendOrder, remove: removeOrder } = useFieldArray({
+    control,
+    name: "order_by"
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Keep Field */}
+      <Controller
+        name="keep"
+        control={control}
+        defaultValue="any"
+        rules={{ required: true }}
+        render={({ field }) => (
+          <div>
+            <label className="block font-medium mb-1">Keep</label>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select keep value" />
+              </SelectTrigger>
+              <SelectContent>
+                {['any', 'first', 'last', 'distinct', 'unique_only'].map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      />
+
+      {/* Dedup By Fields */}
+      <div>
+        <label className="block font-medium mb-1">
+          Dedup By <span className="text-red-500">*</span>
+        </label>
+        <div className="space-y-2">
+          {dedupFields.map((field, index) => (
+            <div key={field.id} className="flex gap-2">
+              <Controller
+                name={`dedup_by.${index}`}
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter column name"
+                    className="flex-1"
+                  />
+                )}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => removeDedup(index)}
+                disabled={dedupFields.length <= 1}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            onClick={() => appendDedup('')}
+            variant="default"
+            className="w-full mt-2"
+          >
+            Add Dedup Column
+          </Button>
+        </div>
+      </div>
+
+      {/* Order By Fields */}
+      <div>
+        <label className="block font-medium mb-1">
+          Order By {isOrderByRequired && <span className="text-red-500">*</span>}
+        </label>
+        <div className="space-y-2">
+          {orderFields.map((field, index) => (
+            <div key={field.id} className="flex gap-2">
+              <Controller
+                name={`order_by.${index}.column`}
+                control={control}
+                rules={{ required: isOrderByRequired }}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Column name"
+                    className="w-1/2"
+                  />
+                )}
+              />
+              <Controller
+                name={`order_by.${index}.order`}
+                control={control}
+                defaultValue="asc"
+                rules={{ required: isOrderByRequired }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} >
+                    <SelectTrigger className="w-1/2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="asc">Ascending</SelectItem>
+                      <SelectItem value="desc">Descending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => removeOrder(index)}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            onClick={() => appendOrder({ column: '', order: 'asc' })}
+            variant="default"
+            className="w-full mt-2"
+          >
+            Add Order By Column
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const renderRepartitionFields = (control: any, schema: Schema) => {
+  const {watch} = useForm();
+  const repartitionType = watch('repartition_type');
+  
+  // Get required fields based on current repartition_type from schema
+  const getRequiredFields = () => {
+    const anyOfConditions = schema.anyOf || [];
+    const matchingCondition = anyOfConditions.find(condition => 
+      condition.if?.properties?.repartition_type?.const === repartitionType
+    );
+    return matchingCondition?.then?.required || schema.required || [];
+  };
+
+  const requiredFields = getRequiredFields();
+
+  // Setup field array for repartition_expression if needed
+  const { 
+    fields: expressionFields, 
+    append: appendExpression, 
+    remove: removeExpression 
+  } = useFieldArray({
+    control,
+    name: "repartition_expression"
+  });
+
+  // Generic function to render field based on schema
+  const renderField = (fieldName: string, fieldSchema: any) => {
+    const isRequired = requiredFields.includes(fieldName);
+
+    switch (fieldSchema.type) {
+      case 'select':
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={fieldSchema.default}
+            rules={{ required: isRequired }}
+            render={({ field }) => (
+              <div>
+                <label className="block font-medium mb-1">
+                  {fieldName.split('_').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' ')}
+                  {isRequired && <span className="text-red-500">*</span>}
+                </label>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Select ${fieldName.replace(/_/g, ' ')}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fieldSchema.enum.map((option: string) => (
+                      <SelectItem key={option} value={option}>
+                        {option.split('_').map(word => 
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+        );
+
+      case 'number':
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            rules={{ required: isRequired }}
+            render={({ field }) => (
+              <div>
+                <label className="block font-medium mb-1">
+                  {fieldName.split('_').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' ')}
+                  {isRequired && <span className="text-red-500">*</span>}
+                </label>
+                <Input
+                  type="number"
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  placeholder={`Enter ${fieldName.replace(/_/g, ' ')}`}
+                  className="w-full"
+                />
+              </div>
+            )}
+          />
+        );
+
+      case 'string':
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            rules={{ required: isRequired }}
+            render={({ field }) => (
+              <div>
+                <label className="block font-medium mb-1">
+                  {fieldName.split('_').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' ')}
+                  {isRequired && <span className="text-red-500">*</span>}
+                </label>
+                <Input
+                  {...field}
+                  placeholder={`Enter ${fieldName.replace(/_/g, ' ')}`}
+                  className="w-full"
+                />
+              </div>
+            )}
+          />
+        );
+
+      case 'array-container':
+        if (fieldName === 'repartition_expression') {
+          return (
+            <div>
+              <label className="block font-medium mb-1">
+                Repartition Expression
+                {isRequired && <span className="text-red-500">*</span>}
+              </label>
+              <div className="space-y-2">
+                {expressionFields.map((field, index) => (
+                  <div key={field.id} className="flex gap-2">
+                    {Object.entries(fieldSchema.items.properties).map(([itemKey, itemSchema]: [string, any]) => (
+                      <Controller
+                        key={`${fieldName}.${index}.${itemKey}`}
+                        name={`${fieldName}.${index}.${itemKey}`}
+                        control={control}
+                        rules={{ required: fieldSchema.items.required.includes(itemKey) }}
+                        render={({ field }) => {
+                          if (itemSchema.type === 'select') {
+                            return (
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue placeholder={itemKey} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {itemSchema.enum.map((option: string) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          }
+                          return (
+                            <Input
+                              {...field}
+                              placeholder={itemKey}
+                              className={itemKey === 'expression' ? 'flex-1' : 'w-32'}
+                            />
+                          );
+                        }}
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => removeExpression(index)}
+                      disabled={expressionFields.length <= 1 && isRequired}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  onClick={() => appendExpression(
+                    Object.fromEntries(
+                      Object.entries(fieldSchema.items.properties).map(([key, schema]: [string, any]) => [
+                        key,
+                        schema.default || ''
+                      ])
+                    )
+                  )}
+                  variant="outline"
+                  className="w-full mt-2"
+                >
+                  Add Expression
+                </Button>
+              </div>
+            </div>
+          );
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(schema.properties).map(([fieldName, fieldSchema]: [string, any]) => (
+        <div key={fieldName}>
+          {renderField(fieldName, fieldSchema)}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const FormContent: React.FC<{
   control: any;
   schema: Schema;
@@ -499,6 +855,15 @@ const FormContent: React.FC<{
 
   // Add function to check if a field should be rendered based on conditions
   const shouldRenderField = (fieldKey: string, fieldSchema: any) => {
+    if (schema.title === 'Dedup') {
+      const keepValue = watch('keep');
+
+      // Check if order_by should be rendered based on the value of keep
+      if (fieldKey === 'order_by') {
+        return ['first', 'last'].includes(keepValue);
+      }
+    }
+
     if (schema.title === 'Repartition') {
       const repartitionType = watch('repartition_type');
       
@@ -521,7 +886,15 @@ const FormContent: React.FC<{
 
   // Update isFieldRequired function to handle conditional requirements
   const isFieldRequired = (fieldKey: string, fieldSchema?: any, parentKey?: string) => {
-    // Check if we have the schema title and it matches Repartition
+    if (schema.title === 'Dedup') {
+      const keepValue = watch('keep');
+
+      // Check if order_by is required based on the value of keep
+      if (fieldKey === 'order_by' && ['first', 'last'].includes(keepValue)) {
+        return true;
+      }
+    }
+
     if (schema.title === 'Repartition') {
       const repartitionType = watch('repartition_type') || 'repartition';
       
@@ -1123,7 +1496,9 @@ const FormContent: React.FC<{
         </DialogTitle>
       </div>
 
-      {schema.title === 'Select' ? (
+      {schema.title === 'Dedup' ? (
+        renderDedupFields(control, schema)
+      ) : schema.title === 'Select' ? (
         renderSelectFields(control, sourceColumns)
       ) : schema.title === 'SequenceGenerator' ? (
         renderSequenceGeneratorFields(control, sourceColumns, schema)
@@ -1151,6 +1526,8 @@ const FormContent: React.FC<{
             {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, control, 'derived_fields', onExpressionClick, sourceColumns, columnSuggestions) : renderArrayFields(schema.properties?.sort_columns, control, 'sort_columns', onExpressionClick, sourceColumns, columnSuggestions)}
           </div>
         </div>
+      ) : schema.title === 'Repartition' ? (
+        renderRepartitionFields(control, schema)
       ) : (
         <div className="space-y-1">
           {renderFieldsInRows(schema.properties, control)}

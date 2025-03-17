@@ -38,11 +38,12 @@ console.log(initialValues,"initialValues")
     case 'Aggregator':
       console.log(baseValues)
       console.log(baseValues.group_by)
+      console.log(baseValues.aggregate)
       return {
         ...baseValues,
         group_by: baseValues.group_by.map(item=>{return {group_by:item}}) || [],
-        aggregations: (baseValues.aggregations?.length > 0)
-          ? baseValues.aggregations
+        aggregations: (baseValues.aggregate?.length > 0)
+          ? baseValues.aggregate
           : [],
         pivot_by: baseValues.pivot || []
       };
@@ -70,7 +71,7 @@ console.log(initialValues,"initialValues")
         }],
         expressions: initialValues.expressions?.map(item=>{
           return {
-            name: item?.target_column || item?.name,
+            name: item?.target_column ?? item?.name,
             expression: item?.expression
           }
         }) || [],

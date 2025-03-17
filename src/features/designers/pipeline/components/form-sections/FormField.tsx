@@ -58,11 +58,11 @@ const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
 
 // Add these styles at the top of the file
 const expressionEditorStyles = {
-  wrapper: 'relative rounded-md border border-gray-300 shadow-sm hover:border-gray-400 focus-within:border-gray-400 my-2',
+  wrapper: 'relative rounded-md border border-gray-200 shadow-sm hover:border-gray-300 focus-within:border-gray-300 my-2',
   header: 'flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50',
   headerTitle: 'text-sm font-medium text-gray-700',
-  editorContainer: 'p-0.5 bg-white',
-  editor: 'min-h-[200px] max-h-[400px] overflow-auto'
+  editorContainer: 'p-0.5 bg-white ',
+  editor: 'min-h-[200px] max-h-[400px] overflow-auto bg-white'
 };
 
 export const FormField: React.FC<FormFieldProps> = React.memo(({
@@ -146,7 +146,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
         <div className={expressionEditorStyles.wrapper}>
           <div className={expressionEditorStyles.editorContainer}>
             <MonacoEditor
-              height="200px"
+              height="100px"
               language="sql"
               theme="vs-light"
               value={typeof value === 'object' && 'expression' in value ? value.expression : value}
@@ -157,7 +157,12 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 folding: false,
                 wordWrap: 'on',
                 contextmenu: false,
-                scrollBeyondLastLine: false
+                scrollBeyondLastLine: false,
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                overviewRulerLanes: 0,
+                renderLineHighlight: 'none',
+                selectionHighlight: false,
               }}
               onMount={(editor, monaco) => {
                 try {

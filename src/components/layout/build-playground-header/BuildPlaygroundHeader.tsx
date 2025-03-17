@@ -18,6 +18,7 @@ import { CATALOG_API_PORT } from '@/config/platformenv';
 import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { AIButton } from '../flow-playground-header';
+import { PipeLineAIButton } from './PipeLineAIButton';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
@@ -226,7 +227,7 @@ export function BuildPlaygroundHeader() {
               </TooltipContent>
             </Tooltip>
             <div className="border-l border-border pl-6 " style={{zIndex: 10000000}}>
-            <AIButton />
+            <PipeLineAIButton />
           </div>
           </div>
           

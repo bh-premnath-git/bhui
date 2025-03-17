@@ -436,6 +436,29 @@ export const generatePipelineAgent = createAsyncThunk(
   }
 );
 
+// New Async thunk for creating pipeline schema
+export const createPipelineSchema = createAsyncThunk(
+  'build-pipline/createPipelineSchema',
+  async ({ pipelineId, request }: { pipelineId: string; request: string }, thunkAPI) => {
+    try {
+      const response = await apiService.post({
+        portNumber: '8090',
+        url: '/pipeline_schema/create_pipeline',
+        usePrefix: true,
+        method: 'POST',
+        data: {
+          pipeline_id: pipelineId,
+          request: request,
+          thread_id: `${pipelineId}_001`
+        }
+      });
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const buildPipeLineSlice = createSlice({
   name: "buildPipeline",
   initialState,
@@ -738,6 +761,19 @@ const buildPipeLineSlice = createSlice({
       .addCase(generatePipelineAgent.rejected, (state, action) => {
         state.loading = false;
         state.error =null;
+      })
+
+      .addCase(createPipelineSchema.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPipelineSchema.fulfilled, (state, action) => {
+        state.loading = false;
+        // You can store the response in state if needed
+      })
+      .addCase(createPipelineSchema.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create pipeline schema';
       })
   }
 });

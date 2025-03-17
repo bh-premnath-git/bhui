@@ -41,6 +41,7 @@ export const useUpdatePipelineMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, pipeline_json }: { id: string; pipeline_json: any }) => {
+            if(id){
             const data =await apiService.patch({
                 portNumber: CATALOG_API_PORT,
                 url: `/pipeline/${id}`,
@@ -50,9 +51,10 @@ export const useUpdatePipelineMutation = () => {
                 metadata: {
                     errorMessage: 'Failed to fetch projects'
                 },
-                params: {limit: 1000}
-            })
-            return data;
+                    params: {limit: 1000}
+                })
+                return data;
+            }
         },
         onSuccess: (_, { id }) => {
             queryClient.invalidateQueries({ queryKey: pipelineKeys.detail(id) });

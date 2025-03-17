@@ -45,7 +45,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
             type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',
             file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
             connection_name: pipelineJsonData?.connection?.name || source?.connection_config?.connection_name || '',
-            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || ''
+            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || 'CSV'
           }
         }
       };

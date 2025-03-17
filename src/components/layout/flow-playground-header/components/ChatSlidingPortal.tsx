@@ -18,6 +18,7 @@ import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
@@ -32,7 +33,9 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     formValues,
     error
   } = useAppSelector((state: RootState) => state.flow);
-
+console.log(selectedFlow);
+const location = useLocation();
+console.log(location.pathname);
   useEffect(() => {
     if (!isOpen) {
       clearMessages();

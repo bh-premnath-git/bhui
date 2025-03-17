@@ -65,7 +65,7 @@ const BuildPlayGround: React.FC = () => {
       )
   }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
       setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet, handleSourceUpdate, pipelineDtl]);
-console.log(transformationCounts,"transformationCounts")
+// console.log(transformationCounts,"transformationCounts")
 
   const edgeTypes = useMemo(() => ({
       default: (props: any) => (

@@ -6,7 +6,8 @@ const DataPipelineCanvasPage = () => {
   return (
     <div className="h-[90%] w-full">
       {/* <SaveProvider>
-      <PipelineProvider> */}
+      // <PipelineProvider> */}
+      
         <DataPipelineCanvas />
       {/* </PipelineProvider>
       </SaveProvider> */}

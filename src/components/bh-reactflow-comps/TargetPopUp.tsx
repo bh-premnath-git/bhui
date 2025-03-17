@@ -9,6 +9,7 @@ import writerSchema from "@/components/bh-reactflow-comps/builddata/json/Writer.
 import csvOptionsSchema from "@/components/bh-reactflow-comps/builddata/json/CSVOptions.json";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 const schemaReferences: Record<string, any> = {
     "schemas/Target.json": targetSchema,
     "transformations/writers/CSVOptions.json": csvOptionsSchema,
@@ -109,15 +110,20 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const { connectionConfigList } = useAppSelector((state) => state.datasource);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
+    const { pipelineJson } = usePipelineContext();
+
     console.log(source,"source")
     console.log(initialData,"initialData")
-
+    console.log(pipelineJson,"pipelineJson")
     useEffect(() => {
         dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
     }, [dispatch]);
 
     useEffect(() => {
         if (source) {
+            console.log(source.source,"source")
+            let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
+            console.log(pipelineJsonData,"pipelineJsonData")
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
@@ -132,7 +138,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         connection_name: source.source?.connection?.name
                     }
                 },
-                file_type: source.source?.file_type||'csv',
+                file_type: source.source?.file_type||pipelineJsonData?.target?.file_type?.toUpperCase()||'CSV',
                 write_options: source.transformationData?.write_options
             };
 

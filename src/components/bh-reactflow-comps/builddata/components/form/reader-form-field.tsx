@@ -97,9 +97,12 @@ export const ReaderFormField: React.FC<{
     errors: Record<string, string>;
     connectionConfigList?: any[];
     selectedConnection?: any;
-}> = ({ fieldName, fieldSchema, path, formData, onChange, errors, connectionConfigList, selectedConnection }) => {
+    disabled?: boolean;
+    disableList?: string[];
+}> = ({ fieldName, fieldSchema, path, formData, onChange, errors, connectionConfigList, selectedConnection, disabled, disableList=['connection','source_name','file_type'] }) => {
     if (!fieldSchema) return null;
 
+    const isFieldDisabled = disabled || (disableList && disableList.includes(fieldName));
 
     if (fieldSchema.$ref) {
         const referencedSchema = schemaReferences[fieldSchema.$ref];
@@ -109,7 +112,7 @@ export const ReaderFormField: React.FC<{
                     <div className="grid grid-cols-2 gap-2">
                         {Object.entries(referencedSchema.properties).map(
                             ([name, schema]: [string, any]) =>
-                                ReaderFormField({ fieldName: name, fieldSchema: schema, path: [...path, fieldName], formData, onChange, errors, connectionConfigList, selectedConnection })
+                                ReaderFormField({ fieldName: name, fieldSchema: schema, path: [...path, fieldName], formData, onChange, errors, connectionConfigList, selectedConnection, disabled, disableList })
                         )}
                     </div>
                 </div>
@@ -136,6 +139,7 @@ export const ReaderFormField: React.FC<{
                     name={fieldName}
                     value={fieldValue || ""}
                     onChange={(e) => onChange(e, path)}
+                    disabled={isFieldDisabled}
                     className={`w-full p-2 border rounded bg-white shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue ? 'border-red-500' : ''
                         }`}
                 >
@@ -170,6 +174,7 @@ export const ReaderFormField: React.FC<{
                         name="connection_config_id"
                         value={formData.source?.connection?.connection_config_id || ""}
                         onChange={(e) => onChange(e, path)}
+                        disabled={isFieldDisabled}
                         className="w-full h-8 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                         <option value="">Select Connection</option>
@@ -191,6 +196,7 @@ export const ReaderFormField: React.FC<{
                             name="file_path_prefix"
                             value={formData.source?.connection?.file_path_prefix || selectedConnection?.custom_metadata?.file_path_prefix || ""}
                             onChange={(e) => onChange(e, path)}
+                            disabled={isFieldDisabled}
                             className="h-8 text-sm"
                             placeholder="Enter file path prefix"
                         />
@@ -227,6 +233,7 @@ export const ReaderFormField: React.FC<{
                 name={fieldName}
                 value={fieldValue || ""}
                 onChange={(e) => onChange(e, path)}
+                disabled={isFieldDisabled}
                 placeholder={`Enter ${formatFieldName(fieldName)}`}
                 className="h-8 text-sm"
             />

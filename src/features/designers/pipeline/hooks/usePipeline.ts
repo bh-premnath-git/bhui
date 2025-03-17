@@ -60,14 +60,14 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
         });
 
     // Fetch single pipeline by ID
-    const fetchPipelineById = (pipelineId: string, enabled = true) =>
-        getPipeline({
-            url: `/pipeline/${pipelineId}/`,
-            queryOptions: {
-                enabled,
-                retry: 2
-            }
-        });
+    // const fetchPipelineById = (pipelineId: string, enabled = true) =>
+    //     getPipeline({
+    //         url: `/pipeline/${pipelineId}/`,
+    //         queryOptions: {
+    //             enabled,
+    //             retry: 2
+    //         }
+    //     });
 
     // Create pipeline mutation
     const createPipelineMutation = createPipeline({
@@ -118,27 +118,27 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
     const { data: pipelines, isLoading, isFetching, isError } = fetchPipelineList(options.shouldFetch);
 
     // Get single pipeline if ID is provided
-    const { 
-        data: pipeline,
-        isLoading: isPipelineLoading,
-        isFetching: isPipelineFetching,
-        isError: isPipelineError 
-    } = fetchPipelineById(options.pipelineId || '', options.shouldFetch && !!options.pipelineId);
+    // const { 
+    //     data: pipeline,
+    //     isLoading: isPipelineLoading,
+    //     isFetching: isPipelineFetching,
+    //     isError: isPipelineError 
+    // } = fetchPipelineById(options.pipelineId || '', options.shouldFetch && !!options.pipelineId);
 
     return {
         // Query results
         pipelines: pipelines || [],
-        pipeline: pipeline?.data?.[0] || null,
+        // pipeline: pipeline?.data?.[0] || null,
         isLoading,
         isFetching,
         isError,
-        isPipelineLoading,
-        isPipelineFetching,
-        isPipelineError,
+        // isPipelineLoading,
+        // isPipelineFetching,
+        // isPipelineError,
 
         // Query functions
         fetchPipelineList,
-        fetchPipelineById,
+        // fetchPipelineById,
 
         // Mutation handlers
         handleCreatePipeline,

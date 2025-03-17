@@ -314,13 +314,17 @@ export const getPipelineById: any = createAsyncThunk(
   'build-pipline/getPipelineById',
   async (params: any, thunkAPI) => {
     try {
+      // alert(JSON.stringify(params))
+      if (!params.id) {
+        return thunkAPI.rejectWithValue('Pipeline ID is required');
+      }
+
       const response = await apiService.get({
         portNumber: CATALOG_API_PORT,
         url: `/pipeline/${params.id}`,
         usePrefix: true,
         method: 'GET',
       });
-      console.log(response)
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

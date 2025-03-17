@@ -30,7 +30,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
       let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
       console.log(pipelineJsonData, "pipelineJson")
       const initialData = {
-        reader_name: pipelineJsonData?.name || source?.data_src_desc || '',
+        reader_name: source?.data_src_desc || pipelineJsonData?.name ||  '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
         source: {
           type: pipelineJsonData?.source_type || (source?.connection_type === 'FILE' ? 'File' : source?.connection_type) || '',
@@ -42,13 +42,14 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
 
           connection: {
             connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
-            type: pipelineJsonData?.connection?.type || source?.connection_type || '',
+            type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',
             file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
-            connection_name: pipelineJsonData?.connection?.connection_name || source?.connection_config?.connection_name || '',
-            file_type: pipelineJsonData?.connection?.file_type || source?.file_type || ''
+            connection_name: pipelineJsonData?.connection?.name || source?.connection_config?.connection_name || '',
+            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || ''
           }
         }
       };
+      console.log(initialData,"initialData")
       setInitialData(initialData);
     }
   }, [source]);
@@ -89,18 +90,18 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[1200px] h-[750px] px-20 overflow-scroll ">
+      <DialogContent className="max-w-[1200px]  px-20 overflow-scroll ">
           {/* Header */}
-          <DialogHeader className="flex justify-start items-center text-black">
-            <div className="flex flex-col">
+          <DialogHeader className=" m-0">
+            {/* <div className="flex flex-col"> */}
               <DialogTitle>{source?.data_src_name}</DialogTitle>
               <p className="text-sm font-bold">{source?.data_src_desc}</p>
-            </div>
+            {/* </div> */}
           </DialogHeader>
 
-          <div className="flex justify-between items-center mt-2">
+          <div className="">
             <div className="flex">
-              {['Reader Options', 'Schema', 'Tag'].map((label, index) => (
+              {['Reader Options', 'Schema'].map((label, index) => (
                 <button
                   key={label}
                   onClick={() => handleClick(index)}
@@ -160,7 +161,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
               />
             )}
             {selected === 1 && <SchemaTable initialData={initialData} />}
-            {selected === 2 && <OnboardTaggingStep />}
+            {/* {selected === 2 && <OnboardTaggingStep />} */}
             {/* {selected === 3 && <PreviewTable />} */}
           </div>
       </DialogContent>

@@ -6,8 +6,10 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 import { Pipeline } from '@/types/designer/pipeline';
 import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv';
-import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
+// import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
 import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
+import CreatePipelineDialog from './pipeline/components/CreatePipelineDialog';
+// import { useToast } from '@/hooks/useToast';
 
 export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -47,7 +49,7 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
       />
-      <CreatePipelineDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <CreatePipelineDialog open={createDialogOpen} handleClose={() => setCreateDialogOpen(false)} />
       <DeletePipelineDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </>);
 }

@@ -68,7 +68,8 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         url: `/connection_registry/connection_config/${options.connectionId}/`,
         queryOptions: {
             enabled: !!options.connectionId,
-            retry: 2
+            retry: 2,
+            retryDelay: 1000,
         }
     }) : {
             data: undefined,
@@ -206,8 +207,8 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
         };
 
     return {
-        connectionTypes: Array.isArray(connectionTypes) ? connectionTypes : 
-                        ConnectionType ? [ConnectionType] : [],
+        connectionTypes: Array.isArray(connectionTypes) ? connectionTypes :
+            ConnectionType ? [ConnectionType] : [],
         isLoading,
         isFetching,
         isError,

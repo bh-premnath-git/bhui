@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, X, Link as LinkIcon, Users, Tag, Gavel } from 'lucide-react';
 import { FaSave, FaEdit, FaTimes } from 'react-icons/fa';
 import { useAboutData } from '@/features/data-catalog/components/hooks/useAboutData';
@@ -24,7 +24,11 @@ import { toast, Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_PORT } from '@/config/platformenv';
+import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
+import { useDispatch } from 'react-redux';
+import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
+import { AppDispatch } from '@/store';
+import { useAppSelector } from '@/hooks/useRedux';
 
 interface DescriptionSectionProps {
   description: string;
@@ -500,9 +504,20 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);
-
-
+  const dispatch = useDispatch<AppDispatch>();
+  const [selectedConnection, setSelectedConnection] = useState<string | null>(
+    selectedSource.connection_config_id?.toString() || null
+  );
+  const [isConnectionChanged, setIsConnectionChanged] = useState(false);
+  const { connectionConfigList } = useAppSelector((state) => state.datasource);
+  console.log(selectedSource);
+  console.log(connectionConfigList);
   const hasChanges = descriptionState.current !== descriptionState.original;
+
+  // Fetch connection configs on mount
+  useEffect(() => {
+    dispatch(getConnectionConfigList({ offset: 0, limit: 1000 }));
+  }, [dispatch]);
 
   const handleGenerateWithBot = async () => {
     setBotStatus('loading');
@@ -581,6 +596,35 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
     }));
   };
 
+  const handleConnectionChange = (value: string) => {
+    setSelectedConnection(value);
+    setIsConnectionChanged(true);
+  };
+
+  const handleUpdateConnection = async () => {
+    try {
+      let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
+      console.log(connectionConfig);
+      await apiService.patch({
+        url: `/data_source/${selectedSource.data_src_id}`,
+        portNumber: CATALOG_API_PORT,
+        method: 'PATCH',
+        usePrefix: true,
+        data: {
+          connection_config_id: parseInt(selectedConnection!, 10),
+          file_path_prefix: connectionConfig?.custom_metadata?.file_path_prefix
+        },
+        metadata: {
+          successMessage: 'Connection updated successfully',
+          errorMessage: 'Failed to update connection'
+        }
+      });
+      setIsConnectionChanged(false);
+    } catch (error) {
+      console.error('Failed to update connection:', error);
+    }
+  };
+
   return (
     <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
       <Toaster />
@@ -655,6 +699,44 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardHeader>
         <CardContent className="pt-0">
           <TagsSection tags={tags} onDeleteTag={handleRemoveTag} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-center pb-2">
+          <h3 className="text-lg font-semibold">Connection</h3>
+          {isConnectionChanged && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUpdateConnection}
+              className="flex items-center gap-2"
+            >
+              Update
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            <Select
+              value={selectedConnection || ''}
+              onValueChange={handleConnectionChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a connection" />
+              </SelectTrigger>
+              <SelectContent>
+                {connectionConfigList?.map((config: any) => (
+                  <SelectItem key={config.id} value={config.id.toString()}>
+                                {config.connection_config_name} ({config.custom_metadata?.type})
+                                </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!selectedConnection && (
+              <p className="text-sm text-muted-foreground">No connection configured.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

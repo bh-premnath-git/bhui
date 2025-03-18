@@ -32,7 +32,7 @@ export const useTransformationOutputQuery = ({
             const { data } = await apiClient.get('/pipeline/debug/get_transformation_output', {
                 params: {
                     pipeline_name: pipelineName,
-                    transformation_name: transformationName?.toLowerCase(),
+                    transformation_name: transformationName,
                     page,
                     page_size: pageSize,
                 }

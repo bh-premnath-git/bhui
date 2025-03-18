@@ -332,13 +332,16 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     // Your save logic here
                     const pipeline_json = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
-                    await apiService.patch({
+                    if(id){
+                      await apiService.patch({
                         portNumber: CATALOG_API_PORT,
                         url: `/pipeline/${id}`,
                         usePrefix: true,
                         method: 'PATCH',
                         data: pipeline_json
                     });
+                }
+                    setPipelineJson(pipeline_json?.pipeline_json);
 
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly

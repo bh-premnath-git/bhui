@@ -23,6 +23,8 @@ interface ConnectionFormProps {
   connectionId: string;
   onBack: () => void;
   connectionConfigName: string;
+  isEdit?: boolean;
+  formData?: any;
 }
 
 export function ConnectionForm({ 
@@ -31,9 +33,12 @@ export function ConnectionForm({
   connectionName,
   connectionId,
   onBack,
-  connectionConfigName
+  connectionConfigName,
+  isEdit,
+  formData
 }: ConnectionFormProps) {
-  const { handleCreateConnection } = useConnections();
+  console.log(formData,"formData")
+  const { handleCreateConnection, handleUpdateConnection } = useConnections();
   const [schema, setSchema] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +91,19 @@ export function ConnectionForm({
 
   const form = useForm({
     resolver: schema ? zodResolver(generateFormSchema(schema)) : undefined,
-    defaultValues: {
+    defaultValues: isEdit && formData ? {
+      name: formData.name || `${connectionDisplayName} Connection`,
+      file_path_prefix: formData.file_path_prefix || '',
+      project_id: formData.project_id || '',
+      dataset_id: formData.dataset_id || '',
+      credentials_json: formData.credentials_json || '',
+      host: formData.host || '',
+      port: formData.port || (connectionName.toLowerCase() === 'mysql' ? '3306' : '5432'),
+      database: formData.database || '',
+      username: formData.username || '',
+      password: formData.password || '',
+      // Add any additional fields from formData
+    } : {
       name: `${connectionDisplayName} Connection`,
       project_id: '',
       dataset_id: '',
@@ -99,22 +116,37 @@ export function ConnectionForm({
     }
   });
 
-  // Reset form when schema changes
+  // Modify the useEffect for form reset to consider formData when isEdit is true
   useEffect(() => {
     if (schema) {
-      form.reset({
-        name: `${connectionDisplayName} Connection`,
-        project_id: '',
-        dataset_id: '',
-        credentials_json: '',
-        host: '',
-        port: connectionName.toLowerCase() === 'mysql' ? 3306 : 5432,
-        database: '',
-        username: '',
-        password: '',
-      });
+      form.reset(
+        isEdit && formData ? {
+          name: formData.name || `${connectionDisplayName} Connection`,
+          file_path_prefix: formData.file_path_prefix || '',
+          project_id: formData.project_id || '',
+          dataset_id: formData.dataset_id || '',
+          credentials_json: formData.credentials_json || '',
+          host: formData.host || '',
+          port: formData.port || (connectionName.toLowerCase() === 'mysql' ? '3306' : '5432'),
+          database: formData.database || '',
+          username: formData.username || '',
+          password: formData.password || '',
+          // Add any additional fields from formData
+        } : {
+          name: `${connectionDisplayName} Connection`,
+          file_path_prefix: '',
+          project_id: '',
+          dataset_id: '',
+          credentials_json: '',
+          host: '',
+          port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
+          database: '',
+          username: '',
+          password: '',
+        }
+      );
     }
-  }, [schema, connectionDisplayName, connectionName, form]);
+  }, [schema, connectionDisplayName, connectionName, form, isEdit, formData]);
 
   const getConfigUnionForType = (connectionName: string, data: any) => {
     const type = connectionName.toLowerCase();
@@ -194,11 +226,10 @@ export function ConnectionForm({
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
 
-      const connectionData: ConnectionValue = {
-        connection_type: connectionType,
-        connection_config_name: connectionConfigName,
+      const connectionData: any = {
         connection_name: data.name || `${connectionDisplayName}`,
-        connection_id: connectionId,
+        connection_description: `${connectionDisplayName} connection`,
+        connection_type: connectionType,
         connection_status: 'active',
         data_residency: 'auto',
         custom_metadata: {},
@@ -206,12 +237,17 @@ export function ConnectionForm({
         config: encryptedString
       };
 
-      await handleCreateConnection(connectionData);
-      toast.success('Connection created successfully');
+      if (isEdit) {
+        await handleUpdateConnection(connectionId, connectionData);
+        toast.success('Connection updated successfully');
+      } else {
+        await handleCreateConnection(connectionData);
+        toast.success('Connection created successfully');
+      }
       navigate(ROUTES.ADMIN.CONNECTION.INDEX);
     } catch (error) {
-      console.error('Failed to create connection:', error);
-      toast.error('Failed to create connection');
+      console.error(`Failed to ${isEdit ? 'update' : 'create'} connection:`, error);
+      toast.error(`Failed to ${isEdit ? 'update' : 'create'} connection`);
     } finally {
       setIsSubmitting(false);
     }
@@ -287,7 +323,7 @@ export function ConnectionForm({
         <CardHeader>
           <div className="flex items-center">
             <Database className="mr-2 h-5 w-5 text-primary" />
-            <CardTitle>Create {connectionDisplayName} Connection</CardTitle>
+            <CardTitle>{isEdit ? 'Update' : 'Create'} {connectionDisplayName} Connection</CardTitle>
           </div>
           <CardDescription>
             Configure your {connectionDisplayName} connection details
@@ -334,7 +370,7 @@ export function ConnectionForm({
                   type="submit" 
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Connection'}
+                  {isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Connection' : 'Create Connection')}
                 </Button>
               </div>
             </form>

@@ -85,22 +85,11 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "DQ Check",
-        "color": "rgb(233, 111, 74)",
-        "icon": "/assets/buildPipeline/squre/4.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "Dedup",
-        "color": "#32D1A4",
+        "color": "#614EA7",
         "icon": "/assets/buildPipeline/squre/5.svg",
         "ports": {
           "inputs": 1,

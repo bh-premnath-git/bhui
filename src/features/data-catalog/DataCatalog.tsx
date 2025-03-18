@@ -30,6 +30,18 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
     ProjectId: project.bh_project_id,
     Project_Name: project.bh_project_name
   })) : [];
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Calculate total count from datasources array
+  const totalCount = datasources?.length || 0;
+  
+  // Calculate the start and end indices for the current page
+  const startIndex = pageIndex * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalCount);
+  
+  // Slice the data for the current page
+  const currentPageData = datasources.slice(startIndex, endIndex);
 
   const onRowClickHandler = (row: Row<DataSource>) => {
     console.log(row.original);
@@ -42,6 +54,21 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
     setShowImportSection(false);
     dispatch(getSource());
 
+  const handlePageChange = (page: number) => {
+    setPageIndex(page - 1);
+    // If you need to fetch new data from API
+    if (onRefetch) {
+      onRefetch();
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPageIndex(0); // Reset to first page when changing page size
+    // If you need to fetch new data from API
+    if (onRefetch) {
+      onRefetch();
+    }
   };
 
   // Refetch data when sheet is closed
@@ -78,15 +105,20 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
       <>
       <DataTable<DataSource>
         columns={columns}
-        data={datasources || []}
+        data={currentPageData}
         topVariant="simple"
         pagination={true}
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
         importSrcFn={handleImportClick}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        pageCount={Math.ceil(totalCount / pageSize)}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
       </>
      )}
     </>
-  );
+  );}
 }

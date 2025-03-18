@@ -1,6 +1,6 @@
 import { ImportProvider } from "@/context/datacatalog/ImportContext"
 import {ImportWizard} from "@/features/data-catalog/ImportWizard"
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 
 const DatasourceImport = () => {
   return (

@@ -5,10 +5,33 @@ import type { User, UserMutationData } from '@/types/admin/user';
 import { toast } from 'sonner';
 import { KEYCLOAK_API_PORT } from '@/config/platformenv';
 
+// Define the API response structure to match the server
+export interface ApiUsersResponse {
+  total: number;
+  users: User[];
+  pagination: {
+    first: number;
+    max_results: number;
+    has_next: boolean;
+    has_previous: boolean;
+  };
+}
+
+// Define the response structure that the components will use
+export interface UsersResponse {
+  users: User[];
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+}
+
 interface UseUsersOptions {
   shouldFetch?: boolean;
   userId?: string;
   mutationsOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+  filters?: Record<string, any>;
 }
 
 interface ApiErrorOptions {
@@ -28,13 +51,19 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 };
 
 export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => {
-  // For queries - returns User objects
-  const { getOne: getUser, getAll: getAllUsers } = useResource<User>(
+  // State to hold the transformed users data in the format expected by components
+  const [usersResponse, setUsersResponse] = useState<UsersResponse>({ users: [] });
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>(options.filters || {});
+  
+  // For queries - returns User objects - using 'any' here to handle various response formats
+  const { getOne: getUser, getAll: getAllUsers } = useResource<any>(
     'users',
     KEYCLOAK_API_PORT,
     false
   );
 
+  
   // For mutations - accepts different types for different operations
   const { create: createUser } = useResource<UserMutationData>(
     'users',
@@ -42,7 +71,7 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
     false
   );
 
-  const { update: updateUser } = useResource<UserMutationData>(
+  const { update: updateUserResource } = useResource<UserMutationData>(
     'users',
     KEYCLOAK_API_PORT,
     false
@@ -60,14 +89,54 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
     false
   );
 
+  // Debounced search function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearch = useCallback(
+    debounce((term: string, filters: Record<string, any>) => {
+      const newFilters = { ...filters };
+      if (term.trim()) {
+        newFilters.search = term;
+      } else {
+        delete newFilters.search;
+      }
+      setSearchFilters(newFilters);
+    }, 500),
+    []
+  );
+
+  // Update search term and trigger debounced search
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+    debouncedSearch(term, options.filters || {});
+  }, [debouncedSearch, options.filters]);
+
+  // Prepare API parameters, removing undefined values
+  const prepareParams = useCallback(() => {
+    const params: Record<string, any> = {
+      // Set default values for pagination
+      page: options.page || 1,
+      pageSize: options.pageSize || 10,
+    };
+
+    // Add search filters
+    Object.entries({ ...searchFilters }).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params[key] = value;
+      }
+    });
+
+    return params;
+  }, [options.page, options.pageSize, searchFilters]);
+
   // List users
-  const { data: users, isLoading, isFetching, isError } = !options.mutationsOnly 
+  const { data: usersData, isLoading, isFetching, isError } = !options.mutationsOnly 
     ? getAllUsers({
-        url: '/users/',
+        url: '/users',
         queryOptions: {
           enabled: options.shouldFetch,
           retry: 2
-        }
+        },
+        params: prepareParams()
       })
     : { data: undefined, isLoading: false, isFetching: false, isError: false };
 
@@ -97,7 +166,7 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
   });
 
   // Update user mutations
-  const updateUserMutation = updateUser('/users', {
+  const updateUserMutation = updateUserResource('/users', {
     mutationOptions: {
       onSuccess: () => toast.success('User updated successfully'),
       onError: (error) => handleApiError(error, { action: 'update' }),
@@ -117,6 +186,50 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
       onError: (error) => handleApiError(error, { action: 'update', context: 'user roles' }),
     },
   });
+
+  // Transform API response to the format expected by components
+  useEffect(() => {
+    if (!usersData) {
+      setUsersResponse({ users: [] });
+      return;
+    }
+
+    // Handle the response based on its actual structure
+    try {
+      // API response format with users array and pagination
+      if (usersData && typeof usersData === 'object' && 'users' in usersData && 'total' in usersData) {
+        const apiResponse = usersData as any;
+        setUsersResponse({
+          users: apiResponse.users || [],
+          totalCount: apiResponse.total,
+          page: options.page || 1,
+          pageSize: apiResponse.pagination?.max_results || options.pageSize || 10
+        });
+      } 
+      // Handle case where it might be an array
+      else if (Array.isArray(usersData)) {
+        setUsersResponse({
+          users: usersData.filter(user => typeof user === 'object' && user !== null) as User[],
+          totalCount: usersData.length,
+          page: options.page || 1,
+          pageSize: options.pageSize || 10
+        });
+      }
+      // Fallback for unexpected formats
+      else {
+        console.warn('Unexpected users data format:', usersData);
+        setUsersResponse({ 
+          users: [],
+          totalCount: 0,
+          page: options.page || 1,
+          pageSize: options.pageSize || 10
+        });
+      }
+    } catch (error) {
+      console.error('Error processing users data:', error);
+      setUsersResponse({ users: [] });
+    }
+  }, [usersData, options.page, options.pageSize]);
 
   // Type-safe mutation handlers
   const handleCreateUser = useCallback(async (data: UserMutationData) => {
@@ -150,9 +263,46 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
     }
   }, [updateUserMutation, updateUserProjectsMutation, updateUserRolesMutation]);
 
+  const addUser = useCallback(async (user: UserMutationData) => {
+    try {
+      const response = await createUserMutation.mutateAsync({
+        data: user
+      });
+      return { success: true, user: response };
+    } catch (error) {
+      console.error('Error adding user:', error);
+      return { success: false, error };
+    }
+  }, [createUserMutation]);
+
+  const updateUser = useCallback(async (id: string, userData: UserMutationData) => {
+    try {
+      await handleUpdateUser(id, userData);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return { success: false, error };
+    }
+  }, [handleUpdateUser]);
+
+  const deleteUser = useCallback(async (id: string) => {
+    try {
+      await updateUserMutation.mutateAsync({
+        data: {} as UserMutationData,
+        url: `/users/${id}`
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return { success: false, error };
+    }
+  }, [updateUserMutation]);
+
   return {
-    users,
+    users: usersResponse,
     user,
+    searchTerm,
+    handleSearch,
     isLoading: isLoading || false,
     isUserLoading: isUserLoading || false,
     isFetching: isFetching || false,
@@ -160,53 +310,9 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
     isError: isError || false,
     isUserError: isUserError || false,
     handleCreateUser,
-    handleUpdateUser
-  };
-};
-
-export const useUserSearch = () => {
-  const { getOne: searchUser } = useResource<User>(
-    'users',
-    KEYCLOAK_API_PORT,
-    false
-  );
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const { data: searchedUser, isLoading, error } = searchUser({
-    url: `/users/${searchQuery}`,
-    queryOptions: {
-      enabled: !!searchQuery,
-      retry: 2
-    },
-    params: { limit: 1000 }
-  });
-
-  const userNotFound = useMemo(() => {
-    if (!error) return false;
-    const apiError = error as { response?: { status: number; data?: { detail?: string } } };
-    return (
-      apiError?.response?.status === 404 &&
-      typeof apiError?.response?.data?.detail === 'string' &&
-      apiError.response.data.detail.includes('User not found')
-    );
-  }, [error]);
-
-  const debounceSearchUser = useMemo(() =>
-    debounce((query: string) => {
-      setSearchQuery(query);
-    }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debounceSearchUser.cancel();
-  }, [debounceSearchUser]);
-
-  return {
-    searchedUser: searchedUser || null,
-    searchLoading: isLoading,
-    userNotFound,
-    debounceSearchUser,
+    handleUpdateUser,
+    addUser,
+    updateUser,
+    deleteUser
   };
 };

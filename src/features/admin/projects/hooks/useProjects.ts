@@ -23,7 +23,7 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   if (!silent) {
     toast.error(errorMessage);
   }
-  throw error;
+  return error;
 };
 
 export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
@@ -88,7 +88,10 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     url: '/bh_project',
     mutationOptions: {
       onSuccess: () => toast.success('Project created successfully'),
-      onError: (error) => handleApiError(error, { action: 'create' }),
+      onError: (error) => {
+        handleApiError(error, { action: 'create' });
+        return Promise.reject(error);
+      },
     },
   });
 
@@ -127,7 +130,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   const handleUpdateProject = useCallback(async (id: string, data: ProjectMutationData) => {
     await updateProjectMutation.mutateAsync({
       data,
-      url: `/bh_project/${id}`
+      params: { id }
     });
   }, [updateProjectMutation]);
 

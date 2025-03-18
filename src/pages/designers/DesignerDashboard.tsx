@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { Designers } from '@/features/designers/DesignerDashboard';
 
 const DesignerDashboard = () => {

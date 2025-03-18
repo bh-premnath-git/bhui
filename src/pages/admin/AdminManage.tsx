@@ -3,7 +3,7 @@ import { Users, FolderGit2, Settings2, ArrowRight, Cable } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ROUTES } from '@/config/routes';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 
 const adminOptions = [
   {

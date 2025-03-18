@@ -7,6 +7,10 @@ interface LayoutField {
   lyt_fld_name: string;
 }
 
+interface LayoutResponse {
+  layout_fields: LayoutField[];
+}
+
 export const getColumnSuggestions = async ( 
   currentNodeId: string,
   nodes: Node[],

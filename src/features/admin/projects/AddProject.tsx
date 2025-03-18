@@ -4,7 +4,7 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { useProjects, useProjectSearch } from './hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from './components/ProjectPageLayout';
-import { encrypt_string } from '@/services/encryption';
+import { encrypt_string } from '@/lib/encryption';
 import { ProjectFormData, transformFormToApiData } from './components/projectFormSchema';
 
 export function AddProject() {

@@ -1,139 +1,66 @@
-import { Suspense, useEffect } from "react";
-import { ReactFlowProvider } from 'reactflow';
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
-import { Provider } from 'react-redux';
-import { store } from './store';
-import { SidebarProvider } from "@/context/SidebarContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
-import { useSidebar } from "@/context/SidebarContext";
-import { routerConfig } from "@/config/router-config";
+import { ReactFlowProvider } from 'reactflow';
+import { BrowserRouter } from "react-router-dom";
+import { KeycloakProvider, useKeycloak } from "./hooks/useKeycloak";
 import { ErrorBoundary } from "react-error-boundary";
-import { Button } from "./components/ui/button";
-import { LazyLoading } from "./components/shared/LazyLoading";
-import { KeycloakProvider, useKeycloakAuth } from "./context/KeycloakContext";
-import 'reactflow/dist/style.css';
-import { useAppDispatch } from "@/hooks/useRedux";
+import { AppRoutes } from "./routes";
+import { ErrorFallback } from "@/components/withPageErrorBoundary"
+import { Provider } from "react-redux";
+import { store } from "@/store";
+import { useAppDispatch } from "./hooks/useRedux";
+import { useEffect } from "react";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
 import { PipelineProvider } from "./context/designers/DataPipelineContext";
 
+
 const queryClient = new QueryClient();
 
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-      <div className="text-center space-y-4">
-        <h2 className="text-2xl font-bold text-destructive">Something went wrong!</h2>
-        <pre className="text-sm p-4 bg-muted rounded-md overflow-auto max-w-2xl">
-          {error.message}
-          {'\n\n'}
-          {error.stack}
-        </pre>
-        <Button onClick={resetErrorBoundary}>Try again</Button>
-      </div>
-    </div>
-  );
-}
-
-function RootLayout() {
-  const { isExpanded } = useSidebar();
-
-  return (
-    <PipelineProvider>
-    <div className="grid grid-cols-[auto,1fr] min-h-screen w-full">
-      <Sidebar />
-      <div className={`col-start-2 col-span-1 transition-all duration-300 ${isExpanded ? "ml-64" : "ml-20"}`}>
-        <Header />
-        <main className="pt-16">
-          <ErrorBoundary
-            FallbackComponent={ErrorFallback}
-            onReset={() => {
-              console.log('Error boundary reset');
-            }}
-            onError={(error) => {
-              console.error('Error caught by boundary:', error);
-            }}
-          >
-            <Suspense fallback={<LazyLoading />}>
-              <Outlet />
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-      </div>
-    </div>
-    </PipelineProvider>
-  );
-}
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: (
-      <ReactFlowProvider>
-        <FlowProvider>
-          {/* <PipelineProvider> */}
-          <SidebarProvider>
-            <RootLayout />
-          </SidebarProvider>
-          {/* </PipelineProvider> */}
-        </FlowProvider>
-      </ReactFlowProvider>
-    ),
-    children: routerConfig
-  }
-]);
-
-// Modified to use authentication state
-function AppInitializer() {
+// Separate component to use Redux after Provider is initialized
+const AppContent = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useKeycloakAuth();
+  const { authenticated } = useKeycloak();
 
   useEffect(() => {
-    // Only fetch data when authenticated
-    if (isAuthenticated) {
+    if (authenticated) {
       dispatch(fetchGithubProviders());
       dispatch(fetchDataSourceTypes());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, authenticated]);
 
-  return null;
-}
-
-function AuthenticatedApp() {
   return (
-    <ThemeProvider>
-      <AppInitializer />
-      <RouterProvider router={router} />
-      <Toaster position="top-right" />
-    </ThemeProvider>
+    <ReactFlowProvider>
+      <FlowProvider>
+        <PipelineProvider>
+          <AppRoutes />
+        </PipelineProvider>
+      </FlowProvider>
+    </ReactFlowProvider>
   );
-}
+};
 
-const App = () => (
-  <Provider store={store}>
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary
-        FallbackComponent={ErrorFallback}
-        onReset={() => {
-          console.log('Root error boundary reset');
-        }}
-        onError={(error) => {
-          console.error('Error caught by root boundary:', error);
-        }}
-      >
+const App = () => {
+  return (
+    <BrowserRouter>
+
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
         <KeycloakProvider>
-          <TooltipProvider>
-              <AuthenticatedApp />
-          </TooltipProvider>
+          <Provider store={store}>
+            <QueryClientProvider client={queryClient}>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <AppContent />
+              </TooltipProvider>
+            </QueryClientProvider>
+          </Provider>
         </KeycloakProvider>
       </ErrorBoundary>
-    </QueryClientProvider>
-  </Provider>
-);
+    </BrowserRouter>
+  )
+};
 
 export default App;

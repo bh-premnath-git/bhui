@@ -245,10 +245,19 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                 <FormDescription>{field.description}</FormDescription>
               )}
               <FormControl>
-                <Input
-                  {...formField}
-                  type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
-                />
+                {field.type === "number" ? (
+                  <Input
+                    {...formField}
+                    type="number"
+                    onChange={(e) => {
+                      // Convert string to number for number fields
+                      const value = e.target.value ? Number(e.target.value) : '';
+                      formField.onChange(value);
+                    }}
+                  />
+                ) : (
+                  <Input {...formField} type={field.type === "string" ? "text" : field.type} />
+                )}
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { EditUser } from '@/features/admin/users/EditUser';
 import { fetchProjects } from '@/store/slices/admin/usersSlice';
 import { useAppDispatch } from '@/hooks/useRedux';

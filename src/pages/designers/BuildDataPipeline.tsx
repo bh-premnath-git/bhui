@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Network } from 'lucide-react';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { PipelineList } from '@/features/designers/BuildDataPipeline';
 import { usePipelineManagementService } from '@/features/designers/pipeline/services/pipelineMgtSrv';
 import { LoadingState } from '@/components/shared/LoadingState';

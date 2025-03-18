@@ -1,5 +1,5 @@
 import { Xplorer } from "@/features/data-catalog/Xplorer"
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
 

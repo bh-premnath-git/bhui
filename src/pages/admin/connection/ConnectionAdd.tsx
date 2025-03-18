@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { AddConnection } from '@/features/admin/connection/AddConnection';
 
 const ConnectionAdd = () => {

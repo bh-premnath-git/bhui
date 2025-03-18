@@ -25,7 +25,7 @@ export const CatalagSlideWrapper: FC<CatalagSlideWrapperProps> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="right" 
-        className="!w-[65vw]"
+        className="w-full max-w-[70vw] overflow-auto p-6"
         aria-describedby="data-catalog-description"
       >
         <SheetHeader>
@@ -34,8 +34,12 @@ export const CatalagSlideWrapper: FC<CatalagSlideWrapperProps> = ({
             Detailed view of the data catalog source.
           </SheetDescription>
         </SheetHeader>
-        <DataCatalogSchema dataSourceId={selectedRow?.data_src_id}
-        selectedSource={selectedRow} />
+        <div className="w-full">
+          <DataCatalogSchema 
+            dataSourceId={selectedRow?.data_src_id}
+            selectedSource={selectedRow} 
+          />
+        </div>
       </SheetContent>
     </Sheet>
   );

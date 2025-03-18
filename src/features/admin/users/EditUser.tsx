@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ROUTES } from "@/config/routes";
 import { UserForm } from "./components/UserForm";
-import { useUsers, useUserSearch } from "./hooks/useUsers";
+import { useUsers } from "./hooks/useUsers";
+import { useUserSearch } from "./hooks/useUserSearch";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserMutationData } from "@/types/admin/user";
 

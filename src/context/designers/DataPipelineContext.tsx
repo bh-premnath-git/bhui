@@ -210,9 +210,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [pipelineJson, setPipelineJson] = useState<any>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
 
-    // Add this at the component level, outside any callbacks
-    const fetchedIdsRef = useRef(new Set<string>());
-
     const setSaving = useCallback(() => {
         setIsSaving(true);
         setHasUnsavedChanges(true);
@@ -249,37 +246,29 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     useEffect(() => { 
         const fetchPipelineDetails = async () => {
             try {
-                // Check if id exists and is valid
-                if (!id) {
-                    console.log('No pipeline ID provided');
-                    return;
-                }
-
-                // Fetch pipeline details
-                const response = await dispatch(getPipelineById({ id })).unwrap();
+                let response = await dispatch(getPipelineById({id:id})).unwrap();
+                console.log(response.pipeline_json);
                 
-                if (!response || !response.pipeline_json) {
-                    throw new Error('Invalid pipeline data received');
-                }
-console.log(response.pipeline_json,"response")
-                // Update pipeline name and JSON safely
-                setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
-                setPipelineJson(response.pipeline_json);
-
-                // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json);
+               setPipeLineName({pipeLineName:response.pipeline_json.name});
+            setPipelineJson(response.pipeline_json)
                 
-                if (!uiJson || !uiJson.nodes) {
-                    throw new Error('Failed to convert pipeline to UI format');
-                }
-
-                // Map nodes with titles safely
-                const nodesWithTitles = uiJson.nodes.map(node => {
-                    const matchingTransformation = response.pipeline_json.transformations?.find(
-                        (t: any) => t?.title === node?.data?.title && t?.name
+                const uiJson = convertPipelineToUIJson(response.pipeline_json);
+                const convertedJson = await uiJson;
+                console.log(convertedJson)
+                const nodesWithTitles = convertedJson.nodes.map(node => {
+                    const matchingTransformation = response.pipeline_json.transformations.find(
+                        (t: any) => {
+                            console.log(t)
+                            if (t.title === node.data.title && t.name) {
+                                return true;
+                            }
+                            return false;
+                        }
                     );
-
+    
+                    // If we found a matching transformation, use its name as the title
                     if (matchingTransformation) {
+                        console.log(matchingTransformation)
                         return {
                             ...node,
                             data: {
@@ -287,62 +276,38 @@ console.log(response.pipeline_json,"response")
                                 title: matchingTransformation.name,
                                 transformationData: {
                                     ...node.data.transformationData,
-                                    name: matchingTransformation.name
+                                    name: matchingTransformation.name // Ensure name is preserved in transformation data
                                 }
                             }
                         };
                     }
                     return node;
                 });
-
-                // Update nodes and edges
+                console.log(nodesWithTitles)
                 setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
-
-                // Initialize form states
+                setEdges(convertedJson.edges);
+    
                 const initialFormStates = {};
-                response.pipeline_json.transformations?.forEach((transformation: any) => {
+                response.pipeline_json.transformations.forEach((transformation: any) => {
                     const matchingNode = nodesWithTitles.find(
                         (node: any) => 
-                            node?.data?.label === transformation?.transformation && 
-                            node?.data?.title === transformation?.name
+                            node.data.label === transformation.transformation && 
+                            node.data.title === transformation.name
                     );
-
+    
                     if (matchingNode?.id) {
                         initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
                     }
                 });
-
+    
+                console.log('Initial Form States:', initialFormStates);
                 setFormStates(initialFormStates);
-
             } catch (error) {
                 console.error("Error fetching pipeline details:", error);
-                // Optionally set an error state or show a notification
             }
         };
-
-        // Only fetch if we have an ID
-        if (id) {
-            fetchPipelineDetails();
-        }
-    }, [id, dispatch, setNodes, setEdges, setPipeLineName, setPipelineJson]);
-
-    // Add type safety for the getInitialFormState function
-    const getInitialFormState = (transformation: any, nodeId: string) => {
-        if (!transformation || !nodeId) {
-            return {};
-        }
-
-        try {
-            return {
-                ...transformation,
-                nodeId
-            };
-        } catch (error) {
-            console.error(`Error creating initial form state for node ${nodeId}:`, error);
-            return {};
-        }
-    };
+        fetchPipelineDetails();
+    }, [id, dispatch, pipelineData]);
 
     // Update the auto-save effect
     useEffect(() => {
@@ -365,7 +330,7 @@ console.log(response.pipeline_json,"response")
                     }));
 
                     // Your save logic here
-                    const pipeline_json:any = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
+                    const pipeline_json = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
                     await apiService.patch({
                         portNumber: CATALOG_API_PORT,
@@ -374,7 +339,6 @@ console.log(response.pipeline_json,"response")
                         method: 'PATCH',
                         data: pipeline_json
                     });
-                    setPipelineJson(pipeline_json?.pipeline_json);
 
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly
@@ -515,14 +479,11 @@ console.log(response.pipeline_json,"response")
                 ...prev,
                 [selectedSchema.nodeId]: data
             }));
-
+  
             // Update node data with transformation data
             setSanitizedNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
-                        // Preserve existing source data if it exists
-                        const existingSource = node.data.source || {};
-                        
                         return {
                             ...node,
                             data: {
@@ -531,9 +492,7 @@ console.log(response.pipeline_json,"response")
                                     ...node.data.transformationData,
                                     ...data,
                                     name: data.name || node.data.title
-                                },
-                                // Preserve existing source data
-                                source: existingSource
+                                }
                             }
                         };
                     }
@@ -792,82 +751,67 @@ console.log(response.pipeline_json,"response")
     const fetchSourceColumns = useCallback(async (nodes: any) => {
         try {
             // Get only source nodes that have a data_src_id and haven't been fetched yet
-            const sourceNodes = nodes.filter(node => {
-                const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
-                const hasDataSrcId = node.data?.source?.data_src_id;
-                const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
-                return isSourceNode && notFetched;
-            });
+            const sourceNodes = nodes.filter(node => 
+                (node.data.label.toLowerCase().includes("source") || node.data.source) &&
+                node.data.source?.data_src_id &&
+                !node.data.source?.columnsLoaded  // Add a flag to track if columns were loaded
+            );
 
             if (sourceNodes.length === 0) return;
 
-            // Get unique unfetched data source IDs
-            const uniqueDataSrcIds = Array.from(
-                new Set(
-                    sourceNodes
-                        .map(node => node.data?.source?.data_src_id)
-                        .filter(Boolean)
-                )
-            );
+            // Create a Set of unique data_src_ids to prevent duplicate requests
+            const uniqueDataSrcIds = new Set(sourceNodes.map(node => node.data.source.data_src_id));
 
-            if (uniqueDataSrcIds.length === 0) return;
-
-            // Process each unique data source ID
-            const results = await Promise.all(
-                uniqueDataSrcIds.map(async (dataSrcId: any) => {
-                    try {
-                        // Mark as fetched before the API call
-                        fetchedIdsRef.current.add(dataSrcId);
-
-                        const response:any = await apiService.get({
-                            portNumber: CATALOG_API_PORT,
-                            url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
-                            usePrefix: true,
-                            method: 'GET',
-                            metadata: {
-                                errorMessage: 'Failed to fetch source layout fields'
-                            }
-                        });
-
-                        return {
-                            dataSrcId,
-                            columns: response?.layout_fields?.map((field: any) => ({
-                                name: field.lyt_fld_name,
-                                dataType: field.lyt_fld_data_type_cd
-                            })) || []
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching columns for data source ${dataSrcId}:`, error);
-                        return { dataSrcId, columns: [] };
+            const columnsPromises = Array.from(uniqueDataSrcIds).map(async (dataSrcId) => {
+                const response: any = await apiService.get({
+                    portNumber: CATALOG_API_PORT,
+                    url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+                    usePrefix: true,
+                    method: 'GET',
+                    metadata: {
+                        errorMessage: 'Failed to fetch source layout fields'
                     }
-                })
-            );
+                });
 
-            // Safely update source columns
-            setSourceColumns((prevColumns) => {
-                const existingColumnNames = new Set(prevColumns.map(col => col.name));
-                const newColumns = results
-                    .flatMap(result => result.columns)
-                    .filter(col => !existingColumnNames.has(col.name));
-                
-                return [...prevColumns, ...newColumns];
+                // Mark nodes with this data_src_id as loaded
+                setSanitizedNodes(prevNodes => prevNodes.map(node => {
+                    if (node.data.source?.data_src_id === dataSrcId) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                source: {
+                                    ...node.data.source,
+                                    columnsLoaded: true
+                                }
+                            }
+                        };
+                    }
+                    return node;
+                }));
+
+                return response?.layout_fields?.map((field: any) => ({
+                    name: field.lyt_fld_name,
+                    dataType: field.lyt_fld_data_type_cd
+                })) || [];
             });
 
+            const allColumns = (await Promise.all(columnsPromises)).flat();
+            setSourceColumns(allColumns);
         } catch (error) {
-            console.error('Error in fetchSourceColumns:', error);
+            console.error('Error fetching columns:', error);
         }
     }, []);
 
-    // Update the useEffect to be more precise
+    // Update the useEffect to only run when necessary
     useEffect(() => {
-        const unfetchedSourceNodes = nodes.filter(node => {
-            const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
-            const hasDataSrcId = node.data?.source?.data_src_id;
-            const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
-            return isSourceNode && hasDataSrcId && notFetched;
-        });
+        const hasNewSourceNodes = nodes.some(node => 
+            (node.data.label.toLowerCase().includes("source") || node.data.source) &&
+            node.data.source?.data_src_id &&
+            !node.data.source?.columnsLoaded
+        );
 
-        if (unfetchedSourceNodes.length > 0) {
+        if (hasNewSourceNodes) {
             fetchSourceColumns(nodes);
         }
     }, [nodes, fetchSourceColumns]);

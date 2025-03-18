@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
 import { CATALOG_API_PORT } from '@/config/platformenv';
-import { SerializedError } from "@reduxjs/toolkit";
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;
@@ -48,9 +47,6 @@ export interface BuildPipelineState {
   listedContentTpes: any;
   pipelineDtl:any;
   aiSuggestion:any;
-  isSaving: boolean;
-  hasUnsavedChanges: boolean;
-  lastSaved: string | null;
 }
 
 const initialState: BuildPipelineState = {
@@ -74,10 +70,7 @@ const initialState: BuildPipelineState = {
   isMetricsLoading: false,
   listedContentTpes: {},
   pipelineDtl:null,
-  aiSuggestion:'',
-  isSaving: false,
-  hasUnsavedChanges: false,
-  lastSaved: null
+  aiSuggestion:''
 };
 
 interface ApiResponse {
@@ -220,18 +213,11 @@ export const getOrderBy: any = createAsyncThunk(
 export const getTransformationCount: any = createAsyncThunk(
   'build-pipline/getTransformationCount',
   async (params: any, thunkAPI) => {
-    console.log(params)
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
-        url: `/pipeline/debug/get_transformation_count`,
-        usePrefix: true,
+        portNumber: CATALOG_API_PORT,url: `/pipeline/debug/get_transformation_count`,usePrefix: true,
         method: 'GET',
-        params: {
-          pipeline_name: params.params,
-          host: 'host.docker.internal',
-          port: 15003
-        }
+        params
       });
       return response;
     } catch (error: any) {
@@ -260,28 +246,16 @@ export const getTransformationOutput: any = createAsyncThunk(
 );
 
 
-export const startPipeLine = createAsyncThunk(
+export const startPipeLine: any = createAsyncThunk(
   'build-pipline/startPipeLine',
-  async (data: {
-    pipeline_name: string;
-    pipeline_json: any;
-    mode: string;
-    checkpoints: string[];
-  }, thunkAPI) => {
+  async (params: any, thunkAPI) => {
     try {
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
         url: `/pipeline/debug/start_pipeline`,
         usePrefix: true,
         method: 'POST',
-        params: {
-          host: 'host.docker.internal',
-          port: '15003',
-          pipeline_name: data.pipeline_name,
-          pipeline_json: JSON.stringify(data.pipeline_json),
-          mode: data.mode,
-          checkpoints: data.checkpoints.join(',')
-        }
+        data:params
       });
       return response;
     } catch (error: any) {
@@ -295,13 +269,12 @@ export const stopPipeLine: any = createAsyncThunk(
   'build-pipline/stopPipeLine',
   async (params: any, thunkAPI) => {
     try {
-      console.log(params)
-      const { pipeline_name } = params;
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=host.docker.internal&port=15003`,
+        url: `/pipeline/debug/stop_pipeline`,
         usePrefix: true,
         method: 'POST',
+        data:params
       });
       return response;
     } catch (error: any) {
@@ -314,16 +287,12 @@ export const getPipelineById: any = createAsyncThunk(
   'build-pipline/getPipelineById',
   async (params: any, thunkAPI) => {
     try {
-      // alert(JSON.stringify(params))
-      if (!params.id) {
-        return thunkAPI.rejectWithValue('Pipeline ID is required');
-      }
-
       const response = await apiService.get({
         portNumber: CATALOG_API_PORT,
         url: `/pipeline/${params.id}`,
         usePrefix: true,
         method: 'GET',
+        params
       });
       return response;
     } catch (error: any) {
@@ -463,18 +432,7 @@ const buildPipeLineSlice = createSlice({
     },
     setIsRun: (state, action: PayloadAction<boolean>) => {
       state.isPipelineRunning = action.payload;
-    },
-    setSavedSlice: (state) => {
-      state.isSaving = false;
-      state.hasUnsavedChanges = false;
-      state.lastSaved = new Date().toISOString();
-  },
-  setUnsavedChangesSlice: (state) => {
-    state.hasUnsavedChanges = true;
-    state.isSaving = false;
-    state.lastSaved = null;
-
-}
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -626,16 +584,16 @@ const buildPipeLineSlice = createSlice({
       })
       .addCase(
         startPipeLine.fulfilled,
-        (state, action: PayloadAction<unknown>) => {
+        (state, action: PayloadAction<ApiResponse[]>) => {
           state.loading = false;
-          // Handle the response as needed
+          state.orderByList = action.payload;
         }
       )
       .addCase(
         startPipeLine.rejected,
-        (state, action: PayloadAction<unknown, string, any, SerializedError>) => {
+        (state, action: PayloadAction<string>) => {
           state.loading = false;
-          state.error = action.error?.message || 'Pipeline start failed';
+          state.error = action.payload;
         }
       )
 
@@ -751,7 +709,5 @@ export const {
   setBuildPipeLineDtl,
   setBuildPipeLineNodes,
   setIsDebug,
-  setIsRun,
-  setSavedSlice,
-  setUnsavedChangesSlice,
+  setIsRun
 } = buildPipeLineSlice.actions;

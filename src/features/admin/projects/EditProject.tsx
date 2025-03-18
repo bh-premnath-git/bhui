@@ -7,7 +7,7 @@ import { ProjectFormData, transformFormToApiData } from './components/projectFor
 import { useProjects } from './hooks/useProjects';
 import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from './components/ProjectPageLayout';
-import { encrypt_string } from '@/services/encryption';
+import { encrypt_string } from '@/lib/encryption';
 import { Project, ProjectGitValidation } from '@/types/admin/project';
 
 const transformProjectToFormData = (project: Project): Partial<ProjectFormData> => {
@@ -36,7 +36,7 @@ const transformProjectToFormData = (project: Project): Partial<ProjectFormData> 
     bh_github_email: project.bh_github_email || '',
     bh_default_branch: project.bh_default_branch || '',
     bh_github_url: project.bh_github_url || '',
-    bh_github_token_url: project.bh_github_token_url || '',
+    bh_github_token_url: '', // Always return empty string for security
     status,
     tags: parsedTags
   };
@@ -91,23 +91,30 @@ export function EditProject() {
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
-      if (!validatedToken) {
-        setError("Please validate your GitHub token first");
-        return;
-      }
-
       setIsSubmitting(true);
       setError(null);
+      
       if (id) {
-        const apiData = transformFormToApiData({
-          ...data,
-          bh_github_token_url: validatedToken.encryptedString
-        });
+        // Only require token validation if the token field was filled
+        if (data.bh_github_token_url && !validatedToken) {
+          setError("Please validate your GitHub token first");
+          return;
+        }
 
-        await handleUpdateProject(id, {
-          ...apiData,
-          init_vector: validatedToken.initVector
-        });
+        const apiData = transformFormToApiData(data);
+        
+        // Only include token-related data if a new token was provided and validated
+        if (validatedToken) {
+          await handleUpdateProject(id, {
+            ...apiData,
+            bh_github_token_url: validatedToken.encryptedString,
+            init_vector: validatedToken.initVector
+          });
+        } else {
+          // Don't include token-related fields if no new token was provided
+          await handleUpdateProject(id, apiData);
+        }
+        
         navigate(ROUTES.ADMIN.PROJECTS.INDEX);
       }
     } catch (error) {

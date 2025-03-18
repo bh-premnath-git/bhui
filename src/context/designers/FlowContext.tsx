@@ -19,7 +19,7 @@ import { useNodeOperations } from '@/hooks/useNodeOperations';
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { useFormOperations } from '@/hooks/useFormOperations';
 import { useModules } from "@/hooks/useModules";
-import { LocalStorageService } from '@/services/localStorageServices';
+import { LocalStorageService } from '@/lib/localStorageServices';
 import { parseStringifiedJson } from '@/lib/object';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);

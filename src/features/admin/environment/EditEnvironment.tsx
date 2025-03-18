@@ -10,7 +10,7 @@ import type { EnvironmentFormValues } from "./components/environmentFormSchema";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EnvironmentPageLayout } from "./components/EnvironmentPageLayout";
-import { encrypt_string } from "@/services/encryption";
+import { encrypt_string } from "@/lib/encryption";
 import { toast } from "sonner";
 
 const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues => {

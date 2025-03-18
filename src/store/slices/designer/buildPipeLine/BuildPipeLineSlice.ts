@@ -250,12 +250,25 @@ export const startPipeLine: any = createAsyncThunk(
   'build-pipline/startPipeLine',
   async (params: any, thunkAPI) => {
     try {
+      // Create params in the correct order and format
+      const params = new URLSearchParams();
+      params.append('pipeline_name', data.pipeline_name);
+      params.append('pipeline_json', JSON.stringify(data.pipeline_json));
+      params.append('mode', data.mode);
+      // Add checkpoints as separate parameters without array notation
+      data.checkpoints.forEach(checkpoint => {
+        params.append('checkpoints', checkpoint);
+      });
+      params.append('host', 'host.docker.internal');
+      params.append('port', '15003');
+
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
         url: `/pipeline/debug/start_pipeline`,
         usePrefix: true,
         method: 'POST',
-        data:params
+        params: Object.fromEntries(params)
+
       });
       return response;
     } catch (error: any) {

@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import FlowPlaygroundHeader from "./headers/flow-playground-header/FlowPlaygroundHeader";
-import BuildPlaygroundHeader from "./headers/build-playground-header/BuildPlaygroundHeader";
 import { useLocation } from "react-router-dom";
+import { BuildPlaygroundHeader } from "./headers/build-playground-header/BuildPlaygroundHeader";
 
 export const Header = () => {
   const { isExpanded } = useSidebar();

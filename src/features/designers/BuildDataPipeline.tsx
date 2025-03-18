@@ -9,17 +9,20 @@ import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv
 // import { CreatePipelineDialog } from './pipeline/components/CreatePipelineDialog';
 import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 import CreatePipelineDialog from './pipeline/components/CreatePipelineDialog';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 // import { useToast } from '@/hooks/useToast';
 
 export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
+  const {setPipeline_id} = usePipelineContext()
   const { handleNavigation } = useNavigation();
   const pipelineSrv = usePipelineManagementService();
 
   const onRowClickHandler = (row: Row<Pipeline>) => {
     pipelineSrv.selectedPipeline(row.original)
+    setPipeline_id(row.original.pipeline_id)
+    localStorage.setItem("pipeline_id",row.original.pipeline_id.toString())
     handleNavigation(ROUTES.DESIGNERS.BUILD_PLAYGROUND(row.original.pipeline_id.toString()))
   }
 

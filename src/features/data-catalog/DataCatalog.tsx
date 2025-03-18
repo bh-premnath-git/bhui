@@ -7,6 +7,10 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
 import { CatalagSlideWrapper } from './components/CatalagSlideWrapper';
 import { ROUTES } from '@/config/routes';
+import ImportDataSourceStepper from './components/ImportDataSourceWizard';
+import { useProjects } from '../admin/projects/hooks/useProjects';
+import { getSource } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { useAppDispatch } from '@/hooks/useRedux';
 
 interface DataCatalogProps {
   datasources: any[];
@@ -18,6 +22,14 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataSource | undefined>();
   const dataCatalogSrv = useDataCatalogManagementService();
+  const [showImportSection, setShowImportSection] = useState(false);
+  const { projects } = useProjects();
+  const dispatch = useAppDispatch();
+
+  const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
+    ProjectId: project.bh_project_id,
+    Project_Name: project.bh_project_name
+  })) : [];
 
   const onRowClickHandler = (row: Row<DataSource>) => {
     console.log(row.original);
@@ -25,6 +37,12 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
     setIsSheetOpen(true);
     dataCatalogSrv.selectDatasource(row.original);
   }
+
+  const closeImportSection = () => {
+    setShowImportSection(false);
+    dispatch(getSource());
+
+  };
 
   // Refetch data when sheet is closed
   useEffect(() => {
@@ -49,9 +67,15 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
       window.removeEventListener("openXploreDialog", handleOpenXplore);
     }
   }, [handleNavigation]);
-
+  const handleImportClick = () => {
+    setShowImportSection(!showImportSection);
+  };
   return (
     <>
+     {showImportSection ? (
+      <ImportDataSourceStepper gitProjectList={gitProjectList} closeImportSection={closeImportSection} />
+     ): (
+      <>
       <DataTable<DataSource>
         columns={columns}
         data={datasources || []}
@@ -59,12 +83,10 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
         pagination={true}
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
+        importSrcFn={handleImportClick}
       />
-      <CatalagSlideWrapper 
-        open={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
-        selectedRow={selectedRow}
-      />
+      </>
+     )}
     </>
   );
 }

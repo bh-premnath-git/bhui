@@ -4,7 +4,7 @@ import { DataOpsHub } from '@/types/dataops/dataOpsHub';
 
 export const columnHelper = createColumnHelper<DataOpsHub>();
 
-export const columns: ColumnDefWithFilters<DataOpsHub, any>[] = [
+export const columns: ColumnDefWithFilters<DataOpsHub>[] = [
   columnHelper.accessor('flow_name', {
     header: 'Flow Name',        
     enableColumnFilter: true,

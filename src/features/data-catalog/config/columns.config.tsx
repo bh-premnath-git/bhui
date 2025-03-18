@@ -11,7 +11,7 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/comp
 
 const columnHelper = createColumnHelper<DataSource>();
 
-const columns: ColumnDefWithFilters<DataSource, any>[] = [
+const columns: ColumnDefWithFilters<DataSource>[] = [
   columnHelper.accessor('data_src_name', {
     header: 'Name',
     cell: (info) => {

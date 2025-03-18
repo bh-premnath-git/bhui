@@ -4,7 +4,7 @@ import { TaskDetails } from "@/types/dataops/dataOpsHub";
 
 const columnHelper = createColumnHelper<TaskDetails>();
 
-const columns: ColumnDefWithFilters<TaskDetails, any>[] = [
+const columns: ColumnDefWithFilters<TaskDetails>[] = [
     columnHelper.accessor('task_name', {
         header: 'Name',
         enableColumnFilter: false,

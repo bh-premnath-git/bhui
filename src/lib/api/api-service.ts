@@ -31,7 +31,7 @@ class ApiService {
 
   constructor() {
     this.instance = axios.create({
-      timeout: 100000,
+      timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -41,9 +41,11 @@ class ApiService {
 
   private setupInterceptors() {
     this.instance.interceptors.request.use((config) => {
-      const token = sessionStorage?.getItem('token');
+      // Get token from session storage with the correct key name
+      const token = sessionStorage?.getItem('kc_token');
       if (token) {
-        config.headers.set('Authorization', `Bearer ${JSON.parse(token)}`);
+        // Use the token directly without parsing as JSON
+        config.headers.set('Authorization', `Bearer ${token}`);
       }
       if (config.data instanceof FormData) {
         delete config.headers['Content-Type'];

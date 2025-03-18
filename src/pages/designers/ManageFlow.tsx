@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { GitBranch } from 'lucide-react';
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { FlowList } from '@/features/designers/ManageFlow';
 import { useFlowManagementService } from '@/features/designers/flow/services/flowMgtSrv';
 import { LoadingState } from '@/components/shared/LoadingState';

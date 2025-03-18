@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import { UserForm } from "./components/UserForm";
-import { useUsers, useUserSearch } from "./hooks/useUsers";
+import { useUsers } from "./hooks/useUsers";
+import { useUserSearch } from "./hooks/useUserSearch";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserMutationData } from "@/types/admin/user";
 

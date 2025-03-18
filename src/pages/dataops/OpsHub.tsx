@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { useEffect } from 'react';
 import { OpsHub } from '@/features/dataops/OpsHub';

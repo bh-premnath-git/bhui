@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { FlowCanvas } from "@/features/designers/FlowCanvas";
 
 function FlowCanvasPage() {

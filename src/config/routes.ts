@@ -2,13 +2,16 @@
 export const ROUTES = {
   INDEX: '/',
   LOGIN: '/login',
+  DASHBOARD: '/dataops-hub',
+  PROFILE: '/profile',
+  SETTINGS: '/settings',
   DATA_CATALOG: '/data-catalog',
   DESIGNERS: {
     INDEX: '/designers',
     BUILD_PIPELINE: '/designers/build-datapipeline',
     BUILD_PLAYGROUND: (id:string) => `/designers/build-playground/${id}`,
     MANAGE_FLOW: '/designers/manage-flow',
-    FLOW_PLAYGROUND:  (id:string) => `/designers/flow-playground/${id}`,
+    FLOW_PLAYGROUND: (id:string) => `/designers/flow-playground/${id}`,
   },
   DATAOPS: {
     INDEX: '/dataops-hub',

@@ -10,7 +10,7 @@ import { ConnectionValue } from '@/types/admin/connection';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { encrypt_string } from '@/services/encryption';
+import { encrypt_string } from '@/lib/encryption';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
@@ -105,12 +105,11 @@ export function ConnectionForm({
       // Add any additional fields from formData
     } : {
       name: `${connectionDisplayName} Connection`,
-      file_path_prefix: '',
       project_id: '',
       dataset_id: '',
       credentials_json: '',
       host: '',
-      port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
+      port: connectionName.toLowerCase() === 'mysql' ? 3306 : 5432,
       database: '',
       username: '',
       password: '',
@@ -214,7 +213,13 @@ export function ConnectionForm({
     try {
       setIsSubmitting(true);
       
-      const configUnion = getConfigUnionForType(connectionName, data);
+      // Ensure port is a number
+      const formData = {
+        ...data,
+        port: typeof data.port === 'string' ? parseInt(data.port, 10) : data.port
+      };
+      
+      const configUnion = getConfigUnionForType(connectionName, formData);
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }

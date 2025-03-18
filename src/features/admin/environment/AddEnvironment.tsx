@@ -5,7 +5,7 @@ import { EnvironmentFormValues, transforFormToAPiData } from './components/envir
 import { useEnvironments } from './hooks/useEnvironments';
 import { ROUTES } from '@/config/routes';
 import { EnvironmentPageLayout } from './components/EnvironmentPageLayout';
-import { encrypt_string } from '@/services/encryption';
+import { encrypt_string } from '@/lib/encryption';
 import { toast } from 'sonner';
 
 export function AddEnvironment() {

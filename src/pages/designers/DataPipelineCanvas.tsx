@@ -1,17 +1,12 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import DataPipelineCanvas  from '@/features/designers/DataPipelineCanvas';
-import { PipelineProvider } from '@/context/designers/DataPipelineContext';
 
 const DataPipelineCanvasPage = () => {
   return (
     <div className="h-[90%] w-full">
-      {/* <SaveProvider>
-      // <PipelineProvider> */}
       
         <DataPipelineCanvas />
-      {/* </PipelineProvider>
-      </SaveProvider> */}
-    </div>
+      </div>
   )
 }
 

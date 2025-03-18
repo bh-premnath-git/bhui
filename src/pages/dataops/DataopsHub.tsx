@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { DataOpsHub } from '@/features/dataops/DataOpsHub';
 function DataOpsHubPage() {
     return (

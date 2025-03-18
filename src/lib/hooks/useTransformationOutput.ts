@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { CATALOG_API_PORT } from '@/config/platformenv';
-import { apiService } from '../api/api-service';
 
 const apiClient = axios.create({
     baseURL: `http://localhost:${CATALOG_API_PORT}`
@@ -15,47 +14,35 @@ export const transformationOutputKeys = {
 };
 
 interface TransformationOutputParams {
-    pipelineName?: string;
-    transformationName?: string;
+    pipelineName: string;
+    transformationName: string;
     page?: number;
     pageSize?: number;
-    enabled?: boolean;
 }
 
 export const useTransformationOutputQuery = ({
     pipelineName,
     transformationName,
     page = 1,
-    pageSize = 50,
-    enabled = true
+    pageSize = 50
 }: TransformationOutputParams) => {
     return useQuery({
-        queryKey: transformationOutputKeys.detail(pipelineName || '', transformationName || ''),
+        queryKey: transformationOutputKeys.detail(pipelineName, transformationName),
         queryFn: async () => {
-            if (!pipelineName || !transformationName) {
-                return null;
-            }
-            
-            const response:any = await apiService.get({
-                portNumber: CATALOG_API_PORT,
-                url: '/pipeline/debug/get_transformation_output',
-                usePrefix: true,
+            const { data } = await apiClient.get('/pipeline/debug/get_transformation_output', {
                 params: {
                     pipeline_name: pipelineName,
                     transformation_name: transformationName,
                     page,
                     page_size: pageSize,
-                },
-                method: 'GET'
+                }
             });
 
-            if (response.error) {
-                throw new Error(response.error);
+            if (data.error) {
+                throw new Error(data.error);
             }
 
-            return response.outputs;
-        },
-        // Only run the query when enabled is true and we have the required parameters
-        enabled: enabled && Boolean(pipelineName) && Boolean(transformationName)
+            return data.outputs;
+        }
     });
 };

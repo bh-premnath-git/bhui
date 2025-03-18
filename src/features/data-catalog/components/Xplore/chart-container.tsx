@@ -56,7 +56,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
   return (
     <div 
-      className="relative w-full h-full"
+      className="relative w-full h-full max-w-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -79,7 +79,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
           />
         </div>
       </div>
-      <div className="w-full h-full">
+      <div className="w-full h-full overflow-hidden horizontal-scrollbar">
         {children}
       </div>
     </div>

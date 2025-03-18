@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Connection, RecentChat, useConnections } from '@/hooks/useConnections';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { Message } from '@/types/data-catalog/xplore/type';
@@ -31,6 +31,23 @@ interface AnalyticsContextType {
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
+// Debounce utility to prevent multiple rapid calls
+const debounce = <F extends (...args: any[]) => any>(
+  func: F,
+  waitFor: number
+): F => {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = (...args: Parameters<F>) => {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+
+  return debounced as F;
+};
+
 export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
   const [input, setInput] = useState("");
@@ -41,6 +58,8 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [shouldSaveDashboard, setShouldSaveDashboard] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  // Add a ref to track in-flight request
+  const createConversationRequestRef = useRef<Promise<any> | null>(null);
 
   const { createConversation } = useXplore();
 
@@ -75,50 +94,80 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setInput(question);
   }, []);
 
-  const handleNewChat = useCallback(async () => {
-    if (isCreatingConversation) {
-      return null;
-    }
-    
-    try {
-      setIsCreatingConversation(true);
-      setMessages([]);
-      setInput("");
-      setCurrentQuestion("");
-      setShouldSaveDashboard(false);
-      resetStream();
+  // Memoize the debounced version of handleNewChat's implementation
+  const createNewConversation = useMemo(() => 
+    debounce(async (): Promise<string | null> => {
+      console.log("[Analytics] Debounced createNewConversation called");
       
-      console.log("Starting new conversation");
-      const response = await createConversation();
+      // If already creating, return the existing promise
+      if (isCreatingConversation && createConversationRequestRef.current) {
+        console.log("[Analytics] Creation already in progress, returning existing promise");
+        return createConversationRequestRef.current;
+      }
       
-      if (response.data.thread_id) {
-        const newThreadId = response.data.thread_id;
-        console.log(`New conversation started with thread_id: ${newThreadId}`);
-        setThreadId(newThreadId);
-        window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
-        return newThreadId; 
-      } else {
-        console.error("No thread_id returned from createConversation");
-        toast.error("Failed to start new conversation: No thread ID returned");
+      try {
+        console.log("[Analytics] Starting new conversation");
+        setIsCreatingConversation(true);
+        setMessages([]);
+        setInput("");
+        setCurrentQuestion("");
+        setShouldSaveDashboard(false);
+        resetStream();
+        
+        // Create a new promise and store the reference
+        const conversationPromise = createConversation()
+          .then(response => {
+            if (response.data.thread_id) {
+              const newThreadId = response.data.thread_id;
+              console.log(`[Analytics] New conversation started with thread_id: ${newThreadId}`);
+              setThreadId(newThreadId);
+              window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
+              return newThreadId;
+            } else {
+              console.error("[Analytics] No thread_id returned from createConversation");
+              toast.error("Failed to start new conversation: No thread ID returned");
+              return null;
+            }
+          })
+          .catch(error => {
+            console.error("[Analytics] Failed to start new conversation:", error);
+            toast.error("Failed to start new conversation");
+            return null;
+          })
+          .finally(() => {
+            setIsCreatingConversation(false);
+            createConversationRequestRef.current = null;
+          });
+          
+        createConversationRequestRef.current = conversationPromise;
+        return conversationPromise;
+      } catch (error) {
+        console.error("[Analytics] Failed to start new conversation:", error);
+        toast.error("Failed to start new conversation");
+        setIsCreatingConversation(false);
+        createConversationRequestRef.current = null;
         return null;
       }
-    } catch (error) {
-      console.error("Failed to start new conversation:", error);
-      toast.error("Failed to start new conversation");
-      return null;
-    } finally {
-      setIsCreatingConversation(false);
-    }
-  }, [resetStream, createConversation, isCreatingConversation]);
+    }, 300), // 300ms debounce to prevent rapid successive calls
+  [resetStream, createConversation]);
+
+  const handleNewChat = useCallback(async (): Promise<string | null> => {
+    console.log("[Analytics] handleNewChat called");
+    return createNewConversation();
+  }, [createNewConversation]);
 
   useEffect(() => {
-    if (selectedConnection && !threadId && !isCreatingConversation) {
+    if (selectedConnection && !threadId && !isCreatingConversation && !createConversationRequestRef.current) {
+      console.log("[Analytics] Creating new conversation from effect");
       handleNewChat();
     }
   }, [selectedConnection, threadId, isCreatingConversation, handleNewChat]);
 
   const handleSubmitQuestion = useCallback(async (question: string) => {
     console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
+    
+    // Reset the stream state to clear previous responses
+    resetStream();
     
     let currentThreadId = threadId;
     if (!currentThreadId) {
@@ -140,6 +189,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCurrentQuestion(question);
     setShouldSaveDashboard(true);
 
+    // Create and add the user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: question,
@@ -147,12 +197,24 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Add a temporary loading assistant message to indicate processing
+    const tempAssistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: '',
+      role: 'assistant',
+      timestamp: new Date(),
+      isLoading: true, // Add this flag to indicate loading state
+    };
+
+    // Update the messages with both user question and loading indicator
+    setMessages(prev => [...prev, userMessage, tempAssistantMessage]);
+    
+    // Start the streaming process
     await startStreaming(question, selectedConnection, currentThreadId);
 
     const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
     await addRecentChat({ name: chatName });
-  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection]);
+  }, [startStreaming, addRecentChat, threadId, handleNewChat, selectedConnection, resetStream]);
 
   const handleConnectionSelect = useCallback((connection: Connection) => {
     setSelectedConnection(connection.id);
@@ -171,24 +233,27 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (streamedContent !== undefined) {
       setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
-        if (lastMessage?.role === 'assistant') {
-          if (streamedContent || (streamedData && streamedData.length > 0)) {
-            const existingContent = lastMessage.content || '';
-            const newContent = streamedContent || '';
-
-            const finalContent = newContent.length < existingContent.length ? existingContent : newContent;
-
-            const updatedMessage = {
-              ...lastMessage,
-              content: finalContent,
-              data: streamedData || lastMessage.data,
-            };
-            return [...prev.slice(0, -1), updatedMessage];
-          }
-          return prev;
+        // Find the last assistant message (which should be our temporary loading message)
+        const lastAssistantIndex = [...prev].reverse().findIndex(msg => msg.role === 'assistant');
+        
+        if (lastAssistantIndex !== -1) {
+          const reversedIndex = lastAssistantIndex;
+          const actualIndex = prev.length - 1 - reversedIndex;
+          
+          // Replace the temporary loading message with actual content
+          const updatedMessages = [...prev];
+          updatedMessages[actualIndex] = {
+            ...updatedMessages[actualIndex],
+            content: streamedContent || '',
+            data: streamedData || [],
+            isLoading: false,
+            timestamp: new Date(),
+          };
+          
+          return updatedMessages;
         }
 
+        // If no assistant message found (should not happen), add a new one
         if (streamedContent || (streamedData && streamedData.length > 0)) {
           const newMessage: Message = {
             id: crypto.randomUUID(),

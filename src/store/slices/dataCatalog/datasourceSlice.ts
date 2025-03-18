@@ -67,28 +67,18 @@ export const fetchConnections = createAsyncThunk(
 
 export const getConnectionConfigList = createAsyncThunk(
   "catalog/connection",
-  async (params: { offset: number; limit: number; signal?: AbortSignal }, { rejectWithValue }) => {
-    try {
-      const response = await apiService.get<any[]>({
-        portNumber: CATALOG_API_PORT,
-        url: '/connection_registry/connection_config/list/',
-        usePrefix: true,
-        method: 'GET',
-        metadata: {
-          errorMessage: 'Failed to fetch connection config list'
-        },
-        params: {
-          offset: params.offset,
-          limit: params.limit
-        },
-        signal: params.signal
-      });
-      
-      // Ensure the response is serializable by converting any complex objects
-      return JSON.parse(JSON.stringify(response));
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async (params: any) => {
+    const response = await apiService.get<any[]>({
+      portNumber: CATALOG_API_PORT,
+      url: '/connection_registry/connection_config/list/',
+      usePrefix: true,
+      method: 'GET',
+      metadata: {
+        errorMessage: 'Failed to fetch connection config list'
+      },
+      params: params
+    });
+    return response;
   }
 );
 

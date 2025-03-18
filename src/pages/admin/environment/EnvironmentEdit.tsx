@@ -1,4 +1,4 @@
-import { withPageErrorBoundary } from '@/components/PageErrorBoundary';
+import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { EditEnvironment } from '@/features/admin/environment/EditEnvironment';
 
 const EnvironmentEdit = () => {

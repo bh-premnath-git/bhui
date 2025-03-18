@@ -1,25 +1,21 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
-export function generateFormSchema(jsonSchema: any) {
-  // Return a basic schema if jsonSchema is null/undefined
-  if (!jsonSchema || !jsonSchema.properties) {
-    return z.object({
-      name: z.string().optional(),
-    });
-  }
+export const generateFormSchema = (schema: any) => {
+  const schemaMap: { [key: string]: any } = {};
 
-  const schema: any = {};
-
-  Object.entries(jsonSchema.properties).forEach(([key, value]: [string, any]) => {
-    if (value.type === 'string') {
-      schema[key] = value.required ? z.string() : z.string().optional();
-    } else if (value.type === 'integer') {
-      schema[key] = value.required ? z.number() : z.number().optional();
-    } else if (value.type === 'object' && value.properties) {
-      schema[key] = generateFormSchema(value);
+  Object.entries(schema.properties).forEach(([key, field]: [string, any]) => {
+    if (field.type === 'number') {
+      schemaMap[key] = z.number({
+        required_error: `${field.title} is required`,
+        invalid_type_error: `${field.title} must be a number`,
+      }).nullable().transform(val => (val === null ? undefined : val));
+    } else if (field.type === 'string') {
+      schemaMap[key] = z.string({
+        required_error: `${field.title} is required`,
+      });
     }
-    // Add more types as needed
+    // Add other types as needed
   });
 
-  return z.object(schema);
-}
+  return z.object(schemaMap);
+};

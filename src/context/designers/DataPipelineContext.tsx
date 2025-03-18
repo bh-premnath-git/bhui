@@ -341,7 +341,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                         data: pipeline_json
                     });
                 }
-                    setPipelineJson(pipeline_json?.pipeline_json);
+                    if ('pipeline_json' in pipeline_json) {
+                        setPipelineJson(pipeline_json.pipeline_json);
+                    }
 
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly

@@ -66,24 +66,18 @@ export function DataTable<TData>({
         };
         const newState = updater(oldState);
         
-        // Check if page index changed
         if (onPageChange && newState.pageIndex !== oldState.pageIndex) {
-          onPageChange(newState.pageIndex + 1); // Convert to 1-based for API
+          onPageChange(newState.pageIndex + 1);
         }
         
-        // Check if page size changed
         if (onPageSizeChange && newState.pageSize !== oldState.pageSize) {
           onPageSizeChange(newState.pageSize);
         }
       }
     },
-    enableFilters: true,
-    enableColumnFilters: true,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   })
 
   useEffect(() => {
@@ -104,7 +98,10 @@ export function DataTable<TData>({
         <StatusTopSection table={table} toolbarConfig={toolbarConfig} headerFilter={headerFilter} />
       )}
 
-      <TableContent table={table} onRowClick={onRowClick} />
+      <TableContent 
+        table={table} 
+        onRowClick={onRowClick}
+      />
 
       {pagination && <TablePagination table={table} />}
     </div>

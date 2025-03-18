@@ -36,7 +36,6 @@ export function ConnectionForm({
   isEdit,
   formData
 }: ConnectionFormProps) {
-  console.log(formData,"formData")
   const { handleCreateConnection, handleUpdateConnection } = useConnections();
   const [schema, setSchema] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +46,6 @@ export function ConnectionForm({
     const loadSchema = async () => {
       setIsLoading(true);
       try {
-        // Special handling for local connection type
         if (connectionName.toLowerCase() === 'local') {
           const localSchema = {
             connectionSpecification: {
@@ -108,7 +106,7 @@ export function ConnectionForm({
       dataset_id: '',
       credentials_json: '',
       host: '',
-      port: connectionName.toLowerCase() === 'mysql' ? 3306 : 5432,
+      port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
       database: '',
       username: '',
       password: '',
@@ -130,7 +128,6 @@ export function ConnectionForm({
           database: formData.database || '',
           username: formData.username || '',
           password: formData.password || '',
-          // Add any additional fields from formData
         } : {
           name: `${connectionDisplayName} Connection`,
           file_path_prefix: '',
@@ -147,8 +144,15 @@ export function ConnectionForm({
     }
   }, [schema, connectionDisplayName, connectionName, form, isEdit, formData]);
 
-  const getConfigUnionForType = (connectionName: string, data: any) => {
+  const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
     const type = connectionName.toLowerCase();
+  
+    const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
+  
+    const commonFields = {
+      [dynamicTypeField]: type, // Dynamically assign source_type or destination_type
+    };
+  
     if (type === 'snowflake') {
       return {
         host: data.host || '',
@@ -160,53 +164,74 @@ export function ConnectionForm({
         username: data.username || '',
         password: data.password || '',
         auth_type: data.auth_type || '',
-        source_type: type
+        ...commonFields,
       };
     }
-    
+  
     if (type === 'bigquery') {
       return {
         project_id: data.project_id || '',
         dataset_id: data.dataset_id || '',
         credentials_json: data.credentials_json || '',
-        source_type: type
+        ...commonFields,
       };
     }
-    
+  
     if (type === 'postgres' || type === 'mysql') {
       return {
         host: data.host || '',
-        port: data.port || (type === 'mysql' ? 3306 : 5432),
+        port: data.port || (type === 'mysql' ? '3306' : '5432'),
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
         db_schema: data.db_schema || '',
-        source_type: type
+        ...commonFields,
       };
     }
-    
+  
     if (type === 'oracle') {
       return {
         host: data.host || '',
         port: data.port || '1521',
+        database: data.database || 'None',
         service_name: data.service_name || '',
         sid: data.sid || '',
         username: data.username || '',
         password: data.password || '',
         db_schema: data.db_schema || 'None',
-        source_type: type
+        ...commonFields,
       };
     }
-    
+  
+    if (type === 'gcs') {
+      return {
+        bucket_name: data.bucket_name || '',
+        credentials_json: data.credentials_json || '',
+        ...commonFields,
+      };
+    }
+
+    if (type === 's3') {
+      return {
+        bucket_name: data.bucket_name || '',
+        access_key: data.access_key || '',
+        secret_key: data.secret_key || '',
+        region: data.region || '',
+        role_arn: data.role_arn || '',
+        ...commonFields,
+      };
+    }
+  
     if (type === 'local') {
       return {
         file_path_prefix: data.file_path_prefix || '',
-        source_type: type
+        ...commonFields,
       };
     }
-    
+  
     return null;
   };
+  
 
   const onSubmit = async (data: any) => {
     try {
@@ -217,8 +242,11 @@ export function ConnectionForm({
         ...data,
         port: typeof data.port === 'string' ? parseInt(data.port, 10) : data.port
       };
-      
-      const configUnion = getConfigUnionForType(connectionName, formData);
+      const dynamicType = connectionType === 'source' ? 'source_type' : 'destination_type';
+
+    // Generate the configuration union with the appropriate dynamic field
+      const configUnion = getConfigUnionForType(connectionName, formData, connectionType);
+
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }
@@ -309,9 +337,6 @@ export function ConnectionForm({
       </div>
     );
   }
-
-  // Debug schema
-  console.log('Current schema:', schema);
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">

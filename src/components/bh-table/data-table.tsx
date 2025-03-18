@@ -25,6 +25,7 @@ export interface DataTableProps<TData> {
   pageSize?: number
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  importSrcFn?: () => void
 }
 
 export function DataTable<TData>({
@@ -40,6 +41,7 @@ export function DataTable<TData>({
   pageSize,
   onPageChange,
   onPageSizeChange,
+  importSrcFn
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -93,7 +95,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       {topVariant === "simple" ? (
-        <SimpleTopSection table={table} toolbarConfig={toolbarConfig} />
+        <SimpleTopSection table={table} toolbarConfig={toolbarConfig} importSrcFn={importSrcFn} />
       ) : (
         <StatusTopSection table={table} toolbarConfig={toolbarConfig} headerFilter={headerFilter} />
       )}

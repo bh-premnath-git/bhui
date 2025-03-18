@@ -225,11 +225,10 @@ export function BuildPlaygroundHeader() {
                 <p>Spark Parameters</p>
               </TooltipContent>
             </Tooltip>
-            <div className="border-l border-border pl-6 " style={{zIndex: 10000000}}>
+          </div>
+          <div className="flex justify-end w-full sm:w-auto border-l border-border pl-6">
             <PipeLineAIButton />
           </div>
-          </div>
-          
         </div>
       </TooltipProvider>
       <ParameterModal 

@@ -10,7 +10,7 @@ const columns: ColumnDefWithFilters<TaskDetails, any>[] = [
         enableColumnFilter: false,
     }),
     columnHelper.accessor('task_status', {
-        header: 'Description',
+        header: 'Status',
         enableColumnFilter: false,
     }),
 ];

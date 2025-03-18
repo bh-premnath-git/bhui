@@ -91,11 +91,14 @@ export const getSource = createAsyncThunk<DataSource[], void>(
   async () => {
     const response = await apiService.get<DataSource[]>({
       portNumber: CATALOG_API_PORT,
-      url: 'api/v1/data_source/list/',
+      url: '/data_source/list/',
       usePrefix: true,
       method: 'GET',
       metadata: {
         errorMessage: 'Failed to fetch data sources'
+      },
+      params: {
+        limit: 1000
       }
     });
     return response;

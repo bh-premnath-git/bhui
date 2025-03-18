@@ -3,8 +3,9 @@ import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter.tsx"
 import type { TopSectionProps, ColumnDefWithFilters } from "@/types/table"
 import { getUniqueValues } from "@/lib/utils"
+import { ImportIcon } from "lucide-react"
 
-export function SimpleTopSection<TData>({ table, toolbarConfig }: TopSectionProps<TData>) {
+export function SimpleTopSection<TData>({ table, toolbarConfig ,importSrcFn}: TopSectionProps<TData>) {
   const data = table.getCoreRowModel().rows.map((row) => row.original)
   const columns = table.getAllColumns()
 
@@ -32,6 +33,9 @@ export function SimpleTopSection<TData>({ table, toolbarConfig }: TopSectionProp
             {typeof button.label === "string" ? button.label : <>{button.label}</>}
           </Button>
         ))}
+        {importSrcFn && <Button variant="default" onClick={importSrcFn}>
+          <ImportIcon className="mr-2 h-4 w-4" /> Import
+        </Button>}
       </div>
     </div>
   )

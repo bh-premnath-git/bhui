@@ -6,7 +6,6 @@ import { useConnections } from '../hooks/useConnection';
 import { generateFormSchema } from './connectionFormSchema';
 import { FormFields } from './FormFields';
 import { useState, useEffect } from 'react';
-import { ConnectionValue } from '@/types/admin/connection';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -227,6 +226,8 @@ export function ConnectionForm({
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
 
       const connectionData: any = {
+        connection_id: connectionId,
+        connection_config_name: connectionConfigName,
         connection_name: data.name || `${connectionDisplayName}`,
         connection_description: `${connectionDisplayName} connection`,
         connection_type: connectionType,

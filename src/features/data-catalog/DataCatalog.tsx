@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/bh-table/data-table';
-import { columns, getToolbarConfig } from './config/columns.config';
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
-import { CatalagSlideWrapper } from './components/CatalagSlideWrapper';
 import { ROUTES } from '@/config/routes';
-import ImportDataSourceStepper from './components/ImportDataSourceWizard';
-import { useProjects } from '../admin/projects/hooks/useProjects';
 import { getSource } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { useAppDispatch } from '@/hooks/useRedux';
+import { useProjects } from '@/features/admin/projects/hooks/useProjects';
+import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
+import { columns, getToolbarConfig } from '@/features/data-catalog/config/columns.config';
+import { CatalagSlideWrapper } from '@/features/data-catalog/components/CatalagSlideWrapper';
 
 interface DataCatalogProps {
   datasources: any[];
@@ -53,6 +53,7 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
   const closeImportSection = () => {
     setShowImportSection(false);
     dispatch(getSource());
+  }; 
 
   const handlePageChange = (page: number) => {
     setPageIndex(page - 1);
@@ -94,9 +95,11 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
       window.removeEventListener("openXploreDialog", handleOpenXplore);
     }
   }, [handleNavigation]);
+  
   const handleImportClick = () => {
     setShowImportSection(!showImportSection);
   };
+  
   return (
     <>
      {showImportSection ? (
@@ -119,6 +122,13 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
       />
       </>
      )}
+     {isSheetOpen && selectedRow && (
+        <CatalagSlideWrapper 
+          open={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          selectedRow={selectedRow}
+        />
+      )}
     </>
-  );}
+  );
 }

@@ -19,9 +19,10 @@
         "title": "Default Dataset ID"
       },
       "credentials_json": {
-        "type": "string",
+        "type": "json",
         "description": "The contents of your Service Account Key JSON file.",
-        "title": "Credentials JSON"
+        "title": "Credentials JSON",
+        "bh_secret": true
       }
     }
   }

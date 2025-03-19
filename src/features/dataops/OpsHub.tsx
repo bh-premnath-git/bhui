@@ -1,14 +1,12 @@
 import { DataTable } from "@/components/bh-table/data-table";
 import { DataOpsHub } from "@/types/dataops/dataOpsHub";
 import { Row } from '@tanstack/react-table';
-import { useNavigation } from "@/hooks/useNavigation";
 import { useDataOpsHubManagementService } from "@/features/dataops/dataOpsHubs/services/dataOpsHubMgtSrv";
 import { columns } from "./dataOpsHubs/config/columns.config";
 import { useState, useMemo } from "react";
 import { OpsHubSlideWrapper } from "./dataOpsHubs/components/OpsHubSlideWrapper";
 
 export function OpsHub({ dataOpsHubs }: { dataOpsHubs: DataOpsHub[] }) {
-  const { handleNavigation } = useNavigation();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataOpsHub | undefined>(undefined);
   const [pageIndex, setPageIndex] = useState(0);

@@ -79,7 +79,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         };
 
     const createConnectionMutation = createConnection({
-        url: '/connection_registry/connection_config/',
+        url: '/connection_registry/connection_config',
         mutationOptions: {
             onSuccess: () => toast.success('Connection created successfully'),
             onError: (error) => handleApiError(error, { action: 'create', context: 'connection' })

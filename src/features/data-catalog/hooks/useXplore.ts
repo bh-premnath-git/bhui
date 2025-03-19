@@ -72,7 +72,8 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
                 },
                 body: JSON.stringify({
                     user_request: userRequest,
-                    thread_id: threadId
+                    thread_id: threadId,
+                    module: "explorer"
                 }),
                 signal
             })

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { ROUTES } from "@/config/routes";
 import { useNavigation } from "@/hooks/useNavigation";
 import { PlusIcon, Cable, Trash2, Edit } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";

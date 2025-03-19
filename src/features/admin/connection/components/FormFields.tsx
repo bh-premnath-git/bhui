@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface FormFieldsProps {
@@ -48,8 +48,54 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [showDescription, setShowDescription] = useState(false);
     
+    if (field.enum) {
+      return (
+        <FormItem>
+          <div className="flex items-center">
+            <FormLabel>
+              {field.title || key}
+              {isRequired && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            {field.description && (
+              <button
+                type="button"
+                className="ml-1 text-muted-foreground"
+                onClick={() => setShowDescription(!showDescription)}
+              >
+                <HelpCircle size={16} />
+              </button>
+            )}
+          </div>
+          {showDescription && field.description && (
+            <FormDescription>{field.description}</FormDescription>
+          )}
+          <Select
+            value={formField.value?.toString() || ''}
+            onValueChange={formField.onChange}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {field.enum
+                .filter((option: string) => option !== "") // Filter out empty strings
+                .map((option: string) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      );
+    }
+    
+    // Add this return statement for standard password fields
     return (
-      <FormItem key={fieldKey}>
+      <FormItem>
         <div className="flex items-center">
           <FormLabel>
             {field.title || key}
@@ -72,15 +118,15 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           <FormControl>
             <Input
               {...formField}
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
+              className="pr-10"
             />
           </FormControl>
           <button
             type="button"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             onClick={() => setShowPassword(!showPassword)}
           >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
         <FormMessage />
@@ -151,7 +197,9 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {field.enum.map((option: string) => (
+                  {field.enum
+                    .filter((option: string) => option !== "")
+                    .map((option: string) => (
                       <SelectItem key={option} value={option}>
                         {option}
                       </SelectItem>

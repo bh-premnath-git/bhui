@@ -24,7 +24,7 @@ export function DataTableFacetedFilter<TData, TValue>({
     // Toggle the filter:
     // If the same value is selected again, clear the filter.
     if (value === currentValue) {
-      column?.setFilterValue(undefined)
+      column?.setFilterValue([])
     } else {
       column?.setFilterValue([value])
     }

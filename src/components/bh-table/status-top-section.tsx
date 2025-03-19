@@ -5,32 +5,38 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle2, Clock, XCircle, X } from "lucide-react"
 import type { TopSectionProps, StatusMetric } from "@/types/table"
 
-export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status" }: TopSectionProps<TData>) {
-  const allRows = table.getCoreRowModel().rows
+export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData }: TopSectionProps<TData>) {
   const statusColumn = table.getColumn(headerFilter)
   const selectedStatuses = (statusColumn?.getFilterValue() as string[]) || []
+  
+  // Add debug log to see what's being selected
+  console.log('Selected statuses:', selectedStatuses)
+
   const metrics: StatusMetric[] = React.useMemo(() => {
     const statusCounts = new Map<string, number>()
-    const totalRows = allRows.length
-    allRows.forEach((row) => {
-      const status = row.getValue(headerFilter) as string
+    const totalRows = fullData?.length || 0
+    
+    // This ensures we see ALL possible statuses across ALL pages
+    fullData?.forEach((row) => {
+      const status = (row as any).flow_status as string
       statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
     })
+    
     return Array.from(statusCounts.entries()).map(([status, count]) => {
       const percentage = (count / totalRows) * 100
       let icon: React.ReactNode
       let color: string
 
-      switch (status.toLowerCase()) {
-        case "success":
+      switch (status) {
+        case "Success":
           icon = <CheckCircle2 className="h-3 w-3 text-green-600" />
           color = "green"
           break
-        case "failed":
+        case "Failed":
           icon = <XCircle className="h-3 w-3 text-red-600" />
           color = "red"
           break
-        case "in-progress":
+        case "In Progress":
           icon = <Clock className="h-3 w-3 text-orange-600" />
           color = "orange"
           break
@@ -45,15 +51,20 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
         percentage,
         icon,
         color,
+        filterValue: status
       }
     })
-  }, [allRows])
+  }, [fullData, headerFilter])
 
   const handleStatusFilter = (status: string) => {
     if (statusColumn) {
-      const updatedStatuses = selectedStatuses.includes(status)
-        ? selectedStatuses.filter((s) => s !== status)
-        : [...selectedStatuses, status]
+      // Update the filter value while preserving multi-select functionality
+      const currentFilters = statusColumn.getFilterValue() as string[] || []
+      const updatedStatuses = currentFilters.includes(status)
+        ? currentFilters.filter(s => s !== status)
+        : [...currentFilters, status]
+      
+      console.log('Setting filter:', updatedStatuses)
       statusColumn.setFilterValue(updatedStatuses.length ? updatedStatuses : undefined)
     }
   }
@@ -64,11 +75,14 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
         {metrics.map((metric) => (
           <Card
             key={metric.label}
-            className={`cursor-pointer transition-all hover:bg-accent relative ${selectedStatuses.includes(metric.label) ? `ring-1 ring-${metric.color}-500` : ""
-              }`}
+            className={`cursor-pointer transition-all hover:bg-accent relative ${
+              (statusColumn?.getFilterValue() as string[] || []).includes(metric.label) 
+                ? `ring-1 ring-${metric.color}-500` 
+                : ""
+            }`}
             onClick={() => handleStatusFilter(metric.label)}
           >
-            {selectedStatuses.includes(metric.label) && (
+            {(statusColumn?.getFilterValue() as string[] || []).includes(metric.label) && (
               <Button
                 variant="ghost"
                 size="sm"

@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import { navigationItems } from "@/config/navigation";
@@ -78,7 +77,7 @@ export function NavigationBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
-          <React.Fragment key={item.path}>
+          <React.Fragment key={`${item.path}-${index}`}>
             <BreadcrumbItem>
               {index === breadcrumbItems.length - 1 ? (
                 <span className="font-medium text-foreground">{item.title}</span>

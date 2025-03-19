@@ -1,4 +1,4 @@
-import type { ColumnDef, FilterFn } from "@tanstack/react-table";
+import type { ColumnDef, FilterFn, Table } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 
 // Button configuration for toolbar
@@ -24,4 +24,21 @@ export interface TToolbarConfig<T = any> {
 export type ColumnDefWithFilters<T> = ColumnDef<T> & {
   enableColumnFilter?: boolean;
   filterFn?: FilterFn<T> | string;
+}
+
+export interface TopSectionProps<TData> {
+  table: Table<TData>;
+  toolbarConfig?: TToolbarConfig;
+  headerFilter?: string;
+  importSrcFn?: () => void;
+  fullData?: TData[];
+}
+
+export interface StatusMetric {
+  label: string;
+  value: number;
+  percentage: number;
+  icon: React.ReactNode;
+  color: string;
+  filterValue: string;
 }

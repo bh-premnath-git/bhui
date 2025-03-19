@@ -26,6 +26,7 @@ export interface DataTableProps<TData> {
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
   importSrcFn?: () => void
+  fullData?: TData[]
 }
 
 export function DataTable<TData>({
@@ -41,7 +42,8 @@ export function DataTable<TData>({
   pageSize,
   onPageChange,
   onPageSizeChange,
-  importSrcFn
+  importSrcFn,
+  fullData
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -58,6 +60,8 @@ export function DataTable<TData>({
         pageSize: pageSize !== undefined ? pageSize : 10,
       },
     },
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     pageCount,
     manualPagination: pageCount !== undefined,
     onPaginationChange: (updater) => {
@@ -97,7 +101,12 @@ export function DataTable<TData>({
       {topVariant === "simple" ? (
         <SimpleTopSection table={table} toolbarConfig={toolbarConfig} importSrcFn={importSrcFn} />
       ) : (
-        <StatusTopSection table={table} toolbarConfig={toolbarConfig} headerFilter={headerFilter} />
+        <StatusTopSection 
+          table={table} 
+          toolbarConfig={toolbarConfig} 
+          headerFilter={headerFilter}
+          fullData={fullData}
+        />
       )}
 
       <TableContent 

@@ -8,7 +8,7 @@ import React, {
     useRef,
     useContext
 } from 'react';
-import { convertPipelineToUIJson, usePipelineQuery, useUpdatePipelineMutation, useTransformationCountQuery } from '@/lib/pipelineJsonConverter';
+import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import {
     useNodesState,
@@ -248,7 +248,6 @@ console.log(pipeline_id,"pipeline_id")
     // Add this near other Redux selectors
     const saveStatus = { hasUnsavedChanges }
     // Fetch pipeline details when id changes
-    const { data: pipelineData, isLoading: isPipelineLoading } = usePipelineQuery(id);
     // const updatePipeline = useUpdatePipelineMutation();
  
     useEffect(() => { 
@@ -706,15 +705,23 @@ console.log(response.pipeline_json,"response")
                 }
                 return transform;
             });
-  
+  console.log(debuggedNodesList)
+  const params = new URLSearchParams({
+    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
+    pipeline_json: JSON.stringify(pipeline_json),
+    mode: 'DEBUG',
+});
+debuggedNodesList.forEach(checkpoint => {
+    params.append('checkpoints', checkpoint?.title);
+});
             // Create the request data object with array
-            const requestData = {
-                pipeline_name: pipelineDtl?.pipeline_name || "sample_pipeline",
-                pipeline_json: pipeline_json,
-                mode: 'DEBUG',
-                checkpoints: debuggedNodesList.map(checkpoint => checkpoint.title)
-            };
-            console.log(requestData,"requestData")
+            // const requestData = {
+            //     pipeline_name: pipelineDtl?.pipeline_name || "sample_pipeline",
+            //     pipeline_json: pipeline_json,
+            //     mode: 'DEBUG',
+            //     checkpoints: debuggedNodesList.map(checkpoint => checkpoint.title)
+            // };
+            // console.log(requestData,"requestData")
   
             setSelectedFormState(pipeline_json);
             setRunDialogOpen(true);
@@ -726,7 +733,13 @@ console.log(response.pipeline_json,"response")
             // }]);
   
             // Pass the request data directly
-            let response:any = await dispatch(startPipeLine(requestData)).unwrap();
+            let response:any = await apiService.post({
+                portNumber: CATALOG_API_PORT,
+                url: `/pipeline/debug/start_pipeline?${params.toString()}`,
+                usePrefix: true,
+                method: 'POST',
+                data: params
+            });
             if (response.error) {
                 throw new Error(response.error);
             }

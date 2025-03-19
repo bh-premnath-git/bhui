@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactElement } from 'react';
 import { DataTable } from '@/components/bh-table/data-table';
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { Row } from '@tanstack/react-table';
@@ -17,7 +17,7 @@ interface DataCatalogProps {
   onRefetch: () => void;
 }
 
-export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
+export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
   const { handleNavigation } = useNavigation();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataSource | undefined>();
@@ -25,6 +25,7 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps) {
   const [showImportSection, setShowImportSection] = useState(false);
   const { projects } = useProjects();
   const dispatch = useAppDispatch();
+  console.log(showImportSection,"projects")
 
   const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
     ProjectId: project.bh_project_id,

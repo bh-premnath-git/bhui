@@ -13,6 +13,8 @@ function DataCatalogPage() {
     const { datasources, isLoading, isFetching, isError, refetch } = useDataCatalog({
       shouldFetch: true
     });
+    console.log(datasources,"datasources")
+    console.log(isLoading,isFetching,"isLoading")
     const dataCatalogSrv = useDataCatalogManagementService();
     
     useEffect(() => {

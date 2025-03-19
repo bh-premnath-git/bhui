@@ -3,11 +3,17 @@ import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter.tsx"
 import type { TopSectionProps, ColumnDefWithFilters } from "@/types/table"
 import { getUniqueValues } from "@/lib/utils"
-import { ImportIcon } from "lucide-react"
+import { ImportIcon, X } from "lucide-react"
 
-export function SimpleTopSection<TData>({ table, toolbarConfig ,importSrcFn}: TopSectionProps<TData>) {
+export function SimpleTopSection<TData>({ table, toolbarConfig, importSrcFn}: TopSectionProps<TData>) {
   const data = table.getCoreRowModel().rows.map((row) => row.original)
   const columns = table.getAllColumns()
+  const hasFilters = table.getState().columnFilters.length > 0 || table.getState().globalFilter
+
+  const handleClearFilters = () => {
+    table.resetColumnFilters()
+    table.setGlobalFilter("")
+  }
 
   return (
     <div className="flex items-center justify-between pb-4">
@@ -19,6 +25,16 @@ export function SimpleTopSection<TData>({ table, toolbarConfig ,importSrcFn}: To
           }
           return null
         })}
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClearFilters}
+            className="h-8 w-8 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <Input

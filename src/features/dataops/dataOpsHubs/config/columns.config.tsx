@@ -16,6 +16,19 @@ export const columns: ColumnDefWithFilters<DataOpsHub>[] = [
   columnHelper.accessor('flow_status', {
     header: 'Flow Status',
     enableColumnFilter: true,
+    filterFn: (row, columnId, filterValue) => {
+      // Debug what's happening
+      console.log("Filtering:", { 
+        value: row.getValue(columnId), 
+        filterValue 
+      });
+      
+      // If no filter or empty array, show all rows
+      if (!filterValue || !filterValue.length) return true;
+      
+      // Check if row's status is in the selected filters array
+      return filterValue.includes(row.getValue(columnId));
+    }
   }),
   columnHelper.accessor('flow_type', {
     header: 'Flow Type',

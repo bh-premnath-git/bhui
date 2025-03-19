@@ -24,6 +24,26 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
   const datatypes = dataSourceTypes?.codes_dtl || [];
   const [layoutData, setLayoutData] = useState<LayoutField[]>([]);
 
+  // Add these state variables for pagination
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Calculate total count and current page data
+  const totalCount = layoutData?.length || 0;
+  const startIndex = pageIndex * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalCount);
+  const currentPageData = layoutData.slice(startIndex, endIndex);
+
+  // Add these handlers for pagination
+  const handlePageChange = (page: number) => {
+    setPageIndex(page - 1);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPageIndex(0); // Reset to first page when changing page size
+  };
+
   useMemo(() => {
     if (layoutFields && layoutFields.layout_fields) {
       setLayoutData(layoutFields.layout_fields);
@@ -314,9 +334,14 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
           {layoutData.length > 0 ? (
             <DataTable
               columns={columns}
-              data={layoutData}
+              data={currentPageData}
               topVariant="simple"
               pagination={true}
+              pageIndex={pageIndex}
+              pageSize={pageSize}
+              pageCount={Math.ceil(totalCount / pageSize)}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
             />
           ) : (
             <div className="p-8 text-center text-gray-500">

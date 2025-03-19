@@ -3,41 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import axios from 'axios';
 import { apiService } from './api/api-service';
+import { getNodeIcon, getNodePorts } from './transformationUtils';
 
-// API client setup
-const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
-});
 
 // Query keys
 export const pipelineKeys = {
     all: ['pipeline'] as const,
     detail: (id: string) => [...pipelineKeys.all, 'detail', id] as const,
     transformationCount: (pipelineName: string) => [...pipelineKeys.all, 'transformationCount', pipelineName] as const,
-};
-
-// Query functions
-export const usePipelineQuery = (id?: string) => {
-    return useQuery({
-        queryKey: pipelineKeys.detail(id || ''),
-        queryFn: async () => {
-            if (!id) {
-                throw new Error("Pipeline id is required");
-            }
-            const data = await apiService.get({
-                portNumber: CATALOG_API_PORT,
-                url: `/pipeline/${id}`,
-                usePrefix: true,
-                method: 'GET',
-                metadata: {
-                    errorMessage: 'Failed to fetch projects'
-                },
-                params: { limit: 1000 }
-            });
-            return data;
-        },
-        enabled: !!id,
-    });
 };
 
 export const useUpdatePipelineMutation = () => {
@@ -69,7 +42,11 @@ export const useTransformationCountQuery = (pipelineName: string) => {
     return useQuery({
         queryKey: pipelineKeys.transformationCount(pipelineName),
         queryFn: async () => {
-            const { data } = await apiClient.get('/pipeline/debug/get_transformation_count', {
+            const data  = await apiService.get({
+                portNumber: CATALOG_API_PORT,
+                url: '/pipeline/debug/get_transformation_count',
+                usePrefix: true,
+                method: 'GET',
                 params: { pipeline_name: pipelineName }
             });
             return data;
@@ -95,16 +72,6 @@ export interface UINode extends Node {
     };
 }
 
-// Add new interface for logs
-
-
-// Modify validation result to include logs
-
-
-// Update validation function to generate logs
-
-
-// Add a helper function to generate unique titles
 const generateUniqueTitle = (type: string, existingTitles: Set<string>): string => {
     let counter = 1;
     let title = type;
@@ -120,47 +87,6 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
 
 
 
-const getNodeIcon = (type: string): string => {
-    const iconMap: { [key: string]: string } = {
-        Reader: '/assets/buildPipeline/6.svg',
-        Target: '/assets/buildPipeline/7.svg',
-        Filter: '/assets/buildPipeline/display/filter.svg',
-        Joiner: '/assets/buildPipeline/display/join.svg',
-        Ship: '/assets/buildPipeline/display/ship.svg',
-        SchemaTransformation: '/assets/buildPipeline/28.svg',
-        Sorter: '/assets/buildPipeline/squre/1.svg',
-        Aggregator: '/assets/buildPipeline/squre/2.svg',
-        'DQ Check': '/assets/buildPipeline/squre/4.svg',
-        Dedup: '/assets/buildPipeline/squre/5.svg',
-        Repartition: '/assets/buildPipeline/squre/6.svg',
-        'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
-        Union: '/assets/buildPipeline/squre/8.svg',
-        Select: '/assets/buildPipeline/squre/11.svg',
-        SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
-        Drop: '/assets/buildPipeline/squre/13.svg'
-    };
-    return iconMap[type] || '/assets/buildPipeline/default.svg';
-};
-
-const getNodePorts = (type: string) => {
-    const portsMap: { [key: string]: { inputs: number; outputs: number; maxInputs: number | 'unlimited' } } = {
-        Reader: { inputs: 0, outputs: 1, maxInputs: 0 },
-        Target: { inputs: 1, outputs: 0, maxInputs: 1 },
-        Filter: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Joiner: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
-        Ship: { inputs: 1, outputs: 1, maxInputs: 1 },
-        SchemaTransformation: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Sorter: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Aggregator: { inputs: 1, outputs: 1, maxInputs: 1 },
-        'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
-        Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
-        'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
-        Union: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
-    };
-    return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };
-};
-
 export const convertPipelineToUIJson = async (pipelineJson: any) => {
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -174,13 +100,24 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     // Process readers first
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {
-            const { data } = await apiClient.get(`/data_source/${source.data_src_id}`);
-            const sourceDetails = data;
-
+            const sourceDetails:any = await apiService.get({
+                portNumber: CATALOG_API_PORT,
+                url: `/data_source/${source.data_src_id}`,
+                usePrefix: true,
+                method: 'GET',
+                metadata: {
+                    errorMessage: 'Failed to fetch source details'
+                },
+            })
+          
+            console.log(sourceDetails)
+            // debugger
+console.log(pipelineJson.sources)
+let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
+console.log(updatedDetails,"updatedDetails")
             const nodeId = `Reader_${index + 1}`;
             const title = source.name;
             existingTitles.add(title);
-
             nodes.push({
                 id: nodeId,
                 type: 'custom',
@@ -193,7 +130,25 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
                     title: title,
                     icon: getNodeIcon('Reader'),
                     ports: getNodePorts('Reader'),
-                    source: sourceDetails
+                    source:{
+                        "name": updatedDetails.name??sourceDetails.data_src_name,
+                        "data_src_desc": updatedDetails.name??sourceDetails.name,
+                        "reader_name": updatedDetails.reader_name??sourceDetails.data_src_name,
+                        "source_type": sourceDetails.connection_type,
+                        "file_name": updatedDetails.file_name??sourceDetails.file_name,
+                        "data_src_id": updatedDetails.data_src_id??sourceDetails.data_src_id,
+                        "project_id": sourceDetails.bh_project_id,
+                        "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
+                        "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+                        "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
+                        "connection": {
+                            "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
+                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+
+                        }
+                    }
                 },
                 width: 56,
                 height: 72
@@ -208,7 +163,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
 
     for (const transform of pipelineJson.transformations) {
-        if (transform.transformation === 'Reader') continue;
+        if (transform.transformation === 'Reader'||transform.transformation==="Target") continue;
 
         const type = transform.transformation;
         const nodeId = `${type}_${nodes.length + 1}`;
@@ -263,31 +218,59 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     if (pipelineJson.targets && pipelineJson.targets.length > 0) {
         const targetId = 'Target_1';
         const targetTitle = generateUniqueTitle('Target', existingTitles);
-
-        nodes.push({
-            id: targetId,
-            type: 'custom',
-            position: { x: xPosition, y: yPosition },
-            data: {
-                label: 'Target',
-                title: targetTitle,
-                icon: getNodeIcon('Target'),
-                ports: getNodePorts('Target')
-            },
-            width: 56,
-            height: 72
-        });
-
-        // Connect last transformation to target
-        const lastTransformation = nodes[nodes.length - 2];
-        if (lastTransformation) {
-            edges.push({
-                source: lastTransformation.id,
-                sourceHandle: 'output-0',
-                target: targetId,
-                targetHandle: 'input-0',
-                id: `reactflow__edge-${lastTransformation.id}output-0-${targetId}input-0`
+        
+        // Find the target transformation
+        const targetTransformation = pipelineJson.transformations.find(
+            (t: any) => t.transformation === 'Target'
+        );
+        if (targetTransformation) {
+            console.log(targetTransformation)
+            nodes.push({
+                id: targetId,
+                type: 'custom',
+                position: { x: xPosition, y: yPosition },
+                data: {
+                    label: 'Target',
+                    title: targetTransformation?.target?.name || targetTitle, // Use transformation name if available
+                    icon: getNodeIcon('Target'),
+                    ports: getNodePorts('Target'),
+                    source: {
+                        name: targetTransformation?.target?.name || 'output',
+                        target_type: targetTransformation?.target?.target_type || 'File',
+                        target_name: targetTransformation?.target?.target_name || 'output',
+                        connection: {
+                            name: targetTransformation?.target?.connection?.name || 'local_connection',
+                            connection_type: targetTransformation.target?.connection?.connection_type || 'Local',
+                            file_path_prefix: targetTransformation.target?.connection?.file_path_prefix || '${output_file}',
+                            connection_config_id: targetTransformation.target?.connection?.connection_config_id
+                        },
+                        file_name: targetTransformation.target?.file_name || 'output.csv',
+                        load_mode: targetTransformation.target?.load_mode,
+                        file_type: targetTransformation.target?.file_type
+                    },
+                    transformationData: {
+                        write_options: targetTransformation.write_options || {
+                            header: true,
+                            sep: '|'
+                        },
+                        file_type: targetTransformation.file_type || 'csv'
+                    }
+                },
+                width: 56,
+                height: 72
             });
+
+            // Connect last transformation to target
+            const lastTransformation = nodes[nodes.length - 2];
+            if (lastTransformation) {
+                edges.push({
+                    source: lastTransformation.id,
+                    sourceHandle: 'output-0',
+                    target: targetId,
+                    targetHandle: 'input-0',
+                    id: `reactflow__edge-${lastTransformation.id}output-0-${targetId}input-0`
+                });
+            }
         }
     }
 

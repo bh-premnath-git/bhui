@@ -246,8 +246,7 @@ export function ConnectionForm({
 
     // Generate the configuration union with the appropriate dynamic field
       const configUnion = getConfigUnionForType(connectionName, formData, connectionType);
-      console.log("encrypte",configUnion)
-      debugger
+     
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }

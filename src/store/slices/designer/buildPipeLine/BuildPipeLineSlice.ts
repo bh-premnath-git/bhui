@@ -409,10 +409,9 @@ export const runNextCheckpoint = createAsyncThunk(
     try {
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
-        url: '/pipeline/run-next-checkpoint',
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=host.docker.internal&port=15003`,
         usePrefix: true,
-        method: 'POST',
-        data: params
+        method: 'POST'
       });
       return response;
     } catch (error: any) {

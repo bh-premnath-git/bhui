@@ -13,30 +13,6 @@ export const pipelineKeys = {
     transformationCount: (pipelineName: string) => [...pipelineKeys.all, 'transformationCount', pipelineName] as const,
 };
 
-// Query functions
-export const usePipelineQuery = (id: string) => {
-    // if(!id){
-        return useQuery({
-            queryKey: pipelineKeys.detail(id),
-            queryFn: async () => {
-                const data=await apiService.get({
-                    portNumber: CATALOG_API_PORT,
-                    url: `/pipeline/${id}`,
-                    usePrefix: true,
-                    method: 'GET',
-                    metadata: {
-                        errorMessage: 'Failed to fetch projects'
-                    },
-                    params: {limit: 1000}
-                })
-                return data;
-            },
-            enabled: !!id,
-        });
-    // }
-    
-};
-
 export const useUpdatePipelineMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({

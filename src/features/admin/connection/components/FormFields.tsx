@@ -92,6 +92,46 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
         </FormItem>
       );
     }
+    
+    // Add this return statement for standard password fields
+    return (
+      <FormItem>
+        <div className="flex items-center">
+          <FormLabel>
+            {field.title || key}
+            {isRequired && <span className="text-destructive ml-1">*</span>}
+          </FormLabel>
+          {field.description && (
+            <button
+              type="button"
+              className="ml-1 text-muted-foreground"
+              onClick={() => setShowDescription(!showDescription)}
+            >
+              <HelpCircle size={16} />
+            </button>
+          )}
+        </div>
+        {showDescription && field.description && (
+          <FormDescription>{field.description}</FormDescription>
+        )}
+        <div className="relative">
+          <FormControl>
+            <Input
+              {...formField}
+              type={showPassword ? "text" : "password"}
+              className="pr-10"
+            />
+          </FormControl>
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+          </button>
+        </div>
+        <FormMessage />
+      </FormItem>
+    );
   };
 
   const renderField = (key: string, field: any) => {

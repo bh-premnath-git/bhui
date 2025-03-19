@@ -706,7 +706,7 @@ console.log(response.pipeline_json,"response")
                 }
                 return transform;
             });
-  
+  console.log(debuggedNodesList)
             // Create the request data object with array
             const requestData = {
                 pipeline_name: pipelineDtl?.pipeline_name || "sample_pipeline",

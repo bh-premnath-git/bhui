@@ -151,7 +151,7 @@ export const insertPipeline: any = createAsyncThunk(
     try {
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
-        url: '/pipeline',
+        url: '/pipeline/',
         usePrefix: true,
         method: 'POST',
         data:body

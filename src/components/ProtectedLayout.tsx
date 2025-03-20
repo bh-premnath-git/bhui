@@ -26,7 +26,7 @@ const ProtectedLayout = () => {
   return (
     <ThemeProvider>
       <SidebarProvider>
-        <div className="min-h-screen flex">
+        <div className="min-h-screen w-full flex">
           <Sidebar />
           <MainContent />
         </div>

@@ -81,7 +81,7 @@ class ApiService {
     
     if (config.params?.flowId) {
       url = url.endsWith('/') ? url : url + '/';
-      url = `${url}${config.params.flowId}/`;
+      url = `${url}${config.params.flowId}`;
       const { flowId, ...restParams } = config.params;
       config.params = restParams;
     }

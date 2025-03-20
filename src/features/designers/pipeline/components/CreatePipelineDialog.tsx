@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { RootState } from '@/store';
 import { insertPipeline, setBuildPipeLineDtl } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useFieldArray } from 'react-hook-form';
@@ -73,25 +71,16 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
             <div>
                 {dedupByFields.map((field, index) => (
                     <div key={field.id} className="flex gap-2 mb-2">
-                        <Controller
-                            name={`dedup_by.${index}`}
+                        <FormField
                             control={control}
+                            name={`dedup_by.${index}`}
                             render={({ field }) => (
-                                <FormField
-                                    fieldSchema={{
-                                        type: 'string',
-                                        title: 'Dedup By',
-                                        properties: {}
-                                    }}
-                                    name={field.name}
-                                    fieldKey={`dedup_by.${index}`}
-                                    value={field.value ?? ''}
-                                    required={true}
-                                    onChange={field.onChange}
-                                    onBlur={field.onBlur}
-                                    isExpression={false}
-                                    additionalColumns={[]}
-                                />
+                                <div className="w-full">
+                                    <Input
+                                        {...field}
+                                        placeholder="Enter dedup field"
+                                    />
+                                </div>
                             )}
                         />
                         <button

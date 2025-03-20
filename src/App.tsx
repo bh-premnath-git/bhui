@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
 import { PipelineProvider } from "./context/designers/DataPipelineContext";
-
+import "./App.css";
 
 const queryClient = new QueryClient();
 

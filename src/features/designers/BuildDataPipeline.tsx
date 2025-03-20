@@ -15,9 +15,17 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  
   const {setPipeline_id} = usePipelineContext()
   const { handleNavigation } = useNavigation();
   const pipelineSrv = usePipelineManagementService();
+
+  const paginatedData = pipeline?.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize
+  );
 
   const onRowClickHandler = (row: Row<Pipeline>) => {
     pipelineSrv.selectedPipeline(row.original)
@@ -46,13 +54,19 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
     <>
       <DataTable<Pipeline>
         columns={columns}
-        data={pipeline || []}
+        data={paginatedData || []}
         topVariant="simple"
         pagination={true}
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        pageCount={Math.ceil((pipeline?.length || 0) / pageSize)}
+        onPageChange={(page) => setPageIndex(page - 1)}
+        onPageSizeChange={setPageSize}
       />
       <CreatePipelineDialog open={createDialogOpen} handleClose={() => setCreateDialogOpen(false)} />
       <DeletePipelineDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
-    </>);
+    </>
+  );
 }

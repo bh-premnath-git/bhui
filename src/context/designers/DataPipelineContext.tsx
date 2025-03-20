@@ -23,27 +23,12 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
 import { convertUIToPipelineJson } from '@/lib/convertUIToPipelineJson';
-import { getPipelineById, getTransformationCount, runNextCheckpoint, startPipeLine, stopPipeLine, updatePipeline,
+import { getPipelineById, getTransformationCount, runNextCheckpoint, stopPipeLine, updatePipeline,
     } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
-import { getInitialFormState } from '@/lib/transformationUtils';
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';
 
-// API client setup
-const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
-});
-
-interface PipelineData {
-    pipeline_json: {
-        name: string;
-        transformations: any[];
-        // Add other properties as needed
-    };
-    pipeline_id: string;
-    pipeline_name: string;
-}
 interface UIProperties {
     color: string;
     icon: string;
@@ -244,11 +229,6 @@ console.log(pipeline_id,"pipeline_id")
         setIsSaving(false);
         setSaveErrorState(error);
     }, []);
-
-    // Add this near other Redux selectors
-    const saveStatus = { hasUnsavedChanges }
-    // Fetch pipeline details when id changes
-    // const updatePipeline = useUpdatePipelineMutation();
  
     useEffect(() => { 
         const fetchPipelineDetails = async () => {
@@ -725,7 +705,7 @@ debuggedNodesList.forEach(checkpoint => {
   
             setSelectedFormState(pipeline_json);
             setRunDialogOpen(true);
-  
+  console.log(pipeline_json,"params")
             // setConversionLogs(prevLogs => [...prevLogs, {
             //     timestamp: new Date().toISOString(),
             //     message: 'Pipeline validation successful. Starting execution...',

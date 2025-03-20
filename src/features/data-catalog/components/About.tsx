@@ -612,7 +612,8 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         usePrefix: true,
         data: {
           connection_config_id: parseInt(selectedConnection!, 10),
-          file_path_prefix: connectionConfig?.custom_metadata?.file_path_prefix
+          file_path_prefix: connectionConfig?.custom_metadata?.file_path_prefix,
+          connection_type: connectionConfig?.connection_name
         },
         metadata: {
           successMessage: 'Connection updated successfully',

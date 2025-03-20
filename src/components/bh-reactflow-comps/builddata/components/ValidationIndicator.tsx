@@ -31,7 +31,7 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
         if (!data?.label) return 'bg-gray-300';
 
         if (data.label.toLowerCase() === "reader") {
-            console.log("data.source", data.source);
+            // console.log("data.source", data.source);
             if (!data.source) return 'bg-red-500';
             return (data?.source?.data_src_desc && data?.source?.connection_config_id) 
                 ? 'bg-green-500' 

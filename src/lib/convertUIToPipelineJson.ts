@@ -53,24 +53,33 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     };
 
     const orderedUiNodes = getOrderedNodes();
-    console.log(uiNodes,"orderedUiNodes")
+    // console.log(uiNodes
+    //     .filter(node => node.id.startsWith('Reader_'))[0],"orderedUiNodes")
     // Extract sources and create reader transformations
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
             name: node.data.source.name || node.data.title,
-            source_type: "File",
+            source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
+            table_name: node.data?.source?.table_name,
             file_name: `${node.data.source.file_name}`,
             data_src_id: node.data.source.data_src_id,
             connection: {
-                name: node.data.source.connection?.name || "local_connection",
-                connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||capitalizeFirstLetter(node.data.source.connection_type),
+                name: node.data.source.connection?.name || node.data.source?.custom_metadata?.connection_config_name,
+                connection_type:node?.data?.source?.custom_metadata?.connection_name,
+                // connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type=="postgres"?"postgresql":node.data.source?.connection?.connection_type)||
+                //                     capitalizeFirstLetter(node.data.source.connection_type == "postgres"?"postgresql":node.data.source.connection_type)||
+                //                      capitalizeFirstLetter(node.data.source?.custom_metadata?.connection_name=="postgres"?"postgresql":node.data.source?.custom_metadata?.connection_name),
                 file_path_prefix: `${node.data.source.file_path_prefix}`,
                 file_type: node.data.source.file_type?.toLowerCase(),
-                connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
+                connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
+                database:node.data.source?.custom_metadata?.custom_metadata?.database,
+                schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
+                secret_name:node.data.source?.custom_metadata?.custom_metadata?.secret_name||"bh-postgres-out5",
+
             }
         }));
-
+// console.log(sources)
     // Create reader transformations
     // debugger;
     console.log(uiNodes)
@@ -81,15 +90,22 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             dependent_on: [],
             transformation: "Reader",
             source: {
-                name: node.data.source.data_src_name || node.data.title,
-                source_type: "File",
-                file_name: node.data.source.file_name,
+                name: node.data.source.name || node.data.title,
+            source_type: capitalizeFirstLetter(node.data.source.type)||"Relational",
+            table_name: node.data?.source?.table_name,
+            file_name: `${node.data.source.file_name}`,
                 connection: {
-                    name: node.data.source.connection?.name || "local_connection",
-                    connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||capitalizeFirstLetter(node.data.source.connection_type),
-                    file_path_prefix: node.data.source.file_path_prefix,
+                    name: node.data.source.connection?.name || node.data.source?.custom_metadata?.connection_config_name,
+                    connection_type:node?.data?.source?.custom_metadata?.connection_name,
+                    // connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||
+                    //                     capitalizeFirstLetter(node.data.source.connection_type)|| capitalizeFirstLetter(node.data.source?.custom_metadata?.connection_name),
+                    file_path_prefix: `${node.data.source.file_path_prefix}`,
                     file_type: node.data.source.file_type?.toLowerCase(),
-                    connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id
+                    connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
+                    database:node.data.source?.custom_metadata?.custom_metadata?.database,
+                schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
+                secret_name:node.data.source?.custom_metadata?.custom_metadata?.secret_name||"bh-postgres-out5",
+    
                 }
             },
             read_options: {
@@ -226,13 +242,18 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         transformation: "Target",
                         target: {
                             name: node.data.source?.name,
-                            target_type: node.data.source?.target_type,
-                            target_name: node.data.source?.target_name,
+                            target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",
+            target_name: node?.data.source?.target_name,
+            table_name: node?.data.source?.table_name||'sample_table',
                             connection: {
                                 name: node.data.source?.connection?.name,
-                                connection_type: node.data.source?.connection?.connection_type,
+                                connection_type:node?.data?.source?.connection?.connection_type,
                                 file_path_prefix: node.data.source?.connection?.file_path_prefix,
-                                connection_config_id: node.data.source?.connection?.connection_config_id
+                                connection_config_id: node.data.source?.connection?.connection_config_id,
+                                database: node?.data?.source?.connection?.database,
+                                schema: node?.data?.source?.connection?.schema || "public",
+                                secret_name: node?.data?.source?.connection?.secret_name||"bh-postgres-out5",
+
                             },
                             file_name: node.data.source?.file_name,
                             load_mode: node.data.source?.load_mode
@@ -252,6 +273,8 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         });
 
     // Create target configuration and writer transformation
+    console.log(uiNodes
+        .filter(node => node.id.startsWith('Target_')), "target befor transform")
     const targets = uiNodes
     .filter(node => node.id.startsWith('Target_'))
     .map(node => ({
@@ -263,21 +286,27 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         },
         load_mode: node?.data.source?.load_mode,
         target: {
-            target_type: node?.data.source?.target_type,
+            target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",
             target_name: node?.data.source?.target_name,
-            name: node?.data.source?.name,
-            connection: {
-                type: node?.data.source?.connection?.connection_type,
-                file_path: node?.data.source?.connection?.file_path_prefix ,
-                connection_config_id: node?.data.source?.connection?.connection_config_id,
-                name: node?.data.source?.connection?.name,
-            },
+            name: node?.data.source?.name ,
             load_mode: node?.data.source?.load_mode,
             file_name: node?.data.source?.file_name,
             file_type: node?.data.source?.file_type?.toLowerCase(),
+            table_name: node?.data.source?.table_name||'sample_table',
+            connection: {
+                type: node?.data.source?.connection?.connection_type,
+                connection_type:node?.data?.source?.connection?.connection_type,
+                file_path: node?.data.source?.connection?.file_path_prefix ,
+                connection_config_id: node?.data.source?.connection?.connection_config_id,
+                name: node?.data.source?.connection?.name,
+                database: node?.data?.source?.connection?.database,
+                schema: node?.data?.source?.connection?.schema || "public",
+                secret_name: node?.data?.source?.connection?.secret_name ||"bh-postgres-out5"
+            },
+            
         }
     }));
-
+console.log(targets,"targets")
    
     return {
         pipeline_json: {

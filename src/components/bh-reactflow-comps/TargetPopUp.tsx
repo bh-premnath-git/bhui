@@ -115,6 +115,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     console.log(source,"source")
     console.log(initialData,"initialData")
     console.log(pipelineJson,"pipelineJson")
+    console.log(selectedConnection)
     useEffect(() => {
         dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
     }, [dispatch]);
@@ -160,6 +161,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 setSelectedConnection(selectedConn || null);
             }
         }
+        console.log(selectedConnection,"formData")
     }, [source, initialData, connectionConfigList]);
 
     useEffect(() => {
@@ -189,7 +191,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         const { name, value } = e.target;
         
         setFormData(prev => {
-            const newData = { ...prev };
+            // Create a deep copy of the previous state
+            const newData = JSON.parse(JSON.stringify(prev));
             
             if (name === 'connection_config_id') {
                 const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
@@ -205,26 +208,38 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         connection_name: selectedConn.connection_config_name || ''
                     };
                 }
+            } else if (name === 'target_type') {
+                if (!newData.target) newData.target = {};
+                newData.target.target_type = value;
+                
+                // Set default values based on target type while preserving other fields
+                if (value === 'PostgreSQL') {
+                    newData.write_options = {
+                        ...newData.write_options,
+                        createDisposition: 'CREATE_IF_NEEDED',
+                        writeMethod: 'direct'
+                    };
+                }
             } else if (name === 'file_path_prefix') {
                 if (!newData.target) newData.target = {};
                 if (!newData.target.connection) newData.target.connection = {};
                 newData.target.connection.file_path_prefix = value;
-            } else if (name === 'target_type') {
-                if (!newData.target) newData.target = {};
-                newData.target.target_type = value;
-            } else if (name === 'load_mode') {
-                if (!newData.target) newData.target = {};
-                newData.target.load_mode = value;
             } else if (name === 'target_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.target_name = value;
+            } else if (name === 'table_name') {
+                if (!newData.target) newData.target = {};
+                newData.target.table_name = value;
+            } else if (name === 'load_mode') {
+                if (!newData.target) newData.target = {};
+                newData.target.load_mode = value;
             } else if (name === 'file_name' && newData.target?.target_type === 'File') {
                 if (!newData.target) newData.target = {};
                 newData.target.file_name = value;
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {
                 newData.file_type = value;
             } else {
-                // Handle other nested fields
+                // Handle nested fields using the path parameter
                 if (path.length === 0) {
                     newData[name] = value;
                 } else {
@@ -291,7 +306,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         </select>
                     </div>
 
-                    {selectedConnection?.custom_metadata?.type === 'Local' && (
+                    {formData.target?.target_type === 'File' && (
                         <div className="w-full space-y-1">
                             <Label className="text-xs font-medium text-gray-700">
                                 File Path Prefix
@@ -304,6 +319,56 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                 placeholder="Enter file path prefix"
                             />
                         </div>
+                    )}
+
+                    {formData.target?.target_type === 'PostgreSQL' && (
+                        <>
+                            <div className="w-full space-y-1">
+                                <Label className="text-xs font-medium text-gray-700">
+                                    Table Name
+                                </Label>
+                                <Input
+                                    name="table_name"
+                                    value={formData.target?.table_name || formData.target?.target_name || ""}
+                                    onChange={(e) => handleChange(e, ['target'])}
+                                    className="h-8 text-sm"
+                                    placeholder="Enter table name"
+                                />
+                            </div>
+                            
+                            {/* PostgreSQL Write Options Section */}
+                            <div className="space-y-3">
+                                <Label className="text-xs font-medium text-gray-700">
+                                    Write Options
+                                </Label>
+                                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs font-medium text-gray-600">
+                                            Create Disposition
+                                        </Label>
+                                        <Input
+                                            name="createDisposition"
+                                            value={formData.write_options?.createDisposition || "CREATE_IF_NEEDED"}
+                                            onChange={(e) => handleChange(e, ['write_options'])}
+                                            className="h-8 text-sm"
+                                            disabled
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs font-medium text-gray-600">
+                                            Write Method
+                                        </Label>
+                                        <Input
+                                            name="writeMethod"
+                                            value={formData.write_options?.writeMethod || "direct"}
+                                            onChange={(e) => handleChange(e, ['write_options'])}
+                                            className="h-8 text-sm"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             );
@@ -385,7 +450,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
         try {
             const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
-            
+            console.log(selectedConnection,"connectionData")
+            console.log(connectionData?.custom_metadata,"connectionData")
             // Use formData.name as the nodeTitle
             const nodeTitle = formData.name;
             console.log(formData,"nodeTitle")
@@ -401,15 +467,19 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                             name: formData.name, // Also update the source name
                             target_type: formData.target?.target_type,
                             target_name: formData.target?.target_name,
+                            table_name: formData.target?.table_name,
                             file_type: formData.file_type,
                             connection: {
                                 name: connectionData?.connection_config_name,
-                                connection_type: connectionData?.custom_metadata?.type,
+                                connection_type: connectionData?.custom_metadata?.type || connectionData?.connection_name,
                                 file_path_prefix: formData.target?.connection?.file_path_prefix,
-                                connection_config_id: formData.target?.connection?.connection_config_id
+                                connection_config_id: formData.target?.connection?.connection_config_id,
+                                database: connectionData?.custom_metadata?.database,
+                                schema: connectionData?.custom_metadata?.schema || "public",
+                                secret_name: connectionData?.secret_name
                             },
-                            file_name: formData.target?.file_name ,
-                            load_mode: formData.target?.load_mode 
+                            file_name: formData.target?.file_name,
+                            load_mode: formData.target?.load_mode
                         },
                         transformationData: {
                             ...formData, 

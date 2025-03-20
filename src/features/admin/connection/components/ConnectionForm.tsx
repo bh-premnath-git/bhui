@@ -99,7 +99,7 @@ export function ConnectionForm({
       database: formData.database || '',
       username: formData.username || '',
       password: formData.password || '',
-      // Add any additional fields from formData
+      schema: formData.schema || '',
     } : {
       name: `${connectionDisplayName} Connection`,
       project_id: '',
@@ -110,6 +110,7 @@ export function ConnectionForm({
       database: '',
       username: '',
       password: '',
+      schema: '',
     }
   });
 
@@ -128,6 +129,7 @@ export function ConnectionForm({
           database: formData.database || '',
           username: formData.username || '',
           password: formData.password || '',
+          schema: formData.schema || '',
         } : {
           name: `${connectionDisplayName} Connection`,
           file_path_prefix: '',
@@ -139,6 +141,7 @@ export function ConnectionForm({
           database: '',
           username: '',
           password: '',
+          schema: '',
         }
       );
     }
@@ -146,6 +149,7 @@ export function ConnectionForm({
 
   const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
     const type = connectionName.toLowerCase();
+    console.log(data,"type")
   
     const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
   
@@ -184,7 +188,7 @@ export function ConnectionForm({
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
-        db_schema: data.db_schema || '',
+        schema: data.schema || '',
         ...commonFields,
       };
     }
@@ -244,24 +248,31 @@ export function ConnectionForm({
       };
       const dynamicType = connectionType === 'source' ? 'source_type' : 'destination_type';
 
-    // Generate the configuration union with the appropriate dynamic field
+      // Add console.log to debug form data
+      console.log('Raw form data:', data);
+      console.log('Processed form data:', formData);
+
+      // Generate the configuration union with the appropriate dynamic field
       const configUnion = getConfigUnionForType(connectionName, formData, connectionType);
+      console.log('Config before encryption:', configUnion);
 
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
-
+let custom_metadata=data;
+custom_metadata.connection_name=connectionDisplayName
+console.log(custom_metadata,"custom_metadata")
       const connectionData: any = {
         connection_id: connectionId,
         connection_config_name: connectionConfigName,
-        connection_name: data.name || `${connectionDisplayName}`,
+        connection_name: connectionDisplayName,
         connection_description: `${connectionDisplayName} connection`,
-        connection_type: connectionType,
+        connection_type:connectionType,
         connection_status: 'active',
         data_residency: 'auto',
-        custom_metadata: {},
+        custom_metadata: custom_metadata,
         init_vector: initVector,
         config: encryptedString
       };

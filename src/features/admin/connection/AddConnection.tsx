@@ -17,7 +17,7 @@ AddConnection() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [connectionConfigName, setConnectionConfigName] = useState<string>("");
   const [showNameError, setShowNameError] = useState<boolean>(false);
-
+  console.log("connectionTypes", connectionTypes);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">

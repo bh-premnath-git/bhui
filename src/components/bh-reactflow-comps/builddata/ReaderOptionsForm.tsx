@@ -11,12 +11,6 @@ import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSl
 
 import { FormData, ReaderFormField } from "./components/form/reader-form-field";
 
-
-const schemaReferences: Record<string, typeof sourceSchema | typeof csvOptionsSchema> = {
-    "schemas/Source.json": sourceSchema,
-    "transformations/readers/CSVOptions.json": csvOptionsSchema,
-};
-
 interface FormSchema {
     type: string;
     properties: Record<string, any>;
@@ -31,17 +25,6 @@ interface ReaderOptionsFormProps {
     nodeId?: string;
 }
 
-
-
-
-const formatFieldName = (fieldName: string) => {
-    return fieldName
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^ /, "")
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-};
 
 
 
@@ -105,7 +88,8 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     ...initialData.source,
                     connection: {
                         ...initialData.source.connection
-                    }
+                    },
+                    table_name: initialData.source?.table_name || ''
                 }
             });
 
@@ -116,19 +100,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     }, [initialData, connectionConfigList]);
 
-    useEffect(() => {
-        const fetchConnectionConfigs = async () => {
-            try {
-                await dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
-            } catch (error) {
-                console.error('Error fetching connection configs:', error);
-                toast.error('Failed to load connection configurations');
-            }
-        };
-
-        fetchConnectionConfigs();
-    }, [dispatch]);
-
+   
     const resolveFileTypeSchema = (schema: any) => {
         const fileTypeCondition = readerSchema.allOf?.find(
             (condition: any) => condition.if.properties.file_type?.const === formData.file_type
@@ -192,32 +164,41 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                 setSelectedConnection(selectedConn);
                 
                 if (selectedConn) {
-                    if (!newData.source) newData.source = {};
-                    newData.source.connection = {
-                        ...newData.source.connection,
-                        connection_config_id: selectedConn.id,
-                        type: selectedConn.custom_metadata?.type || '',
-                        file_path_prefix: selectedConn.custom_metadata?.file_path_prefix || '',
-                        connection_name: selectedConn.connection_config_name || ''
+                    newData.source = {
+                        ...newData.source,
+                        connection: {
+                            ...newData.source?.connection,
+                            connection_config_id: selectedConn.id,
+                            type: selectedConn.custom_metadata?.type || '',
+                            file_path_prefix: selectedConn.custom_metadata?.file_path_prefix || '',
+                            connection_name: selectedConn.connection_config_name || ''
+                        }
                     };
                 }
             } else if (name === 'type') {
-                if (!newData.source) newData.source = {};
                 newData.source = {
                     ...newData.source,
                     type: value,
-                    connection: newData.source.connection // Preserve existing connection data
+                    connection: newData.source?.connection || {} // Preserve existing connection data
                 };
             } else if (name === 'file_path_prefix') {
-                if (!newData.source) newData.source = {};
-                if (!newData.source.connection) newData.source.connection = {};
-                newData.source.connection.file_path_prefix = value;
-            } else if (name === 'file_name') {
-                if (!newData.source) newData.source = {};
-                newData.source.file_name = value;
+                newData.source = {
+                    ...newData.source,
+                    connection: {
+                        ...newData.source?.connection,
+                        file_path_prefix: value
+                    }
+                };
+            } else if (name === 'file_name' || name === 'table_name') {
+                newData.source = {
+                    ...newData.source,
+                    [name]: value
+                };
             } else if (name === 'name') {
-                if (!newData.source) newData.source = {};
-                newData.source.name = value;
+                newData.source = {
+                    ...newData.source,
+                    name: value
+                };
                 newData.name = value;
             } else {
                 if (path.length === 0) {
@@ -225,7 +206,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                 } else {
                     let current = newData;
                     for (let i = 0; i < path.length - 1; i++) {
-                        if (!current[path[i]]) current[path[i]] = {};
+                        current[path[i]] = { ...current[path[i]] };
                         current = current[path[i]];
                     }
                     current[path[path.length - 1]] = value;
@@ -265,21 +246,24 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             data_src_id: formData.source?.data_src_id,
                             data_src_name: formData.reader_name,
                             data_src_desc: formData.reader_name,
-                            connection_type: connectionData?.custom_metadata?.type,
+                            connection_type: connectionData?.custom_metadata?.type?.toLowerCase()=="postgres"?"postgresql":connectionData?.custom_metadata?.type,
                             connection_config_id: formData.source?.connection?.connection_config_id,
                             file_name: formData.source?.file_name,
                             file_path_prefix: formData.source?.connection?.file_path_prefix,
                             file_type: formData?.file_type,
+                            table_name: formData.source?.table_name,
+                            type: formData.source?.type,
+                            custom_metadata: formData.source?.custom_metadata,
                             connection_config: {
                                 connection_name: formData.source?.connection?.connection_name,
                                 file_type: formData?.file_type
                             },
-                            custom_metadata: formData
+                            // custom_metadata: formData
                         }
                     }
                 }
             };
-
+console.log(sourceData,"sourceData")
             onSourceUpdate?.(sourceData);
             onClose?.();
             toast.success("Reader configuration saved successfully");

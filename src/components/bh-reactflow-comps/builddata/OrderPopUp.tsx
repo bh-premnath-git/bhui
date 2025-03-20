@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import SchemaTable from "./SchemaTable";
 import OnboardTaggingStep from "./OnboardTaggingStep";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
-import { useSelector } from "react-redux";
-import { Search } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { Search, HelpCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,12 +12,23 @@ import {
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "sonner";
+import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
+import { AppDispatch } from "@/store";
 
 export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
   const [selected, setSelected] = React.useState(0);
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
-  const [initialData, setInitialData] = useState(null);
+  const [initialData, setInitialData] = useState(null); 
   const { pipelineJson } = usePipelineContext();
+  const dispatch = useDispatch<AppDispatch>();
+  const { connectionConfigList } = useSelector((state: any) => state.datasource);
   console.log(pipelineJson, "pipelineJson")
   // const { pipelineJson } = useSelector((state: any) => state.buildPipeline.pipelineJsonData);
   console.log(pipelineJson, "pipelineJson")
@@ -25,28 +36,47 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     setAnchorEl(null);
   };
   useEffect(() => {
+    const fetchConnectionConfigs = async () => {
+        try {
+            await dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
+        } catch (error) {
+            console.error('Error fetching connection configs:', error);
+            toast.error('Failed to load connection configurations');
+        }
+    };
+
+    fetchConnectionConfigs();
+}, [dispatch]);
+
+  useEffect(() => {
     if (source) {
       console.log(source)
+      let connection = connectionConfigList?.find((item: any) => item.id === source?.connection_config_id);
+      let connection_data={...connection}
+      connection_data.connection_name=connection?.connection_name?.toLowerCase()=='postgres'?'postgresql':connection.connection_name;
+      console.log(connection_data, "connection")
       let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
       console.log(pipelineJsonData, "pipelineJson")
       const initialData = {
         reader_name: source?.data_src_name || pipelineJsonData?.name ||  '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
         source: {
-          type: pipelineJsonData?.source_type || (source?.connection_type === 'FILE' ? 'File' : source?.connection_type) || '',
+          type: connection?.connection_name?.toLowerCase() === 'local' || connection?.connection_name?.toLowerCase() === 's3' ? 'File' : 'Relational',
           source_name: pipelineJsonData?.name || source?.data_src_name || '',
-          file_name: pipelineJsonData?.file_name || source?.file_name || '',
+          file_name: pipelineJsonData?.file_name || source?.file_name,
+          table_name: pipelineJsonData?.table_name || source?.table_name,
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
-
+          custom_metadata:connection_data,
           connection: {
             connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
             type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',
             file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
-            connection_name: pipelineJsonData?.connection?.name || source?.connection_config?.connection_name || '',
-            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || 'CSV'
-          }
+            connection_name: pipelineJsonData?.connection?.name || source?.connection_config?.connection_name ||connection?.connection_config_name|| '',
+            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || 'CSV',
+            table_name: pipelineJsonData?.connection?.table_name || source?.table_name || '',
+          } 
         }
       };
       console.log(initialData,"initialData")
@@ -92,10 +122,28 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[1200px]  px-20 overflow-scroll ">
           {/* Header */}
-          <DialogHeader className=" m-0">
+          <DialogHeader className=" m-0 ">
             {/* <div className="flex flex-col"> */}
-              <DialogTitle>{source?.data_src_name}</DialogTitle>
-              <p className="text-sm font-bold">{source?.data_src_desc}</p>
+              <DialogTitle className="flex">
+                <div className="mr-4">
+              {source?.data_src_name}
+
+                </div>
+              <div className="flex items-center">
+                {source?.data_src_desc && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="h-4 w-4 text-gray-500" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="start">
+                        <p className="text-sm w-96">{source?.data_src_desc}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              </DialogTitle>
             {/* </div> */}
           </DialogHeader>
 

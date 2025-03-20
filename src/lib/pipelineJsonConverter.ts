@@ -111,7 +111,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             })
           
             console.log(sourceDetails)
-            debugger
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
 console.log(updatedDetails,"updatedDetails")

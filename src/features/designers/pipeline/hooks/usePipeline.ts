@@ -71,7 +71,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
 
     // Create pipeline mutation
     const createPipelineMutation = createPipeline({
-        url: '/pipeline/create/',
+        url: '/pipeline/',
         mutationOptions: {
             onSuccess: () => toast.success('Pipeline created successfully'),
             onError: (error) => handleApiError(error, { action: 'create' }),

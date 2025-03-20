@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Network } from 'lucide-react';
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { PipelineList } from '@/features/designers/BuildDataPipeline';
@@ -8,10 +8,13 @@ import { usePipeline } from '@/features/designers/pipeline/hooks/usePipeline';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
+import { Button } from '@/components/ui/button';
+import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 
 export function BuildDataPipelinePage() {
   const { pipelines, isLoading, isFetching, isError } = usePipeline();
   const pipelineService = usePipelineManagementService();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (Array.isArray(pipelines) && pipelines.length > 0) {
@@ -45,7 +48,16 @@ export function BuildDataPipelinePage() {
           Icon={Network}
           title="No Pipelines Found"
           description="Get started by creating a new data pipeline."
+          action={
+            <Button 
+              onClick={() => setCreateDialogOpen(true)}
+              className="mt-4"
+            >
+              Create Pipeline
+            </Button>
+          }
         />
+        <CreatePipelineDialog open={createDialogOpen} handleClose={() => setCreateDialogOpen(false)} />
       </div>
     );
   }

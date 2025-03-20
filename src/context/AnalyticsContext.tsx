@@ -100,7 +100,6 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Memoize the debounced version of handleNewChat's implementation
   const createNewConversation = useMemo(() => 
     debounce(async (): Promise<string | null> => {
-      console.log("[Analytics] Debounced createNewConversation called");
       
       // Check retry limit
       if (retryCount >= MAX_RETRIES) {
@@ -113,12 +112,10 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // If already creating, return the existing promise
       if (isCreatingConversation && createConversationRequestRef.current) {
-        console.log("[Analytics] Creation already in progress, returning existing promise");
         return createConversationRequestRef.current;
       }
       
       try {
-        console.log("[Analytics] Starting new conversation");
         setIsCreatingConversation(true);
         setMessages([]);
         setInput("");
@@ -130,7 +127,6 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           .then(response => {
             if (response.data.thread_id) {
               const newThreadId = response.data.thread_id;
-              console.log(`[Analytics] New conversation started with thread_id: ${newThreadId}`);
               setThreadId(newThreadId);
               setRetryCount(0); // Reset retry count on success
               window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
@@ -168,7 +164,6 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 
   const handleNewChat = useCallback(async (): Promise<string | null> => {
-    console.log("[Analytics] handleNewChat called");
     return createNewConversation();
   }, [createNewConversation]);
 
@@ -180,20 +175,15 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       !createConversationRequestRef.current &&
       retryCount < MAX_RETRIES // Add retry count check
     ) {
-      console.log("[Analytics] Creating new conversation from effect");
       handleNewChat();
     }
   }, [selectedConnection, threadId, isCreatingConversation, handleNewChat, retryCount]); // Add retryCount to dependencies
 
-  const handleSubmitQuestion = useCallback(async (question: string) => {
-    console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
-    
-    // Reset the stream state to clear previous responses
+  const handleSubmitQuestion = useCallback(async (question: string) => {    
     resetStream();
     
     let currentThreadId = threadId;
     if (!currentThreadId) {
-      console.log("No active thread, creating a new conversation");
       currentThreadId = await handleNewChat();
       if (!currentThreadId) {
         toast.error("Unable to start conversation. Please try again.");
@@ -204,10 +194,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!selectedConnection) {
       toast.error("No connection selected. Please select a connection first.");
       return;
-    }
-
-    console.log(`Processing question with threadId: ${currentThreadId}, connection: ${selectedConnection}`);
-    
+    }    
     setCurrentQuestion(question);
     setShouldSaveDashboard(true);
 

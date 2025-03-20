@@ -23,7 +23,6 @@ import {
 } from "@/components/bh-charts";
 import { DataActionMenu } from "./data-action-menu";
 import ChartContainer from './chart-container';
-import { PanelLayout } from "@/components/shared/SharedPanel";
 import { motion } from "framer-motion";
 import { BarChart3, LayoutList } from "lucide-react";
 
@@ -40,6 +39,266 @@ interface GaugeDataItem {
   name: string;
   value: number;
 }
+
+// Define types for data detection
+interface DataTypeInfo {
+  type: 'numeric' | 'date' | 'category';
+  confidence: number;
+  format?: string;
+  sample?: any[];
+}
+
+interface DetectedProperties {
+  numericKeys: Array<{ key: string; info: DataTypeInfo }>;
+  dateKeys: Array<{ key: string; info: DataTypeInfo }>;
+  categoryKeys: Array<{ key: string; info: DataTypeInfo }>;
+}
+
+const detectDataProperties = (data: any[], sampleSize = 10): DetectedProperties => {
+  if (!data.length) {
+    return { numericKeys: [], dateKeys: [], categoryKeys: [] };
+  }
+
+  // Get a representative sample of the data
+  const sampleData = data.length > sampleSize 
+    ? [...Array(sampleSize)].map(() => data[Math.floor(Math.random() * data.length)])
+    : data;
+
+  const keys = Object.keys(sampleData[0]);
+  const analysis: Record<string, { counts: Record<string, number>, samples: any[] }> = {};
+
+  // Initialize analysis structure
+  keys.forEach(key => {
+    analysis[key] = {
+      counts: { numeric: 0, date: 0, category: 0 },
+      samples: []
+    };
+  });
+
+  // Analyze each sample
+  sampleData.forEach(item => {
+    keys.forEach(key => {
+      const value = item[key];
+      analysis[key].samples.push(value);
+
+      if (value === null || value === undefined) return;
+
+      // Try to detect numeric values
+      if (typeof value === 'number' || (!isNaN(Number(value)) && value !== '')) {
+        analysis[key].counts.numeric++;
+        return;
+      }
+
+      // Try to detect dates
+      const dateValue = new Date(value);
+      if (
+        value instanceof Date || 
+        (!isNaN(dateValue.getTime()) && 
+         typeof value === 'string' && 
+         /^\d{4}[-/]?\d{1,2}[-/]?\d{1,2}|^\d{1,2}[-/]?\d{1,2}[-/]?\d{4}/.test(value)
+        )
+      ) {
+        analysis[key].counts.date++;
+        return;
+      }
+
+      // Default to category
+      analysis[key].counts.category++;
+    });
+  });
+
+  // Determine types based on analysis
+  const result: DetectedProperties = {
+    numericKeys: [],
+    dateKeys: [],
+    categoryKeys: []
+  };
+
+  keys.forEach(key => {
+    const { counts, samples } = analysis[key];
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    
+    // Calculate confidence levels
+    const numericConfidence = counts.numeric / total;
+    const dateConfidence = counts.date / total;
+    const categoryConfidence = counts.category / total;
+
+    // Detect format patterns
+    const detectFormat = (samples: any[]): string | undefined => {
+      const sample = samples.find(s => s !== null && s !== undefined);
+      if (!sample) return undefined;
+
+      if (typeof sample === 'string') {
+        if (/^\$/.test(sample)) return 'currency';
+        if (/%$/.test(sample)) return 'percent';
+        if (/^\d{4}-\d{2}$/.test(sample)) {
+          return 'YYYY-MM';
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(sample)) return 'YYYY-MM-DD';
+      }
+      return undefined;
+    };
+
+    const info: DataTypeInfo = {
+      type: 'category',
+      confidence: 0,
+      format: detectFormat(samples),
+      sample: samples.slice(0, 3)
+    };
+
+    // Classify based on highest confidence
+    if (numericConfidence > 0.7) {
+      info.type = 'numeric';
+      info.confidence = numericConfidence;
+      result.numericKeys.push({ key, info });
+    } else if (dateConfidence > 0.7) {
+      info.type = 'date';
+      info.confidence = dateConfidence;
+      result.dateKeys.push({ key, info });
+    } else {
+      info.type = 'category';
+      info.confidence = categoryConfidence;
+      result.categoryKeys.push({ key, info });
+    }
+  });
+
+  return result;
+};
+
+const createChartConfig = (
+  chartType: string,
+  data: any[],
+  currentConfig: Record<string, any> = {},
+  format?: string
+) => {
+  // Detect data properties with improved detection
+  const detected = detectDataProperties(data);
+  
+
+  // Get best candidates for different axis types
+  const getBestKey = (type: 'numeric' | 'date' | 'category'): string | undefined => {
+    let candidates;
+    switch (type) {
+      case 'numeric':
+        candidates = detected.numericKeys;
+        break;
+      case 'date':
+        candidates = detected.dateKeys;
+        break;
+      case 'category':
+        candidates = detected.categoryKeys;
+        break;
+    }
+    return candidates.sort((a, b) => b.info.confidence - a.info.confidence)[0]?.key;
+  };
+
+  // Base config with smart defaults
+  const baseConfig = {
+    showGrid: true,
+    showLabels: true,
+    showLegend: true,
+    isAnimationActive: true,
+    valueFormatter: (value: number) => {
+      const numericKey = detected.numericKeys.find(k => k.info.format);
+      const detectedFormat = numericKey?.info.format;
+
+      if (format || detectedFormat) {
+        if (format === 'currency' || detectedFormat === 'currency') {
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(value);
+        }
+        if (format === 'percent' || detectedFormat === 'percent') {
+          return `${value}%`;
+        }
+      }
+      if (Number.isInteger(value)) {
+        return value.toString();
+      }
+      return value.toLocaleString();
+    }
+  };
+
+  // Chart-specific default configurations
+  const chartSpecificConfig = {
+    line: {
+      strokeWidth: 3,
+      dotRadius: 5,
+      showArea: false,
+      xAxisKey: getBestKey('date') || getBestKey('category') || getBestKey('numeric'),
+      yAxisKey: getBestKey('numeric'),
+      connectNulls: true
+    },
+    bar: {
+      barSize: 32,
+      xAxisKey: getBestKey('category') || getBestKey('date') || getBestKey('numeric'),
+      yAxisKey: getBestKey('numeric'),
+      stackOffset: 'none'
+    },
+    area: {
+      strokeWidth: 2,
+      fillOpacity: 0.3,
+      xAxisKey: getBestKey('date') || getBestKey('category'),
+      yAxisKey: getBestKey('numeric'),
+      stackOffset: 'none'
+    },
+    pie: {
+      innerRadius: 0,
+      nameKey: getBestKey('category'),
+      valueKey: getBestKey('numeric'),
+      labelType: 'percent'
+    },
+    donut: {
+      innerRadius: '60%',
+      nameKey: getBestKey('category'),
+      valueKey: getBestKey('numeric'),
+      labelType: 'percent'
+    },
+    scatter: {
+      xAxisKey: getBestKey('numeric'),
+      yAxisKey: getBestKey('numeric'),
+      dotSize: 6
+    },
+    bubble: {
+      xAxisKey: getBestKey('numeric'),
+      yAxisKey: getBestKey('numeric'),
+      sizeKey: getBestKey('numeric'),
+      minBubbleSize: 5,
+      maxBubbleSize: 30
+    },
+    radar: {
+      variables: Array.from(new Set(data.map(item => String(item[getBestKey('category') || 'name'])))),
+      fillOpacity: 0.3,
+      strokeWidth: 2
+    },
+    gauge: {
+      min: 0,
+      max: 100,
+      arcWidth: 0.2,
+      cornerRadius: 2,
+      animationDuration: 1000
+    },
+    treemap: {
+      nameKey: getBestKey('category'),
+      valueKey: getBestKey('numeric'),
+      aspectRatio: 1,
+      colorScale: 'sequential'
+    },
+    histogram: {
+      bins: 10,
+      valueKey: getBestKey('numeric'),
+      normalized: false
+    }
+  };
+
+  // Merge configurations with priority: currentConfig > chartSpecific > baseConfig
+  return {
+    ...baseConfig,
+    ...(chartSpecificConfig[chartType] || {}),
+    ...currentConfig
+  };
+};
 
 export function DataView({ result, isEmbedded = false }: DataViewProps) {
   const [currentResult, setCurrentResult] = useState<QueryResult>(result);
@@ -109,25 +368,68 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
   }
 
   else if (currentResult.type === 'chart' && currentResult.data) {
-    // Default chart config
-    const chartConfig = {
-      showGrid: true,
-      showLabels: true,
-      showLegend: true,
-      valueFormatter: (value: number) => {
-        if (currentResult.format === 'currency') {
-          return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-          }).format(value);
-        }
-        if (currentResult.format === 'percent') {
-          return `${value}%`;
-        }
-        return value.toLocaleString();
-      },
-      ...currentResult.config
-    };
+    console.log('Raw Chart Data:', currentResult.data);
+    console.log('Chart Type:', currentResult.chartType);
+    
+    // Check if we have time series data with Month and Order Count
+    const isTimeSeriesData = Array.isArray(currentResult.data) && 
+      currentResult.data.length > 0 &&
+      'Month' in currentResult.data[0] && 
+      'Order Count' in currentResult.data[0];
+    
+    
+    // Check if we have city data with capitalized keys (City and Total Orders)
+    const isCapitalizedCityData = Array.isArray(currentResult.data) && 
+      currentResult.data.length > 0 &&
+      'City' in currentResult.data[0] && 
+      'Total Orders' in currentResult.data[0];
+    
+    // Pre-process time series data if detected
+    if (isTimeSeriesData) {
+      
+      // Set explicit chart properties for time series
+      currentResult.xAxis = 'Month';
+      currentResult.yAxis = 'Order Count';
+      
+      // Convert Month strings to proper Date objects if needed
+      if (typeof currentResult.data[0].Month === 'string' && /^\d{4}-\d{2}$/.test(currentResult.data[0].Month)) {
+        currentResult.data = (currentResult.data as any[]).map(item => ({
+          ...item,
+          Month: new Date(item.Month + '-01') // Add day to make it a valid full date
+        }));
+      } 
+      // Handle ISO dates (already valid dates, just create Date objects)
+      else if (typeof currentResult.data[0].Month === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(currentResult.data[0].Month)) {
+        currentResult.data = (currentResult.data as any[]).map(item => ({
+          ...item,
+          Month: new Date(item.Month)
+        }));
+      }
+      
+    }
+    
+    // Pre-process capitalized city data if detected
+    else if (isCapitalizedCityData) {
+      
+      // Set explicit chart properties for city data
+      currentResult.xAxis = 'City';
+      currentResult.yAxis = 'Total Orders';
+      
+      // For bar charts, sort by value for better visualization
+      if (currentResult.chartType === 'bar') {
+        currentResult.data = [...(currentResult.data as any[])].sort((a, b) => b['Total Orders'] - a['Total Orders']);
+      }
+      
+    }
+    
+    // Create dynamic chart configuration
+    const chartConfig = createChartConfig(
+      currentResult.chartType,
+      Array.isArray(currentResult.data) ? currentResult.data : [],
+      currentResult.config,
+      currentResult.format
+    );
+
 
     // Special handling for gauge chart
     if (currentResult.chartType === 'gauge') {
@@ -216,12 +518,13 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     // Process standardized data
     const standardData = useMemo(() => {
       if (currentResult.isMultiSeries && !Array.isArray(currentResult.data)) {
-        return Object.entries(currentResult.data as Record<string, any[]>).map(([key, items]) =>
+        const processedData = Object.entries(currentResult.data as Record<string, any[]>).map(([key, items]) =>
           items.map(item => ({
             ...item,
             series: key
           }))
         ).flat();
+        return processedData;
       }
       return Array.isArray(currentResult.data) ? currentResult.data : [];
     }, [currentResult.data, currentResult.isMultiSeries]);
@@ -229,10 +532,15 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     // Render the appropriate chart based on chartType
     const renderChart = () => {
       const yAxis = currentResult.yAxis || 'value';
-      const chartConfig = currentResult.config || {};
+    
 
       switch (currentResult.chartType) {
         case 'bar':
+          console.log('Bar Chart Data:', {
+            data: standardData,
+            xAxis: currentResult.xAxis || 'name',
+            bars: currentResult.isMultiSeries ? ['series'] : [yAxis]
+          });
           return (
             <BarChart
               data={standardData}
@@ -250,20 +558,10 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <LineChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || 'name'}
-              lines={currentResult.isMultiSeries ? ['series'] : [yAxis]}
+              xAxisDataKey={currentResult.xAxis || chartConfig.xAxisKey}
+              lines={[currentResult.yAxis || chartConfig.yAxisKey]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
-              config={{
-                ...chartConfig,
-                // Force stroke width to be visible
-                strokeWidth: 3,
-                // Add dot radius to make points more visible
-                dotRadius: 5,
-                // Enable animation
-                isAnimationActive: true,
-                // Set true to make it more visible with color fill
-                showArea: true
-              }}
+              config={chartConfig}
               isMultiSeries={currentResult.isMultiSeries}
             />
           );

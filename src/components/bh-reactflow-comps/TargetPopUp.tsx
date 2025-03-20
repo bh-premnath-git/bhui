@@ -111,19 +111,14 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
-
-    console.log(source,"source")
-    console.log(initialData,"initialData")
-    console.log(pipelineJson,"pipelineJson")
+    
     useEffect(() => {
         dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
     }, [dispatch]);
 
     useEffect(() => {
         if (source) {
-            console.log(source.source,"source")
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
-            console.log(pipelineJsonData,"pipelineJsonData")
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
@@ -388,7 +383,6 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Use formData.name as the nodeTitle
             const nodeTitle = formData.name;
-            console.log(formData,"nodeTitle")
             // Create a properly structured source data object
             const sourceData = {
                 nodeId,
@@ -423,7 +417,6 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
-console.log(sourceData,"sourceData")
             if (onSourceUpdate) {
                 onSourceUpdate(sourceData);
             }

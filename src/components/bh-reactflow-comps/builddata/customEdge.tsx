@@ -69,8 +69,7 @@ export const CustomEdge = memo(({
 
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
-    // console.log(transformationCounts,"transformationCounts")
-    // Memoize the query parameters to prevent unnecessary re-renders
+    
     const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
         transformationName: getNode(source)?.data.title,
@@ -81,7 +80,6 @@ export const CustomEdge = memo(({
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
 
     const sourceNode = getNode(source);
-    // console.log(sourceNode,"sourceNode")
     
     const rowCount = transformationCounts.find(
         (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
@@ -107,7 +105,6 @@ export const CustomEdge = memo(({
             setIsMetricsOpen(true);
             setIsEdgeLoading(true);
             try {
-                console.log(sourceNode?.data.title, "sourceNode?.data.title");
                 await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title

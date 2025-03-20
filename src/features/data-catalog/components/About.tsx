@@ -510,8 +510,6 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
   );
   const [isConnectionChanged, setIsConnectionChanged] = useState(false);
   const { connectionConfigList } = useAppSelector((state) => state.datasource);
-  console.log(selectedSource);
-  console.log(connectionConfigList);
   const hasChanges = descriptionState.current !== descriptionState.original;
 
   // Fetch connection configs on mount
@@ -604,7 +602,6 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
   const handleUpdateConnection = async () => {
     try {
       let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
-      console.log(connectionConfig);
       await apiService.patch({
         url: `/data_source/${selectedSource.data_src_id}`,
         portNumber: CATALOG_API_PORT,

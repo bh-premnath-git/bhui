@@ -25,7 +25,6 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
   const [showImportSection, setShowImportSection] = useState(false);
   const { projects } = useProjects();
   const dispatch = useAppDispatch();
-  console.log(showImportSection,"projects")
 
   const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
     ProjectId: project.bh_project_id,
@@ -45,7 +44,6 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
   const currentPageData = datasources.slice(startIndex, endIndex);
 
   const onRowClickHandler = (row: Row<DataSource>) => {
-    console.log(row.original);
     setSelectedRow(row.original);
     setIsSheetOpen(true);
     dataCatalogSrv.selectDatasource(row.original);

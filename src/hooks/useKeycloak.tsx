@@ -39,7 +39,6 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Skip initialization if not in browser with Web Crypto API
     if (!isBrowser) {
-      console.log('Skipping Keycloak initialization: Web Crypto API not available');
       return;
     }
     
@@ -47,10 +46,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
     
     const initKeycloak = async () => {
       try {
-        if (!mounted) return;
-        
-        console.log('Initializing Keycloak with redirectUri:', redirectUri);
-        
+        if (!mounted) return;        
         const authenticated = await keycloak.init({
           onLoad: 'check-sso',
           silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
@@ -60,13 +56,10 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
         });
 
         if (!mounted) return;
-
-        console.log('Keycloak initialized, authenticated:', authenticated);
         setInitialized(true);
         setAuthenticated(authenticated);
         
         if (authenticated) {
-          console.log('User is authenticated, token available:', !!keycloak.token);
           setToken(keycloak.token);
           setRefreshToken(keycloak.refreshToken);
           
@@ -83,10 +76,8 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
           
           // Set up token refresh
           keycloak.onTokenExpired = () => {
-            console.log('Token expired, refreshing...');
             keycloak.updateToken(30).then((refreshed) => {
               if (refreshed) {
-                console.log('Token refreshed');
                 setToken(keycloak.token);
                 setRefreshToken(keycloak.refreshToken);
                 if (typeof sessionStorage !== 'undefined') {

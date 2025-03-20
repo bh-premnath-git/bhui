@@ -53,7 +53,6 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     };
 
     const orderedUiNodes = getOrderedNodes();
-    console.log(uiNodes,"orderedUiNodes")
     // Extract sources and create reader transformations
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
@@ -73,7 +72,6 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 
     // Create reader transformations
     // debugger;
-    console.log(uiNodes)
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => ({
@@ -100,7 +98,6 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_') )
         .map(node => {
-            console.log(node.data)
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
                 transformation: node.data.label,
@@ -116,7 +113,6 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             // Rest of the transformation configuration...
             switch (node.data.label) {
                 case 'Aggregator':
-                console.log(node.data.transformationData)
 
                     return {
                         ...baseConfig,

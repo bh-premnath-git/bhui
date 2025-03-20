@@ -40,8 +40,7 @@ export default function AddSortPopUp({
 
   // Called when user clicks "Apply"
   const onSubmit = (data: SortFormValues) => {
-    console.log("Submitted sort form:", data);
-    console.log("Ascending?", checked); // Use the 'checked' local state for ascending/descending
+     // Use the 'checked' local state for ascending/descending
     // ... do something with the data
   };
 

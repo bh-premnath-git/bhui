@@ -51,7 +51,6 @@ export default function AddFilterPopUp({
 
   // Called when user clicks "Apply"
   const onSubmit = (data: FilterFormValues) => {
-    console.log("Filter form submitted:", data);
     // ... do something with the submitted data
   };
 

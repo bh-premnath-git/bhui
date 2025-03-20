@@ -28,14 +28,12 @@ if (isBrowser) {
       clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
     };
 
-    console.log('Keycloak configuration : >>', keycloakConfig);
     keycloak = new Keycloak(keycloakConfig);
   } catch (error) {
     console.error('Error creating Keycloak instance:', error);
     keycloak = createKeycloakMock();
   }
 } else {
-  console.log('Browser environment not fully supported (missing Web Crypto API), creating mock Keycloak');
   keycloak = createKeycloakMock();
 }
 

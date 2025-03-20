@@ -165,7 +165,7 @@ export function useStreamingResponse() {
     }
   }, [lastExplanation]);
 
-  const startStreaming = useCallback(async (question: string, connectionId: string, threadId: string) => {
+  const startStreaming = useCallback(async (question: string, connectionId: string, threadId: string, module?: string) => {
     // Reset current stream before starting a new one
     if (abortStreamingFunction) {
       abortStreamingFunction();
@@ -185,7 +185,6 @@ export function useStreamingResponse() {
     setIsStreaming(true);
 
     try {
-      console.log(`Starting stream with question: "${question}", connectionId: ${connectionId}, threadId: ${threadId}`);
       const parsedConnectionId = parseInt(connectionId, 10);
       
       if (isNaN(parsedConnectionId)) {
@@ -198,16 +197,13 @@ export function useStreamingResponse() {
         threadId,
         (jsonString: string) => {
           try {
-            console.log("Received stream chunk:", jsonString.substring(0, 100) + (jsonString.length > 100 ? "..." : ""));
             const messageData = JSON.parse(jsonString);
-            console.log("Parsed message type:", messageData.response_type || (messageData.meta ? "meta" : "unknown"));
             processStreamMessage(messageData as StreamMessage);
           } catch (error) {
             console.error('Error parsing stream message:', error, jsonString);
           }
         },
         () => {
-          console.log("Stream completed");
           setIsStreaming(false);
           setAbortStreamingFunction(null);
         },
@@ -216,7 +212,8 @@ export function useStreamingResponse() {
           toast.error('Error while processing your question');
           setIsStreaming(false);
           setAbortStreamingFunction(null);
-        }
+        },
+        module
       );
       
       setAbortStreamingFunction(() => abortFunction);

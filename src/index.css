@@ -34,6 +34,11 @@
     --ring: 240 10% 3.9%;
     
     --radius: 0.5rem;
+    --chart-1-color: #003f5c;
+    --chart-2-color: #2f4b7c;
+    --chart-3-color: #665191;
+    --chart-4-color: #a05195;
+    --chart-5-color: #d45087;
   }
 
   .dark {
@@ -64,6 +69,11 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+    --chart-1-color: #003f5c;
+    --chart-2-color: #2f4b7c;
+    --chart-3-color: #665191;
+    --chart-4-color: #a05195;
+    --chart-5-color: #d45087;
   }
 
   .theme-transition {

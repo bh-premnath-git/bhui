@@ -203,7 +203,6 @@ End of (PolyCrypt) License Terms and Conditions.
 
         var addEventListener = function (type, listener, useCapture) {
             // (ignore useCapture)
-            //console.log("TRACE addEventListener enter");
             if (!(type in listeners)) {
                 listeners[type] = [];
             }
@@ -222,13 +221,10 @@ End of (PolyCrypt) License Terms and Conditions.
         that.addEventListener = addEventListener;
 
         var removeEventListener = function (type, listener, useCapture) {
-            //console.log("TRACE removeEventListener enter");
-            //console.log("ERROR removeEventListener not implemented");
         };
         that.removeEventListener = removeEventListener;
 
         var dispatchEvent = function (e) {
-            //console.log("TRACE dispatchEvent enter");
             var listenersForEvent = listeners[e.type];
             for (var l in listenersForEvent) {
             	if (listenersForEvent.hasOwnProperty(l)) {
@@ -243,7 +239,6 @@ End of (PolyCrypt) License Terms and Conditions.
         // listeners may be either DOM4 EventListener objects or just functions
         // that take the event as its argument
         var _fireListener = function (listener, e) {
-            //console.log("TRACE _fireListener enter");
             var typeofListener = typeof (listener);
             if (typeofListener === 'function') {
                 listener(e);
@@ -252,8 +247,7 @@ End of (PolyCrypt) License Terms and Conditions.
                 (typeof (listener.handleEvent) === 'function')) {
                 listener.handleEvent(e);
             } else {
-                console.log("ERROR listener of unknown type ", typeof (listener));
-                console.log(listener);
+                
             }
         };
 
@@ -264,8 +258,7 @@ End of (PolyCrypt) License Terms and Conditions.
             if (data.idx != myOpid) {
                 return; // message not for me
             }
-            //console.log("TRACE _handleMessage enter");
-            //console.log(message.data);
+            
             bridge.removeMessageHandler(_handleMessage);
             var event = {};
             event.target = op;
@@ -294,7 +287,6 @@ End of (PolyCrypt) License Terms and Conditions.
 
         // send messages TO the plugin
         var postMessage = function (method, args) {
-            //console.log("TRACE postMessage enter");
             var msg = {
                 idx: myOpid,
                 method: method,
@@ -311,7 +303,6 @@ End of (PolyCrypt) License Terms and Conditions.
 
     //--------------------------------------------------------------------------
     var createCryptoOp = function (type, algorithm, key, signature, buffer) {
-        //console.log("TRACE createCryptoOp enter");
 
         var op = {};
         var result = null;
@@ -626,14 +617,12 @@ End of (PolyCrypt) License Terms and Conditions.
     function onPluginMessage(e) {
         var messageString = e.data;
         var messageJson = JSON.parse(messageString);
-        // console.log('Message from plugin: ' + messageString);
         bridge.dispatchMessageHandlers(messageJson);
     };
 
     function onPluginReady(pluginObject) {
         bridge.wirePostMessage(function postMessageToPlugin(messageJson) {
             var messageString = JSON.stringify(messageJson);
-            // console.log('Message to plugin: ' + messageString);
             pluginObject.postMessage(messageString);
         });
     };

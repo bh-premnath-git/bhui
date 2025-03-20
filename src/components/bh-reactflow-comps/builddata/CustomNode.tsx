@@ -36,7 +36,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     selectedSchema?: any;
     handleSearchResultClick: (data: any) => void;
 }) => {
-    // console.log(data)
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleValue, setTitleValue] = useState(data.title );

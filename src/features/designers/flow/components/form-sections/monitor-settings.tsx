@@ -20,14 +20,14 @@ export function MonitorSettings({ form }: MonitorSettingsProps) {
           <FormItem>
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Recipient Email IDs</FormLabel>
             <div className="flex flex-wrap gap-2 mb-2">
-              {field.value.map((email: string) => (
+              {field.value.emails?.map((email: string) => (
                 <Badge key={email} variant="secondary" className="cursor-pointer gap-1">
                   {email}
                   <X
                     className="h-3 w-3"
                     onClick={() => {
-                      const updatedEmails = field.value.filter((e: string) => e !== email)
-                      field.onChange(updatedEmails)
+                      const updatedEmails = field.value.emails?.filter((e: string) => e !== email) || []
+                      field.onChange({ emails: updatedEmails })
                     }}
                   />
                 </Badge>
@@ -40,8 +40,8 @@ export function MonitorSettings({ form }: MonitorSettingsProps) {
                   if (e.key === "Enter" || e.key === ",") {
                     e.preventDefault()
                     const newEmail = e.currentTarget.value.trim()
-                    if (newEmail && newEmail.includes("@") && !field.value.includes(newEmail)) {
-                      field.onChange([...field.value, newEmail])
+                    if (newEmail && newEmail.includes("@") && !field.value.emails?.includes(newEmail)) {
+                      field.onChange({ emails: [...(field.value.emails || []), newEmail] })
                       e.currentTarget.value = ""
                     }
                   }

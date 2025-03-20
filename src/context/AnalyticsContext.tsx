@@ -23,7 +23,7 @@ interface AnalyticsContextType {
   addRecentChat: (chat: Omit<RecentChat, 'id'>) => Promise<RecentChat>;
   messages: Message[];
   isStreaming: boolean;
-  handleSubmitQuestion: (question: string) => Promise<void>;
+  handleSubmitQuestion: (question: string, module?: string) => Promise<void>;
   handleSuggestedQuestion: (question: string) => void;
   handleNewChat: () => Promise<string | null>;
   threadId: string | null;
@@ -60,6 +60,9 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   // Add a ref to track in-flight request
   const createConversationRequestRef = useRef<Promise<any> | null>(null);
+  // Add new state for retry tracking
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3; // Configure maximum number of retries
 
   const { createConversation } = useXplore();
 
@@ -97,16 +100,22 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Memoize the debounced version of handleNewChat's implementation
   const createNewConversation = useMemo(() => 
     debounce(async (): Promise<string | null> => {
-      console.log("[Analytics] Debounced createNewConversation called");
       
+      // Check retry limit
+      if (retryCount >= MAX_RETRIES) {
+        console.error("[Analytics] Max retries reached for conversation creation");
+        toast.error("Unable to create conversation after multiple attempts");
+        setIsCreatingConversation(false);
+        createConversationRequestRef.current = null;
+        return null;
+      }
+
       // If already creating, return the existing promise
       if (isCreatingConversation && createConversationRequestRef.current) {
-        console.log("[Analytics] Creation already in progress, returning existing promise");
         return createConversationRequestRef.current;
       }
       
       try {
-        console.log("[Analytics] Starting new conversation");
         setIsCreatingConversation(true);
         setMessages([]);
         setInput("");
@@ -114,23 +123,24 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setShouldSaveDashboard(false);
         resetStream();
         
-        // Create a new promise and store the reference
         const conversationPromise = createConversation()
           .then(response => {
             if (response.data.thread_id) {
               const newThreadId = response.data.thread_id;
-              console.log(`[Analytics] New conversation started with thread_id: ${newThreadId}`);
               setThreadId(newThreadId);
+              setRetryCount(0); // Reset retry count on success
               window.dispatchEvent(new CustomEvent('xplorer:new-chat'));
               return newThreadId;
             } else {
               console.error("[Analytics] No thread_id returned from createConversation");
+              setRetryCount(prev => prev + 1); // Increment retry count
               toast.error("Failed to start new conversation: No thread ID returned");
               return null;
             }
           })
           .catch(error => {
             console.error("[Analytics] Failed to start new conversation:", error);
+            setRetryCount(prev => prev + 1); // Increment retry count
             toast.error("Failed to start new conversation");
             return null;
           })
@@ -143,35 +153,37 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return conversationPromise;
       } catch (error) {
         console.error("[Analytics] Failed to start new conversation:", error);
+        setRetryCount(prev => prev + 1); // Increment retry count
         toast.error("Failed to start new conversation");
         setIsCreatingConversation(false);
         createConversationRequestRef.current = null;
         return null;
       }
-    }, 300), // 300ms debounce to prevent rapid successive calls
-  [resetStream, createConversation]);
+    }, 300),
+    [resetStream, createConversation, retryCount] // Add retryCount to dependencies
+  );
 
   const handleNewChat = useCallback(async (): Promise<string | null> => {
-    console.log("[Analytics] handleNewChat called");
     return createNewConversation();
   }, [createNewConversation]);
 
   useEffect(() => {
-    if (selectedConnection && !threadId && !isCreatingConversation && !createConversationRequestRef.current) {
-      console.log("[Analytics] Creating new conversation from effect");
+    if (
+      selectedConnection && 
+      !threadId && 
+      !isCreatingConversation && 
+      !createConversationRequestRef.current &&
+      retryCount < MAX_RETRIES // Add retry count check
+    ) {
       handleNewChat();
     }
-  }, [selectedConnection, threadId, isCreatingConversation, handleNewChat]);
+  }, [selectedConnection, threadId, isCreatingConversation, handleNewChat, retryCount]); // Add retryCount to dependencies
 
-  const handleSubmitQuestion = useCallback(async (question: string) => {
-    console.log(`Submitting question: "${question}", current threadId: ${threadId}`);
-    
-    // Reset the stream state to clear previous responses
+  const handleSubmitQuestion = useCallback(async (question: string, module?: string) => {    
     resetStream();
     
     let currentThreadId = threadId;
     if (!currentThreadId) {
-      console.log("No active thread, creating a new conversation");
       currentThreadId = await handleNewChat();
       if (!currentThreadId) {
         toast.error("Unable to start conversation. Please try again.");
@@ -182,10 +194,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!selectedConnection) {
       toast.error("No connection selected. Please select a connection first.");
       return;
-    }
-
-    console.log(`Processing question with threadId: ${currentThreadId}, connection: ${selectedConnection}`);
-    
+    }    
     setCurrentQuestion(question);
     setShouldSaveDashboard(true);
 
@@ -210,7 +219,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMessages(prev => [...prev, userMessage, tempAssistantMessage]);
     
     // Start the streaming process
-    await startStreaming(question, selectedConnection, currentThreadId);
+    await startStreaming(question, selectedConnection, currentThreadId, module);
 
     const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
     await addRecentChat({ name: chatName });

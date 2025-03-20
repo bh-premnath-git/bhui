@@ -1,7 +1,7 @@
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SendHorizontal, Database, ChevronDown, Plus, History, Check, Loader2 } from "lucide-react";
-import { useRef } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,12 +35,16 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   } = useAnalytics();
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
   const handleSubmit = () => {
     if (input.trim()) {
       onSubmit(input);
       setInput("");
-      textareaRef.current?.focus();
+      setIsTextareaFocused(false);
+      setIsDropdownOpen(false);
+      textareaRef.current?.blur();
     }
   };
 
@@ -53,13 +57,17 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
 
   return (
     <div className="border-t bg-background px-2 py-2">
-      <div className="mx-auto flex max-w-3xl items-center rounded-lg border border-input bg-background px-2 relative">
-        <DropdownMenu>
+      <div className={`mx-auto flex max-w-3xl items-center rounded-lg border border-input bg-background px-2 relative transition-all duration-200 ${
+        isDropdownOpen ? 'max-w-4xl' : ''
+      }`}>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 gap-2 text-xs font-normal hover:bg-muted relative z-10 px-2 min-w-[140px] justify-start group"
+              className={`h-8 gap-2 text-xs font-normal hover:bg-muted relative z-10 px-2 justify-start group transition-all duration-200 ${
+                isDropdownOpen ? 'min-w-[180px]' : 'min-w-[140px]'
+              }`}
               disabled={isLoadingConnections}
             >
               {isLoadingConnections ? (
@@ -77,7 +85,9 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="w-[200px] p-0"
+            className={`p-0 transition-all duration-200 ${
+              isDropdownOpen ? 'w-[240px]' : 'w-[200px]'
+            }`}
             sideOffset={8}
           >
             <div className="py-1">
@@ -158,10 +168,14 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsTextareaFocused(true)}
+            onBlur={() => setIsTextareaFocused(false)}
             placeholder="Ask a question about your data..."
-            className="min-h-[36px] w-full resize-none bg-transparent border-0 focus-visible:ring-0 py-2 px-2 text-sm leading-tight shadow-none placeholder:text-muted-foreground/50"
+            className={`min-h-[36px] w-full resize-none bg-transparent border-0 focus-visible:ring-0 py-2 px-2 text-sm leading-tight shadow-none placeholder:text-muted-foreground/50 transition-all duration-200 ${
+              isTextareaFocused ? 'min-h-[100px]' : ''
+            }`}
             disabled={isLoading}
-            rows={1}
+            rows={isTextareaFocused ? 4 : 1}
           />
         </div>
 

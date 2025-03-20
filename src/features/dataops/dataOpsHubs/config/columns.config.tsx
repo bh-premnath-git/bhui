@@ -1,10 +1,11 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { ColumnDefWithFilters } from "@/types/table"
+import type {TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
 import { DataOpsHub } from '@/types/dataops/dataOpsHub';
+import { Clock } from 'lucide-react';
 
 export const columnHelper = createColumnHelper<DataOpsHub>();
 
-export const columns: ColumnDefWithFilters<DataOpsHub>[] = [
+const columns: ColumnDefWithFilters<DataOpsHub>[] = [
   columnHelper.accessor('flow_name', {
     header: 'Flow Name',        
     enableColumnFilter: true,
@@ -47,3 +48,20 @@ export const columns: ColumnDefWithFilters<DataOpsHub>[] = [
     enableColumnFilter: true,
   }),
 ];
+
+const getToolbarConfig = (): TToolbarConfig => {
+  return {
+    buttons: [
+      {
+        label: "Xplore",
+        variant: "outline",
+        icon: Clock,
+        onClick: () => {
+          window.dispatchEvent(new Event("openXploreops"));
+        },
+      }
+    ]
+  }
+}
+
+export { columns, getToolbarConfig };

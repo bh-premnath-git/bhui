@@ -8,6 +8,7 @@ const DataOpsHub = lazy(() => import("@/pages/dataops/DataopsHub"));
 const OpsHub = lazy(() => import("@/pages/dataops/OpsHub"));
 const AlertsHub = lazy(() => import("@/pages/dataops/AlertsHub"));
 const ReleaseBundle = lazy(() => import("@/pages/dataops/ReleaseBundle"));
+const DataOpsXplore = lazy(() => import("@/pages/dataops/DataopsExplorer"));
 
 export const DataOpsRoutes = (
   <>
@@ -24,6 +25,14 @@ export const DataOpsRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <OpsHub />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={`${ROUTES.DATAOPS.OPS_HUB}/data-xplorer`} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <DataOpsXplore />
         </Suspense>
       } 
     />

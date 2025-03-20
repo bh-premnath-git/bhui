@@ -159,8 +159,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isPipelineRunning, setIsPipelineRunning] = useState(false);
     const [transformationCounts, setTransformationCounts] = useState<Array<{ transformationName: string; rowCount: string }>>([]);
     const id  = localStorage.getItem("pipeline_id");
-    console.log(id,"id")
-    console.log(location.pathname,"location")
     const dispatch = useDispatch<AppDispatch>();
     
     const ctrlDTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -199,7 +197,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [pipelineName, setPipeLineName] = useState<any>(null);
     const [pipelineJson, setPipelineJson] = useState<any>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
-console.log(pipeline_id,"pipeline_id")
     // Add this at the component level, outside any callbacks
     const fetchedIdsRef = useRef(new Set<string>());
 
@@ -214,7 +211,6 @@ console.log(pipeline_id,"pipeline_id")
         setLastSaved(new Date());
         setSaveErrorState(null);
         setHeaderUpdateTrigger(prev => {
-            console.log("Header update trigger incremented:", prev + 1);
             return prev + 1;
         });
     };
@@ -236,7 +232,6 @@ console.log(pipeline_id,"pipeline_id")
             try {
                 // Check if id exists and is valid
                 if (!id) {
-                    console.log('No pipeline ID provided');
                     return;
                 }
 
@@ -246,7 +241,6 @@ console.log(pipeline_id,"pipeline_id")
                 if (!response || !response.pipeline_json) {
                     throw new Error('Invalid pipeline data received');
                 }
-console.log(response.pipeline_json,"response")
                 // Update pipeline name and JSON safely
                 setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
                 setPipelineJson(response.pipeline_json);

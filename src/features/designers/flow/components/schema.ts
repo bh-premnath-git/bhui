@@ -13,7 +13,9 @@ export const additionalDetailsSchema = z.object({
 })
 
 export const monitorSettingsSchema = z.object({
-  recipientEmails: z.array(z.string().email("Please enter a valid email address")),
+  recipientEmails: z.object({
+    emails: z.array(z.string().email("Please enter a valid email address"))
+  }),
   alertSettings: z.object({
     onJobStart: z.boolean().default(false),
     onJobFailure: z.boolean().default(true),

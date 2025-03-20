@@ -95,7 +95,7 @@ export function ConnectionForm({
       dataset_id: formData.dataset_id || '',
       credentials_json: formData.credentials_json || '',
       host: formData.host || '',
-      port: formData.port || (connectionName.toLowerCase() === 'mysql' ? '3306' : '5432'),
+      port: formData.port || '',
       database: formData.database || '',
       username: formData.username || '',
       password: formData.password || '',
@@ -106,7 +106,7 @@ export function ConnectionForm({
       dataset_id: '',
       credentials_json: '',
       host: '',
-      port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
+      port: '',
       database: '',
       username: '',
       password: '',
@@ -125,7 +125,7 @@ export function ConnectionForm({
           dataset_id: formData.dataset_id || '',
           credentials_json: formData.credentials_json || '',
           host: formData.host || '',
-          port: formData.port || (connectionName.toLowerCase() === 'mysql' ? '3306' : '5432'),
+          port: formData.port || '',
           database: formData.database || '',
           username: formData.username || '',
           password: formData.password || '',
@@ -137,7 +137,7 @@ export function ConnectionForm({
           dataset_id: '',
           credentials_json: '',
           host: '',
-          port: connectionName.toLowerCase() === 'mysql' ? '3306' : '5432',
+          port: '',
           database: '',
           username: '',
           password: '',
@@ -184,7 +184,7 @@ export function ConnectionForm({
     if (type === 'postgres' || type === 'mysql') {
       return {
         host: data.host || '',
-        port: data.port || (type === 'mysql' ? '3306' : '5432'),
+        port: data.port || '',
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
@@ -196,7 +196,7 @@ export function ConnectionForm({
     if (type === 'oracle') {
       return {
         host: data.host || '',
-        port: data.port || '1521',
+        port: data.port || '',
         database: data.database || 'None',
         service_name: data.service_name || '',
         sid: data.sid || '',

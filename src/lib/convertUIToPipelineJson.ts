@@ -53,8 +53,8 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     };
 
     const orderedUiNodes = getOrderedNodes();
-    // console.log(uiNodes
-    //     .filter(node => node.id.startsWith('Reader_'))[0],"orderedUiNodes")
+    console.log(uiNodes
+        .filter(node => node.id.startsWith('Reader_'))[0].data?.source?.custom_metadata,"orderedUiNodes")
     // Extract sources and create reader transformations
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
@@ -75,11 +75,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
                 database:node.data.source?.custom_metadata?.custom_metadata?.database,
                 schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
-                secret_name:node.data.source?.custom_metadata?.custom_metadata?.secret_name||"bh-postgres-out5",
+                secret_name:node.data.source?.custom_metadata?.secret_name,
 
             }
         }));
-// console.log(sources)
+console.log(sources)
     // Create reader transformations
     // debugger;
     const readerTransformations = uiNodes
@@ -103,7 +103,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
                     database:node.data.source?.custom_metadata?.custom_metadata?.database,
                 schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
-                secret_name:node.data.source?.custom_metadata?.custom_metadata?.secret_name||"bh-postgres-out5",
+                secret_name:node.data.source?.custom_metadata?.secret_name,
     
                 }
             },

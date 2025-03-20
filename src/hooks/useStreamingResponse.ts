@@ -165,7 +165,7 @@ export function useStreamingResponse() {
     }
   }, [lastExplanation]);
 
-  const startStreaming = useCallback(async (question: string, connectionId: string, threadId: string) => {
+  const startStreaming = useCallback(async (question: string, connectionId: string, threadId: string, module?: string) => {
     // Reset current stream before starting a new one
     if (abortStreamingFunction) {
       abortStreamingFunction();
@@ -212,7 +212,8 @@ export function useStreamingResponse() {
           toast.error('Error while processing your question');
           setIsStreaming(false);
           setAbortStreamingFunction(null);
-        }
+        },
+        module
       );
       
       setAbortStreamingFunction(() => abortFunction);

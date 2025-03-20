@@ -23,7 +23,7 @@ interface AnalyticsContextType {
   addRecentChat: (chat: Omit<RecentChat, 'id'>) => Promise<RecentChat>;
   messages: Message[];
   isStreaming: boolean;
-  handleSubmitQuestion: (question: string) => Promise<void>;
+  handleSubmitQuestion: (question: string, module?: string) => Promise<void>;
   handleSuggestedQuestion: (question: string) => void;
   handleNewChat: () => Promise<string | null>;
   threadId: string | null;
@@ -179,7 +179,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [selectedConnection, threadId, isCreatingConversation, handleNewChat, retryCount]); // Add retryCount to dependencies
 
-  const handleSubmitQuestion = useCallback(async (question: string) => {    
+  const handleSubmitQuestion = useCallback(async (question: string, module?: string) => {    
     resetStream();
     
     let currentThreadId = threadId;
@@ -219,7 +219,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMessages(prev => [...prev, userMessage, tempAssistantMessage]);
     
     // Start the streaming process
-    await startStreaming(question, selectedConnection, currentThreadId);
+    await startStreaming(question, selectedConnection, currentThreadId, module);
 
     const chatName = question.slice(0, 30) + (question.length > 30 ? '...' : '');
     await addRecentChat({ name: chatName });

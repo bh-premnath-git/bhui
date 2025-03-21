@@ -80,7 +80,7 @@ export const patchFlowOperation = createAsyncThunk(
     async (data: { flowId: number, data: Partial<Flow> }) => {
         const response = await apiService.patch<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: `/flow/${data.flowId}/`,
+            url: `/flow/${data.flowId}`,
             data: data.data,
             usePrefix: true,
             method: 'PATCH',
@@ -131,7 +131,7 @@ export const fetchDagParserTime = createAsyncThunk(
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.get<string>({
             portNumber: CATALOG_API_PORT,
-            url: '/bh_airflow/dag_parse_time/',
+            url: '/bh_airflow/dag_parse_time',
             params: query,
             usePrefix: true,
             method: 'GET',
@@ -148,7 +148,7 @@ export const commitFlowVersion = createAsyncThunk(
     async (data: { flow_deployment_id: number; comment: string }) => {
         const response = await apiService.post<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: '/flow/flow-version/',
+            url: '/flow/flow-version',
             data,
             usePrefix: true,
             method: 'POST',
@@ -185,7 +185,7 @@ export const triggerDagDeployment = createAsyncThunk(
     async (data: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.post<{ dag_run_id: string }>({
             portNumber: CATALOG_API_PORT,
-            url: '/bh_airflow/trigger_dag/',
+            url: '/bh_airflow/trigger_dag',
             query: `dag_id=${data.dag_id}&airflow_env_name=${data.airflow_env_name}&bh_env_name=${data.bh_env_name}`,
             usePrefix: true,
             method: 'POST',
@@ -202,7 +202,7 @@ export const createFlowAgentConversationEntry = createAsyncThunk(
     async (data: { flow_id: string; request: string; thread_id: string }) => {
         const response = await apiService.post<FlowAgentConversationResponse>({
             portNumber: AGENT_PORT,
-            url: '/flow_agent/create_flow/',
+            url: '/flow_agent/create_flow',
             data,
             usePrefix: true,
             method: 'POST',

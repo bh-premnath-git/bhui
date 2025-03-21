@@ -6,12 +6,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useAppSelector } from "@/hooks/useRedux";
+import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { RootState } from "@/store"
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader, Trash2 } from "lucide-react";
+import { deletePipelineById } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { usePipeline } from "../hooks/usePipeline";
 
 type DeletePipelineDialogProps = {
   open: boolean;
@@ -19,11 +21,31 @@ type DeletePipelineDialogProps = {
 };
 
 export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialogProps) {
-  const pipelineName = useAppSelector((state: RootState) => state.pipeline.selectedPipeline?.pipeline_name)
-  const [confirmationInput, setConfirmationInput] = useState("")
+  const selectedPipeline = useAppSelector((state: RootState) => state.pipeline.selectedPipeline);
+  const pipelineName = selectedPipeline?.pipeline_name;
+  const [confirmationInput, setConfirmationInput] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const dispatch = useAppDispatch();
+  
+  // Import the usePipeline hook to get access to the refetch function
+  const { fetchPipelineList } = usePipeline({ shouldFetch: false });
 
-  const handleDelete = () => {
-
+  const handleDelete = async () => {
+    if (!selectedPipeline?.pipeline_id) return;
+    
+    setIsDeleting(true);
+    try {
+      await dispatch(deletePipelineById(selectedPipeline.pipeline_id));
+      
+      // Refetch the pipeline list after successful deletion
+      fetchPipelineList(true);
+      
+      onOpenChange(false);
+    } catch(error) {
+      console.log(error);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -47,8 +69,18 @@ export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialo
           </div>
         </div>
         <DialogFooter>
-          <Button variant="destructive" onClick={handleDelete} disabled={confirmationInput !== pipelineName}>
-            <Trash2 className="h-4 w-4" />
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={confirmationInput !== pipelineName || isDeleting}>
+            {isDeleting ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

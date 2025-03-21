@@ -26,7 +26,7 @@ export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDi
     const [confirmationInput, setConfirmationInput] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
     const { handleDeleteFlow } = useFlow();
-    
+
 
     const handleDelete = async () => {
         if (!selectedFlow) return;
@@ -72,12 +72,12 @@ export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDi
                         {isDeleting ? (
                             <>
                                 <Loader className="h-4 w-4 animate-spin mr-2" />
-                                Deleting...
+
                             </>
                         ) : (
                             <>
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+
                             </>
                         )}
                     </Button>

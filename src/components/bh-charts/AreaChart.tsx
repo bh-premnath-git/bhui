@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
 } from "recharts"
 import { colorPalettes } from "@/components/bh-charts"
 
@@ -161,7 +160,6 @@ export const AreaChart: React.FC<AreaChartProps> = ({
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         />
-        <Legend />
         {seriesKeys.map((key, index) => (
           <Area
             key={key}

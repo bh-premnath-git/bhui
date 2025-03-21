@@ -58,7 +58,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
         const {dag_run_id, ...other} = dagEunID;
         const response = await apiService.get<{ task_instances: any[] }>({
           portNumber: CATALOG_API_PORT,
-          url: '/bh_airflow/get_dag_task_id/',
+          url: '/bh_airflow/get_dag_task_id',
           params: dagEunID,
           usePrefix: true,
           method: 'GET',
@@ -88,7 +88,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       
       const response = await apiService.get<string>({
         portNumber: CATALOG_API_PORT,
-        url: '/bh_airflow/get_dag_logs/',
+        url: '/bh_airflow/get_dag_logs',
         params: { ...dagEunID, task_id: selectedTask },
         usePrefix: true,
         method: 'GET',

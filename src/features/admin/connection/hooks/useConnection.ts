@@ -65,7 +65,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         isFetching: isConnectionFetching,
         isError: isConnectionError
     } = options.connectionId ? getConnection({
-        url: `/connection_registry/connection_config/${options.connectionId}/`,
+        url: `/connection_registry/connection_config/${options.connectionId}`,
         queryOptions: {
             enabled: !!options.connectionId,
             retry: 2,

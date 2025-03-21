@@ -368,8 +368,8 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
   }
 
   else if (currentResult.type === 'chart' && currentResult.data) {
-    console.log('Raw Chart Data:', currentResult.data);
-    console.log('Chart Type:', currentResult.chartType);
+    //console.log('Raw Chart Data:', currentResult.data);
+    //console.log('Chart Type:', currentResult.chartType);
     
     // Check if we have the new format with x_axis and y_axis properties
     const isNewFormat = Array.isArray(currentResult.data) && 

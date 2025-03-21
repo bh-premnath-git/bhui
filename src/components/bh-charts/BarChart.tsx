@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts"
 import { colorPalettes } from "@/components/bh-charts"
@@ -165,7 +164,6 @@ export const BarChart: React.FC<BarChartProps> = ({
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         />
-        <Legend />
         {seriesKeys.map((key, index) => (
           <Bar 
             key={key} 

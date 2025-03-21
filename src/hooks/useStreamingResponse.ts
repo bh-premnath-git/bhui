@@ -105,7 +105,7 @@ export function useStreamingResponse() {
       case 'CHART':
         try {
           const chartContent = JSON.parse(message.content.replace(/```json\n|\n```/g, ''));
-          const chartStatus = "";
+          const chartStatus:string = chartContent.status;
           // Extract x and y-axis field names from the data structure
           const xAxisField = chartContent.graph_config.x_axis;
           const yAxisField = chartContent.graph_config.y_axis;
@@ -129,7 +129,9 @@ export function useStreamingResponse() {
             chartData = chartContent.graph_data;
           }
           // implementation for chartstatus check
-          if (chartStatus) {}
+          if (chartStatus === "NO_CHART") {
+            return;
+          }
           setStreamedData(prev => [...prev, {
             type: 'chart',
             data: chartData,

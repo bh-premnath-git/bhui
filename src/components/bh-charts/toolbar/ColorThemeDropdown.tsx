@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { COLOR_THEMES } from '../ChartTypes';
 
@@ -26,14 +26,12 @@ const ColorThemeDropdown: React.FC<ColorThemeDropdownProps> = ({
   // Ensure we have a valid theme selected (defaulting to blue if not)
   const safeSelectedTheme = Object.keys(COLOR_THEMES).includes(selectedTheme) ? selectedTheme : 'blue';
   
-  const handleThemeChange = (theme: string) => {
-    // Only proceed if it's a valid theme
+  const handleThemeChange = useCallback((theme: string) => {
     if (Object.keys(COLOR_THEMES).includes(theme)) {
-      // Call the parent component's change handler
       onColorThemeChange(theme);
       setIsOpen(false);
     }
-  };
+  }, [onColorThemeChange, setIsOpen]);
   
   return (
     <div className="flex border-l border-border/30 pl-2 relative" ref={dropdownRef}>

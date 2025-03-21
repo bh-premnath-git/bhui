@@ -156,8 +156,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         />
-        {config.showLegend !== false && <Legend />}
-        
+    
         {groups.map((group, index) => (
           <Scatter
             key={group}

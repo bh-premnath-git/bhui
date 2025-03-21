@@ -19,6 +19,7 @@ import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 // import { AIButton } from '../flow-playground-header';
 import { PipeLineAIButton } from './PipeLineAIButton';
+import { useAppSelector } from '@/hooks/useRedux';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
@@ -46,14 +47,20 @@ export function BuildPlaygroundHeader() {
   }), [isSaving, lastSaved, hasUnsavedChanges, contextPipelineName]);
   // console.log(lastSaved,"localState",isSaving)
   console.log(contextPipelineName,"contextPipelineName")
-  const [localPipelineName, setLocalPipelineName] = useState(contextPipelineName?.pipeLineName || '');
-  const [tempPipelineName, setTempPipelineName] = useState(contextPipelineName?.pipeLineName || '');
+
+  const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
+  const { selectedPipeline } = useAppSelector((state) => state.pipeline);
+console.log(selectedPipeline,"selectedPipeline")
+
+  const [localPipelineName, setLocalPipelineName] = useState(selectedPipeline?.pipeline_name || contextPipelineName?.pipeLineName || '');
+  const [tempPipelineName, setTempPipelineName] = useState(selectedPipeline?.pipeline_name || contextPipelineName?.pipeLineName || '');
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
+
+console.log(selectedPipeline,"selectedPipeline")
 
   useEffect(() => {
     if (contextPipelineName?.pipeLineName) {
@@ -64,7 +71,12 @@ export function BuildPlaygroundHeader() {
       setTempPipelineName(buildPipeLineDtl.pipeline_name);
     }
   }, [buildPipeLineDtl?.pipeline_name, contextPipelineName?.pipeLineName]);
-
+useEffect(()=>{
+  if(buildPipeLineDtl?.pipeline_name){
+    setLocalPipelineName(buildPipeLineDtl.pipeline_name);
+    setTempPipelineName(buildPipeLineDtl.pipeline_name);
+  }
+},[buildPipeLineDtl])
 
   const renderSaveStatus = useMemo(() => {
     if (localState.isSaving) {

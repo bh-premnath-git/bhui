@@ -59,24 +59,47 @@ console.log(initialValues,"initialValues")
             }]
       };
 
-    case 'Joiner':
-      console.log(initialValues)
-      console.log(baseValues)
-      return {
-        ...baseValues,
-        conditions: initialValues.conditions || [{
-          join_input: '',
-          join_condition: '',
-          join_type: 'left'
-        }],
-        expressions: initialValues.expressions?.map(item=>{
-          return {
-            name: item?.target_column ?? item?.name,
-            expression: item?.expression
+      case 'Joiner':
+        console.log('Joiner initial values:', initialValues);
+        return {
+          ...baseValues,
+          conditions: Array.isArray(initialValues?.conditions) && initialValues.conditions.length > 0
+            ? initialValues.conditions.map(condition => ({
+                join_condition: condition.join_condition || '',
+                join_type: condition.join_type || 'left',
+                join_input: condition.join_input || ''
+              }))
+            : [{
+                join_condition: '',
+                join_type: 'left',
+                join_input: ''
+              }],
+          expressions: Array.isArray(initialValues?.expressions) && initialValues.expressions.length > 0
+            ? initialValues.expressions.map(expr => ({
+                name: expr?.target_column ?? expr?.name ?? '',
+                expression: expr?.expression ?? ''
+              }))
+            : [{
+                name: '',
+                expression: ''
+              }],
+          advanced: {
+            hints: Array.isArray(initialValues?.advanced?.hints) && initialValues.advanced.hints.length > 0
+              ? initialValues.advanced.hints.map(hint => ({
+                  hint: hint || ''
+                }))
+              : [{
+                  hint: ''
+                }],
+            broadcast_hint: initialValues?.advanced?.broadcast_hint ?? false,
+            partition_keys: Array.isArray(initialValues?.advanced?.partition_keys)
+              ? initialValues.advanced.partition_keys
+              : [],
+            sort_keys: Array.isArray(initialValues?.advanced?.sort_keys)
+              ? initialValues.advanced.sort_keys
+              : []
           }
-        }) || [],
-        advanced: baseValues?.advanced?.hints ? baseValues?.advanced?.hints :baseValues?.advanced?.hints?baseValues?.advanced?.hints:baseValues?.advanced || []
-      };
+        };
 
     case 'Repartition':
       return {

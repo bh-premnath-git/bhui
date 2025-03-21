@@ -4,7 +4,6 @@ import { FormField } from './FormField';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Node, Edge } from 'reactflow';
-import { Autocomplete } from '@/components/ui/autocomplete';
 import { useDispatch } from 'react-redux';
 // import { generatePipelineAgent } from '@/store/slices/buildPipeLine/BuildPipeLineSlice';
 import { AppDispatch } from '@/store';
@@ -24,6 +23,7 @@ import {
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { Toggle } from '@/components/ui/toggle';
 import { Input } from '@/components/ui/input';
+import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
 
 type ArraySchema = {
   items: Record<string, any>;
@@ -109,82 +109,136 @@ console.log(initialFormValues,"initialFormValues")
 
   // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '') || 
-        isGenerating || 
-        generatedFields.has(fieldName)) {
+    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '') || isGenerating) {
       return;
     }
 
     setIsGenerating(true);
     try {
-      const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
-      const schemaString = suggestions.map(col => `${col}:string`).join(', ');
-      
-      // Get the actual target column name
-      let actualTargetColumn = '';
-      
-      if (schema?.title === 'SchemaTransformation') {
-        const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
-        if (match) {
-          const index = parseInt(match[1]);
-          const derivedFields = watch('derived_fields');
-          actualTargetColumn = derivedFields[index]?.name || '';
-        }
-      } else if (schema?.title === 'Joiner') {
-        actualTargetColumn = watch('join_column');
-      }
-
-      if (!actualTargetColumn) {
-        console.warn('No target column specified');
-        return;
-      }
-
-      const response: any = await dispatch(generatePipelineAgent({ 
-        schemaString, 
-        targetColumn: actualTargetColumn 
-      })).unwrap();
-
-      if (!response?.result) {
-        throw new Error('Invalid response from expression generator');
-      }
-
-      try {
-        const parsedResult = JSON.parse(response.result);
-        const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+      console.log(schema?.title,"schema?.title")
+      if (schema?.title === 'Joiner') {
+        const currentJoinCondition = watch('conditions');
         
-        // Set the expression value in the form
-        if (schema?.title === 'SchemaTransformation') {
-          const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
-          if (match) {
-            const index = parseInt(match[1]);
-            const derivedFields = [...(watch('derived_fields') || [])];
-            derivedFields[index] = {
-              ...derivedFields[index],
-              expression: expressionValue
+        // Find the index if we're editing an existing condition
+        const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
+        const index = match ? parseInt(match[1]) : 0;
+        
+        if (!currentJoinCondition[index]?.join_condition) {
+          const joinPayload: any = await generateJoinPayload(currentNodeId, nodes, edges);
+          console.log(joinPayload, "joinPayload");
+
+          const response: any = await dispatch(generatePipelineAgent({ 
+            params: joinPayload.params,
+            operation_type: "dataset_join",
+            thread_id: 'join_123'
+          })).unwrap();
+
+          if (!response?.result) {
+            throw new Error('Invalid response from expression generator');
+          }
+
+          try {
+            const parsedResult = JSON.parse(response.result);
+            const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+            // Convert join type to expected format (INNER JOIN -> inner, LEFT JOIN -> left)
+            const joinType = parsedResult.join_type?.split(' ')[0]?.toLowerCase() || 'left';
+            
+            console.log(expressionValue, "expressionValue");
+            console.log(joinType, "joinType");
+            
+            // Update the specific condition in the conditions array with both join_condition and join_type
+            const updatedConditions = [...(watch('conditions') || [])];
+            updatedConditions[index] = {
+              ...updatedConditions[index],
+              join_condition: expressionValue,
+              join_type: joinType
             };
-            setValue('derived_fields', derivedFields, {
+            
+            // Set the updated conditions array
+            setValue('conditions', updatedConditions, {
               shouldValidate: true,
               shouldDirty: true,
               shouldTouch: true
             });
+          } catch (error) {
+            console.error('Error parsing response:', error);
+            throw new Error('Invalid response format from expression generator');
           }
-        } else if (schema?.title === 'Joiner') {
-          setValue('join_condition', expressionValue, {
-            shouldValidate: true,
-            shouldDirty: true,
-            shouldTouch: true
-          });
         }
+      } else if (schema?.title === 'SchemaTransformation') {
+        // Existing SchemaTransformation logic
+        const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+        const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+        
+        const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const derivedFields = watch('derived_fields');
+          const actualTargetColumn = derivedFields[index]?.name || '';
 
-        // Mark this field as having been generated
-        setGeneratedFields(prev => new Set(prev).add(fieldName));
+          if (!actualTargetColumn) {
+            console.warn('No target column specified');
+            return;
+          }
+          const params = {
+            schema: schemaString,
+            target_column: actualTargetColumn
+          };
 
-      } catch (error) {
-        console.error('Error parsing response:', error);
-        throw new Error('Invalid response format from expression generator');
+          const response: any = await dispatch(generatePipelineAgent({ 
+            params,
+            operation_type:"spark_expression",
+            thread_id:'spark_123'
+          })).unwrap();
+
+          if (!response?.result) {
+            throw new Error('Invalid response from expression generator');
+          }
+
+          try {
+            const parsedResult = JSON.parse(response.result);
+            const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+            
+            // Set the expression value in the form
+            const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+            if (match) {
+              const index = parseInt(match[1]);
+              const derivedFields = [...(watch('derived_fields') || [])];
+              derivedFields[index] = {
+                ...derivedFields[index],
+                expression: expressionValue
+              };
+              setValue('derived_fields', derivedFields, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            }
+
+            // Mark this field as having been generated
+            setGeneratedFields(prev => new Set(prev).add(fieldName));
+
+          } catch (error) {
+            console.error('Error parsing response:', error);
+            throw new Error('Invalid response format from expression generator');
+          }
+        }
       }
     } catch (error) {
       console.error('Error generating expression:', error);
+      // Update error handling for Joiner
+      if (schema?.title === 'Joiner') {
+        const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
+        const index = match ? parseInt(match[1]) : 0;
+        
+        const updatedConditions = [...(watch('conditions') || [])];
+        updatedConditions[index] = {
+          ...updatedConditions[index],
+          join_condition: '',
+          join_type: 'left' // Default to left join on error
+        };
+        setValue('conditions', updatedConditions);
+      }
       // Clear the expression field in case of error
       if (schema?.title === 'SchemaTransformation') {
         const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
@@ -197,13 +251,11 @@ console.log(initialFormValues,"initialFormValues")
           };
           setValue('derived_fields', derivedFields);
         }
-      } else if (schema?.title === 'Joiner') {
-        setValue('join_condition', '');
       }
     } finally {
       setIsGenerating(false);
     }
-  }, [schema?.title, sourceColumns, setValue, dispatch, watch, isGenerating, generatedFields]);
+  }, [schema?.title, sourceColumns, setValue, dispatch, watch, isGenerating, currentNodeId, nodes, edges]);
 
   // Reset generated fields when form is reset or component unmounts
   useEffect(() => {
@@ -249,8 +301,12 @@ console.log(initialFormValues,"initialFormValues")
         }
 
         const response: any = await dispatch(generatePipelineAgent({ 
-          schemaString, 
-          targetColumn: actualTargetColumn 
+          params: {
+            schema: schemaString,
+            target_column: actualTargetColumn
+          },
+          operation_type:"spark_expression",
+          thread_id:'spark_123'
         })).unwrap();
 
         if (!response?.result) {
@@ -259,7 +315,7 @@ console.log(initialFormValues,"initialFormValues")
 
         try {
           const parsedResult = JSON.parse(response.result);
-          const expressionValue = parsedResult === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+          const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
           
           if (schema?.title === 'SchemaTransformation') {
             const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
@@ -312,36 +368,49 @@ console.log(initialFormValues,"initialFormValues")
   const onSubmitForm = (values: FormValues) => {
     console.log('Raw form values before cleaning:', values);
 
-    // Add validation before cleaning
     if (!schema) {
       console.error('Schema is required');
       return;
     }
 
-    // Validate required fields based on schema type
-    if (schema.title === 'SchemaTransformation') {
-      // Only validate if derived_fields exists and has items
-      if (values.derived_fields?.length) {
-        // Filter out empty fields first
-        const nonEmptyFields = values.derived_fields.filter(
-          field => field.name?.trim() || field.expression?.trim()
-        );
-        
-        // If we have any non-empty fields, validate them
-        if (nonEmptyFields.length > 0) {
-          const invalidFields = nonEmptyFields.filter(
-            field => !field.name?.trim() || !field.expression?.trim()
-          );
-          if (invalidFields.length > 0) {
-            console.error('All non-empty derived fields must have both name and expression');
-            return;
-          }
-        }
+    // Add specific validation for Joiner
+    if (schema.title === 'Joiner') {
+      // Validate conditions array
+      if (!values.conditions?.length) {
+        console.error('At least one join condition is required');
+        return;
       }
+
+      // Filter out invalid conditions
+      const validConditions = values.conditions.filter(condition => 
+        condition.join_condition?.trim() && 
+        condition.join_type?.trim()
+      );
+
+      if (validConditions.length === 0) {
+        console.error('At least one valid join condition is required');
+        return;
+      }
+
+      // Update the conditions with valid ones
+      values.conditions = validConditions;
     }
 
     const cleanValues = Object.entries(values).reduce((acc, [key, value]) => {
       console.log(`Processing field ${key}:`, { value, type: typeof value });
+      
+      // Special handling for Joiner conditions
+      if (key === 'conditions' && Array.isArray(value)) {
+        const cleanedConditions = value.filter(item => 
+          item.join_condition?.trim() && 
+          item.join_type?.trim()
+        );
+        
+        if (cleanedConditions.length > 0) {
+          acc[key] = cleanedConditions;
+        }
+        return acc;
+      }
       
       // Special handling for SchemaTransformation derived_fields
       if (key === 'derived_fields' && Array.isArray(value)) {
@@ -393,6 +462,12 @@ console.log(initialFormValues,"initialFormValues")
       
       return acc;
     }, {} as Record<string, any>);
+
+    // Additional validation for Joiner
+    if (schema.title === 'Joiner' && !cleanValues.conditions?.length) {
+      console.error('No valid join conditions found after cleaning');
+      return;
+    }
 
     // Update SchemaTransformation validation
     if (schema.title === 'SchemaTransformation') {
@@ -1304,7 +1379,8 @@ const FormContent: React.FC<{
                         fieldSchema['ui-hint'] === 'expression' ||
                         (fieldKey === 'condition' && fieldSchema.type === 'string') ||
                         (fieldKey === 'sql' && fieldSchema.type === 'string') ||
-                        (fieldKey === 'join_condition' && fieldSchema.type === 'string');
+                        (fieldKey === 'join_condition' && fieldSchema.type === 'string') ||
+                        (parentKey === 'conditions' && fieldKey === 'join_condition');
 
     // Special handling for boolean fields
     if (fieldSchema.type === 'boolean') {

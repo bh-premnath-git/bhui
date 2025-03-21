@@ -57,44 +57,58 @@ useEffect(() => {
     }
 }, [connectionConfigList, source]);
 
-  const initialSource=()=>{
-    if (source) {
-      console.log(source)
-      console.log(connectionConfigList, "connectionConfigList")
-      let connection = connectionConfigList?.find((item: any) => item.id === source?.connection_config_id);
-      console.log(connection, "connection")
-      let connection_data={...connection}
-      console.log(connection_data, "connection")
+  const initialSource = () => {
+    if (source && connectionConfigList) {
+      const connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
+      if (!connection) {
+        console.warn('Connection not found for the given connection_config_id');
+        return;
+      }
 
-      connection_data.connection_name=connection?.connection_name?.toLowerCase()=='postgres'?'postgresql':connection.connection_name;
-      let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
-      console.log(pipelineJsonData, "pipelineJson")
+      const connection_data = {
+        ...connection,
+        connection_name: connection.connection_name?.toLowerCase() === 'postgres' 
+          ? 'postgresql' 
+          : connection.connection_name
+      };
+
+      const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
+console.log(pipelineJsonData,"pipelineJsonData")
       const initialData = {
-        reader_name: source?.data_src_name || pipelineJsonData?.name ||  '',
+        reader_name: source?.data_src_name || pipelineJsonData?.name || '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
         source: {
-          type: connection?.connection_name?.toLowerCase() === 'local' || connection?.connection_name?.toLowerCase() === 's3' ? 'File' : 'Relational',
+          type: (connection.connection_name?.toLowerCase() === 'local' || 
+                 connection.connection_name?.toLowerCase() === 's3') 
+            ? 'File' 
+            : 'Relational',
           source_name: pipelineJsonData?.name || source?.data_src_name || '',
           file_name: pipelineJsonData?.file_name || source?.file_name,
-          table_name: pipelineJsonData?.table_name || source?.table_name,
+          table_name: pipelineJsonData?.connection?.table_name || 
+          source?.data_src_name || 
+          pipelineJsonData?.name || '',
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
-          custom_metadata:connection_data,
+          custom_metadata: connection_data,
           connection: {
             connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
             type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',
             file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
-            connection_name: pipelineJsonData?.connection?.name || source?.connection_config?.connection_name ||connection?.connection_config_name|| '',
+            connection_name: pipelineJsonData?.connection?.name || 
+                           source?.connection_config?.connection_name ||
+                           connection.connection_config_name || '',
             file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || 'CSV',
-            table_name: pipelineJsonData?.connection?.table_name || source?.table_name || '',
-          } 
+            table_name: pipelineJsonData?.connection?.table_name || 
+                       source?.data_src_name || 
+                       pipelineJsonData?.name || '',
+          }
         }
       };
-      console.log(initialData,"initialData")
+
       setInitialData(initialData);
     }
-  }
+  };
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
 

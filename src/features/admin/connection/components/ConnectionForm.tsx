@@ -294,6 +294,12 @@ console.log(custom_metadata,"custom_metadata")
         init_vector: initVector,
         config: encryptedString
       };
+      if(connectionData?.connection_name?.toLowerCase()=='bigquery'){
+        connectionData.project_id=rawFormData.project_id;
+        connectionData.dataset_id=rawFormData.dataset_id;
+        connectionData.credentials_json=JSON.parse(rawFormData.credentials_json);
+
+      }
 
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);

@@ -423,7 +423,7 @@ export const runNextCheckpoint = createAsyncThunk(
 // New Async thunk for generating pipeline agent
 export const generatePipelineAgent = createAsyncThunk(
   'build-pipline/generatePipelineAgent',
-  async ({ schemaString, targetColumn }: { schemaString: string; targetColumn: string }, thunkAPI) => {
+  async ({ params,operation_type,thread_id }: { params:any,operation_type:string,thread_id:string }, thunkAPI) => {
     try {
       const response = await apiService.post({
         portNumber: AGENT_PORT,
@@ -431,12 +431,9 @@ export const generatePipelineAgent = createAsyncThunk(
         usePrefix: true,
         method: 'POST',
         data: {
-          operation_type: "spark_expression",
-          params: {
-            schema: schemaString,
-            target_column: targetColumn
-          },
-          thread_id: "spark_123"
+          operation_type: operation_type,
+          params: params,
+          thread_id: thread_id
         }
       });
       return response;

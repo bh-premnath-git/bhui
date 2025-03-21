@@ -28,6 +28,7 @@ import { getPipelineById, getTransformationCount, runNextCheckpoint, stopPipeLin
 
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';
+import { useAppSelector } from '@/hooks/useRedux';
 
 interface UIProperties {
     color: string;
@@ -198,6 +199,8 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [pipelineJson, setPipelineJson] = useState<any>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
     // Add this at the component level, outside any callbacks
+    const { selectedPipeline } = useAppSelector((state) => state.pipeline);
+
     const fetchedIdsRef = useRef(new Set<string>());
 
     const setSaving = useCallback(() => {
@@ -225,7 +228,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         setIsSaving(false);
         setSaveErrorState(error);
     }, []);
- 
+ console.log(id,"id")
     useEffect(() => { 
         const fetchPipelineDetails = async () => {
             // alert("fetchPipelineDetails")
@@ -237,18 +240,25 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
                 // Fetch pipeline details
                 const response = await dispatch(getPipelineById({ id })).unwrap();
-                
+                console.log(response,"response")
                 if (!response || !response.pipeline_json) {
+                    setNodes([])
+                    setEdges([])
+                    console.log("response.pipeline_json",response.pipeline_json)
                     throw new Error('Invalid pipeline data received');
                 }
+                
+                console.log(response,"response")
                 // Update pipeline name and JSON safely
                 setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
-                setPipelineJson(response.pipeline_json);
+                setPipelineJson(response?.pipeline_json);
 
                 // Convert pipeline to UI JSON
                 const uiJson = await convertPipelineToUIJson(response.pipeline_json);
                 
                 if (!uiJson || !uiJson.nodes) {
+                    setNodes([])
+                    setEdges([])
                     throw new Error('Failed to convert pipeline to UI format');
                 }
 
@@ -273,10 +283,18 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     }
                     return node;
                 });
+                console.log(response?.pipeline_json,"response?.pipeline_json")
+                if(response?.pipeline_json==null){
+                    setPipelineJson(null)
+                    setNodes([])
+                    setEdges([])
 
+                }else{
+                    setNodes(nodesWithTitles);
+                    setEdges(uiJson.edges || []);
+                }
                 // Update nodes and edges
-                setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
+                
 
                 // Initialize form states
                 const initialFormStates = {};
@@ -301,13 +319,13 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         };
 
         // Only fetch if we have an ID
-        const expectedPath = `/designers/build-playground/${id}`;
+        // const expectedPath = `/designers/build-playground/${id}`;
 
         // Only fetch if we have an ID and the pathname matches
         // if (id && location.pathname === expectedPath) {
             fetchPipelineDetails();
         // }
-    }, [id, dispatch, setNodes, setEdges, setPipeLineName, setPipelineJson]);
+    }, [id, dispatch, setNodes, setEdges, setPipeLineName, setPipelineJson,selectedPipeline]);
 
     // Add type safety for the getInitialFormState function
     const getInitialFormState = (transformation: any, nodeId: string) => {

@@ -212,7 +212,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 newData.target.target_type = value;
                 
                 // Set default values based on target type while preserving other fields
-                if (value === 'PostgreSQL') {
+                if (value === 'Relational') {
                     newData.write_options = {
                         ...newData.write_options,
                         createDisposition: 'CREATE_IF_NEEDED',
@@ -281,6 +281,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
         // Special handling for connection field
         if (fieldName === 'connection') {
+            const filteredConnections = getFilteredConnections();
+            
             return (
                 <div key={fieldName} className="space-y-4">
                     <div className="w-full space-y-1">
@@ -297,7 +299,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                             className="w-full h-9 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring px-3"
                         >
                             <option value="">Select Connection</option>
-                            {connectionConfigList.map((conn) => (
+                            {filteredConnections.map((conn) => (
                                 <option key={conn.id} value={conn.id}>
                                     {conn.connection_config_name}
                                 </option>
@@ -320,7 +322,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         </div>
                     )}
 
-                    {formData.target?.target_type === 'PostgreSQL' && (
+                    {formData.target?.target_type === 'Relational' && (
                         <>
                             <div className="w-full space-y-1">
                                 <Label className="text-xs font-medium text-gray-700">
@@ -328,7 +330,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                 </Label>
                                 <Input
                                     name="table_name"
-                                    value={formData.target?.table_name || formData.target?.target_name || ""}
+                                    value={formData.target?.table_name || ""}
                                     onChange={(e) => handleChange(e, ['target'])}
                                     className="h-8 text-sm"
                                     placeholder="Enter table name"
@@ -501,6 +503,22 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             console.error('Error:', error);
             toast.error('Failed to save configuration');
         }
+    };
+
+    // Add a new function to filter connections based on target type
+    const getFilteredConnections = () => {
+        if (!formData.target?.target_type) return [];
+        
+        return connectionConfigList.filter(conn => {
+            if (formData.target?.target_type === 'File') {
+                // For File type, show only S3 and Local connections
+                return ['S3', 'Local'].includes(conn.connection_name);
+            } else if (formData.target?.target_type === 'Relational') {
+                // For Relational type, show all except S3 and Local
+                return !['S3', 'Local'].includes(conn.connection_name);
+            }
+            return false;
+        });
     };
 
     if (!isOpen) return null;

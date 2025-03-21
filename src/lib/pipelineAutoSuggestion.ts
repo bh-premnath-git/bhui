@@ -7,6 +7,29 @@ interface LayoutField {
   lyt_fld_name: string;
 }
 
+// Add a cache for API responses
+const layoutFieldsCache = new Map<string, LayoutField[]>();
+
+async function fetchLayoutFields(dataSrcId: string): Promise<LayoutField[]> {
+  // Check cache first
+  if (layoutFieldsCache.has(dataSrcId)) {
+    return layoutFieldsCache.get(dataSrcId)!;
+  }
+
+  // If not in cache, fetch from API
+  const response = await apiService.get({
+    portNumber: CATALOG_API_PORT,
+    url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+    usePrefix: true,
+    method: 'GET',
+  });
+
+  const layoutFields = response[0]?.layout_fields || [];
+  // Store in cache
+  layoutFieldsCache.set(dataSrcId, layoutFields);
+  return layoutFields;
+}
+
 export const getColumnSuggestions = async ( 
   currentNodeId: string,
   nodes: Node[],
@@ -31,61 +54,69 @@ export const getColumnSuggestions = async (
       return dependentNodes;
     };
 
-    const dependentNodes = getDependentNodes(currentNodeId);
-    const processedNodes = [...dependentNodes].reverse(); // Process in order of execution
+    // Find the current node first
+    const currentNode = nodes.find(n => n.id === currentNodeId);
+    if (currentNode?.id.startsWith('Reader_')) {
+      const dataSrcId = currentNode.data.source?.data_src_id;
+      if (dataSrcId) {
+        const layoutFields = await fetchLayoutFields(dataSrcId);
+        layoutFields.forEach((field: LayoutField) => {
+          columns.add(field.lyt_fld_name);
+        });
+      }
+    }
 
-    // Process each node to build up available columns
-    for (const node of processedNodes) {
-      if (node.id.startsWith('Reader_')) {
-        // Get columns from API for reader nodes
-        const dataSrcId = node.data.source?.data_src_id;
-        if (dataSrcId) {
-          const response= await apiService.get({
-        portNumber: CATALOG_API_PORT,
-        url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
-        usePrefix: true,
-        method: 'GET',
-          })
-          console.log(response,'response')
-          response[0].layout_fields?.forEach((field: LayoutField) => {
-            columns.add(field.lyt_fld_name);
-          });
-        }
-      } else {
-        // Add columns from transformations
-        switch (node.data.label) {
-          case 'SchemaTransformation':
-            // Add derived fields from schema transformation
-            node.data.transformationData?.derived_fields?.forEach((field: { name: string }) => {
-              columns.add(field.name);
+    // Process dependent nodes only if not a Reader
+    if (!currentNode?.id.startsWith('Reader_')) {
+      const dependentNodes = getDependentNodes(currentNodeId);
+      const processedNodes = [...dependentNodes].reverse();
+
+      // Process each node to build up available columns
+      for (const node of processedNodes) {
+        if (node.id.startsWith('Reader_')) {
+          const dataSrcId = node.data.source?.data_src_id;
+          if (dataSrcId) {
+            const layoutFields = await fetchLayoutFields(dataSrcId);
+            layoutFields.forEach((field: LayoutField) => {
+              columns.add(field.lyt_fld_name);
             });
-            break;
-            
-          case 'Joiner':
-            // Add new columns from join expressions
-            node.data.transformationData?.expressions?.forEach((expr: { target_column: string }) => {
-              columns.add(expr.target_column);
-            });
-            break;
-            
-          case 'Drop':
-            // Remove dropped columns
-            node.data.transformationData?.column_list?.forEach((column: string) => {
-              columns.delete(column);
-            });
-            break;
-            
-          case 'Select':
-            // Keep only selected columns
-            if (node.data.transformationData?.column_list?.length > 0) {
-              const selectedColumns = new Set(node.data.transformationData.column_list);
-              [...columns].forEach(col => {
-                if (!selectedColumns.has(col)) {
-                  columns.delete(col);
-                }
+          }
+        } else {
+          // Add columns from transformations
+          switch (node.data.label) {
+            case 'SchemaTransformation':
+              // Add derived fields from schema transformation
+              node.data.transformationData?.derived_fields?.forEach((field: { name: string }) => {
+                columns.add(field.name);
               });
-            }
-            break;
+              break;
+              
+            case 'Joiner':
+              // Add new columns from join expressions
+              node.data.transformationData?.expressions?.forEach((expr: { target_column: string }) => {
+                columns.add(expr.target_column);
+              });
+              break;
+              
+            case 'Drop':
+              // Remove dropped columns
+              node.data.transformationData?.column_list?.forEach((column: string) => {
+                columns.delete(column);
+              });
+              break;
+              
+            case 'Select':
+              // Keep only selected columns
+              if (node.data.transformationData?.column_list?.length > 0) {
+                const selectedColumns = new Set(node.data.transformationData.column_list);
+                [...columns].forEach(col => {
+                  if (!selectedColumns.has(col)) {
+                    columns.delete(col);
+                  }
+                });
+              }
+              break;
+          }
         }
       }
     }

@@ -5,7 +5,8 @@ import { formatDate } from "@/lib/date-format";
 import {
   Database,
   Clock,
-  PlusIcon
+  PlusIcon,
+  ImportIcon
 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -92,12 +93,25 @@ const getToolbarConfig = (): TToolbarConfig => {
   return {
     buttons: [
       {
-        label: "Data Source",
+        label: "Data",
         variant: "outline",
         icon: PlusIcon,
-        onClick: () => {
-          window.dispatchEvent(new Event("openImportSourceDialog"));
-        },
+        dropdownItems: [
+          {
+            label: "Tables",
+            icon: Database,
+            onClick: () => {
+              window.dispatchEvent(new Event("openImportSourceDialog"));
+            },
+          },
+          {
+            label: "Flat File",
+            icon: ImportIcon,
+            onClick: () => {
+              window.dispatchEvent(new Event("openLocalImport"));
+            },
+          }
+        ]
       },
       {
         label: "Xplore",

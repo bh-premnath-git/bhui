@@ -86,7 +86,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   const formatter = (value: any, name: string) => {
     const formattedValue = config.valueFormatter 
       ? config.valueFormatter(value)
-      : `$${Number(value).toLocaleString()}`;
+      : `${Number(value).toLocaleString()}`;
     
     return [formattedValue, name];
   };
@@ -101,10 +101,10 @@ export const PieChart: React.FC<PieChartProps> = ({
           data={processedData}
           cx="50%"
           cy="50%"
-          innerRadius={config.innerRadius || 60}
+          innerRadius={config.innerRadius !== undefined ? config.innerRadius : 0}
           outerRadius={config.outerRadius || 80}
           fill="#8884d8"
-          paddingAngle={config.paddingAngle || 5}
+          paddingAngle={config.paddingAngle !== undefined ? config.paddingAngle : 0}
           dataKey={dataKey}
           nameKey={nameKey}
           labelLine={showLabels}
@@ -132,7 +132,6 @@ export const PieChart: React.FC<PieChartProps> = ({
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         />
-        <Legend />
       </RechartsPieChart>
     </ResponsiveContainer>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useConnectionType } from './hooks/useConnection';
+import { useConnectionType, useConnectionSearch } from './hooks/useConnection';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ConnectionForm } from './components/ConnectionForm';
 import { ConnectionType } from '@/types/admin/connection';
@@ -9,15 +9,21 @@ import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { ConnectionPageLayout } from './components/ConnectionPageLayout';
 
-export function 
-AddConnection() {
+export function AddConnection() {
   const { connectionTypes, isLoading } = useConnectionType();
+  const {
+    searchedConnection,
+    connectionFound,
+    connectionNotFound,
+    isLoading: searchLoading,
+    error,
+    debounceSearchConnection
+  } = useConnectionSearch();
   const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
   const [activeTab, setActiveTab] = useState<string>("source");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [connectionConfigName, setConnectionConfigName] = useState<string>("");
   const [showNameError, setShowNameError] = useState<boolean>(false);
-  console.log("connectionTypes", connectionTypes);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -79,19 +85,51 @@ AddConnection() {
           <Label htmlFor="connectionName" className="font-medium">
             Connection Name <span className="text-red-500">*</span>
           </Label>
-          <Input
-            id="connectionName"
-            placeholder="Enter connection configuration name..."
-            className={`w-full max-w-md h-9 text-sm ${showNameError ? 'border-red-500 focus:ring-red-500' : ''}`}
-            value={connectionConfigName}
-            onChange={(e) => {
-              setConnectionConfigName(e.target.value);
-              if (e.target.value.trim()) {
-                setShowNameError(false);
-              }
-            }}
-            required
-          />
+          <div>
+            <Input
+              id="connectionName"
+              placeholder="Enter connection configuration name..."
+              className={`w-full max-w-md h-9 text-sm ${
+                showNameError || connectionFound ? 'border-red-500 focus:ring-red-500' : 
+                connectionNotFound ? 'border-green-500 focus:ring-green-500' : ''
+              }`}
+              value={connectionConfigName}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setConnectionConfigName(newValue);
+                
+                if (newValue.trim()) {
+                  setShowNameError(false);
+                  // Trigger the debounced search
+                  debounceSearchConnection(newValue);
+                }
+              }}
+              required
+            />
+            
+            {/* Show feedback based on search results */}
+            {searchLoading && connectionConfigName.trim() && (
+              <p className="text-sm text-muted-foreground mt-1">Checking availability...</p>
+            )}
+            
+            {connectionFound && (
+              <p className="text-sm text-red-500 mt-1">
+                This connection name is already in use
+              </p>
+            )}
+            
+            {connectionNotFound && connectionConfigName.trim() && (
+              <p className="text-sm text-green-500 mt-1">
+                This connection name is available
+              </p>
+            )}
+            
+            {error && (
+              <p className="text-sm text-red-500 mt-1">
+                Error checking connection name availability
+              </p>
+            )}
+          </div>
         </div>
         
         <Tabs defaultValue="source" value={activeTab} onValueChange={setActiveTab} className="mb-6">

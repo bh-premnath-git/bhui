@@ -123,7 +123,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     }
     
     // Default to dollar formatter
-    return [`$${Number(value).toLocaleString()}`, ""];
+    return [`${Number(value).toLocaleString()}`, ""];
   };
 
   // Get display name for a series key

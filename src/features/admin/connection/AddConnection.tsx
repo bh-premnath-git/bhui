@@ -9,8 +9,7 @@ import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { ConnectionPageLayout } from './components/ConnectionPageLayout';
 
-export function 
-AddConnection() {
+export function AddConnection() {
   const { connectionTypes, isLoading } = useConnectionType();
   const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
   const [activeTab, setActiveTab] = useState<string>("source");

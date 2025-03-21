@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
 interface FormFieldsProps {
@@ -127,6 +127,11 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             onClick={() => setShowPassword(!showPassword)}
           >
+            {showPassword ? (
+              <EyeOff size={16} />
+            ) : (
+              <Eye size={16} />
+            )}
           </button>
         </div>
         <FormMessage />

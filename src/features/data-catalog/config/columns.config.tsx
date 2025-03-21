@@ -98,14 +98,14 @@ const getToolbarConfig = (): TToolbarConfig => {
         icon: PlusIcon,
         dropdownItems: [
           {
-            label: "Data Source",
+            label: "Tables",
             icon: Database,
             onClick: () => {
               window.dispatchEvent(new Event("openImportSourceDialog"));
             },
           },
           {
-            label: "Import",
+            label: "Flat File",
             icon: ImportIcon,
             onClick: () => {
               window.dispatchEvent(new Event("openLocalImport"));

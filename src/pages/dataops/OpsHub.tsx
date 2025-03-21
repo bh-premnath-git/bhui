@@ -6,7 +6,7 @@ import { useDataOpsHubManagementService } from '@/features/dataops/dataOpsHubs/s
 import { useDataOpsHub } from '@/features/dataops/dataOpsHubs/hooks/usedataOpsHub';
 
 function OpsHubPage() {
-    const { jobs, isLoading, isFetching, isError } = useDataOpsHub();
+    const { jobs, isFetching } = useDataOpsHub();
     const dataOpsHubSrv = useDataOpsHubManagementService();
     
     useEffect(() => {

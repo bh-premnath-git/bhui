@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader, Trash2 } from "lucide-react";
 import { deletePipelineById } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { usePipeline } from "../hooks/usePipeline";
 
 type DeletePipelineDialogProps = {
   open: boolean;
@@ -25,6 +26,9 @@ export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialo
   const [confirmationInput, setConfirmationInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const dispatch = useAppDispatch();
+  
+  // Import the usePipeline hook to get access to the refetch function
+  const { fetchPipelineList } = usePipeline({ shouldFetch: false });
 
   const handleDelete = async () => {
     if (!selectedPipeline?.pipeline_id) return;
@@ -32,10 +36,13 @@ export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialo
     setIsDeleting(true);
     try {
       await dispatch(deletePipelineById(selectedPipeline.pipeline_id));
+      
+      // Refetch the pipeline list after successful deletion
+      fetchPipelineList(true);
+      
       onOpenChange(false);
-    }catch(error){
-      console.log(error)
-    // Call success callback if you have one
+    } catch(error) {
+      console.log(error);
     } finally {
       setIsDeleting(false);
     }
@@ -71,6 +78,7 @@ export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialo
             ) : (
               <>
                 <Trash2 className="h-4 w-4 mr-2" />
+                Delete
               </>
             )}
           </Button>

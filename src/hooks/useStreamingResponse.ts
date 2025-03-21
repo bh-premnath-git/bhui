@@ -67,8 +67,6 @@ export function useStreamingResponse() {
 
     switch (message.response_type) {
       case 'IDENTIFY':
-        // Skip adding the IDENTIFY messages to the streamed content
-        // We still process them but don't show them to the user
         break;
 
       case 'SQL':
@@ -109,26 +107,26 @@ export function useStreamingResponse() {
           const chartContent = JSON.parse(message.content.replace(/```json\n|\n```/g, ''));
           
           // Extract x and y-axis field names from the data structure
-          const xAxisField = chartContent.x_axis?.field || 'product';
-          const yAxisField = chartContent.y_axis?.field || 'price';
+          const xAxisField = chartContent.graph_config.x_axis;
+          const yAxisField = chartContent.graph_config.y_axis;
           const sizeField = chartContent.size_field || 'size';
           
           // Extract axis labels if available
-          const xAxisLabel = chartContent.x_axis?.label;
-          const yAxisLabel = chartContent.y_axis?.label;
+          const xAxisLabel = chartContent.graph_config.x_axis_label;
+          const yAxisLabel = chartContent.graph_config.y_axis_label;
           
           // Determine if this is multi-series data
           const isMultiSeries = chartContent.is_multi_series || false;
           
           // Process data according to chart format
-          let chartData;
+          let chartData:any;
           
           if (isMultiSeries && chartContent.series_data) {
             // Handle multi-series data format
             chartData = chartContent.series_data;
           } else {
             // Use original data format but preserve all fields
-            chartData = chartContent.data;
+            chartData = chartContent.graph_data;
           }
 
           setStreamedData(prev => [...prev, {

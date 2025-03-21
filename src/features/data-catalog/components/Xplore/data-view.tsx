@@ -371,55 +371,23 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     console.log('Raw Chart Data:', currentResult.data);
     console.log('Chart Type:', currentResult.chartType);
     
-    // Check if we have time series data with Month and Order Count
-    const isTimeSeriesData = Array.isArray(currentResult.data) && 
+    // Check if we have the new format with x_axis and y_axis properties
+    const isNewFormat = Array.isArray(currentResult.data) && 
       currentResult.data.length > 0 &&
-      'Month' in currentResult.data[0] && 
-      'Order Count' in currentResult.data[0];
-    
-    
-    // Check if we have city data with capitalized keys (City and Total Orders)
-    const isCapitalizedCityData = Array.isArray(currentResult.data) && 
-      currentResult.data.length > 0 &&
-      'City' in currentResult.data[0] && 
-      'Total Orders' in currentResult.data[0];
-    
-    // Pre-process time series data if detected
-    if (isTimeSeriesData) {
+      'x_axis' in currentResult.data[0] && 
+      'y_axis' in currentResult.data[0];
+
+    // Transform the new format to be compatible with our chart components
+    if (isNewFormat) {
+      // Transform the data to use the values from xAxis/yAxis that were set in useStreamingResponse
+      currentResult.data = (currentResult.data as any[]).map((item: any) => ({
+        name: item.x_axis,
+        value: item.y_axis
+      }));
       
-      // Set explicit chart properties for time series
-      currentResult.xAxis = 'Month';
-      currentResult.yAxis = 'Order Count';
-      
-      // Convert Month strings to proper Date objects if needed
-      if (typeof currentResult.data[0].Month === 'string' && /^\d{4}-\d{2}$/.test(currentResult.data[0].Month)) {
-        currentResult.data = (currentResult.data as any[]).map(item => ({
-          ...item,
-          Month: new Date(item.Month + '-01') // Add day to make it a valid full date
-        }));
-      } 
-      // Handle ISO dates (already valid dates, just create Date objects)
-      else if (typeof currentResult.data[0].Month === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(currentResult.data[0].Month)) {
-        currentResult.data = (currentResult.data as any[]).map(item => ({
-          ...item,
-          Month: new Date(item.Month)
-        }));
-      }
-      
-    }
-    
-    // Pre-process capitalized city data if detected
-    else if (isCapitalizedCityData) {
-      
-      // Set explicit chart properties for city data
-      currentResult.xAxis = 'City';
-      currentResult.yAxis = 'Total Orders';
-      
-      // For bar charts, sort by value for better visualization
-      if (currentResult.chartType === 'bar') {
-        currentResult.data = [...(currentResult.data as any[])].sort((a, b) => b['Total Orders'] - a['Total Orders']);
-      }
-      
+      // Set the axis properties to use the transformed keys
+      currentResult.xAxis = 'name';
+      currentResult.yAxis = 'value';
     }
     
     // Create dynamic chart configuration
@@ -429,7 +397,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
       currentResult.config,
       currentResult.format
     );
-
 
     // Special handling for gauge chart
     if (currentResult.chartType === 'gauge') {
@@ -532,19 +499,14 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     // Render the appropriate chart based on chartType
     const renderChart = () => {
       const yAxis = currentResult.yAxis || 'value';
-    
+      const xAxis = currentResult.xAxis || 'name';
 
       switch (currentResult.chartType) {
         case 'bar':
-          console.log('Bar Chart Data:', {
-            data: standardData,
-            xAxis: currentResult.xAxis || 'name',
-            bars: currentResult.isMultiSeries ? ['series'] : [yAxis]
-          });
           return (
             <BarChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || 'name'}
+              xAxisDataKey={xAxis}
               bars={currentResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
@@ -558,8 +520,8 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <LineChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || chartConfig.xAxisKey}
-              lines={[currentResult.yAxis || chartConfig.yAxisKey]}
+              xAxisDataKey={xAxis}
+              lines={[yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
               isMultiSeries={currentResult.isMultiSeries}
@@ -570,7 +532,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <AreaChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || 'name'}
+              xAxisDataKey={xAxis}
               areas={currentResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               stacked={currentResult.config?.stacked}
@@ -583,7 +545,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             <PieChart
               data={standardData}
               dataKey={yAxis}
-              nameKey={currentResult.xAxis || 'name'}
+              nameKey={xAxis}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
@@ -593,7 +555,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <DonutChart
               data={standardData.map(item => ({
-                name: String(item[currentResult.xAxis || 'name']),
+                name: String(item[xAxis]),
                 value: Number(item[yAxis] || 0)
               }))}
               config={chartConfig}
@@ -604,7 +566,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <ScatterChart
               data={standardData}
-              xKey={currentResult.xAxis || 'name'}
+              xKey={xAxis}
               yKey={yAxis}
               name={currentResult.title || "Scatter Plot"}
               config={chartConfig}
@@ -615,7 +577,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <BubbleChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || 'name'}
+              xAxisDataKey={xAxis}
               yAxisDataKey={yAxis}
               sizeKey={currentResult.sizeKey || 'size'}
               groups={currentResult.isMultiSeries ? ['series'] : []}
@@ -629,7 +591,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <RadarChart
               data={standardData}
-              variables={Array.from(new Set(standardData.map(item => String(item[currentResult.xAxis || 'name']))))}
+              variables={Array.from(new Set(standardData.map(item => String(item[xAxis]))))}
               groups={currentResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
@@ -641,7 +603,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             <TreemapChart
               data={standardData}
               dataKey={yAxis}
-              nameKey={currentResult.xAxis || 'name'}
+              nameKey={xAxis}
               isMultiSeries={currentResult.isMultiSeries}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
@@ -652,7 +614,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
           return (
             <BarChart
               data={standardData}
-              xAxisDataKey={currentResult.xAxis || 'name'}
+              xAxisDataKey={xAxis}
               bars={currentResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}

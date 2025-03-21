@@ -31,7 +31,7 @@ export function SqlCodeBlock({ sql, isEmbedded = false }: SqlCodeBlockProps) {
       transition={{ duration: 0.3 }}
       className="w-full"
     >
-      <div className={isEmbedded ? "bg-transparent" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
+       <div className={isEmbedded ? "bg-transparent" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
         <div className="flex items-center justify-between mb-2 px-1">
           <div className="text-xs font-medium text-muted-foreground flex items-center">
             <div className="w-2 h-2 rounded-full bg-primary/70 mr-2"></div>
@@ -58,8 +58,8 @@ export function SqlCodeBlock({ sql, isEmbedded = false }: SqlCodeBlockProps) {
             </Tooltip>
           </TooltipProvider>
         </div>
-        <div className="max-w-full overflow-x-auto horizontal-scrollbar">
-          <SqlSyntaxHighlighter code={sql} className="text-sm break-all word-break" />
+        <div className="max-w-full overflow-x-auto whitespace-pre-wrap break-words horizontal-scrollbar">
+          <SqlSyntaxHighlighter code={sql} className="text-sm" />
         </div>
       </div>
     </motion.div>

@@ -41,7 +41,7 @@ interface Node {
     [key: string]: any;
 }
 
-interface PipelineContextProps {
+interface  bnPipelineContextProps {
     nodes: any;
     setNodes: React.Dispatch<React.SetStateAction<any>>;
     onNodesChange: (changes: any) => void;
@@ -146,7 +146,7 @@ interface PipelineContextProps {
     pipelineJson: any;
 }
 
-const PipelineContext = createContext<PipelineContextProps | undefined>(undefined);
+const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
 
 export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location=useLocation()

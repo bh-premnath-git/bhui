@@ -111,7 +111,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
-    
+    console.log(source, "initialData")
+    console.log(source.source?.target_type, "pipelineJson")
     useEffect(() => {
         dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
     }, [dispatch]);
@@ -122,15 +123,19 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
-                    target_type: source.source?.target_type,
+                    target_type: source.source?.connection?.connection_type==="postgresql"?'PostgreSQL':source.source?.target_type,
                     target_name: source.source?.target_name,
+                    table_name: source.source?.table_name,
                     load_mode: source.source?.load_mode,
                     file_name: source.source?.file_name,
                     connection: {
                         connection_config_id: source.source?.connection?.connection_config_id,
                         file_path_prefix: source.source?.connection?.file_path_prefix,
                         type: source.source?.connection?.connection_type,
-                        connection_name: source.source?.connection?.name
+                        connection_name: source.source?.connection?.name,
+                        database: source.source?.connection?.database,
+                        schema: source.source?.connection?.schema,
+                        secret_name: source.source?.connection?.secret_name
                     }
                 },
                 file_type: source.source?.file_type||pipelineJsonData?.target?.file_type?.toUpperCase()||'CSV',

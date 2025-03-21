@@ -38,7 +38,9 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
   useEffect(() => {
     const fetchConnectionConfigs = async () => {
         try {
-            await dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
+            const response = await dispatch(getConnectionConfigList({offset: 0, limit: 1000})).unwrap();
+            // Remove the setTimeout and call initialSource directly after we have the data
+            initialSource();
         } catch (error) {
             console.error('Error fetching connection configs:', error);
             toast.error('Failed to load connection configurations');
@@ -48,13 +50,23 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     fetchConnectionConfigs();
 }, [dispatch]);
 
-  useEffect(() => {
+// Add a new useEffect to watch for changes in connectionConfigList and source
+useEffect(() => {
+    if (connectionConfigList?.length > 0 && source) {
+        initialSource();
+    }
+}, [connectionConfigList, source]);
+
+  const initialSource=()=>{
     if (source) {
       console.log(source)
+      console.log(connectionConfigList, "connectionConfigList")
       let connection = connectionConfigList?.find((item: any) => item.id === source?.connection_config_id);
+      console.log(connection, "connection")
       let connection_data={...connection}
-      connection_data.connection_name=connection?.connection_name?.toLowerCase()=='postgres'?'postgresql':connection.connection_name;
       console.log(connection_data, "connection")
+
+      connection_data.connection_name=connection?.connection_name?.toLowerCase()=='postgres'?'postgresql':connection.connection_name;
       let pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
       console.log(pipelineJsonData, "pipelineJson")
       const initialData = {
@@ -82,7 +94,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
       console.log(initialData,"initialData")
       setInitialData(initialData);
     }
-  }, [source]);
+  }
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
 

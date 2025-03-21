@@ -86,76 +86,80 @@ export function ConnectionForm({
     loadSchema();
   }, [connectionName]);
 
+  // Add this function to generate initial values based on schema
+  const generateInitialValues = (schema: any) => {
+    const initialValues: Record<string, string> = {
+      name: `${connectionDisplayName} Connection`
+    };
+
+    if (schema?.properties) {
+      Object.keys(schema.properties).forEach(key => {
+        initialValues[key] = '';
+      });
+    }
+
+    return initialValues;
+  };
+
   const form = useForm({
     resolver: schema ? zodResolver(generateFormSchema(schema)) : undefined,
-    defaultValues: isEdit && formData ? {
-      name: formData.name || `${connectionDisplayName} Connection`,
-      file_path_prefix: formData.file_path_prefix || '',
-      project_id: formData.project_id || '',
-      dataset_id: formData.dataset_id || '',
-      credentials_json: formData.credentials_json || '',
-      host: formData.host || '',
-      port: formData.port || '',
-      database: formData.database || '',
-      username: formData.username || '',
-      password: formData.password || '',
-      schema: formData.schema || '',
-    } : {
-      name: `${connectionDisplayName} Connection`,
-      project_id: '',
-      dataset_id: '',
-      credentials_json: '',
-      host: '',
-      port: '',
-      database: '',
-      username: '',
-      password: '',
-      schema: '',
-    }
+    defaultValues: isEdit && formData 
+      ? {
+          ...generateInitialValues(schema),
+          ...formData
+        }
+      : generateInitialValues(schema),
+    mode: 'onChange'
   });
 
-  // Modify the useEffect for form reset to consider formData when isEdit is true
+  // Update the useEffect to properly handle schema changes
   useEffect(() => {
     if (schema) {
-      form.reset(
-        isEdit && formData ? {
-          name: formData.name || `${connectionDisplayName} Connection`,
-          file_path_prefix: formData.file_path_prefix || '',
-          project_id: formData.project_id || '',
-          dataset_id: formData.dataset_id || '',
-          credentials_json: formData.credentials_json || '',
-          host: formData.host || '',
-          port: formData.port || '',
-          database: formData.database || '',
-          username: formData.username || '',
-          password: formData.password || '',
-          schema: formData.schema || '',
-        } : {
-          name: `${connectionDisplayName} Connection`,
-          file_path_prefix: '',
-          project_id: '',
-          dataset_id: '',
-          credentials_json: '',
-          host: '',
-          port: '',
-          database: '',
-          username: '',
-          password: '',
-          schema: '',
-        }
-      );
+      const initialValues = isEdit && formData 
+        ? {
+            ...generateInitialValues(schema),
+            ...formData
+          }
+        : generateInitialValues(schema);
+      
+      form.reset(initialValues);
     }
-  }, [schema, connectionDisplayName, connectionName, form, isEdit, formData]);
+  }, [schema, connectionDisplayName, isEdit, formData]);
 
   const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
     const type = connectionName.toLowerCase();
-    console.log(data,"type")
+    console.log("Form data received in getConfigUnionForType:", data);
   
     const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
   
     const commonFields = {
-      [dynamicTypeField]: type, // Dynamically assign source_type or destination_type
+      [dynamicTypeField]: type,
     };
+
+    if (type === 'postgres') {
+      // Handle schemas array properly
+      const schemasArray = Array.isArray(data.schemas) 
+        ? data.schemas 
+        : data.schemas 
+          ? [data.schemas] 
+          : ['public']; // Default to ['public'] if no schemas provided
+
+      return {
+        host: data.host || '',
+        port: data.port ? String(data.port) : '5432', // Ensure port is string
+        database: data.database || '',
+        username: data.username || '',
+        password: data.password || '',
+        schemas: schemasArray,
+        // Add SSL mode if present
+        ...(data.ssl_mode && { ssl_mode: data.ssl_mode }),
+        // Add JDBC params if present
+        ...(data.jdbc_url_params && { jdbc_url_params: data.jdbc_url_params }),
+        // Add replication method if present
+        ...(data.replication_method && { replication_method: data.replication_method }),
+        ...commonFields,
+      };
+    }
   
     if (type === 'snowflake') {
       return {
@@ -173,22 +177,26 @@ export function ConnectionForm({
     }
   
     if (type === 'bigquery') {
+      if (!data.credentials_json) {
+        console.warn('credentials_json is missing from form data');
+      }
+      
       return {
-        project_id: data.project_id || '',
-        dataset_id: data.dataset_id || '',
-        credentials_json: data.credentials_json || '',
+        project_id: data.project_id,
+        dataset_id: data.dataset_id,
+        credentials_json: data.credentials_json,
         ...commonFields,
       };
     }
   
-    if (type === 'postgres' || type === 'mysql') {
+    if (type === 'mysql') {
       return {
         host: data.host || '',
         port: data.port || '',
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
-        schema: data.schema || '',
+        schemas: data.schemas || '',
         ...commonFields,
       };
     }
@@ -241,19 +249,22 @@ export function ConnectionForm({
     try {
       setIsSubmitting(true);
       
-      // Ensure port is a number
-      const formData = {
-        ...data,
-        port: typeof data.port === 'string' ? parseInt(data.port, 10) : data.port
-      };
-      const dynamicType = connectionType === 'source' ? 'source_type' : 'destination_type';
+      // Get raw form data
+      const rawFormData = form.getValues();
+      console.log('Raw form values:', rawFormData);
+      
+      // Special handling for BigQuery
+      const formData = connectionName.toLowerCase() === 'bigquery' 
+        ? {
+            project_id: rawFormData.project_id,
+            dataset_id: rawFormData.dataset_id,
+            credentials_json: rawFormData.credentials_json,
+          }
+        : { ...data };
 
-      // Add console.log to debug form data
-      console.log('Raw form data:', data);
-      console.log('Processed form data:', formData);
-
-      // Generate the configuration union with the appropriate dynamic field
-      const configUnion = getConfigUnionForType(connectionName, formData, connectionType);
+      console.log('Form data before processing:', formData);
+      
+      const configUnion: any = getConfigUnionForType(connectionName, formData, connectionType);
       console.log('Config before encryption:', configUnion);
 
       if (!configUnion) {
@@ -262,7 +273,14 @@ export function ConnectionForm({
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
 let custom_metadata=data;
-custom_metadata.connection_name=connectionDisplayName
+custom_metadata.connection_name=connectionDisplayName;
+if(configUnion?.schemas){
+custom_metadata.schema=configUnion?.schemas[0];
+}
+if(configUnion?.credentials_json){
+  custom_metadata.credentials_json=configUnion?.credentials_json;
+}
+
 console.log(custom_metadata,"custom_metadata")
       const connectionData: any = {
         connection_id: connectionId,
@@ -292,6 +310,14 @@ console.log(custom_metadata,"custom_metadata")
       setIsSubmitting(false);
     }
   };
+
+  // Add this to debug form values
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      console.log('Form values changed:', value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   if (isLoading) {
     return (

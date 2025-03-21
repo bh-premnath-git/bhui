@@ -491,6 +491,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
+            console.log(sourceData,"sourceData")
             if (onSourceUpdate) {
                 onSourceUpdate(sourceData);
             }

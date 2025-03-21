@@ -648,6 +648,44 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
 
       <Card>
         <CardHeader className="flex flex-row justify-between items-center pb-2">
+          <h3 className="text-lg font-semibold">Connection</h3>
+          {isConnectionChanged && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUpdateConnection}
+              className="flex items-center gap-2"
+            >
+              Update
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            <Select
+              value={selectedConnection || ''}
+              onValueChange={handleConnectionChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a connection" />
+              </SelectTrigger>
+              <SelectContent>
+                {connectionConfigList?.map((config: any) => (
+                  <SelectItem key={config.id} value={config.id.toString()}>
+                                {config.connection_config_name} ({config.custom_metadata?.type})
+                                </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!selectedConnection && (
+              <p className="text-sm text-muted-foreground">No connection configured.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Links</h3>
           <Button
             variant="outline"
@@ -697,44 +735,6 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardHeader>
         <CardContent className="pt-0">
           <TagsSection tags={tags} onDeleteTag={handleRemoveTag} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center pb-2">
-          <h3 className="text-lg font-semibold">Connection</h3>
-          {isConnectionChanged && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUpdateConnection}
-              className="flex items-center gap-2"
-            >
-              Update
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2">
-            <Select
-              value={selectedConnection || ''}
-              onValueChange={handleConnectionChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a connection" />
-              </SelectTrigger>
-              <SelectContent>
-                {connectionConfigList?.map((config: any) => (
-                  <SelectItem key={config.id} value={config.id.toString()}>
-                                {config.connection_config_name} ({config.custom_metadata?.type})
-                                </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!selectedConnection && (
-              <p className="text-sm text-muted-foreground">No connection configured.</p>
-            )}
-          </div>
         </CardContent>
       </Card>
 

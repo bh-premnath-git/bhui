@@ -124,7 +124,7 @@ export const LineChart: React.FC<LineChartProps> = ({
     }
     
     // Default to dollar formatter
-    return [`$${Number(value).toLocaleString()}`, name];
+    return [`${Number(value).toLocaleString()}`, name];
   };
   
   // Get display name for a line
@@ -164,7 +164,6 @@ export const LineChart: React.FC<LineChartProps> = ({
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         />
-        <Legend iconSize={6} />
         
         {allLineKeys.map((line, index) => (
           showArea ? (

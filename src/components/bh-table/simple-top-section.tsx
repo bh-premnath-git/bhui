@@ -3,9 +3,15 @@ import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter.tsx"
 import type { TopSectionProps, ColumnDefWithFilters } from "@/types/table"
 import { getUniqueValues } from "@/lib/utils"
-import { ImportIcon, X } from "lucide-react"
+import { X, ChevronDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 
-export function SimpleTopSection<TData>({ table, toolbarConfig, importSrcFn}: TopSectionProps<TData>) {
+export function SimpleTopSection<TData>({ table, toolbarConfig}: TopSectionProps<TData>) {
   const data = table.getCoreRowModel().rows.map((row) => row.original)
   const columns = table.getAllColumns()
   const hasFilters = table.getState().columnFilters.length > 0 || table.getState().globalFilter
@@ -43,15 +49,49 @@ export function SimpleTopSection<TData>({ table, toolbarConfig, importSrcFn}: To
           value={(table.getState().globalFilter as string) ?? ""}
           onChange={(event) => table.setGlobalFilter(event.target.value)}
         />
-        {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => (
-          <Button key={index} variant={button.variant} onClick={button.onClick}>
-            {button.icon && <button.icon className="mr-2 h-4 w-4" />}
-            {typeof button.label === "string" ? button.label : <>{button.label}</>}
-          </Button>
-        ))}
-        {importSrcFn && <Button variant="default" onClick={importSrcFn}>
-          <ImportIcon className="mr-2 h-4 w-4" /> Import
-        </Button>}
+        {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => {
+          if (button.dropdownItems && button.dropdownItems.length > 0) {
+            // Render dropdown button
+            return (
+              <DropdownMenu key={index}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant={button.variant} className={button.className} disabled={button.disabled}>
+                    {button.icon && <button.icon className="mr-2 h-4 w-4" />}
+                    {typeof button.label === "string" ? button.label : <>{button.label}</>}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {button.dropdownItems.map((item, itemIndex) => (
+                    <DropdownMenuItem 
+                      key={itemIndex} 
+                      onClick={item.onClick}
+                      disabled={item.disabled}
+                      className={item.className}
+                    >
+                      {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+                      {typeof item.label === "string" ? item.label : <>{item.label}</>}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          } else {
+            // Render regular button
+            return (
+              <Button 
+                key={index} 
+                variant={button.variant} 
+                onClick={button.onClick}
+                disabled={button.disabled}
+                className={button.className}
+              >
+                {button.icon && <button.icon className="mr-2 h-4 w-4" />}
+                {typeof button.label === "string" ? button.label : <>{button.label}</>}
+              </Button>
+            )
+          }
+        })}
       </div>
     </div>
   )

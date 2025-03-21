@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactElement } from 'react';
+import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/bh-table/data-table';
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { Row } from '@tanstack/react-table';
@@ -64,8 +64,7 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    setPageIndex(0); // Reset to first page when changing page size
-    // If you need to fetch new data from API
+    setPageIndex(0); 
     if (onRefetch) {
       onRefetch();
     }
@@ -86,18 +85,22 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
       handleNavigation(`${ROUTES.DATA_CATALOG}/xplorer`);
     };
 
+    const handleImportClick = () => {
+      setShowImportSection(!showImportSection);
+    };
+
     window.addEventListener("openImportSourceDialog", handleOpenImportSource);
     window.addEventListener("openXploreDialog", handleOpenXplore);
+    window.addEventListener("openLocalImport", handleImportClick);
 
     return () => {
       window.removeEventListener("openImportSourceDialog", handleOpenImportSource);
       window.removeEventListener("openXploreDialog", handleOpenXplore);
+      window.removeEventListener("openLocalImport", handleImportClick);
     }
   }, [handleNavigation]);
   
-  const handleImportClick = () => {
-    setShowImportSection(!showImportSection);
-  };
+ 
   
   return (
     <>
@@ -112,7 +115,6 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
         pagination={true}
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
-        importSrcFn={handleImportClick}
         pageIndex={pageIndex}
         pageSize={pageSize}
         pageCount={Math.ceil(totalCount / pageSize)}

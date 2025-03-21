@@ -7,7 +7,6 @@ import {
   ZAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts"
 import { colorPalettes } from "@/components/bh-charts"

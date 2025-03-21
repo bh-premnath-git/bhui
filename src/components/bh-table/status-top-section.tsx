@@ -2,8 +2,14 @@ import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Clock, XCircle, X } from "lucide-react"
+import { CheckCircle2, Clock, XCircle, X, ChevronDown } from "lucide-react"
 import type { TopSectionProps, StatusMetric } from "@/types/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 
 export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData }: TopSectionProps<TData>) {
   const statusColumn = table.getColumn(headerFilter)
@@ -115,12 +121,53 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
           value={(table.getState().globalFilter as string) ?? ""}
           onChange={(event) => table.setGlobalFilter(event.target.value)}
         />
-        {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => (
-          <Button key={index} variant={button.variant} onClick={button.onClick}>
-            {button.icon && <button.icon className="mr-2 h-4 w-4" />}
-            {typeof button.label === "string" ? button.label : <>{button.label}</>}
-          </Button>
-        ))}
+        {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => {
+          if (button.dropdownItems && button.dropdownItems.length > 0) {
+            // Render dropdown button
+            return (
+              <DropdownMenu key={index}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={button.variant} 
+                    className={button.className} 
+                    disabled={button.disabled}
+                  >
+                    {button.icon && <button.icon className="mr-2 h-4 w-4" />}
+                    {typeof button.label === "string" ? button.label : <>{button.label}</>}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {button.dropdownItems.map((item, itemIndex) => (
+                    <DropdownMenuItem 
+                      key={itemIndex} 
+                      onClick={item.onClick}
+                      disabled={item.disabled}
+                      className={item.className}
+                    >
+                      {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+                      {typeof item.label === "string" ? item.label : <>{item.label}</>}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          } else {
+            // Render regular button
+            return (
+              <Button 
+                key={index} 
+                variant={button.variant} 
+                onClick={button.onClick}
+                disabled={button.disabled}
+                className={button.className}
+              >
+                {button.icon && <button.icon className="mr-2 h-4 w-4" />}
+                {typeof button.label === "string" ? button.label : <>{button.label}</>}
+              </Button>
+            )
+          }
+        })}
       </div>
     </div>
   )

@@ -1,14 +1,23 @@
 import type { ColumnDef, FilterFn, Table } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 
+
+interface DropdownItem {
+  label: React.ReactNode;
+  icon?: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}
 // Button configuration for toolbar
 interface ToolbarButtonConfig {
   label: React.ReactNode;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   icon?: LucideIcon;
-  onClick: () => void;
+  onClick?: () => void;
   disabled?: boolean;
   className?: string;
+  dropdownItems?: DropdownItem[]; 
 }
 
 // Generic toolbar configuration

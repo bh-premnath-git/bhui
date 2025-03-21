@@ -244,7 +244,7 @@ console.log(sources)
             table_name: node?.data.source?.table_name||'sample_table',
                             connection: {
                                 name: node.data.source?.connection?.name,
-                                connection_type:node?.data?.source?.connection?.connection_type,
+                                connection_type:node?.data?.source?.connection?.connection_type?.toLowerCase()=="postgres"?"postgresql":node?.data?.source?.connection?.connection_type,
                                 file_path_prefix: node.data.source?.connection?.file_path_prefix,
                                 connection_config_id: node.data.source?.connection?.connection_config_id,
                                 database: node?.data?.source?.connection?.database,
@@ -292,7 +292,7 @@ console.log(sources)
             table_name: node?.data.source?.table_name||'sample_table',
             connection: {
                 type: node?.data.source?.connection?.connection_type,
-                connection_type:node?.data?.source?.connection?.connection_type,
+                connection_type:node?.data?.source?.connection?.connection_type?.toLowerCase()=="postgres"?"postgresql":node?.data?.source?.connection?.connection_type,
                 file_path: node?.data.source?.connection?.file_path_prefix ,
                 connection_config_id: node?.data.source?.connection?.connection_config_id,
                 name: node?.data.source?.connection?.name,

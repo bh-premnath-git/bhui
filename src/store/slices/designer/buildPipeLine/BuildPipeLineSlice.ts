@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 
 const token: any = sessionStorage?.getItem("token");
@@ -426,7 +426,7 @@ export const generatePipelineAgent = createAsyncThunk(
   async ({ schemaString, targetColumn }: { schemaString: string; targetColumn: string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: '8090',
+        portNumber: AGENT_PORT,
         url: '/pipeline_agent/generate',
         usePrefix: true,
         method: 'POST',

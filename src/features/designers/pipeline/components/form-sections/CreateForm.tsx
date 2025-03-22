@@ -115,54 +115,103 @@ console.log(initialFormValues,"initialFormValues")
 
     setIsGenerating(true);
     try {
-      console.log(schema?.title,"schema?.title")
       if (schema?.title === 'Joiner') {
-        const currentJoinCondition = watch('conditions');
-        
-        // Find the index if we're editing an existing condition
-        const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
-        const index = match ? parseInt(match[1]) : 0;
-        
-        if (!currentJoinCondition[index]?.join_condition) {
-          const joinPayload: any = await generateJoinPayload(currentNodeId, nodes, edges);
-          console.log(joinPayload, "joinPayload");
+        // Check if this is for the expression tab
+        if (fieldName.includes('expressions')) {
+          const match = fieldName.match(/expressions\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const expressions = watch('expressions');
+            const actualTargetColumn = expressions[index]?.name || '';
 
-          const response: any = await dispatch(generatePipelineAgent({ 
-            params: joinPayload.params,
-            operation_type: "dataset_join",
-            thread_id: 'join_123'
-          })).unwrap();
+            if (!actualTargetColumn) {
+              console.warn('No target column specified');
+              return;
+            }
 
-          if (!response?.result) {
-            throw new Error('Invalid response from expression generator');
+            const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+            const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+
+            const response: any = await dispatch(generatePipelineAgent({ 
+              params: {
+                schema: schemaString,
+                target_column: actualTargetColumn
+              },
+              operation_type: "spark_expression",
+              thread_id: 'spark_123'
+            })).unwrap();
+
+            if (!response?.result) {
+              throw new Error('Invalid response from expression generator');
+            }
+
+            try {
+              const parsedResult = JSON.parse(response.result);
+              const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+              
+              // Update the expression value in the form
+              const expressions = [...(watch('expressions') || [])];
+              expressions[index] = {
+                ...expressions[index],
+                expression: expressionValue
+              };
+              setValue('expressions', expressions, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            } catch (error) {
+              console.error('Error parsing response:', error);
+              throw new Error('Invalid response format from expression generator');
+            }
           }
+        } else {
+          // Existing join condition generation logic
+          const currentJoinCondition = watch('conditions');
+          const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
+          const index = match ? parseInt(match[1]) : 0;
+          
+          if (!currentJoinCondition[index]?.join_condition) {
+            const joinPayload: any = await generateJoinPayload(currentNodeId, nodes, edges);
+            console.log(joinPayload, "joinPayload");
 
-          try {
-            const parsedResult = JSON.parse(response.result);
-            const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
-            // Convert join type to expected format (INNER JOIN -> inner, LEFT JOIN -> left)
-            const joinType = parsedResult.join_type?.split(' ')[0]?.toLowerCase() || 'left';
-            
-            console.log(expressionValue, "expressionValue");
-            console.log(joinType, "joinType");
-            
-            // Update the specific condition in the conditions array with both join_condition and join_type
-            const updatedConditions = [...(watch('conditions') || [])];
-            updatedConditions[index] = {
-              ...updatedConditions[index],
-              join_condition: expressionValue,
-              join_type: joinType
-            };
-            
-            // Set the updated conditions array
-            setValue('conditions', updatedConditions, {
-              shouldValidate: true,
-              shouldDirty: true,
-              shouldTouch: true
-            });
-          } catch (error) {
-            console.error('Error parsing response:', error);
-            throw new Error('Invalid response format from expression generator');
+            const response: any = await dispatch(generatePipelineAgent({ 
+              params: joinPayload.params,
+              operation_type: "dataset_join",
+              thread_id: 'join_123'
+            })).unwrap();
+
+            if (!response?.result) {
+              throw new Error('Invalid response from expression generator');
+            }
+
+            try {
+              const parsedResult = JSON.parse(response.result);
+              const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+              // Convert join type to expected format (INNER JOIN -> inner, LEFT JOIN -> left)
+              const joinType = parsedResult.join_type?.split(' ')[0]?.toLowerCase() || 'left';
+              
+              console.log(expressionValue, "expressionValue");
+              console.log(joinType, "joinType");
+              
+              // Update the specific condition in the conditions array with both join_condition and join_type
+              const updatedConditions = [...(watch('conditions') || [])];
+              updatedConditions[index] = {
+                ...updatedConditions[index],
+                join_condition: expressionValue,
+                join_type: joinType
+              };
+              
+              // Set the updated conditions array
+              setValue('conditions', updatedConditions, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            } catch (error) {
+              console.error('Error parsing response:', error);
+              throw new Error('Invalid response format from expression generator');
+            }
           }
         }
       } else if (schema?.title === 'SchemaTransformation') {
@@ -226,18 +275,32 @@ console.log(initialFormValues,"initialFormValues")
       }
     } catch (error) {
       console.error('Error generating expression:', error);
-      // Update error handling for Joiner
+      // Update error handling to include expressions
       if (schema?.title === 'Joiner') {
-        const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
-        const index = match ? parseInt(match[1]) : 0;
-        
-        const updatedConditions = [...(watch('conditions') || [])];
-        updatedConditions[index] = {
-          ...updatedConditions[index],
-          join_condition: '',
-          join_type: 'left' // Default to left join on error
-        };
-        setValue('conditions', updatedConditions);
+        if (fieldName.includes('expressions')) {
+          const match = fieldName.match(/expressions\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const expressions = [...(watch('expressions') || [])];
+            expressions[index] = {
+              ...expressions[index],
+              expression: ''
+            };
+            setValue('expressions', expressions);
+          }
+        } else {
+          // Existing error handling for join conditions
+          const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
+          const index = match ? parseInt(match[1]) : 0;
+          
+          const updatedConditions = [...(watch('conditions') || [])];
+          updatedConditions[index] = {
+            ...updatedConditions[index],
+            join_condition: '',
+            join_type: 'left' // Default to left join on error
+          };
+          setValue('conditions', updatedConditions);
+        }
       }
       // Clear the expression field in case of error
       if (schema?.title === 'SchemaTransformation') {

@@ -7,7 +7,7 @@ import { generateFormSchema } from './connectionFormSchema';
 import { FormFields } from './FormFields';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Database, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Construction, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { encrypt_string } from '@/lib/encryption';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -358,11 +358,13 @@ console.log(custom_metadata,"custom_metadata")
         </Button>
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Form Schema</CardTitle>
-            <CardDescription>We couldn't load the configuration for this connection type</CardDescription>
+            <div className='flex flex-col items-center space-y-4'>
+              <Construction className="h-16 w-16" />
+              <CardTitle className="text-destructive text-2xl font-bold">Under the Construction</CardTitle>
+            </div>
           </CardHeader>
+
           <CardContent className="space-y-4">
-            <p>Unable to load the connection form schema for {connectionDisplayName}. Please try again later.</p>
             <div className="flex justify-end space-x-4">
               <Button variant="outline" onClick={onBack}>
                 Go Back

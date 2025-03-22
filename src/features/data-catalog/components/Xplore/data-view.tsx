@@ -561,6 +561,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               yAxisDataKey={yAxis}
               sizeKey={workingResult.sizeKey || 'size'}
               groups={workingResult.isMultiSeries ? ['series'] : []}
+              isMultiSeries={workingResult.isMultiSeries}
               config={chartConfig}
             />
           );

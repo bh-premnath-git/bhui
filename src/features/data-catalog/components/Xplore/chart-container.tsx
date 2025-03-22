@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { QueryResult, ChartType } from '@/types/data-catalog/xplore/type';
 import ChartToolbar from '@/components/bh-charts/ChartToolbar';
 import { cn } from '@/lib/utils';
-import { colorPalettes } from '@/components/bh-charts';
+import { COLOR_THEMES } from '@/components/bh-charts/ChartTypes';
 
 interface ChartContainerProps {
   result: QueryResult;
@@ -19,18 +19,22 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(result.config?.colorTheme || 'blue');
   
-  // Get the actual colors based on the selected theme
+  // Get the actual color array based on the theme name
   const themeColors = useMemo(() => {
-    if (currentTheme && colorPalettes[`${currentTheme}Colors`]) {
-      return colorPalettes[`${currentTheme}Colors`];
-    }
-    return colorPalettes.supersetColors; // Default fallback
+    return COLOR_THEMES[currentTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.blue;
   }, [currentTheme]);
   
-  // Clone the children with the theme colors prop
+  // Debug logging to verify theme changes
+  useEffect(() => {
+    console.log('Current theme:', currentTheme);
+    console.log('Theme colors:', themeColors);
+  }, [currentTheme, themeColors]);
+  
+  // Clone children to pass down the colors
   const childrenWithColors = useMemo(() => {
     return React.Children.map(children, child => {
       if (React.isValidElement(child)) {
+        // Clone the element with the colors prop
         return React.cloneElement(child, { 
           colors: themeColors,
           ...child.props
@@ -68,7 +72,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
   // Handle settings change
   const handleSettingChange = useCallback((setting: string, value: boolean) => {
-    console.log(`Changing setting ${setting} to: ${value}`);
     if (onChartChange) {
       onChartChange({
         ...result,

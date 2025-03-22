@@ -78,7 +78,14 @@ const ChartToolbar: React.FC<ChartToolbarProps> = ({
         dropdownRef={chartTypeDropdownRef}
         ChartTypeIcon={ChartTypeIcon}
       />
-      
+      {/* Color Theme Dropdown */}
+      <ColorThemeDropdown
+        isOpen={colorDropdownOpen}
+        setIsOpen={setColorDropdownOpen}
+        selectedTheme={selectedTheme}
+        onColorThemeChange={onColorThemeChange}
+        dropdownRef={colorDropdownRef}
+      />
       {/* Settings Dropdown */}
       <SettingsDropdown
         isOpen={settingsDropdownOpen}
@@ -87,15 +94,6 @@ const ChartToolbar: React.FC<ChartToolbarProps> = ({
         config={config}
         handleSettingChange={handleSettingChange}
         dropdownRef={settingsDropdownRef}
-      />
-      
-      {/* Color Theme Dropdown */}
-      <ColorThemeDropdown
-        isOpen={colorDropdownOpen}
-        setIsOpen={setColorDropdownOpen}
-        selectedTheme={selectedTheme}
-        onColorThemeChange={onColorThemeChange}
-        dropdownRef={colorDropdownRef}
       />
     </div>
   );

@@ -159,7 +159,7 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
         
         // Fallback to data-only view with proper null checks
         const chartData = Array.isArray(result.data) ? result.data
-          .filter(item => item && typeof item === 'object') // Filter out null/undefined items
+          .filter(item => item && typeof item === 'object')
           .map(item => [
             item.name || 'N/A',
             (item.value !== undefined && item.value !== null) ? String(item.value) : 'N/A'

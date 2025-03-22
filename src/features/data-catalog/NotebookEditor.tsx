@@ -1,20 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import CommandPalette from './components/CommandPalette';
 import {  ProcessedNote } from '@/types/data-catalog/notebook/note';
-import { FilePlus2, ChevronLeft, GitBranch, Share2, Save } from 'lucide-react';
+import { FilePlus2, ChevronLeft, GitBranch, Share2, Save, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNotes } from '@/context/datacatalog/NotebookContext';
 import EditorToolbar from './components/EditorToolbar';
+import { debounce } from '@/lib/debounce';
 
 const NoteEditor: React.FC = () => {
   const { 
     currentNote, 
     updateNote, 
-    processedNote,
+    processedNote, 
+    processNote, 
     createNote, 
     deleteNote,
     saveProcessedNote,
@@ -26,6 +28,8 @@ const NoteEditor: React.FC = () => {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const [isEditing, setIsEditing] = useState(true);
 
@@ -47,6 +51,41 @@ const NoteEditor: React.FC = () => {
       contentRef.current.focus();
     }
   }, [isEditing, currentNote, processedNote]);
+
+  // Create debounced function for updating preview
+  const updatePreviewDebounced = useMemo(
+    () =>
+      debounce(() => {
+        if (!currentNote) return;
+        
+        // Calculate word count
+        const wordCount = content.trim().split(/\s+/).length || 0;
+        
+        // Extract tags from content (words prefixed with #)
+        const tags = [
+          ...(content.match(/#[a-zA-Z0-9_]+/g) || []).map(tag => tag.substring(1))
+        ];
+        
+        const previewData = {
+          id: currentNote.id,
+          title: title || 'Untitled Note',
+          content: content,
+          tags,
+          wordCount,
+          updatedAt: new Date().toISOString(),
+        };
+        
+        setPreviewData(previewData);
+      }, 500),
+    [content, title, currentNote]
+  );
+
+  // Effect to update preview when content changes
+  useEffect(() => {
+    if (content && showPreview) {
+      updatePreviewDebounced();
+    }
+  }, [content, title, showPreview, updatePreviewDebounced]);
 
   const handleSave = () => {
     if (!currentNote) return;
@@ -85,6 +124,13 @@ const NoteEditor: React.FC = () => {
   const handleDelete = () => {
     if (!currentNote) return;
     deleteNote(currentNote.id);
+  };
+
+  const togglePreview = () => {
+    setShowPreview(!showPreview);
+    if (!showPreview && content) {
+      updatePreviewDebounced();
+    }
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -169,16 +215,44 @@ const NoteEditor: React.FC = () => {
             className="text-lg font-medium border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
           />
         </div>
+        <div className="flex justify-end">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={togglePreview}
+            className={showPreview ? "bg-secondary/50" : ""}
+          >
+            <Code className="h-4 w-4 mr-1" />
+            {showPreview ? "Hide Preview" : "Show Preview"}
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent className="flex-grow overflow-auto pb-0">
-        <textarea
-          ref={contentRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleTextareaKeyDown}
-          placeholder="Start typing... (Use '/' at the beginning of a line to open command palette)"
-          className="note-editor w-full h-full min-h-[300px] resize-none border-none bg-transparent focus:outline-none text-base"
-        />
+      <CardContent className={cn(
+        "flex-grow min-h-0 overflow-auto pb-0", 
+        showPreview ? "flex gap-4" : ""
+      )}>
+        <div className={showPreview ? "w-1/2 h-full flex flex-col" : "w-full h-full flex flex-col"}>
+          <textarea
+            ref={contentRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder="Start typing... (Use '/' at the beginning of a line to open command palette)"
+            className="note-editor w-full resize-none border-none bg-transparent focus:outline-none text-base"
+            style={{ height: 'calc(50vh - 6rem)' }}
+          />
+        </div>
+        
+        {showPreview && previewData && (
+          <div className="w-1/2 border-l pl-4 overflow-auto">
+            <div className="border rounded-md p-4 bg-muted/30">
+              <p className="text-sm font-medium mb-2">JSON Preview</p>
+              <pre className="text-xs overflow-auto p-2 bg-muted rounded-md">
+                {JSON.stringify(previewData, null, 2)}
+              </pre>
+            </div>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex-shrink-0">
         <EditorToolbar
@@ -197,8 +271,8 @@ const NoteEditor: React.FC = () => {
     if (!processedNote) return null;
     
     return (
-      <Card className="w-full h-full overflow-hidden flex flex-col animate-fade-in glassmorphism">
-        <CardHeader className="pb-2">
+      <Card className="w-full h-full flex flex-col overflow-hidden animate-fade-in glassmorphism">
+        <CardHeader className="pb-2 flex-shrink-0">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-medium">{processedNote.title}</h2>
             <div className="flex items-center text-xs text-muted-foreground">
@@ -207,7 +281,7 @@ const NoteEditor: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow overflow-auto pb-0">
+        <CardContent className="flex-grow min-h-0 overflow-auto pb-0">
           <div className="space-y-6">
             {processedNote.summary && (
               <div className="bg-secondary/50 p-3 rounded-md">
@@ -296,7 +370,7 @@ const NoteEditor: React.FC = () => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between border-t bg-white/50 backdrop-blur-sm p-2">
+        <CardFooter className="flex-shrink-0 flex justify-between border-t bg-white/50 backdrop-blur-sm p-2">
           <Button variant="ghost" size="sm" onClick={() => { setProcessedNote(null); setIsEditing(true); }}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back to editing
@@ -346,10 +420,7 @@ const NoteEditor: React.FC = () => {
   );
 
   return (
-    <div className={cn(
-      "flex-1 overflow-hidden p-4 transition-all duration-300",
-      currentNote ? "h-full" : "h-full"
-    )}>
+    <div className="flex-1 overflow-hidden p-4 transition-all duration-300 h-[calc(100vh-4rem)]">
       {!currentNote && renderEmptyState()}
       {currentNote && isEditing && renderEditor()}
       {currentNote && !isEditing && processedNote && renderProcessedView()}

@@ -138,16 +138,25 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const { shouldRender, showThinkingAnimation, showBuildingAnimation, showContent } = useMemo(() => {
     const shouldRender = message.content || (message.data && message.data.length > 0) || message.isLoading;
     
+    // Check for building phase marker
+    const isInBuildingPhase = message.content?.includes('[BUILDING_PHASE]');
+    
+    // Remove the marker before display
+    if (isInBuildingPhase && message.content) {
+      message.content = message.content.replace('[BUILDING_PHASE]', '');
+    }
+    
     // Explicitly prioritize which animation to show
     const showThinkingAnimation = isInitialLoading && !hasSqlContent;
-    const showBuildingAnimation = isBuildingPhase && !hasSqlContent && !isInitialLoading;
-    const showContent = (!isInitialLoading && !isBuildingPhase) || hasSqlContent;
+    const showBuildingAnimation = (isInBuildingPhase || isBuildingPhase) && !hasSqlContent && !isInitialLoading;
+    const showContent = (!isInitialLoading && !isBuildingPhase && !isInBuildingPhase) || hasSqlContent;
     
     console.log('Render flags:', { 
       shouldRender, 
       showThinkingAnimation, 
       showBuildingAnimation, 
-      showContent 
+      showContent,
+      isInBuildingPhase
     });
     
     return { 
@@ -159,7 +168,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }, [
     message.content, 
     message.data, 
-    message.isLoading, 
+    message.isLoading,
     isInitialLoading, 
     isBuildingPhase,
     hasSqlContent

@@ -249,13 +249,16 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const reversedIndex = lastAssistantIndex;
           const actualIndex = prev.length - 1 - reversedIndex;
           
-          // Replace the temporary loading message with actual content
+          // Add a special marker in the content if we're in building phase
           const updatedMessages = [...prev];
           updatedMessages[actualIndex] = {
             ...updatedMessages[actualIndex],
-            content: streamedContent || '',
+            content: streamedContent && isStreaming && 
+                    !streamedContent.includes('SELECT') && 
+                    !streamedContent.includes('INSERT') ? 
+                    `[BUILDING_PHASE]${streamedContent}` : streamedContent || '',
             data: streamedData || [],
-            isLoading: false,
+            isLoading: isStreaming,
             timestamp: new Date(),
           };
           

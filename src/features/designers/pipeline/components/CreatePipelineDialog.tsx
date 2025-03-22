@@ -11,6 +11,7 @@ import { useFieldArray } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { FormField } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
 interface BuildPipeLineCreatePopupProps {
     handleClose: () => void;
@@ -29,7 +30,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-
+    const {setPipeline_id} = usePipelineContext()
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
         defaultValues: {
             bh_project_id: '',
@@ -54,6 +55,8 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                 // Handle error
             } else {
                 dispatch(setBuildPipeLineDtl(response));
+                setPipeline_id(response?.pipeline_id)
+                localStorage.setItem("pipeline_id",response?.pipeline_id.toString())
                 navigate(`/designers/build-playground/${response?.pipeline_id}`);
             }
         } finally {

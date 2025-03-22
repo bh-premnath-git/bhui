@@ -55,62 +55,84 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const orderedUiNodes = getOrderedNodes();
     console.log(uiNodes
         .filter(node => node.id.startsWith('Reader_'))[0].data?.source?.custom_metadata,"orderedUiNodes")
-    // Extract sources and create reader transformations
+
+    // First, let's create connection factory interfaces
+    interface ConnectionConfig {
+        name: string;
+        connection_type: string;
+        [key: string]: any;
+    }
+
+    class ConnectionFactory {
+        static createConnection(connectionData: any): ConnectionConfig {
+            const connectionType = connectionData?.connection_name?.toLowerCase();
+            
+            switch (connectionType) {
+                case 'postgresql':
+                case 'postgres':
+                    return {
+                        name: connectionData.connection_config_name,
+                        connection_type: 'postgresql',
+                        database: connectionData?.custom_metadata?.database,
+                        schema: connectionData?.custom_metadata?.schema || 'public',
+                        secret_name: connectionData?.secret_name
+                    };
+                
+                case 'local':
+                case 's3':
+                    return {
+                        name: connectionData?.connection_config_name,
+                        connection_type: connectionData?.connection_name,
+                        file_path_prefix: connectionData?.file_path_prefix || '${file_path_prefix}'
+                    };
+                    
+                default:
+                    return {
+                        name: connectionData?.connection_config_name,
+                        connection_type: connectionData?.connection_name
+                    };
+            }
+        }
+    }
+
+    // Update the sources mapping
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
-        .map(node => ({
-            name: node.data.source.name || node.data.title,
-            source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
-            table_name: node.data?.source?.table_name,
-            file_name: `${node.data.source.file_name}`,
-            data_src_id: node.data.source.data_src_id,
-            connection: {
-                name: node.data.source.connection?.name || node.data.source?.custom_metadata?.connection_config_name,
-                connection_type:node?.data?.source?.custom_metadata?.connection_name,
-                // connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type=="postgres"?"postgresql":node.data.source?.connection?.connection_type)||
-                //                     capitalizeFirstLetter(node.data.source.connection_type == "postgres"?"postgresql":node.data.source.connection_type)||
-                //                      capitalizeFirstLetter(node.data.source?.custom_metadata?.connection_name=="postgres"?"postgresql":node.data.source?.custom_metadata?.connection_name),
-                file_path_prefix: `${node.data.source.file_path_prefix}`,
-                file_type: node.data.source.file_type?.toLowerCase(),
-                connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
-                database:node.data.source?.custom_metadata?.custom_metadata?.database,
-                schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
-                secret_name:node.data.source?.custom_metadata?.secret_name,
-
-            }
-        }));
+        .map(node => {
+            const connectionConfig = ConnectionFactory.createConnection(node.data.source?.custom_metadata);
+            
+            return {
+                name: node.data.source.name || node.data.title,
+                source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
+                table_name: node.data?.source?.table_name,
+                file_name: `${node.data.source.file_name}`,
+                data_src_id: node.data.source.data_src_id,
+                connection: connectionConfig
+            };
+        });
 console.log(sources)
-    // Create reader transformations
-    // debugger;
+    // Update the reader transformations
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
-        .map(node => ({
-            name: node.data.title,
-            dependent_on: [],
-            transformation: "Reader",
-            source: {
-                name: node.data.source.name || node.data.title,
-            source_type: capitalizeFirstLetter(node.data.source.type)||"Relational",
-            table_name: node.data?.source?.table_name,
-            file_name: `${node.data.source.file_name}`,
-                connection: {
-                    name: node.data.source.connection?.name || node.data.source?.custom_metadata?.connection_config_name,
-                    connection_type:node?.data?.source?.custom_metadata?.connection_name,
-                    // connection_type: capitalizeFirstLetter(node.data.source?.connection?.connection_type)||
-                    //                     capitalizeFirstLetter(node.data.source.connection_type)|| capitalizeFirstLetter(node.data.source?.custom_metadata?.connection_name),
-                    file_path_prefix: `${node.data.source.file_path_prefix}`,
-                    file_type: node.data.source.file_type?.toLowerCase(),
-                    connection_config_id: node.data.source?.connection_config_id ?? node.data.source.connection?.connection_config_id,
-                    database:node.data.source?.custom_metadata?.custom_metadata?.database,
-                schema:node.data.source?.custom_metadata?.custom_metadata?.schema || "public",
-                secret_name:node.data.source?.custom_metadata?.secret_name,
-    
+        .map(node => {
+            const connectionConfig = ConnectionFactory.createConnection(node.data.source?.custom_metadata);
+            
+            return {
+                name: node.data.title,
+                dependent_on: [],
+                transformation: "Reader",
+                source: {
+                    name: node.data.source.name || node.data.title,
+                    source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
+                    table_name: node.data?.source?.table_name,
+                    file_name: `${node.data.source.file_name}`,
+                    connection: connectionConfig
+                },
+                read_options: {
+                    header: true
                 }
-            },
-            read_options: {
-                header: true
-            }
-        }));
+            };
+        });
     // Process regular transformations using ordered nodes
     const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_') )

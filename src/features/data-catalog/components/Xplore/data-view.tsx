@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QueryResult } from "@/types/data-catalog/xplore/type";
 import {
   Table,
@@ -304,8 +304,14 @@ const createChartConfig = (
 export function DataView({ result, isEmbedded = false }: DataViewProps) {
   const [currentResult, setCurrentResult] = useState<QueryResult>(result);
 
+  // Add a useEffect to log config changes for debugging
+  useEffect(() => {
+    console.log('Current chart config:', currentResult.config);
+  }, [currentResult.config]);
+
   // Handle chart changes from the toolbar
   const handleChartChange = (updatedResult: QueryResult) => {
+    console.log('Chart change:', updatedResult);
     setCurrentResult(updatedResult);
   };
 
@@ -317,6 +323,11 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     }
     
     const tableData = Array.isArray(currentResult.data) ? currentResult.data : [];
+
+    useEffect(() => {
+      console.log('Current chart config:', currentResult);
+    }, [currentResult]);
+
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
@@ -481,7 +492,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xAxisDataKey={xAxis}
               bars={workingResult.isMultiSeries ? ['series'] : [yAxis]}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
               isMultiSeries={workingResult.isMultiSeries}
               xAxisLabel={workingResult.xAxisLabel}
@@ -495,7 +505,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xAxisDataKey={xAxis}
               lines={[yAxis]}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
               isMultiSeries={workingResult.isMultiSeries}
             />
@@ -507,7 +516,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xAxisDataKey={xAxis}
               areas={workingResult.isMultiSeries ? ['series'] : [yAxis]}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               stacked={workingResult.config?.stacked}
               config={chartConfig}
             />
@@ -519,7 +527,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               dataKey={yAxis}
               nameKey={xAxis}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
           );
@@ -554,8 +561,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               yAxisDataKey={yAxis}
               sizeKey={workingResult.sizeKey || 'size'}
               groups={workingResult.isMultiSeries ? ['series'] : []}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
-              isMultiSeries={workingResult.isMultiSeries}
               config={chartConfig}
             />
           );
@@ -566,7 +571,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               variables={Array.from(new Set(standardData.map(item => String(item[xAxis]))))}
               groups={workingResult.isMultiSeries ? ['series'] : [yAxis]}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
           );
@@ -578,7 +582,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               dataKey={yAxis}
               nameKey={xAxis}
               isMultiSeries={workingResult.isMultiSeries}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
           );
@@ -589,7 +592,6 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xAxisDataKey={xAxis}
               bars={workingResult.isMultiSeries ? ['series'] : [yAxis]}
-              colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
           );

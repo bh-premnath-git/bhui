@@ -66,7 +66,7 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
             const baseUrl = `${API_DOMAIN}:${AGENT_PORT}${API_PREFIX_URL}`;
             let url: any;
             if (module === "dataops") {
-                url = `${baseUrl}/dataops_conversation/conversation/query/stream`;
+                url = `${baseUrl}/conversation/conversation/query/stream`;
             } else {
                 url = `${baseUrl}/conversation/conversation/query/stream?connection_config_id=${connectionId}`;
             }

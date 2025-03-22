@@ -11,6 +11,11 @@ import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
 import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
 import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import Lineage from '../lineage';
+import DataProfile from '../dataProfile';
+import Incidents from '../incidents';
+import DQRules from '../dqRules';
 
 export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
   const { dataSourceTypes } = useAppSelector(
@@ -327,38 +332,58 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
   }
 
   return (
-    <div className="mt-6">
-      <h3 className="text-lg font-medium">Schema Details</h3>
-      <div className="mt-4 flex gap-6">
-        <div className="flex-1">
-          {layoutData.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={currentPageData}
-              topVariant="simple"
-              pagination={true}
-              pageIndex={pageIndex}
-              pageSize={pageSize}
-              pageCount={Math.ceil(totalCount / pageSize)}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
+    <Tabs defaultValue="schema" className="mt-6">
+      <TabsList>
+        <TabsTrigger value="schema">Schema Details</TabsTrigger>
+        <TabsTrigger value="lineage">Lineage</TabsTrigger>
+        <TabsTrigger value="dataProfile">Data Profile</TabsTrigger>
+        <TabsTrigger value="incidents">Incidents</TabsTrigger>
+        <TabsTrigger value="dqRules">DQ Rules</TabsTrigger>
+      </TabsList>
+      <TabsContent value="schema">
+        <div className="mt-4 flex gap-6">
+          <div className="flex-1">
+            {layoutData.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={currentPageData}
+                topVariant="simple"
+                pagination={true}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                pageCount={Math.ceil(totalCount / pageSize)}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                No schema details available for this data source.
+              </div>
+            )}
+          </div>
+          <div className="w-[300px]">
+            <About
+              selectedSource={selectedSource}
+              initialData={{
+                description: selectedSource?.data_src_desc
+              }}
+              columns={columnsForAbout}
             />
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              No schema details available for this data source.
-            </div>
-          )}
+          </div>
         </div>
-        <div className="w-[300px]">
-          <About
-            selectedSource={selectedSource}
-            initialData={{
-              description: selectedSource?.data_src_desc
-            }}
-            columns={columnsForAbout}
-          />
-        </div>
-      </div>
-    </div>
+      </TabsContent>
+      <TabsContent value="lineage">
+        <Lineage />
+      </TabsContent>
+      <TabsContent value="dataProfile">
+        <DataProfile />
+      </TabsContent>
+      <TabsContent value="incidents">
+        <Incidents />
+      </TabsContent>
+      <TabsContent value="dqRules">
+        <DQRules />
+      </TabsContent>
+    </Tabs>
   );
 }

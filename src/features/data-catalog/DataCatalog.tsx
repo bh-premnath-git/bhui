@@ -85,6 +85,10 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
       handleNavigation(`${ROUTES.DATA_CATALOG}/xplorer`);
     };
 
+    const handleOpenNotebook = () => {
+      handleNavigation(`${ROUTES.DATA_CATALOG}/notebook`);
+    };
+
     const handleImportClick = () => {
       setShowImportSection(!showImportSection);
     };
@@ -92,11 +96,13 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
     window.addEventListener("openImportSourceDialog", handleOpenImportSource);
     window.addEventListener("openXploreDialog", handleOpenXplore);
     window.addEventListener("openLocalImport", handleImportClick);
+    window.addEventListener("openNotebookDialog", handleOpenNotebook);
 
     return () => {
       window.removeEventListener("openImportSourceDialog", handleOpenImportSource);
       window.removeEventListener("openXploreDialog", handleOpenXplore);
       window.removeEventListener("openLocalImport", handleImportClick);
+      window.removeEventListener("openNotebookDialog", handleOpenNotebook);
     }
   }, [handleNavigation]);
   

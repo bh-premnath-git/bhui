@@ -38,6 +38,12 @@ export function NavigationBreadcrumb() {
       return items;
     }
 
+    if (currentPath === "/data-catalog/notebook") {
+      items.push({ title: "Data Catalog", path: "/data-catalog" });
+      items.push({ title: "Notebook", path: "/data-catalog/notebook" });
+      return items;
+    }
+
     const pathSegments = currentPath.split("/").filter(Boolean);
     let currentPathBuild = "";
 

@@ -19,13 +19,22 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const [isInitialLoading, setIsInitialLoading] = useState(message.isLoading);
   const [hasSqlContent, setHasSqlContent] = useState(false);
   
-  // Extract SQL queries and explanations from content - moved to useMemo
+  // Add a building phase state
+  const [isBuildingPhase, setIsBuildingPhase] = useState(false);
+  
+  console.log('Message state:', { 
+    role: message.role, 
+    isLoading: message.isLoading,
+    contentLength: message.content?.length || 0,
+    isInitialLoading,
+    isBuildingPhase,
+    hasSqlContent
+  });
+  
+  // Extract SQL queries and explanations from content
   const parts = useMemo(() => {
     return message.content?.split('\n').reduce<{ type: 'text' | 'sql' | 'explanation', content: string }[]>((acc, line) => {
-      // Skip empty lines
       if (!line.trim()) return acc;
-  
-      // Check for SQL queries
       const sqlContent = line.replace(/^Executing SQL:\s*/, '').trim();
       const isSql = /^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WITH|EXPLAIN|ANALYZE)\s+/i.test(sqlContent);
       
@@ -50,22 +59,52 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }, []) || [];
   }, [message.content]);
 
+  // Track the building phase based on assistant role and content
+  useEffect(() => {
+    const hasAssistantContent = message.role === 'assistant' && 
+                              message.content && 
+                              message.content.trim().length > 0;
+    
+    console.log('Building phase check:', { 
+      hasAssistantContent, 
+      isLoading: message.isLoading,
+      hasSqlContent 
+    });
+    
+    // Force the building phase to be true when we have assistant content
+    // but no SQL yet, regardless of the current phase
+    if (hasAssistantContent && !hasSqlContent && message.isLoading) {
+      console.log('Setting building phase to TRUE');
+      setIsBuildingPhase(true);
+    } else if (hasSqlContent || !message.isLoading) {
+      console.log('Setting building phase to FALSE');
+      setIsBuildingPhase(false);
+    }
+  }, [message.role, message.content, message.isLoading, hasSqlContent]);
+
   // Check if we have SQL content
   useEffect(() => {
-    if (parts.some(part => part.type === 'sql')) {
+    const hasSql = parts.some(part => part.type === 'sql');
+    console.log('SQL content check:', { hasSql, partsCount: parts.length });
+    
+    if (hasSql) {
       setHasSqlContent(true);
       setIsInitialLoading(false);
+      setIsBuildingPhase(false); // Ensure building phase ends when SQL appears
     }
   }, [parts]);
 
   // Update loading state when the message loading state changes
   useEffect(() => {
+    console.log('Loading state changed:', { isLoading: message.isLoading });
+    
     if (!message.isLoading) {
       setIsInitialLoading(false);
+      setIsBuildingPhase(false);
     }
   }, [message.isLoading]);
 
-  // Process text parts to identify explanations - moved to useMemo
+  // Process text parts to identify explanations
   const processedParts = useMemo(() => {
     return parts.map(part => {
       if (part.type === 'text') {
@@ -95,14 +134,45 @@ export function ChatMessage({ message }: ChatMessageProps) {
     });
   }, [parts]);
   
-  // Calculate rendering state flags - moved to useMemo for consistency
-  const { shouldRender, showLoadingAnimation, showContent } = useMemo(() => {
+  // Calculate rendering state flags
+  const { shouldRender, showThinkingAnimation, showBuildingAnimation, showContent } = useMemo(() => {
     const shouldRender = message.content || (message.data && message.data.length > 0) || message.isLoading;
-    const showLoadingAnimation = isInitialLoading && !hasSqlContent;
-    const showContent = !isInitialLoading || hasSqlContent || (!message.isLoading && processedParts.length > 0);
     
-    return { shouldRender, showLoadingAnimation, showContent };
-  }, [message.content, message.data, message.isLoading, isInitialLoading, hasSqlContent, processedParts]);
+    // Check for building phase marker
+    const isInBuildingPhase = message.content?.includes('[BUILDING_PHASE]');
+    
+    // Remove the marker before display
+    if (isInBuildingPhase && message.content) {
+      message.content = message.content.replace('[BUILDING_PHASE]', '');
+    }
+    
+    // Explicitly prioritize which animation to show
+    const showThinkingAnimation = isInitialLoading && !hasSqlContent;
+    const showBuildingAnimation = (isInBuildingPhase || isBuildingPhase) && !hasSqlContent && !isInitialLoading;
+    const showContent = (!isInitialLoading && !isBuildingPhase && !isInBuildingPhase) || hasSqlContent;
+    
+    console.log('Render flags:', { 
+      shouldRender, 
+      showThinkingAnimation, 
+      showBuildingAnimation, 
+      showContent,
+      isInBuildingPhase
+    });
+    
+    return { 
+      shouldRender, 
+      showThinkingAnimation, 
+      showBuildingAnimation, 
+      showContent 
+    };
+  }, [
+    message.content, 
+    message.data, 
+    message.isLoading,
+    isInitialLoading, 
+    isBuildingPhase,
+    hasSqlContent
+  ]);
 
   const handleCopy = () => {
     if (message.content) {
@@ -112,7 +182,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
   };
 
-  // Skip rendering empty messages that aren't loading - moved after all hooks
+  // Skip rendering empty messages that aren't loading
   if (!shouldRender) {
     return null;
   }
@@ -172,10 +242,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )} />
 
           <AnimatePresence mode="wait">
-            {/* Loading state - only show when in initial loading and no SQL content yet */}
-            {showLoadingAnimation && (
+            {showThinkingAnimation && (
               <motion.div 
-                key="loading"
+                key="thinking"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -201,8 +270,34 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 <span className="text-sm text-muted-foreground">Thinking...</span>
               </motion.div>
             )}
-
-            {/* Content - show once we have SQL or loading is complete */}
+            {showBuildingAnimation && (
+              <motion.div 
+                key="building"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center space-x-2"
+              >
+                <div className="flex space-x-1.5">
+                  <motion.div 
+                    className="h-2 w-2 rounded-full bg-primary/40"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.2 }}
+                  />
+                  <motion.div 
+                    className="h-2 w-2 rounded-full bg-primary/40"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.3, delay: 0.1 }}
+                  />
+                  <motion.div 
+                    className="h-2 w-2 rounded-full bg-primary/40"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.4, delay: 0.2 }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">Building...</span>
+              </motion.div>
+            )}
             {showContent && processedParts.length > 0 && (
               <motion.div 
                 key="content"
@@ -228,8 +323,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
             )}
           </AnimatePresence>
         </div>
-
-        {/* Data results - show them when we have data, regardless of loading state */}
         {message.data && message.data.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}

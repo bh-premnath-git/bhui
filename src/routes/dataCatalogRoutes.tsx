@@ -7,6 +7,7 @@ import { LoadingFallback } from './LoadingFallback';
 const DataCatalog = lazy(() => import("@/pages/data-catalog/DataCatalog"));
 const XplorerPage = lazy(() => import("@/pages/data-catalog/XplorerPage"));
 const DatasourceImport = lazy(() => import("@/pages/data-catalog/DatasourceImport"));
+const Notebook = lazy(() => import("@/pages/data-catalog/Notebook"));
 
 export const DataCatalogRoutes = (
   <>
@@ -31,6 +32,14 @@ export const DataCatalogRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <DatasourceImport />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={`${ROUTES.DATA_CATALOG}/notebook`} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <Notebook />
         </Suspense>
       } 
     />

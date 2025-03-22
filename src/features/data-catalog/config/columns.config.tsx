@@ -6,7 +6,8 @@ import {
   Database,
   Clock,
   PlusIcon,
-  ImportIcon
+  ImportIcon,
+  NotebookText
 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -119,6 +120,14 @@ const getToolbarConfig = (): TToolbarConfig => {
         icon: Clock,
         onClick: () => {
           window.dispatchEvent(new Event("openXploreDialog"));
+        },
+      },
+      {
+        label: "Notebook",
+        variant: "outline",
+        icon: NotebookText,
+        onClick: () => {
+          window.dispatchEvent(new Event("openNotebookDialog"));
         },
       }
     ]

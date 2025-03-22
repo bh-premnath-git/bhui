@@ -14,6 +14,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   children,
   onChartChange 
 }) => {
+  // Always declare hooks at the top level, regardless of chart type
   const [isHovered, setIsHovered] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(result.config?.colorTheme || 'blue');
   
@@ -54,6 +55,9 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
     }
   }, [result, onChartChange]);
 
+  // Determine if this chart type should have overflow visible
+  const shouldAllowOverflow = result.chartType === 'donut';
+
   return (
     <div 
       className="relative w-full h-full max-w-full"
@@ -79,7 +83,10 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
           />
         </div>
       </div>
-      <div className="w-full h-full overflow-hidden horizontal-scrollbar">
+      <div className={cn(
+        "w-full h-full",
+        shouldAllowOverflow ? "overflow-visible" : "overflow-hidden horizontal-scrollbar"
+      )}>
         {children}
       </div>
     </div>

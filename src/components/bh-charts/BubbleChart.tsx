@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts"
 import { colorPalettes } from "@/components/bh-charts"
 
@@ -16,7 +17,7 @@ interface BubbleChartProps {
   xAxisDataKey: string;
   yAxisDataKey: string;
   sizeKey: string;
-  groups: string[];
+  groups?: string[];
   colors?: string[];
   config?: Record<string, any>;
   isMultiSeries?: boolean;
@@ -30,60 +31,85 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
   xAxisDataKey,
   yAxisDataKey,
   sizeKey,
-  groups,
+  groups = [],
   colors = colorPalettes.supersetColors,
   config = {},
   isMultiSeries = false
 }) => {
-  // Process data for single and multi-series
+  // Define the processValue function BEFORE using it
+  const processValue = (value: any): number => {
+    if (typeof value === 'string') {
+      // Try to convert string to number, removing currency symbols etc.
+      return Number(value.replace(/[$,]/g, ''));
+    }
+    return typeof value === 'number' ? value : 0;
+  };
+
+  // Now use processValue in the useMemo hook
   const processedData = useMemo(() => {
-    if (!data || data.length === 0) return isMultiSeries ? {} as GroupData : [] as ProcessedDataItem[];
+    if (!data || data.length === 0) return [];
 
     if (isMultiSeries) {
-      // For multi-series, we need to create separate datasets for each group
-      const groupData: GroupData = {};
+      // Group data by series
+      const groupedData: Record<string, any[]> = {};
       
-      data.forEach(item => {
-        groups.forEach(group => {
-          if (!groupData[group]) {
-            groupData[group] = [];
-          }
-
-          if (typeof item[group] === 'object' && item[group] !== null) {
-            // Extract x, y, and size values from the nested object
-            const seriesData: ProcessedDataItem = {
-              [xAxisDataKey]: processValue(item[group][xAxisDataKey]),
-              [yAxisDataKey]: processValue(item[group][yAxisDataKey]),
-              [sizeKey]: processValue(item[group][sizeKey], 1000),
-              name: item.name || item[xAxisDataKey], // Preserve name for tooltip
-            };
-            groupData[group].push(seriesData);
-          }
+      data.forEach((item) => {
+        const group = String(item.series || 'default');
+        if (!groupedData[group]) {
+          groupedData[group] = [];
+        }
+        
+        groupedData[group].push({
+          x: processValue(item[xAxisDataKey]),
+          y: processValue(item[yAxisDataKey]),
+          z: processValue(item[sizeKey]),
+          name: item.name || '',
+          ...item // Keep other properties for tooltip
         });
       });
-
-      return groupData;
+      
+      return Object.entries(groupedData).map(([key, items]) => ({
+        name: key,
+        data: items
+      }));
+    } else {
+      // Single series data
+      return [{
+        name: 'Values',
+        data: data.map(item => ({
+          x: processValue(item[xAxisDataKey]),
+          y: processValue(item[yAxisDataKey]),
+          z: processValue(item[sizeKey]),
+          name: item.name || '',
+          ...item // Keep other properties for tooltip
+        }))
+      }];
     }
+  }, [data, xAxisDataKey, yAxisDataKey, sizeKey, isMultiSeries]);
+
+  // Calculate the domain for the z-axis (bubble size)
+  const zDomain = useMemo(() => {
+    let min = Infinity;
+    let max = -Infinity;
     
-    // Single series processing
-    return data.map(item => ({
-      ...item,
-      [xAxisDataKey]: processValue(item[xAxisDataKey]),
-      [yAxisDataKey]: processValue(item[yAxisDataKey]),
-      [sizeKey]: processValue(item[sizeKey], 1000),
-    })) as ProcessedDataItem[];
-  }, [data, xAxisDataKey, yAxisDataKey, sizeKey, groups, isMultiSeries]);
+    processedData.forEach(series => {
+      series.data.forEach((item: any) => {
+        if (item.z < min) min = item.z;
+        if (item.z > max) max = item.z;
+      });
+    });
+    
+    return [min === Infinity ? 0 : min, max === -Infinity ? 100 : max];
+  }, [processedData]);
 
-  // Helper function to process numeric values
-  const processValue = (value: any, defaultValue: number = 0): number => {
-    if (typeof value === 'string') {
-      const processed = Number(value.replace(/[$,]/g, ''));
-      return isNaN(processed) ? defaultValue : processed;
-    }
-    return typeof value === 'number' ? value : defaultValue;
-  };
-  
-  if (!processedData || (isMultiSeries ? Object.keys(processedData).length === 0 : processedData.length === 0)) {
+  // Configure bubble size range
+  const bubbleSizeRange = [
+    config.minBubbleSize || 5,
+    config.maxBubbleSize || 30
+  ];
+
+  // No data check
+  if (!processedData.length || processedData[0].data.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
         No data available for bubble chart
@@ -112,11 +138,11 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
   };
 
   // Get data for a specific group
-  const getGroupData = (group: string): ProcessedDataItem[] => {
+  const getGroupData = (group: string) => {
     if (isMultiSeries) {
-      return (processedData as GroupData)[group] || [];
+      return (processedData as unknown as GroupData)[group] || [];
     }
-    return processedData as ProcessedDataItem[];
+    return (processedData as unknown as ProcessedDataItem[]);
   };
 
   // Determine if grid should be shown
@@ -129,39 +155,41 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         )}
         <XAxis 
-          dataKey={xAxisDataKey} 
+          type="number" 
+          dataKey="x" 
           name={config.xAxisLabel || xAxisDataKey} 
-          tick={{ fontSize: 12 }}
-          padding={{ left: 20, right: 20 }}
+          tickFormatter={config.xAxisFormatter}
         />
         <YAxis 
-          dataKey={yAxisDataKey} 
+          type="number" 
+          dataKey="y" 
           name={config.yAxisLabel || yAxisDataKey} 
-          tick={{ fontSize: 12 }}
-          padding={{ top: 20, bottom: 20 }}
+          tickFormatter={config.yAxisFormatter}
         />
         <ZAxis 
-          dataKey={sizeKey} 
-          range={config.zAxisRange || [400, 4000]} 
-          name={config.zAxisLabel || sizeKey}
+          type="number" 
+          dataKey="z" 
+          range={bubbleSizeRange} 
+          domain={zDomain}
         />
         <Tooltip 
-          formatter={formatter}
           cursor={{ strokeDasharray: '3 3' }}
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-            border: '1px solid #f0f0f0',
-            borderRadius: '6px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          formatter={(value, name, props) => {
+            if (name === 'x') return [value, config.xAxisLabel || xAxisDataKey];
+            if (name === 'y') return [value, config.yAxisLabel || yAxisDataKey];
+            if (name === 'z') return [value, config.sizeLabel || sizeKey];
+            return [value, name];
           }}
         />
+        {config.showLegend !== false && <Legend />}
     
-        {groups.map((group, index) => (
+        {processedData.map((series, index) => (
           <Scatter
-            key={group}
-            name={getGroupDisplayName(group, index)}
-            data={getGroupData(group)}
+            key={`series-${index}`}
+            name={series.name}
+            data={series.data}
             fill={colors[index % colors.length]}
+            opacity={config.bubbleOpacity || 0.7}
           />
         ))}
       </RechartsScatterChart>

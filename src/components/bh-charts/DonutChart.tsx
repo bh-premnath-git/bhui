@@ -1,4 +1,4 @@
-import React, { useMemo } from "react"
+import React, { useMemo, useState } from "react"
 import {
   PieChart as RechartsPieChart,
   Pie,
@@ -32,6 +32,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   colors = colorPalettes.supersetColors,
   config = {}
 }) => {
+  // IMPORTANT: Always declare ALL hooks at the top level
+  const [activeIndex, setActiveIndex] = useState(-1);
+  
   // Process data for the chart
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -65,19 +68,19 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     return processedData.reduce((sum, item) => sum + (Number(item[dataKey]) || 0), 0);
   }, [processedData, dataKey]);
 
-  if (!processedData.length) {
-    return (
-      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-        No data available for donut chart
-      </div>
-    );
-  }
+  // NO early returns before all hooks are used
+  // Instead, render empty content when there's no data
+  const noDataContent = (
+    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+      No data available for donut chart
+    </div>
+  );
 
   // Inner and outer radius configuration
   const innerRadius = config.innerRadius !== undefined ? config.innerRadius : 60;
   const outerRadius = config.outerRadius !== undefined ? config.outerRadius : 80;
 
-  // Active shape for hover effect
+  // Active shape for hover effect with adjusted values for better display
   const renderActiveShape = (props: any) => {
     const {
       cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, name, value
@@ -86,13 +89,18 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     const percentage = ((value / total) * 100).toFixed(1);
     const displayValue = config.valueFormatter ? config.valueFormatter(value) : value.toLocaleString();
     
+    // Use smaller expansion values to prevent overflow
+    const expandedOuterRadius = outerRadius + 3; // Reduced from original +5
+    const highlightInnerRadius = outerRadius + 4; // Reduced from original +6 
+    const highlightOuterRadius = outerRadius + 6; // Reduced from original +10
+    
     return (
       <g>
         <Sector
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={outerRadius + 5}
+          outerRadius={expandedOuterRadius}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
@@ -102,8 +110,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({
           cy={cy}
           startAngle={startAngle}
           endAngle={endAngle}
-          innerRadius={outerRadius + 6}
-          outerRadius={outerRadius + 10}
+          innerRadius={highlightInnerRadius}
+          outerRadius={highlightOuterRadius}
           fill={fill}
         />
         {config.showActiveLabels !== false && (
@@ -134,9 +142,6 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     return [`${value.toLocaleString()} (${percentage}%)`, name];
   };
 
-  // State for active index
-  const [activeIndex, setActiveIndex] = React.useState(-1);
-  
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
   };
@@ -144,6 +149,11 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   const onPieLeave = () => {
     setActiveIndex(-1);
   };
+
+  // Conditional rendering happens AFTER all hooks have been used
+  if (!processedData.length) {
+    return noDataContent;
+  }
 
   return (
     <ResponsiveContainer width="100%" height={300}>

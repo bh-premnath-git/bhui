@@ -25,6 +25,7 @@ import { DataActionMenu } from "./data-action-menu";
 import ChartContainer from './chart-container';
 import { motion } from "framer-motion";
 import { BarChart3, LayoutList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DataViewProps {
   result: QueryResult;
@@ -308,7 +309,13 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
     setCurrentResult(updatedResult);
   };
 
-  if (currentResult.type === 'table' && currentResult.data) {
+  // IMPORTANT: Move chart rendering logic into functions but don't return from them
+  // This ensures hooks are always called in the same order
+  const renderTableContent = () => {
+    if (!(currentResult.type === 'table' && currentResult.data)) {
+      return null;
+    }
+    
     const tableData = Array.isArray(currentResult.data) ? currentResult.data : [];
     return (
       <motion.div
@@ -365,11 +372,12 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
         </div>
       </motion.div>
     );
-  }
+  };
 
-  else if (currentResult.type === 'chart' && currentResult.data) {
-    //console.log('Raw Chart Data:', currentResult.data);
-    //console.log('Chart Type:', currentResult.chartType);
+  const renderChartContent = () => {
+    if (!(currentResult.type === 'chart' && currentResult.data)) {
+      return null;
+    }
     
     // Check if we have the new format with x_axis and y_axis properties
     const isNewFormat = Array.isArray(currentResult.data) && 
@@ -378,114 +386,35 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
       'y_axis' in currentResult.data[0];
 
     // Transform the new format to be compatible with our chart components
+    const processedData = isNewFormat 
+      ? (currentResult.data as any[]).map((item: any) => ({
+          name: item.x_axis,
+          value: item.y_axis
+        }))
+      : currentResult.data;
+    
+    const workingResult = {
+      ...currentResult,
+      data: processedData
+    };
+    
     if (isNewFormat) {
-      // Transform the data to use the values from xAxis/yAxis that were set in useStreamingResponse
-      currentResult.data = (currentResult.data as any[]).map((item: any) => ({
-        name: item.x_axis,
-        value: item.y_axis
-      }));
-      
-      // Set the axis properties to use the transformed keys
-      currentResult.xAxis = 'name';
-      currentResult.yAxis = 'value';
+      workingResult.xAxis = 'name';
+      workingResult.yAxis = 'value';
     }
     
     // Create dynamic chart configuration
     const chartConfig = createChartConfig(
-      currentResult.chartType,
-      Array.isArray(currentResult.data) ? currentResult.data : [],
-      currentResult.config,
-      currentResult.format
+      workingResult.chartType,
+      Array.isArray(workingResult.data) ? workingResult.data : [],
+      workingResult.config,
+      workingResult.format
     );
-
-    // Special handling for gauge chart
-    if (currentResult.chartType === 'gauge') {
-      let gaugeData: GaugeDataItem;
-
-      if (Array.isArray(currentResult.data)) {
-        const firstItem = currentResult.data[0] || {};
-        gaugeData = {
-          name: String(firstItem[currentResult.xAxis || 'name'] || ''),
-          value: Number(firstItem[currentResult.yAxis || 'value'] || 0)
-        };
-      } else {
-        const data = currentResult.data as Record<string, any>;
-        gaugeData = {
-          name: String(data.name || ''),
-          value: Number(data.value || 0)
-        };
-      }
-
-      return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <h3 className="text-sm font-medium">{currentResult.title || "Gauge Chart"}</h3>
-              </div>
-              <DataActionMenu result={currentResult} />
-            </div>
-            <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
-              <ChartContainer result={currentResult} onChartChange={handleChartChange}>
-                <GaugeChart
-                  value={gaugeData.value}
-                  min={currentResult.min || 0}
-                  max={currentResult.max || 100}
-                  label={gaugeData.name}
-                  config={chartConfig}
-                />
-              </ChartContainer>
-            </div>
-          </div>
-        </motion.div>
-      );
-    }
-
-    // Special handling for histogram
-    if (currentResult.chartType === 'histogram') {
-      const histogramData = Array.isArray(currentResult.data)
-        ? currentResult.data.map((d: ChartDataItem) => Number(d[currentResult.yAxis || 'value']))
-        : [];
-      return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <div className={isEmbedded ? "" : "bg-card/50 border border-border/80 shadow-sm rounded-lg overflow-hidden"}>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <h3 className="text-sm font-medium">{currentResult.title || "Histogram"}</h3>
-              </div>
-              <DataActionMenu result={currentResult} />
-            </div>
-            <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
-              <ChartContainer result={currentResult} onChartChange={handleChartChange}>
-                <HistogramChart
-                  data={histogramData}
-                  config={chartConfig}
-                />
-              </ChartContainer>
-            </div>
-          </div>
-        </motion.div>
-      );
-    }
-
+    
     // Process standardized data
     const standardData = useMemo(() => {
-      if (currentResult.isMultiSeries && !Array.isArray(currentResult.data)) {
-        const processedData = Object.entries(currentResult.data as Record<string, any[]>).map(([key, items]) =>
+      if (workingResult.isMultiSeries && !Array.isArray(workingResult.data)) {
+        const processedData = Object.entries(workingResult.data as Record<string, any[]>).map(([key, items]) =>
           items.map(item => ({
             ...item,
             series: key
@@ -493,26 +422,70 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
         ).flat();
         return processedData;
       }
-      return Array.isArray(currentResult.data) ? currentResult.data : [];
-    }, [currentResult.data, currentResult.isMultiSeries]);
+      return Array.isArray(workingResult.data) ? workingResult.data : [];
+    }, [workingResult.data, workingResult.isMultiSeries]);
 
     // Render the appropriate chart based on chartType
     const renderChart = () => {
-      const yAxis = currentResult.yAxis || 'value';
-      const xAxis = currentResult.xAxis || 'name';
+      const yAxis = workingResult.yAxis || 'value';
+      const xAxis = workingResult.xAxis || 'name';
 
-      switch (currentResult.chartType) {
+      // For gauge chart
+      if (workingResult.chartType === 'gauge') {
+        let gaugeData: GaugeDataItem = { name: '', value: 0 };
+
+        if (Array.isArray(workingResult.data)) {
+          const firstItem = workingResult.data[0] || {};
+          gaugeData = {
+            name: String(firstItem[workingResult.xAxis || 'name'] || ''),
+            value: Number(firstItem[workingResult.yAxis || 'value'] || 0)
+          };
+        } else {
+          const data = workingResult.data as Record<string, any>;
+          gaugeData = {
+            name: String(data.name || ''),
+            value: Number(data.value || 0)
+          };
+        }
+
+        return (
+          <GaugeChart
+            value={gaugeData.value}
+            min={workingResult.min || 0}
+            max={workingResult.max || 100}
+            label={gaugeData.name}
+            config={chartConfig}
+          />
+        );
+      }
+
+      // For histogram
+      if (workingResult.chartType === 'histogram') {
+        const histogramData = Array.isArray(workingResult.data)
+          ? workingResult.data.map((d: ChartDataItem) => Number(d[workingResult.yAxis || 'value']))
+          : [];
+        
+        return (
+          <HistogramChart
+            data={histogramData}
+            config={chartConfig}
+          />
+        );
+      }
+
+      // For all other chart types
+      switch (workingResult.chartType) {
         case 'bar':
           return (
             <BarChart
               data={standardData}
               xAxisDataKey={xAxis}
-              bars={currentResult.isMultiSeries ? ['series'] : [yAxis]}
+              bars={workingResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
-              isMultiSeries={currentResult.isMultiSeries}
-              xAxisLabel={currentResult.xAxisLabel}
-              yAxisLabel={currentResult.yAxisLabel}
+              isMultiSeries={workingResult.isMultiSeries}
+              xAxisLabel={workingResult.xAxisLabel}
+              yAxisLabel={workingResult.yAxisLabel}
             />
           );
 
@@ -524,7 +497,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               lines={[yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
-              isMultiSeries={currentResult.isMultiSeries}
+              isMultiSeries={workingResult.isMultiSeries}
             />
           );
 
@@ -533,9 +506,9 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             <AreaChart
               data={standardData}
               xAxisDataKey={xAxis}
-              areas={currentResult.isMultiSeries ? ['series'] : [yAxis]}
+              areas={workingResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
-              stacked={currentResult.config?.stacked}
+              stacked={workingResult.config?.stacked}
               config={chartConfig}
             />
           );
@@ -568,7 +541,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xKey={xAxis}
               yKey={yAxis}
-              name={currentResult.title || "Scatter Plot"}
+              name={workingResult.title || "Scatter Plot"}
               config={chartConfig}
             />
           );
@@ -579,10 +552,10 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               xAxisDataKey={xAxis}
               yAxisDataKey={yAxis}
-              sizeKey={currentResult.sizeKey || 'size'}
-              groups={currentResult.isMultiSeries ? ['series'] : []}
+              sizeKey={workingResult.sizeKey || 'size'}
+              groups={workingResult.isMultiSeries ? ['series'] : []}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
-              isMultiSeries={currentResult.isMultiSeries}
+              isMultiSeries={workingResult.isMultiSeries}
               config={chartConfig}
             />
           );
@@ -592,7 +565,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             <RadarChart
               data={standardData}
               variables={Array.from(new Set(standardData.map(item => String(item[xAxis]))))}
-              groups={currentResult.isMultiSeries ? ['series'] : [yAxis]}
+              groups={workingResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
@@ -604,7 +577,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               data={standardData}
               dataKey={yAxis}
               nameKey={xAxis}
-              isMultiSeries={currentResult.isMultiSeries}
+              isMultiSeries={workingResult.isMultiSeries}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
@@ -615,7 +588,7 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
             <BarChart
               data={standardData}
               xAxisDataKey={xAxis}
-              bars={currentResult.isMultiSeries ? ['series'] : [yAxis]}
+              bars={workingResult.isMultiSeries ? ['series'] : [yAxis]}
               colors={['var(--chart-1-color)', 'var(--chart-2-color)']}
               config={chartConfig}
             />
@@ -635,19 +608,27 @@ export function DataView({ result, isEmbedded = false }: DataViewProps) {
               <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center">
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </div>
-              <h3 className="text-sm font-medium">{currentResult.title || "Chart"}</h3>
+              <h3 className="text-sm font-medium">{workingResult.title || "Chart"}</h3>
             </div>
-            <DataActionMenu result={currentResult} />
+            <DataActionMenu result={workingResult} />
           </div>
-          <div className="h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full overflow-hidden">
-            <ChartContainer result={currentResult} onChartChange={handleChartChange}>
+          <div className={cn(
+            "h-[400px] w-full bg-card/70 rounded-md p-4 max-w-full",
+            workingResult.chartType === 'donut' ? "overflow-visible" : "overflow-hidden"
+          )}>
+            <ChartContainer result={workingResult} onChartChange={handleChartChange}>
               {renderChart()}
             </ChartContainer>
           </div>
         </div>
       </motion.div>
     );
-  }
+  };
 
-  return null;
+  // Now use the rendered content based on type, but without early returns that could skip hook calls
+  const tableContent = renderTableContent();
+  const chartContent = renderChartContent();
+
+  // Single return point at the end of the component
+  return tableContent || chartContent || null;
 }

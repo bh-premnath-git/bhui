@@ -12,6 +12,10 @@ import { apiService } from '@/lib/api/api-service';
 import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
 import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import Lineage from '../lineage';
+import DataProfile from '../dataProfile';
+import Incidents from '../incidents';
+import DQRules from '../dqRules';
 
 export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
   const { dataSourceTypes } = useAppSelector(
@@ -369,16 +373,16 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
         </div>
       </TabsContent>
       <TabsContent value="lineage">
-        <div className="p-8 text-center text-gray-500">Under Construction</div>
+        <Lineage />
       </TabsContent>
       <TabsContent value="dataProfile">
-        <div className="p-8 text-center text-gray-500">Under Construction</div>
+        <DataProfile />
       </TabsContent>
       <TabsContent value="incidents">
-        <div className="p-8 text-center text-gray-500">Under Construction</div>
+        <Incidents />
       </TabsContent>
       <TabsContent value="dqRules">
-        <div className="p-8 text-center text-gray-500">Under Construction</div>
+        <DQRules />
       </TabsContent>
     </Tabs>
   );

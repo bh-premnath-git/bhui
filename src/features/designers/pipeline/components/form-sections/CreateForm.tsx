@@ -24,6 +24,7 @@ import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/Bui
 import { Toggle } from '@/components/ui/toggle';
 import { Input } from '@/components/ui/input';
 import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
+import { Autocomplete } from '@/components/ui/autocomplete';
 
 type ArraySchema = {
   items: Record<string, any>;
@@ -147,7 +148,7 @@ console.log(initialFormValues,"initialFormValues")
 
             try {
               const parsedResult = JSON.parse(response.result);
-              const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+              const expressionValue = parsedResult === "" ? '' : parsedResult.expression=="UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
               
               // Update the expression value in the form
               const expressions = [...(watch('expressions') || [])];
@@ -187,7 +188,7 @@ console.log(initialFormValues,"initialFormValues")
 
             try {
               const parsedResult = JSON.parse(response.result);
-              const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+              const expressionValue = parsedResult === "" ? '' : parsedResult.expression=="UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
               // Convert join type to expected format (INNER JOIN -> inner, LEFT JOIN -> left)
               const joinType = parsedResult.join_type?.split(' ')[0]?.toLowerCase() || 'left';
               
@@ -246,7 +247,9 @@ console.log(initialFormValues,"initialFormValues")
 
           try {
             const parsedResult = JSON.parse(response.result);
-            const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+            debugger;
+            console.log(parsedResult, "parsedResult");
+            const expressionValue = parsedResult === "" ? '' : parsedResult.expression=="UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
             
             // Set the expression value in the form
             const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
@@ -378,7 +381,8 @@ console.log(initialFormValues,"initialFormValues")
 
         try {
           const parsedResult = JSON.parse(response.result);
-          const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+          console.log(parsedResult, "parsedResult");
+          const expressionValue = parsedResult === "" ? '' : parsedResult.expression=="UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
           
           if (schema?.title === 'SchemaTransformation') {
             const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
@@ -610,100 +614,52 @@ const renderArrayFields = (
   const requiredFields = arraySchema.items.required || [];
 
   return (
-    <div>
-      <div className="flex gap-2 mb-2">
+    <div className="space-y-4">
+      {/* Headers */}
+      <div className="grid grid-cols-[2fr,1fr,40px] gap-4 items-center">
         {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => (
-          <div key={fieldKey} className="flex-1">
-            <div className="mb-1 font-bold">
+          <div key={fieldKey}>
+            <div className="font-medium text-sm text-gray-700">
               {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
                 word.charAt(0).toUpperCase() + word.slice(1)
               ).join(' ')}
               {requiredFields.includes(fieldKey) && 
-                <span className="text-red-500"> *</span>}
+                <span className="text-red-500 ml-1">*</span>}
             </div>
           </div>
         ))}
+        <div /> {/* Spacer for remove button */}
       </div>
 
-      {/* Array items */}
+      {/* Form Fields */}
       {fields.map((field, index) => (
-        <div key={field.id} className="flex gap-2 mb-2">
-          {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => {
-            const isExpression = fieldSchema?.type === 'expression' ||
-              (fieldSchema?.['ui-hint'] === 'expression') ||
-              (section === 'expressions' && fieldKey === 'expression') ||
-              (fieldKey === 'join_condition');
+        <div key={field.id} className="grid grid-cols-[2fr,1fr,40px] gap-4 items-center">
+          {Object.entries(itemProperties).map(([itemKey, itemSchema]: [string, any]) => {
+            const isExpression = itemSchema.type === 'expression' || 
+                               itemSchema['ui-hint'] === 'expression';
 
-            // Handle boolean fields
-            if (fieldSchema.type === 'boolean') {
+            // Handle autocomplete type
+            if (itemSchema.type === 'autocomplete') {
               return (
-                <Controller
-                  key={`${section}.${index}.${fieldKey}`}
-                  name={`${section}.${index}.${fieldKey}`}
-                  control={control}
-                  defaultValue={fieldSchema.default || false}
-                  render={({ field: { value, onChange } }) => (
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium">
-                        {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
-                      </label>
-                      <Toggle
-                        pressed={value}
-                        onPressedChange={onChange}
-                        aria-label={fieldKey}
-                      >
-                        {value ? 'On' : 'Off'}
-                      </Toggle>
-                    </div>
-                  )}
-                />
-              );
-            }
-
-            // Check if the field is pivot_values and render it as an array
-            if (fieldKey === 'pivot_values' && fieldSchema.type === 'array') {
-              return (
-                <div key={`${section}.${index}.${fieldKey}`} className="flex-1">
+                <div key={`${section}.${index}.${itemKey}`} className="w-full">
                   <Controller
-                    name={`${section}.${index}.${fieldKey}`}
+                    name={`${section}.${index}.${itemKey}`}
                     control={control}
-                    defaultValue={[]}
                     render={({ field }) => (
-                      <div>
-                        {Array.isArray(field.value) ? field.value.map((value: string, valueIndex: number) => (
-                          <div key={valueIndex} className="flex items-center gap-2 mb-1">
-                            <Input
-                              type="text"
-                              value={value}
-                              onChange={(e) => {
-                                const newValue = [...field.value];
-                                newValue[valueIndex] = e.target.value;
-                                field.onChange(newValue);
-                              }}
-                              className="form-input"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newValue = field.value.filter((_: string, i: number) => i !== valueIndex);
-                                field.onChange(newValue);
-                              }}
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              <span className="text-xl">×</span>
-                            </button>
-                          </div>
-                        )) : null}
-                        <Button
-                          type="button"
-                          onClick={() => field.onChange([...field.value, ''])}
-                          className="text-green-600 font-bold"
-                        >
-                          Add Value
-                        </Button>
-                      </div>
+                      <Autocomplete
+                        options={columnSuggestions}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        renderInput={(params) => (
+                          <Input
+                            {...params}
+                            placeholder={`Enter ${itemKey}`}
+                            required={requiredFields.includes(itemKey)}
+                          />
+                        )}
+                        className=""
+                        required={requiredFields.includes(itemKey)}
+                      />
                     )}
                   />
                 </div>
@@ -711,74 +667,70 @@ const renderArrayFields = (
             }
 
             return (
-              <Controller
-                key={`${section}.${index}.${fieldKey}`}
-                name={`${section}.${index}.${fieldKey}`}
-                control={control}
-                defaultValue={fieldSchema.default || ''}
-                rules={{
-                  required: requiredFields.includes(fieldKey)
-                }}
-                render={({ field: { onChange, value, name } }) => (
-                  <div className="flex-1">
+              <div key={`${section}.${index}.${itemKey}`} className="w-full">
+                <Controller
+                  name={`${section}.${index}.${itemKey}`}
+                  control={control}
+                  render={({ field }) => (
                     <FormField
+                      fieldKey={itemKey}
                       fieldSchema={{ 
-                        type: fieldSchema.type,
-                        enum: fieldSchema.enum,
-                        title: fieldSchema.title || '',
-                        properties: fieldSchema.properties || {}
+                        type: itemSchema.type,
+                        enum: itemSchema.enum,
+                        title: itemSchema.title,
+                        properties: itemSchema.properties   
                       }}
-                      name={name}
-                      fieldKey={fieldKey}
-                      value={value}
-                      onChange={(e: any) => {
-                        const newValue = e.target?.value ?? e;
-                        onChange(newValue);
-                      }}
+                      name={`${section}.${index}.${itemKey}`}
+                      value={field.value}
+                      onChange={field.onChange}
                       isExpression={isExpression}
                       sourceColumns={columnSuggestions.map(colName => ({
                         name: colName,
                         dataType: 'string'
                       }))}
-                      // sourceColumns={sourceColumns}
-                      required={requiredFields.includes(fieldKey)}
-                      onExpressionClick={() => onExpressionClick(name || fieldKey, onChange, `${section}.${index}.${fieldKey}`)}
+                      required={requiredFields.includes(itemKey)}
+                      onExpressionClick={isExpression ? () => {
+                        onExpressionClick(
+                          field.name || itemKey,
+                          field.onChange,
+                          `${section}.${index}.${itemKey}`
+                        );
+                      } : undefined}
                     />
-                  </div>
-                )}
-              />
+                  )}
+                />
+              </div>
             );
           })}
           <button
             type="button"
             onClick={() => remove(index)}
             disabled={fields.length <= (arraySchema.minItems || 1)}
-            className="text-gray-500 hover:text-gray-700"
+            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100"
           >
-            <span className="text-xl">×</span>
+            <span className="text-gray-500 text-xl">×</span>
           </button>
         </div>
       ))}
 
-      {/* Add button */}
+      {/* Add Button */}
       <Button
         type="button"
         onClick={() => {
           const emptyItem = Object.keys(itemProperties).reduce(
             (acc, key) => ({
               ...acc,
-              [key]: itemProperties[key].enum ?
-                (itemProperties[key].default || itemProperties[key].enum[0]) :
-                itemProperties[key].type === 'boolean' ? false :
-                itemProperties[key].type === 'number' ? 0 : ''
+              [key]: itemProperties[key].enum ? 
+                (itemProperties[key].default || itemProperties[key].enum[0]) : ''
             }),
             {}
           );
           append(emptyItem);
         }}
-        className="text-green-600 font-bold"
+        variant="outline"
+        className="w-full mt-4"
       >
-        Add Field
+        <span className="text-green-600">+ Add Field</span>
       </Button>
     </div>
   );
@@ -1304,7 +1256,7 @@ const FormContent: React.FC<{
                   control={control}
                   render={({ field }) => (
                     <FormField
-                    fieldKey={fieldKey}
+                      fieldKey={itemKey}
                       fieldSchema={{ 
                         type: itemSchema.type,
                         enum: itemSchema.enum,

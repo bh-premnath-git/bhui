@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/sheet'
 
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext'
 
 interface Log {
   timestamp: string
@@ -57,7 +58,6 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   handleRunClick,
   onStop,
   onNext,
-  isPipelineRunning,
   isLoading,
   pipelineConfig,
   terminalLogs,
@@ -69,6 +69,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
+  const {isPipelineRunning}=usePipelineContext()
 
   // --- SETTINGS (Sheet) ---
   const handleSettingsClick = () => {
@@ -129,7 +130,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     { key: 'stop', icon: MdOutlineStop, handler: onStop },
     { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
-    { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
+    // { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
   ]
 
   return (
@@ -153,7 +154,9 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
                 .join(' ')}
               disabled={
                 (action.key === 'run' && isLoading) ||
-                (action.key === 'next' && !isPipelineRunning)
+                (action.key === 'next' && !isPipelineRunning) ||
+                (action.key === 'stop' && !isPipelineRunning)
+
               }
             >
               <span
@@ -187,8 +190,8 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         ))}
 
         {/* Extra button to open Settings (shadcn Sheet) */}
-        <div className="w-px h-6 bg-gray-200 mx-1" />
-        <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        {/* <div className="w-px h-6 bg-gray-200 mx-1" /> */}
+        {/* <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" onClick={handleSettingsClick} title="Settings">
               <MdSettings size={20} />
@@ -201,25 +204,24 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
                 Customize your pipeline settings here.
               </SheetDescription>
             </SheetHeader>
-            {/* ... settings form or content ... */}
             <SheetFooter>
               <Button variant="secondary" onClick={handleCloseSettings}>
                 Close
               </Button>
             </SheetFooter>
           </SheetContent>
-        </Sheet>
+        </Sheet> */}
       </div>
 
       {/* Logs Terminal (no MUI) */}
-      <Terminal
+      {/* <Terminal
         isOpen={isLogsOpen}
         onClose={handleCloseLogs}
         title="Pipeline Logs"
         terminalLogs={terminalLogs}
         proplesLogs={proplesLogs}
-        
-      />
+
+      /> */}
     </>
   )
 }

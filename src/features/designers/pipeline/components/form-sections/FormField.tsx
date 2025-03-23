@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 
 interface FormFieldProps {
+  className?: string;
   fieldSchema: Schema;
   name: string;
   fieldKey: string;

@@ -666,7 +666,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         try {
             setIsCanvasLoading(true);
             setIsPipelineRunning(true);
-            setShowLogs(true);
+            // setShowLogs(true);
             
             setConversionLogs([{
                 timestamp: new Date().toISOString(),

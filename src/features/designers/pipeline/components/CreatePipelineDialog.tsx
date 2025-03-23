@@ -48,15 +48,17 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
     const onSubmit = async (values: FormValues) => {
         try {
             setIsLoading(true);
+            handleClose();
+            
             const body = { ...values, tags: {} };
             const response = await dispatch(insertPipeline(body)).unwrap();
             
             if (response?.error) {
-                // Handle error
+                // Handle error - you might want to show a toast notification here
             } else {
                 dispatch(setBuildPipeLineDtl(response));
                 setPipeline_id(response?.pipeline_id)
-                localStorage.setItem("pipeline_id",response?.pipeline_id.toString())
+                localStorage.setItem("pipeline_id", response?.pipeline_id.toString())
                 navigate(`/designers/build-playground/${response?.pipeline_id}`);
             }
         } finally {
@@ -105,8 +107,6 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
             </div>
         );
     };
-
-    if (isLoading) return <div>loading ...</div>;
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -177,14 +177,16 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                             type="button"
                             onClick={handleClose}
                             className="px-4 py-2 border border-black rounded-md hover:shadow-md transition-shadow"
+                            disabled={isLoading}
                         >
                             Close
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-black text-white rounded-md hover:bg-black/90"
+                            className="px-4 py-2 bg-black text-white rounded-md hover:bg-black/90 disabled:opacity-50"
+                            disabled={isLoading}
                         >
-                            Create Pipeline
+                            {isLoading ? 'Creating...' : 'Create Pipeline'}
                         </button>
                     </DialogFooter>
                 </form>

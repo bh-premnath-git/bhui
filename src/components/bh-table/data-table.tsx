@@ -95,7 +95,7 @@ export function DataTable<TData>({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {topVariant === "simple" ? (
         <SimpleTopSection table={table} toolbarConfig={toolbarConfig} />
       ) : (
@@ -107,10 +107,14 @@ export function DataTable<TData>({
         />
       )}
 
-      <TableContent 
-        table={table} 
-        onRowClick={onRowClick}
-      />
+      <div className="relative w-full overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300">
+        <div style={{ minWidth: '150%' }}>
+          <TableContent 
+            table={table} 
+            onRowClick={onRowClick}
+          />
+        </div>
+      </div>
 
       {pagination && <TablePagination table={table} />}
     </div>

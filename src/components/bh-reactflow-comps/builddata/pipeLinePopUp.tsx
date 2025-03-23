@@ -91,22 +91,19 @@ export default function PipeLinePopUp({
             }}
         >
             {/* Dialog content container */}
-            <DialogContent className="max-w-[1300px] p-0">
+            <DialogContent className="max-w-[1150px] p-0">
                 {/* If !isExpanded => top portion with table */}
                 {!isExpanded && (
                     <div className="p-4">
                         {/* Header */}
                         <DialogHeader style={{textAlign: 'left'}}>
-                            <DialogTitle className="font-semibold text-lg text-start ">
+                            <DialogTitle className="font-semibold text-lg text-start">
                                 {pipelineName}
                             </DialogTitle>
-                            
                         </DialogHeader>
 
-                        
-
-                        {/* Table */}
-                        <div className="overflow-auto" style={{ minWidth: "1200px" }}>
+                        {/* Table container with fixed height */}
+                        <div className="w-[1100px] overflow-x-auto max-h-[65vh]">
                             <DataTable
                                 data={transformData}
                                 columns={columns}
@@ -120,7 +117,7 @@ export default function PipeLinePopUp({
 
                 {/* If isExpanded => show logs or alternate content */}
                 {isExpanded && (
-                    <div className="p-4 w-full min-w-[1200px]">
+                    <div className="p-4 w-full overflow-x-auto">
                         {/* Header */}
                         <div className="flex justify-between items-center mb-2">
                             <span className="font-semibold">

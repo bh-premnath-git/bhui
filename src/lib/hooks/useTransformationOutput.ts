@@ -3,10 +3,6 @@ import axios from 'axios';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { apiService } from '../api/api-service';
 
-const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
-});
-
 // Query keys for transformation output
 export const transformationOutputKeys = {
     all: ['transformationOutput'] as const,

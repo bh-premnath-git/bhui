@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { AppDispatch } from '@/store';
 import { Loader } from 'lucide-react';
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
 const edgeStyles = {
     stroke: '#b1b1b7',
@@ -78,7 +79,7 @@ export const CustomEdge = memo(({
     }), [pipelineDtl?.pipeline_name, source, getNode, isMetricsOpen]);
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
-
+const {debuggedNodesList} = usePipelineContext()
     const sourceNode = getNode(source);
     
     const rowCount = transformationCounts.find(
@@ -154,6 +155,7 @@ export const CustomEdge = memo(({
                 onRemove={handleEdgeRemove}
                 onHoverChange={setIsHovered}
                 isLoading={isEdgeLoading}
+                debuggedNodesList={debuggedNodesList}
             />
 
             {/* Metrics Dialog */}
@@ -175,6 +177,7 @@ interface EdgeControlsProps {
     onRemove: (e: React.MouseEvent) => void;
     onHoverChange: (isHovered: boolean) => void;
     isLoading: boolean;
+    debuggedNodesList:any
 }
 
 const EdgeControls: React.FC<EdgeControlsProps> = ({
@@ -184,7 +187,8 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     onMetricsClick,
     onRemove,
     onHoverChange,
-    isLoading
+    isLoading,
+    debuggedNodesList
 }) => (
     <foreignObject
         width={120}
@@ -197,7 +201,7 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
         onMouseLeave={() => onHoverChange(false)}
     >
         <div className="flex items-center justify-between w-full">
-            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} />
+            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} debuggedNodesList={debuggedNodesList} />
             <RemoveButton isHovered={isHovered} onClick={onRemove} />
         </div>
     </foreignObject>
@@ -207,17 +211,23 @@ interface MetricsButtonProps {
     rowCount?: number;
     onClick: (e: React.MouseEvent) => void;
     isLoading?: boolean;
+    debuggedNodesList:any
 }
 
 const MetricsButton: React.FC<MetricsButtonProps & { isLoading?: boolean }> = ({ 
     rowCount, 
     onClick, 
-    isLoading 
+    isLoading,
+    debuggedNodesList
 }) => {
     const handleMetricsClick = (e: React.MouseEvent) => {
         // Only trigger onClick if rowCount exists (meaning debug list is not empty)
         if (rowCount) {
-            onClick(e);
+// console.log(debuggedNodesList,"debuggedNodesList")
+if(debuggedNodesList?.length>0){
+    onClick(e);
+
+}
         }
     };
 

@@ -247,7 +247,6 @@ console.log(initialFormValues,"initialFormValues")
 
           try {
             const parsedResult = JSON.parse(response.result);
-            debugger;
             console.log(parsedResult, "parsedResult");
             const expressionValue = parsedResult === "" ? '' : parsedResult.expression=="UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
             

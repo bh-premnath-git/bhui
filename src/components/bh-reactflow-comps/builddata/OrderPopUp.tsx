@@ -59,7 +59,8 @@ useEffect(() => {
 
   const initialSource = () => {
     if (source && connectionConfigList) {
-      const connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
+      const connection = connectionConfigList.find((item: any) => item.id === source?.connection?.connection_config_id);
+      console.log(connection,"connection")
       if (!connection) {
         console.warn('Connection not found for the given connection_config_id');
         return;
@@ -71,7 +72,7 @@ useEffect(() => {
           ? 'postgresql' 
           : connection.connection_name
       };
-
+console.log(connection_data,"connection_data")
       const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
 console.log(pipelineJsonData,"pipelineJsonData")
       const initialData = {
@@ -90,7 +91,7 @@ console.log(pipelineJsonData,"pipelineJsonData")
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
-          custom_metadata: connection_data,
+          connection_config: connection_data,
           connection: {
             connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
             type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',

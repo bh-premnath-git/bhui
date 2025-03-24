@@ -16,12 +16,39 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
+// Add proper typing for the transform data
+type TransformData = Record<string, any>
+
 interface PipeLinePopUpProps {
     open: boolean
     handleClose: () => void
-    transformData: any[]
+    transformData: TransformData[]
     pipelineName: string
 }
+
+// Separate component for the header actions
+const HeaderActions = ({ onClose, showSearch = false }: { onClose: () => void, showSearch?: boolean }) => (
+    <div className="flex items-center gap-4">
+        {showSearch && (
+            <div className="relative">
+                <Input
+                    type="text"
+                    placeholder="Search By Keywords"
+                    className="pl-8"
+                />
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+        )}
+        <div className="cursor-pointer">
+            <img
+                src="/assets/buildPipeline/downArrow.png"
+                alt="Expand"
+                width={30}
+            />
+        </div>
+        <X onClick={onClose} className="cursor-pointer" />
+    </div>
+)
 
 export default function PipeLinePopUp({
     open,
@@ -34,13 +61,14 @@ export default function PipeLinePopUp({
     const [openSort, setOpenSort] = useState(false)
     const [isLogsOpen, setIsLogsOpen] = useState(false)
 
-    // Generate columns for the table
-    const columns: ColumnDef<any>[] = Object.keys(transformData[0] || {}).map((key) => ({
-        accessorKey: key,
-        header: key,
-        enableColumnFilter: false,
-
-    }));
+    // Generate columns only if we have data
+    const columns: ColumnDef<TransformData>[] = transformData.length 
+        ? Object.keys(transformData[0]).map((key) => ({
+            accessorKey: key,
+            header: key,
+            enableColumnFilter: false,
+        }))
+        : [];
 
     const toolbarConfig: TToolbarConfig = {
         buttons: [
@@ -54,7 +82,7 @@ export default function PipeLinePopUp({
                 label: "Export CSV",
                 icon: Search,
                 variant: "outline",
-                onClick: () => downloadCSV(transformData, "transform_data"),
+                onClick: () => downloadCSV(transformData, pipelineName),
             },
         ],
     };
@@ -96,21 +124,30 @@ export default function PipeLinePopUp({
                 {!isExpanded && (
                     <div className="p-4">
                         {/* Header */}
-                        <DialogHeader style={{textAlign: 'left'}}>
-                            <DialogTitle className="font-semibold text-lg text-start">
-                                {pipelineName}
-                            </DialogTitle>
+                        <DialogHeader className="mb-4">
+                            <div className="flex justify-between items-center">
+                                <DialogTitle className="font-semibold text-lg">
+                                    {pipelineName}
+                                </DialogTitle>
+                                <HeaderActions onClose={handleClose} />
+                            </div>
                         </DialogHeader>
 
                         {/* Table container with fixed height */}
-                        <div className="w-[1100px] overflow-x-auto max-h-[65vh]">
-                            <DataTable
-                                data={transformData}
-                                columns={columns}
-                                toolbarConfig={toolbarConfig}
-                                topVariant="simple"
-                                pagination={true}
-                            />
+                        <div className="w-full overflow-x-auto max-h-[65vh]">
+                            {transformData.length > 0 ? (
+                                <DataTable
+                                    data={transformData}
+                                    columns={columns}
+                                    toolbarConfig={toolbarConfig}
+                                    topVariant="simple"
+                                    pagination={true}
+                                />
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    No data available
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -121,28 +158,9 @@ export default function PipeLinePopUp({
                         {/* Header */}
                         <div className="flex justify-between items-center mb-2">
                             <span className="font-semibold">
-                                Pipeline Name : Test_pipeline 1 (out)
+                                Pipeline Name: {pipelineName}
                             </span>
-                            <div className="flex items-center gap-4">
-                                {/* Input (Search) */}
-                                <div className="relative">
-                                    <Input
-                                        type="text"
-                                        placeholder="Search By Keywords"
-                                        className="pl-8"
-                                    />
-                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-                                </div>
-
-                                <div className="cursor-pointer">
-                                    <img
-                                        src="/assets/buildPipeline/downArrow.png"
-                                        alt=""
-                                        width={30}
-                                    />
-                                </div>
-                                <X onClick={handleClose} className="cursor-pointer" />
-                            </div>
+                            <HeaderActions onClose={handleClose} showSearch={true} />
                         </div>
 
                         <div className="font-semibold">Showing All Logs</div>

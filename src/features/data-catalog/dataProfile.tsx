@@ -2,19 +2,11 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts"
+import { BarChart } from "@/components/bh-charts/BarChart"
 import { useState } from "react"
+import { ArrowUp, ArrowDown, AlertCircle, Info } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Enhanced mock data with more columns and types
 const mockProfileData = {
@@ -206,13 +198,45 @@ const COLORS = {
   cyan: '#06B6D4'
 }
 
+
+// Helper function for quality badges
+const getQualityBadge = (column) => {
+  if (column.nullPercentage > 10) {
+    return {
+      label: "High Missing Values",
+      variant: "destructive",
+      icon: <AlertCircle className="w-3 h-3" />
+    };
+  } else if (column.type === 'categorical' && column.uniqueValues < 3) {
+    return {
+      label: "Low Cardinality",
+      variant: "warning",
+      icon: <ArrowDown className="w-3 h-3" />
+    };
+  } else if (column.type === 'string' && column.uniqueValues === column.totalRows) {
+    return {
+      label: "Unique Identifier",
+      variant: "success",
+      icon: <ArrowUp className="w-3 h-3" />
+    };
+  }
+  return null;
+};
+
+// For easier type management
+type ColumnStat = typeof mockProfileData.columnStats[0];
+
 const DataProfile = () => {
-  const [selectedColumn, setSelectedColumn] = useState(mockProfileData.columnStats[0])
+  const [selectedColumn, setSelectedColumn] = useState<ColumnStat>(mockProfileData.columnStats[0]);
+
+  // Compute completeness
+  const completeness = 100 - (mockProfileData.summary.missingCells / 
+    (mockProfileData.summary.totalRows * mockProfileData.summary.totalColumns) * 100);
 
   return (
-    <div className="p-6 bg-gray-50">
-      {/* Header Section */}
-      <div className="mb-8">
+    <div className="p-4 bg-gray-50">
+      {/* Compact Header */}
+      <div className="mb-5 flex flex-wrap justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">{mockProfileData.metadata.name}</h1>
         <p className="text-gray-600 mt-2">{mockProfileData.metadata.description}</p>
         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
@@ -222,8 +246,8 @@ const DataProfile = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      {/* Compact Summary Stats */}
+      <div className="grid grid-cols-5 gap-3 mb-5">
         <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <h3 className="text-sm font-medium text-blue-700">Records</h3>
           <p className="text-2xl font-bold text-blue-900">{mockProfileData.summary.totalRows.toLocaleString()}</p>
@@ -235,8 +259,10 @@ const DataProfile = () => {
         <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
           <h3 className="text-sm font-medium text-purple-700">Data Quality Score</h3>
           <div className="mt-2">
-            <Progress value={mockProfileData.summary.dataQualityScore} className="bg-purple-200" 
-              indicatorClassName="bg-purple-600" />
+            <Progress 
+              value={mockProfileData.summary.dataQualityScore} 
+              className="h-1.5 bg-purple-200 [&>div]:bg-purple-600" 
+            />
             <p className="mt-1 text-lg font-semibold text-purple-900">{mockProfileData.summary.dataQualityScore}%</p>
           </div>
         </Card>
@@ -250,30 +276,92 @@ const DataProfile = () => {
         </Card>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Column List */}
-        <Card className="lg:col-span-1 bg-white">
-          <ScrollArea className="h-[700px] p-4">
-            <h3 className="font-semibold mb-4 text-gray-900">Columns</h3>
-            <div className="space-y-2">
+      {/* Main Content with Grid Layout */}
+      <div className="grid grid-cols-4 gap-4">
+        {/* Column List - Enhanced UI */}
+        <Card className="col-span-1 shadow-sm border">
+          <div className="p-3 border-b flex items-center justify-between bg-gray-50">
+            <h3 className="font-medium text-sm text-gray-700">Columns</h3>
+            <Badge variant="secondary" className="text-xs">
+              {mockProfileData.summary.totalColumns} total
+            </Badge>
+          </div>
+          <ScrollArea className="h-[600px]">
+            <div className="p-2 space-y-1">
               {mockProfileData.columnStats.map((column) => (
                 <div
                   key={column.name}
-                  className={`p-3 rounded-lg cursor-pointer transition-all ${
-                    selectedColumn.name === column.name 
-                      ? 'bg-blue-50 border border-blue-200' 
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className={`
+                    group relative p-2.5 rounded-md cursor-pointer transition-all
+                    ${selectedColumn.name === column.name 
+                      ? 'bg-blue-50 border-l-2 border-l-blue-500' 
+                      : 'hover:bg-gray-50 border-l-2 border-l-transparent'
+                    }
+                  `}
                   onClick={() => setSelectedColumn(column)}
                 >
-                  <p className="font-medium text-gray-900">{column.name}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-sm text-gray-500">{column.type}</p>
-                    {column.nullPercentage > 0 && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                        {column.nullPercentage}% null
-                      </span>
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0"> {/* min-w-0 helps with text truncation */}
+                      <p className="font-medium text-sm truncate" title={column.name}>
+                        {column.name}
+                      </p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge 
+                              variant={column.nullPercentage > 5 ? "destructive" : "outline"} 
+                              className="text-[9px] px-1 h-4 shrink-0"
+                            >
+                              {column.nullPercentage}%
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">{column.nullPercentage}% missing values</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+
+                  {/* Column Metadata */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge 
+                      variant="secondary" 
+                      className="text-[9px] px-1.5 h-4 bg-gray-100 text-gray-600 group-hover:bg-gray-200"
+                    >
+                      {column.type}
+                    </Badge>
+                    
+                    {getQualityBadge(column) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge 
+                              variant={getQualityBadge(column).variant as "default" | "secondary" | "destructive" | "outline"} 
+                              className="text-[9px] px-1.5 h-4 flex items-center gap-0.5"
+                            >
+                              {getQualityBadge(column).icon}
+                              <span className="truncate max-w-[80px]">
+                                {getQualityBadge(column).label}
+                              </span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">{getQualityBadge(column).label}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {/* Additional metadata badges if needed */}
+                    {column.uniqueValues === mockProfileData.summary.totalRows && (
+                      <Badge 
+                        variant="outline" 
+                        className="text-[9px] px-1.5 h-4 border-blue-200 text-blue-600"
+                      >
+                        Unique
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -282,77 +370,174 @@ const DataProfile = () => {
           </ScrollArea>
         </Card>
 
-        {/* Column Details */}
-        <Card className="lg:col-span-3">
-          <Tabs defaultValue="overview" className="p-4">
+        {/* Column Details - More Compact */}
+        <Card className="col-span-3 shadow-sm border">
+          <Tabs defaultValue="overview" className="w-full">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="statistics">Statistics</TabsTrigger>
               <TabsTrigger value="distribution">Distribution</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{selectedColumn.name}</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Type</p>
-                    <p className="font-medium">{selectedColumn.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Unique Values</p>
-                    <p className="font-medium">{selectedColumn.uniqueValues}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Null Count</p>
-                    <p className="font-medium">{selectedColumn.nullCount}</p>
-                  </div>
-                  {selectedColumn.pattern && (
-                    <div>
-                      <p className="text-sm text-gray-500">Pattern</p>
-                      <p className="font-medium">{selectedColumn.pattern}</p>
+            <TabsContent value="overview" className="p-4 mt-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-3 border shadow-sm bg-gray-50">
+                  <TooltipProvider>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">Unique Values</p>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Count of distinct values</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
-                  )}
-                </div>
+                  </TooltipProvider>
+                  <p className="font-medium text-sm mt-1">{selectedColumn.uniqueValues.toLocaleString()}</p>
+                </Card>
+
+                <Card className="p-3 border shadow-sm bg-gray-50">
+                  <TooltipProvider>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">Null Values</p>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Count of missing values</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="font-medium text-sm">{selectedColumn.nullCount.toLocaleString()}</span>
+                    <Badge variant={selectedColumn.nullPercentage > 5 ? "destructive" : "outline"} 
+                      className="text-[9px] px-1 h-4">
+                      {selectedColumn.nullPercentage}%
+                    </Badge>
+                  </div>
+                </Card>
+
+                {selectedColumn.pattern && (
+                  <Card className="p-3 border shadow-sm bg-gray-50">
+                    <p className="text-xs text-gray-500">Pattern</p>
+                    <p className="font-medium text-sm mt-1 font-mono">{selectedColumn.pattern}</p>
+                  </Card>
+                )}
+
+                {selectedColumn.examples && (
+                  <Card className="p-3 border shadow-sm bg-gray-50">
+                    <p className="text-xs text-gray-500">Examples</p>
+                    <div className="mt-1 space-y-1">
+                      {selectedColumn.examples.map((ex, i) => (
+                        <p key={i} className="text-xs font-mono bg-white p-1 rounded border">{ex}</p>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
-            <TabsContent value="statistics">
-              {selectedColumn.type === 'integer' && (
+            <TabsContent value="statistics" className="p-4 mt-0">
+              {selectedColumn.type === 'integer' || selectedColumn.type === 'decimal' ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="p-3">
-                      <p className="text-sm text-gray-500">Minimum</p>
-                      <p className="font-medium">{selectedColumn.min}</p>
+                    <Card className="p-3 border shadow-sm bg-gray-50">
+                      <TooltipProvider>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">Minimum</p>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-3 h-3 text-gray-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Smallest value in the dataset</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                      <p className="font-medium text-sm mt-1">{selectedColumn.min}</p>
                     </Card>
-                    <Card className="p-3">
-                      <p className="text-sm text-gray-500">Maximum</p>
-                      <p className="font-medium">{selectedColumn.max}</p>
+
+                    <Card className="p-3 border shadow-sm bg-gray-50">
+                      <TooltipProvider>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">Maximum</p>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-3 h-3 text-gray-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Largest value in the dataset</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                      <p className="font-medium text-sm mt-1">{selectedColumn.max}</p>
                     </Card>
-                    <Card className="p-3">
-                      <p className="text-sm text-gray-500">Mean</p>
-                      <p className="font-medium">{selectedColumn.mean}</p>
+
+                    <Card className="p-3 border shadow-sm bg-gray-50">
+                      <TooltipProvider>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">Mean</p>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-3 h-3 text-gray-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Average value</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                      <p className="font-medium text-sm mt-1">{selectedColumn.mean}</p>
                     </Card>
-                    <Card className="p-3">
-                      <p className="text-sm text-gray-500">Standard Deviation</p>
-                      <p className="font-medium">{selectedColumn.stdDev}</p>
+
+                    <Card className="p-3 border shadow-sm bg-gray-50">
+                      <TooltipProvider>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">Standard Deviation</p>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-3 h-3 text-gray-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Measure of data spread</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                      <p className="font-medium text-sm mt-1">{selectedColumn.stdDev}</p>
                     </Card>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-[200px]">
+                  <div className="text-center">
+                    <p className="text-gray-500 text-sm">Advanced statistics not available for {selectedColumn.type} type</p>
                   </div>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="distribution">
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={selectedColumn.distribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="range" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+            <TabsContent value="distribution" className="mt-0">
+              <div className="p-3">
+                <p className="text-xs font-medium text-gray-700 mb-3">Distribution of {selectedColumn.name}</p>
+                <div className="h-[300px]">
+                  <BarChart
+                    data={selectedColumn.distribution}
+                    xAxisDataKey="range"
+                    bars={["count"]}
+                    colors={[COLORS.primary]}
+                    config={{
+                      valueFormatter: (value) => value.toLocaleString(),
+                      labels: ["Count"]
+                    }}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>

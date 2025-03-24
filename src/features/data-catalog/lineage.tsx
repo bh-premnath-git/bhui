@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import ReactFlow, { 
   Background, 
   Controls,
-  MiniMap,
   Panel,
   MarkerType,
   useNodesState,
@@ -32,13 +31,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-// Define NodeData outside the component
-type NodeData = {
-  label: string;
-  type?: string;
-  details?: { host: string; port: number };
-  columns?: { name: string; type: string; isPrimary?: boolean }[];
-};
+
 
 // Sample data - replace with API call later
 const initialNodes: Node[] = [
@@ -177,25 +170,10 @@ const Lineage = () => {
         elementsSelectable={true}
         snapToGrid={true}
         snapGrid={[15, 15]}
+        proOptions={{ hideAttribution: true }}
       >
         <Background />
         <Controls />
-        <MiniMap 
-          nodeStrokeColor={(n) => {
-            if (n.type === 'connection') return '#3b82f6';
-            if (n.type === 'datasource') return '#10b981';
-            if (n.type === 'pipeline') return '#f97316';
-            return '#64748b';
-          }}
-          nodeColor={(n) => {
-            if (n.type === 'connection') return '#bfdbfe';
-            if (n.type === 'datasource') return '#a7f3d0';
-            if (n.type === 'pipeline') return '#fed7aa';
-            return '#e2e8f0';
-          }}
-          maskColor="rgba(240, 242, 245, 0.7)"
-          className="bg-white shadow-md rounded-md border border-gray-200"
-        />
         
         <Panel position="top-left" className="bg-white p-4 rounded-lg shadow">
           <div className="space-y-4">

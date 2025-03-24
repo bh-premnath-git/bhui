@@ -58,13 +58,16 @@ useEffect(() => {
 }, [connectionConfigList, source]);
 
   const initialSource = () => {
+    // console.log(source,"source")
+    // console.log(connectionConfigList,"connectionConfigList")
+    // console.log(source?.connection_config_id,"source?.connection_config_id")
     if (source && connectionConfigList) {
-      const connection = connectionConfigList.find((item: any) => item.id === source?.connection?.connection_config_id);
-      console.log(connection,"connection")
+      const connection = connectionConfigList.find((item: any) => item.id === (source?.connection_config_id||source?.connection?.connection_config_id));
       if (!connection) {
         console.warn('Connection not found for the given connection_config_id');
         return;
       }
+      console.log(connection,"connection")
 
       const connection_data = {
         ...connection,

@@ -255,6 +255,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
                 // Convert pipeline to UI JSON
                 const uiJson = await convertPipelineToUIJson(response.pipeline_json);
+                debugger;
                 console.log(uiJson,"uiJson")
                 if (!uiJson || !uiJson.nodes) {
                     setNodes([])

@@ -90,7 +90,6 @@ class ConnectionFactory {
         console.log(connectionData,"connectionData")
         if (!connectionData) return {};
         console.log(connectionData,"connectionData")
-        debugger;
         const connectionType = (connectionData?.connection_name || '').toLowerCase();
         
         switch (connectionType) {

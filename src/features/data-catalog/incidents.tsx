@@ -1,20 +1,7 @@
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar,
-  PieChart, 
-  Pie,
-  Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts'
+import { BarChart, PieChart } from '@/components/bh-charts'
 import { 
   Table,
   TableBody,
@@ -27,7 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { 
   AlertTriangle, 
   Clock, 
-  Shield 
+  Shield,
+  X
 } from 'lucide-react'
 
 // Mock data
@@ -64,23 +52,12 @@ const mockIncidents = [
   }
 ]
 
-const lineChartData = [
-  { name: 'Jan', incidents: 4 },
-  { name: 'Feb', incidents: 3 },
-  { name: 'Mar', incidents: 7 },
-  { name: 'Apr', incidents: 2 },
-  { name: 'May', incidents: 6 },
-  { name: 'Jun', incidents: 4 },
-]
-
 const pieChartData = [
   { name: 'Quality Issues', value: 40 },
   { name: 'Performance', value: 30 },
   { name: 'Security', value: 20 },
   { name: 'Other', value: 10 },
 ]
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 const mockMetrics = {
   totalIncidents: 45,
@@ -90,8 +67,42 @@ const mockMetrics = {
   impactedSources: 3,
 }
 
+const trendData = [
+  { name: 'Week 1', quality: 4, performance: 2, security: 1 },
+  { name: 'Week 2', quality: 3, performance: 1, security: 2 },
+  { name: 'Week 3', quality: 5, performance: 3, security: 0 },
+  { name: 'Week 4', quality: 2, performance: 1, security: 1 },
+]
+
+// 2. Update the type definitions to be more specific for the chart data
+type TrendDataPoint = {
+  name: string;
+  quality: number;
+  performance: number;
+  security: number;
+}
+
+type PieDataPoint = {
+  name: string;
+  value: number;
+}
+
+// 3. Add proper typing for the chart configs
+type ChartConfig = {
+  labels: string[];
+  valueFormatter: (value: number) => string;
+}
+
 const Incidents = () => {
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedIncident, setSelectedIncident] = useState<any | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Add data preparation for impact analysis
+  const impactAnalysisData = mockIncidents.map(incident => ({
+    name: incident.title,
+    affectedRows: incident.affectedRows
+  }));
 
   return (
     <div className="p-6 space-y-6">
@@ -138,52 +149,52 @@ const Incidents = () => {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Incident Trends</CardTitle>
+        <TabsContent value="overview" className="p-4 m-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="border shadow-sm">
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-sm font-medium">Incident Trends by Type</CardTitle>
+                <CardDescription className="text-xs">Last 4 weeks</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="incidents" stroke="#8884d8" />
-                    </LineChart>
-                  </ResponsiveContainer>
+              <CardContent className="p-4 pt-0">
+                <div className="h-[250px]">
+                  {isLoading ? (
+                    <div className="h-full flex items-center justify-center">
+                      <span className="text-sm text-gray-500">Loading...</span>
+                    </div>
+                  ) : (
+                    <BarChart
+                      data={trendData}
+                      xAxisDataKey="name"
+                      bars={["quality", "performance", "security"]}
+                      colors={["#f43f5e", "#f59e0b", "#3b82f6"]}
+                      config={{
+                        labels: ["Quality", "Performance", "Security"],
+                        valueFormatter: (value: number) => value.toString()
+                      }}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Incident Types Distribution</CardTitle>
+            <Card className="border shadow-sm">
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-sm font-medium">Incident Distribution by Type</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {pieChartData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+              <CardContent className="p-4 pt-0">
+                <PieChart
+                  data={pieChartData}
+                  dataKey="value"
+                  nameKey="name"
+                  colors={["#f43f5e", "#f59e0b", "#3b82f6", "#a855f7"]}
+                  config={{
+                    innerRadius: 0,
+                    outerRadius: 80,
+                    showLabels: false,
+                    valueFormatter: (value: number) => `${value}%`
+                  }}
+                />
               </CardContent>
             </Card>
           </div>
@@ -222,27 +233,63 @@ const Incidents = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Impact Analysis</CardTitle>
+        <TabsContent value="analytics" className="p-4 m-0">
+          <Card className="border shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm font-medium">Impact Analysis by Incident</CardTitle>
+              <CardDescription className="text-xs">Showing affected rows by incident</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockIncidents}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="type" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="affectedRows" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+            <CardContent className="p-4 pt-0">
+              <div className="h-[250px]">
+                <BarChart
+                  data={impactAnalysisData}
+                  xAxisDataKey="name"
+                  bars={["affectedRows"]}
+                  colors={["#6366f1"]}
+                  config={{
+                    labels: ["Affected Rows"],
+                    valueFormatter: (value: number) => value.toLocaleString()
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedIncident && (
+        <div className="mt-4 p-4 border rounded-lg">
+          <h2 className="text-2xl font-bold mb-4">Incident Details</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Source</p>
+              <p className="text-sm">{selectedIncident.source}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Assignee</p>
+              <p className="text-sm">{selectedIncident.assignee}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-sm font-medium text-gray-500 mb-1">Description</p>
+              <p className="text-sm text-gray-700">{selectedIncident.description}</p>
+            </div>
+            {selectedIncident.resolution && (
+              <div className="col-span-2">
+                <p className="text-sm font-medium text-gray-500 mb-1">Resolution</p>
+                <p className="text-sm text-gray-700">{selectedIncident.resolution}</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button 
+              className="rounded-full p-1 hover:bg-gray-100"
+              onClick={() => setSelectedIncident(null)}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

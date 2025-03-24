@@ -94,7 +94,7 @@ const getToolbarConfig = (): TToolbarConfig => {
   return {
     buttons: [
       {
-        label: "Data",
+        label: "Dataset",
         variant: "outline",
         icon: PlusIcon,
         dropdownItems: [

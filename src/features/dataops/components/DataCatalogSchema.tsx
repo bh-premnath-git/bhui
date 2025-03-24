@@ -1,5 +1,5 @@
 import { DataTable } from '@/components/bh-table/data-table';
-import { createColumns, descriptionCellRefs, tagCellRefs } from '../config/layoutCloumns.config';
+import { createColumns, descriptionCellRefs, tagCellRefs } from '@/features/data-catalog/config/layoutCloumns.config';
 import { useLayoutFields } from '@/features/data-catalog/hooks/uselayoutFileds';
 import About from './About';
 import { LoadingState } from '@/components/shared/LoadingState';

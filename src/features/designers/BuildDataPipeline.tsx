@@ -18,7 +18,7 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   
-  const {setPipeline_id} = usePipelineContext()
+  const {setPipeline_id,setDebuggedNodesList,setDebuggedNodes} = usePipelineContext()
   const { handleNavigation } = useNavigation();
   const pipelineSrv = usePipelineManagementService();
 
@@ -29,6 +29,8 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
 
   const onRowClickHandler = (row: Row<Pipeline>) => {
     pipelineSrv.selectedPipeline(row.original)
+    setDebuggedNodesList([])
+    setDebuggedNodes([])
     setPipeline_id(row.original.pipeline_id)
     localStorage.setItem("pipeline_id",row.original.pipeline_id.toString())
     handleNavigation(ROUTES.DESIGNERS.BUILD_PLAYGROUND(row.original.pipeline_id.toString()))

@@ -85,70 +85,7 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
     return title;
 };
 
-class ConnectionFactory {
-    static createConnection(connectionData: any): any {
-        console.log(connectionData,"connectionData")
-        if (!connectionData) return {};
-        console.log(connectionData,"connectionData")
-        const connectionType = (connectionData?.connection_name || '').toLowerCase();
-        
-        switch (connectionType) {
-            case 'postgresql':
-            case 'postgres':
-                return {
-                    name: connectionData.connection_config_name,
-                    connection_type: 'postgresql',
-                    connection_name: connectionData.connection_config_name,
-                    database: connectionData?.custom_metadata?.database,
-                    schema: connectionData?.custom_metadata?.schema || 'public',
-                    secret_name: connectionData?.secret_name,
-                    connection_config_id: connectionData?.connection_config_id
-                };
-            
-            case 'local':
-                return {
-                    name: connectionData.name,
-                    connection_type: 'local',
-                    connection_name: connectionData.name,
-                    file_type: connectionData.file_type,
-                    file_path_prefix: connectionData.file_path_prefix || '${file_path_prefix}',
-                    connection_config_id: connectionData.connection_config_id
-                };
-                
-            case 's3':
-                return {
-                    name: connectionData.name,
-                    connection_type: 's3',
-                    connection_name: connectionData.name,
-                    file_type: connectionData.file_type,
-                    file_path_prefix: connectionData.file_path_prefix || '${file_path_prefix}',
-                    connection_config_id: connectionData.connection_config_id,
-                    secret_name: connectionData.secret_name
-                };
-                
-            case 'snowflake':
-                return {
-                    name: connectionData.name,
-                    connection_type: 'snowflake',
-                    connection_name: connectionData.name,
-                    database: connectionData.database,
-                    schema: connectionData.schema,
-                    warehouse: connectionData.warehouse,
-                    secret_name: connectionData.secret_name,
-                    connection_config_id: connectionData.connection_config_id
-                };
-                
-            default:
-                return {
-                    name: connectionData.name,
-                    connection_type: connectionType,
-                    connection_name: connectionData.name,
-                    connection_config_id: connectionData.connection_config_id,
-                    ...connectionData
-                };
-        }
-    }
-}
+
 
 export const convertPipelineToUIJson = async (pipelineJson: any) => {
     const nodes: any[] = [];
@@ -163,7 +100,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     // Process readers first
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {
-            const sourceDetails: any = await apiService.get({
+            const sourceDetails:any = await apiService.get({
                 portNumber: CATALOG_API_PORT,
                 url: `/data_source/${source.data_src_id}`,
                 usePrefix: true,
@@ -171,17 +108,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
                 metadata: {
                     errorMessage: 'Failed to fetch source details'
                 },
-            });
-            
-
-            let updatedDetails = pipelineJson.sources?.find(item => item.data_src_id === sourceDetails.data_src_id);
-            // debugger
-            console.log(updatedDetails,"updatedDetails")
-            console.log(updatedDetails?.connection,"updatedDetails.connection")
-            console.log(sourceDetails,"sourceDetails")
-// debugger;
-            const connection = updatedDetails?.connection?updatedDetails?.connection:ConnectionFactory.createConnection(sourceDetails?.connection_config);
-console.log(connection,"connection")
+            })
+          
+            console.log(sourceDetails)
+console.log(pipelineJson.sources)
+let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
+console.log(updatedDetails,"updatedDetails")
             const nodeId = `Reader_${index + 1}`;
             const title = source.name;
             existingTitles.add(title);
@@ -197,17 +129,30 @@ console.log(connection,"connection")
                     title: title,
                     icon: getNodeIcon('Reader'),
                     ports: getNodePorts('Reader'),
-                    source: {
-                        name: updatedDetails.name ?? sourceDetails.data_src_name,
-                        data_src_desc: updatedDetails.name ?? sourceDetails.name,
-                        reader_name: updatedDetails.reader_name ?? sourceDetails.data_src_name,
-                        source_type: sourceDetails.connection_type,
-                        file_name: updatedDetails.file_name ?? sourceDetails.file_name,
-                        data_src_id: updatedDetails.data_src_id ?? sourceDetails.data_src_id,
-                        project_id: sourceDetails.bh_project_id,
-                        table_name: updatedDetails.table_name ?? sourceDetails.table_name,
-                        connection_config_id: updatedDetails?.connection?.connection_config_id ?? sourceDetails.connection_config_id,
-                        connection: connection
+                    source:{
+                        "name": updatedDetails.name??sourceDetails.data_src_name,
+                        "data_src_desc": updatedDetails.name??sourceDetails.name,
+                        "reader_name": updatedDetails.reader_name??sourceDetails.data_src_name,
+                        "source_type": sourceDetails.connection_type,
+                        "file_name": updatedDetails.file_name??sourceDetails.file_name,
+                        "data_src_id": updatedDetails.data_src_id??sourceDetails.data_src_id,
+                        "project_id": sourceDetails.bh_project_id,
+                        "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
+                        "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+                        "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
+                        "table_name": updatedDetails.table_name??sourceDetails.table_name,
+                        "connection": {
+                            "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
+                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
+                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails.connection?.connection_config_id,
+                            "table_name": updatedDetails.table_name??sourceDetails.table_name,
+                            "database": updatedDetails.connection?.database??sourceDetails.connection?.database,
+                            "schema": updatedDetails.connection?.schema??sourceDetails.connection?.schema,
+                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails.connection?.secret_name,
+                        }
                     }
                 },
                 width: 56,

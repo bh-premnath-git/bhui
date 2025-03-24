@@ -185,7 +185,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [selectedFormState, setSelectedFormState] = useState<any>(null);
     const [showLeavePrompt, setShowLeavePrompt] = useState(false);
     const time = import.meta.env.VITE_AUTO_SAVE_TIME;
-    const autoSaveInterval = parseInt(time, 10) || 3000;
+    const autoSaveInterval = parseInt(time, 10) || 5000;
     const navigate = useNavigate();
     // console.log("Id", id);
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
@@ -255,7 +255,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
                 // Convert pipeline to UI JSON
                 const uiJson = await convertPipelineToUIJson(response.pipeline_json);
-                console.log(uiJson,"uiJson")
+                
                 if (!uiJson || !uiJson.nodes) {
                     setNodes([])
                     setEdges([])
@@ -1174,7 +1174,6 @@ debuggedNodesList.forEach(checkpoint => {
 
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
-        console.log(source)
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;

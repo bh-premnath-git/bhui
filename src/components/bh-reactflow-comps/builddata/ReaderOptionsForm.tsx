@@ -81,25 +81,21 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     useEffect(() => {
         if (initialData) {
-            console.log(initialData, "initialData")
             setFormData({
                 ...initialData,
+                file_type: initialData.source?.connection?.file_type.toUpperCase() || initialData.file_type,
                 source: {
                     ...initialData.source,
                     connection: {
-                        ...initialData.source.connection,
-                        connection_config_id: initialData.source?.connection_config?.id || '',
-                        type: initialData.source?.connection_config?.connection_name || '',
-                        connection_name: initialData.source?.connection_config?.connection_config_name || '',
+                        ...initialData.source.connection
                     },
                     table_name: initialData.source?.table_name || ''
                 }
             });
 
             const selectedConn = connectionConfigList.find(
-                conn => conn.id === initialData.source?.connection_config?.id
+                conn => conn.id === initialData.source?.connection?.connection_config_id
             );
-            console.log(selectedConn, "selectedConn")
             setSelectedConnection(selectedConn);
         }
     }, [initialData, connectionConfigList]);
@@ -250,19 +246,24 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             data_src_id: formData.source?.data_src_id,
                             data_src_name: formData.reader_name,
                             data_src_desc: formData.reader_name,
-                            connection_type: connectionData?.connection_name || '',
+                            connection_type: connectionData?.custom_metadata?.type?.toLowerCase()=="postgres"?"postgresql":connectionData?.custom_metadata?.type,
                             connection_config_id: formData.source?.connection?.connection_config_id,
                             file_name: formData.source?.file_name,
                             file_path_prefix: formData.source?.connection?.file_path_prefix,
                             file_type: formData?.file_type,
-                            table_name: formData.source?.table_name || formData.reader_name,
+                            table_name: formData.source?.table_name,
                             type: formData.source?.type,
-                            connection_config: formData.source?.connection_config,
+                            custom_metadata: formData.source?.custom_metadata,
+                            connection_config: {
+                                connection_name: formData.source?.connection?.connection_name,
+                                file_type: formData?.file_type
+                            },
+                            // custom_metadata: formData
                         }
                     }
                 }
             };
-
+console.log(sourceData,"sourceData")
             onSourceUpdate?.(sourceData);
             onClose?.();
             toast.success("Reader configuration saved successfully");

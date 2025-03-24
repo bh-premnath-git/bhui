@@ -39,8 +39,6 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     const fetchConnectionConfigs = async () => {
         try {
             const response = await dispatch(getConnectionConfigList({offset: 0, limit: 1000})).unwrap();
-            console.log(response,"response")
-
             // Remove the setTimeout and call initialSource directly after we have the data
             initialSource();
         } catch (error) {
@@ -60,16 +58,13 @@ useEffect(() => {
 }, [connectionConfigList, source]);
 
   const initialSource = () => {
-    console.log(source,"source")
-    console.log(connectionConfigList,"connectionConfigList")
-    console.log(source?.connection_config_id,"source?.connection_config_id")
     if (source && connectionConfigList) {
-      const connection = connectionConfigList.find((item: any) => item.id === (source?.connection_config_id));
+      const connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
+      console.log(connection)
       if (!connection) {
         console.warn('Connection not found for the given connection_config_id');
         return;
       }
-      console.log(connection,"connection")
 
       const connection_data = {
         ...connection,
@@ -77,7 +72,7 @@ useEffect(() => {
           ? 'postgresql' 
           : connection.connection_name
       };
-console.log(connection_data,"connection_data")
+
       const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
 console.log(pipelineJsonData,"pipelineJsonData")
       const initialData = {
@@ -96,7 +91,7 @@ console.log(pipelineJsonData,"pipelineJsonData")
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
-          connection_config: connection_data,
+          custom_metadata: connection_data,
           connection: {
             connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
             type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',

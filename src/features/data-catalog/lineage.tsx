@@ -26,14 +26,8 @@ import {
 } from "@/components/ui/select";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-
-
 
 // Sample data - replace with API call later
 const initialNodes: Node[] = [

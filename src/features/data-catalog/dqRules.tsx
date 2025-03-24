@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
@@ -8,16 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
 import { Badge } from "@/components/ui/badge"
+import { BarChart } from "@/components/bh-charts"
+import { AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Stub data - replace with API data later
 const dqMetrics = {
@@ -61,97 +55,155 @@ const dqMetrics = {
 
 const DQRules = () => {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Data Quality Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dqMetrics.overview.totalRecords.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Pass Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {((dqMetrics.overview.passedRules / dqMetrics.overview.totalRecords) * 100).toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-4 bg-gray-50">
+      {/* Header */}
+      <div className="mb-5">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Data Quality Rules</h1>
+            <p className="text-sm text-gray-500">Monitor and manage data quality checks</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Last Updated</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dqMetrics.overview.freshness}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="rules" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="rules">Rules Results</TabsTrigger>
-          <TabsTrigger value="trends">Quality Trends</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="rules">
-          <Card>
-            <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rule Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Failed Records</TableHead>
-                    <TableHead>Impact</TableHead>
-                    <TableHead>Last Run</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dqMetrics.ruleResults.map((rule) => (
-                    <TableRow key={rule.id}>
-                      <TableCell>{rule.name}</TableCell>
-                      <TableCell>{rule.category}</TableCell>
-                      <TableCell>
-                        <Badge variant={rule.status === "Passed" ? "success" : "destructive"}>
-                          {rule.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{rule.failedRecords}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{rule.impact}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(rule.lastRun).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+          <Card className="bg-white border shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500">Total Records</p>
+                  <p className="text-lg font-semibold">{dqMetrics.overview.totalRecords.toLocaleString()}</p>
+                </div>
+                <AlertCircle className="h-4 w-4 text-blue-500 mt-1" />
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-xs text-gray-600">Passed: {dqMetrics.overview.passedRules.toLocaleString()}</span>
+                </div>
+                <div className="flex-1 flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                  <span className="text-xs text-gray-600">Failed: {dqMetrics.overview.failedRules.toLocaleString()}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-white border shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500">Pass Rate</p>
+                  <p className="text-lg font-semibold">
+                    {((dqMetrics.overview.passedRules / dqMetrics.overview.totalRecords) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <CheckCircle className="h-4 w-4 text-green-500 mt-1" />
+              </div>
+              <div className="mt-2 flex items-center">
+                <span className="text-xs text-gray-500">Target: 99.9%</span>
+                <span className="text-xs ml-auto text-amber-600">-0.8%</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500">Last Updated</p>
+                  <p className="text-lg font-semibold">{dqMetrics.overview.freshness}</p>
+                </div>
+                <Clock className="h-4 w-4 text-blue-500 mt-1" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xs text-gray-500">Next update in 30 mins</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <Tabs defaultValue="rules" className="bg-white border rounded-md shadow-sm">
+        <div className="border-b px-3 py-2">
+          <TabsList className="h-8 bg-transparent">
+            <TabsTrigger value="rules" className="text-xs data-[state=active]:bg-gray-100">Rules Results</TabsTrigger>
+            <TabsTrigger value="trends" className="text-xs data-[state=active]:bg-gray-100">Quality Trends</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="rules" className="m-0">
+          <div className="overflow-x-auto p-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rule Name</TableHead>
+                  <TableHead className="w-[120px]">Category</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Failed Records</TableHead>
+                  <TableHead className="w-[100px]">Impact</TableHead>
+                  <TableHead className="w-[180px]">Last Run</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dqMetrics.ruleResults.map((rule) => (
+                  <TableRow key={rule.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium text-sm">{rule.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">{rule.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        className={cn(
+                          "text-[10px] px-1.5 py-0",
+                          rule.status === "Passed" 
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-red-100 text-red-800 border-red-200"
+                        )}
+                      >
+                        {rule.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{rule.failedRecords.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        className={cn(
+                          "text-[10px]",
+                          rule.impact === "High" ? "bg-red-100 text-red-800 border-red-200" :
+                          rule.impact === "Medium" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                          "bg-blue-100 text-blue-800 border-blue-200"
+                        )}
+                      >
+                        {rule.impact}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{new Date(rule.lastRun).toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
-        <TabsContent value="trends">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dqMetrics.trendsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="passed" fill="#22c55e" name="Passed Rules" />
-                    <Bar dataKey="failed" fill="#ef4444" name="Failed Rules" />
-                  </BarChart>
-                </ResponsiveContainer>
+        <TabsContent value="trends" className="p-4 m-0">
+          <Card className="border shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm font-medium">Rule Execution Results</CardTitle>
+              <CardDescription className="text-xs">Last 5 days trend</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="h-[250px]">
+                <BarChart
+                  data={dqMetrics.trendsData}
+                  xAxisDataKey="date"
+                  bars={["passed", "failed"]}
+                  colors={["#22c55e", "#ef4444"]}
+                  config={{
+                    labels: ["Passed Rules", "Failed Rules"],
+                    valueFormatter: (value: number) => value.toString()
+                  }}
+                />
               </div>
             </CardContent>
           </Card>

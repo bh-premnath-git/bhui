@@ -58,6 +58,7 @@ useEffect(() => {
 }, [connectionConfigList, source]);
 
   const initialSource = () => {
+    console.log(source,"source")
     if (source && connectionConfigList) {
       const connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
       console.log(connection)

@@ -87,8 +87,10 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
 
 class ConnectionFactory {
     static createConnection(connectionData: any): any {
+        console.log(connectionData,"connectionData")
         if (!connectionData) return {};
         console.log(connectionData,"connectionData")
+        debugger;
         const connectionType = (connectionData?.connection_name || '').toLowerCase();
         
         switch (connectionType) {
@@ -101,7 +103,7 @@ class ConnectionFactory {
                     database: connectionData?.custom_metadata?.database,
                     schema: connectionData?.custom_metadata?.schema || 'public',
                     secret_name: connectionData?.secret_name,
-                    connection_config_id: connectionData?.custom_metadata?.id
+                    connection_config_id: connectionData?.connection_config_id
                 };
             
             case 'local':
@@ -178,7 +180,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
             console.log(updatedDetails,"updatedDetails")
             console.log(updatedDetails?.connection,"updatedDetails.connection")
             console.log(sourceDetails,"sourceDetails")
-
+// debugger;
             const connection = updatedDetails?.connection?updatedDetails?.connection:ConnectionFactory.createConnection(sourceDetails?.connection_config);
 console.log(connection,"connection")
             const nodeId = `Reader_${index + 1}`;

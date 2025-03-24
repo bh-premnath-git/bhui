@@ -229,12 +229,20 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             } else if (name === 'table_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.table_name = value;
+                // Set target_name to match table_name if target_name is not already set
+                if (!newData.target.target_name) {
+                    newData.target.target_name = value;
+                }
             } else if (name === 'load_mode') {
                 if (!newData.target) newData.target = {};
                 newData.target.load_mode = value;
             } else if (name === 'file_name' && newData.target?.target_type === 'File') {
                 if (!newData.target) newData.target = {};
                 newData.target.file_name = value;
+                // Set target_name to match file_name if target_name is not already set
+                if (!newData.target.target_name) {
+                    newData.target.target_name = value;
+                }
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {
                 newData.file_type = value;
             } else {

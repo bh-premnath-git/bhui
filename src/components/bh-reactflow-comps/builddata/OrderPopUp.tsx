@@ -39,6 +39,8 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     const fetchConnectionConfigs = async () => {
         try {
             const response = await dispatch(getConnectionConfigList({offset: 0, limit: 1000})).unwrap();
+            console.log(response,"response")
+
             // Remove the setTimeout and call initialSource directly after we have the data
             initialSource();
         } catch (error) {
@@ -58,11 +60,11 @@ useEffect(() => {
 }, [connectionConfigList, source]);
 
   const initialSource = () => {
-    // console.log(source,"source")
-    // console.log(connectionConfigList,"connectionConfigList")
-    // console.log(source?.connection_config_id,"source?.connection_config_id")
+    console.log(source,"source")
+    console.log(connectionConfigList,"connectionConfigList")
+    console.log(source?.connection_config_id,"source?.connection_config_id")
     if (source && connectionConfigList) {
-      const connection = connectionConfigList.find((item: any) => item.id === (source?.connection_config_id||source?.connection?.connection_config_id));
+      const connection = connectionConfigList.find((item: any) => item.id === (source?.connection_config_id));
       if (!connection) {
         console.warn('Connection not found for the given connection_config_id');
         return;

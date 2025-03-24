@@ -255,7 +255,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
                 // Convert pipeline to UI JSON
                 const uiJson = await convertPipelineToUIJson(response.pipeline_json);
-                debugger;
                 console.log(uiJson,"uiJson")
                 if (!uiJson || !uiJson.nodes) {
                     setNodes([])
@@ -1175,6 +1174,7 @@ debuggedNodesList.forEach(checkpoint => {
 
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
+        console.log(source)
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;

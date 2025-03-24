@@ -14,7 +14,8 @@ import ReactFlow, {
   Position
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Database, Server, GitBranch, Play } from 'lucide-react';
+import { Database, Server, GitBranch, Play, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Select,
@@ -30,6 +31,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 
 
@@ -92,28 +94,35 @@ const initialEdges: Edge[] = [
   },
 ];
 
-// Custom node types
+// Updated node types with more compact design
 const nodeTypes = {
   connection: ({ data }: { data: any }) => (
-    <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow-md border-2 border-blue-300 min-w-[160px]">
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
-      <Server className="w-6 h-6 text-blue-500" />
-      <div>{data.label}</div>
+    <div className="flex flex-col items-center bg-white p-3 rounded-md shadow-sm border border-blue-200 min-w-[140px]">
+      <Handle type="source" position={Position.Right} className="w-2 h-2 bg-blue-500" />
+      <div className="flex items-center gap-2 w-full">
+        <Server className="w-4 h-4 text-blue-500 shrink-0" />
+        <span className="text-sm truncate" title={data.label}>{data.label}</span>
+      </div>
     </div>
   ),
   datasource: ({ data }: { data: any }) => (
-    <div className="flex flex-col bg-white p-4 rounded-lg shadow-md border-2 border-green-300 min-w-[160px]">
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-green-500" />
-      <Database className="w-6 h-6 text-green-500" />
-      <div>{data.label}</div>
+    <div className="flex flex-col bg-white p-3 rounded-md shadow-sm border border-green-200 min-w-[140px]">
+      <Handle type="target" position={Position.Left} className="w-2 h-2 bg-green-500" />
+      <Handle type="source" position={Position.Right} className="w-2 h-2 bg-green-500" />
+      <div className="flex items-center gap-2 w-full">
+        <Database className="w-4 h-4 text-green-500 shrink-0" />
+        <span className="text-sm truncate" title={data.label}>{data.label}</span>
+      </div>
     </div>
   ),
   pipeline: ({ data }: { data: any }) => (
-    <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow-md border-2 border-orange-300 min-w-[160px]">
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-orange-500" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-orange-500" />
-      {/* ... rest of pipeline node content ... */}
+    <div className="flex flex-col items-center bg-white p-3 rounded-md shadow-sm border border-orange-200 min-w-[140px]">
+      <Handle type="target" position={Position.Left} className="w-2 h-2 bg-orange-500" />
+      <Handle type="source" position={Position.Right} className="w-2 h-2 bg-orange-500" />
+      <div className="flex items-center gap-2 w-full">
+        <GitBranch className="w-4 h-4 text-orange-500 shrink-0" />
+        <span className="text-sm truncate" title={data.label}>{data.label}</span>
+      </div>
     </div>
   ),
 };
@@ -121,10 +130,8 @@ const nodeTypes = {
 const Lineage = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [filters, setFilters] = useState({
-    connectionType: 'all',
-    search: '',
-  });
+  const [filters, setFilters] = useState({ connectionType: 'all', search: '' });
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.7 });
 
   const filteredNodes = useMemo(() => {
@@ -149,88 +156,102 @@ const Lineage = () => {
   }, [setEdges]);
 
   return (
-    <div className="h-[600px] w-full">
-      <ReactFlow
-        nodes={filteredNodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        defaultEdgeOptions={{
-          type: 'smoothstep',
-          style: { strokeWidth: 2 },
-          markerEnd: { type: MarkerType.ArrowClosed },
-        }}
-        connectionMode={ConnectionMode.Strict}
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.5}
-        maxZoom={1.5}
-        nodesDraggable={true}
-        elementsSelectable={true}
-        snapToGrid={true}
-        snapGrid={[15, 15]}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background />
-        <Controls />
-        
-        <Panel position="top-left" className="bg-white p-4 rounded-lg shadow">
-          <div className="space-y-4">
-            <Input
-              placeholder="Search nodes..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            />
-            <Select
-              value={filters.connectionType}
-              onValueChange={(value) => setFilters(prev => ({ 
-                ...prev, 
-                connectionType: value 
-              }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Connection Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Connections</SelectItem>
-                <SelectItem value="postgres">Postgres</SelectItem>
-                <SelectItem value="oracle">Oracle</SelectItem>
-                <SelectItem value="snowflake">Snowflake</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </Panel>
+    <div className="relative w-full">
+      <div className="h-[600px] w-full border rounded-lg overflow-hidden">
+        <ReactFlow
+          nodes={filteredNodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          defaultEdgeOptions={{
+            type: 'smoothstep',
+            style: { strokeWidth: 1.5 },
+            markerEnd: { type: MarkerType.ArrowClosed },
+          }}
+          connectionMode={ConnectionMode.Strict}
+          fitViewOptions={{ padding: 0.1 }}
+          minZoom={0.5}
+          maxZoom={1.5}
+          nodesDraggable={true}
+          elementsSelectable={true}
+          snapToGrid={true}
+          snapGrid={[10, 10]}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background />
+          <Controls className="rounded-md border border-gray-200" />
+          
+          <Panel position="top-left" className="bg-white rounded-md shadow-sm border border-gray-200">
+            <div className="p-2 space-y-2">
+              <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded">
+                <Search className="w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search nodes..."
+                  value={filters.search}
+                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  className="border-0 focus-visible:ring-0 h-8 text-sm bg-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <Select
+                  value={filters.connectionType}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, connectionType: value }))}
+                >
+                  <SelectTrigger className="border-0 h-8 text-sm bg-transparent">
+                    <SelectValue placeholder="Connection Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Connections</SelectItem>
+                    <SelectItem value="postgres">Postgres</SelectItem>
+                    <SelectItem value="oracle">Oracle</SelectItem>
+                    <SelectItem value="snowflake">Snowflake</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Panel>
+        </ReactFlow>
+      </div>
 
-        <Panel position="top-right" className="bg-white p-4 rounded-lg shadow">
-          <Card>
-            <CardHeader>
-              <CardTitle>Legend</CardTitle>
-              <CardDescription>Node types in the lineage</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Server className="w-5 h-5 text-blue-500" />
+      <div className="absolute top-2 right-2 z-10">
+        <Card className="w-[200px] shadow-sm border bg-white">
+          <Collapsible open={isLegendOpen} onOpenChange={setIsLegendOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full flex items-center justify-between p-2 text-sm font-medium">
+                Legend
+                {isLegendOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-2 space-y-1.5 border-t">
+                <div className="flex items-center gap-2 text-sm">
+                  <Server className="w-4 h-4 text-blue-500" />
                   <span>Connection</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Database className="w-5 h-5 text-green-500" />
+                <div className="flex items-center gap-2 text-sm">
+                  <Database className="w-4 h-4 text-green-500" />
                   <span>Data Source</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <GitBranch className="w-5 h-5 text-orange-500" />
+                <div className="flex items-center gap-2 text-sm">
+                  <GitBranch className="w-4 h-4 text-orange-500" />
                   <span>Pipeline</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Play className="w-5 h-5 text-purple-500" />
+                <div className="flex items-center gap-2 text-sm">
+                  <Play className="w-4 h-4 text-purple-500" />
                   <span>Flow</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </Panel>
-      </ReactFlow>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      </div>
     </div>
   );
 };

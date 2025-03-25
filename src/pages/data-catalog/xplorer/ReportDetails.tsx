@@ -1,8 +1,50 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Star, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Download, 
+  Share2, 
+  Star, 
+  Trash,
+  Plus,
+  BarChart3,
+  LineChart as LucideLineChart,
+  PieChart as LucidePieChart
+} from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend as RechartsLegend,
+  Bar,
+  Line,
+  Pie,
+  Cell,
+  ResponsiveContainer
+} from 'recharts';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { ChartCard } from '@/features/dataops/dashboard/chart-components';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+const COLORS = [
+  "var(--chart-1-color)",
+  "var(--chart-2-color)",
+  "var(--chart-3-color)",
+  "var(--chart-4-color)",
+  "var(--chart-5-color)"
+];
 
 interface Report {
   id: string;
@@ -12,12 +54,19 @@ interface Report {
   creator: string;
   created: string;
   updated: string;
-  data?: any;
+  data?: {
+    labels: string[];
+    values: number[];
+  };
+  widgets?: {
+    id: string;
+    type: string;
+    title: string;
+  }[];
 }
 
 // Mock data service - would be replaced with actual API calls
 const getReportByPath = (path: string): Report | undefined => {
-  // This would be an API call in a real application
   if (path === 'sales-report') {
     return {
       id: 'sales-report',
@@ -28,10 +77,14 @@ const getReportByPath = (path: string): Report | undefined => {
       created: '2025-02-10T09:30:00',
       updated: '2025-03-15T14:22:00',
       data: {
-        // This would contain actual report data in a real application
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         values: [1200, 1900, 1500, 2200, 1800, 2400],
-      }
+      },
+      widgets: [
+        { id: 'sales-trend', type: 'sales', title: 'Sales Trend' },
+        { id: 'revenue-breakdown', type: 'revenue', title: 'Revenue Breakdown' },
+        { id: 'profit-analysis', type: 'profit', title: 'Profit Analysis' }
+      ]
     };
   } else if (path === 'orders-report') {
     return {
@@ -43,10 +96,10 @@ const getReportByPath = (path: string): Report | undefined => {
       created: '2025-02-15T11:45:00',
       updated: '2025-03-18T09:15:00',
       data: {
-        // This would contain actual report data in a real application
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         values: [450, 520, 480, 600, 580, 710],
-      }
+      },
+      // No widgets defined—will add a default chart widget below.
     };
   } else if (path === 'inventory-report') {
     return {
@@ -58,13 +111,11 @@ const getReportByPath = (path: string): Report | undefined => {
       created: '2025-02-20T13:20:00',
       updated: '2025-03-20T16:30:00',
       data: {
-        // This would contain actual report data in a real application
         labels: ['In Stock', 'Low Stock', 'Out of Stock', 'On Order'],
         values: [65, 20, 5, 10],
-      }
+      },
     };
   }
-
   return undefined;
 };
 
@@ -73,21 +124,28 @@ const ReportDetails: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
+  const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
-    // Fetch report data
     if (reportId) {
       setLoading(true);
       const fetchedReport = getReportByPath(reportId);
-
       if (fetchedReport) {
+        // If no widgets are defined, add a default chart widget.
+        if (!fetchedReport.widgets || fetchedReport.widgets.length === 0) {
+          const defaultWidget = {
+            id: `default-chart`,
+            type: fetchedReport.type,
+            title: fetchedReport.title,
+          };
+          fetchedReport.widgets = [defaultWidget];
+        }
         setReport(fetchedReport);
+        setWidgetOrder(fetchedReport.widgets.map(widget => widget.id));
       } else {
-        // Handle case where report is not found
         console.error(`Report with ID ${reportId} not found`);
       }
-
       setLoading(false);
     }
   }, [reportId]);
@@ -117,9 +175,99 @@ const ReportDetails: React.FC = () => {
     );
   }
 
+  // Transform the report data into an array of objects for the charts
+  const chartData =
+    report.data && report.data.labels && report.data.values
+      ? report.data.labels.map((label, index) => ({
+          name: label,
+          value: report.data!.values[index],
+        }))
+      : [];
+
+  // The main chart section has been removed.
+  // The chart will now render only as a widget in the widget area.
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    const items = Array.from(widgetOrder);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setWidgetOrder(items);
+  };
+
+  const addWidget = () => {
+    if (!report) return;
+    
+    const newWidget = {
+      id: `chart-${Date.now()}`,
+      type: report.type,
+      title: report.title
+    };
+    
+    const updatedReport = {
+      ...report,
+      widgets: [...(report.widgets || []), newWidget]
+    };
+    
+    setReport(updatedReport);
+    setWidgetOrder([...widgetOrder, newWidget.id]);
+  };
+
+  const renderWidget = (widgetId: string) => {
+    if (!report) return null;
+    const widget = report.widgets?.find(w => w.id === widgetId);
+    if (!widget) return null;
+    
+    return (
+      <ChartCard title={widget.title} defaultHeight={300}>
+        <ResponsiveContainer width="100%" height="100%">
+          {report.type === 'bar' ? (
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <RechartsLegend />
+              <Bar dataKey="value" fill={COLORS[0]} />
+            </BarChart>
+          ) : report.type === 'line' ? (
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <RechartsLegend />
+              <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
+            </LineChart>
+          ) : report.type === 'pie' ? (
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill={COLORS[0]}
+                dataKey="value"
+                nameKey="name"
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              >
+                {chartData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <RechartsLegend />
+            </PieChart>
+          ) : null}
+        </ResponsiveContainer>
+      </ChartCard>
+    );
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header with back button and title */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -133,7 +281,6 @@ const ReportDetails: React.FC = () => {
           </Button>
           <h1 className="text-2xl font-bold">{report.title}</h1>
         </div>
-
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Share2 className="h-4 w-4 mr-2" />
@@ -152,16 +299,50 @@ const ReportDetails: React.FC = () => {
           </Button>
         </div>
       </div>
+
       {/* Visualization Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Report Visualization</CardTitle>
+          <CardTitle className="flex justify-between items-center">
+            <>
+              <span>Report Visualization</span>
+              <Button onClick={addWidget}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Chart
+              </Button>
+            </>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="h-96 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <p className="mb-2">Visualization for {report.title} would appear here</p>
-            <p className="text-sm">This is a placeholder - in a real application, this would display the actual visualization</p>
-          </div>
+        <CardContent>
+          {/* Widget Drag and Drop Area */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="widgets" isDropDisabled={isResizing} direction="horizontal">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-4">
+                  {widgetOrder.map((widgetId, index) => (
+                    <Draggable key={widgetId} draggableId={widgetId} index={index} isDragDisabled={isResizing}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            minWidth: '300px',
+                            margin: '4px',
+                            flex: '1 0 30%',
+                          }}
+                        >
+                          {renderWidget(widgetId)}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </CardContent>
       </Card>
     </div>

@@ -76,17 +76,17 @@ export function useSuggestedDataopsQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "Can you list of the jobs failed this week?",
+      text: "Can you get jobs by status?",
       category: "dataops"
     },
     {
       id: '2',
-      text: "what are tasks that are not completed",
+      text: "can u get count of jobs failed by month?",
       category: "dataops"
     },
     {
       id: '3',
-      text: "Can u share the reason for the failure?",
+      text: "can u get the count of jobs by project?",
       category: "dataops"
     },
   ];

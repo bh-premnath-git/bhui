@@ -40,11 +40,9 @@ export const DataOpsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     "latency",
     "cost",
     "ingestion",
-    "publish",
     "health",
     "quality",
     "incident",
-    "freshness",
   ])
 
   const allData = useMemo(() => generateData(), [])

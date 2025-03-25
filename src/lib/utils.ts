@@ -67,7 +67,7 @@ export const generateData = (): DataItem[] => {
 
 export const computeAverageMetrics = (
   data: DataItem[],
-  metric: keyof Pick<DataItem, "latency" | "cost" | "freshness">,
+  metric: keyof Pick<DataItem, "latency" | "cost">,
 ) => {
   return months.map((month) => {
     const monthData = data.filter((item) => item.name === month)
@@ -90,7 +90,6 @@ export const computeAverageMetrics = (
 export const processChartData = (filteredData: DataItem[]): ChartData => ({
   latency: computeAverageMetrics(filteredData, "latency"),
   cost: computeAverageMetrics(filteredData, "cost"),
-  freshness: computeAverageMetrics(filteredData, "freshness"),
   ingestion: [
     { name: "Completed", value: filteredData.filter((item) => item.status === "Completed").length },
     { name: "Failed", value: filteredData.filter((item) => item.status === "Failed").length },

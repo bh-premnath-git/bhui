@@ -173,22 +173,3 @@ export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
     />
   </ChartCard>
 )
-
-export const FreshnessChart: React.FC<{ data: any[] }> = ({ data }) => {
-  const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
-  
-  return (
-    <ChartCard title="Freshness" className="bg-gradient-to-br from-card to-card/95">
-      <LineChart 
-        data={data} 
-        xAxisDataKey="name" 
-        lines={lines}
-        colors={palettes.trend}
-        config={{
-          ...chartDefaults.lineConfig,
-          yAxisLabel: "%"
-        }}
-      />
-    </ChartCard>
-  )
-}

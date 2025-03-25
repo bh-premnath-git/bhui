@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useState } from "react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { Filters } from "./filterSelect"
 import {
@@ -8,17 +8,35 @@ import {
   ProjectHealthChart,
   ProjectQualityChart,
   IncidentSummaryChart,
-  FreshnessChart,
 } from "./charts"
 import { useDataOps } from "@/context/dataops/DataOpsContext"
 import { useFilters } from "@/hooks/useFilter"
 
+// Define type for resize event
+interface ChartResizeEvent extends CustomEvent {
+  detail: { isResizing: boolean }
+}
+
 const DashboardContent = () => {
   const { chartData, chartOrder, setChartOrder } = useDataOps()
   const { loadSavedFilters } = useFilters()
+  
+  // State to track if we're actively resizing
+  const [isResizing, setIsResizing] = useState(false)
 
   useEffect(() => {
     loadSavedFilters()
+    
+    // Listen for resize events from chart components
+    const handleResize = (e: ChartResizeEvent) => {
+      setIsResizing(e.detail.isResizing)
+    }
+    
+    window.addEventListener('chart-resize-state', handleResize as EventListener)
+    
+    return () => {
+      window.removeEventListener('chart-resize-state', handleResize as EventListener)
+    }
   }, [loadSavedFilters])
 
   const handleDragEnd = useCallback(
@@ -42,16 +60,12 @@ const DashboardContent = () => {
         return <CostTrendChart data={chartData.cost} />
       case "ingestion":
         return <StatusDonutChart title="Ingestion Status" data={chartData.ingestion} />
-      case "publish":
-        return <StatusDonutChart title="Publish Status" data={chartData.publish} />
       case "health":
         return <ProjectHealthChart data={chartData.health} />
       case "quality":
         return <ProjectQualityChart data={chartData.quality} />
       case "incident":
         return <IncidentSummaryChart data={chartData.incident} />
-      case "freshness":
-        return <FreshnessChart data={chartData.freshness} />
       default:
         return <div>Chart not implemented</div>
     }
@@ -59,25 +73,43 @@ const DashboardContent = () => {
 
   return (
     <div className="p-2 space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
         <Filters />
       </div>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="chartsDroppable">
+        <Droppable 
+          droppableId="chartsDroppable"
+          isDropDisabled={isResizing}
+        >
           {(provided) => (
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
+              className="flex flex-wrap"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                alignItems: 'flex-start'
+              }}
             >
               {chartOrder.map((chartId, index) => (
-                <Draggable key={chartId} draggableId={chartId} index={index}>
+                <Draggable 
+                  key={chartId} 
+                  draggableId={chartId} 
+                  index={index}
+                  isDragDisabled={isResizing}
+                >
                   {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className="w-full p-1"
+                      style={{
+                        ...provided.draggableProps.style,
+                        minWidth: '300px',
+                        margin: '0.5rem'
+                      }}
                     >
                       {renderChart(chartId)}
                     </div>

@@ -81,12 +81,12 @@ export function useSuggestedDataopsQuestions() {
     },
     {
       id: '2',
-      text: "can u get count of jobs failed by month?",
+      text: "Can u get count of jobs failed by month?",
       category: "dataops"
     },
     {
       id: '3',
-      text: "can u get the count of jobs by project?",
+      text: "Can u get the count of jobs by project?",
       category: "dataops"
     },
   ];

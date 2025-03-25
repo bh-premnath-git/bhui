@@ -1,17 +1,20 @@
-import { 
-  Database, 
-  LayoutDashboard, 
-  Settings, 
+import {
+  Database,
+  LayoutDashboard,
+  Settings,
   PenTool,
   GitBranch,
   Package,
   GitPullRequest,
   AlertCircle,
+  File,
   Share2,
   Users,
   FolderGit2,
   Settings2,
   Cable,
+  Clock,
+  NotebookText
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -21,6 +24,17 @@ export const navigationItems: NavItem[] = [
     title: "Data Catalog",
     icon: Database,
     path: ROUTES.DATA_CATALOG,
+  },
+  {
+    title: "Data Explorer",
+    icon: Clock,
+    path: `${ROUTES.DATA_CATALOG}/xplorer`,
+    subItems: []
+  },
+  {
+    title: "Notebook",
+    icon: NotebookText,
+    path: `${ROUTES.DATA_CATALOG}/notebook`,
   },
   {
     title: "Designer",

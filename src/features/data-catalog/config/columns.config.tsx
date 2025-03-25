@@ -4,10 +4,8 @@ import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { formatDate } from "@/lib/date-format";
 import {
   Database,
-  Clock,
   PlusIcon,
-  ImportIcon,
-  NotebookText
+  ImportIcon
 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -114,22 +112,6 @@ const getToolbarConfig = (): TToolbarConfig => {
           }
         ]
       },
-      {
-        label: "Xplore",
-        variant: "outline",
-        icon: Clock,
-        onClick: () => {
-          window.dispatchEvent(new Event("openXploreDialog"));
-        },
-      },
-      {
-        label: "Notebook",
-        variant: "outline",
-        icon: NotebookText,
-        onClick: () => {
-          window.dispatchEvent(new Event("openNotebookDialog"));
-        },
-      }
     ]
   }
 }

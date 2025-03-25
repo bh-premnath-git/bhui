@@ -231,14 +231,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
         <div className={cn(
           "relative rounded-xl p-4 shadow-sm w-full",
-          isUser ? "bg-primary text-primary-foreground" : "bg-card border"
+          isUser ? 
+            "bg-blue-600/10 text-foreground border border-blue-600/20" : 
+            "bg-gray-100 dark:bg-gray-800/60 border"
         )}>
           <div className={cn(
             "absolute w-4 h-4 rotate-45",
-            isUser ? "bg-primary" : "bg-card border",
+            isUser ? 
+              "bg-blue-600/10 border-blue-600/20" : 
+              "bg-gray-100 dark:bg-gray-800/60",
             isUser ? "left-[-8px]" : "left-[-9px]",
             "top-4 border-l border-t",
-            isUser ? "border-transparent" : "",
+            isUser ? "border-blue-600/20" : "",
           )} />
 
           <AnimatePresence mode="wait">

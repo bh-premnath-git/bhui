@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ResponsiveContainer } from "recharts"
 import { ChevronDown, Download } from "lucide-react"
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { debounce } from 'lodash'
 
 export const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
   <div role="alert" className="flex flex-col items-center justify-center h-full p-4 bg-destructive/10 rounded-md text-destructive">
@@ -42,7 +43,6 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   defaultHeight = 280,
   onSaveHeight
 }) => {
-  // State for managing chart height
   const [height, setHeight] = useState(defaultHeight);
   const [width, setWidth] = useState('100%');
   const [isResizing, setIsResizing] = useState(false);
@@ -54,6 +54,29 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   const startWidthRef = useRef<number>(0);
   const cardRef = useRef<HTMLDivElement>(null);
   
+  // Create debounced save function
+  const debouncedSave = useCallback(
+    debounce((newHeight: number, newWidth: string) => {
+      onSaveHeight?.(newHeight);
+      // You could expand this to save width as well
+      localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
+        height: newHeight,
+        width: newWidth
+      }));
+    }, 250),
+    [title, onSaveHeight]
+  );
+
+  // Load saved dimensions on mount
+  useEffect(() => {
+    const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
+    if (savedDimensions) {
+      const { height: savedHeight, width: savedWidth } = JSON.parse(savedDimensions);
+      setHeight(savedHeight);
+      setWidth(savedWidth);
+    }
+  }, [title]);
+  
   // Handle download button
   const handleDownload = () => {
     console.log(`Downloading ${title} data`);
@@ -61,8 +84,10 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   };
   
   // Reset to default height
-  const resetHeight = () => {
+  const resetDimensions = () => {
     setHeight(defaultHeight);
+    setWidth('100%');
+    localStorage.removeItem(`chart-${title}-dimensions`);
     onSaveHeight?.(defaultHeight);
   };
   
@@ -81,55 +106,55 @@ export const ChartCard: React.FC<ChartCardProps> = ({
     document.body.classList.add('resizing');
   };
   
-  // Handle resize events
+  // Update the resize handler to use debouncing
   useEffect(() => {
     if (!isResizing) return;
     
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
       
-      // Calculate both height and width changes
       const deltaY = e.clientY - startYRef.current;
       const deltaX = e.clientX - startXRef.current;
       
-      // Set new dimensions within limits
       const newHeight = Math.max(180, Math.min(600, startHeightRef.current + deltaY));
       const newWidth = Math.max(300, Math.min(1200, startWidthRef.current + deltaX));
       
       setHeight(newHeight);
-      setWidth(`${newWidth}px`);
+      const newWidthStr = `${newWidth}px`;
+      setWidth(newWidthStr);
+      
+      // Use debounced save
+      debouncedSave(newHeight, newWidthStr);
     };
     
     const handleMouseUp = () => {
-      // End resize operation
       setIsResizing(false);
-      
-      // Save height if callback provided
-      onSaveHeight?.(height);
-      
-      // Emit event to re-enable drag-and-drop
       emitResizeStateEvent(false);
-      
-      // Remove global styles
       document.body.classList.remove('resizing');
+      
+      // Final save on mouse up
+      debouncedSave.flush();
     };
     
-    // Add event listeners
     document.addEventListener('mousemove', handleMouseMove, { passive: false });
     document.addEventListener('mouseup', handleMouseUp);
     
     return () => {
-      // Clean up listeners
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      
-      // Make sure to re-enable drag if component unmounts while resizing
       if (isResizing) {
         emitResizeStateEvent(false);
         document.body.classList.remove('resizing');
       }
     };
-  }, [isResizing, height, onSaveHeight]);
+  }, [isResizing, debouncedSave]);
+
+  // Clean up debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [debouncedSave]);
   
   return (
     <Card 
@@ -161,8 +186,8 @@ export const ChartCard: React.FC<ChartCardProps> = ({
                 Download Data
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={resetHeight} className="text-xs cursor-pointer">
-                Reset Height
+              <DropdownMenuItem onClick={resetDimensions} className="text-xs cursor-pointer">
+                Reset Dimensions
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

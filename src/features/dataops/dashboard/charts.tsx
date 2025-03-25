@@ -4,11 +4,11 @@ import { LineChart, BarChart, AreaChart,  DonutChart } from "@/components/bh-cha
 
 // First, define base colors
 const CHART_COLORS = {
-  chart1: "#003f5c",
-  chart2: "#2f4b7c",
-  chart3: "#665191",
-  chart4: "#a05195",
-  chart5: "#d45087"
+  chart1: "var(--chart-1-color)", 
+  chart2: "var(--chart-2-color)", 
+  chart3: "var(--chart-3-color)", 
+  chart4: "var(--chart-4-color)",
+  chart5: "var(--chart-5-color)"
 }
 
 // Color palettes for different chart types

@@ -107,8 +107,8 @@ export function DataTable<TData>({
         />
       )}
 
-      <div className="relative w-full overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300">
-        <div style={{ minWidth: '150%' }}>
+      <div className="relative w-full  [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300">
+        <div style={{ minWidth: '100%' }}>
           <TableContent 
             table={table} 
             onRowClick={onRowClick}

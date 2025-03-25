@@ -1,45 +1,194 @@
 import type React from "react"
 import { ChartCard } from "./chart-components"
+import { LineChart, BarChart, AreaChart,  DonutChart } from "@/components/bh-charts"
 
-import { LineChart, BarChart, AreaChart, PieChart } from "@/components/bh-charts"
-export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Latency Trend">
-        <LineChart data={data} xAxisDataKey="name" lines={Object.keys(data[0] || {}).filter((key) => key !== "name")} />
-    </ChartCard>
-)
+// First, define base colors
+const CHART_COLORS = {
+  chart1: "#003f5c",
+  chart2: "#2f4b7c",
+  chart3: "#665191",
+  chart4: "#a05195",
+  chart5: "#d45087"
+}
 
-export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Cost Trend">
-        <AreaChart data={data} xAxisDataKey="name" areas={Object.keys(data[0] || {}).filter((key) => key !== "name")} />
+// Color palettes for different chart types
+const palettes = {
+  status: [CHART_COLORS.chart1, CHART_COLORS.chart2, CHART_COLORS.chart3, CHART_COLORS.chart4],
+  trend: [CHART_COLORS.chart1, CHART_COLORS.chart2, CHART_COLORS.chart3, CHART_COLORS.chart4, CHART_COLORS.chart5],
+  comparison: [CHART_COLORS.chart1, CHART_COLORS.chart3, CHART_COLORS.chart5]
+}
+
+// Update chartDefaults to include colors in each config
+const chartDefaults = {
+  lineConfig: {
+    colors: palettes.trend,
+    stroke: CHART_COLORS.chart1,
+    strokeWidth: 2,
+    activeDot: { r: 6, strokeWidth: 1, stroke: "#fff" },
+    dot: { r: 3, strokeWidth: 1, stroke: "#fff" },
+    animationDuration: 800,
+    showGrid: true,
+    connectNulls: true,
+    showLegend: true,
+    legendPosition: "top",
+    margin: { top: 10, right: 30, left: 0, bottom: 5 }
+  },
+  areaConfig: {
+    colors: palettes.trend,
+    stroke: CHART_COLORS.chart1,
+    strokeWidth: 2,
+    fill: CHART_COLORS.chart1,
+    fillOpacity: 0.2,
+    activeDot: { r: 6, strokeWidth: 1, stroke: "#fff" },
+    dot: { r: 0 },
+    animationDuration: 800,
+    showGrid: true,
+    connectNulls: true,
+    showLegend: true,
+    legendPosition: "top",
+    margin: { top: 10, right: 30, left: 0, bottom: 5 }
+  },
+  barConfig: {
+    colors: palettes.status,
+    barSize: 20,
+    animationDuration: 800,
+    showGrid: true,
+    radius: [4, 4, 0, 0],
+    showLegend: true,
+    legendPosition: "top",
+    margin: { top: 10, right: 30, left: 0, bottom: 5 }
+  },
+  donutConfig: {
+    showLabels: true,
+    labelType: "percent"
+  }
+}
+
+// Helper function to prepare data with explicit colors for DonutChart
+const prepareDonutData = (data: any[], colors: string[]) => {
+  return data.map((item, index) => ({
+    ...item,
+    color: colors[index % colors.length]
+  }));
+};
+
+// Chart components with direct color prop
+export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
+  const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
+  
+  return (
+    <ChartCard title="Latency Trend" className="bg-gradient-to-br from-card to-card/95">
+      <LineChart 
+        data={data} 
+        xAxisDataKey="name" 
+        lines={lines}
+        colors={palettes.trend}
+        config={{
+          ...chartDefaults.lineConfig,
+          yAxisLabel: "ms"
+        }}
+      />
     </ChartCard>
-)
+  )
+}
+
+export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
+  const areas = Object.keys(data[0] || {}).filter((key) => key !== "name");
+  
+  return (
+    <ChartCard title="Cost Trend" className="bg-gradient-to-br from-card to-card/95">
+      <AreaChart 
+        data={data} 
+        xAxisDataKey="name" 
+        areas={areas}
+        colors={palettes.trend}
+        config={{
+          ...chartDefaults.areaConfig,
+          yAxisLabel: "$",
+          stacked: true
+        }}
+      />
+    </ChartCard>
+  )
+}
 
 export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ title, data }) => (
-    <ChartCard title={title}>
-        <PieChart data={data} dataKey="value" nameKey="name" />
-    </ChartCard>
+  <ChartCard title={title} className="bg-gradient-to-br from-card to-card/95">
+    <DonutChart 
+      data={prepareDonutData(data, palettes.status)}
+      dataKey="value" 
+      nameKey="name"
+      colors={palettes.status}
+      config={{
+        ...chartDefaults.donutConfig,
+        showLabels: true,
+        labelType: "percent"
+      }}
+    />
+  </ChartCard>
 )
 
 export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Project Health Status">
-        <BarChart data={data} xAxisDataKey="name" bars={["success", "failed"]} />
-    </ChartCard>
+  <ChartCard title="Project Health Status" className="bg-gradient-to-br from-card to-card/95">
+    <BarChart 
+      data={data} 
+      xAxisDataKey="name" 
+      bars={["success", "failed"]}
+      colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
+      config={{
+        ...chartDefaults.barConfig,
+        barGap: 3
+      }}
+    />
+  </ChartCard>
 )
 
 export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Project Quality Status">
-        <BarChart data={data} xAxisDataKey="name" bars={["success", "failed"]} />
-    </ChartCard>
+  <ChartCard title="Project Quality Status" className="bg-gradient-to-br from-card to-card/95">
+    <BarChart 
+      data={data} 
+      xAxisDataKey="name" 
+      bars={["success", "failed"]}
+      colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
+      config={{
+        ...chartDefaults.barConfig,
+        barGap: 3,
+        yAxisLabel: "%"
+      }}
+    />
+  </ChartCard>
 )
 
 export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Incident Summary">
-        <BarChart data={data} xAxisDataKey="name" bars={["failed", "inProgress", "completed"]} />
-    </ChartCard>
+  <ChartCard title="Incident Summary" className="bg-gradient-to-br from-card to-card/95">
+    <BarChart 
+      data={data} 
+      xAxisDataKey="name" 
+      bars={["failed", "inProgress", "completed"]}
+      colors={[CHART_COLORS.chart4, CHART_COLORS.chart3, CHART_COLORS.chart1]}
+      config={{
+        ...chartDefaults.barConfig,
+        barGap: 3
+      }}
+    />
+  </ChartCard>
 )
 
-export const FreshnessChart: React.FC<{ data: any[] }> = ({ data }) => (
-    <ChartCard title="Freshness">
-        <LineChart data={data} xAxisDataKey="name" lines={Object.keys(data[0] || {}).filter((key) => key !== "name")} />
+export const FreshnessChart: React.FC<{ data: any[] }> = ({ data }) => {
+  const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
+  
+  return (
+    <ChartCard title="Freshness" className="bg-gradient-to-br from-card to-card/95">
+      <LineChart 
+        data={data} 
+        xAxisDataKey="name" 
+        lines={lines}
+        colors={palettes.trend}
+        config={{
+          ...chartDefaults.lineConfig,
+          yAxisLabel: "%"
+        }}
+      />
     </ChartCard>
-)
+  )
+}

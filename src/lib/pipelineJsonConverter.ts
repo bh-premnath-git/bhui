@@ -96,7 +96,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any) => {
     
     // Track existing titles to ensure uniqueness
     const existingTitles = new Set<string>();
-
+console.log(pipelineJson)
     // Process readers first
     for (const [index, source] of pipelineJson.sources.entries()) {
         try {

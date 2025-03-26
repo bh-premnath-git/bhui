@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 const columnHelper = createColumnHelper<Release>()
 
-const columns: ColumnDefWithFilters<Release, any>[] = [
+const columns: ColumnDefWithFilters<Release>[] = [
   columnHelper.accessor('name', {
     header: 'Name',
     enableColumnFilter: true,
@@ -30,6 +30,7 @@ const getToolbarConfig = (): TToolbarConfig => {
       {
         label: <Repeat className="mr-2 h-4 w-4" />,
         variant: "outline",
+        className: "bg-primary text-primary-foreground",
         icon: PlusIcon,
         onClick: () => {
         },

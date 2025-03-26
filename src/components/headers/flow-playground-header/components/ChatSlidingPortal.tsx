@@ -212,12 +212,16 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
         <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-sm font-semibold">Bighammer.AI</h2>
+          <h2 className="text-sm font-semibold">BigHammer.ai</h2>
         </div>
         {messages.length === 0 ? (
           <div className="mt-4 flex flex-col items-center flex-grow justify-center">
-            <img src={imageSrc} alt="AI" className="w-16 h-16" />
-            <p className="text-sm text-gray-600 mt-2">How can I assist you with this flow today?</p>
+            <img 
+              src={imageSrc} 
+              alt="AI" 
+              className="w-4 h-6 transform -rotate-[40deg]"
+            />
+            <p className="text-sm text-gray-600 mt-2">How can I assist you with flow?</p>
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4 mt-4">
@@ -232,7 +236,10 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                 >
                   {message.role === "assistant" ? (
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={imageSrc} />
+                      <AvatarImage 
+                        src={imageSrc} 
+                        className="w-4 h-6 transform -rotate-[40deg]"
+                      />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   ) : (
@@ -261,7 +268,10 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
               {loading && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-start gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
+                    <AvatarImage 
+                      src={imageSrc} 
+                      className="w-4 h-6 transform -rotate-[40deg]"
+                    />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
@@ -276,7 +286,10 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
               {formDefinition && !loading && (
                 <div className="flex items-start gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
+                    <AvatarImage 
+                      src={imageSrc} 
+                      className="w-4 h-6 transform -rotate-[40deg]"
+                    />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">

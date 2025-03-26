@@ -11,13 +11,13 @@ export function WelcomeScreen({ suggestedQuestions, onSuggestedQuestion }: Welco
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center bg-gradient-to-b from-background to-background/50">
       <div className="space-y-8 max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h2 className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Explore your data universe through natural conversations
           </h2>
         </div>
         
-        <div className="flex flex-wrap justify-center gap-3 mt-8">
+        <div className="flex flex-wrap justify-center gap-2 mt-4">
           <FeatureCard
             icon={<Database className="h-8 w-8" />}
             title="Multi-Source Analysis"
@@ -40,9 +40,9 @@ export function WelcomeScreen({ suggestedQuestions, onSuggestedQuestion }: Welco
           />
         </div>
 
-        <div className="w-full max-w-3xl mx-auto space-y-4 mt-12">
+        <div className="w-full max-w-6xl mx-auto space-y-2 mt-6">
           <h3 className="text-xl font-semibold text-foreground">Try These Queries</h3>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-1">
             {suggestedQuestions.map((question, i) => (
               <Button
                 key={i}

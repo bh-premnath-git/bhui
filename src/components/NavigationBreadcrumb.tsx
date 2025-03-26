@@ -44,6 +44,34 @@ export function NavigationBreadcrumb() {
       return items;
     }
 
+    // Special case for dataops-hub/ops-hub/data-xplorer
+    if (currentPath === "/dataops-hub/ops-hub/data-xplorer") {
+      items.push({ title: "DataOps Hub", path: "/dataops-hub" });
+      items.push({ title: "Ops Hub", path: "/dataops-hub/ops-hub" });
+      items.push({ title: "Data Xplorer", path: "/dataops-hub/ops-hub/data-xplorer" });
+      return items;
+    }
+
+    // Handle report detail paths
+    if (currentPath.startsWith("/data-catalog/xplorer/")) {
+      items.push({ title: "Data Catalog", path: "/data-catalog" });
+      items.push({ title: "Xplorer", path: "/data-catalog/xplorer" });
+      
+      // Extract report name from URL if possible
+      const reportId = currentPath.split("/").pop();
+      if (reportId) {
+        // Format the report ID for display (e.g., convert 'orders-report' to 'Orders Report')
+        const formattedName = reportId
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        items.push({ title: formattedName, path: currentPath });
+      }
+      
+      return items;
+    }
+
     const pathSegments = currentPath.split("/").filter(Boolean);
     let currentPathBuild = "";
 

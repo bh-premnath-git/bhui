@@ -177,7 +177,11 @@ export const FlowCanvas = () => {
   }, [flow, dispatch]);
 
   if (isLoading) {
-    return <LoadingState className='w-40 h-40' />;
+    return (
+      <div className="w-full h-full bg-background relative flex items-center justify-center">
+        <LoadingState className='w-40 h-40' />
+      </div>
+    );
   }
 
   if (isError) {

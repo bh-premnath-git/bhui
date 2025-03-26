@@ -108,15 +108,95 @@ console.log(initialFormValues,"initialFormValues")
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedFields, setGeneratedFields] = useState<Set<string>>(new Set());
 
+  // Add state to track if AI has been attempted for this field
+  const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
+
   // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
-    if (!['SchemaTransformation', 'Joiner'].includes(schema?.title || '') || isGenerating) {
+    if (!['SchemaTransformation', 'Joiner', 'Aggregator'].includes(schema?.title || '') || isGenerating) {
+      return;
+    }
+
+    // If AI has already been attempted for this field, allow typing
+    if (aiAttempted.has(fieldName)) {
       return;
     }
 
     setIsGenerating(true);
     try {
-      if (schema?.title === 'Joiner') {
+      if (schema?.title === 'Aggregator') {
+        const match = fieldName.match(/aggregations\.(\d+)\.expression/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const aggregations = watch('aggregations');
+          const actualTargetColumn = aggregations[index]?.target_column || '';
+
+          if (!actualTargetColumn) {
+            console.warn('No target column specified');
+            return;
+          }
+
+          const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+          const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+
+          const response: any = await dispatch(generatePipelineAgent({ 
+            params: {
+              schema: schemaString,
+              target_column: actualTargetColumn
+            },
+            operation_type: "spark_expression",
+            thread_id: 'spark_123'
+          })).unwrap();
+
+          if (!response?.result) {
+            throw new Error('Invalid response from expression generator');
+          }
+
+          try {
+            const parsedResult = JSON.parse(response.result);
+            
+            // Mark this field as having attempted AI generation
+            setAiAttempted(prev => new Set(prev).add(fieldName));
+
+            // If UNABLE_TO_GENERATE, just enable typing without setting a value
+            if (parsedResult.expression === "UNABLE_TO_GENERATE") {
+              const aggregations = [...(watch('aggregations') || [])];
+              aggregations[index] = {
+                ...aggregations[index],
+                expression: ''
+              };
+              setValue('aggregations', aggregations, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            } else {
+              const expressionValue = parsedResult === "" ? '' : parsedResult.expression;
+              const aggregations = [...(watch('aggregations') || [])];
+              aggregations[index] = {
+                ...aggregations[index],
+                expression: expressionValue
+              };
+              setValue('aggregations', aggregations, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            }
+
+            // Focus the input field after AI generation attempt
+            const inputElement = document.querySelector(`input[name="aggregations.${index}.expression"]`) as HTMLInputElement;
+            if (inputElement) {
+              inputElement.focus();
+              const length = inputElement.value.length;
+              inputElement.setSelectionRange(length, length);
+            }
+          } catch (error) {
+            console.error('Error parsing response:', error);
+            throw new Error('Invalid response format from expression generator');
+          }
+        }
+      } else if (schema?.title === 'Joiner') {
         // Check if this is for the expression tab
         if (fieldName.includes('expressions')) {
           const match = fieldName.match(/expressions\.(\d+)\.expression/);
@@ -161,6 +241,14 @@ console.log(initialFormValues,"initialFormValues")
                 shouldDirty: true,
                 shouldTouch: true
               });
+
+              // Focus the input field after AI generation
+              const inputElement = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+              if (inputElement) {
+                inputElement.focus();
+                const length = inputElement.value.length;
+                inputElement.setSelectionRange(length, length);
+              }
             } catch (error) {
               console.error('Error parsing response:', error);
               throw new Error('Invalid response format from expression generator');
@@ -209,6 +297,14 @@ console.log(initialFormValues,"initialFormValues")
                 shouldDirty: true,
                 shouldTouch: true
               });
+
+              // Focus the input field after AI generation
+              const inputElement = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+              if (inputElement) {
+                inputElement.focus();
+                const length = inputElement.value.length;
+                inputElement.setSelectionRange(length, length);
+              }
             } catch (error) {
               console.error('Error parsing response:', error);
               throw new Error('Invalid response format from expression generator');
@@ -269,6 +365,14 @@ console.log(initialFormValues,"initialFormValues")
             // Mark this field as having been generated
             setGeneratedFields(prev => new Set(prev).add(fieldName));
 
+            // Focus the input field after AI generation
+            const inputElement = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+            if (inputElement) {
+              inputElement.focus();
+              const length = inputElement.value.length;
+              inputElement.setSelectionRange(length, length);
+            }
+
           } catch (error) {
             console.error('Error parsing response:', error);
             throw new Error('Invalid response format from expression generator');
@@ -326,6 +430,13 @@ console.log(initialFormValues,"initialFormValues")
   useEffect(() => {
     return () => {
       setGeneratedFields(new Set());
+    };
+  }, []);
+
+  // Add useEffect to reset aiAttempted when form is reset or component unmounts
+  useEffect(() => {
+    return () => {
+      setAiAttempted(new Set());
     };
   }, []);
 
@@ -1559,13 +1670,36 @@ const FormContent: React.FC<{
                   name={field.name}
                   value={field.value}
                   onChange={field.onChange}
-                  // required={schema.required.includes('transformation')}
                   fieldKey="transformation"
                 />
               )}
             />
           </div>
         )}
+        
+        {/* Add limit field */}
+        <div className="mb-4">
+          <Controller
+            name="limit"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <FormField
+                fieldSchema={{
+                  type: 'number',
+                  title: 'Limit',
+                  description: 'Maximum number of rows to return',
+                  properties: {}
+                  // fieldKey: 'limit'
+                }}
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                fieldKey="limit"
+              />
+            )}
+          />
+        </div>
         
         <div className="space-y-4">
           {/* Column headers */}

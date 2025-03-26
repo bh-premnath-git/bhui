@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {  Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
+// import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 
 import { FormData, ReaderFormField } from "./components/form/reader-form-field";
 

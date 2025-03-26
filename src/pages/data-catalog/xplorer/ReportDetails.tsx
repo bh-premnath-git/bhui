@@ -38,11 +38,25 @@ const COLORS = [
   "var(--chart-5-color)"
 ];
 
+// First, define the chart type union
+type ChartType = 'bar' | 'line' | 'pie' | 'chart';
+
+// Update the Widget interface
+interface Widget {
+  id: string;
+  type: ChartType;
+  title: string;
+  data?: Array<{
+    name: string;
+    value: number;
+  }>;
+}
+
 interface Report {
   id: string;
   title: string;
   description: string;
-  type: string;
+  type: ChartType; // Update this to use ChartType as well
   creator: string;
   created: string;
   updated: string;
@@ -50,39 +64,12 @@ interface Report {
     labels: string[];
     values: number[];
   };
-  widgets?: {
-    id: string;
-    type: string;
-    title: string;
-    data?: Array<{
-      name: string;
-      value: number;
-    }>;
-  }[];
+  widgets?: Widget[];
 }
 
 // Mock data service - would be replaced with actual API calls
 const getReportByPath = (path: string): Report | undefined => {
-  if (path === 'sales-report') {
-    return {
-      id: 'sales-report',
-      title: 'Sales Report',
-      description: 'Comprehensive analysis of sales data across all regions and product categories',
-      type: 'bar',
-      creator: 'Alex Johnson',
-      created: '2025-02-10T09:30:00',
-      updated: '2025-03-15T14:22:00',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        values: [1200, 1900, 1500, 2200, 1800, 2400],
-      },
-      widgets: [
-        { id: 'sales-trend', type: 'sales', title: 'Sales Trend' },
-        { id: 'revenue-breakdown', type: 'revenue', title: 'Revenue Breakdown' },
-        { id: 'profit-analysis', type: 'profit', title: 'Profit Analysis' }
-      ]
-    };
-  } else if (path === 'orders-report') {
+  if (path === 'orders-report') {
     return {
       id: 'orders-report',
       title: 'Orders Report',
@@ -124,6 +111,20 @@ const ReportDetails: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const location = useLocation();
 
+  // Add validation helper
+  const isValidChartData = (data: any[]): boolean => {
+    return Array.isArray(data) && data.length > 0 && data.every(item => 
+      item && typeof item === 'object' && 
+      'name' in item && 
+      'value' in item &&
+      item.name !== null &&
+      item.value !== null
+    );
+  };
+
+  // Add error state to track rendering issues
+  const [renderErrors, setRenderErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (reportId) {
       setLoading(true);
@@ -131,9 +132,9 @@ const ReportDetails: React.FC = () => {
       if (fetchedReport) {
         // If no widgets are defined, add a default chart widget.
         if (!fetchedReport.widgets || fetchedReport.widgets.length === 0) {
-          const defaultWidget = {
+          const defaultWidget: Widget = {
             id: `default-chart`,
-            type: fetchedReport.type,
+            type: (fetchedReport.type as ChartType) || 'bar', // Add type assertion
             title: fetchedReport.title,
           };
           fetchedReport.widgets = [defaultWidget];
@@ -147,25 +148,69 @@ const ReportDetails: React.FC = () => {
     }
   }, [reportId]);
 
+  // Add debug logging
   useEffect(() => {
-    if (location.state?.newWidget && report) {
-      const widget = location.state.newWidget;
-      
-      setReport(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          widgets: [...(prev.widgets || []), widget]
+    if (location.state?.newWidget) {
+      console.log('Received new widget in location state:', location.state.newWidget);
+    }
+  }, [location.state]);
+
+  // Fix the widget handling effect
+  useEffect(() => {
+    const newWidget = location.state?.newWidget;
+    
+    if (!newWidget) return; // Exit early if no widget
+    
+    console.log('Processing new widget:', newWidget);
+    console.log('Current report:', report);
+
+    try {
+      // Create a properly typed widget
+      const widget: Widget = {
+        id: newWidget.id || `widget-${Date.now()}`,
+        type: (newWidget.type as ChartType) || 'bar',
+        title: newWidget.title || 'New Chart',
+        data: Array.isArray(newWidget.data) ? 
+          newWidget.data.map(item => ({
+            name: String(item?.name || ''),
+            value: Number(item?.value) || 0
+          })) : []
+      };
+
+      console.log('Formatted widget to add:', widget);
+
+      // Update report state
+      setReport(prevReport => {
+        if (!prevReport) return prevReport;
+        
+        const updatedWidgets = [...(prevReport.widgets || []), widget];
+        const updatedReport = {
+          ...prevReport,
+          widgets: updatedWidgets
         };
+        
+        console.log('Updated report with new widget:', updatedReport);
+        return updatedReport;
       });
       
-      setWidgetOrder(prev => [...prev, widget.id]);
+      // Update widget order
+      setWidgetOrder(prevOrder => {
+        const newOrder = [...prevOrder, widget.id];
+        console.log('Updated widget order:', newOrder);
+        return newOrder;
+      });
       
       // Clear location state
-      navigate(location.pathname, { replace: true });
-      toast.success("Chart added to report successfully");
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+        toast.success("Chart added to report successfully");
+      }, 100);
+    } catch (error) {
+      console.error('Error adding new widget:', error);
+      toast.error("Failed to add chart to report");
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, report, navigate, location.pathname]);
+  }, [location.state?.newWidget, location.state?.timestamp]); // Use timestamp to force updates
 
   if (loading) {
     return (
@@ -223,58 +268,135 @@ const ReportDetails: React.FC = () => {
   };
 
   const renderWidget = (widgetId: string) => {
-    if (!report) return null;
-    const widget = report.widgets?.find(w => w.id === widgetId);
-    if (!widget) return null;
-    
-    // Use widget's data if available, otherwise fall back to report data
-    const widgetData = widget.data || chartData;
-    
-    return (
-      <ChartCard title={widget.title} className="h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {widget.type === 'bar' ? (
-            <BarChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Bar dataKey="value" fill={COLORS[0]} />
-            </BarChart>
-          ) : widget.type === 'line' ? (
-            <LineChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
-            </LineChart>
-          ) : widget.type === 'pie' ? (
-            <PieChart>
-              <Pie
-                data={widgetData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill={COLORS[0]}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {widgetData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <RechartsLegend />
-            </PieChart>
-          ) : null}
-        </ResponsiveContainer>
-      </ChartCard>
-    );
+    try {
+      if (!report?.widgets) {
+        console.error('No report or widgets available');
+        return null;
+      }
+
+      const widget = report.widgets.find(w => w.id === widgetId);
+      if (!widget) {
+        console.error(`Widget with id ${widgetId} not found`);
+        return null;
+      }
+
+      // Ensure widget has required properties
+      if (!widget.type) {
+        console.error(`Widget ${widgetId} has no type`);
+        return null;
+      }
+
+      // Use widget's data if available, otherwise fall back to report data
+      let widgetData = widget.data || chartData;
+
+      // Validate data structure
+      if (!isValidChartData(widgetData)) {
+        console.error(`Invalid data structure for widget ${widgetId}`);
+        return (
+          <ChartCard title={widget.title || 'Untitled'} className="h-full">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Invalid chart data structure
+            </div>
+          </ChartCard>
+        );
+      }
+
+      // Ensure numeric values
+      widgetData = widgetData.map(item => ({
+        name: String(item.name || ''),
+        value: Number(item.value) || 0
+      }));
+
+      return (
+        <ChartCard title={widget.title || 'Untitled'} className="h-full">
+          <ResponsiveContainer width="100%" height="100%">
+            {(() => {
+              try {
+                switch (widget.type) {
+                  case 'bar':
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                  case 'line':
+                    return (
+                      <LineChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
+                      </LineChart>
+                    );
+                  case 'pie':
+                    return (
+                      <PieChart>
+                        <Pie
+                          data={widgetData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill={COLORS[0]}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => 
+                            `${name || 'Unnamed'}: ${((percent || 0) * 100).toFixed(0)}%`
+                          }
+                        >
+                          {widgetData.map((_, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS[index % COLORS.length]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <RechartsLegend />
+                      </PieChart>
+                    );
+                  default:
+                    console.warn(`Unknown chart type: ${widget.type}, falling back to bar chart`);
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                }
+              } catch (error) {
+                console.error(`Error rendering chart for widget ${widgetId}:`, error);
+                return (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Error rendering chart
+                  </div>
+                );
+              }
+            })()}
+          </ResponsiveContainer>
+        </ChartCard>
+      );
+    } catch (error) {
+      console.error(`Error in renderWidget for ${widgetId}:`, error);
+      return (
+        <ChartCard title="Error" className="h-full">
+          <div className="flex items-center justify-center h-full text-destructive">
+            Failed to render widget
+          </div>
+        </ChartCard>
+      );
+    }
   };
 
   return (
@@ -316,7 +438,7 @@ const ReportDetails: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Report Visualization</span>
+            <span></span>
             <Button 
               onClick={addWidget}
               variant="outline"

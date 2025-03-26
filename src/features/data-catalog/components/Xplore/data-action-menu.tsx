@@ -18,6 +18,9 @@ interface DataActionMenuProps {
   result: QueryResult;
 }
 
+// Add the ChartType type
+type ChartType = 'bar' | 'line' | 'pie' | 'chart';
+
 export function DataActionMenu({ result }: DataActionMenuProps) {
   const { saveToDashboard } = useDashboard();
   
@@ -201,32 +204,100 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
   };
 
   const handleSaveToDashboard = () => {
-    if (result.type === 'chart') {
-      // Save to dashboard as usual
-      saveToDashboard(result);
-      
-      // Check if we came from a report
-      if (location.state?.sourceReport) {
-        // Prepare data in the format expected by ReportDetails
-        const newWidget = {
-          id: `widget-${Date.now()}`,
-          type: result.chartType || result.type,
-          title: result.title || 'New Chart',
-          data: Array.isArray(result.data) ? 
-            result.data.map(item => ({
-              name: item[result.xAxis || 'name'],
-              value: item[result.yAxis || 'value']
-            })) : []
+    if (!result || !result.type) {
+      toast.error("Invalid data");
+      return;
+    }
+
+    try {
+      // For tables, convert to chart format
+      if (result.type === 'table' && result.columns && Array.isArray(result.data)) {
+        // Transform table data to chart format
+        const chartData = result.data.map((row: Record<string, any>) => ({
+          name: String(row[result.columns![0]] || ''),
+          value: parseFloat(String(row[result.columns![1]])) || 0
+        }));
+
+        // Create chart configuration
+        const chartResult: QueryResult = {
+          type: 'chart' as const,
+          chartType: 'bar',
+          title: result.title || 'Table Visualization',
+          data: chartData,
+          xAxis: result.columns[0],
+          yAxis: result.columns[1],
+          config: {
+            showGrid: true,
+            showLabels: true,
+            showLegend: true
+          }
         };
+
+        // Save to dashboard
+        saveToDashboard(chartResult);
         
-        // Navigate back to the report with the formatted widget
-        navigate(location.state.returnPath, { 
-          state: { newWidget }
+        // Create and navigate with widget if needed
+        if (location.state?.sourceReport) {
+          console.log('Creating widget from table data:', chartData);
+          const newWidget = {
+            id: `widget-${Date.now()}`,
+            type: 'bar' as ChartType, // Always bar for table data
+            title: chartResult.title,
+            data: chartData // This has the {name, value} format needed
+          };
+          
+          navigate(location.state.returnPath, { 
+            replace: true, // Use replace to prevent history issues
+            state: { 
+              newWidget: newWidget,
+              timestamp: Date.now() // Force state update
+            }
+          });
+        } else {
+          toast.success("Chart saved to dashboard");
+        }
+      } 
+      // For charts, use existing data
+      else if (result.type === 'chart') {
+        // Format chart data consistently to {name, value} format
+        const chartData = Array.isArray(result.data) ? 
+          result.data.map(item => ({
+            name: String(item[result.xAxis || 'name'] || ''),
+            value: parseFloat(String(item[result.yAxis || 'value'])) || 0
+          })) : [];
+
+        // Save to dashboard
+        saveToDashboard({
+          ...result,
+          data: chartData
         });
+        
+        // Create and navigate with widget if needed
+        if (location.state?.sourceReport) {
+          console.log('Creating widget from chart data:', chartData);
+          const newWidget = {
+            id: `widget-${Date.now()}`,
+            type: (result.chartType as ChartType) || 'bar',
+            title: result.title || 'New Chart',
+            data: chartData
+          };
+          
+          navigate(location.state.returnPath, { 
+            replace: true,
+            state: { 
+              newWidget: newWidget,
+              timestamp: Date.now() // Force state update
+            }
+          });
+        } else {
+          toast.success("Chart saved to dashboard");
+        }
       } else {
-        // Normal dashboard save
-        toast.success("Chart saved to dashboard");
+        toast.error("Unsupported data type");
       }
+    } catch (error) {
+      console.error('Error in handleSaveToDashboard:', error);
+      toast.error("Failed to save chart");
     }
   };
 

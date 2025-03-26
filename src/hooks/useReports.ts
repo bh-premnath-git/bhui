@@ -13,11 +13,6 @@ interface Report {
 // Mock data instead of API call
 const MOCK_REPORTS: Report[] = [
   {
-    id: 'sales-report',
-    title: 'Sales Report',
-    path: 'sales-report'
-  },
-  {
     id: 'orders-report',
     title: 'Orders Report',
     path: 'orders-report'

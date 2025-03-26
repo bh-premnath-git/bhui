@@ -38,11 +38,25 @@ const COLORS = [
   "var(--chart-5-color)"
 ];
 
+// First, define the chart type union
+type ChartType = 'bar' | 'line' | 'pie' | 'chart';
+
+// Update the Widget interface
+interface Widget {
+  id: string;
+  type: ChartType;
+  title: string;
+  data?: Array<{
+    name: string;
+    value: number;
+  }>;
+}
+
 interface Report {
   id: string;
   title: string;
   description: string;
-  type: string;
+  type: ChartType; // Update this to use ChartType as well
   creator: string;
   created: string;
   updated: string;
@@ -50,15 +64,7 @@ interface Report {
     labels: string[];
     values: number[];
   };
-  widgets?: {
-    id: string;
-    type: string;
-    title: string;
-    data?: Array<{
-      name: string;
-      value: number;
-    }>;
-  }[];
+  widgets?: Widget[];
 }
 
 // Mock data service - would be replaced with actual API calls
@@ -112,9 +118,9 @@ const ReportDetails: React.FC = () => {
       if (fetchedReport) {
         // If no widgets are defined, add a default chart widget.
         if (!fetchedReport.widgets || fetchedReport.widgets.length === 0) {
-          const defaultWidget = {
+          const defaultWidget: Widget = {
             id: `default-chart`,
-            type: fetchedReport.type,
+            type: (fetchedReport.type as ChartType) || 'bar', // Add type assertion
             title: fetchedReport.title,
           };
           fetchedReport.widgets = [defaultWidget];
@@ -130,7 +136,15 @@ const ReportDetails: React.FC = () => {
 
   useEffect(() => {
     if (location.state?.newWidget && report) {
-      const widget = location.state.newWidget;
+      const incomingWidget = location.state.newWidget;
+      
+      // Create a properly typed widget
+      const widget: Widget = {
+        id: incomingWidget.id,
+        type: (incomingWidget.type as ChartType) || 'bar', // Provide default and type assertion
+        title: incomingWidget.title,
+        data: incomingWidget.data
+      };
       
       setReport(prev => {
         if (!prev) return prev;

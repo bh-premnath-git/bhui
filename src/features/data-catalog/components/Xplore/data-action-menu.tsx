@@ -18,6 +18,9 @@ interface DataActionMenuProps {
   result: QueryResult;
 }
 
+// Add the ChartType type
+type ChartType = 'bar' | 'line' | 'pie' | 'chart';
+
 export function DataActionMenu({ result }: DataActionMenuProps) {
   const { saveToDashboard } = useDashboard();
   
@@ -209,7 +212,6 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
     // Transform table data to chart format if needed
     if (result.type === 'table' && result.columns && Array.isArray(result.data)) {
       try {
-        // Create chart-compatible data structure with type safety
         const chartData = result.data.map((row: Record<string, any>) => ({
           name: String(row[result.columns![0]] || ''),
           value: parseFloat(String(row[result.columns![1]])) || 0
@@ -217,7 +219,7 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
 
         // Create chart configuration with explicit type
         const chartResult: QueryResult = {
-          type: 'chart' as const, // explicitly type as 'chart'
+          type: 'chart' as const,
           chartType: 'bar',
           title: result.title || 'Table Visualization',
           data: chartData,
@@ -230,13 +232,13 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
           }
         };
 
-        // Save transformed data
         saveToDashboard(chartResult);
         
         if (location.state?.sourceReport) {
+          // Create widget with proper type
           const newWidget = {
             id: `widget-${Date.now()}`,
-            type: 'bar',
+            type: (result.chartType as ChartType) || 'bar',
             title: chartResult.title,
             data: chartData
           };
@@ -254,30 +256,16 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
     } 
     // Handle existing chart data
     else if (result.type === 'chart') {
-      // Your existing chart handling code
       const validData = Array.isArray(result.data) ? 
-        result.data
-          .filter(item => item && typeof item === 'object')
-          .map(item => ({
-            name: item[result.xAxis || 'name'] || 'Unnamed',
-            value: typeof item[result.yAxis || 'value'] === 'number' ? 
-              item[result.yAxis || 'value'] : 0
-          })) : [];
+        result.data.map(item => ({
+          name: String(item[result.xAxis || 'name'] || 'Unnamed'),
+          value: parseFloat(String(item[result.yAxis || 'value'])) || 0
+        })) : [];
 
-      saveToDashboard({
-        ...result,
-        data: validData,
-        config: result.config || {
-          showGrid: true,
-          showLabels: true,
-          showLegend: true
-        }
-      });
-      
       if (location.state?.sourceReport) {
         const newWidget = {
           id: `widget-${Date.now()}`,
-          type: result.chartType || 'bar',
+          type: (result.chartType as ChartType) || 'bar',
           title: result.title || 'New Chart',
           data: validData
         };
@@ -286,6 +274,10 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
           state: { newWidget }
         });
       } else {
+        saveToDashboard({
+          ...result,
+          data: validData
+        });
         toast.success("Chart saved to dashboard");
       }
     } else {

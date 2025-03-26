@@ -111,6 +111,20 @@ const ReportDetails: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const location = useLocation();
 
+  // Add validation helper
+  const isValidChartData = (data: any[]): boolean => {
+    return Array.isArray(data) && data.length > 0 && data.every(item => 
+      item && typeof item === 'object' && 
+      'name' in item && 
+      'value' in item &&
+      item.name !== null &&
+      item.value !== null
+    );
+  };
+
+  // Add error state to track rendering issues
+  const [renderErrors, setRenderErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (reportId) {
       setLoading(true);
@@ -136,29 +150,47 @@ const ReportDetails: React.FC = () => {
 
   useEffect(() => {
     if (location.state?.newWidget && report) {
-      const incomingWidget = location.state.newWidget;
-      
-      // Create a properly typed widget
-      const widget: Widget = {
-        id: incomingWidget.id,
-        type: (incomingWidget.type as ChartType) || 'bar', // Provide default and type assertion
-        title: incomingWidget.title,
-        data: incomingWidget.data
-      };
-      
-      setReport(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          widgets: [...(prev.widgets || []), widget]
+      try {
+        const incomingWidget = location.state.newWidget;
+        
+        // Validate incoming widget data
+        if (!incomingWidget?.type || !incomingWidget?.title) {
+          throw new Error('Invalid widget data');
+        }
+
+        // Create a properly typed widget with validation
+        const widget: Widget = {
+          id: incomingWidget.id || `widget-${Date.now()}`,
+          type: (incomingWidget.type as ChartType) || 'bar',
+          title: incomingWidget.title || 'New Chart',
+          data: Array.isArray(incomingWidget.data) ? 
+            incomingWidget.data.map(item => ({
+              name: String(item?.name || ''),
+              value: Number(item?.value) || 0
+            })) : []
         };
-      });
-      
-      setWidgetOrder(prev => [...prev, widget.id]);
-      
-      // Clear location state
-      navigate(location.pathname, { replace: true });
-      toast.success("Chart added to report successfully");
+
+        if (!isValidChartData(widget.data)) {
+          throw new Error('Invalid chart data structure');
+        }
+        
+        setReport(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            widgets: [...(prev.widgets || []), widget]
+          };
+        });
+        
+        setWidgetOrder(prev => [...prev, widget.id]);
+        
+        // Clear location state
+        navigate(location.pathname, { replace: true });
+        toast.success("Chart added to report successfully");
+      } catch (error) {
+        console.error('Error adding new widget:', error);
+        toast.error("Failed to add chart to report");
+      }
     }
   }, [location.state, report, navigate, location.pathname]);
 
@@ -218,58 +250,135 @@ const ReportDetails: React.FC = () => {
   };
 
   const renderWidget = (widgetId: string) => {
-    if (!report) return null;
-    const widget = report.widgets?.find(w => w.id === widgetId);
-    if (!widget) return null;
-    
-    // Use widget's data if available, otherwise fall back to report data
-    const widgetData = widget.data || chartData;
-    
-    return (
-      <ChartCard title={widget.title} className="h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {widget.type === 'bar' ? (
-            <BarChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Bar dataKey="value" fill={COLORS[0]} />
-            </BarChart>
-          ) : widget.type === 'line' ? (
-            <LineChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
-            </LineChart>
-          ) : widget.type === 'pie' ? (
-            <PieChart>
-              <Pie
-                data={widgetData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill={COLORS[0]}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {widgetData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <RechartsLegend />
-            </PieChart>
-          ) : null}
-        </ResponsiveContainer>
-      </ChartCard>
-    );
+    try {
+      if (!report?.widgets) {
+        console.error('No report or widgets available');
+        return null;
+      }
+
+      const widget = report.widgets.find(w => w.id === widgetId);
+      if (!widget) {
+        console.error(`Widget with id ${widgetId} not found`);
+        return null;
+      }
+
+      // Ensure widget has required properties
+      if (!widget.type) {
+        console.error(`Widget ${widgetId} has no type`);
+        return null;
+      }
+
+      // Use widget's data if available, otherwise fall back to report data
+      let widgetData = widget.data || chartData;
+
+      // Validate data structure
+      if (!isValidChartData(widgetData)) {
+        console.error(`Invalid data structure for widget ${widgetId}`);
+        return (
+          <ChartCard title={widget.title || 'Untitled'} className="h-full">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Invalid chart data structure
+            </div>
+          </ChartCard>
+        );
+      }
+
+      // Ensure numeric values
+      widgetData = widgetData.map(item => ({
+        name: String(item.name || ''),
+        value: Number(item.value) || 0
+      }));
+
+      return (
+        <ChartCard title={widget.title || 'Untitled'} className="h-full">
+          <ResponsiveContainer width="100%" height="100%">
+            {(() => {
+              try {
+                switch (widget.type) {
+                  case 'bar':
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                  case 'line':
+                    return (
+                      <LineChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
+                      </LineChart>
+                    );
+                  case 'pie':
+                    return (
+                      <PieChart>
+                        <Pie
+                          data={widgetData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill={COLORS[0]}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => 
+                            `${name || 'Unnamed'}: ${((percent || 0) * 100).toFixed(0)}%`
+                          }
+                        >
+                          {widgetData.map((_, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS[index % COLORS.length]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <RechartsLegend />
+                      </PieChart>
+                    );
+                  default:
+                    console.warn(`Unknown chart type: ${widget.type}, falling back to bar chart`);
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                }
+              } catch (error) {
+                console.error(`Error rendering chart for widget ${widgetId}:`, error);
+                return (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Error rendering chart
+                  </div>
+                );
+              }
+            })()}
+          </ResponsiveContainer>
+        </ChartCard>
+      );
+    } catch (error) {
+      console.error(`Error in renderWidget for ${widgetId}:`, error);
+      return (
+        <ChartCard title="Error" className="h-full">
+          <div className="flex items-center justify-center h-full text-destructive">
+            Failed to render widget
+          </div>
+        </ChartCard>
+      );
+    }
   };
 
   return (

@@ -186,7 +186,7 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
             enabled: options.shouldFetch,
             retry: 2
         },
-        params: { limit: 1000 }
+        params: { limit: 1000, order_by: 'id' }
     });
     const {
         data: ConnectionType,

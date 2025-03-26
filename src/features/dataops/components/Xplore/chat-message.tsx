@@ -198,7 +198,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.4, delay: 0.2 }}
                   />
                 </div>
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <span className="text-sm text-muted-foreground">Processing...</span>
               </motion.div>
             )}
 

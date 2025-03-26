@@ -25,12 +25,12 @@ export function useSuggestedQuestions() {
     },
     {
       id: '4',
-      text: "For this customer, how does order processing time (from order date to required date) vary across different product categories?",
+      text: "Which customers have order frequencies significantly different from others in their region?",
       category: "products"
     },
     {
       id: '5',
-      text: "Which employees have significantly higher or lower order volumes compared to the company average?",
+      text: "Which shipping methods are used significantly more or less than average?",
       category: "employees"
     },
     {
@@ -76,7 +76,7 @@ export function useSuggestedDataopsQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "Show me the jobs failed today",
+      text: "Show me the jobs failed for last week",
       category: "dataops"
     },
     {

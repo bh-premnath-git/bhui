@@ -209,15 +209,16 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
       return;
     }
 
-    // Transform table data to chart format if needed
-    if (result.type === 'table' && result.columns && Array.isArray(result.data)) {
-      try {
+    try {
+      // For tables, convert to chart format
+      if (result.type === 'table' && result.columns && Array.isArray(result.data)) {
+        // Transform table data to chart format
         const chartData = result.data.map((row: Record<string, any>) => ({
           name: String(row[result.columns![0]] || ''),
           value: parseFloat(String(row[result.columns![1]])) || 0
         }));
 
-        // Create chart configuration with explicit type
+        // Create chart configuration
         const chartResult: QueryResult = {
           type: 'chart' as const,
           chartType: 'bar',
@@ -232,56 +233,71 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
           }
         };
 
+        // Save to dashboard
         saveToDashboard(chartResult);
         
+        // Create and navigate with widget if needed
         if (location.state?.sourceReport) {
-          // Create widget with proper type
+          console.log('Creating widget from table data:', chartData);
           const newWidget = {
             id: `widget-${Date.now()}`,
-            type: (result.chartType as ChartType) || 'bar',
+            type: 'bar' as ChartType, // Always bar for table data
             title: chartResult.title,
-            data: chartData
+            data: chartData // This has the {name, value} format needed
           };
           
           navigate(location.state.returnPath, { 
-            state: { newWidget }
+            replace: true, // Use replace to prevent history issues
+            state: { 
+              newWidget: newWidget,
+              timestamp: Date.now() // Force state update
+            }
           });
         } else {
           toast.success("Chart saved to dashboard");
         }
-      } catch (error) {
-        console.error('Error transforming table data:', error);
-        toast.error("Failed to transform table data");
-      }
-    } 
-    // Handle existing chart data
-    else if (result.type === 'chart') {
-      const validData = Array.isArray(result.data) ? 
-        result.data.map(item => ({
-          name: String(item[result.xAxis || 'name'] || 'Unnamed'),
-          value: parseFloat(String(item[result.yAxis || 'value'])) || 0
-        })) : [];
+      } 
+      // For charts, use existing data
+      else if (result.type === 'chart') {
+        // Format chart data consistently to {name, value} format
+        const chartData = Array.isArray(result.data) ? 
+          result.data.map(item => ({
+            name: String(item[result.xAxis || 'name'] || ''),
+            value: parseFloat(String(item[result.yAxis || 'value'])) || 0
+          })) : [];
 
-      if (location.state?.sourceReport) {
-        const newWidget = {
-          id: `widget-${Date.now()}`,
-          type: (result.chartType as ChartType) || 'bar',
-          title: result.title || 'New Chart',
-          data: validData
-        };
-        
-        navigate(location.state.returnPath, { 
-          state: { newWidget }
-        });
-      } else {
+        // Save to dashboard
         saveToDashboard({
           ...result,
-          data: validData
+          data: chartData
         });
-        toast.success("Chart saved to dashboard");
+        
+        // Create and navigate with widget if needed
+        if (location.state?.sourceReport) {
+          console.log('Creating widget from chart data:', chartData);
+          const newWidget = {
+            id: `widget-${Date.now()}`,
+            type: (result.chartType as ChartType) || 'bar',
+            title: result.title || 'New Chart',
+            data: chartData
+          };
+          
+          navigate(location.state.returnPath, { 
+            replace: true,
+            state: { 
+              newWidget: newWidget,
+              timestamp: Date.now() // Force state update
+            }
+          });
+        } else {
+          toast.success("Chart saved to dashboard");
+        }
+      } else {
+        toast.error("Unsupported data type");
       }
-    } else {
-      toast.error("Unsupported data type");
+    } catch (error) {
+      console.error('Error in handleSaveToDashboard:', error);
+      toast.error("Failed to save chart");
     }
   };
 

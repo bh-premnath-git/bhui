@@ -148,51 +148,69 @@ const ReportDetails: React.FC = () => {
     }
   }, [reportId]);
 
+  // Add debug logging
   useEffect(() => {
-    if (location.state?.newWidget && report) {
-      try {
-        const incomingWidget = location.state.newWidget;
-        
-        // Validate incoming widget data
-        if (!incomingWidget?.type || !incomingWidget?.title) {
-          throw new Error('Invalid widget data');
-        }
-
-        // Create a properly typed widget with validation
-        const widget: Widget = {
-          id: incomingWidget.id || `widget-${Date.now()}`,
-          type: (incomingWidget.type as ChartType) || 'bar',
-          title: incomingWidget.title || 'New Chart',
-          data: Array.isArray(incomingWidget.data) ? 
-            incomingWidget.data.map(item => ({
-              name: String(item?.name || ''),
-              value: Number(item?.value) || 0
-            })) : []
-        };
-
-        if (!isValidChartData(widget.data)) {
-          throw new Error('Invalid chart data structure');
-        }
-        
-        setReport(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            widgets: [...(prev.widgets || []), widget]
-          };
-        });
-        
-        setWidgetOrder(prev => [...prev, widget.id]);
-        
-        // Clear location state
-        navigate(location.pathname, { replace: true });
-        toast.success("Chart added to report successfully");
-      } catch (error) {
-        console.error('Error adding new widget:', error);
-        toast.error("Failed to add chart to report");
-      }
+    if (location.state?.newWidget) {
+      console.log('Received new widget in location state:', location.state.newWidget);
     }
-  }, [location.state, report, navigate, location.pathname]);
+  }, [location.state]);
+
+  // Fix the widget handling effect
+  useEffect(() => {
+    const newWidget = location.state?.newWidget;
+    
+    if (!newWidget) return; // Exit early if no widget
+    
+    console.log('Processing new widget:', newWidget);
+    console.log('Current report:', report);
+
+    try {
+      // Create a properly typed widget
+      const widget: Widget = {
+        id: newWidget.id || `widget-${Date.now()}`,
+        type: (newWidget.type as ChartType) || 'bar',
+        title: newWidget.title || 'New Chart',
+        data: Array.isArray(newWidget.data) ? 
+          newWidget.data.map(item => ({
+            name: String(item?.name || ''),
+            value: Number(item?.value) || 0
+          })) : []
+      };
+
+      console.log('Formatted widget to add:', widget);
+
+      // Update report state
+      setReport(prevReport => {
+        if (!prevReport) return prevReport;
+        
+        const updatedWidgets = [...(prevReport.widgets || []), widget];
+        const updatedReport = {
+          ...prevReport,
+          widgets: updatedWidgets
+        };
+        
+        console.log('Updated report with new widget:', updatedReport);
+        return updatedReport;
+      });
+      
+      // Update widget order
+      setWidgetOrder(prevOrder => {
+        const newOrder = [...prevOrder, widget.id];
+        console.log('Updated widget order:', newOrder);
+        return newOrder;
+      });
+      
+      // Clear location state
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+        toast.success("Chart added to report successfully");
+      }, 100);
+    } catch (error) {
+      console.error('Error adding new widget:', error);
+      toast.error("Failed to add chart to report");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state?.newWidget, location.state?.timestamp]); // Use timestamp to force updates
 
   if (loading) {
     return (

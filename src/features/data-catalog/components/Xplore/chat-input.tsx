@@ -121,32 +121,35 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
             
             <DropdownMenuSeparator className="my-0" />
             
-            <div className="py-1">
-              <DropdownMenuLabel className="text-xs px-2 py-0.5">
-                Recent
-              </DropdownMenuLabel>
-              <ScrollArea className="h-[80px]">
-                <div className="px-1">
-                  {recentChats.map((chat) => (
-                    <DropdownMenuItem
-                      key={chat.id}
-                      onClick={() => handleRecentSelect(chat)}
-                      className="text-xs justify-between py-1"
-                    >
-                      <div className="flex items-center gap-2">
-                        <History className="h-3.5 w-3.5" />
-                        {chat.name}
-                      </div>
-                      {selectedRecent === chat.id && (
-                        <Check className="h-3.5 w-3.5" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
+            {recentChats.length > 0 && (
+              <>
+                <div className="py-1">
+                  <DropdownMenuLabel className="text-xs px-2 py-0.5">
+                    Recent
+                  </DropdownMenuLabel>
+                  <ScrollArea className="h-[80px]">
+                    <div className="px-1">
+                      {recentChats.map((chat) => (
+                        <DropdownMenuItem
+                          key={chat.id}
+                          onClick={() => handleRecentSelect(chat)}
+                          className="text-xs justify-between py-1"
+                        >
+                          <div className="flex items-center gap-2">
+                            <History className="h-3.5 w-3.5" />
+                            {chat.name}
+                          </div>
+                          {selectedRecent === chat.id && (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
-              </ScrollArea>
-            </div>
-            
-            <DropdownMenuSeparator className="my-0" />
+                <DropdownMenuSeparator className="my-0" />
+              </>
+            )}
             
             <div className="p-1">
               <DropdownMenuItem 

@@ -171,7 +171,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex-1 space-y-3 max-w-full">
         <div className="flex justify-between items-start">
           <div className="text-sm font-medium">
-            {isUser ? 'You' : 'Bighammer AI'}
+            {isUser ? 'John Doe' : 'Bighammer AI'}
           </div>
           {!message.isLoading && message.content && (
             <TooltipProvider>

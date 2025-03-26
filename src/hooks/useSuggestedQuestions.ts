@@ -15,7 +15,7 @@ export function useSuggestedQuestions() {
     },
     {
       id: '2',
-      text: "Within the top-performing region, which territories contribute the most to overall order volume?",
+      text: "List top 10 expensive products",
       category: "sales"
     },
     {
@@ -35,7 +35,7 @@ export function useSuggestedQuestions() {
     },
     {
       id: '6',
-      text: "Are there any territories with order volumes that deviate significantly from the expected trends within their region?",
+      text: "What are our top 5 performing products?",
       category: "products"
     }
   ];

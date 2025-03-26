@@ -17,7 +17,6 @@ import {
 import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
-import { User } from "lucide-react";
 
 export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
@@ -235,17 +234,18 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                   )}
                 >
                   {message.role === "assistant" ? (
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 flex items-center justify-center">
                       <AvatarImage 
                         src={imageSrc} 
-                        className="w-4 h-6 transform -rotate-[40deg]"
+                        className="w-3.5 h-5 transform -rotate-[40deg]"
+                        style={{ objectFit: "contain" }}
                       />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   ) : (
-                    <Avatar className="h-8 w-8 bg-primary">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <User className="h-4 w-4" />
+                    <Avatar className="h-8 w-8 bg-blue-500">
+                      <AvatarFallback className="bg-blue-500 text-white">
+                        {"John Doe".charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -254,11 +254,10 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                       "rounded-lg px-4 py-2 max-w-[80%] relative",
                       message.role === "assistant"
                         ? "bg-gray-100 text-black"
-                        : "bg-primary text-primary-foreground",
-                      // Add a tail to the message bubble
+                        : "bg-blue-100 text-blue-900",
                       message.role === "assistant"
                         ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
-                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
+                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100"
                     )}
                   >
                     <div className="whitespace-pre-wrap">{message.content}</div>

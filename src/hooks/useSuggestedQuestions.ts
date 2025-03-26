@@ -76,7 +76,7 @@ export function useSuggestedDataopsQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "Show me the jobs failed today",
+      text: "Show me the jobs failed for last week",
       category: "dataops"
     },
     {

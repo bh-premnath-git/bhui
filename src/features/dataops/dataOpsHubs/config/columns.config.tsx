@@ -55,6 +55,7 @@ const getToolbarConfig = (): TToolbarConfig => {
       {
         label: "Xplore",
         variant: "outline",
+        className: "bg-primary text-primary-foreground",
         icon: Clock,
         onClick: () => {
           window.dispatchEvent(new Event("openXploreops"));

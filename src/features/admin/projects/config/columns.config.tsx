@@ -46,6 +46,7 @@ const getToolbarConfig = (): TToolbarConfig => {
       {
         label: <FolderGit2 className="mr-2 h-4 w-4" />,
         variant: "outline",
+        className: "bg-primary text-primary-foreground",
         icon: PlusIcon,
         onClick: () => {
           handleNavigation(ROUTES.ADMIN.PROJECTS.ADD)

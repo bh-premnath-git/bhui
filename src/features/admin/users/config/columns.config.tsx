@@ -9,7 +9,7 @@ import { useNavigation } from "@/hooks/useNavigation";
 
 const columnHelper = createColumnHelper<User>()
 
-const columns: ColumnDefWithFilters<User, any>[] = [
+const columns: ColumnDefWithFilters<User>[] = [
   columnHelper.accessor('username', {
     header: 'Name',
 
@@ -62,6 +62,7 @@ const getToolbarConfig = (): TToolbarConfig => {
     buttons: [
       {
         label: <Users className="mr-2 h-4 w-4" />,
+        className: "bg-primary text-primary-foreground",
         variant: "outline",
         icon: PlusIcon,
         onClick: () => {

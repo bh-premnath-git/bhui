@@ -12,10 +12,34 @@ import {
 } from "@/store/slices/designer/flowSlice";
 import { cn } from "@/lib/utils";
 import { useLocation } from "react-router-dom";
-import { recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
+import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
+
+const suggestionQuestions = [
+  {
+    title: "Monthly Sales Report",
+    description: "Build a pipeline for generating monthly sales performance report",
+    icon: BarChart3
+  },
+  {
+    title: "Regional Sales Trends",
+    description: "Create a pipeline to track region-wise sales trends",
+    icon: Globe2
+  },
+  {
+    title: "Product Category Analysis",
+    description: "Generate a sales report pipeline for different product categories",
+    icon: LayoutGrid
+  },
+  {
+    title: "Top Sales Regions",
+    description: "Setup a pipeline for identifying the top-performing sales regions",
+    icon: MapPin
+  }
+];
 
 export const PipeLineChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
@@ -267,6 +291,11 @@ result.pipeline_definition.transformations?.forEach((transformation: any) => {
   }
  
 
+  const handleSuggestionClick = (question: string) => {
+    setInput(question);
+    handleSend();
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-0 flex flex-col h-full border-none bg-background/95 backdrop-blur-md" style={{zIndex: 10000000}}>
@@ -275,19 +304,61 @@ result.pipeline_definition.transformations?.forEach((transformation: any) => {
         </div>
         
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-12 space-y-6">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
               <img 
                 src={imageSrc} 
                 alt="AI" 
-                className="w-6 h-8 transform -rotate-[40deg]"
-                    />
-                  </div>
-            <div className="text-center space-y-2 max-w-sm">
+                className="w-5 h-7 transform -rotate-[40deg]"
+              />
+            </div>
+            <div className="text-center space-y-1.5 max-w-sm">
               <p className="text-lg font-medium">How can I assist with your pipeline?</p>
               <p className="text-sm text-muted-foreground">
-                I can help you create and optimize data pipelines.
+                Select a template or describe your pipeline needs
               </p>
+            </div>
+            <div className="flex flex-col gap-2 w-full max-w-md px-4">
+              {suggestionQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(question.description)}
+                  className="group relative flex flex-col text-left p-4 rounded-xl border border-border/40 
+                    hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 
+                    transition-all duration-300 bg-gradient-to-br from-background/50 to-background/80
+                    backdrop-blur-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center
+                      group-hover:bg-primary/15 transition-colors">
+                      {<question.icon className="w-4 h-4 text-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm text-foreground mb-0.5 flex items-center justify-between">
+                        {question.title}
+                        <svg 
+                          width="14" 
+                          height="14" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 text-primary"
+                        >
+                          <path d="M5 12h14m-7-7l7 7-7 7"/>
+                        </svg>
+                      </h3>
+                      <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors line-clamp-2">
+                        {question.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 
+                    transition-opacity duration-300 pointer-events-none" />
+                </button>
+              ))}
             </div>
           </div>
         ) : (

@@ -64,6 +64,7 @@ interface  bnPipelineContextProps {
     // setPipelineDtl: React.Dispatch<React.SetStateAction<any>>;
     formStates: { [key: string]: any };
     setFormStates: React.Dispatch<React.SetStateAction<{ [key: string]: any }>>;
+    fetchPipelineDetails: () => void;
     sourceColumns: any;
     setSourceColumns: React.Dispatch<React.SetStateAction<any>>;
     setPipeline_id: React.Dispatch<React.SetStateAction<any>>;
@@ -229,7 +230,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         setSaveErrorState(error);
     }, []);
  console.log(id,"id")
-    useEffect(() => { 
+    // useEffect(() => { 
         const fetchPipelineDetails = async () => {
             // alert("fetchPipelineDetails")
             try {
@@ -324,9 +325,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
         // Only fetch if we have an ID and the pathname matches
         // if (id && location.pathname === expectedPath) {
-            fetchPipelineDetails();
+            // fetchPipelineDetails();
         // }
-    }, [id, dispatch, setNodes, setEdges, setPipeLineName, setPipelineJson,selectedPipeline]);
+    // }, [ ]);
 
     // Add type safety for the getInitialFormState function
     const getInitialFormState = (transformation: any, nodeId: string) => {
@@ -1393,6 +1394,7 @@ debuggedNodesList.forEach(checkpoint => {
         pipelineDtl,
         formStates,
         setFormStates,
+        fetchPipelineDetails,
         sourceColumns,
         setSourceColumns,
         setPipeline_id,
@@ -1495,6 +1497,7 @@ debuggedNodesList.forEach(checkpoint => {
         pipelineDtl,
         formStates,
         setFormStates,
+        fetchPipelineDetails,
         sourceColumns,
         setSourceColumns,
         setPipeline_id,

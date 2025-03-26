@@ -63,26 +63,7 @@ interface Report {
 
 // Mock data service - would be replaced with actual API calls
 const getReportByPath = (path: string): Report | undefined => {
-  if (path === 'sales-report') {
-    return {
-      id: 'sales-report',
-      title: 'Sales Report',
-      description: 'Comprehensive analysis of sales data across all regions and product categories',
-      type: 'bar',
-      creator: 'Alex Johnson',
-      created: '2025-02-10T09:30:00',
-      updated: '2025-03-15T14:22:00',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        values: [1200, 1900, 1500, 2200, 1800, 2400],
-      },
-      widgets: [
-        { id: 'sales-trend', type: 'sales', title: 'Sales Trend' },
-        { id: 'revenue-breakdown', type: 'revenue', title: 'Revenue Breakdown' },
-        { id: 'profit-analysis', type: 'profit', title: 'Profit Analysis' }
-      ]
-    };
-  } else if (path === 'orders-report') {
+  if (path === 'orders-report') {
     return {
       id: 'orders-report',
       title: 'Orders Report',
@@ -316,7 +297,7 @@ const ReportDetails: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Report Visualization</span>
+            <span></span>
             <Button 
               onClick={addWidget}
               variant="outline"

@@ -254,7 +254,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                 setPipelineJson(response?.pipeline_json);
 
                 // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json);
+                const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
                 
                 if (!uiJson || !uiJson.nodes) {
                     setNodes([])
@@ -283,6 +283,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     }
                     return node;
                 });
+                console.log(nodesWithTitles,"nodesWithTitles")
                 console.log(response?.pipeline_json,"response?.pipeline_json")
                 if(response?.pipeline_json==null){
                     setPipelineJson(null)

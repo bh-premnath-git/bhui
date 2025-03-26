@@ -87,12 +87,13 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
 
 
 
-export const convertPipelineToUIJson = async (pipelineJson: any) => {
+export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpdate: (sourceData: any) => void) => {
     const nodes: any[] = [];
     const edges: any[] = [];
     let xPosition = 50;
     let yPosition = 100;
     const yOffset = -117;
+    console.log(pipelineJson,"pipelineJson")
     
     // Track existing titles to ensure uniqueness
     const existingTitles = new Set<string>();
@@ -113,12 +114,50 @@ console.log(pipelineJson)
             console.log(sourceDetails)
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
+if (handleSourceUpdate) {
+    const nodeId = `Reader_${index + 1}`;
+    const sourceData = {
+        nodeId,
+        sourceData: {
+            data: {
+                label: updatedDetails.name ?? sourceDetails.data_src_name,
+                source: {
+                    "name": updatedDetails.name??sourceDetails.data_src_name,
+                        "data_src_desc": updatedDetails.name??sourceDetails.name,
+                        "reader_name": updatedDetails.reader_name??sourceDetails.data_src_name,
+                        "source_type": sourceDetails.connection_type,
+                        "file_name": updatedDetails.file_name??sourceDetails.file_name,
+                        "data_src_id": updatedDetails.data_src_id??sourceDetails.data_src_id,
+                        "project_id": sourceDetails.bh_project_id,
+                        "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
+                        "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+                        "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
+                        "table_name": updatedDetails.table_name??sourceDetails.table_name,
+                        "connection": {
+                            "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
+                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
+                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
+                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
+                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails.connection?.connection_config_id,
+                            "table_name": updatedDetails.table_name??sourceDetails.table_name,
+                            "database": updatedDetails.connection?.database??sourceDetails.connection?.database,
+                            "schema": updatedDetails.connection?.schema??sourceDetails.connection?.schema,
+                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails.connection?.secret_name,
+                        }
+                }
+            }
+        }
+    };
+    console.log(sourceData,"sourceData")
+    handleSourceUpdate(sourceData);
+}
+
 console.log(updatedDetails,"updatedDetails")
-            const nodeId = `Reader_${index + 1}`;
             const title = source.name;
             existingTitles.add(title);
             nodes.push({
-                id: nodeId,
+                id: `Reader_${index + 1}`,
                 type: 'custom',
                 position: {
                     x: xPosition,
@@ -162,6 +201,7 @@ console.log(updatedDetails,"updatedDetails")
             console.error(`Error fetching source details for ${source.name}:`, error);
         }
     }
+    
 
     // Process transformations
     xPosition += 130;

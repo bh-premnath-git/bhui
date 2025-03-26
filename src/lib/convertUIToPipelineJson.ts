@@ -150,14 +150,23 @@ console.log(sources)
             // Rest of the transformation configuration...
             switch (node.data.label) {
                 case 'Aggregator':
+                    // Transform the group_by array to match the expected format
+                    const formattedGroupBy = Array.isArray(node.data.transformationData?.group_by)
+                        ? node.data.transformationData.group_by.map(item => item.group_by || item)
+                        : [];
+
+                    // Transform aggregations to match the expected format
+                    const formattedAggregations = node.data.transformationData?.aggregations?.map(agg => ({
+                        target_column: agg.target_column || '',
+                        expression: agg.expression || '',
+                        alias: agg.alias || ''
+                    })) || [];
 
                     return {
                         ...baseConfig,
-                        name: node.data.title, // Explicitly set the name
-                        group_by: Array.isArray(node.data.transformationData?.group_by)
-                            ? node.data.transformationData?.group_by.map(item => item?.group_by)
-                            : [],
-                        aggregate: node.data.transformationData?.aggregations || [],
+                        name: node.data.title,
+                        group_by: formattedGroupBy,
+                        aggregate: formattedAggregations,
                         pivot: node.data.transformationData?.pivot_by || []
                     };
                 case 'Filter':

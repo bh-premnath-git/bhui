@@ -10,32 +10,32 @@ export function useSuggestedQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "What were our sales by region in the last quarter?",
+      text: "Which regions drive the highest order volume?",
       category: "sales"
     },
     {
       id: '2',
-      text: "Compare product performance between 2022 and 2023",
-      category: "products"
+      text: "Within the top-performing region, which territories contribute the most to overall order volume?",
+      category: "sales"
     },
     {
       id: '3',
-      text: "Show me customer retention by cohort",
-      category: "customers"
+      text: "How is order volume distributed among employees within this key territory?",
+      category: "sales"
     },
     {
       id: '4',
-      text: "What are our top 5 performing products?",
+      text: "For this customer, how does order processing time (from order date to required date) vary across different product categories?",
       category: "products"
     },
     {
       id: '5',
-      text: "Analyze revenue trends by customer segment",
-      category: "revenue"
+      text: "Which employees have significantly higher or lower order volumes compared to the company average?",
+      category: "employees"
     },
     {
       id: '6',
-      text: "List top 10 expensive products",
+      text: "Are there any territories with order volumes that deviate significantly from the expected trends within their region?",
       category: "products"
     }
   ];

@@ -31,7 +31,7 @@ const BuildPlayGround: React.FC = () => {
         debuggedNodes,debuggedNodesList,isPipelineRunning,isCanvasLoading,onConnect,handleDebugToggle,
         addNodeToHistory,handleCopy,handlePaste,handleSearchResultClick,handleZoomIn,handleZoomOut,
         handleCenter,transformationCounts,searchTerm,searchResults,highlightedNodeId,copiedEdges,showLogs,
-        nodes,edges,selectedSchema,sourceColumns,isFormOpen,showLeavePrompt,ctrlDTimeout,hasUnsavedChanges,setShowLogs,
+        nodes,edges,selectedSchema,sourceColumns,isFormOpen,showLeavePrompt,ctrlDTimeout,hasUnsavedChanges,setShowLogs,fetchPipelineDetails,
         setLastSaved,lastSaved
     }=usePipelineContext()
   const onError = useCallback((id: string) => {
@@ -66,7 +66,9 @@ const BuildPlayGround: React.FC = () => {
   }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
       setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet, handleSourceUpdate, pipelineDtl]);
 // console.log(transformationCounts,"transformationCounts")
-
+useEffect(()=>{
+  fetchPipelineDetails();
+},[])
   const edgeTypes = useMemo(() => ({
       default: (props: any) => (
           <CustomEdge {...props} transformationCounts={transformationCounts} pipelineDtl={pipelineDtl} debuggedNodesList={debuggedNodesList}/>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Download, 
@@ -7,9 +7,6 @@ import {
   Star, 
   Trash,
   Plus,
-  BarChart3,
-  LineChart as LucideLineChart,
-  PieChart as LucidePieChart
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { 
@@ -27,16 +24,11 @@ import {
   Cell,
   ResponsiveContainer
 } from 'recharts';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
 import { ChartCard } from '@/features/dataops/dashboard/chart-components';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/config/routes';
+import { toast } from 'sonner';
 
 const COLORS = [
   "var(--chart-1-color)",
@@ -62,6 +54,10 @@ interface Report {
     id: string;
     type: string;
     title: string;
+    data?: Array<{
+      name: string;
+      value: number;
+    }>;
   }[];
 }
 
@@ -126,6 +122,7 @@ const ReportDetails: React.FC = () => {
   const navigate = useNavigate();
   const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
   const [isResizing, setIsResizing] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     if (reportId) {
@@ -149,6 +146,26 @@ const ReportDetails: React.FC = () => {
       setLoading(false);
     }
   }, [reportId]);
+
+  useEffect(() => {
+    if (location.state?.newWidget && report) {
+      const widget = location.state.newWidget;
+      
+      setReport(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          widgets: [...(prev.widgets || []), widget]
+        };
+      });
+      
+      setWidgetOrder(prev => [...prev, widget.id]);
+      
+      // Clear location state
+      navigate(location.pathname, { replace: true });
+      toast.success("Chart added to report successfully");
+    }
+  }, [location.state, report, navigate, location.pathname]);
 
   if (loading) {
     return (
@@ -196,21 +213,13 @@ const ReportDetails: React.FC = () => {
   };
 
   const addWidget = () => {
-    if (!report) return;
-    
-    const newWidget = {
-      id: `chart-${Date.now()}`,
-      type: report.type,
-      title: report.title
-    };
-    
-    const updatedReport = {
-      ...report,
-      widgets: [...(report.widgets || []), newWidget]
-    };
-    
-    setReport(updatedReport);
-    setWidgetOrder([...widgetOrder, newWidget.id]);
+    // Navigate to Xplorer with state information about the source report
+    navigate(`${ROUTES.DATA_CATALOG}/xplorer`, {
+      state: {
+        sourceReport: reportId,
+        returnPath: `/data-catalog/xplorer/${reportId}`
+      }
+    });
   };
 
   const renderWidget = (widgetId: string) => {
@@ -218,11 +227,14 @@ const ReportDetails: React.FC = () => {
     const widget = report.widgets?.find(w => w.id === widgetId);
     if (!widget) return null;
     
+    // Use widget's data if available, otherwise fall back to report data
+    const widgetData = widget.data || chartData;
+    
     return (
-      <ChartCard title={widget.title} defaultHeight={300}>
+      <ChartCard title={widget.title} className="h-full">
         <ResponsiveContainer width="100%" height="100%">
-          {report.type === 'bar' ? (
-            <BarChart data={chartData}>
+          {widget.type === 'bar' ? (
+            <BarChart data={widgetData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -230,8 +242,8 @@ const ReportDetails: React.FC = () => {
               <RechartsLegend />
               <Bar dataKey="value" fill={COLORS[0]} />
             </BarChart>
-          ) : report.type === 'line' ? (
-            <LineChart data={chartData}>
+          ) : widget.type === 'line' ? (
+            <LineChart data={widgetData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -239,10 +251,10 @@ const ReportDetails: React.FC = () => {
               <RechartsLegend />
               <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
             </LineChart>
-          ) : report.type === 'pie' ? (
+          ) : widget.type === 'pie' ? (
             <PieChart>
               <Pie
-                data={chartData}
+                data={widgetData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -252,7 +264,7 @@ const ReportDetails: React.FC = () => {
                 nameKey="name"
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
-                {chartData.map((_, index) => (
+                {widgetData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -304,13 +316,16 @@ const ReportDetails: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <>
-              <span>Report Visualization</span>
-              <Button onClick={addWidget}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Chart
-              </Button>
-            </>
+            <span>Report Visualization</span>
+            <Button 
+              onClick={addWidget}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Insight
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -318,7 +333,11 @@ const ReportDetails: React.FC = () => {
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="widgets" isDropDisabled={isResizing} direction="horizontal">
               {(provided) => (
-                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-4">
+                <div 
+                  ref={provided.innerRef} 
+                  {...provided.droppableProps} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto"
+                >
                   {widgetOrder.map((widgetId, index) => (
                     <Draggable key={widgetId} draggableId={widgetId} index={index} isDragDisabled={isResizing}>
                       {(provided) => (
@@ -326,11 +345,9 @@ const ReportDetails: React.FC = () => {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
+                          className="h-[400px]" // Fixed height for each chart container
                           style={{
                             ...provided.draggableProps.style,
-                            minWidth: '300px',
-                            margin: '4px',
-                            flex: '1 0 30%',
                           }}
                         >
                           {renderWidget(widgetId)}

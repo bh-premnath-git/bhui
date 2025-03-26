@@ -12,15 +12,12 @@ export function WelcomeScreen({ suggestedQuestions, onSuggestedQuestion }: Welco
     <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center bg-gradient-to-b from-background to-background/50">
       <div className="space-y-8 max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold text-foreground bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-            Data Explorer AI
-          </h1>
           <h2 className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Explore your data universe through natural conversations
           </h2>
         </div>
         
-        <div className="flex flex-wrap justify-center gap-6 mt-8">
+        <div className="flex flex-wrap justify-center gap-3 mt-8">
           <FeatureCard
             icon={<Database className="h-8 w-8" />}
             title="Multi-Source Analysis"

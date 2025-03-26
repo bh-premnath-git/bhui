@@ -12,8 +12,7 @@ import { useDashboard } from "@/context/DashboardContext";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface DataActionMenuProps {
   result: QueryResult;
@@ -21,6 +20,10 @@ interface DataActionMenuProps {
 
 export function DataActionMenu({ result }: DataActionMenuProps) {
   const { saveToDashboard } = useDashboard();
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [includeDataTable, setIncludeDataTable] = useState(true);
 
   const convertChartToImage = async () => {
@@ -199,11 +202,31 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
 
   const handleSaveToDashboard = () => {
     if (result.type === 'chart') {
+      // Save to dashboard as usual
       saveToDashboard(result);
-      // Use setTimeout to avoid updating state during render
-      setTimeout(() => {
+      
+      // Check if we came from a report
+      if (location.state?.sourceReport) {
+        // Prepare data in the format expected by ReportDetails
+        const newWidget = {
+          id: `widget-${Date.now()}`,
+          type: result.chartType || result.type,
+          title: result.title || 'New Chart',
+          data: Array.isArray(result.data) ? 
+            result.data.map(item => ({
+              name: item[result.xAxis || 'name'],
+              value: item[result.yAxis || 'value']
+            })) : []
+        };
+        
+        // Navigate back to the report with the formatted widget
+        navigate(location.state.returnPath, { 
+          state: { newWidget }
+        });
+      } else {
+        // Normal dashboard save
         toast.success("Chart saved to dashboard");
-      }, 0);
+      }
     }
   };
 
@@ -222,19 +245,6 @@ export function DataActionMenu({ result }: DataActionMenuProps) {
         </DropdownMenuItem>
         {result.type === 'chart' && (
           <>
-            <div className="px-2 py-1.5 text-sm flex items-center space-x-2">
-              <Checkbox 
-                id="include-data-table" 
-                checked={includeDataTable} 
-                onCheckedChange={(checked) => setIncludeDataTable(checked as boolean)}
-              />
-              <Label 
-                htmlFor="include-data-table" 
-                className="text-xs cursor-pointer"
-              >
-                Include data table in PDF
-              </Label>
-            </div>
             <DropdownMenuItem onClick={handleDownloadImage}>
               <Image className="mr-2 h-4 w-4" />
               Download as Image

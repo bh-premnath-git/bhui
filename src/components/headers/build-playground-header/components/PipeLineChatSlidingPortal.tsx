@@ -51,7 +51,7 @@ console.log(selectedPipeline);
 const location = useLocation();
 console.log(location.pathname);
   const [isProcessing, setIsProcessing] = useState(false);
-  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates,handleSourceUpdate}=usePipelineContext();
+  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates,handleSourceUpdate,handleCenter,handleAlignHorizontal}=usePipelineContext();
 
   useEffect(() => {
     if (!isOpen) {
@@ -126,64 +126,58 @@ console.log(location.pathname);
 
     setIsProcessing(true);
     try {
-      // Add user message to chat
       addUserMessage(input);
-      
-      // Show thinking state
       addAssistantMessage("Let me analyze your pipeline request...");
 
-      // Generate a unique pipeline ID using timestamp and random string
       const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Dispatch the create pipeline schema action
       const result:any = await dispatch(createStaticPipelineSchema({
         pipelineId,
         request: input
-      })).unwrap(); // Using unwrap() to handle the promise result
+      })).unwrap();
 
-      // const result:any = await dispatch(recommendDataSources(input)).unwrap();
+      console.log(result);
+      const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
+      console.log(uiJson);
+      if (!uiJson || !uiJson.nodes) {
+        setNodes([])
+        setEdges([])
+        throw new Error('Failed to convert pipeline to UI format');
+      }
 
-console.log(result);
-const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
-console.log(uiJson);
-if (!uiJson || !uiJson.nodes) {
-  setNodes([])
-  setEdges([])
-  throw new Error('Failed to convert pipeline to UI format');
-}
+      const nodesWithTitles = uiJson.nodes.map(node => {
+        const matchingTransformation = result.pipeline_definition.transformations?.find(
+            (t: any) => t?.title === node?.data?.title && t?.name
+        );
 
-const nodesWithTitles = uiJson.nodes.map(node => {
-  const matchingTransformation = result.pipeline_definition.transformations?.find(
-      (t: any) => t?.title === node?.data?.title && t?.name
-  );
+        if (matchingTransformation) {
+            return {
+                ...node,
+                data: {
+                    ...node.data,
+                    title: matchingTransformation.name,
+                    transformationData: {
+                        ...node.data.transformationData,
+                        name: matchingTransformation.name
+                    }
+                }
+            };
+        }
+        return node;
+      });
 
-  if (matchingTransformation) {
-      return {
-          ...node,
-          data: {
-              ...node.data,
-              title: matchingTransformation.name,
-              transformationData: {
-                  ...node.data.transformationData,
-                  name: matchingTransformation.name
-              }
-          }
-      };
-  }
-  return node;
-});
-console.log(result.pipeline_definition,"result.pipeline_definition")
-if(result.pipeline_definition==null){
-  setPipelineJson(null)
-  setNodes([])
-  setEdges([])
+      if(result.pipeline_definition==null){
+        setPipelineJson(null)
+        setNodes([])
+        setEdges([])
+      } else {
+        await setNodes(nodesWithTitles);
+        await setEdges(uiJson.edges || []);
+        await handleCenter();
+        await handleAlignHorizontal();
+      }
 
-}else{
-  setNodes(nodesWithTitles);
-  setEdges(uiJson.edges || []);
-}
-const initialFormStates = {};
-result.pipeline_definition.transformations?.forEach((transformation: any) => {
+      const initialFormStates = {};
+      result.pipeline_definition.transformations?.forEach((transformation: any) => {
                     const matchingNode = nodesWithTitles.find(
                         (node: any) => 
                             node?.data?.label === transformation?.transformation && 
@@ -269,9 +263,10 @@ result.pipeline_definition.transformations?.forEach((transformation: any) => {
                 });
 
                 // Update nodes and edges
-                setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
-
+                await setNodes(nodesWithTitles);
+                await setEdges(uiJson.edges || []);
+                await handleCenter();
+                await handleAlignHorizontal()
                 // Initialize form states
                 const initialFormStates = {};
                 response.pipeline_json.transformations?.forEach((transformation: any) => {

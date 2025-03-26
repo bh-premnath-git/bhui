@@ -20,7 +20,7 @@ export function useSuggestedQuestions() {
     },
     {
       id: '3',
-      text: "How is order volume distributed among employees within this key territory?",
+      text: "How is order volume distributed among employees within territory?",
       category: "sales"
     },
     {

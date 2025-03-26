@@ -59,7 +59,7 @@ export function Sidebar() {
               )}
             >
               BigHammer.ai
-              </h1>
+            </h1>
           </div>
         </div>
       </div>
@@ -150,8 +150,8 @@ export function Sidebar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={userInfo?.avatarUrl || ""} alt={userInfo?.name || "User"} />
-                  <AvatarFallback>{userInfo?.name?.charAt(0) || userInfo?.username?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarImage src={userInfo?.avatarUrl || ""} alt={"John Doe"} />
+                  <AvatarFallback>{"John Doe"?.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -165,7 +165,7 @@ export function Sidebar() {
                     : "opacity-0 max-w-0 pointer-events-none"
                 )}
               >
-                <p className="text-sm font-medium truncate">{userInfo?.name || userInfo?.username}</p>
+                <p className="text-sm font-medium truncate">John Doe{/* {userInfo?.name || userInfo?.username} */}</p>
                 <p className="text-xs text-muted-foreground truncate">{userInfo?.email}</p>
               </div>
             )}

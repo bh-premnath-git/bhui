@@ -1,10 +1,10 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table";
+import type {  ColumnDefWithFilters } from "@/types/table";
 import { AlertHub } from "@/types/dataops/alertsHub";
 
 export const columnHelper = createColumnHelper<AlertHub>();
 
-export const columns: ColumnDefWithFilters<AlertHub, any>[] = [
+export const columns: ColumnDefWithFilters<AlertHub>[] = [
  columnHelper.accessor("flow_name", {
     header: "Flow Name",
     enableColumnFilter: true,

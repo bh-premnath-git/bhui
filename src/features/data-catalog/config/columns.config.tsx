@@ -94,6 +94,7 @@ const getToolbarConfig = (): TToolbarConfig => {
       {
         label: "Dataset",
         variant: "outline",
+        className: "bg-primary text-primary-foreground",
         icon: PlusIcon,
         dropdownItems: [
           {

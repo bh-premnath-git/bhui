@@ -4,6 +4,7 @@ import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import FlowPlaygroundHeader from "./headers/flow-playground-header/FlowPlaygroundHeader";
 import { useLocation } from "react-router-dom";
 import { BuildPlaygroundHeader } from "./headers/build-playground-header/BuildPlaygroundHeader";
+import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 
 export const Header = () => {
   const { isExpanded } = useSidebar();
@@ -16,6 +17,10 @@ export const Header = () => {
 
   const isFlowPlaygroundRoute = (pathname: string) => {
     return pathname.startsWith("/designers/flow-playground/");
+  };
+
+  const isNotebookRoute = (pathname: string) => {
+    return pathname === "/data-catalog/notebook";
   };
 
   // Render appropriate header content based on route
@@ -38,6 +43,7 @@ export const Header = () => {
     )}>
       <div className="flex items-center justify-between w-full">
         {renderHeaderContent()}
+        {isNotebookRoute(location.pathname) && <NotebookAiButton />}
       </div>
     </header>
   );

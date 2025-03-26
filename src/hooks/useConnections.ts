@@ -12,13 +12,13 @@ export interface RecentChat {
 }
 
 // Mock data just for recent chats since we don't have a real API for this yet
-const mockRecentChats: RecentChat[] = [
-  { id: "1", name: "Customer Analysis" },
-  { id: "2", name: "Revenue Report" },
-  { id: "3", name: "User Engagement" },
-  { id: "4", name: "Sales Pipeline" },
-  { id: "5", name: "Marketing Metrics" },
-];
+// const mockRecentChats: RecentChat[] = [
+//   { id: "1", name: "Customer Analysis" },
+//   { id: "2", name: "Revenue Report" },
+//   { id: "3", name: "User Engagement" },
+//   { id: "4", name: "Sales Pipeline" },
+//   { id: "5", name: "Marketing Metrics" },
+// ];
 
 export function useConnections() {
   const { connections: adminConnections, isLoading: adminLoading, isError: adminError } = useAdminConnections();
@@ -41,8 +41,8 @@ export function useConnections() {
           setConnections(mappedConnections);
         }
 
-        // For recent chats we'll still use mock data until we have a real API
-        setRecentChats(mockRecentChats);
+        // Remove the mock data assignment
+        setRecentChats([]); // Always set to empty array
         setIsLoading(false);
       } catch (err) {
         setError('Failed to fetch connections and recent chats');

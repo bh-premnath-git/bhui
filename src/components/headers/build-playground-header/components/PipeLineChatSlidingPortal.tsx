@@ -7,19 +7,12 @@ import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { useFlow } from "@/context/designers/FlowContext";
 import {
-  createFlowAgentConversationEntry,
   clearFlowAgentConversation,
-  setFormDefinition,
-  setFormValues,
-  clearFormStates,
-  setTaskDependencies
+  clearFormStates
 } from "@/store/slices/designer/flowSlice";
-import { RootState } from "@/store";
-// import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
-import { User } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { createPipelineSchema, createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
@@ -276,94 +269,99 @@ result.pipeline_definition.transformations?.forEach((transformation: any) => {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full" style={{zIndex: 10000000}}>
-        <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-sm font-semibold">Bighammer.AI</h2>
+      <SheetContent side="right" className="w-[600px] p-0 flex flex-col h-full border-none bg-background/95 backdrop-blur-md" style={{zIndex: 10000000}}>
+        <div className="px-6 py-4 border-b bg-background/70 backdrop-blur-md">
+          <h2 className="text-base font-medium">BigHammer.ai</h2>
         </div>
+        
         {messages.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center flex-grow justify-center">
-            <img src={imageSrc} alt="AI" className="w-16 h-16" />
-            <p className="text-sm text-gray-600 mt-2">How can I assist you with this flow today?</p>
+          <div className="flex flex-col items-center justify-center h-full py-12 space-y-6">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+              <img 
+                src={imageSrc} 
+                alt="AI" 
+                className="w-6 h-8 transform -rotate-[40deg]"
+                    />
+                  </div>
+            <div className="text-center space-y-2 max-w-sm">
+              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
+              <p className="text-sm text-muted-foreground">
+                I can help you create and optimize data pipelines.
+              </p>
+            </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 pr-4 mt-4">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1 px-6 py-4">
+            <div className="space-y-6 py-4">
               {messages.map((message, i) => (
                 <div
                   key={i}
-                  className={cn(
-                    "flex items-start gap-3",
+                  className={`flex ${
                     message.role === "assistant" ? "flex-row" : "flex-row-reverse"
-                  )}
+                  } gap-4 px-1`}
                 >
                   {message.role === "assistant" ? (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={imageSrc} />
+                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img 
+                          src={imageSrc} 
+                          alt="AI" 
+                          className="w-4 h-6 transform -rotate-[40deg]"
+                        />
+                      </div>
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   ) : (
-                    <Avatar className="h-8 w-8 bg-primary">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <User className="h-4 w-4" />
+                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 bg-blue-500 mt-1">
+                      <AvatarFallback className="bg-blue-500 text-white">
+                        {"John Doe".charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <div
-                    className={cn(
-                      "rounded-lg px-4 py-2 max-w-[80%] relative",
-                      message.role === "assistant"
-                        ? "bg-gray-100 text-black"
-                        : "bg-primary text-primary-foreground",
-                      // Add a tail to the message bubble
-                      message.role === "assistant"
-                        ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
-                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
-                    )}
+                  <div 
+                    className={`flex flex-col max-w-[85%] ${
+                      message.role === "assistant" ? "" : "items-end"
+                    }`}
                   >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                  </div>
-                </div>
-              ))}
-              {/* {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
+                    <div
+                      className={`rounded-2xl px-4 py-3 shadow-sm ${
+                        message.role === "assistant" 
+                          ? "bg-card border border-border/40" 
+                          : "bg-blue-100 text-blue-900"
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap text-sm">{message.content}</div>
                     </div>
                   </div>
                 </div>
-              )} */}
-              {/* {formDefinition && !loading && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
+              ))}
+              {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
+                <div className="flex items-start gap-4 px-1">
+                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                    <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
-                    <h3 className="font-medium mb-2">Flow Form</h3>
-                    <MissingFieldsForm
-                      flowDefinition={formDefinition}
-                      onSubmit={handleFormSubmit}
-                      initialValues={formValues}
-                    />
+                  <div className="flex flex-col max-w-[85%]">
+                    <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )} */}
+              )}
             </div>
           </ScrollArea>
         )}
-        <div className="flex gap-2 mt-4">
+        
+        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
           <AIChatInput
             input={input}
             onChange={setInput}
             onSend={handleSend}
-            placeholder="Ask about your flow..."
+            placeholder="Ask about your pipeline..."
             disabled={isProcessing}
           />
         </div>

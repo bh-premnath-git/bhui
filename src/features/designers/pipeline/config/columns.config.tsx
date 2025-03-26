@@ -70,6 +70,7 @@ const getToolbarConfig = (): TToolbarConfig => {
       {
         label: <Network className="mr-2 h-4 w-4" />,
         variant: "outline",
+        className: "bg-primary text-primary-foreground",
         icon: PlusIcon,
         onClick: () => {
           window.dispatchEvent(new Event("openCreatePipelineDialog"));

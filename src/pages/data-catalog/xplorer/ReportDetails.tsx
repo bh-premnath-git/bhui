@@ -38,11 +38,25 @@ const COLORS = [
   "var(--chart-5-color)"
 ];
 
+// First, define the chart type union
+type ChartType = 'bar' | 'line' | 'pie' | 'chart';
+
+// Update the Widget interface
+interface Widget {
+  id: string;
+  type: ChartType;
+  title: string;
+  data?: Array<{
+    name: string;
+    value: number;
+  }>;
+}
+
 interface Report {
   id: string;
   title: string;
   description: string;
-  type: string;
+  type: ChartType; // Update this to use ChartType as well
   creator: string;
   created: string;
   updated: string;
@@ -50,15 +64,7 @@ interface Report {
     labels: string[];
     values: number[];
   };
-  widgets?: {
-    id: string;
-    type: string;
-    title: string;
-    data?: Array<{
-      name: string;
-      value: number;
-    }>;
-  }[];
+  widgets?: Widget[];
 }
 
 // Mock data service - would be replaced with actual API calls
@@ -76,7 +82,69 @@ const getReportByPath = (path: string): Report | undefined => {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         values: [450, 520, 480, 600, 580, 710],
       },
-      // No widgets defined—will add a default chart widget below.
+      widgets: [
+        {
+          id: 'order-volume',
+          type: 'line',
+          title: 'Monthly Order Volume',
+          data: [
+            { name: 'Jan', value: 450 },
+            { name: 'Feb', value: 520 },
+            { name: 'Mar', value: 480 },
+            { name: 'Apr', value: 600 },
+            { name: 'May', value: 580 },
+            { name: 'Jun', value: 710 }
+          ]
+        },
+        {
+          id: 'order-status',
+          type: 'pie',
+          title: 'Order Status Distribution',
+          data: [
+            { name: 'Delivered', value: 68 },
+            { name: 'In Transit', value: 15 },
+            { name: 'Processing', value: 12 },
+            { name: 'Cancelled', value: 5 }
+          ]
+        },
+        {
+          id: 'avg-order-value',
+          type: 'bar',
+          title: 'Average Order Value',
+          data: [
+            { name: 'Jan', value: 127 },
+            { name: 'Feb', value: 135 },
+            { name: 'Mar', value: 142 },
+            { name: 'Apr', value: 156 },
+            { name: 'May', value: 168 },
+            { name: 'Jun', value: 172 }
+          ]
+        },
+        {
+          id: 'order-fulfillment',
+          type: 'bar',
+          title: 'Order Fulfillment Time (days)',
+          data: [
+            { name: 'Electronics', value: 3.2 },
+            { name: 'Clothing', value: 2.1 },
+            { name: 'Home Goods', value: 2.7 },
+            { name: 'Grocery', value: 1.2 },
+            { name: 'Books', value: 1.9 }
+          ]
+        },
+        {
+          id: 'top-products',
+          type: 'bar',
+          title: 'Top Products by Orders',
+          data: [
+            { name: 'Smartphone', value: 342 },
+            { name: 'Laptop', value: 247 },
+            { name: 'Headphones', value: 186 },
+            { name: 'Smartwatch', value: 152 },
+            { name: 'Tablet', value: 137 }
+          ]
+        }
+      ]
     };
   } else if (path === 'inventory-report') {
     return {
@@ -91,6 +159,68 @@ const getReportByPath = (path: string): Report | undefined => {
         labels: ['In Stock', 'Low Stock', 'Out of Stock', 'On Order'],
         values: [65, 20, 5, 10],
       },
+      widgets: [
+        {
+          id: 'inventory-status',
+          type: 'pie',
+          title: 'Current Inventory Status',
+          data: [
+            { name: 'In Stock', value: 65 },
+            { name: 'Low Stock', value: 20 },
+            { name: 'Out of Stock', value: 5 },
+            { name: 'On Order', value: 10 }
+          ]
+        },
+        {
+          id: 'stock-trends',
+          type: 'line',
+          title: 'Stock Level Trends',
+          data: [
+            { name: 'Week 1', value: 872 },
+            { name: 'Week 2', value: 834 },
+            { name: 'Week 3', value: 789 },
+            { name: 'Week 4', value: 756 },
+            { name: 'Week 5', value: 723 },
+            { name: 'Week 6', value: 798 }
+          ]
+        },
+        {
+          id: 'category-value',
+          type: 'pie',
+          title: 'Inventory Value by Category',
+          data: [
+            { name: 'Electronics', value: 42 },
+            { name: 'Clothing', value: 28 },
+            { name: 'Home Goods', value: 15 },
+            { name: 'Sporting Goods', value: 10 },
+            { name: 'Books', value: 5 }
+          ]
+        },
+        {
+          id: 'turnover-rate',
+          type: 'bar',
+          title: 'Inventory Turnover Rate',
+          data: [
+            { name: 'Electronics', value: 5.2 },
+            { name: 'Clothing', value: 7.8 },
+            { name: 'Home Goods', value: 4.6 },
+            { name: 'Sporting Goods', value: 3.9 },
+            { name: 'Books', value: 2.7 }
+          ]
+        },
+        {
+          id: 'restock-alerts',
+          type: 'bar',
+          title: 'Items Requiring Restock',
+          data: [
+            { name: 'Smartphones', value: 12 },
+            { name: 'T-shirts', value: 8 },
+            { name: 'Headphones', value: 7 },
+            { name: 'Blenders', value: 5 },
+            { name: 'Fitness Trackers', value: 4 }
+          ]
+        }
+      ]
     };
   }
   return undefined;
@@ -105,6 +235,20 @@ const ReportDetails: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const location = useLocation();
 
+  // Add validation helper
+  const isValidChartData = (data: any[]): boolean => {
+    return Array.isArray(data) && data.length > 0 && data.every(item => 
+      item && typeof item === 'object' && 
+      'name' in item && 
+      'value' in item &&
+      item.name !== null &&
+      item.value !== null
+    );
+  };
+
+  // Add error state to track rendering issues
+  const [renderErrors, setRenderErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (reportId) {
       setLoading(true);
@@ -112,9 +256,9 @@ const ReportDetails: React.FC = () => {
       if (fetchedReport) {
         // If no widgets are defined, add a default chart widget.
         if (!fetchedReport.widgets || fetchedReport.widgets.length === 0) {
-          const defaultWidget = {
+          const defaultWidget: Widget = {
             id: `default-chart`,
-            type: fetchedReport.type,
+            type: (fetchedReport.type as ChartType) || 'bar', // Add type assertion
             title: fetchedReport.title,
           };
           fetchedReport.widgets = [defaultWidget];
@@ -128,25 +272,69 @@ const ReportDetails: React.FC = () => {
     }
   }, [reportId]);
 
+  // Add debug logging
   useEffect(() => {
-    if (location.state?.newWidget && report) {
-      const widget = location.state.newWidget;
-      
-      setReport(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          widgets: [...(prev.widgets || []), widget]
+    if (location.state?.newWidget) {
+      console.log('Received new widget in location state:', location.state.newWidget);
+    }
+  }, [location.state]);
+
+  // Fix the widget handling effect
+  useEffect(() => {
+    const newWidget = location.state?.newWidget;
+    
+    if (!newWidget) return; // Exit early if no widget
+    
+    console.log('Processing new widget:', newWidget);
+    console.log('Current report:', report);
+
+    try {
+      // Create a properly typed widget
+      const widget: Widget = {
+        id: newWidget.id || `widget-${Date.now()}`,
+        type: (newWidget.type as ChartType) || 'bar',
+        title: newWidget.title || 'New Chart',
+        data: Array.isArray(newWidget.data) ? 
+          newWidget.data.map(item => ({
+            name: String(item?.name || ''),
+            value: Number(item?.value) || 0
+          })) : []
+      };
+
+      console.log('Formatted widget to add:', widget);
+
+      // Update report state
+      setReport(prevReport => {
+        if (!prevReport) return prevReport;
+        
+        const updatedWidgets = [...(prevReport.widgets || []), widget];
+        const updatedReport = {
+          ...prevReport,
+          widgets: updatedWidgets
         };
+        
+        console.log('Updated report with new widget:', updatedReport);
+        return updatedReport;
       });
       
-      setWidgetOrder(prev => [...prev, widget.id]);
+      // Update widget order
+      setWidgetOrder(prevOrder => {
+        const newOrder = [...prevOrder, widget.id];
+        console.log('Updated widget order:', newOrder);
+        return newOrder;
+      });
       
       // Clear location state
-      navigate(location.pathname, { replace: true });
-      toast.success("Chart added to report successfully");
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+        toast.success("Chart added to report successfully");
+      }, 100);
+    } catch (error) {
+      console.error('Error adding new widget:', error);
+      toast.error("Failed to add chart to report");
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, report, navigate, location.pathname]);
+  }, [location.state?.newWidget, location.state?.timestamp]);
 
   if (loading) {
     return (
@@ -204,58 +392,135 @@ const ReportDetails: React.FC = () => {
   };
 
   const renderWidget = (widgetId: string) => {
-    if (!report) return null;
-    const widget = report.widgets?.find(w => w.id === widgetId);
-    if (!widget) return null;
-    
-    // Use widget's data if available, otherwise fall back to report data
-    const widgetData = widget.data || chartData;
-    
-    return (
-      <ChartCard title={widget.title} className="h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {widget.type === 'bar' ? (
-            <BarChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Bar dataKey="value" fill={COLORS[0]} />
-            </BarChart>
-          ) : widget.type === 'line' ? (
-            <LineChart data={widgetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <RechartsLegend />
-              <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
-            </LineChart>
-          ) : widget.type === 'pie' ? (
-            <PieChart>
-              <Pie
-                data={widgetData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill={COLORS[0]}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {widgetData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <RechartsLegend />
-            </PieChart>
-          ) : null}
-        </ResponsiveContainer>
-      </ChartCard>
-    );
+    try {
+      if (!report?.widgets) {
+        console.error('No report or widgets available');
+        return null;
+      }
+
+      const widget = report.widgets.find(w => w.id === widgetId);
+      if (!widget) {
+        console.error(`Widget with id ${widgetId} not found`);
+        return null;
+      }
+
+      // Ensure widget has required properties
+      if (!widget.type) {
+        console.error(`Widget ${widgetId} has no type`);
+        return null;
+      }
+
+      // Use widget's data if available, otherwise fall back to report data
+      let widgetData = widget.data || chartData;
+
+      // Validate data structure
+      if (!isValidChartData(widgetData)) {
+        console.error(`Invalid data structure for widget ${widgetId}`);
+        return (
+          <ChartCard title={widget.title || 'Untitled'} className="h-full">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Invalid chart data structure
+            </div>
+          </ChartCard>
+        );
+      }
+
+      // Ensure numeric values
+      widgetData = widgetData.map(item => ({
+        name: String(item.name || ''),
+        value: Number(item.value) || 0
+      }));
+
+      return (
+        <ChartCard title={widget.title || 'Untitled'} className="h-full">
+          <ResponsiveContainer width="100%" height="100%">
+            {(() => {
+              try {
+                switch (widget.type) {
+                  case 'bar':
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                  case 'line':
+                    return (
+                      <LineChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Line type="monotone" dataKey="value" stroke={COLORS[1]} />
+                      </LineChart>
+                    );
+                  case 'pie':
+                    return (
+                      <PieChart>
+                        <Pie
+                          data={widgetData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill={COLORS[0]}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => 
+                            `${name || 'Unnamed'}: ${((percent || 0) * 100).toFixed(0)}%`
+                          }
+                        >
+                          {widgetData.map((_, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS[index % COLORS.length]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <RechartsLegend />
+                      </PieChart>
+                    );
+                  default:
+                    console.warn(`Unknown chart type: ${widget.type}, falling back to bar chart`);
+                    return (
+                      <BarChart data={widgetData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <RechartsLegend />
+                        <Bar dataKey="value" fill={COLORS[0]} />
+                      </BarChart>
+                    );
+                }
+              } catch (error) {
+                console.error(`Error rendering chart for widget ${widgetId}:`, error);
+                return (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Error rendering chart
+                  </div>
+                );
+              }
+            })()}
+          </ResponsiveContainer>
+        </ChartCard>
+      );
+    } catch (error) {
+      console.error(`Error in renderWidget for ${widgetId}:`, error);
+      return (
+        <ChartCard title="Error" className="h-full">
+          <div className="flex items-center justify-center h-full text-destructive">
+            Failed to render widget
+          </div>
+        </ChartCard>
+      );
+    }
   };
 
   return (

@@ -1,6 +1,6 @@
 import { Mic, Send, ClipboardCopy } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 interface AIChatInputProps {
   input: string
@@ -36,13 +36,28 @@ export function AIChatInput({
       </Button>
 
       {/* Text input */}
-      <Input
+      <Textarea
         value={input}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        onKeyDown={(e) => e.key === "Enter" && onSend()}
-        className="pl-12 pr-32 h-12 rounded-full border-muted bg-background"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+        className="pl-12 pr-32 min-h-[48px] max-h-[200px] rounded-full border-muted bg-background resize-none overflow-hidden"
         aria-label="Chat input"
+        rows={1}
+        style={{
+          height: 'auto',
+          minHeight: '48px',
+        }}
+        onInput={(e) => {
+          const target = e.target as HTMLTextAreaElement;
+          target.style.height = 'auto';
+          target.style.height = `${target.scrollHeight}px`;
+        }}
       />
 
       {/* Action icons on the right side */}

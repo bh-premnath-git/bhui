@@ -1445,8 +1445,8 @@ const NoteEditor: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-hidden p-4 h-[calc(100vh-4rem)]">
-      <div className="flex h-full space-x-4">
-        <div className="w-3/4 space-y-4">
+      <div className="flex h-full">
+        <div className="w-full space-y-4">
           <Card className="h-full">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
@@ -1484,19 +1484,6 @@ const NoteEditor: React.FC = () => {
               {activeTab === 'editor' && renderStructuredEditor()}
               {activeTab === 'preview' && renderPreview()}
               {activeTab === 'history' && renderHistory()}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="w-1/4">
-          <Card className="h-full">
-            <CardHeader>
-              <h3 className="text-lg font-medium">AI Assistant</h3>
-            </CardHeader>
-            <CardContent>
-              {/* Add AI suggestions and guidance */}
-              {/* Include requirement completeness score */}
-              {/* Show smart recommendations */}
             </CardContent>
           </Card>
         </div>

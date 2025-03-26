@@ -4,8 +4,10 @@ import { COLOR_THEMES } from '../ChartTypes';
 
 // Color palette categories
 const COLOR_CATEGORIES = {
-  "Standard": ["blue", "green", "purple", "pink"],
-  "Colorful": ["mixed", "orange"],
+  "Standard": ["default", "alternate", "corporate"],
+  "Vivid": ["vivid", "neon"],
+  "Nature": ["ocean", "forest", "terra", "sunset"],
+  "Classic": ["blue", "green", "purple", "pink", "orange", "mixed"]
 };
 
 interface ColorThemeDropdownProps {

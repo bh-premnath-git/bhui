@@ -7,19 +7,13 @@ import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { useFlow } from "@/context/designers/FlowContext";
 import {
-  createFlowAgentConversationEntry,
   clearFlowAgentConversation,
-  setFormDefinition,
-  setFormValues,
-  clearFormStates,
-  setTaskDependencies
+  clearFormStates
 } from "@/store/slices/designer/flowSlice";
-import { RootState } from "@/store";
-// import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { createPipelineSchema, createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";

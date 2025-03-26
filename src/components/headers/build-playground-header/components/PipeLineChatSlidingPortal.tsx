@@ -19,7 +19,7 @@ import { RootState } from "@/store";
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { createPipelineSchema } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { createPipelineSchema, createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
@@ -119,18 +119,73 @@ console.log(location.pathname);
       const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Dispatch the create pipeline schema action
-      const result:any = await dispatch(createPipelineSchema({
-        pipelineId,
-        request: input
-      })).unwrap(); // Using unwrap() to handle the promise result
+      // const result:any = await dispatch(createPipelineSchema({
+      //   pipelineId,
+      //   request: input
+      // })).unwrap(); // Using unwrap() to handle the promise result
 
+      const result:any = await dispatch(recommendDataSources(input)).unwrap();
+
+console.log(result);
+const uiJson = await convertPipelineToUIJson(result.suggested_pipeline);
+console.log(uiJson);
+if (!uiJson || !uiJson.nodes) {
+  setNodes([])
+  setEdges([])
+  throw new Error('Failed to convert pipeline to UI format');
+}
+
+const nodesWithTitles = uiJson.nodes.map(node => {
+  const matchingTransformation = result.suggested_pipeline.transformations?.find(
+      (t: any) => t?.title === node?.data?.title && t?.name
+  );
+
+  if (matchingTransformation) {
+      return {
+          ...node,
+          data: {
+              ...node.data,
+              title: matchingTransformation.name,
+              transformationData: {
+                  ...node.data.transformationData,
+                  name: matchingTransformation.name
+              }
+          }
+      };
+  }
+  return node;
+});
+console.log(result.suggested_pipeline,"result.suggested_pipeline")
+if(result.suggested_pipeline==null){
+  setPipelineJson(null)
+  setNodes([])
+  setEdges([])
+
+}else{
+  setNodes(nodesWithTitles);
+  setEdges(uiJson.edges || []);
+}
+const initialFormStates = {};
+result.suggested_pipeline.transformations?.forEach((transformation: any) => {
+                    const matchingNode = nodesWithTitles.find(
+                        (node: any) => 
+                            node?.data?.label === transformation?.transformation && 
+                            node?.data?.title === transformation?.name
+                    );
+
+                    if (matchingNode?.id) {
+                        initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+                    }
+                });
+
+                setFormStates(initialFormStates);
       // Clear the input field
       setInput("");
 
       // Update the last assistant message with the success response
       if (result) {
         console.log(result);
-        let Response=result.pipeline_definition;
+        let Response=result.suggested_pipeline;
         makePipeline(Response);
         updateLastAssistantMessage(
           `I've analyzed your request and created a pipeline schema. Here's what I understood:\n\n` +
@@ -169,7 +224,7 @@ console.log(location.pathname);
 
                 // Convert pipeline to UI JSON
                 const uiJson = await convertPipelineToUIJson(response.pipeline_json);
-                
+                console.log(uiJson,"uiJson")
                 if (!uiJson || !uiJson.nodes) {
                     throw new Error('Failed to convert pipeline to UI format');
                 }

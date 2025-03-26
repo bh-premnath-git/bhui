@@ -449,7 +449,7 @@ export const createPipelineSchema = createAsyncThunk(
   async ({ pipelineId, request }: { pipelineId: string; request: string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: '8090',
+        portNumber: AGENT_PORT,
         url: '/pipeline_schema/create_pipeline',
         usePrefix: true,
         method: 'POST',
@@ -457,6 +457,50 @@ export const createPipelineSchema = createAsyncThunk(
           pipeline_id: pipelineId,
           request: request,
           thread_id: `${pipelineId}_001`
+        }
+      });
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+// New Async thunk for creating static pipeline schema
+export const createStaticPipelineSchema = createAsyncThunk(
+  'build-pipline/createStaticPipelineSchema',
+  async ({ pipelineId, request }: { pipelineId: string; request: string }, thunkAPI) => {
+    try {
+      const response = await apiService.post({
+        portNumber: AGENT_PORT,
+        url: '/pipeline_schema/static/pipeline_schema',
+        usePrefix: true,
+        method: 'POST',
+        data: {
+          pipeline_id: pipelineId,
+          request: request,
+          thread_id: `${pipelineId}_001`
+        }
+      });
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+// New Async thunk for recommending data sources
+export const recommendDataSources = createAsyncThunk(
+  'build-pipline/recommendDataSources',
+  async (request: string, thunkAPI) => {
+    try {
+      const response = await apiService.post({
+        portNumber: AGENT_PORT,
+        url: '/pipeline_schema/recommend_data_sources',
+        usePrefix: true,
+        method: 'POST',
+        data: {
+          request: request
         }
       });
       return response;
@@ -781,6 +825,33 @@ const buildPipeLineSlice = createSlice({
       .addCase(createPipelineSchema.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to create pipeline schema';
+      })
+
+      .addCase(createStaticPipelineSchema.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createStaticPipelineSchema.fulfilled, (state, action) => {
+        state.loading = false;
+        // You can store the response in state if needed
+      })
+      .addCase(createStaticPipelineSchema.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create static pipeline schema';
+      })
+
+      .addCase(recommendDataSources.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(recommendDataSources.fulfilled, (state, action) => {
+        state.loading = false;
+        // You can store the response in state if needed
+        // For example: state.recommendedSources = action.payload;
+      })
+      .addCase(recommendDataSources.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to get data source recommendations';
       })
   }
 });

@@ -36,15 +36,36 @@ console.log(initialValues,"initialValues")
       };
 
     case 'Aggregator':
-      console.log(baseValues)
-      console.log(baseValues.group_by)
-      console.log(baseValues.aggregate)
+      // Debug logs
+      console.log('Raw baseValues:', baseValues);
+      console.log('Raw group_by:', baseValues.group_by);
+      console.log("initialValues", initialValues);
+
+      // Enhanced normalization logic
+      const normalizedGroupBy = Array.isArray(baseValues.group_by)
+        ? baseValues.group_by
+        : Array.isArray(initialValues?.group_by)
+          ? initialValues.group_by
+          : [];
+      
+      console.log('Normalized group_by:', normalizedGroupBy);
+
       return {
         ...baseValues,
-        group_by: baseValues.group_by.map(item=>{return {group_by:item}}) || [],
-        aggregations: (baseValues.aggregate?.length > 0)
-          ? baseValues.aggregate
-          : [],
+        group_by: normalizedGroupBy,
+        aggregations: (baseValues.aggregations?.length > 0)
+          ? baseValues.aggregations
+          : (initialValues?.aggregate?.length > 0)
+            ? initialValues.aggregate.map((agg: any) => ({
+                target_column: agg.target_column || '',
+                expression: agg.expression || '',
+                alias: agg.alias || ''
+              }))
+            : [{
+                target_column: '',
+                expression: '',
+                alias: ''
+              }],
         pivot_by: baseValues.pivot || []
       };
 
@@ -145,7 +166,8 @@ console.log(initialValues,"initialValues")
           : [{
               name: '',
               expression: ''
-            }]
+            }],
+        limit: initialValues?.limit || ''
       };
 
     case 'SequenceGenerator':

@@ -223,12 +223,12 @@ console.log(location.pathname);
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full" style={{zIndex: 10000000}}>
         <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-sm font-semibold">Bighammer.AI</h2>
+          <h2 className="text-sm font-semibold">BigHammer.ai</h2>
         </div>
         {messages.length === 0 ? (
           <div className="mt-4 flex flex-col items-center flex-grow justify-center">
             <img src={imageSrc} alt="AI" className="w-16 h-16" />
-            <p className="text-sm text-gray-600 mt-2">How can I assist you with this flow today?</p>
+            <p className="text-sm text-gray-600 mt-2">How can I assist you with pipeline?</p>
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4 mt-4">

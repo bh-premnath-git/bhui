@@ -223,7 +223,7 @@ console.log(sources)
                         conditions: node.data.transformationData?.conditions || [],
                         expressions: node.data.transformationData?.expressions?.map(item=>{
                             return {
-                                target_column: item?.name,
+                                target_column: item?.name || item?.target_column,
                                 expression: item?.expression
                             }
                         }) || [],

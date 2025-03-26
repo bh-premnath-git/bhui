@@ -42,11 +42,11 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
     
     --radius: 0.5rem;
-    --chart-1-color: #003f5c;
-    --chart-2-color: #2f4b7c;
-    --chart-3-color: #665191;
-    --chart-4-color: #a05195;
-    --chart-5-color: #d45087;
+    --chart-1-color: #1B4965;
+    --chart-2-color: #62B6CB;
+    --chart-3-color: #5FA8D3;
+    --chart-4-color: #CAE9FF;
+    --chart-5-color: #0C2D48;
   }
 
   .dark {
@@ -92,11 +92,11 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    --chart-1-color: #003f5c;
-    --chart-2-color: #2f4b7c;
-    --chart-3-color: #665191;
-    --chart-4-color: #a05195;
-    --chart-5-color: #d45087;
+    --chart-1-color: #1B4965;
+    --chart-2-color: #62B6CB;
+    --chart-3-color: #5FA8D3;
+    --chart-4-color: #CAE9FF;
+    --chart-5-color: #0C2D48;
   }
 
   .theme-transition {
@@ -134,4 +134,17 @@
     overflow-x: auto;
     overflow-y: hidden;
   }
+}
+
+body.resizing {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  cursor: ns-resize !important;
+}
+
+.flex-wrap > * {
+  transition: all 0.2s ease-in-out;
 }

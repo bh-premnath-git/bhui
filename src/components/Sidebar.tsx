@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { navigationItems } from "@/config/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import { useNavigation } from "@/hooks/useNavigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +24,7 @@ export function Sidebar() {
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
   const navigate = useNavigate();
+  const { navigationItems: dynamicItems, loading } = navigation;
 
   const handleLogout = async () => {
     try {
@@ -58,8 +58,8 @@ export function Sidebar() {
                   : "opacity-0 -translate-x-4 pointer-events-none"
               )}
             >
-              Bighammer AI
-            </h1>
+              BigHammer.ai
+              </h1>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function Sidebar() {
       </Button>
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {navigationItems.map((item) => (
+          {dynamicItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}

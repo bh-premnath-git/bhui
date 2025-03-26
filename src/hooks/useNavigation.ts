@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { navigationItems } from '@/config/navigation';
+import { useReports } from './useReports';
+import type { NavItem } from '@/types/navigation';
+import { ROUTES } from '@/config/routes';
+import { PlusCircle } from 'lucide-react';
 
 export interface NavigationHook {
   expandedItems: Set<string>;
   toggleExpanded: (path: string) => void;
   isItemExpanded: (path: string) => boolean;
   handleNavigation: (path: string, params?: Record<string, string>, forceRefetch?: boolean) => void;
+  navigationItems: NavItem[];
+  loading: boolean;
 }
 
 export function useNavigation(): NavigationHook {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const [items, setItems] = useState<NavItem[]>(navigationItems);
+  const { reports, loading } = useReports();
 
   const toggleExpanded = (path: string) => {
     setExpandedItems(prev => {
@@ -41,10 +50,46 @@ export function useNavigation(): NavigationHook {
     navigate(finalPath, { state: { refetch: forceRefetch } });
   };
 
+  useEffect(() => {
+    if (!loading) {
+      // Find the Data Explorer item and update its subItems
+      const updatedItems = items.map(item => {
+        if (item.path === `${ROUTES.DATA_CATALOG}/xplorer`) {
+          return {
+            ...item,
+            subItems: [
+              ...reports,
+              {
+                title: "New Report",
+                icon: PlusCircle,
+                path: `${ROUTES.DATA_CATALOG}/xplorer`,
+                parent: `${ROUTES.DATA_CATALOG}/xplorer`,
+              }
+            ]
+          };
+        }
+        return item;
+      });
+      
+      setItems(updatedItems);
+      
+      // Auto-expand Data Explorer section when reports are loaded
+      if (reports.length > 0) {
+        setExpandedItems(prev => {
+          const newSet = new Set(prev);
+          newSet.add(`${ROUTES.DATA_CATALOG}/xplorer`);
+          return newSet;
+        });
+      }
+    }
+  }, [reports, loading]);
+
   return {
     expandedItems,
     toggleExpanded,
     isItemExpanded,
     handleNavigation,
+    navigationItems: items,
+    loading,
   };
 }

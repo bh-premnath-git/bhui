@@ -17,6 +17,35 @@ export const CHART_TYPES = [
 
 // Define available color themes
 export const COLOR_THEMES = {
+  // Default Palette
+  default: ['#FF8C42', '#FFE4D6', '#4CAF50', '#FFFFFF', '#4A90E2'],
+  alternate: ['#4A90E2', '#FF8C42', '#4CAF50', '#FFE4D6', '#FFFFFF'],
+  
+  // Vivid Palette
+  vivid: ['#20D4BF', '#8B5CF6', '#F43F5E', '#FFBB24', '#22C55E'],
+  
+  // Neon Palette
+  neon: ['#00FFF1', '#7B61FF', '#FF22E3', '#FFFF00', '#00FF00'],
+  
+  // Ocean Palette
+  ocean: ['#0EAAE3', '#22D3EE', '#20D4BF', '#14B8A6', '#0D54B8'],
+  
+  // Forest Palette
+  forest: ['#22C55E', '#84CC16', '#10B981', '#059669', '#047B57'],
+  
+  // Sunset Palette
+  sunset: ['#F97316', '#FB923C', '#EC4899', '#8B5CF6', '#6366F1'],
+  
+  // Terra Palette
+  terra: ['#7B350F', '#B45309', '#92400E', '#A16207', '#854D0E'],
+  
+  // Corporate Palette
+  corporate: ['#647488', '#475569', '#94A3B8', '#CBD5E1', '#FFFFFF'],
+  
+  // Pastel Palette
+  pastel: ['#FDAAAF', '#FCD34D', '#86EFAC', '#93C5FD', '#DDD6FE'],
+  
+  // Keep existing themes if needed
   blue: ['#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#2563EB'],
   green: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#059669'],
   purple: ['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#7C3AED'],

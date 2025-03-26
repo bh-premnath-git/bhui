@@ -17,6 +17,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 }) => {
   // Always declare hooks at the top level, regardless of chart type
   const [isHovered, setIsHovered] = useState(false);
+  const [chartSettings, setChartSettings] = useState(result.config || {});
   const [currentTheme, setCurrentTheme] = useState(result.config?.colorTheme || 'blue');
   
   // Get the actual color array based on the theme name
@@ -72,16 +73,19 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
   // Handle settings change
   const handleSettingChange = useCallback((setting: string, value: boolean) => {
+    const updatedSettings = {
+      ...chartSettings,
+      [setting]: value
+    };
+    setChartSettings(updatedSettings);
+    
     if (onChartChange) {
       onChartChange({
         ...result,
-        config: {
-          ...result.config,
-          [setting]: value
-        }
+        config: updatedSettings
       });
     }
-  }, [result, onChartChange]);
+  }, [result, chartSettings, onChartChange]);
 
   // Determine if this chart type should have overflow visible
   const shouldAllowOverflow = result.chartType === 'donut';

@@ -5,7 +5,6 @@ import {
   Cell,
   Sector,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts"
 import { colorPalettes } from "@/components/bh-charts"
@@ -183,14 +182,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
             />
           ))}
         </Pie>
-        {config.showLegend !== false && (
-          <Legend
-            layout={config.legendLayout || "horizontal"}
-            verticalAlign={config.legendVerticalAlign || "bottom"}
-            align={config.legendAlign || "center"}
-            iconType={config.legendIconType || "circle"}
-          />
-        )}
+       
         <Tooltip 
           formatter={formatter}
           contentStyle={{ 

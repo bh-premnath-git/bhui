@@ -28,7 +28,6 @@ export interface CustomizedDotProps {
 export type ChartData = {
   latency: any[]
   cost: any[]
-  freshness: any[]
   ingestion: any[]
   publish: any[]
   health: any[]

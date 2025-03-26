@@ -22,15 +22,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
   // Add a building phase state
   const [isBuildingPhase, setIsBuildingPhase] = useState(false);
   
-  console.log('Message state:', { 
-    role: message.role, 
-    isLoading: message.isLoading,
-    contentLength: message.content?.length || 0,
-    isInitialLoading,
-    isBuildingPhase,
-    hasSqlContent
-  });
-  
   // Extract SQL queries and explanations from content
   const parts = useMemo(() => {
     return message.content?.split('\n').reduce<{ type: 'text' | 'sql' | 'explanation', content: string }[]>((acc, line) => {
@@ -65,19 +56,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
                               message.content && 
                               message.content.trim().length > 0;
     
-    console.log('Building phase check:', { 
-      hasAssistantContent, 
-      isLoading: message.isLoading,
-      hasSqlContent 
-    });
-    
     // Force the building phase to be true when we have assistant content
     // but no SQL yet, regardless of the current phase
     if (hasAssistantContent && !hasSqlContent && message.isLoading) {
-      console.log('Setting building phase to TRUE');
       setIsBuildingPhase(true);
     } else if (hasSqlContent || !message.isLoading) {
-      console.log('Setting building phase to FALSE');
       setIsBuildingPhase(false);
     }
   }, [message.role, message.content, message.isLoading, hasSqlContent]);
@@ -85,19 +68,16 @@ export function ChatMessage({ message }: ChatMessageProps) {
   // Check if we have SQL content
   useEffect(() => {
     const hasSql = parts.some(part => part.type === 'sql');
-    console.log('SQL content check:', { hasSql, partsCount: parts.length });
     
     if (hasSql) {
       setHasSqlContent(true);
       setIsInitialLoading(false);
-      setIsBuildingPhase(false); // Ensure building phase ends when SQL appears
+      setIsBuildingPhase(false);
     }
   }, [parts]);
 
   // Update loading state when the message loading state changes
   useEffect(() => {
-    console.log('Loading state changed:', { isLoading: message.isLoading });
-    
     if (!message.isLoading) {
       setIsInitialLoading(false);
       setIsBuildingPhase(false);
@@ -150,14 +130,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
     const showThinkingAnimation = isInitialLoading && !hasSqlContent;
     const showBuildingAnimation = (isInBuildingPhase || isBuildingPhase) && !hasSqlContent && !isInitialLoading;
     const showContent = (!isInitialLoading && !isBuildingPhase && !isInBuildingPhase) || hasSqlContent;
-    
-    console.log('Render flags:', { 
-      shouldRender, 
-      showThinkingAnimation, 
-      showBuildingAnimation, 
-      showContent,
-      isInBuildingPhase
-    });
     
     return { 
       shouldRender, 
@@ -231,14 +203,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
         <div className={cn(
           "relative rounded-xl p-4 shadow-sm w-full",
-          isUser ? "bg-primary text-primary-foreground" : "bg-card border"
+          isUser ? 
+            "bg-blue-600/10 text-foreground border border-blue-600/20" : 
+            "bg-gray-100 dark:bg-gray-800/60 border"
         )}>
           <div className={cn(
             "absolute w-4 h-4 rotate-45",
-            isUser ? "bg-primary" : "bg-card border",
+            isUser ? 
+              "bg-blue-600/10 border-blue-600/20" : 
+              "bg-gray-100 dark:bg-gray-800/60",
             isUser ? "left-[-8px]" : "left-[-9px]",
             "top-4 border-l border-t",
-            isUser ? "border-transparent" : "",
+            isUser ? "border-blue-600/20" : "",
           )} />
 
           <AnimatePresence mode="wait">

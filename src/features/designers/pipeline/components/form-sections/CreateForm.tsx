@@ -668,7 +668,7 @@ console.log(initialFormValues,"initialFormValues")
  
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* {schema.title === 'Dedup' && renderDedupFields(control)} */}
       <FormContent
         control={control}
@@ -681,11 +681,10 @@ console.log(initialFormValues,"initialFormValues")
         edges={edges}
       />
       
-      <div className="mt-2">
+      <div className="mt-4">
         <Button
           type="submit"
-          variant="default"
-          className="w-full"
+          className="w-full py-2 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
         >
           Save
         </Button>
@@ -726,7 +725,7 @@ const renderArrayFields = (
   return (
     <div className="space-y-4">
       {/* Headers */}
-      <div className="grid grid-cols-[2fr,1fr,40px] gap-4 items-center">
+      <div className="flex justify-between gap-2">
         {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => (
           <div key={fieldKey}>
             <div className="font-medium text-sm text-gray-700">
@@ -743,7 +742,7 @@ const renderArrayFields = (
 
       {/* Form Fields */}
       {fields.map((field, index) => (
-        <div key={field.id} className="grid grid-cols-[2fr,1fr,40px] gap-4 items-center">
+        <div key={field.id} className="flex justify-between gap-2">
           {Object.entries(itemProperties).map(([itemKey, itemSchema]: [string, any]) => {
             const isExpression = itemSchema.type === 'expression' || 
                                itemSchema['ui-hint'] === 'expression';

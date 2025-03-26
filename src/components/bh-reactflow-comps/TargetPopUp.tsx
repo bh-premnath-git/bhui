@@ -119,11 +119,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
     useEffect(() => {
         if (source) {
+            console.log(source,"sdsd")
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
-                    target_type: source.source?.connection?.connection_type==="postgresql"?'PostgreSQL':source.source?.target_type,
+                    target_type: source.source?.connection?.connection_type?.toLowerCase()==="postgresql"?'Relational':'File',
                     target_name: source.source?.target_name,
                     table_name: source.source?.table_name,
                     load_mode: source.source?.load_mode,

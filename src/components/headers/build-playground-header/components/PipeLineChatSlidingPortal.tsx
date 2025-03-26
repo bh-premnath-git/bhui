@@ -34,7 +34,7 @@ console.log(selectedPipeline);
 const location = useLocation();
 console.log(location.pathname);
   const [isProcessing, setIsProcessing] = useState(false);
-  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates}=usePipelineContext();
+  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates,handleSourceUpdate}=usePipelineContext();
 
   useEffect(() => {
     if (!isOpen) {
@@ -119,15 +119,15 @@ console.log(location.pathname);
       const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Dispatch the create pipeline schema action
-      // const result:any = await dispatch(createPipelineSchema({
-      //   pipelineId,
-      //   request: input
-      // })).unwrap(); // Using unwrap() to handle the promise result
+      const result:any = await dispatch(createStaticPipelineSchema({
+        pipelineId,
+        request: input
+      })).unwrap(); // Using unwrap() to handle the promise result
 
-      const result:any = await dispatch(recommendDataSources(input)).unwrap();
+      // const result:any = await dispatch(recommendDataSources(input)).unwrap();
 
 console.log(result);
-const uiJson = await convertPipelineToUIJson(result.suggested_pipeline);
+const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
 console.log(uiJson);
 if (!uiJson || !uiJson.nodes) {
   setNodes([])
@@ -136,7 +136,7 @@ if (!uiJson || !uiJson.nodes) {
 }
 
 const nodesWithTitles = uiJson.nodes.map(node => {
-  const matchingTransformation = result.suggested_pipeline.transformations?.find(
+  const matchingTransformation = result.pipeline_definition.transformations?.find(
       (t: any) => t?.title === node?.data?.title && t?.name
   );
 
@@ -155,8 +155,8 @@ const nodesWithTitles = uiJson.nodes.map(node => {
   }
   return node;
 });
-console.log(result.suggested_pipeline,"result.suggested_pipeline")
-if(result.suggested_pipeline==null){
+console.log(result.pipeline_definition,"result.pipeline_definition")
+if(result.pipeline_definition==null){
   setPipelineJson(null)
   setNodes([])
   setEdges([])
@@ -166,7 +166,7 @@ if(result.suggested_pipeline==null){
   setEdges(uiJson.edges || []);
 }
 const initialFormStates = {};
-result.suggested_pipeline.transformations?.forEach((transformation: any) => {
+result.pipeline_definition.transformations?.forEach((transformation: any) => {
                     const matchingNode = nodesWithTitles.find(
                         (node: any) => 
                             node?.data?.label === transformation?.transformation && 
@@ -185,11 +185,11 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
       // Update the last assistant message with the success response
       if (result) {
         console.log(result);
-        let Response=result.suggested_pipeline;
+        let Response=result.pipeline_definition;
         makePipeline(Response);
         updateLastAssistantMessage(
           `I've analyzed your request and created a pipeline schema. Here's what I understood:\n\n` +
-          `${JSON.stringify(result, null, 2)}\n\n` +
+          // `${JSON.stringify(result, null, 2)}\n\n` +
           `Would you like me to explain any part of this pipeline in more detail?`
         );
       }
@@ -223,7 +223,7 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
                 setPipelineJson(response.pipeline_json);
 
                 // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json);
+                const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
                 console.log(uiJson,"uiJson")
                 if (!uiJson || !uiJson.nodes) {
                     throw new Error('Failed to convert pipeline to UI format');

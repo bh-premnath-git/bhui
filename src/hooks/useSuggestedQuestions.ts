@@ -15,27 +15,27 @@ export function useSuggestedQuestions() {
     },
     {
       id: '2',
-      text: "Within the top-performing region, which territories contribute the most to overall order volume?",
+      text: "List top 10 expensive products",
       category: "sales"
     },
     {
       id: '3',
-      text: "How is order volume distributed among employees within this key territory?",
+      text: "How is order volume distributed among employees within territory?",
       category: "sales"
     },
     {
       id: '4',
-      text: "For this customer, how does order processing time (from order date to required date) vary across different product categories?",
+      text: "Which customers have order frequencies significantly different from others in their region?",
       category: "products"
     },
     {
       id: '5',
-      text: "Which employees have significantly higher or lower order volumes compared to the company average?",
+      text: "Which shipping methods are used significantly more or less than average?",
       category: "employees"
     },
     {
       id: '6',
-      text: "Are there any territories with order volumes that deviate significantly from the expected trends within their region?",
+      text: "What are our top 5 performing products?",
       category: "products"
     }
   ];
@@ -76,7 +76,7 @@ export function useSuggestedDataopsQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "Show me the jobs failed today",
+      text: "Show me the jobs failed for last week",
       category: "dataops"
     },
     {

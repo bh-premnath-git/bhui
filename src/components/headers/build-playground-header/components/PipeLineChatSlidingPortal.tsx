@@ -11,12 +11,35 @@ import {
   clearFormStates
 } from "@/store/slices/designer/flowSlice";
 import { cn } from "@/lib/utils";
-import { User } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
+import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
+
+const suggestionQuestions = [
+  {
+    title: "Monthly Sales Report",
+    description: "Build a pipeline for generating monthly sales performance report",
+    icon: BarChart3
+  },
+  {
+    title: "Regional Sales Trends",
+    description: "Create a pipeline to track region-wise sales trends",
+    icon: Globe2
+  },
+  {
+    title: "Product Category Analysis",
+    description: "Generate a sales report pipeline for different product categories",
+    icon: LayoutGrid
+  },
+  {
+    title: "Top Sales Regions",
+    description: "Setup a pipeline for identifying the top-performing sales regions for different product categories",
+    icon: MapPin
+  }
+];
 
 export const PipeLineChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
@@ -28,7 +51,7 @@ console.log(selectedPipeline);
 const location = useLocation();
 console.log(location.pathname);
   const [isProcessing, setIsProcessing] = useState(false);
-  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates}=usePipelineContext();
+  const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates,handleSourceUpdate,handleCenter,handleAlignHorizontal}=usePipelineContext();
 
   useEffect(() => {
     if (!isOpen) {
@@ -103,64 +126,58 @@ console.log(location.pathname);
 
     setIsProcessing(true);
     try {
-      // Add user message to chat
       addUserMessage(input);
-      
-      // Show thinking state
       addAssistantMessage("Let me analyze your pipeline request...");
 
-      // Generate a unique pipeline ID using timestamp and random string
       const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const result:any = await dispatch(createStaticPipelineSchema({
+        pipelineId,
+        request: input
+      })).unwrap();
 
-      // Dispatch the create pipeline schema action
-      // const result:any = await dispatch(createPipelineSchema({
-      //   pipelineId,
-      //   request: input
-      // })).unwrap(); // Using unwrap() to handle the promise result
+      console.log(result);
+      const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
+      console.log(uiJson);
+      if (!uiJson || !uiJson.nodes) {
+        setNodes([])
+        setEdges([])
+        throw new Error('Failed to convert pipeline to UI format');
+      }
 
-      const result:any = await dispatch(recommendDataSources(input)).unwrap();
+      const nodesWithTitles = uiJson.nodes.map(node => {
+        const matchingTransformation = result.pipeline_definition.transformations?.find(
+            (t: any) => t?.title === node?.data?.title && t?.name
+        );
 
-console.log(result);
-const uiJson = await convertPipelineToUIJson(result.suggested_pipeline);
-console.log(uiJson);
-if (!uiJson || !uiJson.nodes) {
-  setNodes([])
-  setEdges([])
-  throw new Error('Failed to convert pipeline to UI format');
-}
+        if (matchingTransformation) {
+            return {
+                ...node,
+                data: {
+                    ...node.data,
+                    title: matchingTransformation.name,
+                    transformationData: {
+                        ...node.data.transformationData,
+                        name: matchingTransformation.name
+                    }
+                }
+            };
+        }
+        return node;
+      });
 
-const nodesWithTitles = uiJson.nodes.map(node => {
-  const matchingTransformation = result.suggested_pipeline.transformations?.find(
-      (t: any) => t?.title === node?.data?.title && t?.name
-  );
+      if(result.pipeline_definition==null){
+        setPipelineJson(null)
+        setNodes([])
+        setEdges([])
+      } else {
+        await setNodes(nodesWithTitles);
+        await setEdges(uiJson.edges || []);
+        await handleCenter();
+        await handleAlignHorizontal();
+      }
 
-  if (matchingTransformation) {
-      return {
-          ...node,
-          data: {
-              ...node.data,
-              title: matchingTransformation.name,
-              transformationData: {
-                  ...node.data.transformationData,
-                  name: matchingTransformation.name
-              }
-          }
-      };
-  }
-  return node;
-});
-console.log(result.suggested_pipeline,"result.suggested_pipeline")
-if(result.suggested_pipeline==null){
-  setPipelineJson(null)
-  setNodes([])
-  setEdges([])
-
-}else{
-  setNodes(nodesWithTitles);
-  setEdges(uiJson.edges || []);
-}
-const initialFormStates = {};
-result.suggested_pipeline.transformations?.forEach((transformation: any) => {
+      const initialFormStates = {};
+      result.pipeline_definition.transformations?.forEach((transformation: any) => {
                     const matchingNode = nodesWithTitles.find(
                         (node: any) => 
                             node?.data?.label === transformation?.transformation && 
@@ -179,11 +196,11 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
       // Update the last assistant message with the success response
       if (result) {
         console.log(result);
-        let Response=result.suggested_pipeline;
+        let Response=result.pipeline_definition;
         makePipeline(Response);
         updateLastAssistantMessage(
           `I've analyzed your request and created a pipeline schema. Here's what I understood:\n\n` +
-          `${JSON.stringify(result, null, 2)}\n\n` +
+          // `${JSON.stringify(result, null, 2)}\n\n` +
           `Would you like me to explain any part of this pipeline in more detail?`
         );
       }
@@ -217,7 +234,7 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
                 setPipelineJson(response.pipeline_json);
 
                 // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json);
+                const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
                 console.log(uiJson,"uiJson")
                 if (!uiJson || !uiJson.nodes) {
                     throw new Error('Failed to convert pipeline to UI format');
@@ -246,9 +263,10 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
                 });
 
                 // Update nodes and edges
-                setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
-
+                await setNodes(nodesWithTitles);
+                await setEdges(uiJson.edges || []);
+                await handleCenter();
+                await handleAlignHorizontal()
                 // Initialize form states
                 const initialFormStates = {};
                 response.pipeline_json.transformations?.forEach((transformation: any) => {
@@ -268,96 +286,148 @@ result.suggested_pipeline.transformations?.forEach((transformation: any) => {
   }
  
 
+  const handleSuggestionClick = (question: string) => {
+    setInput(question);
+    handleSend();
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full" style={{zIndex: 10000000}}>
-        <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-sm font-semibold">BigHammer.ai</h2>
+      <SheetContent side="right" className="w-[600px] p-0 flex flex-col h-full border-none bg-background/95 backdrop-blur-md" style={{zIndex: 10000000}}>
+        <div className="px-6 py-4 border-b bg-background/70 backdrop-blur-md">
+          <h2 className="text-base font-medium">BigHammer.ai</h2>
         </div>
+        
         {messages.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center flex-grow justify-center">
-            <img src={imageSrc} alt="AI" className="w-16 h-16" />
-            <p className="text-sm text-gray-600 mt-2">How can I assist you with pipeline?</p>
+          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              <img 
+                src={imageSrc} 
+                alt="AI" 
+                className="w-5 h-7 transform -rotate-[40deg]"
+              />
+            </div>
+            <div className="text-center space-y-1.5 max-w-sm">
+              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
+              <p className="text-sm text-muted-foreground">
+                Select a template or describe your pipeline needs
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 w-full max-w-md px-4">
+              {suggestionQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(question.description)}
+                  className="group relative flex flex-col text-left p-4 rounded-xl border border-border/40 
+                    hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 
+                    transition-all duration-300 bg-gradient-to-br from-background/50 to-background/80
+                    backdrop-blur-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center
+                      group-hover:bg-primary/15 transition-colors">
+                      {<question.icon className="w-4 h-4 text-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm text-foreground mb-0.5 flex items-center justify-between">
+                        {question.title}
+                        <svg 
+                          width="14" 
+                          height="14" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 text-primary"
+                        >
+                          <path d="M5 12h14m-7-7l7 7-7 7"/>
+                        </svg>
+                      </h3>
+                      <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors line-clamp-2">
+                        {question.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 
+                    transition-opacity duration-300 pointer-events-none" />
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 pr-4 mt-4">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1 px-6 py-4">
+            <div className="space-y-6 py-4">
               {messages.map((message, i) => (
                 <div
                   key={i}
-                  className={cn(
-                    "flex items-start gap-3",
+                  className={`flex ${
                     message.role === "assistant" ? "flex-row" : "flex-row-reverse"
-                  )}
+                  } gap-4 px-1`}
                 >
                   {message.role === "assistant" ? (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={imageSrc} />
+                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img 
+                          src={imageSrc} 
+                          alt="AI" 
+                          className="w-4 h-6 transform -rotate-[40deg]"
+                        />
+                      </div>
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   ) : (
-                    <Avatar className="h-8 w-8 bg-primary">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <User className="h-4 w-4" />
+                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 bg-blue-500 mt-1">
+                      <AvatarFallback className="bg-blue-500 text-white">
+                        {"John Doe".charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   )}
                   <div
-                    className={cn(
-                      "rounded-lg px-4 py-2 max-w-[80%] relative",
-                      message.role === "assistant"
-                        ? "bg-gray-100 text-black"
-                        : "bg-primary text-primary-foreground",
-                      // Add a tail to the message bubble
-                      message.role === "assistant"
-                        ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
-                        : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
-                    )}
+                    className={`flex flex-col max-w-[85%] ${
+                      message.role === "assistant" ? "" : "items-end"
+                    }`}
                   >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                  </div>
-                </div>
-              ))}
-              {/* {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
+                    <div
+                      className={`rounded-2xl px-4 py-3 shadow-sm ${
+                        message.role === "assistant" 
+                          ? "bg-card border border-border/40" 
+                          : "bg-blue-100 text-blue-900"
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap text-sm">{message.content}</div>
                     </div>
                   </div>
                 </div>
-              )} */}
-              {/* {formDefinition && !loading && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={imageSrc} />
+              ))}
+              {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
+                <div className="flex items-start gap-4 px-1">
+                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                    <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
-                    <h3 className="font-medium mb-2">Flow Form</h3>
-                    <MissingFieldsForm
-                      flowDefinition={formDefinition}
-                      onSubmit={handleFormSubmit}
-                      initialValues={formValues}
-                    />
+                  <div className="flex flex-col max-w-[85%]">
+                    <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
+                    <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )} */}
+              )}
             </div>
           </ScrollArea>
         )}
-        <div className="flex gap-2 mt-4">
+        
+        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
           <AIChatInput
             input={input}
             onChange={setInput}
             onSend={handleSend}
-            placeholder="Ask about your flow..."
+            placeholder="Ask about your pipeline..."
             disabled={isProcessing}
           />
         </div>

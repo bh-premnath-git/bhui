@@ -82,7 +82,69 @@ const getReportByPath = (path: string): Report | undefined => {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         values: [450, 520, 480, 600, 580, 710],
       },
-      // No widgets defined—will add a default chart widget below.
+      widgets: [
+        {
+          id: 'order-volume',
+          type: 'line',
+          title: 'Monthly Order Volume',
+          data: [
+            { name: 'Jan', value: 450 },
+            { name: 'Feb', value: 520 },
+            { name: 'Mar', value: 480 },
+            { name: 'Apr', value: 600 },
+            { name: 'May', value: 580 },
+            { name: 'Jun', value: 710 }
+          ]
+        },
+        {
+          id: 'order-status',
+          type: 'pie',
+          title: 'Order Status Distribution',
+          data: [
+            { name: 'Delivered', value: 68 },
+            { name: 'In Transit', value: 15 },
+            { name: 'Processing', value: 12 },
+            { name: 'Cancelled', value: 5 }
+          ]
+        },
+        {
+          id: 'avg-order-value',
+          type: 'bar',
+          title: 'Average Order Value',
+          data: [
+            { name: 'Jan', value: 127 },
+            { name: 'Feb', value: 135 },
+            { name: 'Mar', value: 142 },
+            { name: 'Apr', value: 156 },
+            { name: 'May', value: 168 },
+            { name: 'Jun', value: 172 }
+          ]
+        },
+        {
+          id: 'order-fulfillment',
+          type: 'bar',
+          title: 'Order Fulfillment Time (days)',
+          data: [
+            { name: 'Electronics', value: 3.2 },
+            { name: 'Clothing', value: 2.1 },
+            { name: 'Home Goods', value: 2.7 },
+            { name: 'Grocery', value: 1.2 },
+            { name: 'Books', value: 1.9 }
+          ]
+        },
+        {
+          id: 'top-products',
+          type: 'bar',
+          title: 'Top Products by Orders',
+          data: [
+            { name: 'Smartphone', value: 342 },
+            { name: 'Laptop', value: 247 },
+            { name: 'Headphones', value: 186 },
+            { name: 'Smartwatch', value: 152 },
+            { name: 'Tablet', value: 137 }
+          ]
+        }
+      ]
     };
   } else if (path === 'inventory-report') {
     return {
@@ -97,6 +159,68 @@ const getReportByPath = (path: string): Report | undefined => {
         labels: ['In Stock', 'Low Stock', 'Out of Stock', 'On Order'],
         values: [65, 20, 5, 10],
       },
+      widgets: [
+        {
+          id: 'inventory-status',
+          type: 'pie',
+          title: 'Current Inventory Status',
+          data: [
+            { name: 'In Stock', value: 65 },
+            { name: 'Low Stock', value: 20 },
+            { name: 'Out of Stock', value: 5 },
+            { name: 'On Order', value: 10 }
+          ]
+        },
+        {
+          id: 'stock-trends',
+          type: 'line',
+          title: 'Stock Level Trends',
+          data: [
+            { name: 'Week 1', value: 872 },
+            { name: 'Week 2', value: 834 },
+            { name: 'Week 3', value: 789 },
+            { name: 'Week 4', value: 756 },
+            { name: 'Week 5', value: 723 },
+            { name: 'Week 6', value: 798 }
+          ]
+        },
+        {
+          id: 'category-value',
+          type: 'pie',
+          title: 'Inventory Value by Category',
+          data: [
+            { name: 'Electronics', value: 42 },
+            { name: 'Clothing', value: 28 },
+            { name: 'Home Goods', value: 15 },
+            { name: 'Sporting Goods', value: 10 },
+            { name: 'Books', value: 5 }
+          ]
+        },
+        {
+          id: 'turnover-rate',
+          type: 'bar',
+          title: 'Inventory Turnover Rate',
+          data: [
+            { name: 'Electronics', value: 5.2 },
+            { name: 'Clothing', value: 7.8 },
+            { name: 'Home Goods', value: 4.6 },
+            { name: 'Sporting Goods', value: 3.9 },
+            { name: 'Books', value: 2.7 }
+          ]
+        },
+        {
+          id: 'restock-alerts',
+          type: 'bar',
+          title: 'Items Requiring Restock',
+          data: [
+            { name: 'Smartphones', value: 12 },
+            { name: 'T-shirts', value: 8 },
+            { name: 'Headphones', value: 7 },
+            { name: 'Blenders', value: 5 },
+            { name: 'Fitness Trackers', value: 4 }
+          ]
+        }
+      ]
     };
   }
   return undefined;
@@ -210,7 +334,7 @@ const ReportDetails: React.FC = () => {
       toast.error("Failed to add chart to report");
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state?.newWidget, location.state?.timestamp]); // Use timestamp to force updates
+  }, [location.state?.newWidget, location.state?.timestamp]);
 
   if (loading) {
     return (

@@ -18,11 +18,11 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   // Always declare hooks at the top level, regardless of chart type
   const [isHovered, setIsHovered] = useState(false);
   const [chartSettings, setChartSettings] = useState(result.config || {});
-  const [currentTheme, setCurrentTheme] = useState(result.config?.colorTheme || 'blue');
+  const [currentTheme, setCurrentTheme] = useState(result.config?.colorTheme || 'orange');
   
   // Get the actual color array based on the theme name
   const themeColors = useMemo(() => {
-    return COLOR_THEMES[currentTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.blue;
+    return COLOR_THEMES[currentTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.orange;
   }, [currentTheme]);
   
   // Debug logging to verify theme changes

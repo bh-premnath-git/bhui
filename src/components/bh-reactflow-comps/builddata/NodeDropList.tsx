@@ -26,10 +26,6 @@ import { Input } from "@/components/ui/input"
 import { apiService } from "@/lib/api/api-service"
 import { usePipelineContext } from "@/context/designers/DataPipelineContext"
 
-// API client setup
-const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
-});
 
 // Query keys
 const dataSourceKeys = {

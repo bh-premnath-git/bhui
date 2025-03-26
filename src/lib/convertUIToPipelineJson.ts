@@ -19,7 +19,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         // Return early if only validating
         return validation;
     }
-    
+    console.log(uiNodes,"nodes")
     // Get ordered nodes using topological sort
     const getOrderedNodes = () => {
         const orderedNodes: UINode[] = [];
@@ -91,14 +91,50 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     };
             }
         }
+
+        static createConnectionFromSource(sourceData: any): ConnectionConfig {
+            const connection = sourceData?.connection;
+            
+            if (!connection) {
+                throw new Error('Connection data is missing in source');
+            }
+
+            const connectionType = connection.connection_type?.toLowerCase();
+            
+            switch (connectionType) {
+                case 'postgresql':
+                case 'postgres':
+                    return {
+                        name: connection.name,
+                        connection_type: 'postgresql',
+                        database: connection.database,
+                        schema: connection.schema || 'public',
+                        secret_name: connection.secret_name
+                    };
+                
+                case 'local':
+                case 's3':
+                    return {
+                        name: connection.name,
+                        connection_type: connection.connection_type,
+                        file_path_prefix: connection.file_path_prefix || '${file_path_prefix}'
+                    };
+                    
+                default:
+                    return {
+                        name: connection.name,
+                        connection_type: connection.connection_type
+                    };
+            }
+        }
     }
 
     // Update the sources mapping
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
-            const connectionConfig = ConnectionFactory.createConnection(node.data.source?.custom_metadata);
-            
+            const connectionConfig =node.data.source?.custom_metadata? ConnectionFactory.createConnection(node.data.source?.custom_metadata):ConnectionFactory.createConnectionFromSource(node.data.source);
+            console.log(node.data.source,"connectionConfig")
             return {
                 name: node.data.source.name || node.data.title,
                 source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
@@ -113,8 +149,8 @@ console.log(sources)
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
-            const connectionConfig = ConnectionFactory.createConnection(node.data.source?.custom_metadata);
-            
+            const connectionConfig =node.data.source?.custom_metadata? ConnectionFactory.createConnection(node.data.source?.custom_metadata):ConnectionFactory.createConnectionFromSource(node.data.source);
+            console.log(connectionConfig,"connectionConfig")
             return {
                 name: node.data.title,
                 dependent_on: [],
@@ -152,11 +188,11 @@ console.log(sources)
                 case 'Aggregator':
                     // Transform the group_by array to match the expected format
                     const formattedGroupBy = Array.isArray(node.data.transformationData?.group_by)
-                        ? node.data.transformationData.group_by.map(item => item.group_by || item)
+                        ? node.data.transformationData.group_by
                         : [];
 
                     // Transform aggregations to match the expected format
-                    const formattedAggregations = node.data.transformationData?.aggregations?.map(agg => ({
+                    const formattedAggregations = node.data.transformationData?.aggregate?.map(agg => ({
                         target_column: agg.target_column || '',
                         expression: agg.expression || '',
                         alias: agg.alias || ''
@@ -167,7 +203,7 @@ console.log(sources)
                         name: node.data.title,
                         group_by: formattedGroupBy,
                         aggregate: formattedAggregations,
-                        pivot: node.data.transformationData?.pivot_by || []
+                        pivot: node.data.transformationData?.pivot || []
                     };
                 case 'Filter':
                     return {
@@ -187,7 +223,7 @@ console.log(sources)
                         conditions: node.data.transformationData?.conditions || [],
                         expressions: node.data.transformationData?.expressions?.map(item=>{
                             return {
-                                target_column: item?.name,
+                                target_column: item?.name || item?.target_column,
                                 expression: item?.expression
                             }
                         }) || [],

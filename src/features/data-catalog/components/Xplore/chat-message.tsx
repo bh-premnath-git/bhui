@@ -88,10 +88,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const processedParts = useMemo(() => {
     return parts.map(part => {
       if (part.type === 'text') {
-        // Heuristics for identifying explanations:
-        // 1. Content contains structured data indicators like ":" or "-" and are longer paragraphs
-        // 2. Content is concise and likely explaining data
-        // 3. Paragraphs that start with explanatory phrases
         
         const content = part.content.toLowerCase();
         
@@ -243,7 +239,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.4, delay: 0.2 }}
                   />
                 </div>
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <span className="text-sm text-muted-foreground">Processing...</span>
               </motion.div>
             )}
             {showBuildingAnimation && (

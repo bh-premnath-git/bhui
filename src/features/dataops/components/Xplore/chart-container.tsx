@@ -21,7 +21,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   
   // Get the actual color array based on the theme name
   const themeColors = useMemo(() => {
-    return COLOR_THEMES[currentTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.blue;
+    return COLOR_THEMES[currentTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.orange;
   }, [currentTheme]);
   
   // Debug logging to verify theme changes

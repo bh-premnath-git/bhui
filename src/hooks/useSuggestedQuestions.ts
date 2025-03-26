@@ -30,7 +30,7 @@ export function useSuggestedQuestions() {
     },
     {
       id: '5',
-      text: "Which employees have significantly higher or lower order volumes compared to the company average?",
+      text: "Which shipping methods are used significantly more or less than average?",
       category: "employees"
     },
     {

@@ -222,7 +222,8 @@ useEffect(()=>{
                       proOptions={{ hideAttribution: true }}
                   />
               </div>
-              <div className="flex items-center justify-end gap-4 mt-4">
+              {/* Updated FlowControls container positioning */}
+              <div className="fixed bottom-4 right-4 z-50">
                   <FlowControls
                       onZoomIn={handleZoomIn}
                       onZoomOut={handleZoomOut}
@@ -237,7 +238,6 @@ useEffect(()=>{
                       pipelineConfig={handleRunClick}
                       terminalLogs={terminalLogs}
                       proplesLogs={conversionLogs}
-                         
                   />
               </div>
 

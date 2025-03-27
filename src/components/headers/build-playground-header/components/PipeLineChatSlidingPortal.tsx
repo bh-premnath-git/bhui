@@ -16,6 +16,7 @@ import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
 import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
+import { useReactFlow } from "reactflow";
 
 const suggestionQuestions = [
   {
@@ -46,6 +47,8 @@ export const PipeLineChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpe
   const dispatch = useAppDispatch();
   const [input, setInput] = useState("");
   const { selectedPipeline } = useAppSelector((state) => state.pipeline);
+  const reactFlowInstance = useReactFlow();
+
 console.log(selectedPipeline);
 const location = useLocation();
 console.log(location.pathname);
@@ -122,6 +125,9 @@ console.log(location.pathname);
 
   const handleSend = async () => {
     if (!input.trim()) return;
+    const { setNodes, setEdges } = reactFlowInstance;
+    setNodes([])
+    setEdges([])
 
     setIsProcessing(true);
     try {
@@ -163,14 +169,15 @@ console.log(location.pathname);
         }
         return node;
       });
-
+console.log(result.pipeline_definition,"nodesWithTitles");
       if(result.pipeline_definition==null){
         setPipelineJson(null)
         setNodes([])
         setEdges([])
       } else {
+        console.log(nodesWithTitles,"nodesWithTitles");
         await setNodes(nodesWithTitles);
-        await setEdges(uiJson.edges || []);
+        await setEdges(uiJson.edges);
         await handleCenter();
         await handleAlignHorizontal();
       }
@@ -194,8 +201,8 @@ console.log(location.pathname);
 
       // Update the last assistant message with the success response
       if (result) {
-        console.log(result);
-        let Response=result.pipeline_definition;
+        // console.log(result);
+        // let Response=result.pipeline_definition;
         makePipeline(Response);
         updateLastAssistantMessage(
           `I've analyzed your request and created a pipeline schema. Here's what I understood:\n\n` +

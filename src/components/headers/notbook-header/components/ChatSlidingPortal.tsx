@@ -29,7 +29,7 @@ export const ChatSlidingPortal = ({
     
     // Show loading state
     setLoading(true);
-    setMessages(prev => [...prev, { role: 'assistant', content: 'Thinking...' }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: 'Processing...' }]);
 
     // Simulate AI response
     setTimeout(() => {

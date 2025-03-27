@@ -156,7 +156,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     if (!input.trim() || !selectedFlow?.flow_id) return;
 
     addUserMessage(input);
-    addAssistantMessage("Thinking...");
+    addAssistantMessage("Processing...");
 
     await dispatch(createFlowAgentConversationEntry({
       flow_id: selectedFlow.flow_id.toString(),

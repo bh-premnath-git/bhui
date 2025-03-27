@@ -63,7 +63,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     isFetching: isEnvironmentFetching,
     isError: isEnvironmentError
   } = options.environmentId ? getEnvironment({
-    url: `/environment/environment/${options.environmentId}/`,
+    url: `/environment/environment/${options.environmentId}`,
     queryOptions: {
       enabled: !!options.environmentId,
       retry: 2

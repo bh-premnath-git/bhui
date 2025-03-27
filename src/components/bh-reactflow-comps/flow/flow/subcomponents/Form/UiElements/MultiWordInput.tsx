@@ -38,10 +38,15 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
   }, [values, defaultValue, onChange]);
 
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollLeft = containerRef.current.scrollWidth;
+    if (containerRef.current && inputRef.current) {
+      if (values.length > 0 && inputValue === '') {
+        containerRef.current.scrollTo({
+          left: 0,
+          behavior: 'smooth'
+        });
+      }
     }
-  }, [values]);
+  }, [values, inputValue]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -91,11 +96,14 @@ export const MultiWordInput: React.FC<MultiWordInputProps> = ({
           "focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500",
           "overflow-x-auto overflow-y-hidden",
           "whitespace-nowrap",
-          "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+          "scroll-smooth",
+          "[&::-webkit-scrollbar]:h-1",
+          "scrollbar-track-transparent",
+          "scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300"
         )}
         onClick={() => inputRef.current?.focus()}
       >
-        <div className="flex items-center gap-2 h-full">
+        <div className="flex items-center gap-2 h-full flex-nowrap">
           {values.map((word, index) => (
             <Badge
               key={index}

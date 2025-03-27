@@ -108,13 +108,7 @@ const DashboardContent = () => {
             items={chartOrder} 
             strategy={rectSortingStrategy}
           >
-            <div 
-              className="flex flex-wrap"
-              style={{
-                gap: '1rem',
-                alignItems: 'flex-start'
-              }}
-            >
+            <div className="flex flex-wrap gap-6">
               {/* Charts are now individually sortable using dnd-kit */}
               {chartOrder.map((chartId) => renderChart(chartId))}
             </div>

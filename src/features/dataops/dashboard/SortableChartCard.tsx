@@ -40,7 +40,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   onSaveHeight
 }) => {
   const [height, setHeight] = useState(defaultHeight);
-  const [width, setWidth] = useState('100%');
+  const [width, setWidth] = useState('350px'); // Default initial width
   const [isResizing, setIsResizing] = useState(false);
   
   // Refs for resize operation
@@ -77,8 +77,12 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
     if (savedDimensions) {
       const { height: savedHeight, width: savedWidth } = JSON.parse(savedDimensions);
-      setHeight(savedHeight);
-      setWidth(savedWidth);
+      if (savedHeight) {
+        setHeight(savedHeight);
+      }
+      if (savedWidth) {
+        setWidth(savedWidth);
+      }
     }
   }, [title]);
   
@@ -90,9 +94,13 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   
   // Reset to default height
   const resetDimensions = () => {
+    const defaultWidth = '350px'; // Default chart width
     setHeight(defaultHeight);
-    setWidth('100%');
-    localStorage.removeItem(`chart-${title}-dimensions`);
+    setWidth(defaultWidth);
+    localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
+      height: defaultHeight,
+      width: defaultWidth
+    }));
     onSaveHeight?.(defaultHeight);
   };
   
@@ -120,9 +128,9 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       const deltaY = e.clientY - startYRef.current;
       const deltaX = e.clientX - startXRef.current;
       
-      // Lower minimum constraints to allow for more flexibility
-      const newHeight = Math.max(120, startHeightRef.current + deltaY);
-      const newWidth = Math.max(150, startWidthRef.current + deltaX);
+      // Allow more flexible resizing while maintaining reasonable minimums
+      const newHeight = Math.max(150, startHeightRef.current + deltaY);
+      const newWidth = Math.max(250, startWidthRef.current + deltaX);
       
       setHeight(newHeight);
       const newWidthStr = `${newWidth}px`;
@@ -164,8 +172,8 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 999 : isResizing ? 50 : 'auto',
-    width,
-    flexBasis: width,
+    width: width,
+    flexGrow: 1,
   };
   
   return (

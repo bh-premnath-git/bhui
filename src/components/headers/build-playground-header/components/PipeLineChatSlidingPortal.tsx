@@ -36,7 +36,7 @@ const suggestionQuestions = [
   },
   {
     title: "Top Sales Regions",
-    description: "Setup a pipeline for identifying the top-performing sales regions",
+    description: "Setup a pipeline for identifying the top-performing sales regions for different product categories",
     icon: MapPin
   }
 ];

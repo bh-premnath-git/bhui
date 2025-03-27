@@ -24,6 +24,10 @@ interface PipeLinePopUpProps {
     handleClose: () => void
     transformData: TransformData[]
     pipelineName: string
+    isLoading?: boolean
+    totalCount?: number
+    onPageChange?: (page: number, pageSize: number) => void
+    onPageSizeChange?: (pageSize: number) => void
 }
 
 // Separate component for the header actions
@@ -54,12 +58,17 @@ export default function PipeLinePopUp({
     open,
     handleClose,
     transformData,
-    pipelineName
+    pipelineName,
+    isLoading = false,
+    totalCount,
+    onPageChange,
+    onPageSizeChange
 }: PipeLinePopUpProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [openFilter, setOpenFilter] = useState(false)
     const [openSort, setOpenSort] = useState(false)
-    const [isLogsOpen, setIsLogsOpen] = useState(false)
+    const [pageIndex, setPageIndex] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
 
     // Generate columns only if we have data
     const columns: ColumnDef<TransformData>[] = transformData.length 
@@ -72,16 +81,16 @@ export default function PipeLinePopUp({
 
     const toolbarConfig: TToolbarConfig = {
         buttons: [
-            {
-                label: "Filter",
-                icon: Filter,
-                variant: "outline",
-                onClick: () => setOpenFilter(true),
-            },
+            // {
+            //     label: "Filter",
+            //     icon: Filter,
+            //     variant: "outline",
+            //     onClick: () => setOpenFilter(true),
+            // },
             {
                 label: "Export CSV",
                 icon: Search,
-                variant: "outline",
+                variant: "default",
                 onClick: () => downloadCSV(transformData, pipelineName),
             },
         ],
@@ -91,27 +100,31 @@ export default function PipeLinePopUp({
         setOpenFilter(false)
     }
 
-    const handleSortOpen = () => {
-        setOpenSort(true)
-    }
-
+   
     const handleSortClose = () => {
         setOpenSort(false)
     }
 
-    const handleCloseLogs = () => {
-        setIsLogsOpen(false)
-    }
+    const handlePageChange = (newPage: number) => {
+        setPageIndex(newPage);
+        onPageChange?.(newPage, pageSize);
+    };
 
-    const handleClick = () => {
-        setIsExpanded((prev) => !prev)
-    }
+    const handlePageSizeChange = (newPageSize: number) => {
+        setPageSize(newPageSize);
+        setPageIndex(1);
+        onPageSizeChange?.(newPageSize);
+    };
+
+    // Add pagination logic
+    const paginatedData = transformData.slice(
+        (pageIndex - 1) * pageSize,
+        pageIndex * pageSize
+    );
 
     return (
         <Dialog
             open={open}
-            // When the dialog is closed (e.g., user clicks outside or X),
-            // call `handleClose()` to mirror the old MUI onClose behavior.
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     handleClose()
@@ -119,29 +132,33 @@ export default function PipeLinePopUp({
             }}
         >
             {/* Dialog content container */}
-            <DialogContent className="max-w-[1150px] p-0">
+            <DialogContent className="max-w-[1250px] p-0">
                 {/* If !isExpanded => top portion with table */}
                 {!isExpanded && (
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col h-full">
                         {/* Header */}
                         <DialogHeader className="mb-4">
                             <div className="flex justify-between items-center">
                                 <DialogTitle className="font-semibold text-lg">
                                     {pipelineName}
                                 </DialogTitle>
-                                <HeaderActions onClose={handleClose} />
+                                {/* <HeaderActions onClose={handleClose} /> */}
                             </div>
                         </DialogHeader>
 
                         {/* Table container with fixed height */}
-                        <div className="w-full overflow-x-auto max-h-[65vh]">
-                            {transformData.length > 0 ? (
+                        <div className="w-full overflow-x-auto flex-1" style={{ maxHeight: 'calc(55vh - 100px)', minHeight: 'calc(55vh - 100px)' }}>
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                </div>
+                            ) : transformData.length > 0 ? (
                                 <DataTable
-                                    data={transformData}
+                                    data={paginatedData}
                                     columns={columns}
                                     toolbarConfig={toolbarConfig}
                                     topVariant="simple"
-                                    pagination={true}
+                                    pagination={false}
                                 />
                             ) : (
                                 <div className="text-center py-8 text-gray-500">
@@ -149,6 +166,42 @@ export default function PipeLinePopUp({
                                 </div>
                             )}
                         </div>
+
+                        {/* Pagination Footer */}
+                        {transformData.length > 0 && (
+                            <div className="mt-4 border-t pt-4 flex justify-between items-center">
+                                <div className="text-sm text-gray-500">
+                                    Showing {((pageIndex - 1) * pageSize) + 1} to {Math.min(pageIndex * pageSize, totalCount || transformData.length)} of {totalCount || transformData.length} entries
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="border rounded px-2 py-1"
+                                        value={pageSize}
+                                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                    >
+                                        {[5, 10, 20, 30, 50].map((size) => (
+                                            <option key={size} value={size}>
+                                                {size} per page
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="px-3 py-1 border rounded disabled:opacity-50"
+                                        onClick={() => handlePageChange(pageIndex - 1)}
+                                        disabled={pageIndex === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        className="px-3 py-1 border rounded disabled:opacity-50"
+                                        onClick={() => handlePageChange(pageIndex + 1)}
+                                        disabled={pageIndex >= Math.ceil((totalCount || transformData.length) / pageSize)}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

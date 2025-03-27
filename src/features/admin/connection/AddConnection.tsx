@@ -75,6 +75,7 @@ export function AddConnection() {
     "google_firestore": "/assets/buildPipeline/connection/google_firestore.svg",
     "ibm_db2": "/assets/buildPipeline/connection/ibm_db2.svg",
     "ibm_idms": "/assets/buildPipeline/connection/idms.png",
+    "teradata": "/assets/buildPipeline/connection/teradata.svg",
   };
 
   // Filter connections by type and search term

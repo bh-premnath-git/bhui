@@ -37,6 +37,9 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
   }
 
   useEffect(() => {
+    setDebuggedNodesList([])
+    setDebuggedNodes([])
+
     const handleOpenCreate = () => setCreateDialogOpen(true);
     const handleOpenDelete = (event: Event) => {
       const customEvent = event as CustomEvent<Pipeline>;

@@ -10,7 +10,6 @@ import {
   clearFlowAgentConversation,
   clearFormStates
 } from "@/store/slices/designer/flowSlice";
-import { cn } from "@/lib/utils";
 import { useLocation } from "react-router-dom";
 import { createStaticPipelineSchema, recommendDataSources } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
@@ -375,7 +374,7 @@ console.log(location.pathname);
                           className="w-4 h-6 transform -rotate-[40deg]"
                         />
                       </div>
-                      <AvatarFallback>AI</AvatarFallback>
+                      {/* <AvatarFallback>AI</AvatarFallback> */}
                     </Avatar>
                   ) : (
                     <Avatar className="w-8 h-8 mr-0 flex-shrink-0 bg-blue-500 mt-1">

@@ -122,28 +122,29 @@ console.log(location.pathname);
 
   const handleSend = async () => {
     if (!input.trim()) return;
-
+    setNodes([])
+    setEdges([])
     setIsProcessing(true);
     try {
       addUserMessage(input);
       addAssistantMessage("Let me analyze your pipeline request...");
 
       const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const result:any = await dispatch(createStaticPipelineSchema({
-        pipelineId,
-        request: input
-      })).unwrap();
-
+      // const result:any = await dispatch(createStaticPipelineSchema({
+      //   pipelineId,
+      //   request: input
+      // })).unwrap();
+const result:any=await dispatch(recommendDataSources(input)).unwrap();
       console.log(result);
+      
       const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
-      console.log(uiJson);
+      console.log(uiJson,"uiJson");
       if (!uiJson || !uiJson.nodes) {
-        setNodes([])
-        setEdges([])
+        
         throw new Error('Failed to convert pipeline to UI format');
       }
 
-      const nodesWithTitles = uiJson.nodes.map(node => {
+      const nodesWithTitles = await uiJson.nodes.map(node => {
         const matchingTransformation = result.pipeline_definition.transformations?.find(
             (t: any) => t?.title === node?.data?.title && t?.name
         );
@@ -163,20 +164,22 @@ console.log(location.pathname);
         }
         return node;
       });
-
+console.log(nodesWithTitles,"nodesWithTitles")
+console.log(uiJson.edges,"uiJson.edges")
       if(result.pipeline_definition==null){
         setPipelineJson(null)
         setNodes([])
         setEdges([])
       } else {
+        console.log(nodesWithTitles,"nodesWithTitles")
         await setNodes(nodesWithTitles);
-        await setEdges(uiJson.edges || []);
+        await setEdges(uiJson.edges);
         await handleCenter();
         await handleAlignHorizontal();
       }
 
       const initialFormStates = {};
-      result.pipeline_definition.transformations?.forEach((transformation: any) => {
+      await result.pipeline_definition.transformations?.forEach((transformation: any) => {
                     const matchingNode = nodesWithTitles.find(
                         (node: any) => 
                             node?.data?.label === transformation?.transformation && 
@@ -194,9 +197,9 @@ console.log(location.pathname);
 
       // Update the last assistant message with the success response
       if (result) {
-        console.log(result);
-        let Response=result.pipeline_definition;
-        makePipeline(Response);
+        // console.log(result);
+        // let Response=result.pipeline_definition;
+        // makePipeline(Response);
         updateLastAssistantMessage(
           `I've analyzed your request and created a pipeline schema. Here's what I understood:\n\n` +
           // `${JSON.stringify(result, null, 2)}\n\n` +
@@ -228,61 +231,61 @@ console.log(location.pathname);
     }
   };
 
-  const makePipeline=async(response:any)=>{
-    // setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
-                setPipelineJson(response.pipeline_json);
+//   const makePipeline=async(response:any)=>{
+//     // setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
+//                 setPipelineJson(response.pipeline_json);
 
-                // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
-                console.log(uiJson,"uiJson")
-                if (!uiJson || !uiJson.nodes) {
-                    throw new Error('Failed to convert pipeline to UI format');
-                }
+//                 // Convert pipeline to UI JSON
+//                 const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
+//                 console.log(uiJson,"uiJson")
+//                 if (!uiJson || !uiJson.nodes) {
+//                     throw new Error('Failed to convert pipeline to UI format');
+//                 }
 
-                // Map nodes with titles safely
-                const nodesWithTitles = uiJson.nodes.map(node => {
-                    const matchingTransformation = response.pipeline_json.transformations?.find(
-                        (t: any) => t?.title === node?.data?.title && t?.name
-                    );
+//                 // Map nodes with titles safely
+//                 const nodesWithTitles = uiJson.nodes.map(node => {
+//                     const matchingTransformation = response.pipeline_json.transformations?.find(
+//                         (t: any) => t?.title === node?.data?.title && t?.name
+//                     );
 
-                    if (matchingTransformation) {
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                title: matchingTransformation.name,
-                                transformationData: {
-                                    ...node.data.transformationData,
-                                    name: matchingTransformation.name
-                                }
-                            }
-                        };
-                    }
-                    return node;
-                });
+//                     if (matchingTransformation) {
+//                         return {
+//                             ...node,
+//                             data: {
+//                                 ...node.data,
+//                                 title: matchingTransformation.name,
+//                                 transformationData: {
+//                                     ...node.data.transformationData,
+//                                     name: matchingTransformation.name
+//                                 }
+//                             }
+//                         };
+//                     }
+//                     return node;
+//                 });
+// console.log(nodesWithTitles,"nodesWithTitles")
+//                 // Update nodes and edges
+//                 await setNodes(nodesWithTitles);
+//                 await setEdges(uiJson.edges || []);
+//                 await handleCenter();
+//                 await handleAlignHorizontal()
+//                 // Initialize form states
+//                 const initialFormStates = {};
+//                 response.pipeline_json.transformations?.forEach((transformation: any) => {
+//                     const matchingNode = nodesWithTitles.find(
+//                         (node: any) => 
+//                             node?.data?.label === transformation?.transformation && 
+//                             node?.data?.title === transformation?.name
+//                     );
 
-                // Update nodes and edges
-                await setNodes(nodesWithTitles);
-                await setEdges(uiJson.edges || []);
-                await handleCenter();
-                await handleAlignHorizontal()
-                // Initialize form states
-                const initialFormStates = {};
-                response.pipeline_json.transformations?.forEach((transformation: any) => {
-                    const matchingNode = nodesWithTitles.find(
-                        (node: any) => 
-                            node?.data?.label === transformation?.transformation && 
-                            node?.data?.title === transformation?.name
-                    );
+//                     if (matchingNode?.id) {
+//                         initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+//                     }
+//                 });
 
-                    if (matchingNode?.id) {
-                        initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
-                    }
-                });
+//                 setFormStates(initialFormStates);
 
-                setFormStates(initialFormStates);
-
-  }
+//   }
  
 
   const handleSuggestionClick = (question: string) => {

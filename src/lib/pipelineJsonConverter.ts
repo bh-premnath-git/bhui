@@ -134,16 +134,16 @@ if (handleSourceUpdate) {
                         "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
                         "table_name": updatedDetails.table_name??sourceDetails.table_name,
                         "connection": {
-                            "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
-                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
-                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
-                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
-                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
-                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails.connection?.connection_config_id,
-                            "table_name": updatedDetails.table_name??sourceDetails.table_name,
-                            "database": updatedDetails.connection?.database??sourceDetails.connection?.database,
-                            "schema": updatedDetails.connection?.schema??sourceDetails.connection?.schema,
-                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails.connection?.secret_name,
+                            "name": updatedDetails?.connection?.name??sourceDetails?.connection?.name,
+                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails?.connection?.connection_type,
+                            "connection_name": updatedDetails?.connection?.name??sourceDetails?.connection?.name,
+                            "file_type": updatedDetails?.connection?.file_type??sourceDetails?.file_type,
+                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails?.connection?.file_path_prefix,
+                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection?.connection_config_id,
+                            "table_name": updatedDetails.table_name??sourceDetails?.table_name,
+                            "database": updatedDetails.connection?.database??sourceDetails?.connection?.database,
+                            "schema": updatedDetails.connection?.schema??sourceDetails?.connection?.schema,
+                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails?.connection?.secret_name,
                         }
                 }
             }
@@ -238,7 +238,7 @@ console.log(updatedDetails,"updatedDetails")
 
         // Create edges based on dependencies
         if (transform.dependent_on) {
-            transform.dependent_on.forEach((dependentName: string, index: number) => {
+            await transform.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = [...nodes].reverse().find(
                     node => node.data.title === dependentName
                 )?.id;
@@ -315,7 +315,7 @@ console.log(updatedDetails,"updatedDetails")
             // Connect last transformation to target
             const lastTransformation = nodes[nodes.length - 2];
             if (lastTransformation) {
-                edges.push({
+                 edges.push({
                     source: lastTransformation.id,
                     sourceHandle: 'output-0',
                     target: targetId,
@@ -326,6 +326,6 @@ console.log(updatedDetails,"updatedDetails")
         }
     }
 
-    return { nodes, edges };
+    return await { nodes, edges };
 };
 

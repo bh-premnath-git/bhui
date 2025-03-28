@@ -16,6 +16,7 @@ import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
 import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
+import { useReactFlow } from "reactflow";
 
 const suggestionQuestions = [
   {
@@ -46,6 +47,8 @@ export const PipeLineChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpe
   const dispatch = useAppDispatch();
   const [input, setInput] = useState("");
   const { selectedPipeline } = useAppSelector((state) => state.pipeline);
+  const reactFlowInstance = useReactFlow();
+
 console.log(selectedPipeline);
 const location = useLocation();
 console.log(location.pathname);
@@ -122,8 +125,10 @@ console.log(location.pathname);
 
   const handleSend = async () => {
     if (!input.trim()) return;
+    const { setNodes, setEdges } = reactFlowInstance;
     setNodes([])
     setEdges([])
+
     setIsProcessing(true);
     try {
       addUserMessage(input);
@@ -164,14 +169,13 @@ const result:any=await dispatch(recommendDataSources(input)).unwrap();
         }
         return node;
       });
-console.log(nodesWithTitles,"nodesWithTitles")
-console.log(uiJson.edges,"uiJson.edges")
+console.log(result.pipeline_definition,"nodesWithTitles");
       if(result.pipeline_definition==null){
         setPipelineJson(null)
         setNodes([])
         setEdges([])
       } else {
-        console.log(nodesWithTitles,"nodesWithTitles")
+        console.log(nodesWithTitles,"nodesWithTitles");
         await setNodes(nodesWithTitles);
         await setEdges(uiJson.edges);
         await handleCenter();

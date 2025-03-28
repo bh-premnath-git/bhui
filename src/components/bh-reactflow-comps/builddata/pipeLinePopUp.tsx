@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Filter, Search, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Filter, Search, X, Loader2 } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/bh-table/data-table"
 import AddFilterPopUp from "./AddFilterPopUp"
@@ -59,7 +59,6 @@ export default function PipeLinePopUp({
     handleClose,
     transformData,
     pipelineName,
-    isLoading = false,
     totalCount,
     onPageChange,
     onPageSizeChange
@@ -69,7 +68,19 @@ export default function PipeLinePopUp({
     const [openSort, setOpenSort] = useState(false)
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
+    const [isLoading, setIsLoading] = useState(true);
 
+    useEffect(()=>{
+        console.log(transformData,"transformData");
+       
+            setTimeout(()=>{
+                if(transformData.length>0){
+                    setIsLoading(false)
+                }else{
+                    setIsLoading(true)
+                }
+                        },4500)
+    },[transformData,open])
     // Generate columns only if we have data
     const columns: ColumnDef<TransformData>[] = transformData.length 
         ? Object.keys(transformData[0]).map((key) => ({
@@ -147,10 +158,21 @@ export default function PipeLinePopUp({
                         </DialogHeader>
 
                         {/* Table container with fixed height */}
-                        <div className="w-full overflow-x-auto flex-1" style={{ maxHeight: 'calc(55vh - 100px)', minHeight: 'calc(55vh - 100px)' }}>
+                        <div className="w-full overflow-x-auto flex-1 relative" style={{ maxHeight: 'calc(55vh - 100px)', minHeight: 'calc(55vh - 100px)' }}>
                             {isLoading ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-white/95 to-white/98 backdrop-blur-sm">
+                                    <div className="relative">
+                                        <div className="absolute -inset-4 rounded-full bg-primary/10 blur-xl animate-pulse"></div>
+                                        <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
+                                    </div>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <p className="text-primary/80 font-medium">Loading Data</p>
+                                        <div className="flex gap-1">
+                                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-[bounce_1s_infinite] [animation-delay:-0.3s]"></span>
+                                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-[bounce_1s_infinite] [animation-delay:-0.2s]"></span>
+                                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-[bounce_1s_infinite] [animation-delay:-0.1s]"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : transformData.length > 0 ? (
                                 <DataTable

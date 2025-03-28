@@ -43,3 +43,37 @@ pre, code {
   overflow-wrap: break-word !important;
   max-width: 100% !important;
 }
+
+/* dnd-kit animations and styles */
+.dragging-active {
+  cursor: grabbing !important;
+}
+
+.resizing {
+  cursor: nwse-resize !important;
+}
+
+/* Animation for when an item is being dragged */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.dragging {
+  z-index: 999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  animation: pulse 1.5s infinite;
+}
+
+.dragging-active {
+  cursor: grabbing !important;
+}
+
+.dragging-active * {
+  cursor: grabbing !important;
+}
+
+.dragging-active .recharts-wrapper {
+  pointer-events: none;
+}

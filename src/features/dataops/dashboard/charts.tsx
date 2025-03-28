@@ -1,6 +1,6 @@
 import type React from "react"
-import { ChartCard } from "./chart-components"
-import { LineChart, BarChart, AreaChart,  DonutChart } from "@/components/bh-charts"
+import { SortableChartCard } from "./SortableChartCard"
+import { LineChart, BarChart, AreaChart, DonutChart } from "@/components/bh-charts"
 
 // First, define base colors
 const CHART_COLORS = {
@@ -77,7 +77,7 @@ export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <ChartCard title="Latency Trend" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="latency" title="Latency Trend" className="bg-gradient-to-br from-card to-card/95">
       <LineChart 
         data={data} 
         xAxisDataKey="name" 
@@ -88,7 +88,7 @@ export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
           yAxisLabel: "ms"
         }}
       />
-    </ChartCard>
+    </SortableChartCard>
   )
 }
 
@@ -96,7 +96,7 @@ export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const areas = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <ChartCard title="Cost Trend" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="cost" title="Cost Trend" className="bg-gradient-to-br from-card to-card/95">
       <AreaChart 
         data={data} 
         xAxisDataKey="name" 
@@ -108,12 +108,12 @@ export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
           stacked: true
         }}
       />
-    </ChartCard>
+    </SortableChartCard>
   )
 }
 
 export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ title, data }) => (
-  <ChartCard title={title} className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="ingestion" title={title} className="bg-gradient-to-br from-card to-card/95">
     <DonutChart 
       data={prepareDonutData(data, palettes.status)}
       dataKey="value" 
@@ -125,11 +125,11 @@ export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ tit
         labelType: "percent"
       }}
     />
-  </ChartCard>
+  </SortableChartCard>
 )
 
 export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <ChartCard title="Project Health Status" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="health" title="Project Health Status" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -140,11 +140,11 @@ export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
         barGap: 3
       }}
     />
-  </ChartCard>
+  </SortableChartCard>
 )
 
 export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <ChartCard title="Project Quality Status" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="quality" title="Project Quality Status" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -156,11 +156,11 @@ export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
         yAxisLabel: "%"
       }}
     />
-  </ChartCard>
+  </SortableChartCard>
 )
 
 export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <ChartCard title="Incident Summary" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="incident" title="Incident Summary" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -171,5 +171,5 @@ export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
         barGap: 3
       }}
     />
-  </ChartCard>
+  </SortableChartCard>
 )

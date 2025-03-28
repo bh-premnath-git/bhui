@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ResponsiveContainer } from "recharts"
-import { ChevronDown, Download } from "lucide-react"
+import { ChevronDown, Download, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { debounce } from 'lodash'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 export const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
   <div role="alert" className="flex flex-col items-center justify-center h-full p-4 bg-destructive/10 rounded-md text-destructive">
@@ -20,7 +22,8 @@ export const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
   </div>
 )
 
-interface ChartCardProps {
+interface SortableChartCardProps {
+  id: string;
   title: string;
   children: React.ReactNode;
   className?: string;
@@ -28,25 +31,16 @@ interface ChartCardProps {
   onSaveHeight?: (height: number) => void;
 }
 
-// Create a custom event for communicating resize state to the dashboard
-const emitResizeStateEvent = (isResizing: boolean) => {
-  const event = new CustomEvent('chart-resize-state', {
-    detail: { isResizing }
-  });
-  window.dispatchEvent(event);
-};
-
-export const ChartCard: React.FC<ChartCardProps> = React.memo(({ 
+export const SortableChartCard: React.FC<SortableChartCardProps> = ({ 
+  id,
   title, 
   children, 
   className,
   defaultHeight = 280,
   onSaveHeight
 }) => {
-  const [dimensions, setDimensions] = useState<{ height: number; width: string }>({
-    height: defaultHeight,
-    width: '100%'
-  });
+  const [height, setHeight] = useState(defaultHeight);
+  const [width, setWidth] = useState('350px'); // Default initial width
   const [isResizing, setIsResizing] = useState(false);
   
   // Refs for resize operation
@@ -55,12 +49,21 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
   const startHeightRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // dnd-kit sortable hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id, disabled: isResizing });
   
   // Create debounced save function
   const debouncedSave = useCallback(
     debounce((newHeight: number, newWidth: string) => {
       onSaveHeight?.(newHeight);
-      // You could expand this to save width as well
       localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
         height: newHeight,
         width: newWidth
@@ -70,14 +73,16 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
   );
 
   // Load saved dimensions on mount
-  useEffect(() => {
+  React.useEffect(() => {
     const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
     if (savedDimensions) {
       const { height: savedHeight, width: savedWidth } = JSON.parse(savedDimensions);
-      setDimensions({
-        height: savedHeight,
-        width: savedWidth
-      });
+      if (savedHeight) {
+        setHeight(savedHeight);
+      }
+      if (savedWidth) {
+        setWidth(savedWidth);
+      }
     }
   }, [title]);
   
@@ -89,11 +94,13 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
   
   // Reset to default height
   const resetDimensions = () => {
-    setDimensions({
+    const defaultWidth = '350px'; // Default chart width
+    setHeight(defaultHeight);
+    setWidth(defaultWidth);
+    localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
       height: defaultHeight,
-      width: '100%'
-    });
-    localStorage.removeItem(`chart-${title}-dimensions`);
+      width: defaultWidth
+    }));
     onSaveHeight?.(defaultHeight);
   };
   
@@ -104,16 +111,15 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
     
     startYRef.current = e.clientY;
     startXRef.current = e.clientX;
-    startHeightRef.current = dimensions.height;
-    startWidthRef.current = cardRef.current?.offsetWidth || 0;
+    startHeightRef.current = height;
+    startWidthRef.current = parseFloat(width.replace('px', '')) || cardRef.current?.offsetWidth || 0;
     
     setIsResizing(true);
-    emitResizeStateEvent(true);
     document.body.classList.add('resizing');
   };
   
   // Update the resize handler to use debouncing
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isResizing) return;
     
     const handleMouseMove = (e: MouseEvent) => {
@@ -122,27 +128,20 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
       const deltaY = e.clientY - startYRef.current;
       const deltaX = e.clientX - startXRef.current;
       
-      // Increase minimum size and adjust maximum constraints
-      const newHeight = Math.max(200, Math.min(800, startHeightRef.current + deltaY));
-      const containerWidth = cardRef.current?.parentElement?.clientWidth || 1200;
-      const newWidth = Math.max(350, Math.min(containerWidth, startWidthRef.current + deltaX));
+      // Allow more flexible resizing while maintaining reasonable minimums
+      const newHeight = Math.max(150, startHeightRef.current + deltaY);
+      const newWidth = Math.max(250, startWidthRef.current + deltaX);
       
-      // Add transform scale during resize for visual feedback
-      cardRef.current?.style.setProperty('transform', isResizing ? 'scale(1.002)' : 'scale(1)');
-      cardRef.current?.style.setProperty('z-index', isResizing ? '50' : 'auto');
-      
-      setDimensions({
-        height: newHeight,
-        width: `${newWidth}px`
-      });
+      setHeight(newHeight);
+      const newWidthStr = `${newWidth}px`;
+      setWidth(newWidthStr);
       
       // Use debounced save
-      debouncedSave(newHeight, newWidth.toString());
+      debouncedSave(newHeight, newWidthStr);
     };
     
     const handleMouseUp = () => {
       setIsResizing(false);
-      emitResizeStateEvent(false);
       document.body.classList.remove('resizing');
       
       // Final save on mouse up
@@ -156,37 +155,53 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       if (isResizing) {
-        emitResizeStateEvent(false);
         document.body.classList.remove('resizing');
       }
     };
   }, [isResizing, debouncedSave]);
 
   // Clean up debounced function on unmount
-  useEffect(() => {
+  React.useEffect(() => {
     return () => {
       debouncedSave.cancel();
     };
   }, [debouncedSave]);
+
+  // Apply dnd-kit transforms
+  const chartStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 999 : isResizing ? 50 : 'auto',
+    width: width,
+    flexGrow: 1,
+  };
   
   return (
     <Card 
-      ref={cardRef}
+      ref={(node) => {
+        cardRef.current = node;
+        setNodeRef(node);
+      }}
       className={cn(
         "col-span-1 transition-all duration-300 hover:shadow-md",
         "border-muted/70 bg-card/90",
-        "backdrop-blur-sm relative overflow-hidden",
-        isResizing && "shadow-lg ring-1 ring-primary/20",
+        "backdrop-blur-sm",
+        "relative",
+        isDragging && "dragging",
+        isResizing && "resizing",
         className
       )}
-      style={{ 
-        width: dimensions.width,
-        transition: isResizing ? 'none' : 'all 0.3s ease',
-        willChange: isResizing ? 'transform, width, height' : 'auto'
-      }}
+      style={chartStyle}
     >
-      {/* Reduce header padding */}
-      <CardHeader className="flex flex-row justify-center items-center p-2">
+      {/* Card header with title and dropdown */}
+      <CardHeader className="flex flex-row justify-center items-center p-3 pb-0">
+        <div className="absolute left-2 cursor-grab active:cursor-grabbing" 
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5 text-muted-foreground opacity-60 hover:opacity-100" />
+        </div>
+        
         <CardTitle className="text-sm font-medium text-foreground/80 flex items-center">
           {title}
         </CardTitle>
@@ -211,30 +226,18 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
         </div>
       </CardHeader>
       
-      {/* Reduce content padding */}
-      <CardContent className="p-2">
+      {/* Chart content */}
+      <CardContent className="p-3 pt-3">
         <div 
-          className={cn(
-            "bg-card rounded-md border border-border/30",
-            "overflow-hidden w-full"
-          )}
-          style={{ 
-            height: `${dimensions.height}px`,
-            minHeight: "180px",
-          }}
+          className="p-2 bg-card rounded-md border border-border/30"
+          style={{ height: `${height}px` }}
         >
           <ResponsiveContainer 
-            width="99%"
+            width="100%" 
             height="100%"
             aria-label={title}
-            aspect={undefined}
           >
-            {React.isValidElement(children) ? (
-              React.cloneElement(children as React.ReactElement, {
-                width: "100%",
-                height: "100%",
-              })
-            ) : (
+            {React.isValidElement(children) ? children : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 No data available
               </div>
@@ -257,10 +260,10 @@ export const ChartCard: React.FC<ChartCardProps> = React.memo(({
         onMouseDown={handleResizeStart}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
+        title="Resize chart"
       >
         <div className="w-3 h-3 border-r-2 border-b-2 border-muted-foreground/40" />
       </div>
     </Card>
   )
-})
-
+}

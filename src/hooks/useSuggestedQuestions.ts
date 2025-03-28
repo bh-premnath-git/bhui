@@ -10,7 +10,7 @@ export function useSuggestedQuestions() {
   const defaultQuestions: SuggestedQuestion[] = [
     {
       id: '1',
-      text: "Which regions drive the highest order volume?",
+      text: "Which customers placed the most and fewest orders?",
       category: "sales"
     },
     {
@@ -25,7 +25,7 @@ export function useSuggestedQuestions() {
     },
     {
       id: '4',
-      text: "Which customers have order frequencies significantly different from others in their region?",
+      text: "For the top customer, what product categories do they order most?",
       category: "products"
     },
     {

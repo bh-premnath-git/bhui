@@ -93,10 +93,22 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         }
 
         static createConnectionFromSource(sourceData: any): ConnectionConfig {
+            // Add defensive checks
+            if (!sourceData) {
+                return {
+                    name: 'default',
+                    connection_type: 'unknown'
+                };
+            }
+
             const connection = sourceData?.connection;
             
+            // Return a default connection if missing
             if (!connection) {
-                throw new Error('Connection data is missing in source');
+                return {
+                    name: sourceData.name || 'default',
+                    connection_type: sourceData.type || 'unknown'
+                };
             }
 
             const connectionType = connection.connection_type?.toLowerCase();
@@ -129,18 +141,21 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         }
     }
 
-    // Update the sources mapping
+    // Update the sources mapping with defensive checks
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
-            const connectionConfig =node.data.source?.custom_metadata? ConnectionFactory.createConnection(node.data.source?.custom_metadata):ConnectionFactory.createConnectionFromSource(node.data.source);
-            console.log(node.data.source,"connectionConfig")
+            const source = node.data.source || {};
+            const connectionConfig = source?.custom_metadata 
+                ? ConnectionFactory.createConnection(source.custom_metadata)
+                : ConnectionFactory.createConnectionFromSource(source);
+
             return {
-                name: node.data.source.name || node.data.title,
-                source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
-                table_name: node.data?.source?.table_name,
-                file_name: `${node.data.source.file_name}`,
-                data_src_id: node.data.source.data_src_id,
+                name: source.name || node.data.title || 'Unnamed Source',
+                source_type: capitalizeFirstLetter(source.type) || "Relational",
+                table_name: source?.table_name,
+                file_name: source.file_name ? `${source.file_name}` : undefined,
+                data_src_id: source.data_src_id,
                 connection: connectionConfig
             };
         });

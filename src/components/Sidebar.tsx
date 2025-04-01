@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronLeft, LogOut, Sun, Moon } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
 import logo from "/logo.svg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ROUTES } from "@/config/routes";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -80,33 +81,86 @@ export function Sidebar() {
         <ul className="space-y-1 px-2">
           {dynamicItems.map((item) => (
             <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center px-3 py-2 rounded-md",
-                    "transition-all duration-200 ease-in-out",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    isActive && "bg-accent text-accent-foreground",
-                    !isExpanded && "justify-center"
-                  )
-                }
-                onClick={() => item.subItems && navigation.toggleExpanded(item.path)}
-              >
-                <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200" />
-                {isExpanded && (
-                  <span className="ml-3 flex-1 transition-opacity duration-200">{item.title}</span>
+              <div className="flex">
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center px-3 py-2 rounded-md",
+                      "transition-all duration-200 ease-in-out",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      isActive && "bg-accent text-accent-foreground",
+                      !isExpanded && "justify-center",
+                      "flex-1"
+                    )
+                  }
+                  onClick={() => item.subItems && navigation.toggleExpanded(item.path)}
+                >
+                  <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200" />
+                  {isExpanded && (
+                    <span className="ml-3 flex-1 transition-opacity duration-200">{item.title}</span>
+                  )}
+                  {isExpanded && item.subItems && (
+                    <ChevronRight
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        "transition-transform duration-200 ease-in-out",
+                        navigation.isItemExpanded(item.path) && "transform rotate-90"
+                      )}
+                    />
+                  )}
+                </NavLink>
+                {isExpanded && item.actions && (
+                  <div className="flex items-center">
+                    {item.actions.map((action, index) => (
+                      action.icon === 'ellipsis' ? (
+                        <DropdownMenu key={index}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 ml-1"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                            <DropdownMenuItem 
+                              className="cursor-pointer flex items-center gap-2"
+                              onClick={() => {
+                                // Open search functionality
+                                console.log("Search clicked");
+                              }}
+                            >
+                              <Search className="h-4 w-4" />
+                              <span>Search</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="cursor-pointer flex items-center gap-2"
+                              onClick={() => {
+                                navigate(`${ROUTES.DATA_CATALOG}/xplorer`);
+                              }}
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                              <span>New Report</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Button
+                          key={index}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 ml-1"
+                          onClick={() => navigation.handleAction(action.action, item.path)}
+                        >
+                          {action.icon === 'ellipsis' && <MoreHorizontal className="h-4 w-4" />}
+                        </Button>
+                      )
+                    ))}
+                  </div>
                 )}
-                {isExpanded && item.subItems && (
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      "transition-transform duration-200 ease-in-out",
-                      navigation.isItemExpanded(item.path) && "transform rotate-90"
-                    )}
-                  />
-                )}
-              </NavLink>
+              </div>
               {isExpanded && item.subItems && (
                 <ul
                   className={cn(

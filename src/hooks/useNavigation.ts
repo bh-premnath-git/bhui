@@ -11,6 +11,7 @@ export interface NavigationHook {
   toggleExpanded: (path: string) => void;
   isItemExpanded: (path: string) => boolean;
   handleNavigation: (path: string, params?: Record<string, string>, forceRefetch?: boolean) => void;
+  handleAction: (action: string, itemPath: string) => void;
   navigationItems: NavItem[];
   loading: boolean;
 }
@@ -50,6 +51,21 @@ export function useNavigation(): NavigationHook {
     navigate(finalPath, { state: { refetch: forceRefetch } });
   };
 
+  const handleAction = (action: string, itemPath: string) => {
+    console.log(`Action ${action} for item ${itemPath}`);
+    
+    switch (action) {
+      case 'menu':
+        // For the menu action, we will handle this in the component
+        // by showing a dropdown when the ellipsis is clicked
+        console.log('Menu clicked for Data Explorer');
+        break;
+      
+      default:
+        console.warn(`Unknown action: ${action}`);
+    }
+  };
+
   useEffect(() => {
     if (!loading) {
       // Find the Data Explorer item and update its subItems
@@ -57,15 +73,7 @@ export function useNavigation(): NavigationHook {
         if (item.path === `${ROUTES.DATA_CATALOG}/xplorer`) {
           return {
             ...item,
-            subItems: [
-              ...reports,
-              {
-                title: "New Report",
-                icon: PlusCircle,
-                path: `${ROUTES.DATA_CATALOG}/xplorer`,
-                parent: `${ROUTES.DATA_CATALOG}/xplorer`,
-              }
-            ]
+            subItems: [...reports]
           };
         }
         return item;
@@ -89,6 +97,7 @@ export function useNavigation(): NavigationHook {
     toggleExpanded,
     isItemExpanded,
     handleNavigation,
+    handleAction,
     navigationItems: items,
     loading,
   };

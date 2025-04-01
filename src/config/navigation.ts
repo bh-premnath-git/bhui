@@ -7,7 +7,6 @@ import {
   Package,
   GitPullRequest,
   AlertCircle,
-  File,
   Share2,
   Users,
   FolderGit2,
@@ -29,7 +28,10 @@ export const navigationItems: NavItem[] = [
     title: "Data Explorer",
     icon: Clock,
     path: `${ROUTES.DATA_CATALOG}/xplorer`,
-    subItems: []
+    subItems: [],
+    actions: [
+      { icon: 'ellipsis', action: 'menu' }
+    ]
   },
   {
     title: "Notebook",

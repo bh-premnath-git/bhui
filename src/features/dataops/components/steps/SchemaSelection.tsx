@@ -7,8 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDatabase } from '../../hooks/useDatabase';
-
+import { useDatabase } from '@/lib/hooks/useDatabase';
 interface SchemaSelectionProps {
   selectedConnection: string;
   selectedSchema: string;

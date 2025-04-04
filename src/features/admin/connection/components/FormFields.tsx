@@ -149,6 +149,46 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
       return null;
     }
 
+    // Special case for credentials_json
+    if (key === 'credentials_json') {
+      return (
+        <FormField
+          key={fieldKey}
+          control={form.control}
+          name={fieldKey}
+          render={({ field: formField }) => (
+            <FormItem>
+              <div className="flex items-center">
+                <FormLabel>
+                  {field.title || key}
+                  {isRequired && <span className="text-destructive ml-1">*</span>}
+                </FormLabel>
+                {field.description && (
+                  <button
+                    type="button"
+                    className="ml-1 text-muted-foreground"
+                    onClick={() => setShowDescription(!showDescription)}
+                  >
+                    <HelpCircle size={16} />
+                  </button>
+                )}
+              </div>
+              {showDescription && field.description && (
+                <FormDescription>{field.description}</FormDescription>
+              )}
+              <FormControl>
+                <Textarea
+                  {...formField}
+                  className="font-mono h-48 resize-y"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+    }
+
     if (field.type === 'object' && field.properties) {
       return (
         <div key={fieldKey} className="space-y-4">
@@ -244,7 +284,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
             );
           }
 
-          if (field.type === 'string' && (field.format === 'json' || key.includes('json'))) {
+          if (field.type === 'string' && (field.format === 'textarea' || field.format === 'json' || key.includes('json') || key === 'credentials_json')) {
             return (
               <FormItem>
                 <div className="flex items-center">

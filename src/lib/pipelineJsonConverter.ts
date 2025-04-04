@@ -110,7 +110,7 @@ console.log(pipelineJson)
                     errorMessage: 'Failed to fetch source details'
                 },
             })
-          
+          debugger;
             console.log(sourceDetails)
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);
@@ -133,18 +133,8 @@ if (handleSourceUpdate) {
                         "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
                         "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
                         "table_name": updatedDetails.table_name??sourceDetails.table_name,
-                        "connection": {
-                            "name": updatedDetails?.connection?.name??sourceDetails?.connection?.name,
-                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails?.connection?.connection_type,
-                            "connection_name": updatedDetails?.connection?.name??sourceDetails?.connection?.name,
-                            "file_type": updatedDetails?.connection?.file_type??sourceDetails?.file_type,
-                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails?.connection?.file_path_prefix,
-                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection?.connection_config_id,
-                            "table_name": updatedDetails.table_name??sourceDetails?.table_name,
-                            "database": updatedDetails.connection?.database??sourceDetails?.connection?.database,
-                            "schema": updatedDetails.connection?.schema??sourceDetails?.connection?.schema,
-                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails?.connection?.secret_name,
-                        }
+                        "connection_config":{custom_metadata:updatedDetails?.connection??sourceDetails?.connection_config?.custom_metadata},
+                        "connection": updatedDetails?.connection??sourceDetails?.connection_config?.custom_metadata
                 }
             }
         }
@@ -180,18 +170,8 @@ console.log(updatedDetails,"updatedDetails")
                         "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
                         "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails?.connection_config_id,
                         "table_name": updatedDetails.table_name??sourceDetails.table_name,
-                        "connection": {
-                            "name": updatedDetails.connection?.name??sourceDetails.connection?.name,
-                            "connection_type": updatedDetails?.connection?.connection_type??sourceDetails.connection?.connection_type,
-                            "connection_name": updatedDetails.connection?.name??sourceDetails.connection?.name,
-                            "file_type": updatedDetails.connection?.file_type??sourceDetails.file_type,
-                            "file_path_prefix": updatedDetails.connection?.file_path_prefix??sourceDetails.connection?.file_path_prefix,
-                            "connection_config_id": updatedDetails.connection?.connection_config_id??sourceDetails.connection?.connection_config_id,
-                            "table_name": updatedDetails.table_name??sourceDetails.table_name,
-                            "database": updatedDetails.connection?.database??sourceDetails.connection?.database,
-                            "schema": updatedDetails.connection?.schema??sourceDetails.connection?.schema,
-                            "secret_name": updatedDetails.connection?.secret_name??sourceDetails.connection?.secret_name,
-                        }
+                        "connection_config":{custom_metadata:updatedDetails?.connection??sourceDetails?.connection_config?.custom_metadata},
+                        "connection": updatedDetails?.connection??sourceDetails?.connection_config?.custom_metadata
                     }
                 },
                 width: 56,
@@ -269,8 +249,8 @@ console.log(updatedDetails,"updatedDetails")
             (t: any) => t.transformation === 'Target'
         );
         if (targetTransformation) {
-            console.log(targetTransformation)
-            console.log( targetTransformation?.target?.target_type )
+            console.log(targetTransformation,"targetTransformation")
+            console.log( targetTransformation?.target?.target_type,"targetTransformationtype" )
 
             nodes.push({
                 id: targetId,

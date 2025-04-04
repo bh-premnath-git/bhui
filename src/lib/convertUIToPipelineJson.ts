@@ -54,117 +54,33 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 
     const orderedUiNodes = getOrderedNodes();
    
-    // First, let's create connection factory interfaces
-    interface ConnectionConfig {
-        name: string;
-        connection_type: string;
-        [key: string]: any;
-    }
 
-    class ConnectionFactory {
-        static createConnection(connectionData: any): ConnectionConfig {
-            const connectionType = connectionData?.connection_name?.toLowerCase();
-            
-            switch (connectionType) {
-                case 'postgresql':
-                case 'postgres':
-                    return {
-                        name: connectionData.connection_config_name,
-                        connection_type: 'postgresql',
-                        database: connectionData?.custom_metadata?.database,
-                        schema: connectionData?.custom_metadata?.schema || 'public',
-                        secret_name: connectionData?.secret_name
-                    };
-                
-                case 'local':
-                case 's3':
-                    return {
-                        name: connectionData?.connection_config_name,
-                        connection_type: connectionData?.connection_name,
-                        file_path_prefix: connectionData?.file_path_prefix || '${file_path_prefix}'
-                    };
-                    
-                default:
-                    return {
-                        name: connectionData?.connection_config_name,
-                        connection_type: connectionData?.connection_name
-                    };
-            }
-        }
-
-        static createConnectionFromSource(sourceData: any): ConnectionConfig {
-            // Add defensive checks
-            if (!sourceData) {
-                return {
-                    name: 'default',
-                    connection_type: 'unknown'
-                };
-            }
-
-            const connection = sourceData?.connection;
-            
-            // Return a default connection if missing
-            if (!connection) {
-                return {
-                    name: sourceData.name || 'default',
-                    connection_type: sourceData.type || 'unknown'
-                };
-            }
-
-            const connectionType = connection.connection_type?.toLowerCase();
-            
-            switch (connectionType) {
-                case 'postgresql':
-                case 'postgres':
-                    return {
-                        name: connection.name,
-                        connection_type: 'postgresql',
-                        database: connection.database,
-                        schema: connection.schema || 'public',
-                        secret_name: connection.secret_name
-                    };
-                
-                case 'local':
-                case 's3':
-                    return {
-                        name: connection.name,
-                        connection_type: connection.connection_type,
-                        file_path_prefix: connection.file_path_prefix || '${file_path_prefix}'
-                    };
-                    
-                default:
-                    return {
-                        name: connection.name,
-                        connection_type: connection.connection_type
-                    };
-            }
-        }
-    }
-
+    
+    console.log(
+        uiNodes,"uiNodes"
+    )
     // Update the sources mapping with defensive checks
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
             const source = node.data.source || {};
-            const connectionConfig = source?.custom_metadata 
-                ? ConnectionFactory.createConnection(source.custom_metadata)
-                : ConnectionFactory.createConnectionFromSource(source);
+            const connectionConfig = source?.connection_config?.custom_metadata;
 
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
                 source_type: capitalizeFirstLetter(source.type) || "Relational",
-                table_name: source?.table_name,
+                table_name: source?.table_name || source.data_src_name,
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
                 connection: connectionConfig
             };
         });
-console.log(sources)
+
     // Update the reader transformations
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
-            const connectionConfig =node.data.source?.custom_metadata? ConnectionFactory.createConnection(node.data.source?.custom_metadata):ConnectionFactory.createConnectionFromSource(node.data.source);
+            const connectionConfig =node.data.source?.connection_config?.custom_metadata;
             console.log(connectionConfig,"connectionConfig")
             return {
                 name: node.data.title,
@@ -173,7 +89,7 @@ console.log(sources)
                 source: {
                     name: node.data.source.name || node.data.title,
                     source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
-                    table_name: node.data?.source?.table_name,
+                    table_name: node.data?.source?.table_name|| node.data.source.data_src_name,
                     file_name: `${node.data.source.file_name}`,
                     connection: connectionConfig
                 },
@@ -322,16 +238,7 @@ console.log(sources)
                             target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",
             target_name: node?.data.source?.target_name,
             table_name: node?.data.source?.table_name||'sample_table',
-                            connection: {
-                                name: node.data.source?.connection?.name,
-                                connection_type:node?.data?.source?.connection?.connection_type?.toLowerCase()=="postgres"?"postgresql":node?.data?.source?.connection?.connection_type,
-                                file_path_prefix: node.data.source?.connection?.file_path_prefix,
-                                connection_config_id: node.data.source?.connection?.connection_config_id,
-                                database: node?.data?.source?.connection?.database,
-                                schema: node?.data?.source?.connection?.schema || "public",
-                                secret_name: node?.data?.source?.connection?.secret_name||"bh-postgres-out5",
-
-                            },
+                            connection: node.data.source?.connection,
                             file_name: node.data.source?.file_name,
                             load_mode: node.data.source?.load_mode
                         },
@@ -357,31 +264,9 @@ console.log(sources)
     .map(node => ({
         name: node?.data.source?.name,
         type: node?.data.source?.target_type,
-        connection: {
-            type: node?.data.source?.connection?.connection_type,
-            file_path: node?.data.source?.connection?.file_path_prefix,
-        },
+        connection: node?.data.source?.connection,
         load_mode: node?.data.source?.load_mode,
-        target: {
-            target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",
-            target_name: node?.data.source?.target_name,
-            name: node?.data.source?.name ,
-            load_mode: node?.data.source?.load_mode,
-            file_name: node?.data.source?.file_name,
-            file_type: node?.data.source?.file_type?.toLowerCase(),
-            table_name: node?.data.source?.table_name||'sample_table',
-            connection: {
-                type: node?.data.source?.connection?.connection_type,
-                connection_type:node?.data?.source?.connection?.connection_type?.toLowerCase()=="postgres"?"postgresql":node?.data?.source?.connection?.connection_type,
-                file_path: node?.data.source?.connection?.file_path_prefix ,
-                connection_config_id: node?.data.source?.connection?.connection_config_id,
-                name: node?.data.source?.connection?.name,
-                database: node?.data?.source?.connection?.database,
-                schema: node?.data?.source?.connection?.schema || "public",
-                secret_name: node?.data?.source?.connection?.secret_name ||"bh-postgres-out5"
-            },
-            
-        }
+        
     }));
 console.log(targets,"targets")
    

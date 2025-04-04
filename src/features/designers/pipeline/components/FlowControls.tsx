@@ -127,9 +127,9 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: onCenter },
     { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: onAlignHorizontal },
     { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: onAlignVertical },
-    { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
-    { key: 'stop', icon: MdOutlineStop, handler: onStop },
-    { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
+    // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
+    // { key: 'stop', icon: MdOutlineStop, handler: onStop },
+    // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
     // { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
   ]
 

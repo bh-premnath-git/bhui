@@ -13,6 +13,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
@@ -30,29 +31,6 @@ interface PipeLinePopUpProps {
     onPageSizeChange?: (pageSize: number) => void
 }
 
-// Separate component for the header actions
-const HeaderActions = ({ onClose, showSearch = false }: { onClose: () => void, showSearch?: boolean }) => (
-    <div className="flex items-center gap-4">
-        {showSearch && (
-            <div className="relative">
-                <Input
-                    type="text"
-                    placeholder="Search By Keywords"
-                    className="pl-8"
-                />
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-            </div>
-        )}
-        <div className="cursor-pointer">
-            <img
-                src="/assets/buildPipeline/downArrow.png"
-                alt="Expand"
-                width={30}
-            />
-        </div>
-        <X onClick={onClose} className="cursor-pointer" />
-    </div>
-)
 
 export default function PipeLinePopUp({
     open,
@@ -67,51 +45,35 @@ export default function PipeLinePopUp({
     const [openFilter, setOpenFilter] = useState(false)
     const [openSort, setOpenSort] = useState(false)
     const [pageIndex, setPageIndex] = useState(1);
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(20);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(()=>{
         console.log(transformData,"transformData");
-       
-            setTimeout(()=>{
-                if(transformData.length>0){
-                    setIsLoading(false)
-                }else{
-                    setIsLoading(true)
-                }
-                        },4500)
+       if(transformData.length>0){
+        setIsLoading(false)
+       }else{
+        setTimeout(()=>{
+            if(transformData.length>0){
+                setIsLoading(false)
+            }else{
+                setIsLoading(true)
+            }
+                    },4500)
+       }
+            
     },[transformData,open])
+    
     // Generate columns only if we have data
-    const columns: ColumnDef<TransformData>[] = transformData.length 
-        ? Object.keys(transformData[0]).map((key) => ({
-            accessorKey: key,
-            header: key,
-            enableColumnFilter: false,
-        }))
+    const columns = transformData.length 
+        ? Object.keys(transformData[0])
+            .filter(key => key !== 'row_number') // Filter out row_number column
         : [];
-
-    const toolbarConfig: TToolbarConfig = {
-        buttons: [
-            // {
-            //     label: "Filter",
-            //     icon: Filter,
-            //     variant: "outline",
-            //     onClick: () => setOpenFilter(true),
-            // },
-            {
-                label: "Export CSV",
-                icon: Search,
-                variant: "default",
-                onClick: () => downloadCSV(transformData, pipelineName),
-            },
-        ],
-    };
 
     const handleFilterClose = () => {
         setOpenFilter(false)
     }
 
-   
     const handleSortClose = () => {
         setOpenSort(false)
     }
@@ -133,6 +95,10 @@ export default function PipeLinePopUp({
         pageIndex * pageSize
     );
 
+    const handleExportCSV = () => {
+        downloadCSV(transformData, pipelineName);
+    };
+
     return (
         <Dialog
             open={open}
@@ -143,7 +109,7 @@ export default function PipeLinePopUp({
             }}
         >
             {/* Dialog content container */}
-            <DialogContent className="max-w-[1250px] p-0">
+            <DialogContent className="max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw] p-0 h-[80vh] flex flex-col">
                 {/* If !isExpanded => top portion with table */}
                 {!isExpanded && (
                     <div className="p-4 flex flex-col h-full">
@@ -153,14 +119,26 @@ export default function PipeLinePopUp({
                                 <DialogTitle className="font-semibold text-lg">
                                     {pipelineName}
                                 </DialogTitle>
-                                {/* <HeaderActions onClose={handleClose} /> */}
+                                <div className="flex items-center gap-6">
+                                    <button 
+                                        onClick={handleExportCSV}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-md text-sm hover:bg-primary/90 transition-colors"
+                                    >
+                                        <Search className="h-4 w-4" />
+                                        Export CSV
+                                    </button>
+                                    <DialogClose onClick={handleClose} className="cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                        {/* <X className="h-5 w-5 hover:text-primary transition-colors" /> */}
+                                        <span className="sr-only">Close</span>
+                                    </DialogClose>
+                                </div>
                             </div>
                         </DialogHeader>
 
-                        {/* Table container with fixed height */}
-                        <div className="w-full overflow-x-auto flex-1 relative" style={{ maxHeight: 'calc(55vh - 100px)', minHeight: 'calc(55vh - 100px)' }}>
+                        {/* Table container with dynamic height */}
+                        <div className="w-full flex-1 overflow-hidden flex flex-col">
                             {isLoading ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-white/95 to-white/98 backdrop-blur-sm">
+                                <div className="flex-1 flex flex-col items-center justify-center gap-4">
                                     <div className="relative">
                                         <div className="absolute -inset-4 rounded-full bg-primary/10 blur-xl animate-pulse"></div>
                                         <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
@@ -175,15 +153,42 @@ export default function PipeLinePopUp({
                                     </div>
                                 </div>
                             ) : transformData.length > 0 ? (
-                                <DataTable
-                                    data={paginatedData}
-                                    columns={columns}
-                                    toolbarConfig={toolbarConfig}
-                                    topVariant="simple"
-                                    pagination={false}
-                                />
+                                <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
+                                    <div className="inline-block min-w-full align-middle">
+                                        <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    {columns.map((column) => (
+                                                        <th 
+                                                            key={column} 
+                                                            scope="col" 
+                                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky top-0 bg-gray-50"
+                                                        >
+                                                            {column}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {paginatedData.map((row, rowIndex) => (
+                                                    <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        {columns.map((column) => (
+                                                            <td 
+                                                                key={`${rowIndex}-${column}`} 
+                                                                className="px-4 py-2 text-sm text-gray-900 truncate max-w-[200px]"
+                                                                title={String(row[column])}
+                                                            >
+                                                                {String(row[column])}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             ) : (
-                                <div className="text-center py-8 text-gray-500">
+                                <div className="flex-1 flex items-center justify-center text-center py-8 text-gray-500">
                                     No data available
                                 </div>
                             )}
@@ -191,13 +196,13 @@ export default function PipeLinePopUp({
 
                         {/* Pagination Footer */}
                         {transformData.length > 0 && (
-                            <div className="mt-4 border-t pt-4 flex justify-between items-center">
+                            <div className="mt-4 border-t pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
                                 <div className="text-sm text-gray-500">
                                     Showing {((pageIndex - 1) * pageSize) + 1} to {Math.min(pageIndex * pageSize, totalCount || transformData.length)} of {totalCount || transformData.length} entries
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <select
-                                        className="border rounded px-2 py-1"
+                                        className="border rounded px-2 py-1 text-sm bg-white"
                                         value={pageSize}
                                         onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                                     >
@@ -207,40 +212,28 @@ export default function PipeLinePopUp({
                                             </option>
                                         ))}
                                     </select>
-                                    <button
-                                        className="px-3 py-1 border rounded disabled:opacity-50"
-                                        onClick={() => handlePageChange(pageIndex - 1)}
-                                        disabled={pageIndex === 1}
-                                    >
-                                        Previous
-                                    </button>
-                                    <button
-                                        className="px-3 py-1 border rounded disabled:opacity-50"
-                                        onClick={() => handlePageChange(pageIndex + 1)}
-                                        disabled={pageIndex >= Math.ceil((totalCount || transformData.length) / pageSize)}
-                                    >
-                                        Next
-                                    </button>
+                                    <div className="flex">
+                                        <button
+                                            className="px-3 py-1 border border-r-0 rounded-l text-sm disabled:opacity-50 disabled:bg-gray-100 hover:bg-gray-50 transition-colors"
+                                            onClick={() => handlePageChange(pageIndex - 1)}
+                                            disabled={pageIndex === 1}
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            className="px-3 py-1 border rounded-r text-sm disabled:opacity-50 disabled:bg-gray-100 hover:bg-gray-50 transition-colors"
+                                            onClick={() => handlePageChange(pageIndex + 1)}
+                                            disabled={pageIndex >= Math.ceil((totalCount || transformData.length) / pageSize)}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* If isExpanded => show logs or alternate content */}
-                {isExpanded && (
-                    <div className="p-4 w-full overflow-x-auto">
-                        {/* Header */}
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold">
-                                Pipeline Name: {pipelineName}
-                            </span>
-                            <HeaderActions onClose={handleClose} showSearch={true} />
-                        </div>
-
-                        <div className="font-semibold">Showing All Logs</div>
-                    </div>
-                )}
             </DialogContent>
             <AddFilterPopUp handleFilterClose={handleFilterClose} openFilter={openFilter} />
             <AddSortPopUp handleSortClose={handleSortClose} openSort={openSort} />

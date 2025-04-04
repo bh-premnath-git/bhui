@@ -110,7 +110,7 @@ console.log(pipelineJson)
                     errorMessage: 'Failed to fetch source details'
                 },
             })
-          debugger;
+        //   debugger;
             console.log(sourceDetails)
 console.log(pipelineJson.sources)
 let updatedDetails=pipelineJson.sources?.find(item=>item.data_src_id===sourceDetails.data_src_id);

@@ -318,7 +318,7 @@ export function ConnectionForm({
       case 'postgres':
         return {
           name: connectionConfigName,
-          connection_type: "postgresql",
+          connection_type: "PostgreSQL",
           schema: data.schemas || null,
           database: data?.database || null,
           secret_name: `bh-postgres-${cleanedName}`
@@ -326,7 +326,7 @@ export function ConnectionForm({
       case 'mysql':
         return {
           name: connectionConfigName,
-          connection_type: "mysql",
+          connection_type: "MySQL",
           schema: data.db_schema || null,
           database: data?.database || null,
           secret_name: `bh-mysql-${cleanedName}`
@@ -334,7 +334,7 @@ export function ConnectionForm({
       case 's3':
         return {
           name: connectionConfigName,
-          connection_type: "s3",
+          connection_type: "S3",
           file_path_prefix: data.landing_folder || '',
           bucket: data?.bucket_name || null,
           secret_name: `bh-s3-${cleanedName}`
@@ -342,7 +342,7 @@ export function ConnectionForm({
       case 'bigquery':
         return {
           name: connectionConfigName,
-          connection_type: "bigquery",
+          connection_type: "BigQuery",
           project_id: data.project_id || '',
           dataset_id: data?.dataset_id || null,
           temp_gcs_bucket: data?.temp_gcs_bucket || null,

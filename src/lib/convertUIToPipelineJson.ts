@@ -1,5 +1,5 @@
 import { Node, Edge } from 'reactflow';
-import { UINode } from './pipelineJsonConverter';
+import { convertToOptimizedPipelineJson, resolveRefs, UINode } from './pipelineJsonConverter';
 import { validatePipelineConnections } from './validatePipelineConnections';
 
 
@@ -269,7 +269,25 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         
     }));
 console.log(targets,"targets")
-   
+//    let optimized=convertToOptimizedPipelineJson({
+//     $schema: "https://json-schema.org/draft-07/schema#",
+//     name: pipelineDtl?.pipeline_name || "sample_pipeline",
+//     description: pipelineDtl?.pipeline_description || " ",
+//     version: "1.0",
+//     mode: "DEBUG",
+//     parameters: [],
+//     sources,
+//     targets,
+//     transformations: [
+//         ...readerTransformations,
+//         ...regularTransformations.filter(Boolean),
+//         // ...writerTransformations
+//     ]
+// })
+// console.log(optimized,"optimized")
+// let resolved=resolveRefs(optimized,optimized)
+// console.log(resolved,"resolved")
+// return optimized;
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -293,4 +311,32 @@ console.log(targets,"targets")
 
 function capitalizeFirstLetter(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+}
+
+export const convertOptimisedPipelineJsonToPipelineJson=async(nodes:Node[],edges:Edge[],pipelineDtl:any,validateOnly:boolean=false)=>{
+let pipelineJson:any=await convertUIToPipelineJson(nodes,edges,pipelineDtl,validateOnly);
+console.log(pipelineJson,"pipelineJson");
+let optimized=convertToOptimizedPipelineJson(pipelineJson?.pipeline_json);
+console.log(optimized,"optimized");
+let resolved=resolveRefs(optimized,optimized);
+console.log(resolved,"resolved");
+return {pipeline_json:optimized};
+}
+
+
+export const resolveRefsPipelineJson = (optimized: any, pipelineJson: any) => {
+    
+    let resolved = resolveRefs(optimized, pipelineJson);
+    
+    // Convert sources from object to array
+    if (resolved.sources && typeof resolved.sources === 'object' && !Array.isArray(resolved.sources)) {
+        resolved.sources = Object.values(resolved.sources);
+    }
+    
+    // Convert targets from object to array
+    if (resolved.targets && typeof resolved.targets === 'object' && !Array.isArray(resolved.targets)) {
+        resolved.targets = Object.values(resolved.targets);
+    }
+    
+    return resolved;
 }

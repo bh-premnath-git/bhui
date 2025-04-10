@@ -94,13 +94,16 @@ export const patchFlowOperation = createAsyncThunk(
 
 export const updateFlowConfiguration = createAsyncThunk(
     "flows/updateFlowConfiguration",
-    async (data: { flow_config_id: number, flow_config: { flow_config: any[] } }) => {
+    async (data: { flow_config_id: number, flow_config: string }) => {
         const response = await apiService.put<Flow>({
             portNumber: CATALOG_API_PORT,
-            url: `/flow/flow-config/${data.flow_config_id}/`,
+            url: `/flow/flow-config/${data.flow_config_id}`,
             data: data.flow_config,
             usePrefix: true,
             method: 'PUT',
+            additionalHeaders: {
+                'Content-Type': 'application/json'
+            },
             metadata: {
                 errorMessage: 'Failed to update flow configuration'
             }
@@ -362,6 +365,9 @@ const flowSlice = createSlice({
                 console.log('Update Flow Configuration - Current selectedFlow:', state.selectedFlow);
                 
                 if (state.selectedFlow && state.selectedFlow.flow_config) {
+                    // Parse the string back into an array
+                    const parsedConfig = JSON.parse(action.meta.arg.flow_config);
+                    
                     // Update the flow_config in the selectedFlow
                     state.selectedFlow = {
                         ...state.selectedFlow,
@@ -369,9 +375,7 @@ const flowSlice = createSlice({
                             config.flow_config_id === action.meta.arg.flow_config_id 
                                 ? { 
                                     ...config, 
-                                    // Use the actual API response if available, otherwise use the sent data
-                                    flow_config: action.payload?.flow_config?.[0]?.flow_config || 
-                                                action.meta.arg.flow_config.flow_config 
+                                    flow_config: parsedConfig.flow_config
                                   }
                                 : config
                         )

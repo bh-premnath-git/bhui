@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react"
+import { useEffect, useState } from "react"
 import { Filters } from "./filterSelect"
 import {
   LatencyTrendChart,
@@ -101,7 +101,7 @@ const DashboardContent = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="relative w-full bg-card/70 backdrop-blur-sm p-6 shadow-sm">
+        <div className="relative w-full bg-card/70 backdrop-blur-sm p-2 shadow-sm">
           <div className="absolute inset-0 bg-grid-black/[0.02] -z-10" />
           
           <SortableContext 

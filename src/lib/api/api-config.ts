@@ -16,7 +16,7 @@ export interface ApiConfig {
   portNumber?: string;
   method: string;
   url: string;
-  data?: Record<string, any> | FormData;
+  data?: string | Record<string, any> | FormData;
   params?: Record<string, any>;
   query?: string;
   additionalHeaders?: Record<string, string>;

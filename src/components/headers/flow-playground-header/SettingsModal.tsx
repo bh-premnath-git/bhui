@@ -25,13 +25,6 @@ interface ConfigItem {
   key: string;
   value: string;
 }
-
-interface SettingsModalProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-  selectedData?: any;
-}
-
 // Configuration Row Component
 const ConfigRow: React.FC<{
   config: ConfigItem;
@@ -151,7 +144,6 @@ export const SettingsModal = () => {
 
   const dispatch = useAppDispatch();
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
-
   useEffect(() => {
     if (isOpen && selectedFlow) {
       // Initialize with data from selectedFlow
@@ -272,11 +264,15 @@ export const SettingsModal = () => {
             cleanedConfigs :
             [{ key: '', value: '' }];
 
-          console.log('Cleaned configs to save:', configsToSave);
+          // Create the flow_config object and stringify it
+          const flowConfigString = JSON.stringify({
+            flow_config
+              : { flow_config: configsToSave }
+          });
 
           await dispatch(updateFlowConfiguration({
             flow_config_id,
-            flow_config: { flow_config: configsToSave }
+            flow_config: flowConfigString
           }));
         }
       }

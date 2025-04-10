@@ -120,6 +120,7 @@ export interface ModuleType {
     type: OperatorType;
     description: string;
     properties: BaseOperatorProperties;
+    requiredFields: string[];
   }>;
 }
 

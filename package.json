@@ -59,6 +59,7 @@
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^10.17.9",
     "input-otp": "^1.2.4",
+    "json-schema-ref-parser": "^9.0.9",
     "jspdf": "^3.0.0",
     "jspdf-autotable": "^5.0.2",
     "keycloak-js": "^24.0.3",

@@ -13,6 +13,7 @@ import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList
 import { LoaderCircle } from 'lucide-react';
 import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
 
 const BuildPlayGround: React.FC = () => {
     const {conversionLogs,
@@ -151,6 +152,7 @@ useEffect(()=>{
 
   return (
       <div className="relative h-full">
+        {/* <ResolveSchema/> */}
           <div className="p-1 ml-8">
              
             
@@ -160,20 +162,32 @@ useEffect(()=>{
   </div>
 </div>
               {debuggedNodesList?.length > 0 && (
-                  <div className="mb-4 p-2 bg-blue-50 rounded-lg">
-                      <h3 className="text-sm font-medium text-blue-900 mb-2">Debugged Nodes:</h3>
-                      <div className="flex flex-wrap gap-2">
+                  <div className="absolute top-2 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
+                      <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Debug Mode
+                          </h3>
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                              {debuggedNodesList.length} nodes
+                          </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 overflow-y-auto custom-scrollbar pr-1" style={{ maxHeight: `${Math.min(40 * Math.ceil(debuggedNodesList.length / 2), 300)}px` }}>
                           {debuggedNodesList.map(({ id, title }) => (
                               <div
                                   key={id}
-                                  className="flex items-center gap-2 bg-white px-3 py-1 rounded-full text-sm text-blue-700 border border-blue-200"
+                                  className="group flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg text-sm text-blue-700 border border-blue-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
                               >
-                                  <span>{title}</span>
+                                  <span className="truncate max-w-[180px]" title={title}>{title}</span>
                                   <button
                                       onClick={() => handleDebugToggle(id, title)}
-                                      className="hover:text-blue-900"
+                                      className="opacity-70 hover:opacity-100 hover:text-red-500 transition-all duration-200 ml-1"
+                                      title="Remove from debug"
+                                      aria-label={`Remove ${title} from debug list`}
                                   >
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                       </svg>
                                   </button>
@@ -182,14 +196,7 @@ useEffect(()=>{
                       </div>
                   </div>
               )}
-              <div className="flex justify-center gap-4 mb-4">
-                  <NodeDropList
-                      filteredNodes={filteredNodes}
-                      handleNodeClick={handleNodeClick}
-                      addNodeToHistory={addNodeToHistory}
-                  />
-
-              </div>
+             
               <div style={{ height: '75vh', width: '100%', }}>
                   <ReactFlow
                       nodes={nodes?.map(node => ({

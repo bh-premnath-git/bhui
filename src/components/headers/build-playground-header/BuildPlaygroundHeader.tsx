@@ -20,18 +20,24 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 // import { AIButton } from '../flow-playground-header';
 import { PipeLineAIButton } from './PipeLineAIButton';
 import { useAppSelector } from '@/hooks/useRedux';
+import SearchNode from './components/SearchNode';
+import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
+import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
+import { HiOutlinePlay } from 'react-icons/hi';
+import { MdOutlineStop, MdOutlineSkipNext } from 'react-icons/md';
+import PipelineControls from './components/PipelineControls';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
   const { id } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
-  
-  const { 
-    pipelineName: contextPipelineName, 
-    setUnsavedChanges, 
-    setSaving, 
-    setSaved, 
+
+  const {
+    pipelineName: contextPipelineName,
+    setUnsavedChanges,
+    setSaving,
+    setSaved,
     setPipeLineName,
     setLastSaved,
     lastSaved,
@@ -42,20 +48,22 @@ export function BuildPlaygroundHeader() {
     searchTerm,
     searchResults,
     highlightedNodeId,
+    handleNodeClick, addNodeToHistory,
+    handleRunClick, isPipelineRunning,handleNext,handleStop,handleRun
   } = usePipelineContext();
   const localState = useMemo(() => ({
     isSaving,
     lastSaved,
     hasUnsavedChanges,
     pipelineName: contextPipelineName?.pipeLineName,
-    
+
   }), [isSaving, lastSaved, hasUnsavedChanges, contextPipelineName]);
   // console.log(lastSaved,"localState",isSaving)
-  console.log(contextPipelineName,"contextPipelineName")
+  console.log(contextPipelineName, "contextPipelineName")
 
   const { buildPipeLineDtl } = useSelector((state: RootState) => state.buildPipeline);
   const { selectedPipeline } = useAppSelector((state) => state.pipeline);
-console.log(selectedPipeline,"selectedPipeline")
+  console.log(selectedPipeline, "selectedPipeline")
 
   const [localPipelineName, setLocalPipelineName] = useState(selectedPipeline?.pipeline_name || contextPipelineName?.pipeLineName || '');
   const [tempPipelineName, setTempPipelineName] = useState(selectedPipeline?.pipeline_name || contextPipelineName?.pipeLineName || '');
@@ -63,9 +71,9 @@ console.log(selectedPipeline,"selectedPipeline")
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const filteredNodes = useMemo(() => nodeData.nodes, []);
 
-
-console.log(selectedPipeline,"selectedPipeline")
+  console.log(selectedPipeline, "selectedPipeline")
 
   useEffect(() => {
     if (contextPipelineName?.pipeLineName) {
@@ -76,12 +84,12 @@ console.log(selectedPipeline,"selectedPipeline")
       setTempPipelineName(buildPipeLineDtl.pipeline_name);
     }
   }, [buildPipeLineDtl?.pipeline_name, contextPipelineName?.pipeLineName]);
-useEffect(()=>{
-  if(buildPipeLineDtl?.pipeline_name){
-    setLocalPipelineName(buildPipeLineDtl.pipeline_name);
-    setTempPipelineName(buildPipeLineDtl.pipeline_name);
-  }
-},[buildPipeLineDtl])
+  useEffect(() => {
+    if (buildPipeLineDtl?.pipeline_name) {
+      setLocalPipelineName(buildPipeLineDtl.pipeline_name);
+      setTempPipelineName(buildPipeLineDtl.pipeline_name);
+    }
+  }, [buildPipeLineDtl])
 
   const renderSaveStatus = useMemo(() => {
     if (localState.isSaving) {
@@ -118,7 +126,7 @@ useEffect(()=>{
     if (tempPipelineName !== localPipelineName) {
       setSaving();
       try {
-        if(id){
+        if (id) {
           await apiService.patch({
             portNumber: CATALOG_API_PORT,
             url: `/pipeline/${id}`,
@@ -127,8 +135,8 @@ useEffect(()=>{
             data: { pipeline_name: tempPipelineName }
           });
         }
-        
-        
+
+
         setLocalPipelineName(tempPipelineName);
         setPipeLineName({ pipeLineName: tempPipelineName });
         setSaved();
@@ -153,7 +161,7 @@ useEffect(()=>{
   };
 
   return (
-    <div className="bg-[#fff] w-[100%] p-1 border-b border-border">
+    <div className="bg-[#fff] w-[100%] p-0 border-b border-border">
       <TooltipProvider>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -182,10 +190,10 @@ useEffect(()=>{
               ) : (
                 <div className="flex items-center">
                   <span className="flex-grow truncate pr-8">{localPipelineName}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
                     onClick={handleNameEdit}
                     aria-label="Edit pipeline name"
                   >
@@ -212,10 +220,10 @@ useEffect(()=>{
             </Popover>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  className='border bg-gray-50' 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  className='border bg-gray-50'
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setIsPipelineParamOpen(true)}
                   aria-label="Pipeline Parameters"
                 >
@@ -226,12 +234,12 @@ useEffect(()=>{
                 <p>Pipeline Parameters</p>
               </TooltipContent>
             </Tooltip>
-            <Tooltip>
+            <Tooltip >
               <TooltipTrigger asChild>
-                <Button 
-                  className='border bg-gray-50' 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  className='border bg-gray-50'
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setIsSparkParamOpen(true)}
                   aria-label="Spark Parameters"
                 >
@@ -242,60 +250,44 @@ useEffect(()=>{
                 <p>Spark Parameters</p>
               </TooltipContent>
             </Tooltip>
-            
+            <PipelineControls
+              handleRunClick={handleRun}
+              handleStop={handleStop}
+              handleNext={handleNext}
+              isPipelineRunning={isPipelineRunning}
+            />
+
+            <div className="flex justify-center gap-4 border-l border-border pl-3">
+                  <NodeDropList
+                      filteredNodes={filteredNodes}
+                      handleNodeClick={handleNodeClick}
+                      addNodeToHistory={addNodeToHistory}
+                  />
+              </div>
+
           </div>
           <div className="flex justify-end w-full sm:w-auto ">
-          <div className='px-6'>
-          <div className="relative ">
-              <div className="relative">
-                <Input
-                  data-search-input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search nodes... (Ctrl+F)"
-                  className="w-64 px-4 py-2 pr-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Search className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-              {searchResults?.length > 0 && searchTerm && (
-                <div className="absolute mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-100 max-h-60 overflow-y-auto z-50">
-                  {searchResults.map((result) => (
-                    <button
-                      key={result.id}
-                      onClick={() => handleSearchResultClick(result.id)}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-800">{result.title}</span>
-                        <span className="text-xs text-gray-500">{result.label}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className='px-6'>
+              <SearchNode searchTerm={searchTerm} handleSearch={handleSearch} searchResults={searchResults} handleSearchResultClick={handleSearchResultClick} />
             </div>
-          </div>
-<div className="border-l border-border pl-6 ">
-  <PipeLineAIButton />
-</div>
+            <div className="border-l border-border pl-6 ">
+              <PipeLineAIButton />
+            </div>
            
           </div>
         </div>
       </TooltipProvider>
-      <ParameterModal 
-        isOpen={isPipelineParamOpen} 
-        onClose={() => setIsPipelineParamOpen(false)} 
-        type="pipeline" 
+      <ParameterModal
+        isOpen={isPipelineParamOpen}
+        onClose={() => setIsPipelineParamOpen(false)}
+        type="pipeline"
       />
-      <ParameterModal 
-        isOpen={isSparkParamOpen} 
-        onClose={() => setIsSparkParamOpen(false)} 
-        type="spark" 
+      <ParameterModal
+        isOpen={isSparkParamOpen}
+        onClose={() => setIsSparkParamOpen(false)}
+        type="spark"
       />
-      
+
     </div>
   )
 }

@@ -119,25 +119,20 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
     useEffect(() => {
         if (source) {
+            let connection={...source.source?.connection};
+            connection.connection_config_id=connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
             console.log(source,"sdsd")
+            console.log(connection,"connection")
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
-                    target_type: source.source?.connection?.connection_type?.toLowerCase()==="postgresql"?'Relational':'File',
+                    target_type: source.source?.target_type||pipelineJsonData?.target?.target_type,
                     target_name: source.source?.target_name,
                     table_name: source.source?.table_name,
                     load_mode: source.source?.load_mode,
                     file_name: source.source?.file_name,
-                    connection: {
-                        connection_config_id: source.source?.connection?.connection_config_id,
-                        file_path_prefix: source.source?.connection?.file_path_prefix,
-                        type: source.source?.connection?.connection_type,
-                        connection_name: source.source?.connection?.name,
-                        database: source.source?.connection?.database,
-                        schema: source.source?.connection?.schema,
-                        secret_name: source.source?.connection?.secret_name
-                    }
+                    connection: connection
                 },
                 file_type: source.source?.file_type||pipelineJsonData?.target?.file_type?.toUpperCase()||'CSV',
                 write_options: source.transformationData?.write_options
@@ -457,19 +452,22 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             toast.error("Please fill all required fields");
             return;
         }
+        console.log(formData,"formData")
 
         try {
             const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
+            let connection ={...connectionData?.custom_metadata};
+            connection.connection_config_id=formData.target?.connection?.connection_config_id;
             console.log(selectedConnection,"connectionData")
             console.log(connectionData?.custom_metadata,"connectionData")
+            console.log(connection,"formData")
             // Use formData.name as the nodeTitle
-            const nodeTitle = formData.name;
+            // const nodeTitle = formData.name;
             // Create a properly structured source data object
             const sourceData = {
                 nodeId,
                 sourceData: {
                     data: {
-                        ...formData,
                         label: formData.name,
                         title: formData.name, // Set the title to the name entered by user
                         source: {
@@ -478,27 +476,10 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                             target_name: formData.target?.target_name,
                             table_name: formData.target?.table_name,
                             file_type: formData.file_type,
-                            connection: {
-                                name: connectionData?.connection_config_name,
-                                connection_type: connectionData?.custom_metadata?.type || connectionData?.connection_name,
-                                file_path_prefix: formData.target?.connection?.file_path_prefix,
-                                connection_config_id: formData.target?.connection?.connection_config_id,
-                                database: connectionData?.custom_metadata?.database,
-                                schema: connectionData?.custom_metadata?.schema || "public",
-                                secret_name: connectionData?.secret_name
-                            },
+                            connection: connection,
                             file_name: formData.target?.file_name,
                             load_mode: formData.target?.load_mode
                         },
-                        transformationData: {
-                            ...formData, 
-                            name: nodeTitle, // Update transformation name as well
-                            file_type: formData.file_type || "csv",
-                            write_options: formData.write_options || {
-                                header: true,
-                                sep: "|"
-                            }
-                        }
                     }
                 }
             };

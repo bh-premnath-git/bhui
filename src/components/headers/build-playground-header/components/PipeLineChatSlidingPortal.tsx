@@ -54,6 +54,7 @@ const location = useLocation();
 console.log(location.pathname);
   const [isProcessing, setIsProcessing] = useState(false);
   const {setPipelineJson,setPipeLineName,setNodes,setEdges,setFormStates,handleSourceUpdate,handleCenter,handleAlignHorizontal}=usePipelineContext();
+  const [isNewChat, setIsNewChat] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -297,14 +298,25 @@ console.log(result.pipeline_definition,"nodesWithTitles");
     handleSend();
   };
 
+  const handleNewChat = () => {
+    setIsNewChat(true);
+    clearMessages();
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[600px] p-0 flex flex-col h-full border-none bg-background/95 backdrop-blur-md" style={{zIndex: 10000000}}>
-        <div className="px-6 py-4 border-b bg-background/70 backdrop-blur-md">
+        <div className="px-6 py-4 border-b bg-background/70 backdrop-blur-md flex justify-between items-center">
           <h2 className="text-base font-medium">BigHammer.ai</h2>
+          <button
+            onClick={handleNewChat}
+            className="text-sm text-primary hover:underline"
+          >
+            New Chat
+          </button>
         </div>
         
-        {messages.length === 0 ? (
+        {isNewChat || messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
               <img 

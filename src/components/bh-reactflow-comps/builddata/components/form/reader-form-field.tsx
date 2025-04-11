@@ -172,8 +172,11 @@ export const ReaderFormField: React.FC<{
                     </Label>
                     <select
                         name="connection_config_id"
-                        value={formData.source?.connection?.connection_config_id || ""}
-                        onChange={(e) => onChange(e, path)}
+                        value={formData.source?.connection_config_id || ""}
+                        onChange={(e) => {
+                            const newValue = e.target.value;
+                            onChange(e, [...path, 'connection', 'connection_config_id']);
+                        }}
                         disabled={isFieldDisabled}
                         className="w-full h-8 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                     >

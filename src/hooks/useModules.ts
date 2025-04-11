@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import schema from '@/pages/designers/flow-playground/data/flow_schema.json';
+import schema from '@bh-ai/flow-schema';
 
 export function useModules() {
   return useMemo(() => {
     const operators = schema.properties.tasks.items.oneOf;
-
+    debugger;
     const normalizedOperators = operators.map((operator: any, index: number) => {
       const { description } = operator.properties.type;
       const { module_name, color, icon } = operator.properties.type.ui_properties;

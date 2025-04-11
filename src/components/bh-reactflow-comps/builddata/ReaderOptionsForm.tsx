@@ -81,21 +81,28 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     useEffect(() => {
         if (initialData) {
+            const selectedConn = connectionConfigList.find(
+                conn => conn.connection_config_name === initialData.source?.connection?.name
+            );
+
             setFormData({
                 ...initialData,
-                file_type: initialData.source?.connection?.file_type.toUpperCase() || initialData.file_type,
+                file_type: initialData.source?.connection?.file_type?.toUpperCase() || initialData.file_type,
                 source: {
                     ...initialData.source,
                     connection: {
-                        ...initialData.source.connection
+                        ...initialData.source.connection,
+                        connection_config_id: selectedConn?.id || initialData.source.connection.connection_config_id,
+                        name: selectedConn?.connection_config_name || initialData.source.connection.name,
+                        connection_type: selectedConn?.custom_metadata?.connection_type || initialData.source.connection.connection_type,
+                        database: selectedConn?.custom_metadata?.database || initialData.source.connection.database,
+                        schema: selectedConn?.custom_metadata?.schema || initialData.source.connection.schema,
+                        secret_name: selectedConn?.custom_metadata?.secret_name || initialData.source.connection.secret_name
                     },
                     table_name: initialData.source?.table_name || ''
                 }
             });
 
-            const selectedConn = connectionConfigList.find(
-                conn => conn.id === initialData.source?.connection?.connection_config_id
-            );
             setSelectedConnection(selectedConn);
         }
     }, [initialData, connectionConfigList]);
@@ -219,7 +226,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+console.log(formData,"formData")
         const missingFields = validateFormData(currentSchema, formData);
 
         if (missingFields.length > 0) {
@@ -246,19 +253,14 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             data_src_id: formData.source?.data_src_id,
                             data_src_name: formData.reader_name,
                             data_src_desc: formData.reader_name,
-                            connection_type: connectionData?.custom_metadata?.type?.toLowerCase()=="postgres"?"postgresql":connectionData?.custom_metadata?.type,
-                            connection_config_id: formData.source?.connection?.connection_config_id,
+                            connection_type: formData.source?.connection?.connection_type,
+                            connection_config_id: formData.source?.connection_config_id,
                             file_name: formData.source?.file_name,
                             file_path_prefix: formData.source?.connection?.file_path_prefix,
                             file_type: formData?.file_type,
                             table_name: formData.source?.table_name,
                             type: formData.source?.type,
-                            custom_metadata: formData.source?.custom_metadata,
-                            connection_config: {
-                                connection_name: formData.source?.connection?.connection_name,
-                                file_type: formData?.file_type
-                            },
-                            // custom_metadata: formData
+                            connection_config:{custom_metadata: formData.source?.connection},
                         }
                     }
                 }

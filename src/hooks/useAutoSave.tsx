@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError } from '@/store/slices/designer/features/autoSaveSlice';
-import { convertUIToPipelineJson, useUpdatePipelineMutation } from '@/lib/pipelineJsonConverter';
+import {  useUpdatePipelineMutation } from '@/lib/pipelineJsonConverter';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useParams } from 'react-router-dom';
+import { convertOptimisedPipelineJsonToPipelineJson } from '@/lib/convertUIToPipelineJson';
 
 export const useAutoSave = () => {
     const { id } = useParams();
@@ -20,7 +21,7 @@ export const useAutoSave = () => {
             if (saveStatus.hasUnsavedChanges) {
                 try {
                     dispatch(setSaving());
-                    const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+                    const pipeline_json = convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
                     await updatePipeline.mutateAsync({ id, pipeline_json });
                     dispatch(setSaved());
                     setValidationErrors([]);

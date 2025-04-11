@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Construction, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { encrypt_string } from '@/lib/encryption';
+import { decrypt_string, encrypt_string } from '@/lib/encryption';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,11 @@ interface ConnectionFormProps {
   isEdit?: boolean;
   formData?: any;
 }
+
+// Utility function to clean the connectionConfigName
+const cleanConnectionConfigName = (name: string) => {
+  return name.replace(/[_-]/g, '');
+};
 
 export function ConnectionForm({ 
   connectionType, 
@@ -67,7 +72,27 @@ export function ConnectionForm({
             `@/components/bh-reactflow-comps/builddata/json/${connectionName.toLowerCase()}.json`
           );
           if (module?.default?.connectionSpecification) {
-            setSchema(module.default.connectionSpecification);
+            let schema = module.default.connectionSpecification;
+            
+            // Modify the schema for BigQuery to use textarea
+            if (connectionName.toLowerCase() === 'bigquery' && schema.properties.credentials_json) {
+              schema = {
+                ...schema,
+                properties: {
+                  ...schema.properties,
+                  credentials_json: {
+                    ...schema.properties.credentials_json,
+                    type: "string",
+                    format: "textarea",
+                    title: "Credentials JSON",
+                    description: "Your BigQuery credentials in JSON format"
+                  }
+                }
+              };
+              console.log('Modified BigQuery schema:', schema);
+            }
+            
+            setSchema(schema);
           } else {
             console.error('Invalid schema format:', module);
             setSchema(null);
@@ -150,7 +175,7 @@ export function ConnectionForm({
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
-        schemas: schemasArray,
+        schemas: schemasArray[0],
         // Add SSL mode if present
         ...(data.ssl_mode && { ssl_mode: data.ssl_mode }),
         // Add JDBC params if present
@@ -177,14 +202,44 @@ export function ConnectionForm({
     }
   
     if (type === 'bigquery') {
-      if (!data.credentials_json) {
-        console.warn('credentials_json is missing from form data');
+      let parsedCredentials;
+      try {
+        console.log('Raw credentials_json:', data.credentials_json);
+        
+        if (typeof data.credentials_json === 'string') {
+          // Try to clean the string before parsing
+          const cleanedJson = data.credentials_json
+            .replace(/\r?\n|\r/g, '') // Remove all newlines
+            .trim(); // Remove leading/trailing whitespace
+          console.log('Cleaned credentials_json:', cleanedJson);
+          
+          try {
+            parsedCredentials = JSON.parse(cleanedJson);
+          } catch (parseError) {
+            // If parsing fails, try to use the string as-is
+            console.warn('Failed to parse cleaned JSON, using raw string:', parseError);
+            parsedCredentials = data.credentials_json;
+          }
+        } else if (typeof data.credentials_json === 'object') {
+          parsedCredentials = data.credentials_json;
+        } else {
+          console.warn('Unexpected credentials_json type:', typeof data.credentials_json);
+          parsedCredentials = data.credentials_json;
+        }
+      } catch (error) {
+        console.error('Error handling credentials_json:', error);
+        // Use the raw value if all parsing attempts fail
+        parsedCredentials = data.credentials_json;
       }
-      
+
+      // console.log('Final parsed credentials:', JSON.parse(parsedCredentials));
+      console.log('Final parsed credentials:', typeof parsedCredentials);
+
       return {
         project_id: data.project_id,
         dataset_id: data.dataset_id,
-        credentials_json: data.credentials_json,
+        credentials_json: parsedCredentials,
+        temp_gcs_bucket: data.temp_gcs_bucket,
         ...commonFields,
       };
     }
@@ -196,7 +251,7 @@ export function ConnectionForm({
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
-        schemas: data.schemas || '',
+        schemas: data.db_schema || '',
         ...commonFields,
       };
     }
@@ -245,6 +300,59 @@ export function ConnectionForm({
   };
   
 
+  const generateCustomMetadata = (type: string, data: any) => {
+    console.log(type, "type");
+    console.log(data, "data");
+    console.log(connectionConfigName, "data.file_path_prefix");
+
+    // Clean the connectionConfigName
+    const cleanedName = cleanConnectionConfigName(connectionConfigName || '');
+
+    switch (type.toLowerCase()) {
+      case 'local':
+        return {
+          name: connectionConfigName,
+          connection_type: "Local",
+          file_path_prefix: data.file_path_prefix || null
+        };
+      case 'postgres':
+        return {
+          name: connectionConfigName,
+          connection_type: "PostgreSQL",
+          schema: data.schemas || null,
+          database: data?.database || null,
+          secret_name: `bh-postgres-${cleanedName}`
+        };
+      case 'mysql':
+        return {
+          name: connectionConfigName,
+          connection_type: "MySQL",
+          schema: data.db_schema || null,
+          database: data?.database || null,
+          secret_name: `bh-mysql-${cleanedName}`
+        };
+      case 's3':
+        return {
+          name: connectionConfigName,
+          connection_type: "S3",
+          file_path_prefix: data.landing_folder || '',
+          bucket: data?.bucket_name || null,
+          secret_name: `bh-s3-${cleanedName}`
+        };
+      case 'bigquery':
+        return {
+          name: connectionConfigName,
+          connection_type: "BigQuery",
+          project_id: data.project_id || '',
+          dataset_id: data?.dataset_id || null,
+          temp_gcs_bucket: data?.temp_gcs_bucket || null,
+          secret_name: `bh-bigquery-${cleanedName}`
+        };
+      default:
+        throw new Error(`Unsupported connection type: ${type}`);
+    }
+  };
+
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
@@ -259,12 +367,13 @@ export function ConnectionForm({
             project_id: rawFormData.project_id,
             dataset_id: rawFormData.dataset_id,
             credentials_json: rawFormData.credentials_json,
+            temp_gcs_bucket: rawFormData.temp_gcs_bucket,
           }
         : { ...data };
 
       console.log('Form data before processing:', formData);
       
-      const configUnion: any = getConfigUnionForType(connectionName, formData, connectionType);
+      const configUnion: any = await getConfigUnionForType(connectionName, formData, connectionType);
       console.log('Config before encryption:', configUnion);
 
       if (!configUnion) {
@@ -272,35 +381,32 @@ export function ConnectionForm({
       }
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
-let custom_metadata=data;
-custom_metadata.connection_name=connectionDisplayName;
-if(configUnion?.schemas){
-custom_metadata.schema=configUnion?.schemas[0];
-}
-if(configUnion?.credentials_json){
-  custom_metadata.credentials_json=configUnion?.credentials_json;
-}
+      console.log(decrypt_string(encryptedString, initVector), "initVector");
 
-console.log(custom_metadata,"custom_metadata")
+      // Use the factory function to generate custom metadata
+      const custom_metadata = generateCustomMetadata(connectionName, rawFormData);
+      console.log(custom_metadata, "custom_metadata");
+
       const connectionData: any = {
         connection_id: connectionId,
         connection_config_name: connectionConfigName,
         connection_name: connectionDisplayName,
         connection_description: `${connectionDisplayName} connection`,
-        connection_type:connectionType,
+        connection_type: connectionType,
         connection_status: 'active',
         data_residency: 'auto',
         custom_metadata: custom_metadata,
         init_vector: initVector,
         config: encryptedString
       };
-      if(connectionData?.connection_name?.toLowerCase()=='bigquery'){
-        connectionData.project_id=rawFormData.project_id;
-        connectionData.dataset_id=rawFormData.dataset_id;
-        connectionData.credentials_json=JSON.parse(rawFormData.credentials_json);
 
+      if (connectionData?.connection_name?.toLowerCase() === 'bigquery') {
+        connectionData.project_id = rawFormData.project_id;
+        connectionData.dataset_id = rawFormData.dataset_id;
+        connectionData.credentials_json = rawFormData.credentials_json?.toString();
       }
 
+      console.log(connectionData, "connectionData");
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);
         toast.success('Connection updated successfully');

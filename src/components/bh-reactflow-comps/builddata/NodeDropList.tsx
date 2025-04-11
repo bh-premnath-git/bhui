@@ -113,8 +113,8 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   }
 
   return (
-    <div className="flex justify-center gap-4 mb-4">
-      {filteredNodes.slice(0, 8).map((node) => (
+    <div className="flex justify-center gap-4 ">
+      {filteredNodes.slice(0, 7).map((node) => (
         <div
           key={node.ui_properties.module_name}
           onMouseEnter={() => handleNodeHover(node.ui_properties.module_name)}
@@ -259,7 +259,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
         </div>
       ))}
 
-      {filteredNodes.length > 8 && (
+      {filteredNodes.length > 7 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="rounded">
@@ -267,7 +267,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[300px]">
-            {filteredNodes.slice(8).map((node: Node) => (
+            {filteredNodes.slice(7).map((node: Node) => (
               <DropdownMenuItem
                 key={node.ui_properties.module_name}
                 onClick={() => handleNodeClick(node)}

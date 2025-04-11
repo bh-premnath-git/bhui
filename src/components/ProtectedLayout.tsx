@@ -15,7 +15,7 @@ const MainContent = () => {
       isExpanded ? "ml-64" : "ml-20"
     )}>
       <Header />
-      <main className="p-6 mt-16">
+      <main className="p-2 mt-10">
         <Outlet />
       </main>
     </div>

@@ -31,7 +31,7 @@ export const validateFormData = (formData: any, schema: any, isSource: boolean, 
 
         // Additional validation for connection
         if (sourceData.connection) {
-            if (!sourceData.connection.connection_config_id) {
+            if (!sourceData.connection) {
                 warnings.push('Connection configuration is required');
                 isValid = false;
             }

@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json package-lock.json ./
+COPY ../@bh-ai ./@bh-ai
 RUN npm install --force
 
 # Copy the entire project

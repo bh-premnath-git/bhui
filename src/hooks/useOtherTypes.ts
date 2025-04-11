@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import schema from '@/pages/designers/flow-playground/data/flow_schema.json';
+import schema from '@bh-ai/flow-schema';
 
 /**
  * Hook to get all types in the same module as the provided type

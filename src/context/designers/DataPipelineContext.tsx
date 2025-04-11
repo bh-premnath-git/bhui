@@ -22,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
-import { convertUIToPipelineJson } from '@/lib/convertUIToPipelineJson';
+import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
 import { getPipelineById, getTransformationCount, runNextCheckpoint, stopPipeLine, updatePipeline,
     } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
@@ -252,10 +252,13 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                 console.log(response,"response")
                 // Update pipeline name and JSON safely
                 setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
-                setPipelineJson(response?.pipeline_json);
+                let optimised=await resolveRefsPipelineJson(response?.pipeline_json,response?.pipeline_json)
+                console.log(optimised,"optimised")
+                setPipelineJson(optimised);
 
                 // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
+                const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+                console.log(uiJson,"uiJson")
                 
                 if (!uiJson || !uiJson.nodes) {
                     setNodes([])
@@ -367,7 +370,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     }));
 
                     // Your save logic here
-                    const pipeline_json:any = convertUIToPipelineJson(serializedNodes, edges, pipelineDtl);
+                    const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
                     if(id){
                       await apiService.patch({
@@ -379,9 +382,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     });
                 }
                     if ('pipeline_json' in pipeline_json) {
-                        setPipelineJson(pipeline_json.pipeline_json);
-                    }
-
+                        let optimised=await resolveRefsPipelineJson(pipeline_json.pipeline_json,pipeline_json.pipeline_json)
+                        setPipelineJson(optimised);                    }
+                  
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly
                     // setTimeout(() => {
@@ -554,9 +557,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         setIsFormOpen(false);
     }, []);
 
-    const handleRunClick = useCallback((e: React.MouseEvent) => {
+    const handleRunClick = useCallback(async(e: React.MouseEvent) => {
     
-        const pipelineConfig:any = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+        const pipelineConfig:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
           setSelectedFormState(pipelineConfig);
           return pipelineConfig;
       }, [edges, formStates, reactFlowInstance]);
@@ -675,19 +678,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                 message: 'Starting pipeline validation...',
                 level: 'info'
             }]);
-            setValidationErrors([]);
   
-            const validationResult:any = convertUIToPipelineJson(nodes, edges, pipelineDtl, true);
-            
-            if (validationResult.logs) {
-                setConversionLogs(prevLogs => [...prevLogs, ...validationResult.logs]);
-            }
-  
-            if (!validationResult.isValid) {
-                throw new Error(`Pipeline is incomplete or broken:\n${validationResult.errors.join('\n')}`);
-            }
-  
-            const {pipeline_json}:any = await convertUIToPipelineJson(nodes, edges, pipelineDtl);
+          
+            const {pipeline_json}:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
             console.log(pipeline_json)
   
             pipeline_json.transformations = pipeline_json.transformations.map(transform => {
@@ -930,7 +923,7 @@ debuggedNodesList.forEach(checkpoint => {
     const handleLeavePage = useCallback(async () => {
         try {
             setSaving();
-            const pipeline_json = convertUIToPipelineJson(nodes, edges, pipelineDtl);
+            const pipeline_json =await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
             if (id) {
               await dispatch(updatePipeline({ id: id, data: pipeline_json }));
   

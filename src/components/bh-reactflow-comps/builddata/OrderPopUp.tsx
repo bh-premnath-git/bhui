@@ -67,12 +67,7 @@ useEffect(() => {
         return;
       }
 
-      const connection_data = {
-        ...connection,
-        connection_name: connection.connection_name?.toLowerCase() === 'postgres' 
-          ? 'postgresql' 
-          : connection.connection_name
-      };
+      
 
       const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
 console.log(pipelineJsonData,"pipelineJsonData")
@@ -92,19 +87,8 @@ console.log(pipelineJsonData,"pipelineJsonData")
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || '',
-          custom_metadata: connection_data,
-          connection: {
-            connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
-            type: pipelineJsonData?.connection?.connection_type || source?.connection_type || '',
-            file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || source?.file_path_prefix || '',
-            connection_name: pipelineJsonData?.connection?.name || 
-                           source?.connection_config?.connection_name ||
-                           connection.connection_config_name || '',
-            file_type: pipelineJsonData?.connection?.file_type?.toUpperCase() || source?.file_type || 'CSV',
-            table_name: pipelineJsonData?.connection?.table_name || 
-                       source?.data_src_name || 
-                       pipelineJsonData?.name || '',
-          }
+          connection: pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata,
+          connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
         }
       };
 

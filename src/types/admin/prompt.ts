@@ -1,4 +1,5 @@
 export interface Prompt{
+    id: number | undefined;
     prompt_name: string;
     module_id: number;
     module_name: string;

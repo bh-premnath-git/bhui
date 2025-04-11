@@ -23,6 +23,7 @@ export const modules = [
 // 2. Form to API transformer
 export const transformFormToApiData = (formData: PromptFormValues): FormData => {
   const apiData: Prompt = {
+    id: undefined,
     prompt_name: formData.prompt_name,
     module_id: Number(formData.module_id),
     module_name: modules.find((module) => module.value === formData.module_id)?.label || "",

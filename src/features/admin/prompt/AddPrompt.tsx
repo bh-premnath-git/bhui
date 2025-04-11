@@ -24,6 +24,7 @@ export function AddPrompt() {
       setError(null);
       const selectedModule = modules.find(mod => mod.value.toString() === data.module_id?.toString());
       const promptData: Prompt = {
+        id: undefined,
         prompt_name: data.prompt_name || "",
         module_id: parseInt(data.module_id || "0"),
         module_name: selectedModule?.label || "",

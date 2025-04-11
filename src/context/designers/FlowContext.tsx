@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
+import { RootState } from '@/store';
+import { setSelectedFlow } from '@/store/slices/designer/flowSlice';
 import {
   Node, Edge,
   NodeChange,
@@ -29,6 +32,7 @@ const INITIAL_POSITION = { x: 50, y: 140 };
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const dispatch = useAppDispatch();
 
   const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(() => {
     // Try to get flowId from URL first, then localStorage
@@ -36,13 +40,32 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     return flowIdFromUrl || LocalStorageService.getItem('selectedFlowId');
   });
 
-  // Update selectedFlowId when URL changes
+  // Update selectedFlowId when URL changes and reset states when navigating to manage-flow
   useEffect(() => {
     const flowIdFromUrl = location.pathname.match(/\/flow\/(\d+)/)?.[1];
-    if (flowIdFromUrl && flowIdFromUrl !== selectedFlowId) {
+    
+    // Check if we've navigated to the manage-flow route
+    if (location.pathname.includes('designers/manage-flow')) {
+      console.log('Navigated to manage-flow route, resetting all flow states');
+      // Reset all flow-related states
+      setSelectedFlowIdState(null);
+      setNodes([]);
+      setEdges([]);
+      setNodeFormData([]);
+      setSelectedNode(null);
+      setIsSaved(true);
+      setIsSaving(false);
+      setIsDirty(false);
+      setHasFlowConfig(false);
+      
+      // IMPORTANT: Also reset the selectedFlow in Redux
+      dispatch(setSelectedFlow(null));
+    } 
+    // If there's a flow ID in the URL and it's different from current, update it
+    else if (flowIdFromUrl && flowIdFromUrl !== selectedFlowId) {
       setSelectedFlowIdState(flowIdFromUrl);
     }
-  }, [location.pathname]);
+  }, [location.pathname, dispatch]);
 
   // Persist selectedFlowId to localStorage
   useEffect(() => {
@@ -66,10 +89,48 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [isDirty, setIsDirty] = useState(false);
   const [formdataNum, setFormDataNum] = useState(0);
   const [aiMissingData, setAiMissingData] = useState({});
+  const [hasFlowConfig, setHasFlowConfig] = useState(false);
 
+  // Add flowConfigMap state
+  const [flowConfigMap, setFlowConfigMap] = useState<Record<string, boolean>>({});
+
+  // This logs the selectedFlowId changes to help with debugging
   useEffect(() => {
-    console.log('selectedFlowId changed:', selectedFlowId);
+    console.log('FlowContext: selectedFlowId changed to:', selectedFlowId);
   }, [selectedFlowId]);
+
+  // Import the RootState and useAppSelector for accessing the Redux store
+  const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
+
+  // Update the hasFlowConfig effect to use flowConfigMap
+  useEffect(() => {
+    if (selectedFlowId) {
+      const hasConfig = flowConfigMap[selectedFlowId] || false;
+      console.log('Flow Config Check:', {
+        selectedFlowId,
+        hasConfig,
+        flowConfigMap
+      });
+      setHasFlowConfig(hasConfig);
+    } else {
+      setHasFlowConfig(false);
+    }
+  }, [selectedFlowId, flowConfigMap]);
+
+  // Add effect to update flowConfigMap when selectedFlow changes
+  useEffect(() => {
+    if (selectedFlow) {
+      const hasConfig = selectedFlow.flow_config && 
+                       selectedFlow.flow_config.length > 0 && 
+                       selectedFlow.flow_config[0].flow_config && 
+                       Object.keys(selectedFlow.flow_config[0].flow_config).length > 0;
+      
+      setFlowConfigMap(prev => ({
+        ...prev,
+        [selectedFlow.flow_id]: hasConfig
+      }));
+    }
+  }, [selectedFlow]);
 
   const [moduleTypes] = useModules();
 
@@ -359,9 +420,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     return allOptimized;
   }, [nodes]);
 
-  // Update node dependencies when edges change
+  // Update node dependencies when edges change - with flow ID safety check
   const updateNodeDependencies = useCallback(() => {
     if (!selectedFlowId) return;
+    console.log('Updating node dependencies for flow ID:', selectedFlowId);
 
     setNodeFormData(currentFormData => {
       const updatedFormData = [...currentFormData];
@@ -421,6 +483,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const debouncedSave = useDebouncedCallback(
     () => {
       if (autoSave && selectedFlowId && isDirty) {
+        // Log before saving to verify the correct flow ID
+        console.log(`Auto-saving flow with ID: ${selectedFlowId}`);
         saveFlow();
         setIsDirty(false);
       }
@@ -527,6 +591,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }
 
 
+  // Added effect to handle flow data loading
   useEffect(() => {
     if (selectedFlowId) {
       const savedFlow = loadFlow(selectedFlowId);
@@ -537,6 +602,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaved(true);
       setIsSaving(false);
       setIsDirty(false);
+      
+      // Explicitly set hasFlowConfig to false when loading a new flow
+      // This ensures we start from a clean state for the new flow
+      setHasFlowConfig(false);
     } else {
       setNodes([]);
       setEdges([]);
@@ -545,6 +614,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaved(true);
       setIsSaving(false);
       setIsDirty(false);
+      setHasFlowConfig(false);
     }
   }, [selectedFlowId, loadFlow]);
 
@@ -635,7 +705,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     aiMissingData,
     setAiMissingData,
     updateNodeDependencies,
-    clearFlow
+    clearFlow,
+    hasFlowConfig,
+    flowConfigMap,
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

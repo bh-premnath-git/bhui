@@ -160,6 +160,7 @@ export interface Property {
 export interface GroupedProperties {
   property: Property[];
   settings: Property[];
+  parameters?: Property[];
   [key: string]: Property[];
 }
 
@@ -221,6 +222,8 @@ export interface FlowContextType {
   autoSave: boolean;
   editingNode: EditingNode | null;
   temporaryEdgeId: string | null;
+  hasFlowConfig: boolean;
+  flowConfigMap: Record<string, boolean>;
   setNodes: React.Dispatch<React.SetStateAction<Node<CustomNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   deleteEdgeBySourceTarget: (source: string, target: string) => void;

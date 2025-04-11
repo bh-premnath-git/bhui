@@ -9,21 +9,93 @@ import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { createShortUUID } from "@/lib/utils";
-import { Save } from "lucide-react";
+import { Save, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useOtherTypes } from "@/hooks/useOtherTypes";
 import { useNodeFormInput } from "@/hooks/useNodeFormInput";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { updateFlowDefinition } from '@/store/slices/designer/flowSlice';
+import schema from '@bh-ai/flow-schema';
 import { RootState } from "@/store/";
+import { Input } from "@/components/ui/input";
 
 interface NodeFormProps {
     id: string;
     closeTap: () => void;
 }
 
-type TabType = "property" | "settings";
+type TabType = "property" | "settings" | "parameters";
 
+interface ParameterItem {
+    key: string;
+    value: string | number;
+}
+
+const ParameterRow: React.FC<{
+    parameter: ParameterItem;
+    onDelete: () => void;
+    onChange: (field: 'key' | 'value', value: string) => void;
+    canDelete: boolean;
+}> = ({ parameter, onDelete, onChange, canDelete }) => (
+    <div className="flex gap-2 items-center">
+        <Input
+            placeholder="Key"
+            value={parameter.key}
+            onChange={(e) => onChange('key', e.target.value)}
+            className="w-1/2"
+        />
+        <Input
+            placeholder="Value"
+            value={parameter.value}
+            onChange={(e) => onChange('value', e.target.value)}
+            className="w-1/2"
+        />
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="text-gray-400 hover:text-red-500"
+            disabled={!canDelete}
+        >
+            <X className="h-4 w-4" />
+        </Button>
+    </div>
+);
+
+const ParametersSection: React.FC<{
+    parameters: ParameterItem[];
+    onParameterChange: (index: number, field: 'key' | 'value', value: string) => void;
+    onAddParameter: () => void;
+    onRemoveParameter: (index: number) => void;
+}> = ({ parameters, onParameterChange, onAddParameter, onRemoveParameter }) => (
+    <div className="space-y-3">
+        <div className="flex text-sm font-medium text-gray-500 px-3">
+            <div className="w-1/2">Key</div>
+            <div className="w-1/2">Value</div>
+        </div>
+        <div className="space-y-2">
+            {parameters.map((parameter, index) => (
+                <ParameterRow
+                    key={index}
+                    parameter={parameter}
+                    onDelete={() => onRemoveParameter(index)}
+                    onChange={(field, value) => onParameterChange(index, field, value)}
+                    canDelete={parameters.length > 1}
+                />
+            ))}
+        </div>
+
+        <Button
+            type="button"
+            variant="ghost"
+            onClick={onAddParameter}
+            className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9"
+        >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Parameter
+        </Button>
+    </div>
+);
 // Utility function to check if a field value is empty
 const isFieldEmpty = (value: any): boolean => {
     if (!value) return true;
@@ -36,7 +108,8 @@ const isFieldEmpty = (value: any): boolean => {
 const updateFlowDefinitionOnServer = (
     selectedFlowId: string | null,
     selectedFlow: any,
-    dispatch: any
+    dispatch: any,
+    hasFlowConfig: boolean
 ) => {
     if (!selectedFlowId || !selectedFlow?.flow_id) return;
     
@@ -48,10 +121,19 @@ const updateFlowDefinitionOnServer = (
         }
 
         const parsedStructure = JSON.parse(flowStructure);
-        const flowJson = parsedStructure.nodeFormData?.map((item: any) => item.formData);
+        const flowJson = {
+            $schema: schema["$schema"],
+            description: `Flow for ${selectedFlow?.flow_name || 'Unnamed Flow'}`,
+            name: selectedFlow?.flow_name || 'Unnamed Flow',
+            version: schema.version,
+            isFlowConfig: hasFlowConfig,
+            tasks: parsedStructure.nodeFormData?.map((item: any) => ({
+                ...item.formData
+            }))
+        };
         
         // Check if all tasks have valid IDs
-        const allTasksValid = flowJson.every((task: any) => !!task.task_id);
+        const allTasksValid = flowJson.tasks?.every((task: any) => !!task.task_id);
         if (!allTasksValid) {
             console.warn("Some tasks are missing task_id");
         }
@@ -122,7 +204,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         getNodeFormData,
         revertOrSaveData,
         updateNodeDependencies,
-        selectedFlowId
+        selectedFlowId,
+        hasFlowConfig
     } = useFlow();
     
     const dispatch = useAppDispatch();
@@ -155,9 +238,19 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
     }, [selectedNode.data.meta.properties, selectedValue]);
 
+    // Check if the current operator type has parameters
+    const hasParameters = useMemo(() => {
+        const operatorTypesWithParameters = [
+            'EmrAddStepsOperator',
+            'EmrCreateJobFlowOperator',
+            'EmrTerminateJobFlowOperator'
+        ];
+        return operatorTypesWithParameters.includes(selectedValue);
+    }, [selectedValue]);
+
     // Group properties for tabs
     const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? 
-        { properties: { property: [], settings: [] } };
+        { properties: { property: [], settings: [], parameters: [] } };
 
     // Get current form data for the selected node
     const currentFormData = useMemo(
@@ -200,7 +293,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         revertOrSaveData(id, true);
         
         // Update flow definition on the server
-        updateFlowDefinitionOnServer(selectedFlowId, selectedFlow, dispatch);
+        updateFlowDefinitionOnServer(selectedFlowId, selectedFlow, dispatch, hasFlowConfig);
     }, [
         closeTap, 
         id, 
@@ -247,6 +340,30 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
     }, [selectedNode]);
 
+    // Add parameter handling functions
+    const handleParameterChange = useCallback((index: number, field: 'key' | 'value', value: string) => {
+        const newParameters = [...(currentFormData.parameters || [])];
+        if (!newParameters[index]) {
+            newParameters[index] = { key: '', value: '' };
+        }
+        newParameters[index][field] = value;
+        handleInputChange('parameters', JSON.stringify(newParameters));
+    }, [currentFormData, handleInputChange]);
+
+    const addParameterRow = useCallback(() => {
+        const newParameters = [...(currentFormData.parameters || [])];
+        newParameters.push({ key: '', value: '' });
+        handleInputChange('parameters', JSON.stringify(newParameters));
+    }, [currentFormData, handleInputChange]);
+
+    const removeParameterRow = useCallback((index: number) => {
+        const newParameters = [...(currentFormData.parameters || [])];
+        if (newParameters.length > 1) {
+            newParameters.splice(index, 1);
+            handleInputChange('parameters', JSON.stringify(newParameters));
+        }
+    }, [currentFormData, handleInputChange]);
+
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg">
             <CardContent className="p-6 space-y-6">
@@ -281,7 +398,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
                 {/* Property Tabs */}
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsList className={`grid w-full ${hasParameters ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
                         <TabsTrigger
                             value="property"
                             className="data-[state=active]:bg-black data-[state=active]:text-white"
@@ -295,6 +412,14 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         >
                             Settings
                         </TabsTrigger>
+                        {hasParameters && (
+                            <TabsTrigger
+                                value="parameters"
+                                className="data-[state=active]:bg-black data-[state=active]:text-white"
+                            >
+                                Parameters
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="property">
@@ -318,6 +443,19 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                             />
                         </ScrollArea>
                     </TabsContent>
+
+                    {hasParameters && (
+                        <TabsContent value="parameters">
+                            <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                                <ParametersSection
+                                    parameters={currentFormData.parameters || [{ key: '', value: '' }]}
+                                    onParameterChange={handleParameterChange}
+                                    onAddParameter={addParameterRow}
+                                    onRemoveParameter={removeParameterRow}
+                                />
+                            </ScrollArea>
+                        </TabsContent>
+                    )}
                 </Tabs>
 
                 {/* Save Button */}

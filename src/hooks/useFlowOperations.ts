@@ -36,6 +36,10 @@ export function useFlowOperations(
       console.warn("No flow selected. Cannot save.");
       return;
     }
+    
+    // Log the flow being saved to help with debugging
+    console.log(`Saving flow with ID: ${selectedFlowId}`);
+    
     setIsSaving(true);
     try {
       const sortedNodes = [...nodes].sort((a, b) => a.position.x - b.position.x);
@@ -60,7 +64,11 @@ export function useFlowOperations(
         edges,
         nodeFormData: sortedNodeFormData,
       };
-      LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
+      
+      // Double-check we're saving to the correct flow ID
+      const currentFlowId = selectedFlowId;
+      LocalStorageService.setItem(`flow-${currentFlowId}`, flowData);
+      
       await new Promise((resolve) => setTimeout(resolve, 0));
       setIsSaved(true);
     } catch (error) {
@@ -72,6 +80,10 @@ export function useFlowOperations(
   }, [nodes, edges, nodeFormData, selectedFlowId, setIsSaving, setIsSaved]);
 
   const loadFlow = useCallback((flowId: string) => {
+    // Log the flow being loaded to help with debugging
+    console.log(`Loading flow with ID: ${flowId}`);
+    
+    // Ensure we're using the explicitly passed flowId, not the closure value
     const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
     return savedFlow;
   }, []);

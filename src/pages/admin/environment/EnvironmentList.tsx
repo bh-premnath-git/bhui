@@ -7,16 +7,27 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { useEnvironments } from '@/features/admin/environment/hooks/useEnvironments';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { EnvironmentList } from '@/features/admin/environment/Environment';
-import { useEnvironmentManagementServive } from '@/features/admin/environment/services/envMgtSrv'; 
+import { useEnvironmentManagementServive } from '@/features/admin/environment/services/envMgtSrv';
+import { Environment } from '@/types/admin/environment';
+import { Button } from '@/components/ui/button';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
 
 function Environments() {
   const { environments, isLoading, isFetching, isError } = useEnvironments();
   const envMgntSrv = useEnvironmentManagementServive();
+  const { handleNavigation } = useNavigation();
+  
+  // Filter out MWAA environments and ensure we only have Environment objects
+  const regularEnvironments = environments?.filter((env): env is Environment => 
+    'bh_env_id' in env && 'bh_env_name' in env
+  ) || [];
+
   useEffect(() => {
-    if(environments && environments.length > 0){
-      envMgntSrv.setEnvironments(environments);
+    if(regularEnvironments.length > 0){
+      envMgntSrv.setEnvironments(regularEnvironments);
     }
-  }, []);
+  }, [regularEnvironments]);
 
   if (isLoading) {
     return (
@@ -34,13 +45,21 @@ function Environments() {
     );
   }
 
-  if (environments?.length === 0) {
+  if (regularEnvironments.length === 0) {
     return (
       <div className="p-6">
         <EmptyState
-          title="Welcome to Your User Management!"
-          description="Ready to manage your users."
+          title="No Environments Found"
+          description="Get started by creating a new environment to manage your deployments."
           Icon={Settings2}
+          action={
+            <Button 
+              onClick={() => handleNavigation(ROUTES.ADMIN.ENVIRONMENT.ADD)}
+              className="mt-4"
+            >
+              Create Environment
+            </Button>
+          }
         />
       </div>
     );
@@ -54,7 +73,7 @@ function Environments() {
             <LoadingState className='w-40 h-40' />
           </div>
         )}
-        <EnvironmentList environments={environments || []} />
+        <EnvironmentList environments={regularEnvironments} />
       </div>
     </div>
   );

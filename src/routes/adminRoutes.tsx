@@ -17,6 +17,10 @@ const EditEnvironment = lazy(() => import("@/pages/admin/environment/Environment
 const Connection = lazy(() => import("@/pages/admin/connection/ConnectionList"));
 const AddConnection = lazy(() => import("@/pages/admin/connection/ConnectionAdd"));
 const EditConnection = lazy(() => import("@/pages/admin/connection/ConnectionEdit"));
+//promt
+const PromtList = lazy(() => import("@/pages/admin/prompt/PromptList"));
+const PromtAdd = lazy(() => import("@/pages/admin/prompt/PromptAdd")); 
+const PromtEdit = lazy(() => import("@/pages/admin/prompt/PromptEdit"));
 
 export const AdminRoutes = (
   <>
@@ -124,6 +128,30 @@ export const AdminRoutes = (
         </Suspense>
       } 
     />
+    <Route 
+      path={ROUTES.ADMIN.PROMPT.INDEX} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <PromtList />
+        </Suspense>
+      }
+    />
+    <Route
+      path={ROUTES.ADMIN.PROMPT.ADD}
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <PromtAdd />
+        </Suspense>
+      }
+    />
+    <Route
+      path="/admin-console/prompt/edit/:id"
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <PromtEdit />
+        </Suspense>   
+      }
+    />  
   </>
 );
 

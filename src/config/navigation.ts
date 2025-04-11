@@ -13,7 +13,8 @@ import {
   Settings2,
   Cable,
   Clock,
-  NotebookText
+  NotebookText,
+  BookMarked
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -109,6 +110,12 @@ export const navigationItems: NavItem[] = [
         title: "Manage Connections",
         icon: Cable,
         path: ROUTES.ADMIN.CONNECTION.INDEX,
+        parent: ROUTES.ADMIN.INDEX
+      },
+      {
+        title: "Manage Prompts",
+        icon: BookMarked,
+        path: ROUTES.ADMIN.PROMPT.INDEX,
         parent: ROUTES.ADMIN.INDEX
       }
     ],

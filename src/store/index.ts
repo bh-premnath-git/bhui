@@ -14,6 +14,7 @@ import globalReducer from './slices/globalGitSlice';
 import connectionReducer from './slices/admin/connection'
 import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
+import promptsReducer from './slices/admin/promptsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     global: globalReducer,
     buildPipeline: buildPipelineReducer,
     cluster: clusterReducer,
+    prompts: promptsReducer,
   },
 });
 

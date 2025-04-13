@@ -423,13 +423,14 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => 
-                nodesOrUpdater(prevNodes).map(sanitizeNode)
-            );
-        } else {
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
+        // alert()
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
     }, [setNodes, sanitizeNode]);
 
     // Update handleNodesChange

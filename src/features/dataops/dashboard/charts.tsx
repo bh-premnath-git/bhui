@@ -77,7 +77,7 @@ export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <SortableChartCard id="latency" title="Latency Trend" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="latency" title="Latency" className="bg-gradient-to-br from-card to-card/95">
       <LineChart 
         data={data} 
         xAxisDataKey="name" 
@@ -96,7 +96,7 @@ export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const areas = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <SortableChartCard id="cost" title="Cost Trend" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="cost" title="Cost" className="bg-gradient-to-br from-card to-card/95">
       <AreaChart 
         data={data} 
         xAxisDataKey="name" 
@@ -129,7 +129,7 @@ export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ tit
 )
 
 export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="health" title="Project Health Status" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="health" title="Health Status" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -144,7 +144,7 @@ export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
 )
 
 export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="quality" title="Project Quality Status" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="quality" title="Quality" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -160,7 +160,7 @@ export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
 )
 
 export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="incident" title="Incident Summary" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="incident" title="Incidents" className="bg-gradient-to-br from-card to-card/95">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 

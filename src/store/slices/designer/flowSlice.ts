@@ -365,23 +365,27 @@ const flowSlice = createSlice({
                 console.log('Update Flow Configuration - Current selectedFlow:', state.selectedFlow);
                 
                 if (state.selectedFlow && state.selectedFlow.flow_config) {
-                    // Parse the string back into an array
-                    const parsedConfig = JSON.parse(action.meta.arg.flow_config);
-                    
-                    // Update the flow_config in the selectedFlow
-                    state.selectedFlow = {
-                        ...state.selectedFlow,
-                        flow_config: state.selectedFlow.flow_config.map(config => 
-                            config.flow_config_id === action.meta.arg.flow_config_id 
-                                ? { 
-                                    ...config, 
-                                    flow_config: parsedConfig.flow_config
-                                  }
-                                : config
-                        )
-                    };
-                    
-                    console.log('Update Flow Configuration - Updated selectedFlow:', state.selectedFlow);
+                    try {
+                        // Parse the string back into an object
+                        const parsedConfig = JSON.parse(action.meta.arg.flow_config);
+                        console.log('Parsed config:', parsedConfig);
+                        
+                        // Update the flow_config in the selectedFlow
+                        state.selectedFlow = {
+                            ...state.selectedFlow,
+                            flow_config: state.selectedFlow.flow_config.map(config => 
+                                config.flow_config_id === action.meta.arg.flow_config_id 
+                                    ? { 
+                                        ...config, 
+                                        flow_config: parsedConfig  // Store it directly as received
+                                      }
+                                    : config
+                            )
+                        };
+                        console.log('Updated selectedFlow:', state.selectedFlow);
+                    } catch (err) {
+                        console.error('Error parsing flow configuration:', err);
+                    }                    
                 }
             })
             .addCase(updateFlowConfiguration.rejected, (state, action) => {

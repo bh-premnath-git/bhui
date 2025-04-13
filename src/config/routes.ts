@@ -40,6 +40,11 @@ export const ROUTES = {
       INDEX: '/admin-console/connection',
       ADD: '/admin-console/connection/add',
       EDIT: (id: string) => `/admin-console/connection/edit/${id}`
+    },
+    PROMPT:{
+      INDEX: '/admin-console/prompt',
+      ADD: '/admin-console/prompt/add',
+      EDIT: (id: string) => `/admin-console/prompt/edit/${id}`
     }
   }
 } as const;

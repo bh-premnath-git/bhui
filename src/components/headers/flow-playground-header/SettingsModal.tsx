@@ -167,36 +167,59 @@ export const SettingsModal = () => {
       let configData: ConfigItem[] = [{ key: '', value: '' }];
 
       if (selectedFlow?.flow_config?.length > 0) {
-        const flowConfigData = selectedFlow.flow_config[0]?.flow_config;
+        // Get the first flow config entry
+        const flowConfigEntry = selectedFlow.flow_config[0];
+        console.log('Flow config entry:', flowConfigEntry);
+        
+        // Check if flow_config exists and has the expected structure
+        if (flowConfigEntry && flowConfigEntry.flow_config) {
+          // Extract the actual config array - check if it's nested under 'flow_config'
+          let configArray;
+          
+          // Handle case where flow_config itself has a flow_config property (nested structure)
+          const flowConfig: any = flowConfigEntry.flow_config;
+          if (typeof flowConfig === 'object' && 
+              !Array.isArray(flowConfig) && 
+              'flow_config' in flowConfig && 
+              Array.isArray(flowConfig.flow_config)) {
+            configArray = flowConfig.flow_config;
+            console.log('Using nested flow_config.flow_config array:', configArray);
+          }
+          // Handle case where flow_config is directly an array
+          else if (Array.isArray(flowConfig)) {
+            configArray = flowConfig;
+            console.log('Using direct flow_config array:', configArray);
+          }
+          
+          if (configArray && configArray.length > 0) {
+            // Process each config item
+            configData = configArray.map((config: any) => {
+              console.log('Processing config item:', config);
 
-        if (Array.isArray(flowConfigData) && flowConfigData.length > 0) {
-          // Process each config item with more logging
-          configData = flowConfigData.map((config: any) => {
-            console.log('Processing config item:', config);
-
-            // Handle case where config is already in the correct format
-            if (config && typeof config === 'object' && 'key' in config && 'value' in config) {
-              return {
-                key: String(config.key),
-                value: String(config.value)
-              };
-            }
-            // Handle case where config is a key-value object
-            else if (config && typeof config === 'object') {
-              const keys = Object.keys(config);
-              if (keys.length > 0) {
-                const key = keys[0];
+              // Handle case where config is already in the correct format
+              if (config && typeof config === 'object' && 'key' in config && 'value' in config) {
                 return {
-                  key: key,
-                  value: String(config[key] || '')
+                  key: String(config.key),
+                  value: String(config.value)
                 };
               }
-            }
+              // Handle case where config is a key-value object
+              else if (config && typeof config === 'object') {
+                const keys = Object.keys(config);
+                if (keys.length > 0) {
+                  const key = keys[0];
+                  return {
+                    key: key,
+                    value: String(config[key] || '')
+                  };
+                }
+              }
 
-            // Default empty item if we couldn't process
-            return { key: '', value: '' };
-          }).filter((item: ConfigItem) => item.key !== '' || item.value !== '');
-
+              // Default empty item if we couldn't process
+              return { key: '', value: '' };
+            }).filter((item: ConfigItem) => item.key !== '' || item.value !== '');
+          }
+          
           // If all items were filtered out, add a default empty one
           if (configData.length === 0) {
             configData = [{ key: '', value: '' }];
@@ -266,9 +289,10 @@ export const SettingsModal = () => {
 
           // Create the flow_config object and stringify it
           const flowConfigString = JSON.stringify({
-            flow_config
-              : { flow_config: configsToSave }
+            flow_config: configsToSave
           });
+
+          console.log('Sending flow configuration as string:', flowConfigString);
 
           await dispatch(updateFlowConfiguration({
             flow_config_id,

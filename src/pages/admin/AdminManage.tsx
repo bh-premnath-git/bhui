@@ -1,5 +1,5 @@
 
-import { Users, FolderGit2, Settings2, ArrowRight, Cable } from 'lucide-react';
+import { Users, FolderGit2, Settings2, ArrowRight, Cable, BookMarked } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ROUTES } from '@/config/routes';
@@ -41,6 +41,15 @@ const adminOptions = [
     buttonText: 'Manage Connection',
     link: ROUTES.ADMIN.CONNECTION.INDEX.toString(),
     gradient: "from-red-500/20 via-orange-300/20 to-pink-500/20"
+  },
+  {
+    id: 5,
+    icon: <BookMarked className="w-6 h-6 text-foreground" />,
+    title: "Manage Prompts",
+    desc: "Refine the BH-AI-Agent prompts to optimize responses and enhance user interactions.",
+    buttonText: 'Manage Prompt',
+    link: ROUTES.ADMIN.PROMPT.INDEX.toString(),
+    gradient: "from-purple-500/20 via-violet-300/20 to-indigo-500/20"
   }
 ];
 

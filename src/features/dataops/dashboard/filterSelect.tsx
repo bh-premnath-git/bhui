@@ -15,12 +15,12 @@ interface FilterSelectProps {
 const FilterSelect: React.FC<FilterSelectProps> = ({ label, value, onChange, options }) => (
   <div>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[130px] text-accent-foreground">
+      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[90px] h-6 text-xs text-accent-foreground">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
-          <SelectItem key={option} value={option}>
+          <SelectItem key={option} value={option} className="text-xs">
             {option === "All" ? `${label}/All` : `(${option})`}
           </SelectItem>
         ))}
@@ -33,7 +33,7 @@ export const Filters: React.FC = () => {
   const { filters, handleFilterChange, resetFilters } = useFilters()
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-wrap items-end gap-0.5 pl-1 py-1">
       <FilterSelect
         label="Project"
         value={filters.project}
@@ -58,8 +58,8 @@ export const Filters: React.FC = () => {
         onChange={(value) => handleFilterChange("duration", value)}
         options={["All", "Today", "This Week", "This Month"]}
       />
-      <Button variant="ghost" size="icon" onClick={resetFilters} aria-label="Reset filters">
-        <X className="h-4 w-4" />
+      <Button variant="ghost" size="icon" onClick={resetFilters} aria-label="Reset filters" className="h-6 w-6">
+        <X className="h-2 w-2" />
       </Button>
     </div>
   )

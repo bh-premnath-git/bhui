@@ -36,7 +36,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   title, 
   children, 
   className,
-  defaultHeight = 280,
+  defaultHeight = 130,
   onSaveHeight
 }) => {
   const [height, setHeight] = useState(defaultHeight);
@@ -72,18 +72,31 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     [title, onSaveHeight]
   );
 
-  // Load saved dimensions on mount
+  // Load saved dimensions on mount and handle window resize
   React.useEffect(() => {
-    const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
-    if (savedDimensions) {
-      const { height: savedHeight, width: savedWidth } = JSON.parse(savedDimensions);
-      if (savedHeight) {
-        setHeight(savedHeight);
+    const loadDimensions = () => {
+      const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
+      if (savedDimensions) {
+        const { height: savedHeight } = JSON.parse(savedDimensions);
+        if (savedHeight) {
+          // Make sure the saved height doesn't exceed current viewport constraints
+          const maxHeight = window.innerHeight - 320;
+          setHeight(Math.min(savedHeight, maxHeight));
+        }
       }
-      if (savedWidth) {
-        setWidth(savedWidth);
-      }
-    }
+    };
+
+    // Load initial dimensions
+    loadDimensions();
+
+    // Update dimensions when window resizes
+    const handleResize = () => {
+      const maxHeight = window.innerHeight - 320;
+      setHeight(currHeight => Math.min(currHeight, maxHeight));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [title]);
   
   // Handle download button
@@ -92,16 +105,21 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     // Implement actual download logic here
   };
   
-  // Reset to default height
+  // Reset to default height with viewport constraints
   const resetDimensions = () => {
-    const defaultWidth = '350px'; // Default chart width
-    setHeight(defaultHeight);
-    setWidth(defaultWidth);
+    // Apply viewport constraints to default height
+    const maxHeight = window.innerHeight - 320;
+    const constrainedDefaultHeight = Math.min(defaultHeight, maxHeight);
+    
+    setHeight(constrainedDefaultHeight);
+    setWidth('100%'); // Always use 100% width to fit grid cells
+    
     localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
-      height: defaultHeight,
-      width: defaultWidth
+      height: constrainedDefaultHeight,
+      width: '100%'
     }));
-    onSaveHeight?.(defaultHeight);
+    
+    onSaveHeight?.(constrainedDefaultHeight);
   };
   
   // Start resize operation
@@ -126,18 +144,20 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       e.preventDefault();
       
       const deltaY = e.clientY - startYRef.current;
-      const deltaX = e.clientX - startXRef.current;
       
-      // Allow more flexible resizing while maintaining reasonable minimums
-      const newHeight = Math.max(150, startHeightRef.current + deltaY);
-      const newWidth = Math.max(250, startWidthRef.current + deltaX);
+      // Calculate viewport constraints
+      const maxHeight = window.innerHeight - 320; // Account for headers, margins, etc.
+      
+      // Allow resizing within viewport constraints
+      const newHeight = Math.min(
+        maxHeight,
+        Math.max(90, startHeightRef.current + deltaY)
+      );
       
       setHeight(newHeight);
-      const newWidthStr = `${newWidth}px`;
-      setWidth(newWidthStr);
       
       // Use debounced save
-      debouncedSave(newHeight, newWidthStr);
+      debouncedSave(newHeight, '100%');
     };
     
     const handleMouseUp = () => {
@@ -172,8 +192,8 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 999 : isResizing ? 50 : 'auto',
-    width: width,
-    flexGrow: 1,
+    height: 'auto', // Allow height to be determined by content
+    width: '100%', // Use full width of grid cell
   };
   
   return (
@@ -186,7 +206,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
         "col-span-1 transition-all duration-300 hover:shadow-md",
         "border-muted/70 bg-card/90",
         "backdrop-blur-sm",
-        "relative",
+        "relative h-full flex flex-col",  /* Make card fill grid cell and use flex column */
         isDragging && "dragging",
         isResizing && "resizing",
         className
@@ -194,22 +214,22 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       style={chartStyle}
     >
       {/* Card header with title and dropdown */}
-      <CardHeader className="flex flex-row justify-center items-center p-3 pb-0">
+      <CardHeader className="flex flex-row justify-center items-center p-0 pb-0">
         <div className="absolute left-2 cursor-grab active:cursor-grabbing" 
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="h-5 w-5 text-muted-foreground opacity-60 hover:opacity-100" />
+          <GripVertical className="h-4 w-4 text-muted-foreground opacity-60 hover:opacity-100" />
         </div>
         
-        <CardTitle className="text-sm font-medium text-foreground/80 flex items-center">
+        <CardTitle className="text-xs font-medium text-foreground/80 flex items-center">
           {title}
         </CardTitle>
         <div className="absolute right-2 flex items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/80">
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-muted/80">
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
@@ -227,10 +247,14 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       </CardHeader>
       
       {/* Chart content */}
-      <CardContent className="p-3 pt-3">
+      <CardContent className="p-0 pt-0 flex-grow flex flex-col">
         <div 
-          className="p-2 bg-card rounded-md border border-border/30"
-          style={{ height: `${height}px` }}
+          className="p-0 bg-card rounded-md border border-border/30 flex-grow flex flex-col"
+          style={{ 
+            height: `min(${height}px, calc(100vh - 320px))`, 
+            minHeight: '100px',
+            maxHeight: 'calc(100vh - 320px)' 
+          }}
         >
           <ResponsiveContainer 
             width="100%" 
@@ -249,7 +273,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       {/* Resize handle - positioned at the bottom of the card */}
       <div 
         className={cn(
-          "absolute bottom-1 right-1 w-6 h-6",
+          "absolute bottom-0 right-0 w-4 h-4",
           "cursor-nwse-resize flex items-center justify-center",
           "hover:bg-primary/10 rounded-sm",
           isResizing ? "bg-primary/20" : "bg-transparent",
@@ -262,7 +286,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
         onTouchStart={(e) => e.stopPropagation()}
         title="Resize chart"
       >
-        <div className="w-3 h-3 border-r-2 border-b-2 border-muted-foreground/40" />
+        <div className="w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40" />
       </div>
     </Card>
   )

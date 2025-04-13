@@ -77,7 +77,7 @@ const DashboardContent = () => {
       case "cost":
         return <CostTrendChart data={chartData.cost} />
       case "ingestion":
-        return <StatusDonutChart title="Ingestion Status" data={chartData.ingestion} />
+        return <StatusDonutChart title="Ingestion" data={chartData.ingestion} />
       case "health":
         return <ProjectHealthChart data={chartData.health} />
       case "quality":
@@ -90,8 +90,8 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="p-2 space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden p-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 flex-shrink-0 mb-0 mt-1">
         <Filters />
       </div>
       
@@ -101,14 +101,14 @@ const DashboardContent = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="relative w-full bg-card/70 backdrop-blur-sm p-2 shadow-sm">
+        <div className="relative w-full bg-card/70 backdrop-blur-sm p-1 pt-2 shadow-sm flex-grow overflow-auto">
           <div className="absolute inset-0 bg-grid-black/[0.02] -z-10" />
           
           <SortableContext 
             items={chartOrder} 
             strategy={rectSortingStrategy}
           >
-            <div className="flex flex-wrap gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-min gap-0 h-full">
               {/* Charts are now individually sortable using dnd-kit */}
               {chartOrder.map((chartId) => renderChart(chartId))}
             </div>

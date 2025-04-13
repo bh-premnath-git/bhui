@@ -368,7 +368,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                                     : []
                         }
                     }));
-
                     // Your save logic here
                     const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
@@ -1169,6 +1168,8 @@ debuggedNodesList.forEach(checkpoint => {
 
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
+        console.log(source);
+        
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;

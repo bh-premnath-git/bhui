@@ -325,8 +325,19 @@ return {pipeline_json:optimized};
 
 
 export const resolveRefsPipelineJson = (optimized: any, pipelineJson: any) => {
+    // Check if optimized or pipelineJson is undefined/null
+    if (!optimized || !pipelineJson) {
+        console.error("resolveRefsPipelineJson: optimized or pipelineJson is undefined/null");
+        return optimized || {}; // Return the original optimized object or an empty object
+    }
     
     let resolved = resolveRefs(optimized, pipelineJson);
+    
+    // Check if resolved is undefined/null
+    if (!resolved) {
+        console.error("resolveRefsPipelineJson: resolved is undefined/null");
+        return optimized; // Return the original optimized object
+    }
     
     // Convert sources from object to array
     if (resolved.sources && typeof resolved.sources === 'object' && !Array.isArray(resolved.sources)) {

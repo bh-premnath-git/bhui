@@ -117,112 +117,128 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         return result;
     };
 
-    // Process readers first - sources is now an object, not an array
-    const sources = pipelineJson.sources || {};
-    let sourceIndex = 0;
+    // Track processed sources to avoid duplicates
+    const processedSources = new Set<string>();
     
-    for (const sourceKey in sources) {
-        try {
-            const source = sources[sourceKey];
+    // Process transformations
+    xPosition += 130;
+    const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
+    let sourceIndex = 0;
+
+    // First, process Reader transformations from the transformations array
+    for (const transform of pipelineJson.transformations) {
+        if (transform.transformation === 'Reader') {
+            // Resolve source reference if it exists
+            let sourceData = transform.source;
+            if (sourceData && sourceData.$ref) {
+                sourceData = resolveRef(sourceData.$ref);
+            }
             
             // Resolve connection reference if it exists
-            let connection = source.connection;
+            let connection = sourceData?.connection;
             if (connection && connection.$ref) {
                 connection = resolveRef(connection.$ref);
             }
             
-            // Merge connection data with source
-            const sourceWithConnection = {
-                ...source,
-                connection: connection
-            };
+            // Skip if this source has already been processed
+            const sourceName = sourceData?.name || transform.name;
+            if (processedSources.has(sourceName)) continue;
+            processedSources.add(sourceName);
             
-            const sourceDetails: any = await apiService.get({
-                portNumber: CATALOG_API_PORT,
-                url: `/data_source/${source.data_src_id || ''}`,
-                usePrefix: true,
-                method: 'GET',
-                metadata: {
-                    errorMessage: 'Failed to fetch source details'
-                },
-            });
-            
-            if (handleSourceUpdate) {
-                const nodeId = `Reader_${sourceIndex + 1}`;
-                const sourceData = {
-                    nodeId,
-                    sourceData: {
-                        data: {
-                            label: source.name || sourceDetails.data_src_name,
-                            source: {
-                                "name": source.name || sourceDetails.data_src_name,
-                                "data_src_desc": source.name || sourceDetails.name,
-                                "reader_name": source.reader_name || sourceDetails.data_src_name,
-                                "source_type": source.source_type || sourceDetails.connection_type,
-                                "file_name": source.file_name || sourceDetails.file_name,
-                                "data_src_id": source.data_src_id || sourceDetails.data_src_id,
-                                "project_id": sourceDetails.bh_project_id,
-                                "file_path_prefix": connection?.file_path_prefix || sourceDetails.connection?.file_path_prefix,
-                                "file_type": connection?.file_type || sourceDetails.file_type,
-                                "connection_config_id": connection?.connection_config_id || sourceDetails?.connection_config_id,
-                                "table_name": source.table_name || sourceDetails.table_name,
-                                "connection_config": { custom_metadata: connection || sourceDetails?.connection_config?.custom_metadata },
-                                "connection": connection || sourceDetails?.connection_config?.custom_metadata
+            try {
+                const sourceDetails: any = await apiService.get({
+                    portNumber: CATALOG_API_PORT,
+                    url: `/data_source/${sourceData?.data_src_id || ''}`,
+                    usePrefix: true,
+                    method: 'GET',
+                    metadata: {
+                        errorMessage: 'Failed to fetch source details'
+                    },
+                });
+                
+                if (handleSourceUpdate) {
+                    const nodeId = `Reader_${sourceIndex + 1}`;
+                    const sourceUpdateData = {
+                        nodeId,
+                        sourceData: {
+                            data: {
+                                label: sourceName || sourceDetails.data_src_name,
+                                source: {
+                                    "name": sourceName || sourceDetails.data_src_name,
+                                    "data_src_desc": sourceName || sourceDetails.name,
+                                    "reader_name": sourceData?.reader_name || sourceDetails.data_src_name,
+                                    "source_type": sourceData?.source_type || sourceDetails.connection_type,
+                                    "file_name": sourceData?.file_name || sourceDetails.file_name,
+                                    "data_src_id": sourceData?.data_src_id || sourceDetails.data_src_id,
+                                    "project_id": sourceDetails.bh_project_id,
+                                    "file_path_prefix": connection?.file_path_prefix || sourceDetails.connection?.file_path_prefix,
+                                    "file_type": connection?.file_type || sourceDetails.file_type,
+                                    "connection_config_id": connection?.connection_config_id || sourceDetails?.connection_config_id,
+                                    "table_name": sourceData?.table_name || sourceDetails.table_name,
+                                    "connection_config": { custom_metadata: connection || sourceDetails?.connection_config?.custom_metadata },
+                                    "connection": connection || sourceDetails?.connection_config?.custom_metadata
+                                }
                             }
                         }
-                    }
-                };
+                    };
+                    
+                    handleSourceUpdate(sourceUpdateData);
+                }
                 
-                handleSourceUpdate(sourceData);
+                const nodeTitle = sourceName;
+                existingTitles.add(nodeTitle);
+                
+                const nodeId = `Reader_${sourceIndex + 1}`;
+                transformationNodes.set(transform.name, nodeId);
+                
+                nodes.push({
+                    id: nodeId,
+                    type: 'custom',
+                    position: {
+                        x: xPosition - 130, // Position at the start
+                        y: sourceIndex === 0 ? yPosition : yPosition + yOffset
+                    },
+                    data: {
+                        label: 'Reader',
+                        title: nodeTitle,
+                        icon: getNodeIcon('Reader'),
+                        ports: getNodePorts('Reader'),
+                        transformationType: 'Reader',
+                        transformationData: {
+                            ...transform,
+                            name: nodeTitle
+                        },
+                        source: {
+                            "name": sourceName || sourceDetails.data_src_name,
+                            "data_src_desc": sourceName || sourceDetails.name,
+                            "reader_name": sourceData?.reader_name || sourceDetails.data_src_name,
+                            "source_type": sourceData?.source_type || sourceDetails.connection_type,
+                            "file_name": sourceData?.file_name || sourceDetails.file_name,
+                            "data_src_id": sourceData?.data_src_id || sourceDetails.data_src_id,
+                            "project_id": sourceDetails.bh_project_id,
+                            "file_path_prefix": connection?.file_path_prefix || sourceDetails.connection?.file_path_prefix,
+                            "file_type": connection?.file_type || sourceDetails.file_type,
+                            "connection_config_id": connection?.connection_config_id || sourceDetails?.connection_config_id,
+                            "table_name": sourceData?.table_name || sourceDetails.table_name,
+                            "connection_config": { custom_metadata: connection || sourceDetails?.connection_config?.custom_metadata },
+                            "connection": connection || sourceDetails?.connection_config?.custom_metadata
+                        }
+                    },
+                    width: 56,
+                    height: 72
+                });
+                
+                sourceIndex++;
+            } catch (error) {
+                console.error(`Error processing Reader transformation:`, error);
             }
-            
-            const title = source.name;
-            existingTitles.add(title);
-            
-            nodes.push({
-                id: `Reader_${sourceIndex + 1}`,
-                type: 'custom',
-                position: {
-                    x: xPosition,
-                    y: sourceIndex === 0 ? yPosition : yPosition + yOffset
-                },
-                data: {
-                    label: 'Reader',
-                    title: title,
-                    icon: getNodeIcon('Reader'),
-                    ports: getNodePorts('Reader'),
-                    source: {
-                        "name": source.name || sourceDetails.data_src_name,
-                        "data_src_desc": source.name || sourceDetails.name,
-                        "reader_name": source.reader_name || sourceDetails.data_src_name,
-                        "source_type": source.source_type || sourceDetails.connection_type,
-                        "file_name": source.file_name || sourceDetails.file_name,
-                        "data_src_id": source.data_src_id || sourceDetails.data_src_id,
-                        "project_id": sourceDetails.bh_project_id,
-                        "file_path_prefix": connection?.file_path_prefix || sourceDetails.connection?.file_path_prefix,
-                        "file_type": connection?.file_type || sourceDetails.file_type,
-                        "connection_config_id": connection?.connection_config_id || sourceDetails?.connection_config_id,
-                        "table_name": source.table_name || sourceDetails.table_name,
-                        "connection_config": { custom_metadata: connection || sourceDetails?.connection_config?.custom_metadata },
-                        "connection": connection || sourceDetails?.connection_config?.custom_metadata
-                    }
-                },
-                width: 56,
-                height: 72
-            });
-            
-            sourceIndex++;
-        } catch (error) {
-            console.error(`Error fetching source details for ${sourceKey}:`, error);
         }
     }
 
-    // Process transformations
-    xPosition += 130;
-    const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
-
+    // Process non-Reader, non-Writer transformations
     for (const transform of pipelineJson.transformations) {
-        if (transform.transformation === 'Reader' || transform.transformation === 'Target' || transform.transformation === 'Writer') continue;
+        // Skip Reader and Writer/Target transformations (handled separately)
+        if (transform.transformation === 'Reader' || transform.transformation === 'Writer' || transform.transformation === 'Target') continue;
 
         const type = transform.transformation;
         const nodeId = `${type}_${nodes.length + 1}`;
@@ -231,19 +247,20 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         const nodeTitle = transform.name || generateUniqueTitle(type, existingTitles);
         transformationNodes.set(transform.name, nodeId);
 
+        // Handle regular transformations
         nodes.push({
             id: nodeId,
             type: 'custom',
             position: { x: xPosition, y: yPosition },
             data: {
                 label: type,
-                title: nodeTitle, // Use the preserved name
+                title: nodeTitle,
                 icon: getNodeIcon(type),
                 ports: getNodePorts(type),
                 transformationType: type,
                 transformationData: {
                     ...transform,
-                    name: nodeTitle // Ensure the name is preserved in transformation data
+                    name: nodeTitle
                 }
             },
             width: 56,
@@ -252,12 +269,9 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
         // Create edges based on dependencies
         if (transform.dependent_on) {
-            await transform.dependent_on.forEach((dependentName: string, index: number) => {
-                const sourceNodeId = [...nodes].reverse().find(
-                    node => node.data.title === dependentName
-                )?.id;
-                console.log(sourceNodeId);
-
+            transform.dependent_on.forEach((dependentName: string, index: number) => {
+                const sourceNodeId = transformationNodes.get(dependentName);
+                
                 if (sourceNodeId) {
                     edges.push({
                         source: sourceNodeId,
@@ -273,83 +287,93 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         xPosition += 130;
     }
 
-    // Add target nodes - targets is now an object, not an array
-    const targets = pipelineJson.targets || {};
+    // Process Writer/Target transformation
+    const writerTransformation = pipelineJson.transformations.find(
+        (t: any) => t.transformation === 'Writer' || t.transformation === 'Target'
+    );
     
-    if (Object.keys(targets).length > 0) {
-        const targetId = 'Target_1';
-        const targetTitle = generateUniqueTitle('Target', existingTitles);
+    if (writerTransformation) {
+        const targetId = `Target_${nodes.length + 1}`;
+        const targetTitle = writerTransformation.name || generateUniqueTitle('Target', existingTitles);
+        transformationNodes.set(writerTransformation.name, targetId);
         
-        // Find the writer transformation or target transformation
-        const writerTransformation = pipelineJson.transformations.find(
-            (t: any) => t.transformation === 'Writer' || t.transformation === 'Target'
-        );
+        // Resolve target reference if it exists
+        let targetData = writerTransformation.target || writerTransformation;
+        if (targetData && targetData.$ref) {
+            targetData = resolveRef(targetData.$ref);
+        }
         
-        if (writerTransformation) {
-            // Resolve target reference if it exists
-            let targetData = writerTransformation.target || writerTransformation;
-            if (targetData && targetData.$ref) {
-                targetData = resolveRef(targetData.$ref);
-            }
-            
-            // Resolve connection reference if it exists
-            let connection = targetData?.connection;
-            if (connection && connection.$ref) {
-                connection = resolveRef(connection.$ref);
-            }
-            
-            console.log(writerTransformation, "writerTransformation");
-            
-            nodes.push({
-                id: targetId,
-                type: 'custom',
-                position: { x: xPosition, y: yPosition },
-                data: {
-                    label: 'Target',
-                    title: targetData?.name || targetTitle,
-                    icon: getNodeIcon('Target'),
-                    ports: getNodePorts('Target'),
-                    source: {
-                        name: targetData?.name || 'output',
-                        target_type: connection?.connection_type === "PostgreSQL" ? 'Relational' : targetData?.target_type || 'File',
-                        target_name: targetData?.target_name || 'output',
-                        table_name: targetData?.table_name,
-                        connection: {
-                            name: connection?.name || 'local_connection',
-                            connection_type: connection?.connection_type || 'Local',
-                            file_path_prefix: connection?.file_path_prefix || '${output_file}',
-                            connection_config_id: connection?.connection_config_id,
-                            database: connection?.database,
-                            schema: connection?.schema,
-                            secret_name: connection?.secret_name,
-                        },
-                        file_name: targetData?.file_name || 'output.csv',
-                        load_mode: targetData?.load_mode,
-                        file_type: targetData?.file_type
+        // If targets is an array, use the first target
+        const targets = pipelineJson.targets || {};
+        if (Array.isArray(targets) && targets.length > 0) {
+            targetData = targets[0];
+        }
+        
+        // Resolve connection reference if it exists
+        let connection = targetData?.connection;
+        if (connection && connection.$ref) {
+            connection = resolveRef(connection.$ref);
+        }
+        
+        console.log(writerTransformation, "writerTransformation");
+        
+        nodes.push({
+            id: targetId,
+            type: 'custom',
+            position: { x: xPosition, y: yPosition },
+            data: {
+                label: 'Target',
+                title: targetData?.name || targetTitle,
+                icon: getNodeIcon('Target'),
+                ports: getNodePorts('Target'),
+                transformationType: 'Target',
+                transformationData: {
+                    ...writerTransformation,
+                    name: targetTitle,
+                    write_options: writerTransformation.write_options || {
+                        header: true,
+                        sep: '|'
                     },
-                    transformationData: {
-                        write_options: writerTransformation.write_options || {
-                            header: true,
-                            sep: '|'
-                        },
-                        file_type: writerTransformation.file_type || 'csv'
-                    }
+                    file_type: writerTransformation.file_type || 'csv'
                 },
-                width: 56,
-                height: 72
-            });
+                source: {
+                    name: targetData?.name || 'output',
+                    target_type: connection?.connection_type === "PostgreSQL" ? 'Relational' : targetData?.target_type || 'File',
+                    target_name: targetData?.target_name || 'output',
+                    table_name: targetData?.table_name,
+                    connection: {
+                        name: connection?.name || 'local_connection',
+                        connection_type: connection?.connection_type || 'Local',
+                        file_path_prefix: connection?.file_path_prefix || '${output_file}',
+                        connection_config_id: connection?.connection_config_id,
+                        database: connection?.database,
+                        schema: connection?.schema,
+                        secret_name: connection?.secret_name,
+                    },
+                    file_name: targetData?.file_name || 'output.csv',
+                    load_mode: targetData?.load_mode,
+                    file_type: targetData?.file_type
+                }
+            },
+            width: 56,
+            height: 72
+        });
 
-            // Connect last transformation to target
-            const lastTransformation = nodes[nodes.length - 2];
-            if (lastTransformation) {
-                edges.push({
-                    source: lastTransformation.id,
-                    sourceHandle: 'output-0',
-                    target: targetId,
-                    targetHandle: 'input-0',
-                    id: `reactflow__edge-${lastTransformation.id}output-0-${targetId}input-0`
-                });
-            }
+        // Create edges based on dependencies
+        if (writerTransformation.dependent_on) {
+            writerTransformation.dependent_on.forEach((dependentName: string, index: number) => {
+                const sourceNodeId = transformationNodes.get(dependentName);
+                
+                if (sourceNodeId) {
+                    edges.push({
+                        source: sourceNodeId,
+                        sourceHandle: 'output-0',
+                        target: targetId,
+                        targetHandle: `input-${index}`,
+                        id: `reactflow__edge-${sourceNodeId}output-0-${targetId}input-${index}`
+                    });
+                }
+            });
         }
     }
 
@@ -517,7 +541,12 @@ export const convertToOptimizedPipelineJson = (currentJson: any) => {
 
 
 export const resolveRefs = (obj:any, root:any) => {
-    if (typeof obj !== "object" || obj === null) return obj;
+    // Handle null or undefined inputs
+    if (obj === null || obj === undefined) return obj;
+    if (root === null || root === undefined) return obj;
+    
+    // Handle non-object types
+    if (typeof obj !== "object") return obj;
   
     if (Array.isArray(obj)) {
       return obj.map((item:any) => resolveRefs(item, root));
@@ -528,9 +557,13 @@ export const resolveRefs = (obj:any, root:any) => {
       let resolved = root;
   
       for (const key of refPath) {
+        if (!resolved || typeof resolved !== 'object') {
+          console.error("Invalid $ref path:", obj.$ref, "at key:", key);
+          return obj; // Return as is if reference is broken
+        }
         resolved = resolved[key];
         if (!resolved) {
-          console.error("Invalid $ref:", obj.$ref);
+          console.error("Invalid $ref:", obj.$ref, "at key:", key);
           return obj; // Return as is if reference is broken
         }
       }

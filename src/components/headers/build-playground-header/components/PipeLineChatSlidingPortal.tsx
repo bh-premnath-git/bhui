@@ -17,6 +17,7 @@ import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
 import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
 import { useReactFlow } from "reactflow";
+import { resolveRefsPipelineJson } from "@/lib/convertUIToPipelineJson";
 
 const suggestionQuestions = [
   {
@@ -140,13 +141,33 @@ console.log(location.pathname);
       //   pipelineId,
       //   request: input
       // })).unwrap();
-const result:any=await dispatch(recommendDataSources(input)).unwrap();
-      console.log(result);
+      const result:any = await dispatch(recommendDataSources(input)).unwrap();
       
-      const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
-      console.log(uiJson,"uiJson");
+      console.log(result, "result from recommendDataSources");
+      
+      // Check if result or result.pipeline_json is undefined
+      if (!result || !result.pipeline_definition) {
+        console.error("Pipeline creation error: result or result.pipeline_json is undefined");
+        updateLastAssistantMessage("I couldn't generate a pipeline from your request. Please try rephrasing your request.");
+        return;
+      }
+      
+      let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+      console.log(optimised, "optimised");
+      
+      if (!optimised) {
+        console.error("Pipeline creation error: optimised is undefined");
+        updateLastAssistantMessage("I encountered an error while processing the pipeline. Please try again.");
+        return;
+      }
+      
+      setPipelineJson(optimised);
+
+      // Convert pipeline to UI JSON
+      const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+      
+      console.log(uiJson, "uiJson");
       if (!uiJson || !uiJson.nodes) {
-        
         throw new Error('Failed to convert pipeline to UI format');
       }
 

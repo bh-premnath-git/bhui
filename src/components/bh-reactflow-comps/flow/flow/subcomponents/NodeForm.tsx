@@ -63,39 +63,55 @@ const ParameterRow: React.FC<{
 );
 
 const ParametersSection: React.FC<{
-    parameters: ParameterItem[];
+    parameters: ParameterItem[] | string;
     onParameterChange: (index: number, field: 'key' | 'value', value: string) => void;
     onAddParameter: () => void;
     onRemoveParameter: (index: number) => void;
-}> = ({ parameters, onParameterChange, onAddParameter, onRemoveParameter }) => (
-    <div className="space-y-3">
-        <div className="flex text-sm font-medium text-gray-500 px-3">
-            <div className="w-1/2">Key</div>
-            <div className="w-1/2">Value</div>
-        </div>
-        <div className="space-y-2">
-            {parameters.map((parameter, index) => (
-                <ParameterRow
-                    key={index}
-                    parameter={parameter}
-                    onDelete={() => onRemoveParameter(index)}
-                    onChange={(field, value) => onParameterChange(index, field, value)}
-                    canDelete={parameters.length > 1}
-                />
-            ))}
-        </div>
+    defaultParameters?: ParameterItem[];
+}> = ({ parameters, onParameterChange, onAddParameter, onRemoveParameter, defaultParameters }) => {
+    // Ensure parameters is always an array
+    const parametersArray = useMemo(() => {
+        if (typeof parameters === 'string') {
+            try {
+                return JSON.parse(parameters);
+            } catch (e) {
+                return defaultParameters || [{ key: '', value: '' }];
+            }
+        }
+        return Array.isArray(parameters) ? parameters : (defaultParameters || [{ key: '', value: '' }]);
+    }, [parameters, defaultParameters]);
 
-        <Button
-            type="button"
-            variant="ghost"
-            onClick={onAddParameter}
-            className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9"
-        >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Parameter
-        </Button>
-    </div>
-);
+    return (
+        <div className="space-y-3">
+            <div className="flex text-sm font-medium text-gray-500 px-3">
+                <div className="w-1/2">Key</div>
+                <div className="w-1/2">Value</div>
+            </div>
+            <div className="space-y-2">
+                {parametersArray.map((parameter, index) => (
+                    <ParameterRow
+                        key={index}
+                        parameter={parameter}
+                        onDelete={() => onRemoveParameter(index)}
+                        onChange={(field, value) => onParameterChange(index, field, value)}
+                        canDelete={parametersArray.length > 1}
+                    />
+                ))}
+            </div>
+
+            <Button
+                type="button"
+                variant="ghost"
+                onClick={onAddParameter}
+                className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9"
+            >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Parameter
+            </Button>
+        </div>
+    );
+};
+
 // Utility function to check if a field value is empty
 const isFieldEmpty = (value: any): boolean => {
     if (!value) return true;
@@ -109,10 +125,11 @@ const updateFlowDefinitionOnServer = (
     selectedFlowId: string | null,
     selectedFlow: any,
     dispatch: any,
-    hasFlowConfig: boolean
+    hasFlowConfig: boolean,
+    flowConfigMap: Record<string, any>
 ) => {
     if (!selectedFlowId || !selectedFlow?.flow_id) return;
-    
+
     try {
         const flowStructure = localStorage.getItem(`flow-${selectedFlowId}`);
         if (!flowStructure) {
@@ -121,36 +138,36 @@ const updateFlowDefinitionOnServer = (
         }
 
         const parsedStructure = JSON.parse(flowStructure);
+        console.log("flowConfigMap >>>>", flowConfigMap?.flowconfig);
+
         const flowJson = {
             $schema: schema["$schema"],
             description: `Flow for ${selectedFlow?.flow_name || 'Unnamed Flow'}`,
             name: selectedFlow?.flow_name || 'Unnamed Flow',
             version: schema.version,
-            isFlowConfig: hasFlowConfig,
+            parameters: flowConfigMap?.flowconfig?.flow_config || [],
             tasks: parsedStructure.nodeFormData?.map((item: any) => ({
                 ...item.formData
             }))
         };
-        
+
         // Check if all tasks have valid IDs
         const allTasksValid = flowJson.tasks?.every((task: any) => !!task.task_id);
         if (!allTasksValid) {
             console.warn("Some tasks are missing task_id");
         }
-        
+
         dispatch(updateFlowDefinition({
             flow_id: selectedFlow.flow_id.toString(),
             flow_json: {
                 flow_deployment_id: selectedFlow.flow_deployment?.[0]?.flow_deployment_id,
                 flow_id: selectedFlow.flow_id.toString(),
-                flow_json: { 
-                    flowJson: flowJson, 
-                    flowStructure: parsedStructure 
+                flow_json: {
+                    flowJson: flowJson,
+                    flowStructure: parsedStructure
                 }
             }
         }));
-        
-        console.log("Flow definition update triggered");
     } catch (error) {
         console.error("Failed to update flow definition:", error);
     }
@@ -173,8 +190,8 @@ const useFormValidation = (selectedNodeId: string, requiredFields: string[], get
             });
             return false;
         }
-        
-        const missingFields = requiredFields.filter(field => 
+
+        const missingFields = requiredFields.filter(field =>
             isFieldEmpty(currentFields[field])
         );
 
@@ -184,7 +201,7 @@ const useFormValidation = (selectedNodeId: string, requiredFields: string[], get
             });
             return false;
         }
-        
+
         return true;
     }, [getNodeFormData, requiredFields, selectedNodeId]);
 
@@ -205,23 +222,24 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         revertOrSaveData,
         updateNodeDependencies,
         selectedFlowId,
-        hasFlowConfig
+        hasFlowConfig,
+        flowConfigMap
     } = useFlow();
-    
+
     const dispatch = useAppDispatch();
     const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
 
     const [activeTab, setActiveTab] = useState<TabType>("property");
     const [selectedValue, setSelectedValue] = useState<string>("");
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
-    
+
     if (!selectedNode) return null;
-    
+
     const typesMatched = useOtherTypes(selectedNode.data.selectedData);
 
     // Form validation
     const { isSaveDisabled, validateForm } = useFormValidation(
-        selectedNode.id, 
+        selectedNode.id,
         requiredFieldsState,
         getNodeFormData
     );
@@ -229,14 +247,30 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     // Get selected properties based on node type
     const selectedProperties = useMemo(() => {
         if (Array.isArray(selectedNode.data.meta.properties) && selectedValue) {
-            return selectedNode.data.meta.properties.find(
+            const props = selectedNode.data.meta.properties.find(
                 (item: any) =>
                     item.type === selectedValue || item.type === selectedNode.data.selectedData
             );
+            console.log("Selected Properties:", props); // Debug log
+            return props;
         } else {
             return selectedNode.data.meta.properties;
         }
     }, [selectedNode.data.meta.properties, selectedValue]);
+
+    // Get default parameters from schema
+    const defaultParameters = useMemo(() => {
+        if (!selectedProperties) return [];
+        
+        // Find the parameters property in the schema
+        const parametersProperty = selectedProperties.properties?.parameters;
+        console.log("Parameters Property:", parametersProperty); // Debug log
+        
+        if (parametersProperty?.ui_properties?.default) {
+            return parametersProperty.ui_properties.default;
+        }
+        return [];
+    }, [selectedProperties]);
 
     // Check if the current operator type has parameters
     const hasParameters = useMemo(() => {
@@ -249,7 +283,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [selectedValue]);
 
     // Group properties for tabs
-    const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ?? 
+    const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ??
         { properties: { property: [], settings: [], parameters: [] } };
 
     // Get current form data for the selected node
@@ -280,30 +314,42 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         taskID,
     });
 
+    // Initialize parameters with default values
+    useEffect(() => {
+        if (hasParameters) {
+            // If parameters don't exist or are empty, initialize with defaults
+            if (!currentFormData.parameters || 
+                (typeof currentFormData.parameters === 'string' && currentFormData.parameters === '[]') ||
+                (Array.isArray(currentFormData.parameters) && currentFormData.parameters.length === 0)) {
+                handleInputChange('parameters', JSON.stringify(defaultParameters));
+            }
+        }
+    }, [hasParameters, currentFormData.parameters, defaultParameters, handleInputChange]);
+
     // Handle save button click
     const handleSave = useCallback(() => {
         if (!selectedNode || !validateForm()) return;
-        
+
         // Update node dependencies based on current edges
         updateNodeDependencies();
-        
+
         // Save the flow to local storage
         setFormDataNum((prev) => prev + 1);
         closeTap();
         revertOrSaveData(id, true);
-        
+
         // Update flow definition on the server
-        updateFlowDefinitionOnServer(selectedFlowId, selectedFlow, dispatch, hasFlowConfig);
+        updateFlowDefinitionOnServer(selectedFlowId, selectedFlow, dispatch, hasFlowConfig, flowConfigMap);
     }, [
-        closeTap, 
-        id, 
-        validateForm, 
-        revertOrSaveData, 
-        updateNodeDependencies, 
-        selectedNode, 
-        selectedFlowId, 
-        selectedFlow, 
-        dispatch, 
+        closeTap,
+        id,
+        validateForm,
+        revertOrSaveData,
+        updateNodeDependencies,
+        selectedNode,
+        selectedFlowId,
+        selectedFlow,
+        dispatch,
         setFormDataNum
     ]);
 
@@ -340,29 +386,46 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         }
     }, [selectedNode]);
 
-    // Add parameter handling functions
+    // Update the parameter handling functions
     const handleParameterChange = useCallback((index: number, field: 'key' | 'value', value: string) => {
-        const newParameters = [...(currentFormData.parameters || [])];
+        const currentParameters = typeof currentFormData.parameters === 'string' 
+            ? JSON.parse(currentFormData.parameters)
+            : Array.isArray(currentFormData.parameters) 
+                ? currentFormData.parameters 
+                : defaultParameters;
+        
+        const newParameters = [...currentParameters];
         if (!newParameters[index]) {
             newParameters[index] = { key: '', value: '' };
         }
         newParameters[index][field] = value;
         handleInputChange('parameters', JSON.stringify(newParameters));
-    }, [currentFormData, handleInputChange]);
+    }, [currentFormData, handleInputChange, defaultParameters]);
 
     const addParameterRow = useCallback(() => {
-        const newParameters = [...(currentFormData.parameters || [])];
-        newParameters.push({ key: '', value: '' });
+        const currentParameters = typeof currentFormData.parameters === 'string' 
+            ? JSON.parse(currentFormData.parameters)
+            : Array.isArray(currentFormData.parameters) 
+                ? currentFormData.parameters 
+                : defaultParameters;
+        
+        const newParameters = [...currentParameters, { key: '', value: '' }];
         handleInputChange('parameters', JSON.stringify(newParameters));
-    }, [currentFormData, handleInputChange]);
+    }, [currentFormData, handleInputChange, defaultParameters]);
 
     const removeParameterRow = useCallback((index: number) => {
-        const newParameters = [...(currentFormData.parameters || [])];
-        if (newParameters.length > 1) {
+        const currentParameters = typeof currentFormData.parameters === 'string' 
+            ? JSON.parse(currentFormData.parameters)
+            : Array.isArray(currentFormData.parameters) 
+                ? currentFormData.parameters 
+                : defaultParameters;
+        
+        if (currentParameters.length > 1) {
+            const newParameters = [...currentParameters];
             newParameters.splice(index, 1);
             handleInputChange('parameters', JSON.stringify(newParameters));
         }
-    }, [currentFormData, handleInputChange]);
+    }, [currentFormData, handleInputChange, defaultParameters]);
 
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg">
@@ -448,10 +511,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         <TabsContent value="parameters">
                             <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
                                 <ParametersSection
-                                    parameters={currentFormData.parameters || [{ key: '', value: '' }]}
+                                    parameters={currentFormData.parameters || JSON.stringify(defaultParameters)}
                                     onParameterChange={handleParameterChange}
                                     onAddParameter={addParameterRow}
                                     onRemoveParameter={removeParameterRow}
+                                    defaultParameters={defaultParameters}
                                 />
                             </ScrollArea>
                         </TabsContent>
@@ -462,9 +526,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 <div className="flex justify-center pt-4">
                     <Button
                         onClick={handleSave}
-                        className={`bg-black hover:bg-black/90 text-white px-8 ${
-                            isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        className={`bg-black hover:bg-black/90 text-white px-8 ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                         disabled={isSaveDisabled}
                     >
                         <Save className="w-4 h-4 mr-2" />

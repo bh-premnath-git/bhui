@@ -63,6 +63,7 @@ export function useFlowOperations(
         nodes: sortedNodes,
         edges,
         nodeFormData: sortedNodeFormData,
+        flowConfigs: LocalStorageService.getItem(`flow-${selectedFlowId}`)?.flowConfigs || [],
       };
       
       // Double-check we're saving to the correct flow ID

@@ -40,6 +40,7 @@ export const useGroupedProperties = (selectedNode: any) => {
         (a.ui_properties?.order || 0) - (b.ui_properties?.order || 0)
       );
     });
+    
     return grouped;
   }, [selectedNode]); // Keep a single dependency
 };

@@ -9,6 +9,7 @@ const BuildDataPipeline = lazy(() => import("@/pages/designers/BuildDataPipeline
 const DataPipeCanvas = lazy(() => import("@/pages/designers/DataPipelineCanvas"));
 const ManageFlow = lazy(() => import("@/pages/designers/ManageFlow"));
 const FlowCanvas = lazy(() => import("@/pages/designers/FlowCanvas"));
+const NotebookEditor = lazy(() => import("@/pages/data-catalog/Notebook"));
 
 export const DesignerRoutes = (
   <>
@@ -49,6 +50,14 @@ export const DesignerRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <FlowCanvas />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={ROUTES.DESIGNERS.NOTEBOOK} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <NotebookEditor />
         </Suspense>
       } 
     />

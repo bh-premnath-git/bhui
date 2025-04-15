@@ -19,7 +19,7 @@ export function useNodeFormInput({
 }: UseNodeFormInputProps) {
     
   const handleInputChange = useCallback(
-    (key: string, value: string) => {
+    (key: string, value: any) => {
       if (!selectedNode) return;
       
       updateNodeFormData(selectedNode.id, {
@@ -28,9 +28,10 @@ export function useNodeFormInput({
         [key]: value,
       });
       
-      saveFlow();
+      // Don't call saveFlow here - this causes a continuous loop
+      // Let the parent component handle saving at appropriate times
     },
-    [selectedNode, currentFormData, dependsOn, updateNodeFormData, saveFlow, taskID]
+    [selectedNode, currentFormData, dependsOn, updateNodeFormData, taskID]
   );
 
   return handleInputChange;

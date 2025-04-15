@@ -176,9 +176,21 @@ export const SettingsModal = () => {
           // Extract the actual config array - check if it's nested under 'flow_config'
           let configArray;
           
-          // Handle case where flow_config itself has a flow_config property (nested structure)
+          // Handle case where flow_config has a double nested structure
           const flowConfig: any = flowConfigEntry.flow_config;
           if (typeof flowConfig === 'object' && 
+              !Array.isArray(flowConfig) && 
+              'flow_config' in flowConfig && 
+              typeof flowConfig.flow_config === 'object' &&
+              !Array.isArray(flowConfig.flow_config) &&
+              'flow_config' in flowConfig.flow_config &&
+              Array.isArray(flowConfig.flow_config.flow_config)) {
+            // Double nested structure: flow_config.flow_config.flow_config
+            configArray = flowConfig.flow_config.flow_config;
+            console.log('Using double nested flow_config.flow_config.flow_config array:', configArray);
+          }
+          // Handle case where flow_config has a single level of nesting
+          else if (typeof flowConfig === 'object' && 
               !Array.isArray(flowConfig) && 
               'flow_config' in flowConfig && 
               Array.isArray(flowConfig.flow_config)) {
@@ -287,9 +299,11 @@ export const SettingsModal = () => {
             cleanedConfigs :
             [{ key: '', value: '' }];
 
-          // Create the flow_config object and stringify it
+          // Create the flow_config object with double nesting and stringify it
           const flowConfigString = JSON.stringify({
-            flow_config: configsToSave
+            flow_config: {
+              flow_config: configsToSave
+            }
           });
 
           console.log('Sending flow configuration as string:', flowConfigString);

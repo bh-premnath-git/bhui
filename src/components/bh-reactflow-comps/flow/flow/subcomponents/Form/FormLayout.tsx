@@ -5,7 +5,7 @@ import { Property, FormValues } from '@/types/designer/flow';
 interface FormLayoutProps {
   properties: Property[];
   formValues: FormValues;
-  onInputChange: (key: string, value: string) => void;
+  onInputChange: (key: string, value: any) => void;
   dependsOn?: string[];
 }
 

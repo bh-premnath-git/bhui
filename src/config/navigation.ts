@@ -2,7 +2,7 @@ import {
   Database,
   LayoutDashboard,
   Settings,
-  PenTool,
+  Network,
   GitBranch,
   Package,
   GitPullRequest,
@@ -12,7 +12,8 @@ import {
   FolderGit2,
   Settings2,
   Cable,
-  Clock,
+  Search,
+  BarChart,
   NotebookText,
   BookMarked
 } from "lucide-react";
@@ -27,21 +28,17 @@ export const navigationItems: NavItem[] = [
   },
   {
     title: "Data Explorer",
-    icon: Clock,
+    icon: BarChart,
     path: `${ROUTES.DATA_CATALOG}/xplorer`,
     subItems: [],
     actions: [
       { icon: 'ellipsis', action: 'menu' }
     ]
   },
-  {
-    title: "Notebook",
-    icon: NotebookText,
-    path: `${ROUTES.DATA_CATALOG}/notebook`,
-  },
+
   {
     title: "Designer",
-    icon: PenTool,
+    icon: Network,
     path: ROUTES.DESIGNERS.INDEX,
     subItems: [
       {
@@ -54,6 +51,12 @@ export const navigationItems: NavItem[] = [
         title: "Manage Flow",
         icon: GitBranch,
         path: ROUTES.DESIGNERS.MANAGE_FLOW,
+        parent: ROUTES.DESIGNERS.INDEX,
+      },
+      {
+        title: "Notebook",
+        icon: NotebookText,
+        path: ROUTES.DESIGNERS.NOTEBOOK,
         parent: ROUTES.DESIGNERS.INDEX,
       },
     ],

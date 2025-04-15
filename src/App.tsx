@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import { fetchGithubProviders, fetchDataSourceTypes } from "./store/slices/globalGitSlice";
 import { FlowProvider } from "./context/designers/FlowContext";
 import { PipelineProvider } from "./context/designers/DataPipelineContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -45,20 +46,21 @@ const AppContent = () => {
 const App = () => {
   return (
     <BrowserRouter>
-
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <KeycloakProvider>
-          <Provider store={store}>
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <AppContent />
-              </TooltipProvider>
-            </QueryClientProvider>
-          </Provider>
-        </KeycloakProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <KeycloakProvider>
+            <Provider store={store}>
+              <QueryClientProvider client={queryClient}>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <AppContent />
+                </TooltipProvider>
+              </QueryClientProvider>
+            </Provider>
+          </KeycloakProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
     </BrowserRouter>
   )
 };

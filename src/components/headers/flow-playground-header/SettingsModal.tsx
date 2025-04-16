@@ -32,24 +32,28 @@ const ConfigRow: React.FC<{
   onChange: (field: 'key' | 'value', value: string) => void;
   canDelete: boolean;
 }> = ({ config, onDelete, onChange, canDelete }) => (
-  <div className="flex gap-2 items-center">
-    <Input
-      placeholder="Key"
-      value={config.key}
-      onChange={(e) => onChange('key', e.target.value)}
-      className="w-1/2"
-    />
-    <Input
-      placeholder="Value"
-      value={config.value}
-      onChange={(e) => onChange('value', e.target.value)}
-      className="w-1/2"
-    />
+  <div className="flex gap-2 items-center px-1">
+    <div className="w-1/2">
+      <Input
+        placeholder="Key"
+        value={config.key}
+        onChange={(e) => onChange('key', e.target.value)}
+        className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
+      />
+    </div>
+    <div className="w-1/2">
+      <Input
+        placeholder="Value"
+        value={config.value}
+        onChange={(e) => onChange('value', e.target.value)}
+        className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
+      />
+    </div>
     <Button
       variant="ghost"
       size="icon"
       onClick={onDelete}
-      className="text-gray-400 hover:text-red-500"
+      className="text-gray-400 hover:text-red-500 flex-shrink-0"
       disabled={!canDelete}
     >
       <X className="h-4 w-4" />
@@ -64,12 +68,12 @@ const ConfigurationSection: React.FC<{
   onAddConfig: () => void;
   onRemoveConfig: (index: number) => void;
 }> = ({ configs, onConfigChange, onAddConfig, onRemoveConfig }) => (
-  <div className="space-y-3">
+  <div className="space-y-3 px-3">
     <div className="flex text-sm font-medium text-gray-500 px-3">
       <div className="w-1/2">Key</div>
       <div className="w-1/2">Value</div>
     </div>
-    <div className="space-y-2">
+    <div className="space-y-2 overflow-visible">
       {configs.map((config, index) => (
         <ConfigRow
           key={index}
@@ -85,7 +89,7 @@ const ConfigurationSection: React.FC<{
       type="button"
       variant="ghost"
       onClick={onAddConfig}
-      className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9"
+      className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9 mx-auto px-4"
     >
       <Plus className="h-4 w-4 mr-2" />
       Add Configuration
@@ -120,12 +124,12 @@ const NotesSection: React.FC<{
     </Button>
 
     {showNotes && (
-      <div className="px-4">
+      <div className="px-4 overflow-visible">
         <Textarea
           placeholder="Add your notes here..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[120px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm rounded-lg"
+          className="min-h-[120px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 text-sm rounded-lg w-full"
         />
       </div>
     )}
@@ -176,9 +180,21 @@ export const SettingsModal = () => {
           // Extract the actual config array - check if it's nested under 'flow_config'
           let configArray;
           
-          // Handle case where flow_config itself has a flow_config property (nested structure)
+          // Handle case where flow_config has a double nested structure
           const flowConfig: any = flowConfigEntry.flow_config;
           if (typeof flowConfig === 'object' && 
+              !Array.isArray(flowConfig) && 
+              'flow_config' in flowConfig && 
+              typeof flowConfig.flow_config === 'object' &&
+              !Array.isArray(flowConfig.flow_config) &&
+              'flow_config' in flowConfig.flow_config &&
+              Array.isArray(flowConfig.flow_config.flow_config)) {
+            // Double nested structure: flow_config.flow_config.flow_config
+            configArray = flowConfig.flow_config.flow_config;
+            console.log('Using double nested flow_config.flow_config.flow_config array:', configArray);
+          }
+          // Handle case where flow_config has a single level of nesting
+          else if (typeof flowConfig === 'object' && 
               !Array.isArray(flowConfig) && 
               'flow_config' in flowConfig && 
               Array.isArray(flowConfig.flow_config)) {
@@ -287,9 +303,11 @@ export const SettingsModal = () => {
             cleanedConfigs :
             [{ key: '', value: '' }];
 
-          // Create the flow_config object and stringify it
+          // Create the flow_config object with double nesting and stringify it
           const flowConfigString = JSON.stringify({
-            flow_config: configsToSave
+            flow_config: {
+              flow_config: configsToSave
+            }
           });
 
           console.log('Sending flow configuration as string:', flowConfigString);
@@ -336,7 +354,7 @@ export const SettingsModal = () => {
       </TooltipProvider>
 
       <DialogContent
-        className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg"
+        className="sm:max-w-[550px] bg-white/95 backdrop-blur-sm border-0 shadow-lg p-6"
         aria-describedby="flowform"
       >
         <DialogHeader className="space-y-1">
@@ -349,24 +367,24 @@ export const SettingsModal = () => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex space-x-4 mb-6 p-1 rounded-lg">
+          <TabsList className="flex space-x-4 mb-6 p-1 rounded-lg overflow-visible">
             <TabsTrigger
               value="settings"
-              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black data-[state=focus]:outline-none data-[state=focus]:ring-2 data-[state=focus]:ring-gray-400"
+              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               Settings
             </TabsTrigger>
             <TabsTrigger
               value="configuration"
-              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black data-[state=focus]:outline-none data-[state=focus]:ring-2 data-[state=focus]:ring-gray-400"
+              className="px-4 py-2 rounded-md border border-gray-300 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               Configuration
             </TabsTrigger>
           </TabsList>
 
-          <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
+          <div className="min-h-[300px] max-h-[400px] overflow-y-auto overflow-x-visible px-1">
             {/* Container to keep consistent height */}
-            <TabsContent value="settings" className="mt-0 h-full">
+            <TabsContent value="settings" className="mt-0 h-full overflow-visible">
               <div className="grid gap-6 py-4">
                 <NotesSection
                   notes={notes}
@@ -374,13 +392,13 @@ export const SettingsModal = () => {
                   setShowNotes={setShowNotes}
                   setNotes={setNotes}
                 />
-                <div className="px-4 pt-2">
+                <div className="px-4 pt-2 overflow-visible">
                   <TagInput tags={tags} setTags={setTags} />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="configuration" className="mt-0 h-full">
+            <TabsContent value="configuration" className="mt-0 h-full overflow-visible">
               <ConfigurationSection
                 configs={configs}
                 onConfigChange={handleConfigChange}

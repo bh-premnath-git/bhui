@@ -174,7 +174,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
     };
 
     return (
-      <div className={`space-y-2 ${columnSpan > 1 ? 'col-span-2' : ''}`}>
+      <div className={`space-y-2 overflow-visible ${columnSpan > 1 ? 'col-span-2' : ''}`}>
         {renderField()}
       </div>
     );

@@ -80,7 +80,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         onChange={onChange}
         onBlur={handleBlur}
         className={`w-full border px-3 py-2 text-sm bg-white rounded-md 
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-transparent
           ${displayError ? 'border-red-500' : 'border-gray-300'}`}
       />
       {displayError && (

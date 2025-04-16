@@ -141,7 +141,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   const showArea = config.showArea === true;
   
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height="100%" minHeight={280}>
       <RechartsLineChart 
         data={processedData} 
         margin={{ top: 20, right: 20, left: 20, bottom: 20 }}

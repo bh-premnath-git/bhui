@@ -377,7 +377,7 @@ const flowSlice = createSlice({
                                 config.flow_config_id === action.meta.arg.flow_config_id 
                                     ? { 
                                         ...config, 
-                                        flow_config: parsedConfig  // Store it directly as received
+                                        flow_config: parsedConfig  // Store directly as received with double nesting
                                       }
                                     : config
                             )

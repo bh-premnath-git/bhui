@@ -77,7 +77,7 @@ export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <SortableChartCard id="latency" title="Latency" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="latency" title="Latency" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
       <LineChart 
         data={data} 
         xAxisDataKey="name" 
@@ -96,7 +96,7 @@ export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
   const areas = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <SortableChartCard id="cost" title="Cost" className="bg-gradient-to-br from-card to-card/95">
+    <SortableChartCard id="cost" title="Cost" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
       <AreaChart 
         data={data} 
         xAxisDataKey="name" 
@@ -113,7 +113,7 @@ export const CostTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
 }
 
 export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ title, data }) => (
-  <SortableChartCard id="ingestion" title={title} className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="ingestion" title={title} className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <DonutChart 
       data={prepareDonutData(data, palettes.status)}
       dataKey="value" 
@@ -129,7 +129,7 @@ export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ tit
 )
 
 export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="health" title="Health Status" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="health" title="Health Status" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -144,7 +144,7 @@ export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
 )
 
 export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="quality" title="Quality" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="quality" title="Quality" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
@@ -160,7 +160,7 @@ export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
 )
 
 export const IncidentSummaryChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="incident" title="Incidents" className="bg-gradient-to-br from-card to-card/95">
+  <SortableChartCard id="incident" title="Incidents" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 

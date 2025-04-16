@@ -34,37 +34,43 @@ interface ParameterItem {
     value: string | number;
 }
 
-const ParameterRow: React.FC<{
+// Memoize the ParameterRow component for better performance
+const ParameterRow = React.memo<{
     parameter: ParameterItem;
     onDelete: () => void;
     onChange: (field: 'key' | 'value', value: string) => void;
     canDelete: boolean;
-}> = ({ parameter, onDelete, onChange, canDelete }) => (
-    <div className="flex gap-2 items-center">
-        <Input
-            placeholder="Key"
-            value={parameter.key}
-            onChange={(e) => onChange('key', e.target.value)}
-            className="w-1/2"
-        />
-        <Input
-            placeholder="Value"
-            value={parameter.value}
-            onChange={(e) => onChange('value', e.target.value)}
-            className="w-1/2"
-        />
+}>(({ parameter, onDelete, onChange, canDelete }) => (
+    <div className="flex gap-2 items-center px-1 overflow-visible">
+        <div className="w-1/2">
+            <Input
+                placeholder="Key"
+                value={parameter.key}
+                onChange={(e) => onChange('key', e.target.value)}
+                className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
+            />
+        </div>
+        <div className="w-1/2">
+            <Input
+                placeholder="Value"
+                value={parameter.value}
+                onChange={(e) => onChange('value', e.target.value)}
+                className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
+            />
+        </div>
         <Button
             variant="ghost"
             size="icon"
             onClick={onDelete}
-            className="text-gray-400 hover:text-red-500"
+            className="text-gray-400 hover:text-red-500 flex-shrink-0"
             disabled={!canDelete}
         >
             <X className="h-4 w-4" />
         </Button>
     </div>
-);
+));
 
+// Memoize the ParametersSection component
 const ParametersSection = React.memo<{
     parameters: ParameterItem[] | string;
     onParameterChange: (index: number, field: 'key' | 'value', value: string) => void;
@@ -74,34 +80,28 @@ const ParametersSection = React.memo<{
 }>(({ parameters, onParameterChange, onAddParameter, onRemoveParameter, defaultParameters }) => {
     // Ensure parameters is always an array
     const parametersArray = useMemo(() => {
-        if (typeof parameters === 'string') {
+        // Always convert to array if not already
+        if (!Array.isArray(parameters)) {
             try {
-                const parsed = JSON.parse(parameters);
-                if (DEBUG_MODE) console.log("Parsed parameters string:", parsed);
-                return parsed;
+                if (typeof parameters === 'string' && parameters) {
+                    const parsed = JSON.parse(parameters);
+                    return Array.isArray(parsed) ? parsed : defaultParameters || [{ key: '', value: '' }];
+                }
             } catch (e) {
-                if (DEBUG_MODE) console.log("Error parsing parameters string:", e);
-                return defaultParameters || [{ key: '', value: '' }];
+                // Silent error handling - fall back to defaults
             }
+            return defaultParameters || [{ key: '', value: '' }];
         }
-        if (Array.isArray(parameters)) {
-            return parameters;
-        }
-        // If default parameters exist, use those
-        if (defaultParameters && defaultParameters.length > 0) {
-            return defaultParameters;
-        }
-        // Fallback to empty parameter
-        return [{ key: '', value: '' }];
+        return parameters;
     }, [parameters, defaultParameters]);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 px-3 overflow-visible">
             <div className="flex text-sm font-medium text-gray-500 px-3">
                 <div className="w-1/2">Key</div>
                 <div className="w-1/2">Value</div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-visible">
                 {parametersArray.map((parameter, index) => (
                     <ParameterRow
                         key={index}
@@ -117,7 +117,7 @@ const ParametersSection = React.memo<{
                 type="button"
                 variant="ghost"
                 onClick={onAddParameter}
-                className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9"
+                className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9 mx-auto px-4"
             >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Parameter
@@ -155,10 +155,10 @@ const updateFlowDefinitionOnServer = (
 
         const parsedStructure = JSON.parse(flowStructure);
         if (DEBUG_MODE) console.log("flowConfigMap >>>>", flowConfigMap?.flowconfig);
-        
+
         // Ensure we have the most up-to-date nodeFormData
         const formData = nodeFormData?.length > 0 ? nodeFormData : parsedStructure.nodeFormData;
-        
+
         // Make sure we have complete task data before saving
         if (!formData || formData.length === 0) {
             console.warn("No form data available for saving");
@@ -175,38 +175,21 @@ const updateFlowDefinitionOnServer = (
 
         // Process tasks to ensure parameters are JavaScript objects, not strings
         const processedTasks = formData?.map((item: any) => {
-            // Create a deep copy to avoid mutations
-            const processedItem = JSON.parse(JSON.stringify(item.formData));
-            
-            // Special handling for EmrCreateJobFlowOperator which seems to have issues
-            if (processedItem.type === 'EmrCreateJobFlowOperator') {
-                console.log("Special handling for EmrCreateJobFlowOperator");
-                if (typeof processedItem.parameters === 'string') {
-                    try {
-                        processedItem.parameters = JSON.parse(processedItem.parameters);
-                        console.log("Successfully parsed EmrCreateJobFlowOperator parameters from string to array");
-                    } catch (e) {
-                        console.error("Error parsing EmrCreateJobFlowOperator parameters:", e);
-                        processedItem.parameters = [];
-                    }
-                }
-            }
-            
-            // Make sure all parameters are arrays, not strings
-            if (typeof processedItem.parameters === 'string') {
-                console.log(`Found stringified parameters for task ${processedItem.task_id || 'unknown'}`);
-                try {
-                    processedItem.parameters = JSON.parse(processedItem.parameters);
-                } catch (e) {
-                    console.error(`Error parsing parameters string for task ${processedItem.task_id || 'unknown'}:`, e);
-                    processedItem.parameters = [];
+        // Create a deep copy to avoid mutations
+        const processedItem = JSON.parse(JSON.stringify(item.formData));
+        
+        // Only process parameters if they exist
+        if (processedItem.parameters !== undefined) {
+        // Ensure parameters is always an array
+            if (!Array.isArray(processedItem.parameters)) {
+                processedItem.parameters = [];
                 }
             }
             
             // Function to convert string booleans to actual booleans
             const convertBooleanStrings = (obj: any): any => {
                 if (!obj) return obj;
-                
+
                 // If it's a simple string value, convert if it's 'true'/'false'
                 if (typeof obj === 'string') {
                     if (obj === 'true') return true;
@@ -215,12 +198,12 @@ const updateFlowDefinitionOnServer = (
                     if (!isNaN(Number(obj)) && obj !== '') return Number(obj);
                     return obj;
                 }
-                
+
                 // If it's an array, process each item
                 if (Array.isArray(obj)) {
                     return obj.map(item => convertBooleanStrings(item));
                 }
-                
+
                 // If it's an object, process each property
                 if (typeof obj === 'object') {
                     const result: any = {};
@@ -229,20 +212,21 @@ const updateFlowDefinitionOnServer = (
                     }
                     return result;
                 }
-                
+
                 return obj;
             };
-            
+
             // Convert all string booleans in the entire form data
             const fullyProcessed = convertBooleanStrings(processedItem);
-            
-            // Log the changes to debug the issue
-            console.log(`Processed task ${fullyProcessed.task_id || 'unknown'} with type ${fullyProcessed.type}:`, {
-                parametersType: typeof fullyProcessed.parameters,
-                isArray: Array.isArray(fullyProcessed.parameters),
-                parameters: fullyProcessed.parameters
-            });
-            
+
+            if (DEBUG_MODE) {
+                console.log(`Processed task ${fullyProcessed.task_id || 'unknown'} with type ${fullyProcessed.type}:`, {
+                    parametersType: typeof fullyProcessed.parameters,
+                    isArray: Array.isArray(fullyProcessed.parameters),
+                    parameters: fullyProcessed.parameters
+                });
+            }
+
             return fullyProcessed;
         });
 
@@ -256,15 +240,19 @@ const updateFlowDefinitionOnServer = (
         };
 
         // Always log the parameters for each task to verify proper format
-        console.log("FINAL TASKS BEFORE SAVING:");
-        for (let i = 0; i < flowJson.tasks.length; i++) {
-            const task = flowJson.tasks[i];
-            const isParamsString = typeof task.parameters === 'string';
-            console.log(`Task[${i}] ${task.task_id} parameters:`, task.parameters);
-            console.log(`  Is parameters a string? ${isParamsString}`);
-            console.log(`  Parameters type: ${typeof task.parameters}`);
-            if (isParamsString) {
-                console.error(`  ERROR: Parameters for task ${task.task_id} are still a string!`);
+        if (DEBUG_MODE) {
+            console.log("FINAL TASKS BEFORE SAVING:");
+            for (let i = 0; i < flowJson.tasks.length; i++) {
+                const task = flowJson.tasks[i];
+                // Only log parameters if they exist
+                if (task.parameters !== undefined) {
+                    console.log(`Task[${i}] ${task.task_id} parameters:`, task.parameters);
+                    if (!Array.isArray(task.parameters)) {
+                        console.error(`  ERROR: Parameters for task ${task.task_id} are not an array!`);
+                    }
+                } else {
+                    console.log(`Task[${i}] ${task.task_id} has no parameters`);
+                }
             }
         }
 
@@ -276,7 +264,7 @@ const updateFlowDefinitionOnServer = (
             }
             return isValid;
         });
-        
+
         if (!allTasksValid) {
             console.warn("Some tasks are missing task_id or type");
         }
@@ -297,15 +285,15 @@ const updateFlowDefinitionOnServer = (
     }
 };
 
-// Custom hook for form validation
+// Custom hook for form validation - with memoization for better performance
 const useFormValidation = (selectedNodeId: string, requiredFields: string[], getNodeFormData: any) => {
-    // Check if save should be disabled
+    // Check if save should be disabled - memoized for performance
     const isSaveDisabled = useMemo(() => {
         const currentFields = getNodeFormData(selectedNodeId) || {};
         return requiredFields.some(field => isFieldEmpty(currentFields[field]));
     }, [getNodeFormData, requiredFields, selectedNodeId]);
 
-    // Validate form fields
+    // Validate form fields - memoized callback for performance
     const validateForm = useCallback(() => {
         const currentFields = getNodeFormData(selectedNodeId);
         if (!currentFields) {
@@ -356,7 +344,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const [activeTab, setActiveTab] = useState<TabType>("property");
     const [selectedValue, setSelectedValue] = useState<string>("");
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
-    
+
     // Ref to track if parameters have been initialized
     const parametersInitializedRef = useRef(false);
 
@@ -383,14 +371,14 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             return selectedNode.data.meta.properties;
         }
     }, [selectedNode.data.meta.properties, selectedValue]);
-    
+
     // Get default parameters from schema
     const defaultParameters = useMemo(() => {
         if (!selectedProperties) return [];
-        
+
         // Find the parameters property in the schema
         const parametersProperty = selectedProperties.properties?.parameters;
-        
+
         if (parametersProperty?.ui_properties?.default) {
             return parametersProperty.ui_properties.default;
         }
@@ -400,14 +388,15 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     // Group properties for tabs
     const groupedProperties = useGroupedProperties({ properties: selectedProperties }) ??
         { property: [], settings: [], parameters: [] };
-    
+
     // Check if the current operator type has parameters based on grouped properties
     const hasParameters = useMemo(() => {
-        // Check if the parameters group exists and has at least one property
-        return groupedProperties && 
-               groupedProperties["parameters"] && 
-               groupedProperties["parameters"].length > 0;
-    }, [groupedProperties]);
+    // Check if the parameters group exists and has at least one property
+    return groupedProperties && 
+    groupedProperties["parameters"] && 
+    groupedProperties["parameters"].length > 0 &&
+               selectedValue; // Only show parameters when a node type is selected
+    }, [groupedProperties, selectedValue]);
 
     // Get current form data for the selected node
     const currentFormData = useMemo(
@@ -444,23 +433,22 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
     // Initialize parameters with default values - more robust approach
     useEffect(() => {
-        if (hasParameters && defaultParameters && defaultParameters.length > 0) {
-            // Initialize parameters if they don't exist or are empty
-            const isEmpty = 
-                !currentFormData.parameters || 
-                (typeof currentFormData.parameters === 'string' && 
-                    (currentFormData.parameters === '[]' || currentFormData.parameters === '')) ||
-                (Array.isArray(currentFormData.parameters) && 
-                    currentFormData.parameters.length === 0);
-                    
-            if (isEmpty && !parametersInitializedRef.current) {
-                // Store parameters directly as an array, not as a string
-                updateNodeFormData(selectedNode.id, {
-                    ...currentFormData,
-                    parameters: defaultParameters
-                });
-                parametersInitializedRef.current = true;
-            }
+    // Only initialize parameters if this node type actually has parameters
+    if (hasParameters && defaultParameters && defaultParameters.length > 0) {
+    // Initialize parameters if they don't exist or are not an array
+    const shouldInitialize = 
+    !currentFormData.parameters || 
+    !Array.isArray(currentFormData.parameters) || 
+    currentFormData.parameters.length === 0;
+            
+    if (shouldInitialize && !parametersInitializedRef.current) {
+    // Always store as an array
+    updateNodeFormData(selectedNode.id, {
+    ...currentFormData,
+        parameters: defaultParameters
+    });
+        parametersInitializedRef.current = true;
+        }
         }
     }, [hasParameters, defaultParameters, updateNodeFormData, currentFormData, selectedNode.id]);
 
@@ -471,19 +459,16 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         // First, ensure form data is updated
         const newFormData = [...nodeFormData];
         const existingNodeIndex = newFormData.findIndex(item => item.nodeId === selectedNode.id);
-        
-        // Parse parameters from string to array if needed
+
+        // Always ensure parameters is an array
         let parameters = currentFormData.parameters;
-        if (typeof parameters === 'string') {
-            try {
-                parameters = JSON.parse(parameters);
-                console.log("Converting string parameters to array in handleSave");
-            } catch (e) {
-                console.error("Error parsing parameters in handleSave:", e);
-                parameters = [];
-            }
+        if (!Array.isArray(parameters)) {
+            // Convert to array if not already
+            parameters = Array.isArray(defaultParameters) && defaultParameters.length > 0 ?
+                defaultParameters : [{ key: '', value: '' }];
         }
-        
+
+        // Only include parameters if this node type has parameter properties
         const updatedFormData = {
             nodeId: selectedNode.id,
             formData: {
@@ -491,27 +476,25 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 task_id: currentFormData.task_id || taskID,
                 type: selectedValue, // Ensure type is set
                 dependsOn: prevNodeFn(selectedNode.id) || [],
-                parameters: parameters // Make sure parameters are stored as an array
+                // Only include parameters if this node type has them
+                ...(hasParameters ? { parameters: parameters } : {})
             }
         };
-        
+
         if (existingNodeIndex >= 0) {
             newFormData[existingNodeIndex] = updatedFormData;
         } else {
             newFormData.push(updatedFormData);
         }
 
-        // Save with a proper array for parameters
-        console.log("Saving node with parameters:", {
-            nodeId: selectedNode.id, 
-            parametersType: typeof parameters,
-            isArray: Array.isArray(parameters),
-            parameters: parameters
-        });
+        // Save with a proper array for parameters if needed
+        if (DEBUG_MODE && hasParameters) {
+            console.log("Saving node with parameters:", parameters);
+        }
 
         // Update the form data state first
         updateNodeFormData(selectedNode.id, updatedFormData.formData);
-        
+
         // Wait a moment for state to update before saving
         setTimeout(() => {
             // Update node dependencies based on current edges
@@ -519,17 +502,17 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
             // Save the flow to local storage
             setFormDataNum((prev) => prev + 1);
-            
+
             // Update flow definition on the server with the updated form data
             updateFlowDefinitionOnServer(
-                selectedFlowId, 
-                selectedFlow, 
-                dispatch, 
-                hasFlowConfig, 
+                selectedFlowId,
+                selectedFlow,
+                dispatch,
+                hasFlowConfig,
                 flowConfigMap,
                 newFormData // Pass the updated form data
             );
-            
+
             // Close the form
             closeTap();
             revertOrSaveData(id, true);
@@ -590,19 +573,20 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
     // Update the parameter handling functions
     const handleParameterChange = useCallback((index: number, field: 'key' | 'value', value: string) => {
-        const currentParameters = typeof currentFormData.parameters === 'string' 
-            ? JSON.parse(currentFormData.parameters)
-            : Array.isArray(currentFormData.parameters) 
-                ? currentFormData.parameters 
-                : defaultParameters;
-        
+        // Always ensure parameters is an array
+        const currentParameters = Array.isArray(currentFormData.parameters)
+            ? currentFormData.parameters
+            : defaultParameters?.length > 0
+                ? defaultParameters
+                : [{ key: '', value: '' }];
+
         const newParameters = [...currentParameters];
         if (!newParameters[index]) {
             newParameters[index] = { key: '', value: '' };
         }
         newParameters[index][field] = value;
-        
-        // Store directly as an array, not as a string
+
+        // Always store as an array
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
             parameters: newParameters
@@ -610,15 +594,16 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [currentFormData, updateNodeFormData, selectedNode, defaultParameters]);
 
     const addParameterRow = useCallback(() => {
-        const currentParameters = typeof currentFormData.parameters === 'string' 
-            ? JSON.parse(currentFormData.parameters)
-            : Array.isArray(currentFormData.parameters) 
-                ? currentFormData.parameters 
-                : defaultParameters;
-        
+        // Always ensure parameters is an array
+        const currentParameters = Array.isArray(currentFormData.parameters)
+            ? currentFormData.parameters
+            : defaultParameters?.length > 0
+                ? defaultParameters
+                : [{ key: '', value: '' }];
+
         const newParameters = [...currentParameters, { key: '', value: '' }];
-        
-        // Store directly as an array, not as a string
+
+        // Always store as an array
         updateNodeFormData(selectedNode.id, {
             ...currentFormData,
             parameters: newParameters
@@ -626,17 +611,18 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [currentFormData, updateNodeFormData, selectedNode, defaultParameters]);
 
     const removeParameterRow = useCallback((index: number) => {
-        const currentParameters = typeof currentFormData.parameters === 'string' 
-            ? JSON.parse(currentFormData.parameters)
-            : Array.isArray(currentFormData.parameters) 
-                ? currentFormData.parameters 
-                : defaultParameters;
-        
+        // Always ensure parameters is an array
+        const currentParameters = Array.isArray(currentFormData.parameters)
+            ? currentFormData.parameters
+            : defaultParameters?.length > 0
+                ? defaultParameters
+                : [{ key: '', value: '' }];
+
         if (currentParameters.length > 1) {
             const newParameters = [...currentParameters];
             newParameters.splice(index, 1);
-            
-            // Store directly as an array, not as a string
+
+            // Always store as an array
             updateNodeFormData(selectedNode.id, {
                 ...currentFormData,
                 parameters: newParameters
@@ -645,8 +631,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [currentFormData, updateNodeFormData, selectedNode, defaultParameters]);
 
     return (
-        <Card className="w-full max-w-3xl mx-auto shadow-lg">
-            <CardContent className="p-6 space-y-6">
+        <Card className="w-full max-w-3xl mx-auto shadow-lg overflow-visible">
+            <CardContent className="p-6 space-y-6 overflow-visible">
                 {/* Node Type Selector */}
                 <div className="grid grid-cols-2 gap-4 items-center">
                     <Label htmlFor="type-select" className="text-sm font-medium text-gray-700">
@@ -677,17 +663,17 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 </div>
 
                 {/* Property Tabs */}
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className={`grid w-full ${hasParameters ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full overflow-visible">
+                    <TabsList className={`grid w-full ${hasParameters ? 'grid-cols-3' : 'grid-cols-2'} mb-6 overflow-visible`}>
                         <TabsTrigger
                             value="property"
-                            className="data-[state=active]:bg-black data-[state=active]:text-white"
+                            className="data-[state=active]:bg-black data-[state=active]:text-white focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:outline-none"
                         >
                             Properties
                         </TabsTrigger>
                         <TabsTrigger
                             value="settings"
-                            className="data-[state=active]:bg-black data-[state=active]:text-white"
+                            className="data-[state=active]:bg-black data-[state=active]:text-white focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:outline-none"
                             disabled={!groupedProperties["settings"]?.length}
                         >
                             Settings
@@ -695,15 +681,15 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         {hasParameters && (
                             <TabsTrigger
                                 value="parameters"
-                                className="data-[state=active]:bg-black data-[state=active]:text-white"
+                                className="data-[state=active]:bg-black data-[state=active]:text-white focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:outline-none"
                             >
                                 Parameters
                             </TabsTrigger>
                         )}
                     </TabsList>
 
-                    <TabsContent value="property">
-                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                    <TabsContent value="property" className="overflow-visible">
+                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4 overflow-visible">
                             <FormLayout
                                 properties={groupedProperties["property"]}
                                 formValues={currentFormData}
@@ -713,8 +699,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         </ScrollArea>
                     </TabsContent>
 
-                    <TabsContent value="settings">
-                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                    <TabsContent value="settings" className="overflow-visible">
+                        <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4 overflow-visible">
                             <FormLayout
                                 properties={groupedProperties["settings"]}
                                 formValues={currentFormData}
@@ -725,13 +711,13 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     </TabsContent>
 
                     {hasParameters && (
-                        <TabsContent value="parameters">
-                            <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4">
+                        <TabsContent value="parameters" className="overflow-visible">
+                            <ScrollArea className="h-[400px] pr-4 rounded-md border border-gray-200 bg-white p-4 overflow-visible">
                                 <ParametersSection
                                     parameters={
-                                        typeof currentFormData.parameters === 'string'
-                                            ? JSON.parse(currentFormData.parameters)
-                                            : currentFormData.parameters || defaultParameters
+                                        Array.isArray(currentFormData.parameters)
+                                            ? currentFormData.parameters
+                                            : defaultParameters || [{ key: '', value: '' }]
                                     }
                                     onParameterChange={handleParameterChange}
                                     onAddParameter={addParameterRow}

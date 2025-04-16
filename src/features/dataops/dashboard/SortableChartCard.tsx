@@ -72,15 +72,15 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     [title, onSaveHeight]
   );
 
-  // Load saved dimensions on mount and handle window resize
+  // Load saved dimensions on mount
   React.useEffect(() => {
     const loadDimensions = () => {
       const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
       if (savedDimensions) {
         const { height: savedHeight } = JSON.parse(savedDimensions);
         if (savedHeight) {
-          // Make sure the saved height doesn't exceed current viewport constraints
-          const maxHeight = window.innerHeight - 320;
+          // Use a reasonable maximum height
+          const maxHeight = 600;
           setHeight(Math.min(savedHeight, maxHeight));
         }
       }
@@ -88,15 +88,6 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
 
     // Load initial dimensions
     loadDimensions();
-
-    // Update dimensions when window resizes
-    const handleResize = () => {
-      const maxHeight = window.innerHeight - 320;
-      setHeight(currHeight => Math.min(currHeight, maxHeight));
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [title]);
   
   // Handle download button
@@ -105,21 +96,18 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
     // Implement actual download logic here
   };
   
-  // Reset to default height with viewport constraints
+  // Reset to default height
   const resetDimensions = () => {
-    // Apply viewport constraints to default height
-    const maxHeight = window.innerHeight - 320;
-    const constrainedDefaultHeight = Math.min(defaultHeight, maxHeight);
-    
-    setHeight(constrainedDefaultHeight);
+    // Use default height
+    setHeight(defaultHeight);
     setWidth('100%'); // Always use 100% width to fit grid cells
     
     localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
-      height: constrainedDefaultHeight,
+      height: defaultHeight,
       width: '100%'
     }));
     
-    onSaveHeight?.(constrainedDefaultHeight);
+    onSaveHeight?.(defaultHeight);
   };
   
   // Start resize operation
@@ -145,13 +133,14 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       
       const deltaY = e.clientY - startYRef.current;
       
-      // Calculate viewport constraints
-      const maxHeight = window.innerHeight - 320; // Account for headers, margins, etc.
+      // Use fixed min and max height constraints
+      const minHeight = 100;
+      const maxHeight = 600;
       
-      // Allow resizing within viewport constraints
+      // Allow resizing within these constraints
       const newHeight = Math.min(
         maxHeight,
-        Math.max(90, startHeightRef.current + deltaY)
+        Math.max(minHeight, startHeightRef.current + deltaY)
       );
       
       setHeight(newHeight);
@@ -206,7 +195,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
         "col-span-1 transition-all duration-300 hover:shadow-md",
         "border-muted/70 bg-card/90",
         "backdrop-blur-sm",
-        "relative h-full flex flex-col",  /* Make card fill grid cell and use flex column */
+        "relative h-full flex flex-col overflow-hidden",  /* Make card fill grid cell and use flex column */
         isDragging && "dragging",
         isResizing && "resizing",
         className
@@ -247,13 +236,12 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       </CardHeader>
       
       {/* Chart content */}
-      <CardContent className="p-0 pt-0 flex-grow flex flex-col">
+      <CardContent className="p-0 pt-0 flex-grow flex flex-col overflow-hidden">
         <div 
-          className="p-0 bg-card rounded-md border border-border/30 flex-grow flex flex-col"
+          className="p-0 bg-card rounded-md border border-border/30 flex-grow flex flex-col overflow-hidden"
           style={{ 
-            height: `min(${height}px, calc(100vh - 320px))`, 
-            minHeight: '100px',
-            maxHeight: 'calc(100vh - 320px)' 
+            height: `${height}px`, 
+            minHeight: '100px'
           }}
         >
           <ResponsiveContainer 

@@ -368,7 +368,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                                     : []
                         }
                     }));
-
                     // Your save logic here
                     const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
@@ -424,13 +423,14 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => 
-                nodesOrUpdater(prevNodes).map(sanitizeNode)
-            );
-        } else {
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
+        // alert()
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
     }, [setNodes, sanitizeNode]);
 
     // Update handleNodesChange
@@ -1169,6 +1169,8 @@ debuggedNodesList.forEach(checkpoint => {
 
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
+        console.log(source);
+        
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;

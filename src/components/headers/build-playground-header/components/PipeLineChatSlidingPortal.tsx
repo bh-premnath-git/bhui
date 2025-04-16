@@ -17,6 +17,7 @@ import { convertPipelineToUIJson } from "@/lib/pipelineJsonConverter";
 import { getInitialFormState } from "@/lib/transformationUtils";
 import { BarChart3, Globe2, LayoutGrid, MapPin } from "lucide-react";
 import { useReactFlow } from "reactflow";
+import { resolveRefsPipelineJson } from "@/lib/convertUIToPipelineJson";
 
 const suggestionQuestions = [
   {
@@ -58,80 +59,29 @@ console.log(location.pathname);
 
   useEffect(() => {
     if (!isOpen) {
+      // Clear all state when the portal is closed
       clearMessages();
       dispatch(clearFlowAgentConversation());
       dispatch(clearFormStates());
+      
+      // Clear the pipeline state
+      const { setNodes, setEdges } = reactFlowInstance;
+      setPipelineJson(null);
+     
+      setInput("");
+      setIsNewChat(false);
     }
-  }, [isOpen, clearMessages, dispatch]);
-
-//   useEffect(() => {
-//     if (error) {
-//       console.log('Flow error detected:', error);
-//       // Update the last assistant message to show the error
-//       updateLastAssistantMessage(`Error: ${error}. Please try again or modify your request.`);
-//     }
-//   }, [error, updateLastAssistantMessage]);
-
-  
-
-//   useEffect(() => {
-//     if (flowAgentConversation) {
-//       let formattedMessage = '';
-//       let shouldUpdateMessage = true;
-
-//       if (flowAgentConversation.status === 'error') {
-//         formattedMessage = `Error: Could not process your request. Please refine your workflow description.`;
-//       }
-//       else if (flowAgentConversation.status === 'missing') {
-//         formattedMessage = `Please provide the following information for your workflow:`;
-
-//         if (flowAgentConversation.flow_definition && typeof flowAgentConversation.flow_definition === 'object') {
-//           dispatch(setFormDefinition(flowAgentConversation.flow_definition as Record<string, string[]>));
-//         }
-
-//         if (flowAgentConversation.operators && Array.isArray(flowAgentConversation.operators) && flowAgentConversation.operators.length > 0) {
-//           formattedMessage += `\n\nOperators: ${flowAgentConversation.operators.join(', ')}`;
-//         }
-//         if (flowAgentConversation.pipelines && Array.isArray(flowAgentConversation.pipelines) && flowAgentConversation.pipelines.length > 0) {
-//           formattedMessage += `\nPipelines: ${flowAgentConversation.pipelines.join(', ')}`;
-//         }
-//       }
-//       else if (flowAgentConversation.status === 'success') {
-//         shouldUpdateMessage = false;
-//         if (typeof flowAgentConversation.flow_definition === 'string') {
-//           const { formDef, formValues: extractedValues, dependencies } = extractFromJson(flowAgentConversation.flow_definition);
-//           if (formDef) {
-//             dispatch(setFormDefinition(formDef));
-//             dispatch(setFormValues(extractedValues));
-            
-//             // Store dependencies in Redux store if needed
-//             if (dependencies && Object.keys(dependencies).length > 0) {
-//               dispatch(setTaskDependencies(dependencies));
-//               console.log('Task dependencies:', dependencies);
-//             }
-            
-//             setAiflowStrructre(flowAgentConversation.flow_definition);
-//           }
-//         }
-//       }
-//       else if (flowAgentConversation.response) {
-//         formattedMessage = flowAgentConversation.response;
-//       }
-
-//       if (shouldUpdateMessage) {
-//         updateLastAssistantMessage(formattedMessage);
-//       }
-//     }
-//   }, [flowAgentConversation]);
+  }, [isOpen, clearMessages, dispatch, reactFlowInstance, setPipelineJson, setNodes, setEdges, setFormStates, ]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    const { setNodes, setEdges } = reactFlowInstance;
-    setNodes([])
-    setEdges([])
-
+    
     setIsProcessing(true);
     try {
+      setFormStates({});
+      setPipelineJson(null);
+      const { setNodes, setEdges } = reactFlowInstance;
+   
       addUserMessage(input);
       addAssistantMessage("Let me analyze your pipeline request...");
 
@@ -140,13 +90,34 @@ console.log(location.pathname);
       //   pipelineId,
       //   request: input
       // })).unwrap();
-const result:any=await dispatch(recommendDataSources(input)).unwrap();
-      console.log(result);
+      const result:any = await dispatch(recommendDataSources(input)).unwrap();
       
-      const uiJson = await convertPipelineToUIJson(result.pipeline_definition, handleSourceUpdate);
-      console.log(uiJson,"uiJson");
+      console.log(result, "result from recommendDataSources");
+      
+      // Check if result or result.pipeline_json is undefined
+      if (!result || !result.pipeline_definition) {
+        console.error("Pipeline creation error: result or result.pipeline_json is undefined");
+        updateLastAssistantMessage("I couldn't generate a pipeline from your request. Please try rephrasing your request.");
+        return;
+      }
+      
+      let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+      console.log(optimised, "optimised");
+      
+      if (!optimised) {
+        console.error("Pipeline creation error: optimised is undefined");
+        updateLastAssistantMessage("I encountered an error while processing the pipeline. Please try again.");
+        return;
+      }
+      
+      // Set the pipeline JSON first
+      setPipelineJson(optimised);
+
+      // Convert pipeline to UI JSON
+      const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+      
+      console.log(uiJson, "uiJson");
       if (!uiJson || !uiJson.nodes) {
-        
         throw new Error('Failed to convert pipeline to UI format');
       }
 
@@ -170,33 +141,42 @@ const result:any=await dispatch(recommendDataSources(input)).unwrap();
         }
         return node;
       });
-console.log(result.pipeline_definition,"nodesWithTitles");
+      
+      console.log(result.pipeline_definition,"nodesWithTitles");
+      
       if(result.pipeline_definition==null){
-        setPipelineJson(null)
-        setNodes([])
-        setEdges([])
+        setPipelineJson(null);
+        setNodes([]);
+        setEdges([]);
       } else {
         console.log(nodesWithTitles,"nodesWithTitles");
+        setNodes([]);
+        
+        // Set nodes and edges with the new data
         await setNodes(nodesWithTitles);
         await setEdges(uiJson.edges);
+        
+        // Center and align the nodes
         await handleCenter();
         await handleAlignHorizontal();
       }
 
+      // Initialize form states for the new nodes
       const initialFormStates = {};
       await result.pipeline_definition.transformations?.forEach((transformation: any) => {
-                    const matchingNode = nodesWithTitles.find(
-                        (node: any) => 
-                            node?.data?.label === transformation?.transformation && 
-                            node?.data?.title === transformation?.name
-                    );
+          const matchingNode = nodesWithTitles.find(
+              (node: any) => 
+                  node?.data?.label === transformation?.transformation && 
+                  node?.data?.title === transformation?.name
+          );
 
-                    if (matchingNode?.id) {
-                        initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
-                    }
-                });
+          if (matchingNode?.id) {
+              initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+          }
+      });
 
-                setFormStates(initialFormStates);
+      // Set the form states with the new data
+      setFormStates(initialFormStates);
       // Clear the input field
       setInput("");
 
@@ -231,67 +211,19 @@ console.log(result.pipeline_definition,"nodesWithTitles");
 
       // Log the error for debugging
       console.error("Pipeline creation error:", error);
+      
+      // Ensure we clean up any partial state in case of error
+      const { setNodes, setEdges } = reactFlowInstance;
+      setPipelineJson(null);
+      setNodes([]);
+      setEdges([]);
+      setFormStates({});
     } finally {
       setIsProcessing(false);
+      setInput(""); // Clear input field regardless of success or failure
     }
   };
 
-//   const makePipeline=async(response:any)=>{
-//     // setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
-//                 setPipelineJson(response.pipeline_json);
-
-//                 // Convert pipeline to UI JSON
-//                 const uiJson = await convertPipelineToUIJson(response.pipeline_json, handleSourceUpdate);
-//                 console.log(uiJson,"uiJson")
-//                 if (!uiJson || !uiJson.nodes) {
-//                     throw new Error('Failed to convert pipeline to UI format');
-//                 }
-
-//                 // Map nodes with titles safely
-//                 const nodesWithTitles = uiJson.nodes.map(node => {
-//                     const matchingTransformation = response.pipeline_json.transformations?.find(
-//                         (t: any) => t?.title === node?.data?.title && t?.name
-//                     );
-
-//                     if (matchingTransformation) {
-//                         return {
-//                             ...node,
-//                             data: {
-//                                 ...node.data,
-//                                 title: matchingTransformation.name,
-//                                 transformationData: {
-//                                     ...node.data.transformationData,
-//                                     name: matchingTransformation.name
-//                                 }
-//                             }
-//                         };
-//                     }
-//                     return node;
-//                 });
-// console.log(nodesWithTitles,"nodesWithTitles")
-//                 // Update nodes and edges
-//                 await setNodes(nodesWithTitles);
-//                 await setEdges(uiJson.edges || []);
-//                 await handleCenter();
-//                 await handleAlignHorizontal()
-//                 // Initialize form states
-//                 const initialFormStates = {};
-//                 response.pipeline_json.transformations?.forEach((transformation: any) => {
-//                     const matchingNode = nodesWithTitles.find(
-//                         (node: any) => 
-//                             node?.data?.label === transformation?.transformation && 
-//                             node?.data?.title === transformation?.name
-//                     );
-
-//                     if (matchingNode?.id) {
-//                         initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
-//                     }
-//                 });
-
-//                 setFormStates(initialFormStates);
-
-//   }
- 
 
   const handleSuggestionClick = (question: string) => {
     setInput(question);
@@ -301,6 +233,14 @@ console.log(result.pipeline_definition,"nodesWithTitles");
   const handleNewChat = () => {
     setIsNewChat(true);
     clearMessages();
+    
+    // Clear the pipeline state
+    const { setNodes, setEdges } = reactFlowInstance;
+    setPipelineJson(null);
+    setNodes([]);
+    setEdges([]);
+    setFormStates({});
+    setInput("");
   };
 
   return (

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronLeft, Edit, Link, Database, Zap, Search } from 'lucide-react'
+import { ChevronLeft, Edit, Link, Database, Zap, Search, FileJson } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +26,7 @@ import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { HiOutlinePlay } from 'react-icons/hi';
 import { MdOutlineStop, MdOutlineSkipNext } from 'react-icons/md';
 import PipelineControls from './components/PipelineControls';
+import { JsonToPipelineDialog } from './JsonToPipelineDialog';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
@@ -70,6 +71,7 @@ export function BuildPlaygroundHeader() {
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+  const [isJsonToPipelineOpen, setIsJsonToPipelineOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const filteredNodes = useMemo(() => nodeData.nodes, []);
 
@@ -250,6 +252,22 @@ export function BuildPlaygroundHeader() {
                 <p>Spark Parameters</p>
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className='border bg-gray-50'
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsJsonToPipelineOpen(true)}
+                  aria-label="Convert JSON to Pipeline"
+                >
+                  <FileJson className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Convert JSON to Pipeline</p>
+              </TooltipContent>
+            </Tooltip>
             <PipelineControls
               handleRunClick={handleRun}
               handleStop={handleStop}
@@ -286,6 +304,10 @@ export function BuildPlaygroundHeader() {
         isOpen={isSparkParamOpen}
         onClose={() => setIsSparkParamOpen(false)}
         type="spark"
+      />
+      <JsonToPipelineDialog
+        isOpen={isJsonToPipelineOpen}
+        onClose={() => setIsJsonToPipelineOpen(false)}
       />
 
     </div>

@@ -285,6 +285,7 @@ export function ConnectionForm({
         secret_key: data.secret_key || '',
         region: data.region || '',
         role_arn: data.role_arn || '',
+        file_path_prefix: data.file_path_prefix || '',
         ...commonFields,
       };
     }
@@ -335,7 +336,7 @@ export function ConnectionForm({
         return {
           name: connectionConfigName,
           connection_type: "S3",
-          file_path_prefix: data.landing_folder || '',
+          file_path_prefix: data.file_path_prefix || '',
           bucket: data?.bucket_name || null,
           secret_name: `bh-s3-${cleanedName}`
         };

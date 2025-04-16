@@ -214,6 +214,16 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         createDisposition: 'CREATE_IF_NEEDED',
                         writeMethod: 'direct'
                     };
+                    
+                    // If target_name exists but table_name doesn't, set table_name to match target_name
+                    if (newData.target.target_name && (!newData.target.table_name || newData.target.table_name === '')) {
+                        newData.target.table_name = newData.target.target_name;
+                    }
+                } else if (value === 'File') {
+                    // If target_name exists but file_name doesn't, set file_name to match target_name
+                    if (newData.target.target_name && (!newData.target.file_name || newData.target.file_name === '')) {
+                        newData.target.file_name = newData.target.target_name;
+                    }
                 }
             } else if (name === 'file_path_prefix') {
                 if (!newData.target) newData.target = {};
@@ -222,6 +232,10 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             } else if (name === 'target_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.target_name = value;
+                // Set table_name to match target_name if target_type is Relational
+                if (newData.target.target_type === 'Relational' && (!newData.target.table_name || newData.target.table_name === '')) {
+                    newData.target.table_name = value;
+                }
             } else if (name === 'table_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.table_name = value;
@@ -236,7 +250,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 if (!newData.target) newData.target = {};
                 newData.target.file_name = value;
                 // Set target_name to match file_name if target_name is not already set
-                if (!newData.target.target_name) {
+                if (!newData.target.target_name || newData.target.target_name === '') {
                     newData.target.target_name = value;
                 }
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {

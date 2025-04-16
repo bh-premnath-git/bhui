@@ -19,27 +19,25 @@ import { AutoSaveChanges, AutoSaveDefault, LastSave } from './AutoSave';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 // import { AIButton } from '../flow-playground-header';
 import { PipeLineAIButton } from './PipeLineAIButton';
-import { useAppSelector } from '@/hooks/useRedux';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import SearchNode from './components/SearchNode';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { HiOutlinePlay } from 'react-icons/hi';
 import { MdOutlineStop, MdOutlineSkipNext } from 'react-icons/md';
 import PipelineControls from './components/PipelineControls';
+import { patchPipelineOperation } from '@/store/slices/designer/pipelineSlice';
+import { PipelineNameEditor } from './components/PipelineNameEditor';
 
 export function BuildPlaygroundHeader() {
   // console.log("BuildPlaygroundHeader rendered");
   const { id } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const {
     pipelineName: contextPipelineName,
-    setUnsavedChanges,
-    setSaving,
-    setSaved,
-    setPipeLineName,
-    setLastSaved,
     lastSaved,
     isSaving,
     hasUnsavedChanges,
@@ -70,26 +68,28 @@ export function BuildPlaygroundHeader() {
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const filteredNodes = useMemo(() => nodeData.nodes, []);
 
   console.log(selectedPipeline, "selectedPipeline")
 
-  useEffect(() => {
-    if (contextPipelineName?.pipeLineName) {
-      setLocalPipelineName(contextPipelineName.pipeLineName);
-      setTempPipelineName(contextPipelineName.pipeLineName);
-    } else if (buildPipeLineDtl?.pipeline_name) {
-      setLocalPipelineName(buildPipeLineDtl.pipeline_name);
-      setTempPipelineName(buildPipeLineDtl.pipeline_name);
-    }
-  }, [buildPipeLineDtl?.pipeline_name, contextPipelineName?.pipeLineName]);
-  useEffect(() => {
-    if (buildPipeLineDtl?.pipeline_name) {
-      setLocalPipelineName(buildPipeLineDtl.pipeline_name);
-      setTempPipelineName(buildPipeLineDtl.pipeline_name);
-    }
-  }, [buildPipeLineDtl])
+  // Update the useEffect hooks to properly handle name changes
+useEffect(() => {
+  // Priority 1: Selected pipeline from Redux
+  if (selectedPipeline?.pipeline_name) {
+    setLocalPipelineName(selectedPipeline.pipeline_name);
+    setTempPipelineName(selectedPipeline.pipeline_name);
+  } 
+  // Priority 2: Context pipeline name
+  else if (contextPipelineName?.pipeLineName) {
+    setLocalPipelineName(contextPipelineName.pipeLineName);
+    setTempPipelineName(contextPipelineName.pipeLineName);
+  }
+  // Priority 3: Build pipeline detail
+  else if (buildPipeLineDtl?.pipeline_name) {
+    setLocalPipelineName(buildPipeLineDtl.pipeline_name);
+    setTempPipelineName(buildPipeLineDtl.pipeline_name);
+  }
+}, [selectedPipeline?.pipeline_name, contextPipelineName?.pipeLineName, buildPipeLineDtl?.pipeline_name]);
 
   const renderSaveStatus = useMemo(() => {
     if (localState.isSaving) {
@@ -109,56 +109,6 @@ export function BuildPlaygroundHeader() {
     }
   };
 
-  const handleNameEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTempPipelineName(e.target.value);
-  };
-
-  const handleNameSubmit = async () => {
-    if (!tempPipelineName.trim()) {
-      setErrorMessage("Pipeline name is required.");
-      return;
-    }
-    setErrorMessage(''); // Clear error message if validation passes
-    if (tempPipelineName !== localPipelineName) {
-      setSaving();
-      try {
-        if (id) {
-          await apiService.patch({
-            portNumber: CATALOG_API_PORT,
-            url: `/pipeline/${id}`,
-            usePrefix: true,
-            method: 'PATCH',
-            data: { pipeline_name: tempPipelineName }
-          });
-        }
-
-
-        setLocalPipelineName(tempPipelineName);
-        setPipeLineName({ pipeLineName: tempPipelineName });
-        setSaved();
-      } catch (error) {
-        console.error("Error updating pipeline name:", error);
-        setTempPipelineName(localPipelineName);
-        setUnsavedChanges();
-      }
-    } else {
-      setTempPipelineName(localPipelineName);
-    }
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleNameSubmit();
-    } else if (e.key === 'Escape') {
-      setTempPipelineName(localPipelineName);
-      setIsEditing(false);
-    }
-  };
 
   return (
     <div className="bg-[#fff] w-[100%] p-0 border-b border-border">
@@ -175,38 +125,8 @@ export function BuildPlaygroundHeader() {
 
             {renderSaveStatus}
 
-            <div className="relative flex-grow sm:w-40">
-              {isEditing ? (
-                <Input
-                  type="text"
-                  className="pr-8"
-                  value={tempPipelineName}
-                  onChange={handleNameChange}
-                  onBlur={handleNameSubmit}
-                  onKeyDown={handleKeyDown}
-                  autoFocus
-                  aria-label="Edit pipeline name"
-                />
-              ) : (
-                <div className="flex items-center">
-                  <span className="flex-grow truncate pr-8">{localPipelineName}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
-                    onClick={handleNameEdit}
-                    aria-label="Edit pipeline name"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              {errorMessage && (
-                <div className="text-red-500 text-sm mt-1">
-                  {errorMessage}
-                </div>
-              )}
-            </div>
+            <PipelineNameEditor />
+            
             <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
               <PopoverTrigger asChild>
                 <Button className="flex items-center gap-2 bg-[#1C1C1C] hover:bg-[#2C2C2C] text-white">

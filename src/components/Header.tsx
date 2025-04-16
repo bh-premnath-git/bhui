@@ -5,6 +5,7 @@ import FlowPlaygroundHeader from "./headers/flow-playground-header/FlowPlaygroun
 import { useLocation } from "react-router-dom";
 import { BuildPlaygroundHeader } from "./headers/build-playground-header/BuildPlaygroundHeader";
 import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
+import { PlaygroundHeader } from "./headers/playground-header";
 
 export const Header = () => {
   const { isExpanded } = useSidebar();
@@ -33,6 +34,15 @@ export const Header = () => {
     }
     return <NavigationBreadcrumb />;
   };
+  // const renderHeaderContent = () => {
+  //   if (isBuildPlaygroundRoute(location.pathname)) {
+  //     return <PlaygroundHeader playGroundHeader="pipeline" />;
+  //   }
+  //   if (isFlowPlaygroundRoute(location.pathname)) {
+  //     return <PlaygroundHeader playGroundHeader="flow" />;
+  //   }
+  //   return <NavigationBreadcrumb />;
+  // };
   
   return (
     <header className={cn(

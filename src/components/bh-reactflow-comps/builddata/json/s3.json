@@ -48,6 +48,13 @@
           "examples": ["bh_sync"],
           "order": 3
         },
+        "file_path_prefix": {
+          "title": "File Path Prefix",
+          "type": "string",
+          "description": "The path within the S3 bucket where data will be written.",
+          "examples": ["/data/bighammer"],
+          "order": 4
+        },
         "region": {
           "title": "Region",
           "type": "string",

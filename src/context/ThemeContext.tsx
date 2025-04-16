@@ -14,10 +14,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(() => {
     // Check for user preference
     const storedTheme = localStorage.getItem('theme') as Theme | null;
-    // Or check system preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    return storedTheme || (prefersDark ? 'dark' : 'light');
+    // Always default to light theme if no preference is stored
+    return storedTheme || 'light';
   });
 
   const toggleTheme = () => {

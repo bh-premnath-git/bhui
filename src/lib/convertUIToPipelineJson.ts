@@ -65,10 +65,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .map(node => {
             const source = node.data.source || {};
             const connectionConfig = source?.connection_config?.custom_metadata;
-
+const source_type=source.type||source.source_type;
+console.log(source_type,"firstName")
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
-                source_type: capitalizeFirstLetter(source.type) || "Relational",
+                source_type: capitalizeFirstLetter(source.type||source.source_type) || "Relational",
                 table_name: source?.table_name || source.data_src_name,
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
@@ -88,7 +89,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 transformation: "Reader",
                 source: {
                     name: node.data.source.name || node.data.title,
-                    source_type: capitalizeFirstLetter(node.data.source.type) || "Relational",
+                    source_type: capitalizeFirstLetter(node.data.source.type || node.data.source.source_type) || "Relational",
                     table_name: node.data?.source?.table_name|| node.data.source.data_src_name,
                     file_name: `${node.data.source.file_name}`,
                     connection: connectionConfig
@@ -243,6 +244,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                             load_mode: node.data.source?.load_mode
                         },
                         file_type: node.data?.source?.file_type?.toLowerCase(),
+                        file_name: node.data.source?.file_name,
                         write_options: node.data.transformationData?.write_options || {
                             header: true,
                             sep: "|"
@@ -293,7 +295,7 @@ console.log(targets,"targets")
             $schema: "https://json-schema.org/draft-07/schema#",
             name: pipelineDtl?.pipeline_name || "sample_pipeline",
             description: pipelineDtl?.pipeline_description || " ",
-            version: "1.0",
+            version: "1.0.0",
             mode: "DEBUG",
             parameters: [],
             sources,

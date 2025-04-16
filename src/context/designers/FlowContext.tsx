@@ -37,7 +37,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [selectedFlowId, setSelectedFlowIdState] = useState<string | null>(() => {
     // Try to get flowId from URL first, then localStorage
     const flowIdFromUrl = location.pathname.match(/\/flow\/(\d+)/)?.[1];
-    return flowIdFromUrl || LocalStorageService.getItem('selectedFlowId');
+    return flowIdFromUrl || LocalStorageService.getItem('selectedFlowId') || null;
   });
 
   // Update selectedFlowId when URL changes and reset states when navigating to manage-flow
@@ -46,7 +46,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     
     // Check if we've navigated to the manage-flow route
     if (location.pathname.includes('designers/manage-flow')) {
-      console.log('Navigated to manage-flow route, resetting all flow states');
       // Reset all flow-related states
       setSelectedFlowIdState(null);
       setNodes([]);
@@ -92,12 +91,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [hasFlowConfig, setHasFlowConfig] = useState(false);
 
   // Add flowConfigMap state
-  const [flowConfigMap, setFlowConfigMap] = useState<Record<string, boolean>>({});
-
-  // This logs the selectedFlowId changes to help with debugging
-  useEffect(() => {
-    console.log('FlowContext: selectedFlowId changed to:', selectedFlowId);
-  }, [selectedFlowId]);
+  const [flowConfigMap, setFlowConfigMap] = useState<Record<string, any>>({});
 
   // Import the RootState and useAppSelector for accessing the Redux store
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
@@ -106,31 +100,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (selectedFlowId) {
       const hasConfig = flowConfigMap[selectedFlowId] || false;
-      console.log('Flow Config Check:', {
-        selectedFlowId,
-        hasConfig,
-        flowConfigMap
-      });
+      if (selectedFlow?.flow_config?.[0]?.flow_config) {
+        setFlowConfigMap(prev => ({
+          ...prev,
+         flowconfig: selectedFlow.flow_config[0].flow_config
+        }));
+      }
       setHasFlowConfig(hasConfig);
     } else {
       setHasFlowConfig(false);
     }
-  }, [selectedFlowId, flowConfigMap]);
+  }, [selectedFlowId, flowConfigMap, selectedFlow]);
 
-  // Add effect to update flowConfigMap when selectedFlow changes
-  useEffect(() => {
-    if (selectedFlow) {
-      const hasConfig = selectedFlow.flow_config && 
-                       selectedFlow.flow_config.length > 0 && 
-                       selectedFlow.flow_config[0].flow_config && 
-                       Object.keys(selectedFlow.flow_config[0].flow_config).length > 0;
-      
-      setFlowConfigMap(prev => ({
-        ...prev,
-        [selectedFlow.flow_id]: hasConfig
-      }));
-    }
-  }, [selectedFlow]);
 
   const [moduleTypes] = useModules();
 
@@ -191,9 +172,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setNodeFormData([]);
       setSelectedNode(null);
       setIsSaved(true);
-      setIsDirty(false);
-      
-      console.log(`Flow ${selectedFlowId} cleared from localStorage and state`);
+      setIsDirty(false);      
     }
   }, [selectedFlowId]);
 
@@ -423,8 +402,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   // Update node dependencies when edges change - with flow ID safety check
   const updateNodeDependencies = useCallback(() => {
     if (!selectedFlowId) return;
-    console.log('Updating node dependencies for flow ID:', selectedFlowId);
-
     setNodeFormData(currentFormData => {
       const updatedFormData = [...currentFormData];
 
@@ -482,10 +459,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const debouncedSave = useDebouncedCallback(
     () => {
-      if (autoSave && selectedFlowId && isDirty) {
-        // Log before saving to verify the correct flow ID
-        console.log(`Auto-saving flow with ID: ${selectedFlowId}`);
-        saveFlow();
+      if (autoSave && selectedFlowId && isDirty) {        saveFlow();
         setIsDirty(false);
       }
     },
@@ -547,7 +521,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
             if (index > 0) {
               const sourceId = `task-${valData.tasks[index - 1].task_id ?? index - 1}`;
-              console.log("sourceId", sourceId);
               const targetId = nodeId;
               edgesToAdd.push({
                 id: `e${sourceId}-${targetId}`,

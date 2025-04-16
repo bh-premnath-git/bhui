@@ -132,6 +132,7 @@ interface  bnPipelineContextProps {
     handleZoomIn: () => void;
     handleZoomOut: () => void;
     handleCenter: () => void;
+    makePipeline: (result:any) =>void;
     ctrlDTimeout: MutableRefObject<NodeJS.Timeout | null>;
     isSaving: boolean;
     hasUnsavedChanges: boolean;
@@ -423,15 +424,17 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
+        console.log(nodesOrUpdater)
         // alert()
-        // if (typeof nodesOrUpdater === 'function') {
-        //     setNodes((prevNodes) => 
-        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
-        //     );
-        // } else {
-        //     setNodes(nodesOrUpdater.map(sanitizeNode));
-        // }
-    }, [setNodes, sanitizeNode]);
+        // console.log(typeof nodesOrUpdater)
+        if (typeof nodesOrUpdater === 'function') {
+            setNodes((prevNodes) => 
+                nodesOrUpdater(prevNodes).map(sanitizeNode)
+            );
+        } else {
+            setNodes(nodesOrUpdater.map(sanitizeNode));
+        }
+    }, [ sanitizeNode]);
 
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
@@ -487,6 +490,80 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             console.error('FitView error:', error);
         }
     }, [fitView]);
+const makePipeline = async (result: any) => {
+    let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+    console.log(optimised, "optimised");
+    
+    
+    
+    // Set the pipeline JSON first
+    setPipelineJson(optimised);
+
+    // Convert pipeline to UI JSON
+    const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+    
+    console.log(uiJson, "uiJson");
+    if (!uiJson || !uiJson.nodes) {
+      throw new Error('Failed to convert pipeline to UI format');
+    }
+
+    const nodesWithTitles = await uiJson.nodes.map(node => {
+      const matchingTransformation = result.pipeline_definition.transformations?.find(
+          (t: any) => t?.title === node?.data?.title && t?.name
+      );
+
+      if (matchingTransformation) {
+          return {
+              ...node,
+              data: {
+                  ...node.data,
+                  title: matchingTransformation.name,
+                  transformationData: {
+                      ...node.data.transformationData,
+                      name: matchingTransformation.name
+                  }
+              }
+          };
+      }
+      return node;
+    });
+    
+    console.log(result.pipeline_definition,"nodesWithTitles");
+    
+    if(result.pipeline_definition==null){
+      setPipelineJson(null);
+      setNodes([]);
+      setEdges([]);
+    } else {
+      console.log(nodesWithTitles,"nodesWithTitles");
+      setNodes([]);
+      
+      // Set nodes and edges with the new data
+      await setNodes(nodesWithTitles);
+      await setEdges(uiJson.edges);
+      
+      // Center and align the nodes
+      await handleCenter();
+      await handleAlignHorizontal();
+    }
+
+    // Initialize form states for the new nodes
+    const initialFormStates = {};
+    await result.pipeline_definition.transformations?.forEach((transformation: any) => {
+        const matchingNode = nodesWithTitles.find(
+            (node: any) => 
+                node?.data?.label === transformation?.transformation && 
+                node?.data?.title === transformation?.name
+        );
+
+        if (matchingNode?.id) {
+            initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+        }
+    });
+
+    // Set the form states with the new data
+    setFormStates(initialFormStates);
+  }
 
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
@@ -1457,6 +1534,7 @@ debuggedNodesList.forEach(checkpoint => {
         handleZoomIn,
         handleZoomOut,
         handleCenter,
+        makePipeline,
         ctrlDTimeout,
         isSaving,
         hasUnsavedChanges,
@@ -1556,6 +1634,7 @@ debuggedNodesList.forEach(checkpoint => {
         handleZoomIn,
         handleZoomOut,
         handleCenter,
+        makePipeline,
         ctrlDTimeout,
         isSaving,
         hasUnsavedChanges,

@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
-import { ArrowRight, Network, GitBranch } from 'lucide-react';
+import { ArrowRight, Network, GitBranch, NotebookText } from 'lucide-react';
 
 const designerOptions = [
   {
@@ -21,6 +21,15 @@ const designerOptions = [
     buttonText: 'Manage Flow',
     link: ROUTES.DESIGNERS.MANAGE_FLOW,
     gradient: "from-emerald-500/20 via-emerald-300/20 to-blue-500/20"
+  },
+  {
+    id: 4,
+    icon: <NotebookText className="w-6 h-6 text-foreground" />,
+    title: "Notebook",
+    desc: "Create interactive notebooks to analyze data, develop algorithms and document your data science workflows.",
+    buttonText: 'Open Notebook',
+    link: ROUTES.DESIGNERS.NOTEBOOK,
+    gradient: "from-purple-500/20 via-pink-300/20 to-rose-500/20"
   },
 ];
 

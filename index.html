@@ -8,6 +8,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Bighammer AI</title>
+    <script>
+      // Set initial theme to light
+      (function() {
+        const storedTheme = localStorage.getItem('theme');
+        if (!storedTheme) {
+          localStorage.setItem('theme', 'light');
+        }
+        // Remove dark class by default
+        document.documentElement.classList.remove('dark');
+        // Only add dark class if explicitly set to dark
+        if (storedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

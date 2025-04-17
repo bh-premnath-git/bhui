@@ -47,7 +47,7 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
                     checked={value === "true"}
                     onCheckedChange={handleCheckedChange}
                     className={`border 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500
                         ${error ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {label ? (

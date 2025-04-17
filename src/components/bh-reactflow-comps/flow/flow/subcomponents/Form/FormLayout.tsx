@@ -40,7 +40,7 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
   return (
     <div className="space-y-4">
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="grid grid-cols-2 gap-4">
+        <div key={rowIndex} className="grid grid-cols-2 gap-2">
           {row.map((property) => (
             <FormField
               key={property.ui_properties.property_key}

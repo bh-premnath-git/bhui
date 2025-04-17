@@ -7,6 +7,9 @@ import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   {
+    ignores: ['node_modules', 'dist', 'build'], // Must be defined in its own top-level block
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
@@ -20,9 +23,9 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint,
-      'react': reactPlugin,
+      react: reactPlugin,
       'react-hooks': reactHooksPlugin,
-      'prettier': prettierPlugin,
+      prettier: prettierPlugin,
     },
     settings: {
       react: {

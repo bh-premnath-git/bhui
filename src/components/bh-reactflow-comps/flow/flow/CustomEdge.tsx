@@ -1,6 +1,6 @@
 import { useFlow } from '@/context/designers/FlowContext';
-import { memo, useState } from 'react';
-import { EdgeProps, getSmoothStepPath } from 'reactflow';
+import { memo, useState, useCallback } from 'react';
+import { EdgeProps, getSmoothStepPath, useReactFlow } from 'reactflow';
 import { Trash2 } from 'lucide-react';
 
 export const CustomEdge = memo(({
@@ -16,41 +16,60 @@ export const CustomEdge = memo(({
   style = {},
   markerStart,
   markerEnd,
+  selected,
 }: EdgeProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [edgePath] = getSmoothStepPath({
+  const { deleteEdgeBySourceTarget } = useFlow();
+  const { getNode } = useReactFlow();
+  
+  // Get source and target nodes for advanced interactions
+  const sourceNode = getNode(source);
+  const targetNode = getNode(target);
+
+  // Calculate path with improved curve for better visual flow
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
+    borderRadius: 16, // Smoother curves
   });
 
-  const { deleteEdgeBySourceTarget } = useFlow();
-
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     deleteEdgeBySourceTarget(source, target);
+  }, [deleteEdgeBySourceTarget, source, target]);
+
+  // Determine edge appearance based on selection state and hover
+  const getStrokeWidth = () => {
+    if (selected) return 2;
+    if (isHovered) return 1.5;
+    return 1;
   };
 
   return (
     <g 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      className="transition-opacity duration-300"
     >
       <path
         id={id}
         style={{
           ...style,
-          strokeWidth: 1,
-          stroke: 'rgb(148 163 184)',
+          strokeWidth: getStrokeWidth(),
+          stroke: selected ? 'rgb(148 163 184)' : 'rgb(148 163 184)',
+          transition: 'stroke 0.3s, stroke-width 0.3s',
         }}
-        className="react-flow__edge-path transition-all duration-300 hover:stroke-primary hover:stroke-[3]"
+        className={`react-flow__edge-path ${isHovered ? 'opacity-100' : 'opacity-80'}`}
         d={edgePath}
         markerStart={markerStart}
         markerEnd={markerEnd}
       />
-      {isHovered && (
+      
+      {/* Controls that appear on hover or selection */}
+      {(isHovered || selected) && (
         <foreignObject
           width={24}
           height={24}
@@ -60,7 +79,7 @@ export const CustomEdge = memo(({
           style={{ pointerEvents: 'all' }}
         >
           <div
-            className="w-full h-full flex items-center justify-center rounded-full bg-white border-2 border-red-500 hover:bg-red-50 transition-colors duration-200"
+            className="w-full h-full flex items-center justify-center rounded-full bg-white border border-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
             style={{ cursor: 'pointer' }}
           >
             <button

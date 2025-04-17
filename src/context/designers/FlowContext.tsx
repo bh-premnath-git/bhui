@@ -98,41 +98,60 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   // Update the hasFlowConfig effect to use flowConfigMap
   useEffect(() => {
-    if (selectedFlowId) {
-      const hasConfig = flowConfigMap[selectedFlowId] || false;
-      if (selectedFlow?.flow_config?.[0]?.flow_config) {
+    // Skip this effect if there's no selectedFlowId
+    if (!selectedFlowId) {
+      setHasFlowConfig(false);
+      return;
+    }
+    
+    // Get the config status from the map, default to false if not found
+    const hasConfig = flowConfigMap[selectedFlowId] || false;
+    
+    // Only update flow config information if we have selected flow data
+    if (selectedFlow?.flow_config?.[0]?.flow_config) {
+      const newConfig = selectedFlow.flow_config[0].flow_config;
+      
+      // Compare to see if this is actually a change to avoid unnecessary updates
+      if (JSON.stringify(flowConfigMap.flowconfig) !== JSON.stringify(newConfig)) {
         setFlowConfigMap(prev => ({
           ...prev,
-         flowconfig: selectedFlow.flow_config[0].flow_config
+          flowconfig: newConfig
         }));
       }
-      setHasFlowConfig(hasConfig);
-    } else {
-      setHasFlowConfig(false);
     }
-  }, [selectedFlowId, flowConfigMap, selectedFlow]);
+    
+    setHasFlowConfig(hasConfig);
+  }, [selectedFlowId, selectedFlow]);  // Removed flowConfigMap from dependencies
 
 
   const [moduleTypes] = useModules();
 
   const [changeTriggerCount, setChangeTriggerCount] = useState(0);
+  const isUpdatingDependencies = useRef(false); // Add ref to track dependency update state
 
   const prevNodeFn = useCallback(
     (nodeId: string): string[] | undefined => {
+      if (!selectedFlowId) return undefined;
+      
       const incomingEdges = edges.filter((edge) => edge.target === nodeId);
       if (incomingEdges.length === 0) return undefined;
       const sourceNodeIds = incomingEdges.map((edge) => edge.source);
-      const currentNodeformData = LocalStorageService.getItem(`flow-${selectedFlowId}`).nodeFormData;
+      
+      // Safely check if flow data exists in localStorage
+      const savedFlowData = LocalStorageService.getItem(`flow-${selectedFlowId}`);
+      if (!savedFlowData || !savedFlowData.nodeFormData) return undefined;
+      
+      const currentNodeformData = savedFlowData.nodeFormData;
 
       const previousNodesFormData = currentNodeformData.filter((formData) =>
         sourceNodeIds.includes(formData.nodeId)
       );
       if (previousNodesFormData.length === 0) return undefined;
 
-      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id);
-      return taskIds;
+      const taskIds = previousNodesFormData.map(formData => formData.formData.task_id).filter(Boolean);
+      return taskIds.length > 0 ? taskIds : undefined;
     },
-    [edges, nodeFormData]
+    [edges, selectedFlowId]
   );
 
   const {
@@ -450,10 +469,19 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   }, [selectedFlowId, edges, setNodeFormData]);
 
-  // Call updateNodeDependencies whenever edges change
+  // Call updateNodeDependencies whenever edges change - with safeguards
   useEffect(() => {
-    if (selectedFlowId) {
+    // Skip if there's no selectedFlowId or if we're already processing
+    if (!selectedFlowId || isUpdatingDependencies.current) return;
+    
+    // This prevents the effect from running recursively
+    isUpdatingDependencies.current = true;
+    
+    try {
       updateNodeDependencies();
+    } finally {
+      // Reset the flag after execution is done
+      isUpdatingDependencies.current = false;
     }
   }, [edges, selectedFlowId, updateNodeDependencies]);
 
@@ -595,26 +623,33 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const prevEdgesRef = useRef(edges);
   const prevFormDataRef = useRef(nodeFormData);
 
+  // Track changes to nodes, edges, and formData with safeguards against infinite loops
   useEffect(() => {
-    if (selectedFlowId && changeTriggerCount < 2) {
-      // Check if there are actual changes before logging
-      const nodesChanged = JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes);
-      const edgesChanged = JSON.stringify(prevEdgesRef.current) !== JSON.stringify(edges);
-      const formDataChanged = JSON.stringify(prevFormDataRef.current) !== JSON.stringify(nodeFormData);
+    // Skip if no selectedFlowId or if we're already at our change limit
+    if (!selectedFlowId || changeTriggerCount >= 2) return;
+    
+    // Use refs to compare previous and current values without causing re-renders
+    const nodesChanged = JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes);
+    const edgesChanged = JSON.stringify(prevEdgesRef.current) !== JSON.stringify(edges);
+    const formDataChanged = JSON.stringify(prevFormDataRef.current) !== JSON.stringify(nodeFormData);
 
-      if (nodesChanged || edgesChanged || formDataChanged) {
-        setIsDirty(true);
-        setChangeTriggerCount((prev) => prev + 1);
-        if (autoSave) {
-          console.log("modification", { flowId: selectedFlowId });
-        }
-        prevNodesRef.current = nodes;
-        prevEdgesRef.current = edges;
-        prevFormDataRef.current = nodeFormData;
+    // Only trigger updates if something actually changed
+    if (nodesChanged || edgesChanged || formDataChanged) {
+      setIsDirty(true); 
+      setChangeTriggerCount((prev) => prev + 1);
+      
+      // Update our references to current state
+      prevNodesRef.current = [...nodes];
+      prevEdgesRef.current = [...edges];
+      prevFormDataRef.current = [...nodeFormData];
+      
+      // Only save if autoSave is enabled
+      if (autoSave) {
+        console.log("modification", { flowId: selectedFlowId });
         debouncedSave();
       }
     }
-  }, [nodes, edges, nodeFormData, selectedFlowId, debouncedSave, changeTriggerCount, autoSave]);
+  }, [nodes, edges, nodeFormData, selectedFlowId, autoSave, debouncedSave]);
 
   useEffect(() => {
     if (changeTriggerCount >= 2) {

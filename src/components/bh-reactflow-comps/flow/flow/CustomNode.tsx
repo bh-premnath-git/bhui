@@ -1,5 +1,5 @@
-import { memo, useRef, useState } from "react";
-import { NodeProps } from "reactflow";
+import { memo, useRef, useState, useEffect } from "react";
+import { NodeProps, useUpdateNodeInternals } from "reactflow";
 import { NodeContent } from "./NodeContent";
 import { NodeHandles } from "./NodeHandles";
 import { useFlow } from "@/context/designers/FlowContext";
@@ -33,8 +33,30 @@ export const CustomNode = memo(
   ({ id, data, selected }: NodeProps<CustomNodeData>) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isNodeTapModalOpen, setIsNodeTapModalOpen] = useState(false);
-    const { selectNode, revertOrSaveData } = useFlow();
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const { selectNode, revertOrSaveData, updateNodeDimensions } = useFlow();
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const nodeRef = useRef<HTMLDivElement>(null);
+    const updateNodeInternals = useUpdateNodeInternals();
+    
+    // Track node dimensions for responsive layout
+    useEffect(() => {
+      if (nodeRef.current) {
+        const observer = new ResizeObserver((entries) => {
+          const { width, height } = entries[0].contentRect;
+          setDimensions({ width, height });
+          
+          // Update node dimensions in context to help with layout calculations
+          updateNodeDimensions?.(id, { width, height });
+          
+          // Force ReactFlow to recalculate handles positions
+          updateNodeInternals(id);
+        });
+        
+        observer.observe(nodeRef.current);
+        return () => observer.disconnect();
+      }
+    }, [id, updateNodeInternals, updateNodeDimensions]);
 
     const showToolbar = () => {
       if (timeoutRef.current) {
@@ -54,15 +76,25 @@ export const CustomNode = memo(
       setIsNodeTapModalOpen(true);
     };
 
+    // Calculate appropriate sheet size based on viewport
+    const getSheetSize = () => {
+      const viewportWidth = window.innerWidth;
+      if (viewportWidth < 640) return "w-[95vw]";
+      if (viewportWidth < 1024) return "w-[70vw]";
+      return "w-[45vw]";
+    };
+
     return (
       <>
         <div
-          className={`relative group p-0 bg-transparent select-none ${
+          ref={nodeRef}
+          className={`relative group p-0 bg-transparent select-none transition-shadow ${
             selected ? "shadow-lg" : ""
           }`}
           onMouseEnter={showToolbar}
           onMouseLeave={hideToolbar}
           onDoubleClick={handleDoubleClick}
+          data-testid={`node-${id}`}
         >
           <NodeContent
             id={id}
@@ -72,6 +104,13 @@ export const CustomNode = memo(
             isHovered={isHovered}
           />
           <NodeHandles />
+          
+          {/* Optional debug info - remove in production */}
+          {false && (
+            <div className="absolute bottom-0 right-0 text-[8px] text-gray-500 bg-white/80 px-1 rounded">
+              {dimensions.width.toFixed(0)}x{dimensions.height.toFixed(0)}
+            </div>
+          )}
         </div>
         <Sheet
           open={isNodeTapModalOpen}
@@ -82,16 +121,18 @@ export const CustomNode = memo(
             setIsNodeTapModalOpen(open);
           }}
         >
-          <SheetContent side="right" className="w-[45vw]">
+          <SheetContent side="right" className={getSheetSize()}>
             <SheetHeader>
               <SheetTitle>Configure Node Properties</SheetTitle>
             </SheetHeader>
-            <NodeForm
-              id={id}
-              closeTap={() => {
-                setIsNodeTapModalOpen(false);
-              }}
-            />
+            <div className="max-h-[calc(100vh-10rem)] overflow-y-auto pb-4">
+              <NodeForm
+                id={id}
+                closeTap={() => {
+                  setIsNodeTapModalOpen(false);
+                }}
+              />
+            </div>
           </SheetContent>
         </Sheet>
       </>

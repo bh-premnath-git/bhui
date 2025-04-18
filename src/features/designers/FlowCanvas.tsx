@@ -220,11 +220,6 @@ export const FlowCanvas = () => {
             snapToGrid={true}
             snapGrid={snapGrid}
           >
-            <Panel position="top-center" className="w-full z-40">
-              <div className="flex justify-between items-start w-full px-4 pt-4">
-                <ToolbarNodes />
-              </div>
-            </Panel>
             <CustomControls />
           </ReactFlow>
         </div>

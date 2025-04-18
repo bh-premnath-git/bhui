@@ -37,7 +37,7 @@ export const DeployingPart = () => {
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-200 ease-in-out
+                        className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors duration-200 ease-in-out
                             ${loading ? 'opacity-70' : ''} 
                             ${error 
                                 ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 

@@ -25,24 +25,24 @@ export const Header = () => {
   };
 
   // Render appropriate header content based on route
-  const renderHeaderContent = () => {
-    if (isBuildPlaygroundRoute(location.pathname)) {
-      return <BuildPlaygroundHeader />;
-    }
-    if (isFlowPlaygroundRoute(location.pathname)) {
-      return <FlowPlaygroundHeader />;
-    }
-    return <NavigationBreadcrumb />;
-  };
   // const renderHeaderContent = () => {
   //   if (isBuildPlaygroundRoute(location.pathname)) {
-  //     return <PlaygroundHeader playGroundHeader="pipeline" />;
+  //     return <BuildPlaygroundHeader />;
   //   }
   //   if (isFlowPlaygroundRoute(location.pathname)) {
-  //     return <PlaygroundHeader playGroundHeader="flow" />;
+  //     return <FlowPlaygroundHeader />;
   //   }
   //   return <NavigationBreadcrumb />;
   // };
+  const renderHeaderContent = () => {
+    if (isBuildPlaygroundRoute(location.pathname)) {
+      return <PlaygroundHeader playGroundHeader="pipeline" />;
+    }
+    if (isFlowPlaygroundRoute(location.pathname)) {
+      return <PlaygroundHeader playGroundHeader="flow" />;
+    }
+    return <NavigationBreadcrumb />;
+  };
   
   return (
     <header className={cn(

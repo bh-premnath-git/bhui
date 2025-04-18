@@ -11,17 +11,18 @@ const PipelineControls: React.FC<any> = ({
     isPipelineRunning
 }: any) => {
     return (
-        <>
+        <div className="flex items-center space-x-1 rounded-md border p-1">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
                         onClick={handleRunClick}
-                        variant="default"
-                        size="icon"
+                        variant="ghost"
+                        size="sm"
                         disabled={isPipelineRunning}
                         aria-label="Run Pipeline"
+                        className="px-2.5"
                     >
-                        <HiOutlinePlay className="h-4 w-4" />
+                        <HiOutlinePlay className={`h-4 w-4 ${!isPipelineRunning ? "text-green-500" : "text-gray-400"}`} />
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -32,14 +33,14 @@ const PipelineControls: React.FC<any> = ({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        className={`border ${isPipelineRunning ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-50'}`}
                         onClick={handleStop}
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         disabled={!isPipelineRunning}
                         aria-label="Stop Pipeline"
+                        className="px-2.5"
                     >
-                        <MdOutlineStop className="h-4 w-4" />
+                        <MdOutlineStop className={`h-4 w-4 ${isPipelineRunning ? "text-red-500" : "text-gray-400"}`} />
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -50,22 +51,21 @@ const PipelineControls: React.FC<any> = ({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        className={`border ${isPipelineRunning ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-gray-50'}`}
-
                         onClick={handleNext}
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         disabled={!isPipelineRunning}
                         aria-label="Next Step"
+                        className="px-2.5"
                     >
-                        <MdOutlineSkipNext className="h-4 w-4" />
+                        <MdOutlineSkipNext className={`h-4 w-4 ${isPipelineRunning ? "text-blue-500" : "text-gray-400"}`} />
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                     <p>Next Step</p>
                 </TooltipContent>
             </Tooltip>
-        </>
+        </div>
     );
 };
 

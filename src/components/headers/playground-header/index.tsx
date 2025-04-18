@@ -5,41 +5,66 @@ import { patchPipelineOperation } from '@/store/slices/designer/pipelineSlice';
 import { Flow } from "@/types/designer/flow";
 import { Pipeline } from "@/types/designer/pipeline";
 import { NameEditor } from "./HeaderInput";
-import SearchNode from "./SearchNode";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { CloudCog, Database, FileJson, Zap } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
+import { useMemo, useState } from 'react';
+import { CommitPart, DeployingPart, EnvironmentSelect, PlaybackButton, SchedulePicker, SettingsModal } from '../flow-playground-header';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ParameterModal } from '../build-playground-header/ParameterModal';
+import { JsonToPipelineDialog } from '../build-playground-header/JsonToPipelineDialog';
+import SearchNode from './SearchNode';
+import { AIButton } from './AIChatButton';
+import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
+import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
+import PipelineControls from '../build-playground-header/components/PipelineControls';
+
 
 export interface PlayGroundHeaderProps {
   playGroundHeader?: "flow" | "pipeline";
 }
 
+
+
 export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const isFlow = playGroundHeader === "flow";
   const dispatch = useAppDispatch();
-  
-  // Select the appropriate state based on playground type
+
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
-  const autoSaveStatus = 'saved'; // or 'saving' or 'off'
-  const lastSavedTime = new Date().toISOString(); // replace with actual last saved time
-  const toggleAutoSave = () => {}; // your toggle function
+  const autoSaveStatus = 'saved';
+  const lastSavedTime = new Date().toISOString();
+  const toggleAutoSave = () => { };
   const navigate = useNavigate();
-  
+  const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
+  const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+  const [isJsonToPipelineOpen, setIsJsonToPipelineOpen] = useState(false);
+  const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
+  const filteredNodes = useMemo(() => nodeData.nodes, []);
+
+  const {
+    handleNodeClick, addNodeToHistory,
+    isPipelineRunning, handleNext, handleStop, handleRun
+  } = usePipelineContext();
+
   const currentItem = isFlow ? selectedFlow : selectedPipeline;
-  
-  const itemName = isFlow 
-    ? (currentItem as Flow)?.flow_name 
+
+  const itemName = isFlow
+    ? (currentItem as Flow)?.flow_name
     : (currentItem as Pipeline)?.pipeline_name;
-  
-  const itemId = isFlow 
-    ? (currentItem as Flow)?.flow_id 
+
+  const itemId = isFlow
+    ? (currentItem as Flow)?.flow_id
     : (currentItem as Pipeline)?.pipeline_id;
 
   const handleSave = async (newName: string) => {
     if (!currentItem) return;
-    
+
     if (isFlow) {
       await dispatch(patchFlowOperation({
         flowId: itemId,
@@ -47,42 +72,163 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
       })).unwrap();
     } else {
       await dispatch(patchPipelineOperation({
-        pipelineId: itemId, 
+        pipelineId: itemId,
         data: { pipeline_name: newName, pipeline_key: newName }
       })).unwrap();
-    }
-  };
-  
-  const handleBackClick = () => {
-    if (isFlow) {
-      navigate("designers/manage-flow");
-    } else {
-      navigate("designers/build-datapipeline/");   
     }
   };
 
 
   return (
-    <div className="bg-[#fff] w-[100%] p-0 border-b border-border">
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-card p-2 space-y-2 sm:space-y-0">
+    <div className="bg-[#fff] w-full p-0 border-border">
+      <div className="flex flex-col sm:flex-row items-center justify-between bg-card">
+        {/* Left section - AutoSave, NameEditor, and action buttons */}
         <div className="flex items-center space-x-3 w-full sm:w-auto">
-          <Button
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              variant="ghost" size="icon" aria-label="Go back" onClick={handleBackClick}>
-              <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <AutoSaveStatus 
+          <AutoSaveStatus
             status={autoSaveStatus}
             lastSaved={lastSavedTime}
             onToggle={toggleAutoSave}
           />
-          <NameEditor 
+  
+          <NameEditor
             initialName={itemName || ''}
             onSave={handleSave}
             placeholder={isFlow ? 'Flow name...' : 'Pipeline name...'}
           />
+  
+          {isFlow && <SettingsModal />}
+  
+          {!isFlow && (
+            <div className="flex items-center space-x-2">
+              <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button
+                        aria-label="Pipeline Parameters"
+                        className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
+                      >
+                        <CloudCog className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Detach Cluster</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-[400px] p-6" align="start">
+                  <ClusterConfigDialog />
+                </PopoverContent>
+              </Popover>
+  
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsPipelineParamOpen(true)}
+                    aria-label="Pipeline Parameters"
+                  >
+                    <Database className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Pipeline Parameters</p>
+                </TooltipContent>
+              </Tooltip>
+  
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSparkParamOpen(true)}
+                    aria-label="Spark Parameters"
+                  >
+                    <Zap className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Spark Parameters</p>
+                </TooltipContent>
+              </Tooltip>
+  
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsJsonToPipelineOpen(true)}
+                    aria-label="Convert JSON to Pipeline"
+                  >
+                    <FileJson className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Convert JSON to Pipeline</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
+  
+        {/* Middle section - Node controls */}
+        <div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
+          {isFlow && <ToolbarNodes />}
+          {!isFlow && (
+            <NodeDropList
+              filteredNodes={filteredNodes}
+              handleNodeClick={handleNodeClick}
+              addNodeToHistory={addNodeToHistory}
+            />
+          )}
+        </div>
+  
+        {/* Right section - Pipeline controls and AI button */}
+        <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">
+          {!isFlow && (
+            <PipelineControls
+              handleRunClick={handleRun}
+              handleStop={handleStop}
+              handleNext={handleNext}
+              isPipelineRunning={isPipelineRunning}
+            />
+          )}
+  
+          {isFlow && (
+            <div className="flex items-center space-x-3">
+              <EnvironmentSelect />
+              <SchedulePicker />
+              <DeployingPart />
+              <CommitPart />
+              <PlaybackButton />
+            </div>
+          )}
+  
+          <div className="border-l border-border pl-4">
+            <AIButton variant={playGroundHeader} color="#009f59" />
+          </div>
         </div>
       </div>
+  
+      {!isFlow && (
+        <>
+          <ParameterModal
+            isOpen={isPipelineParamOpen}
+            onClose={() => setIsPipelineParamOpen(false)}
+            type="pipeline"
+          />
+          <ParameterModal
+            isOpen={isSparkParamOpen}
+            onClose={() => setIsSparkParamOpen(false)}
+            type="spark"
+          />
+          <JsonToPipelineDialog
+            isOpen={isJsonToPipelineOpen}
+            onClose={() => setIsJsonToPipelineOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
-}
+}  

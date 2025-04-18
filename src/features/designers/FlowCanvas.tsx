@@ -7,7 +7,6 @@ import ReactFlow, {
   addEdge,
   ReactFlowInstance,
   MarkerType,
-  useReactFlow,
   getOutgoers,
 } from 'reactflow';
 import { useAppDispatch } from '@/hooks/useRedux';
@@ -39,10 +38,10 @@ export const FlowCanvas = () => {
     onNodesChange,
     onEdgesChange,
     setReactFlowInstance,
+    fitView,
   } = useFlow();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { fitView } = useReactFlow();
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -72,11 +71,15 @@ export const FlowCanvas = () => {
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
       setReactFlowInstance(instance);
-      setTimeout(() => {
-        fitView({ padding: 0.2, duration: 0 });
-      }, 0);
+      // Delay to ensure all components are mounted
+      if (nodes.length > 0) {
+        const timer = setTimeout(() => {
+          fitView();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
     },
-    [setReactFlowInstance, fitView]
+    [setReactFlowInstance, fitView, nodes.length]
   );
 
   const checkNodeProximityAndConnect = useCallback(() => {
@@ -166,6 +169,17 @@ export const FlowCanvas = () => {
     [nodes, edges],
   );
 
+  // Only run fitView when we have nodes that need positioning
+  useEffect(() => {
+    if (nodes.length > 0 && fitView) {
+      // Add a small delay to ensure nodes are rendered
+      const timer = setTimeout(() => {
+        fitView();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [nodes.length, fitView]);
+
   useEffect(() => {
     if (flow) {
       dispatch(setSelectedFlow(flow));
@@ -189,7 +203,7 @@ export const FlowCanvas = () => {
   }
 
   return (
-    <div className="w-full h-full bg-background relative">
+    <div className="w-full h-full bg-background overflow-hidden">
       <ReactFlowProvider>
         <div ref={reactFlowWrapper} className="w-full h-full">
           <ReactFlow
@@ -214,11 +228,13 @@ export const FlowCanvas = () => {
             minZoom={0.3}
             maxZoom={2}
             panOnDrag={true}
-            zoomOnScroll={false}
+            zoomOnScroll={true}
             nodesDraggable
             nodesConnectable
             snapToGrid={true}
             snapGrid={snapGrid}
+            fitView={false}
+            fitViewOptions={{ padding: 0.3 }}
           >
             <CustomControls />
           </ReactFlow>

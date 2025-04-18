@@ -112,7 +112,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
         className={`w-full border px-3 py-2 text-sm bg-white rounded-md font-sans
           transition-all duration-200 ease-in-out
           resize-none overflow-hidden
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500
           ${getBorderColor()}`}
         placeholder={placeholder}
         style={{

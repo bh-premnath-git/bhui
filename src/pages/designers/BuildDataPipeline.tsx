@@ -12,9 +12,31 @@ import { Button } from '@/components/ui/button';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 
 export function BuildDataPipelinePage() {
-  const { pipelines, isLoading, isFetching, isError } = usePipeline();
+  const { pipelines, isLoading, isFetching, isError, fetchPipelineList } = usePipeline();
   const pipelineService = usePipelineManagementService();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(0);
+  
+  // Handle pipeline data updates
+  useEffect(() => {
+    const refreshPipelineList = async () => {
+      try {
+        // Force a refetch of pipeline data
+        await fetchPipelineList(true);
+        // Force component refresh
+        setForceRefresh(prev => prev + 1);
+      } catch (error) {
+        console.error('Error refreshing pipeline list:', error);
+      }
+    };
+    
+    // Listen for the list updated event
+    window.addEventListener('pipelineListUpdated', refreshPipelineList);
+    
+    return () => {
+      window.removeEventListener('pipelineListUpdated', refreshPipelineList);
+    };
+  }, [fetchPipelineList]);
 
   useEffect(() => {
     if (Array.isArray(pipelines) && pipelines.length > 0) {
@@ -63,7 +85,7 @@ export function BuildDataPipelinePage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" key={forceRefresh}>  {/* Use key to force re-render */}
       <div className="relative">
         {isFetching && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">

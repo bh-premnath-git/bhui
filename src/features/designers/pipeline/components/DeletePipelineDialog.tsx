@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader, Trash2 } from "lucide-react";
-import { deletePipelineById } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
-import { usePipeline } from "../hooks/usePipeline";
+import { deletePipelineById, getAllPipeline } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type DeletePipelineDialogProps = {
   open: boolean;
@@ -26,30 +27,55 @@ export function DeletePipelineDialog({ open, onOpenChange }: DeletePipelineDialo
   const [confirmationInput, setConfirmationInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   
-  // Import the usePipeline hook to get access to the refetch function
-  const { fetchPipelineList } = usePipeline({ shouldFetch: false });
+  // Reset confirmation input when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setConfirmationInput("");
+    }
+  }, [open]);
 
   const handleDelete = async () => {
     if (!selectedPipeline?.pipeline_id) return;
     
     setIsDeleting(true);
     try {
+      // Delete pipeline
       await dispatch(deletePipelineById(selectedPipeline.pipeline_id));
       
-      // Refetch the pipeline list after successful deletion
-      fetchPipelineList(true);
+      // Force refresh the pipeline list in Redux
+      await dispatch(getAllPipeline());
       
+      // Invalidate React Query cache for pipelines - using the new syntax
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      queryClient.invalidateQueries({ queryKey: ['pipelines', 'list'] });
+      
+      // Show success toast
+      toast.success(`Pipeline "${pipelineName}" successfully deleted`);
+      
+      // Close the dialog - explicitly set to false
       onOpenChange(false);
+
+      // Dispatch a custom event to notify parent components about the deletion
+      window.dispatchEvent(new CustomEvent('pipelineDeleted', { 
+        detail: { pipelineId: selectedPipeline.pipeline_id } 
+      }));
     } catch(error) {
-      console.log(error);
+      console.error("Failed to delete pipeline:", error);
+      toast.error(`Failed to delete pipeline: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsDeleting(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(value) => {
+      // Only allow closing if not in the middle of deletion
+      if (!isDeleting || !value) {
+        onOpenChange(value);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Confirm Delete</DialogTitle>

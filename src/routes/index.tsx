@@ -25,7 +25,6 @@ export const AppRoutes = () => {
           </>
         }
       />
-
       <Route path={ROUTES.LOGIN} element={<Login />} />
 
       {/* Protected Routes */}

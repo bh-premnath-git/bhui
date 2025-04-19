@@ -1,9 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
-import FlowPlaygroundHeader from "./headers/flow-playground-header/FlowPlaygroundHeader";
 import { useLocation } from "react-router-dom";
-import { BuildPlaygroundHeader } from "./headers/build-playground-header/BuildPlaygroundHeader";
 import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
 
@@ -24,16 +22,6 @@ export const Header = () => {
     return pathname === "/data-catalog/notebook";
   };
 
-  // Render appropriate header content based on route
-  // const renderHeaderContent = () => {
-  //   if (isBuildPlaygroundRoute(location.pathname)) {
-  //     return <BuildPlaygroundHeader />;
-  //   }
-  //   if (isFlowPlaygroundRoute(location.pathname)) {
-  //     return <FlowPlaygroundHeader />;
-  //   }
-  //   return <NavigationBreadcrumb />;
-  // };
   const renderHeaderContent = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
       return <PlaygroundHeader playGroundHeader="pipeline" />;

@@ -7,7 +7,7 @@ import { Pipeline } from "@/types/designer/pipeline";
 import { NameEditor } from "./HeaderInput";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
-import { CloudCog, Database, FileJson, Zap } from "lucide-react";
+import { CloudCog, Database, FileJson, Settings, Zap } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
 import { useMemo, useState } from 'react';
@@ -126,29 +126,14 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                     onClick={() => setIsPipelineParamOpen(true)}
                     aria-label="Pipeline Parameters"
                   >
-                    <Database className="h-5 w-5" />
+                    <Settings className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Pipeline Parameters</p>
+                  <p>Pipeline settings</p>
                 </TooltipContent>
               </Tooltip>
   
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSparkParamOpen(true)}
-                    aria-label="Spark Parameters"
-                  >
-                    <Zap className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Spark Parameters</p>
-                </TooltipContent>
-              </Tooltip>
   
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -211,15 +196,12 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
       {!isFlow && (
         <>
           <ParameterModal
-            isOpen={isPipelineParamOpen}
-            onClose={() => setIsPipelineParamOpen(false)}
-            type="pipeline"
-          />
-          <ParameterModal
-            isOpen={isSparkParamOpen}
-            onClose={() => setIsSparkParamOpen(false)}
-            type="spark"
-          />
+  isOpen={isPipelineParamOpen || isSparkParamOpen}
+  onClose={() => {
+    setIsPipelineParamOpen(false);
+    setIsSparkParamOpen(false);
+  }}
+/>
           <JsonToPipelineDialog
             isOpen={isJsonToPipelineOpen}
             onClose={() => setIsJsonToPipelineOpen(false)}

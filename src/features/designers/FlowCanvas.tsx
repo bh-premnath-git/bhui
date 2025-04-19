@@ -20,6 +20,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import 'reactflow/dist/style.css';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+import KeyboardShortcutsPanel from './pipeline/components/ShortcutsInfoPanel';
 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
@@ -201,9 +202,29 @@ export const FlowCanvas = () => {
   if (isError) {
     return <ErrorState title="Error loading flow" description="Please try again later" />;
   }
+  const keyboardShortcuts = [
+    { key: 'Ctrl + C', action: 'Copy' },
+    { key: 'Ctrl + V', action: 'Paste' },
+    { key: 'Ctrl + X', action: 'Cut' },
+    { key: 'Ctrl + Z', action: 'Undo' },
+    { key: 'Ctrl + Y', action: 'Redo' },
+    { key: 'Ctrl + F', action: 'Search' },
+    { key: 'Ctrl + D', action: 'Add to Debug List' },
+    { key: 'Ctrl + R', action: 'Run Pipeline' },
+    { key: 'Ctrl + L', action: 'Open Logs' },
+    { key: 'Ctrl + K', action: 'Stop Pipeline' },
+    { key: 'Ctrl + N', action: 'Next Step' },
+    { key: 'Ctrl + +', action: 'Zoom In' },
+    { key: 'Ctrl + -', action: 'Zoom Out' },
+];
 
   return (
     <div className="w-full h-full bg-background overflow-hidden">
+        <div className="absolute mt-2 z-50">
+          <div className="rounded-lg p-2 text-sm">
+            <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
+          </div>
+        </div>
       <ReactFlowProvider>
         <div ref={reactFlowWrapper} className="w-full h-full">
           <ReactFlow

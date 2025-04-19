@@ -161,14 +161,14 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose,
                   placeholder="Key"
                   value={param.key}
                   onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
-                  className="w-1/2"
+                  className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
                   required
                 />
                 <Input
                   placeholder="Value"
                   value={param.value}
                   onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-                  className="w-1/2"
+                  className="w-full focus:ring-2 focus:ring-offset-0 focus:ring-blue-500"
                   required
                 />
                 <Button

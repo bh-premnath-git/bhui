@@ -84,7 +84,7 @@ export const PlaybackButton = () => {
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         className="h-9 w-9"
                         onClick={handleClick}

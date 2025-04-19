@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store/";
@@ -9,10 +9,15 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 
 export const DeployingPart = () => {
     const dispatch = useAppDispatch();
-    const { selectedFlow, selectedEnvironment, error, dagParserTime, loading } = 
+    const { selectedFlow, selectedEnvironment, error, dagParserTime, loading } =
         useAppSelector((state: RootState) => state.flow);
 
     useEffect(() => {
@@ -32,38 +37,64 @@ export const DeployingPart = () => {
         return date.toLocaleString();
     };
 
+    // Determine icon color based on status
+    const getIconColorClass = () => {
+        if (loading) return "text-gray-400";
+        if (error) return "text-red-500 dark:text-red-400";
+        if (dagParserTime) return "text-green-500 dark:text-green-400";
+        return "text-gray-500 dark:text-gray-400"; // Default/none state
+    };
+
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div 
-                        className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors duration-200 ease-in-out
-                            ${loading ? 'opacity-70' : ''} 
-                            ${error 
-                                ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
-                                : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/80'
-                            }`}
-                    >
-                        <Clock className="h-4 w-4 text-current opacity-70" />
-                        <time
-                            className="whitespace-nowrap"
-                            dateTime={dagParserTime || undefined}
-                        >
-                            Last deployed: <span className="font-medium">{formatDagParserTime(dagParserTime)}</span>
-                        </time>
-                        {error && (
-                            <AlertCircle className="h-4 w-4 text-current" />
-                        )}
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                    {error ? (
-                        <p className="text-red-600 dark:text-red-400">Failed to fetch deployment time</p>
-                    ) : (
+        <div className="flex items-center">
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="p-1">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button
+                                        className={`rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? 'animate-pulse' : ''}`}
+                                        aria-label="Deployment status"
+                                    >
+                                        <Clock className={`h-5 w-5 ${getIconColorClass()}`} />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-4 bg-white dark:bg-gray-800 rounded-md shadow-md">
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">Deployment Information</h4>
+                                        <div className="flex items-center gap-2">
+                                            {error ? (
+                                                <>
+                                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                                    <span className="text-red-600 dark:text-red-400 text-sm font-normal">Failed to fetch deployment time</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Clock className={`h-4 w-4 ${getIconColorClass()}`} />
+                                                    <span className="text-gray-700 dark:text-gray-300 text-sm font-normal">
+                                                        Last deployed: <span className="font-medium">{formatDagParserTime(dagParserTime)}</span>
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                        {selectedFlow?.flow_name && (
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                DAG ID: <span className="font-medium">{selectedFlow.flow_name}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </PopoverContent>
+
+                            </Popover>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
                         <p>Last DAG parser time</p>
-                    )}
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        </div>
     );
 };
+

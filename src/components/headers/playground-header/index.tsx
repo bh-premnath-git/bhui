@@ -8,7 +8,6 @@ import { NameEditor } from "./HeaderInput";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
 import { CloudCog, Database, FileJson, Zap } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
 import { useMemo, useState } from 'react';
@@ -40,7 +39,6 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const autoSaveStatus = 'saved';
   const lastSavedTime = new Date().toISOString();
   const toggleAutoSave = () => { };
-  const navigate = useNavigate();
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
   const [isJsonToPipelineOpen, setIsJsonToPipelineOpen] = useState(false);

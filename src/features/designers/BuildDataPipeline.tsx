@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { DataTable } from '@/components/bh-table/data-table';
 import { columns, getToolbarConfig } from './pipeline/config/columns.config';
 import { Row } from '@tanstack/react-table';
@@ -10,6 +10,10 @@ import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv
 import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 import CreatePipelineDialog from './pipeline/components/CreatePipelineDialog';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { getAllPipeline } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { usePipeline } from './pipeline/hooks/usePipeline';
+import { useQueryClient } from '@tanstack/react-query';
 // import { useToast } from '@/hooks/useToast';
 
 export function PipelineList({ pipeline }: { pipeline: any[] }) {
@@ -36,6 +40,30 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
     handleNavigation(ROUTES.DESIGNERS.BUILD_PLAYGROUND(row.original.pipeline_id.toString()))
   }
 
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
+  const { fetchPipelineList } = usePipeline({ shouldFetch: false });
+  
+  // Function to completely refresh pipeline data
+  const refreshPipelineData = useCallback(async () => {
+    try {
+      // Invalidate React Query cache
+      queryClient.invalidateQueries(['pipelines']);
+      queryClient.invalidateQueries(['pipelines', 'list']);
+      
+      // Fetch fresh data through Redux
+      await dispatch(getAllPipeline());
+      
+      // Also trigger React Query refetch
+      await fetchPipelineList(true);
+      
+      // Force parent component to refresh its view of the pipelines
+      window.dispatchEvent(new Event('pipelineListUpdated'));
+    } catch (error) {
+      console.error('Failed to refresh pipeline data:', error);
+    }
+  }, [dispatch, queryClient, fetchPipelineList]);
+
   useEffect(() => {
     setDebuggedNodesList([])
     setDebuggedNodes([])
@@ -46,14 +74,38 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
       pipelineSrv.selectedPipeline(customEvent.detail);
       setDeleteDialogOpen(true);
     };
+    
+    // Handle pipeline deletion event
+    const handlePipelineDeleted = async (event: Event) => {
+      const customEvent = event as CustomEvent<{pipelineId: number}>;
+      console.log('Pipeline deleted event received:', customEvent.detail);
+      
+      // Use our comprehensive refresh function
+      await refreshPipelineData();
+      
+      // Ensure the item is removed from the current view
+      if (customEvent.detail?.pipelineId) {
+        // Create a filtered version of the current pipeline list
+        const filteredPipelines = pipeline.filter(p => p.pipeline_id !== customEvent.detail.pipelineId);
+        
+        // Update the pipeline service with the filtered list
+        if (filteredPipelines.length !== pipeline.length) {
+          pipelineSrv.setPipelines(filteredPipelines);
+        }
+      }
+    };
+    
     window.addEventListener("openCreatePipelineDialog", handleOpenCreate);
     window.addEventListener("openPipelineDeleteDialog", handleOpenDelete);
+    window.addEventListener("pipelineDeleted", handlePipelineDeleted);
 
     return () => {
       window.removeEventListener("openCreatePipelineDialog", handleOpenCreate);
       window.removeEventListener("openPipelineDeleteDialog", handleOpenDelete);
+      window.removeEventListener("pipelineDeleted", handlePipelineDeleted);
     };
-  }, []);
+  }, [dispatch, pipelineSrv, setDebuggedNodesList, setDebuggedNodes, refreshPipelineData, pipeline]);
+
 
   return (
     <>

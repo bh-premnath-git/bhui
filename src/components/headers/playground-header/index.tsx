@@ -15,7 +15,6 @@ import { CommitPart, DeployingPart, EnvironmentSelect, PlaybackButton, ScheduleP
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ParameterModal } from '../build-playground-header/ParameterModal';
 import { JsonToPipelineDialog } from '../build-playground-header/JsonToPipelineDialog';
-import SearchNode from './SearchNode';
 import { AIButton } from './AIChatButton';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';

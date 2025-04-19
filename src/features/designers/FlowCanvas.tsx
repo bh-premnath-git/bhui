@@ -2,7 +2,6 @@ import { useCallback, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactFlow, {
   ReactFlowProvider,
-  Panel,
   Connection,
   addEdge,
   ReactFlowInstance,
@@ -12,7 +11,6 @@ import ReactFlow, {
 import { useAppDispatch } from '@/hooks/useRedux';
 import { useFlow } from '@/context/designers/FlowContext';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
-import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
 import { CustomControls } from '@/components/bh-reactflow-comps/flow/flow/CustomControls';
 import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
@@ -20,18 +18,17 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import 'reactflow/dist/style.css';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
-import KeyboardShortcutsPanel from './pipeline/components/ShortcutsInfoPanel';
-
+ 
 const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.8 };
-
+ 
 export const FlowCanvas = () => {
   const { id } = useParams();
   const { useFetchFlowById } = useFlowApi();
   const { data: flow, isLoading, isError } = useFetchFlowById(id || '');
   const dispatch = useAppDispatch();
-
+ 
   const {
     nodes,
     edges,
@@ -41,9 +38,9 @@ export const FlowCanvas = () => {
     setReactFlowInstance,
     fitView,
   } = useFlow();
-
+ 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-
+ 
   const onConnect = useCallback(
     (connection: Connection) => {
       const edge = {
@@ -68,7 +65,7 @@ export const FlowCanvas = () => {
     },
     [setEdges]
   );
-
+ 
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
       setReactFlowInstance(instance);
@@ -82,14 +79,14 @@ export const FlowCanvas = () => {
     },
     [setReactFlowInstance, fitView, nodes.length]
   );
-
+ 
   const checkNodeProximityAndConnect = useCallback(() => {
     const HANDLE_WIDTH = 12;
     const HANDLE_HEIGHT = 32;
     const NODE_WIDTH = 56;
     const NODE_HEIGHT = 56;
     const HANDLE_OFFSET_X = 0;
-
+ 
     const handles = nodes.flatMap((node) => [
       {
         nodeId: node.id,
@@ -110,7 +107,7 @@ export const FlowCanvas = () => {
         height: HANDLE_HEIGHT,
       },
     ]);
-
+ 
     const newEdges = handles.flatMap((handleA, i) =>
       handles.slice(i + 1).flatMap((handleB) => {
         if (
@@ -146,13 +143,13 @@ export const FlowCanvas = () => {
         return [];
       })
     );
-
+ 
     if (newEdges.length > 0) {
       setEdges((eds) => [...eds, ...newEdges]);
     }
-
+ 
   }, [nodes, edges, setEdges]);
-
+ 
   const isValidConnection = useCallback(
     (connection: any) => {
       const target = nodes.find((node) => node.id === connection.target);
@@ -169,7 +166,7 @@ export const FlowCanvas = () => {
     },
     [nodes, edges],
   );
-
+ 
   // Only run fitView when we have nodes that need positioning
   useEffect(() => {
     if (nodes.length > 0 && fitView) {
@@ -180,7 +177,7 @@ export const FlowCanvas = () => {
       return () => clearTimeout(timer);
     }
   }, [nodes.length, fitView]);
-
+ 
   useEffect(() => {
     if (flow) {
       dispatch(setSelectedFlow(flow));
@@ -190,7 +187,7 @@ export const FlowCanvas = () => {
       }
     }
   }, [flow, dispatch]);
-
+ 
   if (isLoading) {
     return (
       <div className="w-full h-full bg-background relative flex items-center justify-center">
@@ -198,33 +195,13 @@ export const FlowCanvas = () => {
       </div>
     );
   }
-
+ 
   if (isError) {
     return <ErrorState title="Error loading flow" description="Please try again later" />;
   }
-  const keyboardShortcuts = [
-    { key: 'Ctrl + C', action: 'Copy' },
-    { key: 'Ctrl + V', action: 'Paste' },
-    { key: 'Ctrl + X', action: 'Cut' },
-    { key: 'Ctrl + Z', action: 'Undo' },
-    { key: 'Ctrl + Y', action: 'Redo' },
-    { key: 'Ctrl + F', action: 'Search' },
-    { key: 'Ctrl + D', action: 'Add to Debug List' },
-    { key: 'Ctrl + R', action: 'Run Pipeline' },
-    { key: 'Ctrl + L', action: 'Open Logs' },
-    { key: 'Ctrl + K', action: 'Stop Pipeline' },
-    { key: 'Ctrl + N', action: 'Next Step' },
-    { key: 'Ctrl + +', action: 'Zoom In' },
-    { key: 'Ctrl + -', action: 'Zoom Out' },
-];
-
+ 
   return (
     <div className="w-full h-full bg-background overflow-hidden">
-        <div className="absolute mt-2 z-50">
-          <div className="rounded-lg p-2 text-sm">
-            <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
-          </div>
-        </div>
       <ReactFlowProvider>
         <div ref={reactFlowWrapper} className="w-full h-full">
           <ReactFlow
@@ -264,7 +241,7 @@ export const FlowCanvas = () => {
     </div>
   );
 }
-
+ 
 const rectanglesOverlap = (rect1: any, rect2: any) => !(
   rect1.x + rect1.width < rect2.x ||
   rect1.x > rect2.x + rect2.width ||

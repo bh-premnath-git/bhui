@@ -48,8 +48,9 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
   const refreshPipelineData = useCallback(async () => {
     try {
       // Invalidate React Query cache
-      queryClient.invalidateQueries(['pipelines']);
-      queryClient.invalidateQueries(['pipelines', 'list']);
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      queryClient.invalidateQueries({ queryKey: ['pipelines', 'list'] });
+
       
       // Fetch fresh data through Redux
       await dispatch(getAllPipeline());

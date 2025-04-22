@@ -11,19 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Save, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Save} from "lucide-react";
 import { useGroupedProperties } from "@/hooks/useGroupedProperties";
 import { useFlow } from "@/context/designers/FlowContext";
 import { useOtherTypes } from "@/hooks/useOtherTypes";
 import { useNodeFormInput } from "@/hooks/useNodeFormInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { updateFlowDefinition } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
-import { Input } from "@/components/ui/input";
 import { createShortUUID } from "@/lib/utils";
-
-import { convertLiteralStrings } from "./utils/formUtils";
 import { updateFlowDefinitionOnServer } from "./utils/updateFlowDefinitionOnServer";
 import { useFormValidation } from "./hooks/useFormValidation";
 import { ParametersSection } from "./components/ParametersSection";
@@ -181,8 +176,13 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     );
 
     const handleSave = useCallback(() => {
-        if (!selectedNode || !validateForm()) return;
+        console.log("Save button clicked");
+        if (!selectedNode || !validateForm()) {
+            console.log("Validation failed or no selected node");
+            return;
+        }
 
+        console.log("Creating form data");
         const newFormData = [...nodeFormData];
         const idx = newFormData.findIndex((i) => i.nodeId === selectedNode.id);
 
@@ -209,23 +209,30 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         if (idx >= 0) newFormData[idx] = updatedFormData;
         else newFormData.push(updatedFormData);
 
+        console.log("Updating node form data");
         updateNodeFormData(selectedNode.id, updatedFormData.formData);
 
-        setTimeout(() => {
-            updateNodeDependencies();
-            setFormDataNum((p) => p + 1);
+        console.log("Calling updateNodeDependencies and setFormDataNum");
+        updateNodeDependencies();
+        setFormDataNum((p) => p + 1);
 
-            updateFlowDefinitionOnServer(
-                selectedFlowId,
-                selectedFlow,
-                dispatch,
-                flowConfigMap,
-                newFormData
-            );
+        console.log("Calling updateFlowDefinitionOnServer");
+        console.log("Selected flow:", selectedFlow);
+        console.log("Selected flow ID:", selectedFlowId);
+        console.log("Flow config map:", flowConfigMap);
+        
+        // Call updateFlowDefinitionOnServer directly without setTimeout
+        updateFlowDefinitionOnServer(
+            selectedFlowId,
+            selectedFlow,
+            dispatch,
+            flowConfigMap,
+            newFormData
+        );
 
-            closeTap();
-            revertOrSaveData(id, true);
-        }, 100);
+        console.log("Closing form");
+        closeTap();
+        revertOrSaveData(id, true);
     }, [
         closeTap,
         id,
@@ -352,6 +359,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     useEffect(() => {
         setRequiredFieldsState(selectedNode.data.requiredFields);
     }, [selectedNode.data.requiredFields]);
+    
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg overflow-visible">
             <CardContent className="p-6 space-y-6 overflow-visible">

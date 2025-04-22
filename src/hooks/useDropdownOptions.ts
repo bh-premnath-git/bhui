@@ -45,7 +45,7 @@ export const useDropdownOptions = (
       if (id && path !== 'pipeline') {
         url = `/${path}/${id}/${connections}`;
       } else {
-        url = `/${path}/${connections}/`;
+        url = `/${path}/${connections}/?is_pipeline_parameter_required=true`;
       }
 
       const data = await apiService.get({

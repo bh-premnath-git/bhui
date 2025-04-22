@@ -149,18 +149,18 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
   };
 
   const handleSave = async () => {
-    // Check for duplicate keys in both tabs
+    // Check for duplicate keys in the active tab
     const checkDuplicates = (params: Parameter[]) => {
       const keys = params.map(param => param.key);
       return keys.some((key, index) => keys.indexOf(key) !== index);
     };
 
-    if (checkDuplicates(pipelineParams)) {
+    if (activeTab === 'pipeline' && checkDuplicates(pipelineParams)) {
       toast.error("Duplicate key in Pipeline Parameters");
       return;
     }
 
-    if (checkDuplicates(sparkParams)) {
+    if (activeTab === 'spark' && checkDuplicates(sparkParams)) {
       toast.error("Duplicate key in Spark Parameters");
       return;
     }
@@ -168,58 +168,66 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
     setIsSaving(true);
     try {
       // Save pipeline parameters
-      for (const param of pipelineParams) {
-        const payload = {
-          pipeline_id: Number(id),
-          parameter_name: param.key,
-          parameter_value: param.value,
-          parameter_type: 'USER'
-        };
+      if (activeTab === 'pipeline') {
+        for (const param of pipelineParams) {
+          if (!param.key || !param.value) continue;
+          
+          const payload = {
+            pipeline_id: Number(id),
+            parameter_name: param.key,
+            parameter_value: param.value,
+            parameter_type: 'USER'
+          };
 
-        if (param.pipeline_parameter_id) {
-          await apiService.put({
-            portNumber: CATALOG_API_PORT,
-            method: 'PUT',
-            url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
-            data: payload,
-            usePrefix: true
-          });
-        } else if (param.key && param.value) {
-          await apiService.post({
-            portNumber: CATALOG_API_PORT,
-            method: 'POST',
-            url: '/pipeline/pipeline-parameter',
-            data: payload,
-            usePrefix: true
-          });
+          if (param.pipeline_parameter_id) {
+            await apiService.put({
+              portNumber: CATALOG_API_PORT,
+              method: 'PUT',
+              url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
+              data: payload,
+              usePrefix: true
+            });
+          } else {
+            await apiService.post({
+              portNumber: CATALOG_API_PORT,
+              method: 'POST',
+              url: '/pipeline/pipeline-parameter',
+              data: payload,
+              usePrefix: true
+            });
+          }
         }
       }
 
       // Save spark parameters
-      for (const param of sparkParams) {
-        const payload = {
-          pipeline_id: Number(id),
-          parameter_name: param.key,
-          parameter_value: param.value,
-          parameter_type: 'SPARK_SESSION'
-        };
+      if (activeTab === 'spark') {
+        for (const param of sparkParams) {
+          if (!param.key || !param.value) continue;
+          
+          const payload = {
+            pipeline_id: Number(id),
+            parameter_name: param.key,
+            parameter_value: param.value,
+            parameter_type: 'SPARK_SESSION'
+          };
 
-        if (param.pipeline_parameter_id) {
-          await apiService.put({
-            portNumber: CATALOG_API_PORT,
-            method: 'PUT',
-            url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
-            data: payload,
-            usePrefix: true
-          });
-        } else if (param.key && param.value) {
-          await apiService.post({
-            portNumber: CATALOG_API_PORT,
-            method: 'POST',
-            url: '/pipeline/pipeline-parameter',
-            data: payload,
-            usePrefix: true
-          });
+          if (param.pipeline_parameter_id) {
+            await apiService.put({
+              portNumber: CATALOG_API_PORT,
+              method: 'PUT',
+              url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
+              data: payload,
+              usePrefix: true
+            });
+          } else {
+            await apiService.post({
+              portNumber: CATALOG_API_PORT,
+              method: 'POST',
+              url: '/pipeline/pipeline-parameter',
+              data: payload,
+              usePrefix: true
+            });
+          }
         }
       }
       
@@ -313,8 +321,8 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
             type="button"
             onClick={handleSave}
             disabled={isSaving || 
-              pipelineParams.some(p => !p.key || !p.value) || 
-              sparkParams.some(p => !p.key || !p.value)}
+              (activeTab === 'pipeline' && pipelineParams.some(p => !p.key || !p.value)) || 
+              (activeTab === 'spark' && sparkParams.some(p => !p.key || !p.value))}
             aria-label={isSaving ? 'Saving' : 'Save'}
             className="bg-black hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
           >

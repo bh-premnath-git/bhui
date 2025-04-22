@@ -9,6 +9,9 @@ lerna-debug.log*
 .env
 vite.config.ts
 
+gemini_cli_config.json
+react_src.db
+
 node_modules
 dist
 dist-ssr

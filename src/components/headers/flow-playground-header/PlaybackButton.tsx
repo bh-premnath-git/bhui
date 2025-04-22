@@ -81,27 +81,29 @@ export const PlaybackButton = () => {
 
     return (
         <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9"
-                        onClick={handleClick}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isPlaying ? (
-                            <Pause className="h-4 w-4" />
-                        ) : (
-                            <Play className="h-4 w-4" />
-                        )}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" align="center">
-                    <p>{isPlaying ? "Stop Deployment" : "Start Deployment"}</p>
-                </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center p-0.25">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-1"
+                            onClick={handleClick}
+                        >
+                            {isLoading ? (
+                                <Loader2 className="h-2 w-2 animate-spin" />
+                            ) : isPlaying ? (
+                                <Pause className="h-2 w-2 text-red-500" />
+                            ) : (
+                                <Play className="h-2 w-2 text-green-500" />
+                            )}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="center">
+                        <p>{isPlaying ? "Stop Deployment" : "Start Deployment"}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </div>
         </TooltipProvider>
     );
 };

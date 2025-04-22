@@ -102,7 +102,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <Button
-                        aria-label="Pipeline Parameters"
+                        aria-label="Parameters"
                         className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
                       >
                         <CloudCog className="h-5 w-5" />
@@ -124,7 +124,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsPipelineParamOpen(true)}
-                    aria-label="Pipeline Parameters"
+                    aria-label="Parameters"
                   >
                     <Settings className="h-5 w-5" />
                   </Button>

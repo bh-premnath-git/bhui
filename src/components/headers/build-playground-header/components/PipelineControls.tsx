@@ -15,36 +15,21 @@ const PipelineControls: React.FC<any> = ({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        onClick={handleRunClick}
+                        onClick={isPipelineRunning ? handleStop : handleRunClick}
                         variant="ghost"
                         size="sm"
-                        disabled={isPipelineRunning}
-                        aria-label="Run Pipeline"
+                        aria-label={isPipelineRunning ? "Stop Pipeline" : "Run Pipeline"}
                         className="px-2.5"
                     >
-                        <HiOutlinePlay className={`h-4 w-4 ${!isPipelineRunning ? "text-green-500" : "text-gray-400"}`} />
+                        {isPipelineRunning ? (
+                            <MdOutlineStop className="h-4 w-4 text-red-500" />
+                        ) : (
+                            <HiOutlinePlay className="h-4 w-4 text-green-500" />
+                        )}
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>Run Pipeline</p>
-                </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        onClick={handleStop}
-                        variant="ghost"
-                        size="sm"
-                        disabled={!isPipelineRunning}
-                        aria-label="Stop Pipeline"
-                        className="px-2.5"
-                    >
-                        <MdOutlineStop className={`h-4 w-4 ${isPipelineRunning ? "text-red-500" : "text-gray-400"}`} />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Stop Pipeline</p>
+                    <p>{isPipelineRunning ? "Stop Pipeline" : "Run Pipeline"}</p>
                 </TooltipContent>
             </Tooltip>
 

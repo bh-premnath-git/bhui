@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { RootState } from '@/store';
@@ -56,6 +56,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaving(false);
       setIsDirty(false);
       setHasFlowConfig(false);
+      setFlowPipeline(null);
       
       // IMPORTANT: Also reset the selectedFlow in Redux
       dispatch(setSelectedFlow(null));
@@ -89,12 +90,31 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [formdataNum, setFormDataNum] = useState(0);
   const [aiMissingData, setAiMissingData] = useState({});
   const [hasFlowConfig, setHasFlowConfig] = useState(false);
+  const [flowPipeline, setFlowPipeline] = useState<any | null>(null);
+  
+  // Add lastPipelineRef to keep track of the last non-null pipeline
+  const lastPipelineRef = useRef<any>(null);
 
   // Add flowConfigMap state
   const [flowConfigMap, setFlowConfigMap] = useState<Record<string, any>>({});
 
   // Import the RootState and useAppSelector for accessing the Redux store
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
+
+  // Add getPipelineDetails function with useMemo
+  const getPipelineDetails = useCallback((pipelineName: string | null) => {
+    const pipelineDetails = useMemo(() => {
+      if (pipelineName && flowPipeline && flowPipeline.length) {
+        const found = flowPipeline.find((p: any) => p.pipeline_name === pipelineName) ?? null;
+        lastPipelineRef.current = found;
+        return found;
+      }
+      // when pipelineName is null, return the last non-null value
+      return lastPipelineRef.current;
+    }, [pipelineName, flowPipeline]);
+    
+    return pipelineDetails;
+  }, [flowPipeline]);
 
   // Update the hasFlowConfig effect to use flowConfigMap
   useEffect(() => {
@@ -607,6 +627,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       // Explicitly set hasFlowConfig to false when loading a new flow
       // This ensures we start from a clean state for the new flow
       setHasFlowConfig(false);
+      setFlowPipeline(null);
     } else {
       setNodes([]);
       setEdges([]);
@@ -616,6 +637,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setIsSaving(false);
       setIsDirty(false);
       setHasFlowConfig(false);
+      setFlowPipeline(null);
     }
   }, [selectedFlowId, loadFlow]);
 
@@ -716,6 +738,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     clearFlow,
     hasFlowConfig,
     flowConfigMap,
+    flowPipeline,
+    setFlowPipeline,
+    getPipelineDetails,
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

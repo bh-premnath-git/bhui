@@ -11,16 +11,18 @@ import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store";
 import { parseStringifiedJson } from "@/lib/object";
+import { useFlow } from "@/context/designers/FlowContext";
 
 interface FormFieldProps {
   property: Property;
   value: any;
   onChange: (key: string, value: string) => void;
   dependsOn?: string[];
+  formValues?: Record<string, any>;
 }
 
 export const FormField: React.FC<FormFieldProps> = React.memo(
-  ({ property, value, onChange }) => {
+  ({ property, value, onChange, formValues = {} }) => {
     const {
       property_name,
       property_key,
@@ -31,14 +33,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       language,
     } = property.ui_properties;
 
-    
+    const { setFlowPipeline } = useFlow();
     const { environment } = useAppSelector(
       (state: RootState) => state.flow
     );
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
     const { options, isLoading } = useDropdownOptions(
       endpoint ?? '',
-      endpoint !== "{catalog_base_url}/api/v1/pipeline/list" ? `${environment?.bh_env_id}` : null
+      endpoint !== "{catalog_base_url}/api/v1/pipeline/list" ? `${environment?.bh_env_id}` : null,
+      setFlowPipeline
     );
     const defaultValue = property.ui_properties.default
     const description = property.description
@@ -139,6 +142,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               type="number"
               default={defaultValue}
               description={description}
+              formData={formValues}
             />
           );
         case "textbox":
@@ -168,6 +172,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               mandatory={mandatory}
               default={defaultValue}
               description={description}
+              formData={formValues}
             />
           );
       }

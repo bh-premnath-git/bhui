@@ -282,4 +282,7 @@ export interface FlowContextType {
   setAiMissingData?: React.Dispatch<React.SetStateAction<any>>;
   updateNodeDependencies: () => void;
   clearFlow: () => void;
+  flowPipeline: any | null;
+  setFlowPipeline: React.Dispatch<React.SetStateAction<any | null>>;
+  getPipelineDetails: (pipelineName: string | null) => any;
 }

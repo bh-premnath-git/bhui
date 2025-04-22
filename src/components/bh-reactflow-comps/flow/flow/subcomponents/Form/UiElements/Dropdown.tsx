@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { AlertCircle, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePipeline } from '@/hooks/usePipeline';
 
 interface DropdownFieldProps {
     id: string;
@@ -53,6 +54,8 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
             onChange(property_key, chosenOption);
         }
     }, [value, defaultValue, options, onChange, property_key]);
+    
+    usePipeline(property_key.includes('pipeline') ? value : null);
 
     return (
         <div className="w-full max-w-sm space-y-4">

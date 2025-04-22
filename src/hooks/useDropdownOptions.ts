@@ -25,7 +25,8 @@ const processEndpoint = (endpoint: string | undefined) => {
 
 export const useDropdownOptions = (
   endpoint: string | null | undefined,
-  id: string | null
+  id: string | null,
+  setFlowPipeline?: (pipeline: any) => void
 ) => {
   const queryResult = useQuery({
     queryKey: ['dropdownOptions', endpoint, id],
@@ -57,6 +58,7 @@ export const useDropdownOptions = (
 
       // 6. If path === 'pipeline', return pipeline names specifically
       if (path === 'pipeline') {
+        setFlowPipeline(data);
         return Array.isArray(data)
           ? data.map((item: any) => item.pipeline_name || '')
           : [];
@@ -78,7 +80,7 @@ export const useDropdownOptions = (
       return [];
     },
     enabled: !!endpoint,
-    
+
   });
 
   const { data: options = [], isLoading, isError, error } = queryResult;

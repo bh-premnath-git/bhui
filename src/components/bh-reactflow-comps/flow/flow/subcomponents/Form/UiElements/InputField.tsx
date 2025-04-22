@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle, HelpCircle } from 'lucide-react';
 import {
   Tooltip,
@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip"
+import { usePipeline } from '@/hooks/usePipeline';
 
 interface InputFieldProps {
   label: string;
@@ -19,6 +20,7 @@ interface InputFieldProps {
   type?: string;
   default?: any;
   description: string;
+  formData?: Record<string, any>;
 }
 
 export const InputField: React.FC<InputFieldProps> = ({
@@ -31,23 +33,84 @@ export const InputField: React.FC<InputFieldProps> = ({
   error,
   description,
   default: defaultValue,
-  type = 'text'
+  type = 'text',
+  formData = {}
 }) => {
   const [touched, setTouched] = useState(false);
   const [fieldError, setFieldError] = useState(error);
+  const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
+  
+  // This function searches through the form data to find pipeline name fields
+  const findPipelineName = () => {
+    // Look for common pipeline field patterns
+    for (const key in formData) {
+      // If a field has "pipeline" in it and it's a dropdown (string value)
+      if (
+        (key.toLowerCase().includes('pipeline') || key.toLowerCase() === 'pipeline') && 
+        typeof formData[key] === 'string' && 
+        formData[key] !== ''
+      ) {
+        return formData[key];
+      }
+    }
+    return null;
+  };
+  
+  const pipelineName = findPipelineName();
+  const { pipelineDetails } = usePipeline(pipelineName);
+  
+  // On mount and when pipelineDetails changes, update the current pipeline ID
+  useEffect(() => {
+    if (pipelineDetails && pipelineDetails.pipeline_id) {
+      // Only update if it's different than what we had before
+      const newPipelineId = pipelineDetails.pipeline_id.toString();
+      if (newPipelineId !== currentPipelineId) {
+        setCurrentPipelineId(newPipelineId);
+      }
+    }
+  }, [pipelineDetails]);
+  
+  // When the pipeline ID changes and this is a pipeline ID field, update the value
+  useEffect(() => {
+    if (label === "Pipeline id" && currentPipelineId && (!value || value !== currentPipelineId)) {
+      const syntheticEvent = {
+        target: {
+          value: currentPipelineId
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      
+      onChange(syntheticEvent);
+    }
+  }, [label, currentPipelineId, value, onChange]);
 
   const handleBlur = () => {
     setTouched(true);
-    if (mandatory && !value.trim() && !defaultValue?.toString().trim()) {
+    if (mandatory && !value.trim() && !defaultValue?.toString().trim() && !currentPipelineId) {
       setFieldError(`${label} is required`);
     } else {
       setFieldError(error);
     }
   };
 
-  const displayValue = value || defaultValue || "";
+  // Determine which value to display - prioritize the form value, then pipeline ID, then default
+  let displayValue = value || defaultValue || "";
+  if (label === "Pipeline id" && currentPipelineId && !value) {
+    displayValue = currentPipelineId;
+  }
 
   const displayError = touched ? fieldError : error;
+
+  // For debugging - log when pipeline details change for Pipeline id fields
+  useEffect(() => {
+    if (label === "Pipeline id") {
+      console.log("Pipeline ID field values:", {
+        pipelineName,
+        pipelineId: pipelineDetails?.pipeline_id,
+        currentValue: value,
+        displayValue
+      });
+    }
+  }, [label, pipelineName, pipelineDetails, value, displayValue]);
 
   return (
     <div className="w-full max-w-sm space-y-4">

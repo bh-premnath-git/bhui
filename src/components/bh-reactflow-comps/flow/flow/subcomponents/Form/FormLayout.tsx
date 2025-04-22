@@ -48,6 +48,7 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
               value={formValues[property.ui_properties.property_key] || ''}
               onChange={onInputChange}
               dependsOn={dependsOn}
+              formValues={formValues}
             />
           ))}
         </div>

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Save} from "lucide-react";
+import { Save } from "lucide-react";
 import { useGroupedProperties } from "@/hooks/useGroupedProperties";
 import { useFlow } from "@/context/designers/FlowContext";
 import { useOtherTypes } from "@/hooks/useOtherTypes";
@@ -46,6 +46,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateNodeDependencies,
         selectedFlowId,
         flowConfigMap,
+        getPipelineDetails,
+        flowPipeline,
     } = useFlow();
 
     const dispatch = useAppDispatch();
@@ -57,6 +59,23 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
     const paramsInitRef = useRef(false);
 
+    const [pipelineData, setPipelineData] = useState<any>(null);
+    
+    // When the pipeline changes, reset the pipeline data
+    useEffect(() => {
+        console.log("Resetting pipeline data due to pipeline change");
+        setPipelineData(null); // Clear current data
+        
+        // Then fetch the new data (happens in the next effect)
+    }, [flowPipeline]); // Only flowPipeline, not getPipelineDetails to avoid over-triggering
+    
+    // Use effect to update pipeline data when it changes
+    useEffect(() => {
+        const details = getPipelineDetails(null);
+        setPipelineData(details);
+        console.log("Updated pipelineDetails in NodeForm:", details);
+    }, [getPipelineDetails, flowPipeline]); // Added flowPipeline as dependency
+    
     if (!selectedNode) return null;
 
     /* -------------------------- Derived values --------------------------- */
@@ -220,7 +239,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         console.log("Selected flow:", selectedFlow);
         console.log("Selected flow ID:", selectedFlowId);
         console.log("Flow config map:", flowConfigMap);
-        
+
         // Call updateFlowDefinitionOnServer directly without setTimeout
         updateFlowDefinitionOnServer(
             selectedFlowId,
@@ -359,7 +378,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     useEffect(() => {
         setRequiredFieldsState(selectedNode.data.requiredFields);
     }, [selectedNode.data.requiredFields]);
-    
+
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg overflow-visible">
             <CardContent className="p-6 space-y-6 overflow-visible">
@@ -452,6 +471,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                                     onAddParameter={addParameterRow}
                                     onRemoveParameter={removeParameterRow}
                                     defaultParameters={defaultParameters}
+                                    pipeline_parameters={
+                                        selectedValue === 'EmrAddStepsOperator' 
+                                            ? (pipelineData?.pipeline_parameters || []) 
+                                            : []
+                                    }
                                 />
                             </ScrollArea>
                         </TabsContent>

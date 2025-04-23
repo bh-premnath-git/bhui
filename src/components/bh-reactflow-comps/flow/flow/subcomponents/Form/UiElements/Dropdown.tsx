@@ -36,7 +36,15 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
         onChange(property_key, e.target.value);
     }, [onChange, property_key]);
 
+    // Only auto-select for non-node type dropdowns
+    // This prevents auto-selection for the main node type dropdown while
+    // preserving it for other form fields that may need default values
+    const isNodeTypeDropdown = property_key === 'type' || property_name === 'Select Node Type';
+    
     useEffect(() => {
+        // Skip auto-selection for node type dropdown
+        if (isNodeTypeDropdown) return;
+        
         if (!value && options.length > 0) {
             let chosenOption = options[0]; 
 
@@ -53,9 +61,11 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
 
             onChange(property_key, chosenOption);
         }
-    }, [value, defaultValue, options, onChange, property_key]);
+    }, [value, defaultValue, options, onChange, property_key, isNodeTypeDropdown]);
     
-    usePipeline(property_key.includes('pipeline') ? value : null);
+    // Always load pipeline data for pipeline fields, regardless of selection
+    const isPipelineField = property_key.includes('pipeline');
+    usePipeline(isPipelineField ? (value || 'load_pipeline_data') : null);
 
     return (
         <div className="w-full max-w-sm space-y-4">

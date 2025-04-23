@@ -14,10 +14,12 @@ interface Props {
   onAddParameter: () => void;
   onRemoveParameter: (index: number) => void;
   defaultParameters?: ParameterItem[];
+  pipeline_parameters?: ParameterItem[];
 }
 
 /**
- * Component to manage and display parameters
+ * Component to manage and display parameters.
+ * Pipeline parameters are automatically included and treated like defaults.
  */
 export const ParametersSection = React.memo<Props>(
   ({
@@ -26,27 +28,80 @@ export const ParametersSection = React.memo<Props>(
     onAddParameter,
     onRemoveParameter,
     defaultParameters = [],
+    pipeline_parameters = [],
   }) => {
-    /** Normalise to an array */
+    // Normalize parameters: Start with base (prop or defaults), then layer pipeline params
     const parametersArray = useMemo<ParameterItem[]>(() => {
-      if (Array.isArray(parameters) && parameters.length) return parameters;
-      if (typeof parameters === "string" && parameters) {
+      let baseParams: ParameterItem[] = [];
+
+      // 1. Determine base parameters
+      let providedParamsUsed = false;
+      if (Array.isArray(parameters) && parameters.length) {
+        baseParams = parameters as ParameterItem[];
+        providedParamsUsed = true;
+      } else if (typeof parameters === "string" && parameters) {
         try {
           const parsed = JSON.parse(parameters);
-          if (Array.isArray(parsed) && parsed.length) return parsed;
+          if (Array.isArray(parsed) && parsed.length) {
+            baseParams = parsed;
+            providedParamsUsed = true;
+          }
         } catch {
           /* ignore */
         }
       }
-      if (defaultParameters.length) return defaultParameters;
-      return [{ key: "", value: "" }];
-    }, [parameters, defaultParameters]);
+      // If prop wasn't valid/used, fall back to defaults
+      if (!providedParamsUsed) {
+        baseParams = defaultParameters || [];
+      }
 
-    /** Helper to know if a param comes from defaults */
-    const isDefaultParameter = useCallback(
-      (param: ParameterItem) =>
-        defaultParameters.some((d) => d.key === param.key),
-      [defaultParameters]
+      // 2. Create a Map, seeding with base params
+      const combined = new Map<string, ParameterItem>();
+      baseParams.forEach(p => {
+        if (p && typeof p.key !== 'undefined') combined.set(p.key, p);
+      });
+
+      // 3. Layer pipeline parameters on top (add new or overwrite existing by key)
+      (pipeline_parameters || []).forEach(p => {
+        if (p && typeof p.key !== 'undefined') {
+            // If the key already exists from base/defaults, update its value
+            // Otherwise, just add the new pipeline parameter
+            combined.set(p.key, { ...combined.get(p.key), ...p });
+        }
+      });
+
+      // 4. Convert back to array
+      let finalParams = Array.from(combined.values());
+
+      // 5. Ensure at least one row if the list is empty
+      if (finalParams.length === 0) {
+        finalParams = [{ key: "", value: "" }];
+      }
+
+      return finalParams;
+    }, [parameters, defaultParameters, pipeline_parameters]);
+
+    // Helper to check if a parameter is read-only (from defaults or pipeline)
+    const isReadOnlyParameter = useCallback(
+      (param: ParameterItem) => {
+        if (!param || typeof param.key === 'undefined') return false;
+        const key = param.key;
+        // Check origin solely based on the *initial* lists passed as props
+        const isDefault = (defaultParameters || []).some(d => d?.key === key);
+        const isPipeline = (pipeline_parameters || []).some(p => p?.key === key);
+        return isDefault || isPipeline;
+      },
+      [defaultParameters, pipeline_parameters]
+    );
+    
+    // Helper specifically to identify pipeline params for styling
+    const isPipelineOrigin = useCallback(
+      (param: ParameterItem) => {
+         if (!param || typeof param.key === 'undefined') return false;
+         // Check origin based on the *initial* pipeline list passed as prop
+         return (pipeline_parameters || []).some(p => p?.key === param.key);
+      },
+      [pipeline_parameters]
     );
 
     return (
@@ -58,16 +113,21 @@ export const ParametersSection = React.memo<Props>(
 
         <div className="space-y-2 overflow-visible">
           {parametersArray.map((parameter, index) => {
-            const isDefault = isDefaultParameter(parameter);
+            if (!parameter) return null;
+            const isReadOnly = isReadOnlyParameter(parameter);
+            const isFromPipeline = isPipelineOrigin(parameter);
+
             return (
               <ParameterRow
-                key={index}
+                key={`${parameter.key || 'empty'}-${index}`}
                 parameter={parameter}
                 onDelete={() => onRemoveParameter(index)}
                 onChange={(field, value) =>
                   onParameterChange(index, field, value)
                 }
-                canDelete={!isDefault && parametersArray.length > 1}
+                canDelete={!isReadOnly && parametersArray.length > 1}
+                className={isFromPipeline ? 'bg-blue-50 border-blue-200' : undefined}
+                readOnly={isReadOnly}
               />
             );
           })}
@@ -79,8 +139,7 @@ export const ParametersSection = React.memo<Props>(
           onClick={onAddParameter}
           className="w-full mt-4 border border-dashed border-gray-200 hover:border-gray-300 text-gray-600 h-9 px-4 focus:outline-none focus:ring-0"
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Parameter
+          <Plus className="h-4 w-4 mr-2" /> Add Parameter
         </Button>
       </div>
     );

@@ -101,19 +101,48 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   // Import the RootState and useAppSelector for accessing the Redux store
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
 
-  // Add getPipelineDetails function with useMemo
+  // Improved getPipelineDetails function with better null handling
   const getPipelineDetails = useCallback((pipelineName: string | null) => {
-    const pipelineDetails = useMemo(() => {
-      if (pipelineName && flowPipeline && flowPipeline.length) {
-        const found = flowPipeline.find((p: any) => p.pipeline_name === pipelineName) ?? null;
+    // Log for debugging
+    console.log('getPipelineDetails called with:', pipelineName);
+    console.log('Current flowPipeline:', flowPipeline);
+    console.log('Current lastPipelineRef.current:', lastPipelineRef.current);
+
+    // For the special loading value, return null without updating the ref
+    if (pipelineName === 'load_pipeline_data') {
+      return null;
+    }
+
+    // If a specific pipeline name is provided and we have pipeline data
+    if (pipelineName && flowPipeline && Array.isArray(flowPipeline)) {
+      // Find the matching pipeline 
+      const found = flowPipeline.find((p: any) => p.pipeline_name === pipelineName) ?? null;
+      
+      // If found, update the ref and return
+      if (found) {
+        console.log('Found pipeline details:', found);
         lastPipelineRef.current = found;
         return found;
       }
-      // when pipelineName is null, return the last non-null value
-      return lastPipelineRef.current;
-    }, [pipelineName, flowPipeline]);
+    }
     
-    return pipelineDetails;
+    // Special case: if looking for null (latest pipeline) but flowPipeline has changed and has items
+    // First check if flowPipeline has items but is different from last ref
+    if (pipelineName === null && 
+        flowPipeline && 
+        Array.isArray(flowPipeline) && 
+        flowPipeline.length > 0) {
+      
+      // Check if we need to update the reference
+      if (!lastPipelineRef.current || 
+          !flowPipeline.some((p: any) => p.pipeline_id === lastPipelineRef.current?.pipeline_id)) {
+        console.log('Updating lastPipelineRef to first pipeline in list');
+        lastPipelineRef.current = flowPipeline[0];
+      }
+    }
+
+    // Return the saved reference
+    return lastPipelineRef.current;
   }, [flowPipeline]);
 
   // Update the hasFlowConfig effect to use flowConfigMap

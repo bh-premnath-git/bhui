@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store/";
-import { triggerDagDeployment, setDagRunId } from '@/store/slices/designer/flowSlice';
+import { triggerDagDeployment, setDagRunId, deployDag } from '@/store/slices/designer/flowSlice';
 import { toast } from 'sonner';
 import { useFlow } from '@/context/designers/FlowContext';
 
@@ -19,11 +19,11 @@ export const PlaybackButton = () => {
     const location = useLocation();
     const { selectedFlow, selectedEnvironment } = useAppSelector((state: RootState) => state.flow);
     const { isPlaying, togglePlayback } = useFlow();
-    
     const [isLoading, setIsLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
 
+    
     useEffect(() => {
         if (location.pathname !== prevPathname && abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -39,7 +39,7 @@ export const PlaybackButton = () => {
 
         try {
             const result = await dispatch(triggerDagDeployment({
-                dag_id: selectedFlow.flow_name,
+                dag_id: selectedFlow.flow_key,
                 airflow_env_name: selectedEnvironment.airflow_env_name,
                 bh_env_name: selectedEnvironment.bh_env_name
             })).unwrap();
@@ -47,7 +47,7 @@ export const PlaybackButton = () => {
             dispatch(setDagRunId({
                 dag_run_id: result.dag_run_id,
                 airflow_env_name: selectedEnvironment.airflow_env_name,
-                dag_id: selectedFlow.flow_name,
+                dag_id: selectedFlow.flow_key,
                 bh_env_name: selectedEnvironment.bh_env_name
             }));
 
@@ -66,14 +66,36 @@ export const PlaybackButton = () => {
     const handleClick = async () => {
         setIsLoading(true);
         try {
+            if (!selectedFlow?.flow_definition?.flow_definition_id || !selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
+                toast.error("Missing flow definition or deployment ID for deployment.");
+                setIsLoading(false);
+                return;
+            }
+
+            // First, call deployDag
+            await dispatch(deployDag({
+                flow_definition_id: selectedFlow.flow_definition.flow_definition_id,
+                flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id
+            })).unwrap();
+
+            toast.info("Initial deployment step successful. Proceeding..."); // Optional feedback
+
+            // Proceed with original logic only if deployDag was successful
             if (!isPlaying) {
-                const success = await deployFlow();
+                const success = await deployFlow(); // deployFlow now handles triggerDagDeployment
                 if (success) {
                     togglePlayback();
                 }
             } else {
-                togglePlayback();
+                // Logic for stopping: Should we stop if already playing?
+                // For now, assuming stop only toggles the state without further API calls here.
+                togglePlayback(); 
+                toast.info("Playback stopped."); // Optional feedback
             }
+        } catch (error) {
+            // Catch errors from deployDag or deployFlow
+            console.error("Error during deployment process:", error);
+            toast.error(`Deployment process failed: ${(error as Error).message || 'Unknown error'}`);
         } finally {
             setIsLoading(false);
         }

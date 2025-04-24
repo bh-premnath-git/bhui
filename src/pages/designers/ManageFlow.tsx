@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { GitBranch } from 'lucide-react';
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { FlowList } from '@/features/designers/ManageFlow';
@@ -18,15 +18,31 @@ function ManageFlowPage() {
   const { fetchFlowsList } = useFlow();
   const flowService = useFlowManagementService();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
+  
+  // Get the initial list to check if there are flows
   const {
-    data: flows = [],
+    data: initialFlows,
     isLoading,
     isFetching,
-    isError
-  } = fetchFlowsList(true);
-
-  const noFlows = !Array.isArray(flows) || flows.length === 0;
+    isError,
+    refetch: refetchAllFlows
+  } = fetchFlowsList(1, 1000, true); // Fetch with a large limit to get all flows
+  
+  // Extract flow data from the response
+  const flowData = useMemo(() => {
+    if (!initialFlows) return [];
+    
+    if (Array.isArray(initialFlows)) {
+      return initialFlows;
+    } else if (initialFlows.data && Array.isArray(initialFlows.data)) {
+      return initialFlows.data;
+    }
+    
+    return [];
+  }, [initialFlows]);
+  
+  // Check if we have no flows
+  const noFlows = !flowData || flowData.length === 0;
 
   useEffect(() => {
     dispatch(fetchProjects());
@@ -35,9 +51,14 @@ function ManageFlowPage() {
 
   useEffect(() => {
     if (!noFlows) {
-      flowService.setFlows(flows);
+      flowService.setFlows(flowData);
     }
-  }, [noFlows, flows, flowService]);
+  }, [noFlows, flowData, flowService]);
+
+  // Function to refresh flows data
+  const handleFlowsRefresh = () => {
+    refetchAllFlows();
+  };
 
   if (isLoading) {
     return (
@@ -86,7 +107,10 @@ function ManageFlowPage() {
           <LoadingState className="w-40 h-40" />
         </div>
       )}
-      <FlowList flows={flows} />
+      <FlowList 
+        flows={flowData} 
+        onFlowsRefresh={handleFlowsRefresh}
+      />
     </div>
   );
 }

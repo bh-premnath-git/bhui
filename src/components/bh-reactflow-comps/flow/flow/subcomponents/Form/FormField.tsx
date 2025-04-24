@@ -17,7 +17,7 @@ interface FormFieldProps {
   property: Property;
   value: any;
   onChange: (key: string, value: string) => void;
-  dependsOn?: string[];
+  depends_on?: string[];
   formValues?: Record<string, any>;
 }
 

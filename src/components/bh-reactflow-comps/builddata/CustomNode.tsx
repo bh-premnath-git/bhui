@@ -126,7 +126,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     const handleDelete = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        const { setEdges } = reactFlowInstance;
+        const { setEdges,setNodes } = reactFlowInstance;
         setNodes((nodes: any[]) => nodes.filter(node => node.id !== id));
         setEdges((edges: any[]) => edges.filter(edge =>
             edge.source !== id && edge.target !== id
@@ -134,6 +134,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         if (debuggedNodes.has(id)) {
             onDebugToggle(id, data.title);
         }
+        
     }, [id, setNodes, reactFlowInstance, debuggedNodes, onDebugToggle, data.title]);
 
     const handleClone = useCallback((e: React.MouseEvent) => {

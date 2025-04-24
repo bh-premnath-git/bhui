@@ -427,13 +427,13 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         console.log(nodesOrUpdater)
         // alert()
         // console.log(typeof nodesOrUpdater)
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => 
-                nodesOrUpdater(prevNodes).map(sanitizeNode)
-            );
-        } else {
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
     }, [ sanitizeNode]);
 
     // Update handleNodesChange
@@ -1288,8 +1288,21 @@ debuggedNodesList.forEach(checkpoint => {
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
-  
-        setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
+  setNodes((prevNodes) => {
+            const existingNode = prevNodes.find(n => n.id === uniqueId);
+            if (existingNode) {
+                return prevNodes.map(n => n.id === uniqueId ? { ...n, position: basePosition } : n);
+            }
+            return [...prevNodes, newNode];
+        });
+        setEdges((prevEdges) => {
+            const existingEdge = prevEdges.find(e => e.source === uniqueId);        
+            if (existingEdge) {
+                return prevEdges.map(e => e.source === uniqueId ? { ...e, target: source.id } : e);
+            }
+            return [...prevEdges, { id: `${uniqueId}-${source.id}`, source: uniqueId, target: source.id }];
+        });
+        // setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {

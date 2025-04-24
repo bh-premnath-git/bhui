@@ -422,20 +422,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         };
     }, []);
 
-    // Modify setNodes to sanitize nodes
-    const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        console.log(nodesOrUpdater)
-        // alert()
-        // console.log(typeof nodesOrUpdater)
-        // if (typeof nodesOrUpdater === 'function') {
-        //     setNodes((prevNodes) => 
-        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
-        //     );
-        // } else {
-        //     setNodes(nodesOrUpdater.map(sanitizeNode));
-        // }
-    }, [ sanitizeNode]);
-
+   
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
         const sanitizedChanges = changes.map((change: any) => {
@@ -464,7 +451,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [onNodesChange, dispatch, sanitizeNode]);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setSanitizedNodes(prevNodes =>
+        setNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -481,7 +468,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             })
         );
         setUnsavedChanges();
-    }, [setSanitizedNodes, dispatch]);
+    }, [setNodes, dispatch]);
 
     const handleCenter = useCallback(() => {
         try {
@@ -586,7 +573,7 @@ const makePipeline = async (result: any) => {
         );
         setUnsavedChanges();
        
-    }, [setSanitizedNodes, dispatch]);
+    }, [setNodes, dispatch]);
 
     const handleEdgesChange = useCallback((changes: any) => {
         onEdgesChange(changes);
@@ -603,7 +590,7 @@ const makePipeline = async (result: any) => {
             }));
 
             // Update node data with transformation data
-            setSanitizedNodes((nds) =>
+            setNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
@@ -628,7 +615,7 @@ const makePipeline = async (result: any) => {
             );
         }
         setIsFormOpen(false);
-    }, [selectedSchema, setSanitizedNodes]);
+    }, [selectedSchema]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);
@@ -1081,14 +1068,14 @@ debuggedNodesList.forEach(checkpoint => {
             }
         });
   
-        setSanitizedNodes(prevNodes => [...prevNodes, ...newNodes]);
+        setNodes(prevNodes => [...prevNodes, ...newNodes]);
         setEdges(prevEdges => [...prevEdges, ...newEdges]);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
             ...newFormStates
         })); 
         setUnsavedChanges();
-    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setSanitizedNodes, setEdges, setFormStates, dispatch]);
+    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setEdges, setFormStates, dispatch]);
 
     const handleCut = useCallback(() => {
         const selectedNodes = nodes.filter(node => node.selected);
@@ -1102,17 +1089,17 @@ debuggedNodesList.forEach(checkpoint => {
         setCopiedEdges(selectedEdges);
   
         addNodeToHistory();
-        setSanitizedNodes(nds => nds.filter(node => !node.selected));
+        setNodes(nds => nds.filter(node => !node.selected));
         setEdges(eds => eds.filter(edge => !edge.selected));
         setUnsavedChanges();
-    }, [nodes, edges, addNodeToHistory, setSanitizedNodes, setEdges, dispatch]);
+    }, [nodes, edges, addNodeToHistory, setEdges, dispatch]);
   
     const handleRedo = useCallback(() => {
         if (redoStack.length > 0) {
             const lastState = redoStack[redoStack.length - 1];
             setRedoStack((prev) => prev.slice(0, -1));
             setHistory((prev) => [...prev, { nodes, edges }]);
-            setSanitizedNodes(lastState.nodes);
+            setNodes(lastState.nodes);
             setEdges(lastState.edges);
         }
     }, [redoStack, nodes, edges]);
@@ -1122,7 +1109,7 @@ debuggedNodesList.forEach(checkpoint => {
             const lastState = history[history.length - 1];
             setHistory((prev) => prev.slice(0, -1));
             setRedoStack((prev) => [...prev, { nodes, edges }]);
-            setSanitizedNodes(lastState.nodes);
+            setNodes(lastState.nodes);
             setEdges(lastState.edges);
         }
     }, [history, nodes, edges]);
@@ -1296,13 +1283,12 @@ debuggedNodesList.forEach(checkpoint => {
             return [...prevNodes, newNode];
         });
        
-        // setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setSanitizedNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
+    }, [nodes, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;
@@ -1365,7 +1351,7 @@ debuggedNodesList.forEach(checkpoint => {
             };
         });
   
-        setSanitizedNodes(newNodes);
+        setNodes(newNodes);
   
         // Center the view
         setTimeout(() => {
@@ -1376,7 +1362,7 @@ debuggedNodesList.forEach(checkpoint => {
         }, 50);
   
         setUnsavedChanges();
-    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
+    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
   
     const handleAlignVertical = useCallback(() => {
         if (nodes.length === 0) return;
@@ -1439,7 +1425,7 @@ debuggedNodesList.forEach(checkpoint => {
             };
         });
   
-        setSanitizedNodes(newNodes);
+        setNodes(newNodes);
   
         // Center the view
         setTimeout(() => {
@@ -1450,11 +1436,11 @@ debuggedNodesList.forEach(checkpoint => {
         }, 50);
   
         setUnsavedChanges();
-    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
+    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
   
     const value = useMemo(() => ({
         nodes,
-        setNodes: setSanitizedNodes,
+        setNodes: setNodes,
         onNodesChange: handleNodesChange,
         edges,
         setEdges,
@@ -1558,7 +1544,7 @@ debuggedNodesList.forEach(checkpoint => {
         pipelineJson
     }), [
         nodes,
-        setSanitizedNodes,
+        setNodes,
         handleNodesChange,
         edges,
         setEdges,

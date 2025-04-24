@@ -422,7 +422,20 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         };
     }, []);
 
-   
+    // Modify setNodes to sanitize nodes
+    const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
+        console.log(nodesOrUpdater)
+        // alert()
+        // console.log(typeof nodesOrUpdater)
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
+    }, [ sanitizeNode]);
+
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
         const sanitizedChanges = changes.map((change: any) => {
@@ -451,7 +464,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [onNodesChange, dispatch, sanitizeNode]);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -468,7 +481,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             })
         );
         setUnsavedChanges();
-    }, [setNodes, dispatch]);
+    }, [setSanitizedNodes, dispatch]);
 
     const handleCenter = useCallback(() => {
         try {
@@ -555,7 +568,7 @@ const makePipeline = async (result: any) => {
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log(sourceData)
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -573,7 +586,7 @@ const makePipeline = async (result: any) => {
         );
         setUnsavedChanges();
        
-    }, [setNodes, dispatch]);
+    }, [setSanitizedNodes, dispatch]);
 
     const handleEdgesChange = useCallback((changes: any) => {
         onEdgesChange(changes);
@@ -590,7 +603,7 @@ const makePipeline = async (result: any) => {
             }));
 
             // Update node data with transformation data
-            setNodes((nds) =>
+            setSanitizedNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
@@ -615,7 +628,7 @@ const makePipeline = async (result: any) => {
             );
         }
         setIsFormOpen(false);
-    }, [selectedSchema]);
+    }, [selectedSchema, setSanitizedNodes]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);
@@ -1068,14 +1081,14 @@ debuggedNodesList.forEach(checkpoint => {
             }
         });
   
-        setNodes(prevNodes => [...prevNodes, ...newNodes]);
+        setSanitizedNodes(prevNodes => [...prevNodes, ...newNodes]);
         setEdges(prevEdges => [...prevEdges, ...newEdges]);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
             ...newFormStates
         })); 
         setUnsavedChanges();
-    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setEdges, setFormStates, dispatch]);
+    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setSanitizedNodes, setEdges, setFormStates, dispatch]);
 
     const handleCut = useCallback(() => {
         const selectedNodes = nodes.filter(node => node.selected);
@@ -1089,17 +1102,17 @@ debuggedNodesList.forEach(checkpoint => {
         setCopiedEdges(selectedEdges);
   
         addNodeToHistory();
-        setNodes(nds => nds.filter(node => !node.selected));
+        setSanitizedNodes(nds => nds.filter(node => !node.selected));
         setEdges(eds => eds.filter(edge => !edge.selected));
         setUnsavedChanges();
-    }, [nodes, edges, addNodeToHistory, setEdges, dispatch]);
+    }, [nodes, edges, addNodeToHistory, setSanitizedNodes, setEdges, dispatch]);
   
     const handleRedo = useCallback(() => {
         if (redoStack.length > 0) {
             const lastState = redoStack[redoStack.length - 1];
             setRedoStack((prev) => prev.slice(0, -1));
             setHistory((prev) => [...prev, { nodes, edges }]);
-            setNodes(lastState.nodes);
+            setSanitizedNodes(lastState.nodes);
             setEdges(lastState.edges);
         }
     }, [redoStack, nodes, edges]);
@@ -1109,7 +1122,7 @@ debuggedNodesList.forEach(checkpoint => {
             const lastState = history[history.length - 1];
             setHistory((prev) => prev.slice(0, -1));
             setRedoStack((prev) => [...prev, { nodes, edges }]);
-            setNodes(lastState.nodes);
+            setSanitizedNodes(lastState.nodes);
             setEdges(lastState.edges);
         }
     }, [history, nodes, edges]);
@@ -1275,20 +1288,14 @@ debuggedNodesList.forEach(checkpoint => {
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
-  setNodes((prevNodes) => {
-            const existingNode = prevNodes.find(n => n.id === uniqueId);
-            if (existingNode) {
-                return prevNodes.map(n => n.id === uniqueId ? { ...n, position: basePosition } : n);
-            }
-            return [...prevNodes, newNode];
-        });
-       
+  
+        setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, reactFlowInstance, dispatch, handleNodeUpdate]);
+    }, [nodes, setSanitizedNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;
@@ -1351,7 +1358,7 @@ debuggedNodesList.forEach(checkpoint => {
             };
         });
   
-        setNodes(newNodes);
+        setSanitizedNodes(newNodes);
   
         // Center the view
         setTimeout(() => {
@@ -1362,7 +1369,7 @@ debuggedNodesList.forEach(checkpoint => {
         }, 50);
   
         setUnsavedChanges();
-    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
   
     const handleAlignVertical = useCallback(() => {
         if (nodes.length === 0) return;
@@ -1425,7 +1432,7 @@ debuggedNodesList.forEach(checkpoint => {
             };
         });
   
-        setNodes(newNodes);
+        setSanitizedNodes(newNodes);
   
         // Center the view
         setTimeout(() => {
@@ -1436,11 +1443,11 @@ debuggedNodesList.forEach(checkpoint => {
         }, 50);
   
         setUnsavedChanges();
-    }, [nodes, edges, setNodes, dispatch, reactFlowInstance]);
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
   
     const value = useMemo(() => ({
         nodes,
-        setNodes: setNodes,
+        setNodes: setSanitizedNodes,
         onNodesChange: handleNodesChange,
         edges,
         setEdges,
@@ -1544,7 +1551,7 @@ debuggedNodesList.forEach(checkpoint => {
         pipelineJson
     }), [
         nodes,
-        setNodes,
+        setSanitizedNodes,
         handleNodesChange,
         edges,
         setEdges,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { ChatSlidingPortal } from '../flow-playground-header/components/ChatSlidingPortal';
-import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
+// import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
 
 interface AIButtonProps {
     variant: 'flow' | 'pipeline';
@@ -36,11 +36,12 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                 />
             </motion.button>
             {variant === 'pipeline' ? (
-                <PipeLineChatSlidingPortal
-                    isOpen={isChatOpen}
-                    onClose={() => setIsChatOpen(false)}
-                    imageSrc={ai}
-                />
+                <></>
+                // <PipeLineChatSlidingPortal
+                //     isOpen={isChatOpen}
+                //     onClose={() => setIsChatOpen(false)}
+                //     imageSrc={ai}
+                // />
             ) : (
                 <ChatSlidingPortal
                     isOpen={isChatOpen}

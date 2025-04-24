@@ -568,7 +568,7 @@ const makePipeline = async (result: any) => {
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log(sourceData)
-        setSanitizedNodes(prevNodes =>
+        setNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -1295,13 +1295,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
             return [...prevNodes, newNode];
         });
-        setEdges((prevEdges) => {
-            const existingEdge = prevEdges.find(e => e.source === uniqueId);        
-            if (existingEdge) {
-                return prevEdges.map(e => e.source === uniqueId ? { ...e, target: source.id } : e);
-            }
-            return [...prevEdges, { id: `${uniqueId}-${source.id}`, source: uniqueId, target: source.id }];
-        });
+       
         // setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   

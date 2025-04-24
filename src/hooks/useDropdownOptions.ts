@@ -60,7 +60,7 @@ export const useDropdownOptions = (
       if (path === 'pipeline') {
         setFlowPipeline(data);
         return Array.isArray(data)
-          ? data.map((item: any) => item.pipeline_name || '')
+          ? data.map((item: any) => item.pipeline_key || '')
           : [];
       }
 

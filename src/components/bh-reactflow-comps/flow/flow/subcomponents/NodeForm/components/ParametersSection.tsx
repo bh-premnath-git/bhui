@@ -127,7 +127,8 @@ export const ParametersSection = React.memo<Props>(
                 }
                 canDelete={!isReadOnly && parametersArray.length > 1}
                 className={isFromPipeline ? 'bg-blue-50 border-blue-200' : undefined}
-                readOnly={isReadOnly}
+                readOnlyKey={isReadOnly}
+                readOnlyValue={false}
               />
             );
           })}

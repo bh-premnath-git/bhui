@@ -3,7 +3,7 @@ import { useCallback } from "react";
 interface UseNodeFormInputProps {
   selectedNode: any;
   currentFormData: Record<string, any>;
-  dependsOn: any;
+  depends_on: any;
   updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
   saveFlow: () => void;
   taskID: string;
@@ -12,7 +12,7 @@ interface UseNodeFormInputProps {
 export function useNodeFormInput({
   selectedNode,
   currentFormData,
-  dependsOn,
+  depends_on,
   updateNodeFormData,
   saveFlow,
   taskID,
@@ -31,7 +31,7 @@ export function useNodeFormInput({
       // Don't call saveFlow here - this causes a continuous loop
       // Let the parent component handle saving at appropriate times
     },
-    [selectedNode, currentFormData, dependsOn, updateNodeFormData, taskID]
+    [selectedNode, currentFormData, depends_on, updateNodeFormData, taskID]
   );
 
   return handleInputChange;

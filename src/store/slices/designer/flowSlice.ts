@@ -217,6 +217,23 @@ export const createFlowAgentConversationEntry = createAsyncThunk(
     }
 );
 
+export const deployDag = createAsyncThunk(
+    "flows/deployDag",
+    async (data: { flow_definition_id: number; flow_deployment_id: number }) => {
+        const response = await apiService.post<any>({ // Assuming 'any' response type for now
+            portNumber: CATALOG_API_PORT,
+            url: '/flow/flow-definition/deploy-dag',
+            params: data, // Sending data as query parameters
+            usePrefix: true,
+            method: 'POST',
+            metadata: {
+                errorMessage: 'Failed to deploy DAG'
+            }
+        });
+        return response;
+    }
+);
+
 const flowSlice = createSlice({
     name: 'flow',
     initialState,
@@ -473,6 +490,18 @@ const flowSlice = createSlice({
             .addCase(createFlowAgentConversationEntry.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message || 'Failed to create flow agent conversation entry';
+            })
+            .addCase(deployDag.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deployDag.fulfilled, (state, action) => {
+                state.loading = false;
+                console.log('DAG deployed successfully:', action.payload); 
+            })
+            .addCase(deployDag.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message || 'Failed to deploy DAG';
             });
     },
 });

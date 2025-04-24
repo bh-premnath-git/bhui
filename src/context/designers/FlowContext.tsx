@@ -481,10 +481,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // First, reset all dependsOn arrays
+      // First, reset all depends_on arrays
       updatedFormData.forEach(item => {
-        if (item.formData && item.formData.dependsOn) {
-          item.formData.dependsOn = [];
+        if (item.formData && item.formData.depends_on) {
+          item.formData.depends_on = [];
         }
       });
 
@@ -499,15 +499,15 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
               updatedFormData[targetNodeIndex].formData = {};
             }
 
-            // Ensure we have a dependsOn array
-            if (!updatedFormData[targetNodeIndex].formData.dependsOn) {
-              updatedFormData[targetNodeIndex].formData.dependsOn = [];
+            // Ensure we have a depends_on array
+            if (!updatedFormData[targetNodeIndex].formData.depends_on) {
+              updatedFormData[targetNodeIndex].formData.depends_on = [];
             }
 
             // Add the dependency if it doesn't exist already
-            const dependsOn = updatedFormData[targetNodeIndex].formData.dependsOn;
-            if (!dependsOn.includes(sourceTaskId)) {
-              updatedFormData[targetNodeIndex].formData.dependsOn = [...dependsOn, sourceTaskId];
+            const depends_on = updatedFormData[targetNodeIndex].formData.depends_on;
+            if (!depends_on.includes(sourceTaskId)) {
+              updatedFormData[targetNodeIndex].formData.depends_on = [...depends_on, sourceTaskId];
             }
           }
         }

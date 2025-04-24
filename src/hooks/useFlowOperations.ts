@@ -54,8 +54,8 @@ export function useFlowOperations(
         const type = node.data.selectedData;
         updatedFormData.type = type
 
-        const dependsOn = prevNodeFn(matchFormData.nodeId)?.map(node => node) ?? [];
-        updatedFormData.dependsOn = dependsOn;
+        const depends_on = prevNodeFn(matchFormData.nodeId)?.map(node => node) ?? [];
+        updatedFormData.depends_on = depends_on;
 
         return { ...matchFormData, formData: updatedFormData };
       });

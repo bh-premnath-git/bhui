@@ -65,7 +65,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     useEffect(() => {
         console.log("Resetting pipeline data due to pipeline change");
         setPipelineData(null); // Clear current data
-        
         // Then fetch the new data (happens in the next effect)
     }, [flowPipeline]); // Only flowPipeline, not getPipelineDetails to avoid over-triggering
     
@@ -115,13 +114,13 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [nodeFormData, selectedNode.id]
     );
 
-    const dependsOn = useMemo(
+    const depends_on = useMemo(
         () => prevNodeFn(selectedNode.id) ?? [],
         [prevNodeFn, selectedNode.id]
     );
 
     const taskID = useMemo(
-        () => `${selectedNode.data.label}-${selectedValue}-${createShortUUID()}`,
+        () => `${selectedNode.data.label}_${selectedValue}_${createShortUUID()}`,
         [selectedNode.data.label, selectedValue]
     );
 
@@ -129,7 +128,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const handleInputChange = useNodeFormInput({
         selectedNode,
         currentFormData,
-        dependsOn,
+        depends_on,
         updateNodeFormData,
         saveFlow,
         taskID,
@@ -205,40 +204,39 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         const newFormData = [...nodeFormData];
         const idx = newFormData.findIndex((i) => i.nodeId === selectedNode.id);
 
-        let parameters: ParameterItem[] = [];
+        let rawParameters: ParameterItem[] = [];
         if (Array.isArray(currentFormData.parameters)) {
-            parameters = [...currentFormData.parameters];
+            rawParameters = [...currentFormData.parameters];
         } else if (defaultParameters.length) {
-            parameters = [...defaultParameters];
+            rawParameters = [...defaultParameters];
         } else {
-            parameters = [{ key: "", value: "" }];
+            rawParameters = [];
         }
+
+        console.log("[NodeForm] Raw parameters before filtering:", JSON.stringify(rawParameters));
+
+        // Filter out parameters where the value is null OR the parameter itself is null
+        const parameters = rawParameters.filter(p => p !== null && p.value !== null);
+        console.log("[NodeForm] Parameters after filtering:", JSON.stringify(parameters));
 
         const updatedFormData = {
             nodeId: selectedNode.id,
             formData: {
                 ...currentFormData,
-                task_id: currentFormData.task_id || taskID,
+                task_id: `${currentFormData.task_id || taskID}`.toLowerCase(),
                 type: selectedValue,
-                dependsOn: prevNodeFn(selectedNode.id) || [],
+                depends_on: prevNodeFn(selectedNode.id) || [],
                 parameters,
             },
         };
 
         if (idx >= 0) newFormData[idx] = updatedFormData;
         else newFormData.push(updatedFormData);
-
-        console.log("Updating node form data");
         updateNodeFormData(selectedNode.id, updatedFormData.formData);
-
-        console.log("Calling updateNodeDependencies and setFormDataNum");
         updateNodeDependencies();
         setFormDataNum((p) => p + 1);
 
-        console.log("Calling updateFlowDefinitionOnServer");
-        console.log("Selected flow:", selectedFlow);
-        console.log("Selected flow ID:", selectedFlowId);
-        console.log("Flow config map:", flowConfigMap);
+        console.log("[NodeForm] Final newFormData being sent:", JSON.stringify(newFormData));
 
         // Call updateFlowDefinitionOnServer directly without setTimeout
         updateFlowDefinitionOnServer(
@@ -360,14 +358,45 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             );
             const fields = req?.[val] || [];
             setRequiredFieldsState(fields);
+            
+            // Update node metadata
             updateNodeMeta(
                 selectedNode.id,
                 { type: val },
                 { type: val, requiredFields: fields }
             );
             updatedSelectedNodeId(selectedNode.id, val);
+
+            // When EmrAddStepsOperator is selected, initialize with pipeline parameters
+            if (val === 'EmrAddStepsOperator' && pipelineData?.pipeline_parameters?.length) {
+                console.log("Adding pipeline parameters to form data for EmrAddStepsOperator");
+                
+                // Get current parameters (if any)
+                let currentParams = Array.isArray(currentFormData.parameters) 
+                    ? [...currentFormData.parameters] 
+                    : [];
+                
+                // Create a map of current parameters by key for efficient lookup
+                const paramMap = new Map();
+                currentParams.forEach(p => {
+                    if (p && p.key) paramMap.set(p.key, p);
+                });
+                
+                // Add pipeline parameters that aren't already in currentParams
+                pipelineData.pipeline_parameters.forEach(p => {
+                    if (p && p.key && !paramMap.has(p.key)) {
+                        currentParams.push(p);
+                    }
+                });
+                
+                // Update form data with combined parameters
+                updateNodeFormData(selectedNode.id, {
+                    ...currentFormData,
+                    parameters: currentParams,
+                });
+            }
         },
-        [selectedNode, updateNodeMeta, updatedSelectedNodeId]
+        [selectedNode, updateNodeMeta, updatedSelectedNodeId, pipelineData, currentFormData, updateNodeFormData]
     );
 
     useEffect(() => {
@@ -378,6 +407,41 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     useEffect(() => {
         setRequiredFieldsState(selectedNode.data.requiredFields);
     }, [selectedNode.data.requiredFields]);
+
+    // Initialize pipeline parameters when pipelineData changes and type is EmrAddStepsOperator
+    useEffect(() => {
+        if (selectedValue === 'EmrAddStepsOperator' && pipelineData?.pipeline_parameters?.length) {
+            console.log("Initializing pipeline parameters for EmrAddStepsOperator from effect");
+            
+            // Get current parameters (if any)
+            let currentParams = Array.isArray(currentFormData.parameters) 
+                ? [...currentFormData.parameters] 
+                : [];
+            
+            // Create a map of current parameters by key
+            const paramMap = new Map();
+            currentParams.forEach(p => {
+                if (p && p.key) paramMap.set(p.key, p);
+            });
+            
+            // Add pipeline parameters that aren't already in currentParams
+            let hasNewParams = false;
+            pipelineData.pipeline_parameters.forEach(p => {
+                if (p && p.key && !paramMap.has(p.key)) {
+                    currentParams.push(p);
+                    hasNewParams = true;
+                }
+            });
+            
+            // Only update if we added new parameters
+            if (hasNewParams) {
+                updateNodeFormData(selectedNode.id, {
+                    ...currentFormData,
+                    parameters: currentParams,
+                });
+            }
+        }
+    }, [pipelineData, selectedValue, currentFormData, selectedNode, updateNodeFormData]);
 
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg overflow-visible">
@@ -446,7 +510,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                                 properties={groupedProperties.property}
                                 formValues={currentFormData}
                                 onInputChange={handleInputChange}
-                                dependsOn={dependsOn}
+                                depends_on={depends_on}
                             />
                         </ScrollArea>
                     </TabsContent>
@@ -457,7 +521,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                                 properties={groupedProperties.settings}
                                 formValues={currentFormData}
                                 onInputChange={handleInputChange}
-                                dependsOn={dependsOn}
+                                depends_on={depends_on}
                             />
                         </ScrollArea>
                     </TabsContent>

@@ -11,16 +11,31 @@ interface Props {
   canDelete: boolean;
   className?: string;
   readOnly?: boolean;
+  readOnlyKey?: boolean;
+  readOnlyValue?: boolean;
 }
 
 /**
  * Component to render a single parameter row
  */
 export const ParameterRow = React.memo<Props>(
-  ({ parameter, onDelete, onChange, canDelete, className = "", readOnly = false }) => {
+  ({ 
+    parameter, 
+    onDelete, 
+    onChange, 
+    canDelete, 
+    className = "", 
+    readOnly = false,
+    readOnlyKey,
+    readOnlyValue 
+  }) => {
     if (!parameter) {
       return null;
     }
+
+    // For backwards compatibility, if readOnlyKey/Value not specified, use readOnly
+    const isKeyReadOnly = readOnlyKey !== undefined ? readOnlyKey : (!canDelete || readOnly);
+    const isValueReadOnly = readOnlyValue !== undefined ? readOnlyValue : readOnly;
 
     return (
       <div
@@ -34,9 +49,9 @@ export const ParameterRow = React.memo<Props>(
             value={parameter.key ?? ""}
             onChange={(e) => onChange("key", e.target.value)}
             className={`w-full focus:outline-none ${
-              !canDelete || readOnly ? "border-gray-200" : ""
+              isKeyReadOnly ? "border-gray-200" : ""
             }`}
-            readOnly={!canDelete || readOnly}
+            readOnly={isKeyReadOnly}
           />
         </div>
         <div className="w-1/2">
@@ -44,8 +59,8 @@ export const ParameterRow = React.memo<Props>(
             placeholder="Value"
             value={String(parameter.value ?? "")}
             onChange={(e) => onChange("value", e.target.value)}
-            className={`w-full focus:outline-none ${readOnly ? "border-gray-200" : ""}`}
-            readOnly={readOnly}
+            className={`w-full focus:outline-none ${isValueReadOnly ? "border-gray-200" : ""}`}
+            readOnly={isValueReadOnly}
           />
         </div>
         <Button

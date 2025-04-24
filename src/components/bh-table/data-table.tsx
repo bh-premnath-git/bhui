@@ -84,6 +84,13 @@ export function DataTable<TData>({
     getFilteredRowModel: getFilteredRowModel(),
   })
 
+  // Update the table when data changes
+  useEffect(() => {
+    if (table) {
+      table.setPageIndex(pageIndex !== undefined ? pageIndex : 0);
+    }
+  }, [table, pageIndex, data]);
+
   useEffect(() => {
     if (!isInitialized && table) {
       setIsInitialized(true)

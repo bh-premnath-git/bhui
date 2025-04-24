@@ -45,10 +45,10 @@ export const useFlow = () => {
   );
 
   // List flows with pagination
-  const fetchFlowsList = (enabled = true) =>
+  const fetchFlowsList = (page = 1, pageSize = 10, enabled = true) =>
     getAllFlows({
       url: '/flow/list/',
-      params: {limit:1000},
+      params: { page, limit: pageSize },
       queryOptions: {
         enabled,
         retry: 2

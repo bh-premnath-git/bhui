@@ -6,13 +6,13 @@ interface FormLayoutProps {
   properties: Property[];
   formValues: FormValues;
   onInputChange: (key: string, value: any) => void;
-  dependsOn?: string[];
+  depends_on?: string[];
 }
 
 export const FormLayout: React.FC<FormLayoutProps> = React.memo(({ 
   properties, 
   formValues, 
-  dependsOn, 
+  depends_on, 
   onInputChange 
 }) => {
   const rows: Property[][] = [];
@@ -47,7 +47,7 @@ export const FormLayout: React.FC<FormLayoutProps> = React.memo(({
               property={property}
               value={formValues[property.ui_properties.property_key] || ''}
               onChange={onInputChange}
-              dependsOn={dependsOn}
+              depends_on={depends_on}
               formValues={formValues}
             />
           ))}

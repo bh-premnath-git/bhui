@@ -27,7 +27,7 @@ export const navigationItems: NavItem[] = [
     path: ROUTES.DATA_CATALOG,
   },
   {
-    title: "Data Explorer",
+    title: "Data Xplorer",
     icon: BarChart,
     path: `${ROUTES.DATA_CATALOG}/xplorer`,
     subItems: [],
@@ -42,19 +42,19 @@ export const navigationItems: NavItem[] = [
     path: ROUTES.DESIGNERS.INDEX,
     subItems: [
       {
-        title: "Build Data Pipelines",
+        title: "Data Pipelines",
         icon: Share2,
         path: ROUTES.DESIGNERS.BUILD_PIPELINE,
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {
-        title: "Manage Flow",
+        title: "Data Flow",
         icon: GitBranch,
         path: ROUTES.DESIGNERS.MANAGE_FLOW,
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {
-        title: "Notebook",
+        title: "Notebooks",
         icon: NotebookText,
         path: ROUTES.DESIGNERS.NOTEBOOK,
         parent: ROUTES.DESIGNERS.INDEX,

@@ -28,7 +28,7 @@ export function AIChatInput({
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute left-2 h-8 w-8 text-muted-foreground hover:text-foreground"
+        className="absolute left-2 h-8 w-8 text-muted-foreground hover:text-foreground transition-colors duration-200 z-10"
         aria-label="Voice input"
         onClick={onVoiceInput}
       >
@@ -46,7 +46,7 @@ export function AIChatInput({
             onSend();
           }
         }}
-        className="pl-12 pr-32 min-h-[48px] max-h-[200px] rounded-full border-muted bg-background resize-none overflow-hidden"
+        className="pl-12 pr-32 min-h-[48px] max-h-[200px] rounded-full border-muted bg-background resize-none overflow-hidden shadow-sm focus:ring-1 focus:ring-green-400 focus:border-green-400 transition-all duration-200"
         aria-label="Chat input"
         rows={1}
         style={{
@@ -67,7 +67,7 @@ export function AIChatInput({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors duration-200"
           aria-label="Copy"
           onClick={onCopy}
         >
@@ -79,7 +79,11 @@ export function AIChatInput({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90"
+          className={`h-8 w-8 transition-colors duration-200 ${
+            disabled || !input.trim() 
+              ? 'bg-green-300 text-white cursor-not-allowed opacity-70' 
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
           onClick={onSend}
           disabled={disabled || !input.trim()}
           aria-label="Send message"

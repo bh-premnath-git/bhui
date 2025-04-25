@@ -24,20 +24,8 @@ import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText,
 import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import SchemaFormLoader from "./SchemaFormLoader";
+import { DataSource } from "@/types/data-catalog/dataCatalog";
 
-interface DataSource {
-  data_src_id: number;
-  data_src_name: string;
-  data_src_desc: string;
-  connection_config: {
-    connection_config_name: string;
-    custom_metadata: {
-      connection_type: string;
-      schema: string;
-      database: string;
-    };
-  };
-}
 
 interface SuggestionButtonProps {
   text: string;
@@ -47,7 +35,13 @@ interface SuggestionButtonProps {
   className?: string;
 }
 
-const SuggestionButton = ({ text, icon, onClick, variant = 'outline', className = '' }: SuggestionButtonProps) => {
+const SuggestionButton = ({
+  text,
+  icon,
+  onClick,
+  variant = 'outline',
+  className = ''
+}: SuggestionButtonProps) => {
   // Create a handler that directly executes the action without setting input
   const handleClick = () => {
     // Call the onClick handler directly
@@ -59,10 +53,10 @@ const SuggestionButton = ({ text, icon, onClick, variant = 'outline', className 
       variant={variant}
       size="sm"
       onClick={handleClick}
-      className={`mr-2 mb-2 flex items-center gap-1 ${className}`}
+      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-200 ${className}`}
     >
-      {icon}
-      <span>{text}</span>
+      {icon && <span className="flex-shrink-0">{icon}</span>}
+      <span className="truncate">{text}</span>
     </Button>
   );
 };
@@ -89,7 +83,7 @@ export const PipeLineChatPanel = ({
   const [step, setStep] = useState<'name' | 'source' | 'transformations' | 'confirm'>('name');
   const [pipelineName, setPipelineName] = useState('');
   const [pipelineDescription, setPipelineDescription] = useState('');
-  const [selectedSources, setSelectedSources] = useState<DataSource[]>([]);
+  const [selectedSources, setSelectedSources] = useState<any[]>([]);
   const [transformations, setTransformations] = useState<string[]>([]);
 
   // Target configuration state
@@ -1339,28 +1333,25 @@ export const PipeLineChatPanel = ({
 
         {isNewChat || messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
-            <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                <img
-                  src={imageSrc}
-                  alt="AI"
-                  className="w-5 h-7 transform -rotate-[40deg]"
-                />
-              </div>
-              <div className="text-center space-y-1.5 max-w-sm">
-                <p className="text-lg font-medium">How can I assist with your pipeline?</p>
-                <div className="flex justify-center items-center"> 
-                  <Button
-                    onClick={startPipelineCreation}
-                    className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Start Pipeline
-                  </Button>
-                </div>
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              <img
+                src={imageSrc}
+                alt="AI"
+                className="w-5 h-7 transform -rotate-[40deg]"
+              />
+            </div>
+            <div className="text-center space-y-1.5 max-w-sm">
+              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
+              <div className="flex justify-center items-center"> {/* Updated here */}
+                <Button
+                  onClick={startPipelineCreation}
+                  className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Start Pipeline
+                </Button>
               </div>
             </div>
-
           </div>
         ) : (
           <ScrollArea className="flex-1 px-6 py-4">
@@ -1372,7 +1363,7 @@ export const PipeLineChatPanel = ({
                     }`}
                 >
                   {message.role === "assistant" && (
-                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
                       <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
@@ -1502,6 +1493,7 @@ export const PipeLineChatPanel = ({
                                 <SuggestionButton
                                   text="Continue to transformations"
                                   icon={<ChevronDown className="h-3 w-3" />}
+                                  //tooltip="Proceed to the next step"
                                   onClick={() => {
                                     addUserMessage("Continue to transformations");
                                     // Explicitly set the step to 'transformations' and sub-step to 'select'
@@ -1877,7 +1869,7 @@ export const PipeLineChatPanel = ({
               ))}
               {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-start gap-4 px-1">
-                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1">
+                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
                     <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>

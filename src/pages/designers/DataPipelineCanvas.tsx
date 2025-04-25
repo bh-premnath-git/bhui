@@ -1,11 +1,10 @@
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
-import DataPipelineCanvas  from '@/features/designers/DataPipelineCanvas';
+import DataPipelineCanvasNew  from '@/features/designers/DataPipelineCanvasNew';
 
 const DataPipelineCanvasPage = () => {
   return (
     <div className="h-[90%] w-full">
-      
-        <DataPipelineCanvas />
+        <DataPipelineCanvasNew />
       </div>
   )
 }

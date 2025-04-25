@@ -244,16 +244,47 @@ export function Sidebar() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={theme === 'dark'}
-                    onCheckedChange={toggleTheme}
-                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-90"
-                  />
-                  {theme === 'dark' ? (
-                    <Moon className="h-4 w-4 text-yellow-300" />
-                  ) : (
-                    <Sun className="h-4 w-4 text-amber-500" />
+                <div className="flex items-center gap-2 relative">
+                  <div className="relative">
+                    <Switch
+                      checked={theme === 'dark'}
+                      onCheckedChange={toggleTheme}
+                      className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-90"
+                    />
+                    
+                    {/* Custom thumb with icon */}
+                    <div 
+                      className={cn(
+                        "absolute top-0 left-0 pointer-events-none",
+                        "h-5 w-10 flex items-center",
+                        "transition-all duration-300"
+                      )}
+                    >
+                      <div 
+                        className={cn(
+                          "h-[18px] w-[18px] rounded-full flex items-center justify-center",
+                          "transition-all duration-300 transform shadow-sm",
+                          theme === 'dark' 
+                            ? "translate-x-[18px] bg-primary/90" 
+                            : "translate-x-[2px] bg-amber-50"
+                        )}
+                      >
+                        {theme === 'dark' ? (
+                          <Moon className="h-3 w-3 text-white drop-shadow-[0_0_1px_rgba(255,255,255,0.5)]" />
+                        ) : (
+                          <Sun className="h-3 w-3 text-amber-600 drop-shadow-[0_0_1px_rgba(180,83,9,0.3)]" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {isExpanded && (
+                    <span className={cn(
+                      "text-sm ml-1 font-medium",
+                      theme === 'dark' ? "text-blue-100" : "text-amber-600"
+                    )}>
+                      {theme === 'dark' ? 'Dark' : 'Light'}
+                    </span>
                   )}
                 </div>
               </TooltipTrigger>

@@ -7,7 +7,7 @@ const designerOptions = [
   {
     id: 2,
     icon: <Network className="w-6 h-6 text-foreground" />,
-    title: "Build Data Pipeline",
+    title: "Data Pipeline",
     desc: "Transform and enrich data via UI driven approach. Combine multiple datasets and create enriched data sets.",
     buttonText: 'Build Pipeline',
     link: ROUTES.DESIGNERS.BUILD_PIPELINE,
@@ -16,16 +16,16 @@ const designerOptions = [
   {
     id: 3,
     icon: <GitBranch className="w-6 h-6 text-foreground" />,
-    title: "Manage Flow",
+    title: "Data Flow",
     desc: "Manage pipeline flows in Airflow. Schedule flows using cron expressions.",
-    buttonText: 'Manage Flow',
+    buttonText: 'Build Flow',
     link: ROUTES.DESIGNERS.MANAGE_FLOW,
     gradient: "from-emerald-500/20 via-emerald-300/20 to-blue-500/20"
   },
   {
     id: 4,
     icon: <NotebookText className="w-6 h-6 text-foreground" />,
-    title: "Notebook",
+    title: "Notebooks",
     desc: "Create interactive notebooks to analyze data, develop algorithms and document your data science workflows.",
     buttonText: 'Open Notebook',
     link: ROUTES.DESIGNERS.NOTEBOOK,

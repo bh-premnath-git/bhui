@@ -13,10 +13,18 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { useReactFlow } from "reactflow";
 import { apiService } from '@/lib/api/api-service';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import SchemaFormLoader from "./SchemaFormLoader";
+import { DataSource } from "@/types/data-catalog/dataCatalog";
 
 
 interface SuggestionButtonProps {
@@ -27,11 +35,11 @@ interface SuggestionButtonProps {
   className?: string;
 }
 
-const SuggestionButton = ({ 
-  text, 
-  icon, 
-  onClick, 
-  variant = 'outline', 
+const SuggestionButton = ({
+  text,
+  icon,
+  onClick,
+  variant = 'outline',
   className = ''
 }: SuggestionButtonProps) => {
   // Create a handler that directly executes the action without setting input
@@ -54,9 +62,9 @@ const SuggestionButton = ({
 };
 
 
-export const PipeLineChatPanel = ({ 
-  onClose, 
-  imageSrc="/assets/ai/ai.svg",
+export const PipeLineChatPanel = ({
+  onClose,
+  imageSrc = "/assets/ai/ai.svg",
   onPipelineCreated,
   className = ""
 }: any) => {
@@ -69,7 +77,7 @@ export const PipeLineChatPanel = ({
   const { setPipelineJson, setNodes, setEdges, setFormStates } = usePipelineContext();
   const [isNewChat, setIsNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Pipeline creation state
   const [mode, setMode] = useState<'chat' | 'create'>('chat');
   const [step, setStep] = useState<'name' | 'source' | 'transformations' | 'confirm'>('name');
@@ -77,7 +85,7 @@ export const PipeLineChatPanel = ({
   const [pipelineDescription, setPipelineDescription] = useState('');
   const [selectedSources, setSelectedSources] = useState<any[]>([]);
   const [transformations, setTransformations] = useState<string[]>([]);
-  
+
   // Target configuration state
   const [targetConfig, setTargetConfig] = useState<{
     type: 'Database' | 'File' | 'Custom';
@@ -111,7 +119,7 @@ export const PipeLineChatPanel = ({
     setPipelineDescription('');
     setSelectedSources([]);
     setTransformations([]);
-    
+
     // Reset target configuration
     setTargetConfig({
       type: 'File',
@@ -119,7 +127,7 @@ export const PipeLineChatPanel = ({
       filePath: 'examples/',
       fileFormat: 'CSV'
     });
-    
+
     // Reset form states
     setShowFilterForm(false);
     setShowSchemaForm(false);
@@ -135,17 +143,17 @@ export const PipeLineChatPanel = ({
   const startPipelineCreation = () => {
     setMode('create');
     clearMessages();
-    
+
     // Set default values for pipeline name and description
     setPipelineName("New Pipeline");
     setPipelineDescription("Data pipeline created with AI assistant");
-    
+
     // Skip asking for name and description, directly ask for data source
     addAssistantMessage("Hi! I'll help you create a new data pipeline. Let's add a data source to your pipeline. Please enter the name of a data source you'd like to search for (e.g., \"sales_data\").");
-    
+
     // Set step directly to source
     setStep('source');
-    
+
     // Build and update the pipeline template with the default values
     const pipelineTemplate = buildPipelineTemplate();
     setPipelineJson(pipelineTemplate);
@@ -198,7 +206,7 @@ export const PipeLineChatPanel = ({
     selectedSources.forEach((source: any) => {
       const sourceId = `source_${source.data_src_id}`;
       const connectionId = `connection_${source.data_src_id}`;
-      
+
       if (source.connection_config?.custom_metadata?.connection_type) {
         // Database source
         sources[sourceId] = {
@@ -226,14 +234,14 @@ export const PipeLineChatPanel = ({
       // Add target - dynamically build based on target configuration
       const targetId = "target_output";
       const targetName = targetConfig.customConfig?.name || "output_data";
-      
+
       // Build the target object based on the target configuration
       const targetObj: Record<string, any> = {
         "name": targetName,
         "target_type": targetConfig.type,
         "load_mode": targetConfig.customConfig?.loadMode || "overwrite"
       };
-      
+
       // Add type-specific properties
       if (targetConfig.type === 'Database') {
         targetObj.table_name = targetName;
@@ -244,13 +252,13 @@ export const PipeLineChatPanel = ({
           "database": targetConfig.database || "",
           "secret_name": targetConfig.customConfig?.secretName || "default_secret"
         };
-        
+
         // If using source connection, copy connection details from source
-        if (useSourceConnection && selectedSources.length > 0 && 
-            selectedSources[0].connection_config?.custom_metadata?.connection_type) {
+        if (useSourceConnection && selectedSources.length > 0 &&
+          selectedSources[0].connection_config?.custom_metadata?.connection_type) {
           const sourceId = `connection_${selectedSources[0].data_src_id}`;
           const sourceConnection = connections[sourceId];
-          
+
           targetObj.connection = {
             "name": sourceConnection.name,
             "connection_type": sourceConnection.connection_type,
@@ -270,7 +278,7 @@ export const PipeLineChatPanel = ({
         // For custom target types, use the customConfig directly
         Object.assign(targetObj, targetConfig.customConfig || {});
       }
-      
+
       pipelineTemplate.targets[targetId] = targetObj;
     }
 
@@ -317,8 +325,8 @@ export const PipeLineChatPanel = ({
       // Create filter transformation with user-provided condition or default
       transformationsList.push({
         "name": "filter_transformation",
-        "dependent_on": transformations.includes('schema') 
-          ? ["schema_transformation"] 
+        "dependent_on": transformations.includes('schema')
+          ? ["schema_transformation"]
           : readerTransformations.map(t => t.name),
         "transformation": "Filter",
         "condition": filterCondition || "age >= 18"
@@ -327,10 +335,10 @@ export const PipeLineChatPanel = ({
 
     // Add writer transformation only if target is selected
     if (transformations.includes('target') && pipelineTemplate.targets["target_output"]) {
-      const lastTransformationName = transformationsList.length > 0 
-        ? transformationsList[transformationsList.length - 1].name 
+      const lastTransformationName = transformationsList.length > 0
+        ? transformationsList[transformationsList.length - 1].name
         : readerTransformations.map(t => t.name);
-      
+
       transformationsList.push({
         "name": "write_output",
         "dependent_on": Array.isArray(lastTransformationName) ? lastTransformationName : [lastTransformationName],
@@ -353,12 +361,12 @@ export const PipeLineChatPanel = ({
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    
+
     setIsProcessing(true);
     try {
       // Add user message to chat
       addUserMessage(input);
-      
+
       if (mode === 'create') {
         // Handle pipeline creation flow
         switch (step) {
@@ -373,14 +381,14 @@ export const PipeLineChatPanel = ({
             await handleConfirmStep(input);
             break;
         }
-        
+
         // Log the current pipeline template
         console.log("Current pipeline template:", buildPipelineTemplate());
       } else {
         // Regular chat mode
         addAssistantMessage("This is a placeholder response. The actual API functionality has been removed.");
       }
-      
+
       // Clear the input field
       setInput("");
     } catch (error) {
@@ -395,13 +403,13 @@ export const PipeLineChatPanel = ({
     // Extract pipeline name from user input
     const name = input.trim();
     setPipelineName(name);
-    
+
     // Ask for description with yes/no options
     addAssistantMessage(`Great! Your pipeline will be named "${name}". Would you like to add a description for your pipeline? (Yes/No)`);
-    
+
     // Move to description or source step based on next user input
     setStep('source');
-    
+
     // Build and update the pipeline template
     const pipelineTemplate = buildPipelineTemplate();
     setPipelineJson(pipelineTemplate);
@@ -422,11 +430,11 @@ export const PipeLineChatPanel = ({
       );
       return;
     }
-    
+
     // Search for data sources
     try {
       setIsProcessing(true);
-      const response:any = await apiService.get({
+      const response: any = await apiService.get({
         portNumber: CATALOG_API_PORT,
         url: `/data_source/list/`,
         usePrefix: true,
@@ -438,52 +446,52 @@ export const PipeLineChatPanel = ({
           order_desc: false
         }
       });
-      
+
       if (response && response.length > 0) {
         // Store the found sources
-        const sources: any[] = response;
-        
+        const sources: DataSource[] = response;
+
         // Get the first source
-        const selectedSource:any = sources[0];
+        const selectedSource: any = sources[0];
         console.log(selectedSource);
-        
+
         // Store the source data for the form
         setCurrentSourceData(selectedSource);
-        
+
         // Log the source data for debugging
         console.log("Selected source data:", selectedSource);
-        
+
         // Determine if it's a relational or file source
-        const isRelational = selectedSource.connection_config.custom_metadata.connection_type =="S3" || selectedSource.connection_config.custom_metadata.connection_type =="Local" ? false : true;
-        
+        const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
+
         // Create initial values for the reader form
-        const readerInitialValues:any = {
+        const readerInitialValues: any = {
           reader_name: selectedSource.data_src_name,
           source: {
             type: isRelational ? 'Relational' : 'File',
-            file_path:isRelational? null: selectedSource.file_path_prefix || selectedSource.file_path || `examples/${selectedSource.data_src_name}.csv`,
-            data_src_id:selectedSource?.data_src_id,
+            file_path: isRelational ? null : selectedSource.file_path_prefix || selectedSource.file_path || `examples/${selectedSource.data_src_name}.csv`,
+            data_src_id: selectedSource?.data_src_id,
             connection: selectedSource.connection_config.custom_metadata
           },
-          file_type:isRelational?null: selectedSource.file_type || 'CSV',
+          file_type: isRelational ? null : selectedSource.file_type || 'CSV',
           read_options: {
             header: selectedSource.read_options?.header !== undefined ? selectedSource.read_options.header : true,
             delimiter: selectedSource.read_options?.delimiter || ',',
             quote: selectedSource.read_options?.quote || '"'
           }
         };
-        
+
         // If there's a query, add it
         if (selectedSource.query) {
           readerInitialValues.query = selectedSource.query;
         }
-        
+
         // Log the form values for debugging
         console.log("Reader form initial values:", readerInitialValues);
-        
+
         setReaderFormInitialValues(readerInitialValues);
         setShowReaderForm(true);
-        
+
         addAssistantMessage(
           `I found the data source "${selectedSource.data_src_name}". Please review and customize the reader configuration below:`
         );
@@ -506,20 +514,20 @@ export const PipeLineChatPanel = ({
   const [targetName, setTargetName] = useState('');
   const [useSourceConnection, setUseSourceConnection] = useState(true);
   const [transformationSubStep, setTransformationSubStep] = useState<
-    'select' | 
-    'filter_condition' | 
+    'select' |
+    'filter_condition' |
     'schema_form' |
-    'target_name' | 
-    'target_type' | 
-    'file_format' | 
-    'file_path' | 
-    'db_type' | 
-    'db_schema' | 
-    'db_name' | 
-    'connection_choice' | 
+    'target_name' |
+    'target_type' |
+    'file_format' |
+    'file_path' |
+    'db_type' |
+    'db_schema' |
+    'db_name' |
+    'connection_choice' |
     'summary' | 'target_form'
   >('select');
-  
+
   // State for inline forms
   const [showFilterForm, setShowFilterForm] = useState(false);
   const [showSchemaForm, setShowSchemaForm] = useState(false);
@@ -533,7 +541,7 @@ export const PipeLineChatPanel = ({
 
   const handleTransformationsStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
-    
+
     // Check if user wants to add another source
     if (userInput.includes('add another') || userInput.includes('search') || userInput.includes('new source')) {
       setStep('source');
@@ -541,14 +549,14 @@ export const PipeLineChatPanel = ({
       addAssistantMessage("Sure! Please enter the name of another data source you'd like to search for.");
       return;
     }
-    
+
     // Check if this is the initial "continue to transformations" request
-    if ((userInput.includes('continue to transformation') || userInput.includes('continue')) && 
-        !userInput.includes('filter') && !userInput.includes('schema') && !userInput.includes('target')) {
+    if ((userInput.includes('continue to transformation') || userInput.includes('continue')) &&
+      !userInput.includes('filter') && !userInput.includes('schema') && !userInput.includes('target')) {
       // Make sure we're in the transformations step and select sub-step
       setStep('transformations');
       setTransformationSubStep('select');
-      
+
       // Ask the user what transformations they want to add
       addAssistantMessage(
         "Great! Now let's add some transformations to your pipeline. I can add the following types of transformations:\n\n" +
@@ -556,22 +564,22 @@ export const PipeLineChatPanel = ({
         "2. Filter Transformation - Filter data based on conditions\n\n" +
         "Which transformations would you like to add? You can say things like 'add schema transformation' or 'add both'."
       );
-      
+
       // Build and update the pipeline template
       const pipelineTemplate = buildPipelineTemplate();
       setPipelineJson(pipelineTemplate);
       console.log("Current pipeline template:", pipelineTemplate);
-      
+
       return;
     }
-    
+
     // Handle different sub-steps within the transformations step
     switch (transformationSubStep) {
       case 'select':
         // Process transformation selection
         const newTransformations = [...transformations];
         let currentSelection = '';
-        
+
         // Track what the user is selecting in this step
         if (userInput.includes('schema') || userInput.includes('2')) {
           currentSelection = 'schema';
@@ -579,14 +587,14 @@ export const PipeLineChatPanel = ({
             newTransformations.push('schema');
           }
         }
-        
+
         if (userInput.includes('filter') || userInput.includes('1')) {
           currentSelection = 'filter';
           if (!newTransformations.includes('filter')) {
             newTransformations.push('filter');
           }
         }
-        
+
         if (userInput.includes('both') || userInput.includes('all')) {
           currentSelection = 'both';
           if (!newTransformations.includes('schema')) {
@@ -596,16 +604,16 @@ export const PipeLineChatPanel = ({
             newTransformations.push('filter');
           }
         }
-        
+
         // Check if user wants to move to target
-        if (userInput.includes('target') || userInput.includes('3') || userInput.includes('skip') || 
-            userInput.includes('complete') || userInput.includes('finish')) {
+        if (userInput.includes('target') || userInput.includes('3') || userInput.includes('skip') ||
+          userInput.includes('complete') || userInput.includes('finish')) {
           currentSelection = 'target';
           // Add target to transformations
           if (!newTransformations.includes('target')) {
             newTransformations.push('target');
           }
-          
+
           // If the user already has a target name saved, use it
           if (targetName) {
             setTargetConfig(prev => ({
@@ -617,14 +625,14 @@ export const PipeLineChatPanel = ({
             }));
           }
         }
-        
+
         setTransformations(newTransformations);
-        
+
         // Handle the current selection
         if (currentSelection === 'filter') {
           // Show filter form
           setTransformationSubStep('filter_condition');
-          setFilterFormInitialValues({ 
+          setFilterFormInitialValues({
             condition: filterCondition || '',
             name: 'filter_transformation'
           });
@@ -633,16 +641,16 @@ export const PipeLineChatPanel = ({
         } else if (currentSelection === 'schema') {
           // Show schema form
           setTransformationSubStep('schema_form');
-          setSchemaFormInitialValues({ 
+          setSchemaFormInitialValues({
             name: 'schema_transformation',
-            derived_fields: [{ name: '', expression: '' }] 
+            derived_fields: [{ name: '', expression: '' }]
           });
           setShowSchemaForm(true);
           addAssistantMessage("Great! Please define your schema transformations below:");
         } else if (currentSelection === 'both') {
           // Start with filter form first
           setTransformationSubStep('filter_condition');
-          setFilterFormInitialValues({ 
+          setFilterFormInitialValues({
             condition: filterCondition || '',
             name: 'filter_transformation'
           });
@@ -651,7 +659,7 @@ export const PipeLineChatPanel = ({
         } else if (currentSelection === 'target') {
           // Show Writer form instead of asking questions
           setTransformationSubStep('target_form');
-          
+
           // Prepare initial values for the Writer form
           const initialValues = {
             name: targetName || 'write_output',
@@ -673,7 +681,7 @@ export const PipeLineChatPanel = ({
               writeMethod: 'APPEND'
             }
           };
-          
+
           setWriterFormInitialValues(initialValues);
           setShowWriterForm(true);
           addAssistantMessage("Please configure your output target below:");
@@ -683,11 +691,11 @@ export const PipeLineChatPanel = ({
           addAssistantMessage("Please select at least one transformation type or target configuration.");
         }
         break;
-        
+
       case 'filter_condition':
         // Save the filter condition
         setFilterCondition(input);
-        
+
         // Return to transformation selection to allow adding more transformations
         setTransformationSubStep('select');
         addAssistantMessage(
@@ -698,7 +706,7 @@ export const PipeLineChatPanel = ({
           "Please select an option from the buttons below."
         );
         break;
-        
+
       case 'target_name':
         // Save the target name and update target configuration
         setTargetConfig(prev => ({
@@ -709,14 +717,14 @@ export const PipeLineChatPanel = ({
           }
         }));
         setTargetName(input);
-        
+
         // Return to transformation selection to allow adding more transformations
         setTransformationSubStep('select');
-        
+
         // Build and update the pipeline template
         const updatedTemplate = buildPipelineTemplate();
         setPipelineJson(updatedTemplate);
-        
+
         // Ask if the user wants to add more transformations
         addAssistantMessage(
           "Great! I've saved your output name. Would you like to add more transformations to your pipeline?\n\n" +
@@ -726,12 +734,12 @@ export const PipeLineChatPanel = ({
           "Please select an option from the buttons below."
         );
         break;
-        
+
       case 'target_type':
         // Process target type selection
         let targetType: 'File' | 'Database' | 'Custom' = 'File';
         const typeInput = input.toLowerCase().trim();
-        
+
         if (typeInput.includes('1') || typeInput.includes('file')) {
           targetType = 'File';
           setTargetConfig(prev => ({
@@ -740,7 +748,7 @@ export const PipeLineChatPanel = ({
             connectionType: 'Local',
             filePath: 'examples/'
           }));
-          
+
           // Ask for file format
           setTransformationSubStep('file_format');
           addAssistantMessage(
@@ -758,7 +766,7 @@ export const PipeLineChatPanel = ({
             type: 'Database',
             connectionType: 'PostgreSQL' // Default, can be changed
           }));
-          
+
           // Ask for database type
           setTransformationSubStep('db_type');
           addAssistantMessage(
@@ -779,14 +787,14 @@ export const PipeLineChatPanel = ({
               target_type: 'Custom'
             }
           }));
-          
+
           // Skip to summary for custom - user can configure details elsewhere
           setTransformationSubStep('summary');
-          
+
           // Build the final pipeline template
           const finalTemplate = buildPipelineTemplate();
           setPipelineJson(finalTemplate);
-          
+
           // Show summary and ask for confirmation
           addAssistantMessage(
             `Great! I've configured your pipeline with the following details:\n\n` +
@@ -797,7 +805,7 @@ export const PipeLineChatPanel = ({
             `- Output: ${input || "output_data"} (Custom)\n\n` +
             `Would you like to create this pipeline now?`
           );
-          
+
           setStep('confirm');
         } else {
           // Default to File if input is unclear
@@ -806,14 +814,14 @@ export const PipeLineChatPanel = ({
             ...prev,
             type: 'File'
           }));
-          
+
           // Skip to summary
           setTransformationSubStep('summary');
-          
+
           // Build the final pipeline template
           const finalTemplate = buildPipelineTemplate();
           setPipelineJson(finalTemplate);
-          
+
           // Show summary and ask for confirmation
           addAssistantMessage(
             `Great! I've configured your pipeline with the following details:\n\n` +
@@ -824,16 +832,16 @@ export const PipeLineChatPanel = ({
             `- Output: ${input || "output_data"} (File)\n\n` +
             `Would you like to create this pipeline now?`
           );
-          
+
           setStep('confirm');
         }
         break;
-        
+
       case 'file_format':
         // Process file format selection
         let fileFormat = 'CSV';
         const formatInput = input.toLowerCase().trim();
-        
+
         if (formatInput.includes('1') || formatInput.includes('csv')) {
           fileFormat = 'CSV';
         } else if (formatInput.includes('2') || formatInput.includes('json')) {
@@ -854,37 +862,37 @@ export const PipeLineChatPanel = ({
           // Use whatever they typed
           fileFormat = input.trim();
         }
-        
+
         // Update target config with file format
         setTargetConfig(prev => ({
           ...prev,
           fileFormat
         }));
-        
+
         // Ask for file path
         setTransformationSubStep('file_path');
         addAssistantMessage(
           `What directory path would you like to use for your output file? (Default: examples/)`
         );
         break;
-        
+
       case 'file_path':
         // Process file path
         const filePath = input.trim() || 'examples/';
-        
+
         // Update target config with file path
         setTargetConfig(prev => ({
           ...prev,
           filePath
         }));
-        
+
         // Move to summary
         setTransformationSubStep('summary');
-        
+
         // Build the final pipeline template
         const fileTargetTemplate = buildPipelineTemplate();
         setPipelineJson(fileTargetTemplate);
-        
+
         // Show summary and ask for confirmation
         addAssistantMessage(
           `Great! I've configured your pipeline with the following details:\n\n` +
@@ -895,15 +903,15 @@ export const PipeLineChatPanel = ({
           `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.fileFormat})\n\n` +
           `Would you like to create this pipeline now?`
         );
-        
+
         setStep('confirm');
         break;
-        
+
       case 'db_type':
         // Process database type selection
         let dbType = 'PostgreSQL';
         const dbTypeInput = input.toLowerCase().trim();
-        
+
         if (dbTypeInput.includes('1') || dbTypeInput.includes('postgres')) {
           dbType = 'PostgreSQL';
         } else if (dbTypeInput.includes('2') || dbTypeInput.includes('mysql')) {
@@ -924,54 +932,54 @@ export const PipeLineChatPanel = ({
           // Use whatever they typed
           dbType = input.trim();
         }
-        
+
         // Update target config with database type
         setTargetConfig(prev => ({
           ...prev,
           connectionType: dbType
         }));
-        
+
         // Ask for schema
         setTransformationSubStep('db_schema');
         addAssistantMessage(
           `What schema would you like to use for your database target? (Default: public)`
         );
         break;
-        
+
       case 'db_schema':
         // Process database schema
         const schema = input.trim() || 'public';
-        
+
         // Update target config with schema
         setTargetConfig(prev => ({
           ...prev,
           schema
         }));
-        
+
         // Ask for database name
         setTransformationSubStep('db_name');
         addAssistantMessage(
           `What is the name of the database you'd like to use? (Default: postgres)`
         );
         break;
-        
+
       case 'db_name':
         // Process database name
         const database = input.trim() || 'postgres';
-        
+
         // Update target config with database name
         setTargetConfig(prev => ({
           ...prev,
           database
         }));
-        
+
         // Move to summary
         setTransformationSubStep('summary');
-        
+
         // Build the final pipeline template
         const dbTargetTemplate = buildPipelineTemplate();
         setPipelineJson(dbTargetTemplate);
-        
+
         // Show summary and ask for confirmation
         addAssistantMessage(
           `Great! I've configured your pipeline with the following details:\n\n` +
@@ -982,21 +990,21 @@ export const PipeLineChatPanel = ({
           `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.connectionType})\n\n` +
           `Would you like to create this pipeline now?`
         );
-        
+
         setStep('confirm');
         break;
-        
+
       case 'connection_choice':
         // Save the connection choice
         const useDbConnection = input.toLowerCase().includes('yes') || input.toLowerCase().includes('y');
         setUseSourceConnection(useDbConnection);
-        
+
         if (useDbConnection) {
           // Update target config to use database connection from source
           const sourceConnectionType = selectedSources[0].connection_config?.custom_metadata?.connection_type || 'PostgreSQL';
           const sourceSchema = selectedSources[0].connection_config?.custom_metadata?.schema || 'public';
           const sourceDatabase = selectedSources[0].connection_config?.custom_metadata?.database || 'postgres';
-          
+
           setTargetConfig(prev => ({
             ...prev,
             type: 'Database',
@@ -1007,7 +1015,7 @@ export const PipeLineChatPanel = ({
         } else {
           // Ask for target type since they don't want to use source connection
           setTransformationSubStep('target_type');
-          
+
           addAssistantMessage(
             `What type of target would you like to use for your output?\n\n` +
             `1. File (CSV, JSON, etc.)\n` +
@@ -1017,15 +1025,15 @@ export const PipeLineChatPanel = ({
           );
           return; // Wait for next input
         }
-        
+
         // Move to summary
         setTransformationSubStep('summary');
-        
+
         // Build the final pipeline template with the updated connection choice
         const finalTemplate = buildPipelineTemplate();
         setPipelineJson(finalTemplate);
         console.log("Final pipeline template with connection choice:", finalTemplate);
-        
+
         // Show summary and ask for confirmation
         addAssistantMessage(
           `Great! I've configured your pipeline with the following details:\n\n` +
@@ -1036,14 +1044,14 @@ export const PipeLineChatPanel = ({
           `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.connectionType})\n\n` +
           `Would you like to create this pipeline now?`
         );
-        
+
         setStep('confirm');
         break;
-        
+
       default:
         break;
     }
-    
+
     // Update the pipeline template
     setTimeout(() => {
       const pipelineTemplate = buildPipelineTemplate();
@@ -1053,20 +1061,20 @@ export const PipeLineChatPanel = ({
 
   const handleConfirmStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
-    
+
     if (userInput.includes('yes') || userInput.includes('create') || userInput.includes('confirm')) {
       // User confirmed, create the pipeline
       try {
         setIsProcessing(true);
-        
+
         // Get the final pipeline template
         const finalTemplate = buildPipelineTemplate();
-        
+
         // Log the final template for debugging
         console.log("Final pipeline template for creation:", finalTemplate);
-        
+
         // Create the pipeline
-        const response:any = await apiService.post({
+        const response: any = await apiService.post({
           portNumber: CATALOG_API_PORT,
           url: `/pipeline/`,
           usePrefix: true,
@@ -1078,19 +1086,19 @@ export const PipeLineChatPanel = ({
             pipeline_type: "DATA"
           }
         });
-        
+
         if (response && response.pipeline_id) {
           // Success!
           addAssistantMessage(
             `Success! I've created your pipeline "${pipelineName}". ` +
             `You can now view and edit it in the pipeline designer.`
           );
-          
+
           // Notify the parent component that a pipeline was created
           if (onPipelineCreated) {
             onPipelineCreated(response.pipeline_id);
           }
-          
+
           // Close the chat after a delay
           setTimeout(() => {
             onClose();
@@ -1118,25 +1126,25 @@ export const PipeLineChatPanel = ({
     setMode('chat');
     resetPipelineCreationState();
   };
-  
+
   // Handle reader form submission
   const handleReaderFormSubmit = (formData: any) => {
     console.log("Reader form submitted:", formData);
-    
+
     // Add the source with the updated configuration
     if (currentSourceData) {
       // Create a deep copy of the current source data
       const updatedSource = JSON.parse(JSON.stringify(currentSourceData));
-      
+
       // Update basic properties
       updatedSource.data_src_name = formData.reader_name;
       updatedSource.file_type = formData.file_type;
-      
+
       // Update source-specific properties
       if (formData.source.type === 'File') {
         updatedSource.file_path = formData.source.file_path;
         updatedSource.file_path_prefix = formData.source.file_path;
-        
+
         // Update read options if present
         if (formData.read_options) {
           updatedSource.read_options = {
@@ -1145,11 +1153,11 @@ export const PipeLineChatPanel = ({
             quote: formData.read_options.quote
           };
         }
-        
+
         // Clear any relational-specific properties
         delete updatedSource.table_name;
         delete updatedSource.query;
-        
+
         // Set connection config to null or default for file sources
         updatedSource.connection_config = null;
       } else if (formData.source.type === 'Relational') {
@@ -1162,36 +1170,36 @@ export const PipeLineChatPanel = ({
             schema: formData.source.connection.schema
           }
         };
-        
+
         // Set table name
         updatedSource.table_name = formData.source.connection.table;
-        
+
         // Set query if present
         if (formData.query) {
           updatedSource.query = formData.query;
         }
-        
+
         // Clear any file-specific properties
         delete updatedSource.file_path;
         delete updatedSource.file_path_prefix;
         delete updatedSource.read_options;
       }
-      
+
       // Log the updated source for debugging
       console.log("Updated source:", updatedSource);
-      
+
       // Add to selected sources
       const updatedSources = [...selectedSources, updatedSource];
       setSelectedSources(updatedSources);
-      
+
       // Add a message to show the configuration
       addUserMessage(`Reader configuration saved for "${formData.reader_name}"`);
-      
+
       // Hide the form
       setShowReaderForm(false);
-      
+
       // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
-      
+
       // Ask if they want to add another source or continue
       addAssistantMessage(
         `I've added the data source "${formData.reader_name}" to your pipeline. ` +
@@ -1200,23 +1208,23 @@ export const PipeLineChatPanel = ({
       );
     }
   };
-  
+
   // Handle filter form submission
   const handleFilterFormSubmit = (formData: any) => {
     console.log("Filter form submitted:", formData);
-    
+
     // Save filter condition
     setFilterCondition(formData.condition);
-    
+
     // Add a message to show the selected condition
     addUserMessage(`Filter condition: ${formData.condition}`);
-    
+
     // Hide the form
     setShowFilterForm(false);
-    
+
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
-    
+
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       "Great! The filter transformation has been added. Would you like to add another transformation?\n\n" +
@@ -1225,28 +1233,28 @@ export const PipeLineChatPanel = ({
       "3. Target - Skip transformations not needed\n\n" +
       "Please select an option from the buttons below."
     );
-    
+
     // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
   };
-  
+
   // Handle schema transformation form submission
   const handleSchemaFormSubmit = (formData: any) => {
     console.log("Schema form submitted:", formData);
-    
+
     // Save schema transformation
-    const derivedFields = formData.derived_fields.map((field: any) => 
+    const derivedFields = formData.derived_fields.map((field: any) =>
       `${field.name}: ${field.expression}`
     ).join(', ');
-    
+
     // Add a message to show the selected derived fields
     addUserMessage(`Schema transformation: ${derivedFields}`);
-    
+
     // Hide the form
     setShowSchemaForm(false);
-    
+
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
-    
+
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       "Great! The schema transformation has been added. Would you like to add another transformation?\n\n" +
@@ -1256,11 +1264,11 @@ export const PipeLineChatPanel = ({
       "Please select an option from the buttons below."
     );
   };
-  
+
   // Handle writer form submission
   const handleWriterFormSubmit = (formData: any) => {
     console.log("Writer form submitted:", formData);
-    
+
     // Save target configuration
     setTargetName(formData.target.target_name);
     setTargetConfig({
@@ -1273,34 +1281,34 @@ export const PipeLineChatPanel = ({
         loadMode: formData.target.load_mode
       }
     });
-    
+
     // Add a message to show the target configuration
     const targetType = formData.target.target_type;
     let targetDetails = '';
-    
+
     if (targetType === 'File') {
       targetDetails = `${formData.file_type} file: ${formData.target.file_name}`;
     } else if (targetType === 'Relational') {
       targetDetails = `Database: ${formData.target.connection.database || 'default'}`;
     }
-    
+
     // Add target to transformations if not already there
     if (!transformations.includes('target')) {
       const newTransformations = [...transformations, 'target'];
       setTransformations(newTransformations);
       console.log("Added target to transformations:", newTransformations);
     }
-    
+
     // Update the pipeline template manually to ensure the target is added
     const updatedTemplate = buildPipelineTemplate();
     setPipelineJson(updatedTemplate);
     console.log("Updated pipeline template after writer form submission:", updatedTemplate);
-    
+
     addUserMessage(`Target configuration: ${formData.target.target_name} (${targetDetails})`);
-    
+
     // Hide the form
     setShowWriterForm(false);
-    
+
     // Ask for more transformations instead of going directly to target
     setTransformationSubStep('select');
     addAssistantMessage(
@@ -1310,53 +1318,49 @@ export const PipeLineChatPanel = ({
       "3. Target - Skip transformations not needed\n\n" +
       "Please select an option from the buttons below."
     );
-    
+
     // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
   };
 
   return (
     <>
-      
+
       {/* Chat panel - always visible, not sliding */}
-      <div 
-        className={`h-full flex flex-col bg-background/95 backdrop-blur-md border-l border-border/50 shadow-lg opacity-100 transition-all duration-300 ${className}`}
+      <div
+        className={`h-full flex flex-col bg-background/95 backdrop-blur-md border-l border-border shadow-lg opacity-100 ${className}`}
       >
-     
-      
-      {isNewChat || messages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10">
-            <img 
-              src={imageSrc} 
-              alt="AI" 
-              className="w-8 h-8 transform -rotate-[40deg]"
-            />
-          </div>
-          <div className="text-center space-y-1.5 max-w-sm">
-            <p className="text-lg font-medium">How can I assist with your pipeline?</p>
-            <p className="text-sm text-muted-foreground">
-              Describe your pipeline needs or create a new pipeline
-            </p>
-            <div className="pt-4">
-              <Button 
-                onClick={startPipelineCreation}
-                className="bg-primary text-white hover:bg-primary/90 flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Create New Pipeline
-              </Button>
+
+
+        {isNewChat || messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              <img
+                src={imageSrc}
+                alt="AI"
+                className="w-5 h-7 transform -rotate-[40deg]"
+              />
+            </div>
+            <div className="text-center space-y-1.5 max-w-sm">
+              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
+              <div className="flex justify-center items-center"> {/* Updated here */}
+                <Button
+                  onClick={startPipelineCreation}
+                  className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Start Pipeline
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <ScrollArea className="flex-1 px-6 py-4">
-          <div className="space-y-6 py-4">
+        ) : (
+          <ScrollArea className="flex-1 px-6 py-4">
+            <div className="space-y-6 py-4">
               {messages.map((message, i) => (
                 <div
                   key={i}
-                  className={`flex ${
-                    message.role === "user" ? "justify-end" : "items-start gap-4 px-1"
-                  }`}
+                  className={`flex ${message.role === "user" ? "justify-end" : "items-start gap-4 px-1"
+                    }`}
                 >
                   {message.role === "assistant" && (
                     <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
@@ -1365,19 +1369,17 @@ export const PipeLineChatPanel = ({
                     </Avatar>
                   )}
                   <div
-                    className={`flex flex-col ${
-                      message.role === "user" ? "items-end" : "max-w-[85%]"
-                    }`}
+                    className={`flex flex-col ${message.role === "user" ? "items-end" : "max-w-[85%]"
+                      }`}
                   >
                     <div
-                      className={`rounded-2xl px-4 py-3 transition-all duration-200 ${
-                        message.role === "user"
-                          ? "bg-green-600 text-white shadow-sm"
-                          : "bg-card border border-border/40 shadow-sm hover:border-border/60"
-                      }`}
+                      className={`rounded-2xl px-4 py-3 ${message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card border border-border/40 shadow-sm"
+                        }`}
                     >
                       <div className="whitespace-pre-wrap">{message.content}</div>
-                      
+
                       {/* Show inline forms after specific assistant messages */}
                       {message.role === "assistant" && i === messages.length - 1 && (
                         <>
@@ -1390,7 +1392,7 @@ export const PipeLineChatPanel = ({
                               updatePipelineTemplate={true}
                             />
                           )}
-                          
+
                           {showFilterForm && message.content.includes("Please define your filter condition") && (
                             <SchemaFormLoader
                               schemaType="Filter"
@@ -1400,20 +1402,20 @@ export const PipeLineChatPanel = ({
                               updatePipelineTemplate={true}
                             />
                           )}
-                          
+
                           {showSchemaForm && (
-                            message.content.includes("Please define your schema transformations") || 
+                            message.content.includes("Please define your schema transformations") ||
                             transformationSubStep === 'schema_form'
                           ) && (
-                            <SchemaFormLoader
-                              schemaType="SchemaTransformation"
-                              initialValues={schemaFormInitialValues}
-                              onSubmit={handleSchemaFormSubmit}
-                              submitLabel="Apply Schema Transformation"
-                              updatePipelineTemplate={true}
-                            />
-                          )}
-                          
+                              <SchemaFormLoader
+                                schemaType="SchemaTransformation"
+                                initialValues={schemaFormInitialValues}
+                                onSubmit={handleSchemaFormSubmit}
+                                submitLabel="Apply Schema Transformation"
+                                updatePipelineTemplate={true}
+                              />
+                            )}
+
                           {showWriterForm && message.content.includes("Please configure your output target below") && (
                             <SchemaFormLoader
                               schemaType="Writer"
@@ -1426,25 +1428,24 @@ export const PipeLineChatPanel = ({
                         </>
                       )}
                     </div>
-                    
+
                     {/* Suggestion buttons for guided flow */}
                     {message.role === "assistant" && i === messages.length - 1 && (
                       <div className="mt-3 flex flex-wrap">
                         {mode === 'create' && (
                           <>
                             {/* Description question buttons removed as we're skipping this step */}
-                            
+
                             {/* Description input suggestions removed as we're skipping this step */}
-                            
+
                             {/* Add data source buttons - appears immediately after starting pipeline creation */}
                             {step === 'source' && messages.length === 1 && message.content.includes("Please enter the name of a data source") && (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Common Data Sources:</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="top_sales_regions" 
-                                    icon={<Database className="h-4 w-4" />}
-                                    //tooltip="Sales data by region"
+                              <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="text-sm font-medium text-muted-foreground mb-1">Common Data Sources:</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <SuggestionButton
+                                    text="top_sales_regions"
+                                    icon={<Database className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       const dataSource = "top_sales_regions";
                                       addUserMessage(dataSource);
@@ -1456,10 +1457,9 @@ export const PipeLineChatPanel = ({
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="customer_records" 
-                                    icon={<Database className="h-4 w-4" />}
-                                    //tooltip="Customer information database"
+                                  <SuggestionButton
+                                    text="customer_records"
+                                    icon={<Database className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       const dataSource = "customer_records";
                                       addUserMessage(dataSource);
@@ -1474,13 +1474,12 @@ export const PipeLineChatPanel = ({
                                 </div>
                               </div>
                             )}
-                            
+
                             {step === 'source' && messages.length > 3 && selectedSources.length > 0 && (
                               <>
-                                <SuggestionButton 
-                                  text="Add another source" 
-                                  icon={<Plus className="h-3 w-3" />}
-                                  //tooltip="Include an additional data source"
+                                <SuggestionButton
+                                  text="Add another source"
+                                  icon={<Plus className="h-3 w-3 mr-1" />}
                                   onClick={() => {
                                     addUserMessage("Add another source");
                                     // Build and update the pipeline template before handling the step
@@ -1491,8 +1490,8 @@ export const PipeLineChatPanel = ({
                                   }}
                                   className="justify-start py-2 px-3"
                                 />
-                                <SuggestionButton 
-                                  text="Continue to transformations" 
+                                <SuggestionButton
+                                  text="Continue to transformations"
                                   icon={<ChevronDown className="h-3 w-3" />}
                                   //tooltip="Proceed to the next step"
                                   onClick={() => {
@@ -1510,94 +1509,90 @@ export const PipeLineChatPanel = ({
                                 />
                               </>
                             )}
-                            
+
                             {step === 'transformations' && (
-                              transformationSubStep === 'select' || 
+                              transformationSubStep === 'select' ||
                               messages[messages.length - 1]?.content?.includes("Please select an option from the buttons below") ||
                               messages[messages.length - 1]?.content?.includes("What type of transformation would you like to add") ||
                               messages[messages.length - 1]?.content?.includes("Which transformations would you like to add") ||
                               messages[messages.length - 1]?.content?.includes("Would you like to add another transformation")
                             ) && (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Select Transformation(s):</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="Filter Transformation" 
-                                    icon={<Filter className="h-4 w-4" />}
-                                    onClick={() => {
-                                      addUserMessage("Filter Transformation");
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleTransformationsStep("1. Filter Transformation");
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton 
-                                    text="Schema Transformation" 
-                                    icon={<Database className="h-4 w-4" />}
-                                    //tooltip="Modify data structure and add derived fields"
-                                    onClick={() => {
-                                      addUserMessage("Schema Transformation");
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleTransformationsStep("2. Schema Transformation");
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton 
-                                    text="Target (Skip Transformations)" 
-                                    icon={<FileText className="h-4 w-4" />}
-                                    //tooltip="Proceed directly to output configuration"
-                                    onClick={() => {
-                                      addUserMessage("Target - Skip transformations not needed");
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleTransformationsStep("3. Target");
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton 
-                                    text="Add Both Transformations" 
-                                    icon={<Layers className="h-4 w-4" />}
-                                    //tooltip="Include both filter and schema transformations"
-                                    onClick={() => {
-                                      addUserMessage("Add both transformations");
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleTransformationsStep("Add both");
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
+                                <div className="flex flex-col gap-2 w-full mt-2">
+                                  <div className="text-sm font-medium text-muted-foreground mb-1">Select Transformation(s):</div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <SuggestionButton
+                                      text="Filter Transformation"
+                                      icon={<Filter className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Filter Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = buildPipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("1. Filter Transformation");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                    <SuggestionButton
+                                      text="Schema Transformation"
+                                      icon={<Database className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Schema Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = buildPipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("2. Schema Transformation");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                    <SuggestionButton
+                                      text="Target (Skip Transformations)"
+                                      icon={<FileText className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Target - Skip transformations not needed");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = buildPipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("3. Target");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                    <SuggestionButton
+                                      text="Add Both Transformations"
+                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Add both transformations");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = buildPipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Add both");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            
+                              )}
+
                             {step === 'transformations' && transformationSubStep === 'filter_condition' && (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Common Filter Conditions:</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="age >= 18" 
-                                    icon={<Filter className="h-4 w-4" />}
-                                    //tooltip="Filter for adults only"
+                              <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="text-sm font-medium text-muted-foreground mb-1">Common Filter Conditions:</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <SuggestionButton
+                                    text="age >= 18"
+                                    icon={<Filter className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set filter condition directly
                                       setFilterCondition("age >= 18");
                                       addUserMessage("age >= 18");
-                                      
+
                                       // Build and update the pipeline template
                                       const pipelineTemplate = buildPipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
-                                      
+
                                       // If schema transformation is also selected, show the schema form
                                       if (transformations.includes('schema')) {
                                         addAssistantMessage("Now, please fill out the schema transformation form.");
@@ -1609,20 +1604,19 @@ export const PipeLineChatPanel = ({
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="sales_amount > 1000" 
-                                    icon={<Filter className="h-4 w-4" />}
-                                    //tooltip="Filter for high-value sales"
+                                  <SuggestionButton
+                                    text="sales_amount > 1000"
+                                    icon={<Filter className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set filter condition directly
                                       setFilterCondition("sales_amount > 1000");
                                       addUserMessage("sales_amount > 1000");
-                                      
+
                                       // Build and update the pipeline template
                                       const pipelineTemplate = buildPipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
-                                      
+
                                       // If schema transformation is also selected, show the schema form
                                       if (transformations.includes('schema')) {
                                         addAssistantMessage("Now, please fill out the schema transformation form.");
@@ -1634,19 +1628,19 @@ export const PipeLineChatPanel = ({
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="status = 'active'" 
+                                  <SuggestionButton
+                                    text="status = 'active'"
                                     icon={<Filter className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set filter condition directly
                                       setFilterCondition("status = 'active'");
                                       addUserMessage("status = 'active'");
-                                      
+
                                       // Build and update the pipeline template
                                       const pipelineTemplate = buildPipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
-                                      
+
                                       // If schema transformation is also selected, show the schema form
                                       if (transformations.includes('schema')) {
                                         addAssistantMessage("Now, please fill out the schema transformation form.");
@@ -1658,19 +1652,19 @@ export const PipeLineChatPanel = ({
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="date_column >= '2023-01-01'" 
+                                  <SuggestionButton
+                                    text="date_column >= '2023-01-01'"
                                     icon={<Filter className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set filter condition directly
                                       setFilterCondition("date_column >= '2023-01-01'");
                                       addUserMessage("date_column >= '2023-01-01'");
-                                      
+
                                       // Build and update the pipeline template
                                       const pipelineTemplate = buildPipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
-                                      
+
                                       // If schema transformation is also selected, show the schema form
                                       if (transformations.includes('schema')) {
                                         addAssistantMessage("Now, please fill out the schema transformation form.");
@@ -1685,19 +1679,19 @@ export const PipeLineChatPanel = ({
                                 </div>
                               </div>
                             )}
-                            
+
                             {step === 'transformations' && transformationSubStep === 'target_name' && (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Suggested Output Names:</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="processed_data" 
+                              <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="text-sm font-medium text-muted-foreground mb-1">Suggested Output Names:</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <SuggestionButton
+                                    text="processed_data"
                                     icon={<FileText className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("processed_data");
                                       addUserMessage("processed_data");
-                                      
+
                                       // If we have a source with connection config, ask if they want to use the same connection
                                       if (selectedSources.length > 0 && selectedSources[0].connection_config?.custom_metadata?.connection_type) {
                                         setTransformationSubStep('connection_choice');
@@ -1708,11 +1702,11 @@ export const PipeLineChatPanel = ({
                                       } else {
                                         // Skip to summary
                                         setTransformationSubStep('summary');
-                                        
+
                                         // Build the final pipeline template
                                         const finalTemplate = buildPipelineTemplate();
                                         setPipelineJson(finalTemplate);
-                                        
+
                                         // Show summary and ask for confirmation
                                         addAssistantMessage(
                                           `Great! I've configured your pipeline with the following details:\n\n` +
@@ -1723,20 +1717,20 @@ export const PipeLineChatPanel = ({
                                           `- Output: processed_data\n\n` +
                                           `Would you like to create this pipeline now?`
                                         );
-                                        
+
                                         setStep('confirm');
                                       }
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="analysis_results" 
+                                  <SuggestionButton
+                                    text="analysis_results"
                                     icon={<FileText className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("analysis_results");
                                       addUserMessage("analysis_results");
-                                      
+
                                       // If we have a source with connection config, ask if they want to use the same connection
                                       if (selectedSources.length > 0 && selectedSources[0].connection_config?.custom_metadata?.connection_type) {
                                         setTransformationSubStep('connection_choice');
@@ -1747,11 +1741,11 @@ export const PipeLineChatPanel = ({
                                       } else {
                                         // Skip to summary
                                         setTransformationSubStep('summary');
-                                        
+
                                         // Build the final pipeline template
                                         const finalTemplate = buildPipelineTemplate();
                                         setPipelineJson(finalTemplate);
-                                        
+
                                         // Show summary and ask for confirmation
                                         addAssistantMessage(
                                           `Great! I've configured your pipeline with the following details:\n\n` +
@@ -1762,7 +1756,7 @@ export const PipeLineChatPanel = ({
                                           `- Output: analysis_results\n\n` +
                                           `Would you like to create this pipeline now?`
                                         );
-                                        
+
                                         setStep('confirm');
                                       }
                                     }}
@@ -1771,26 +1765,26 @@ export const PipeLineChatPanel = ({
                                 </div>
                               </div>
                             )}
-                            
+
                             {step === 'transformations' && transformationSubStep === 'connection_choice' && (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Use Same Database Connection?</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="Yes, use same database" 
-                                    icon={<Check className="h-4 w-4 mr-2" />} 
+                              <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="text-sm font-medium text-muted-foreground mb-1">Use Same Database Connection?</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <SuggestionButton
+                                    text="Yes, use same database"
+                                    icon={<Check className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(true);
                                       addUserMessage("Yes");
-                                      
+
                                       // Move to summary
                                       setTransformationSubStep('summary');
-                                      
+
                                       // Build the final pipeline template
                                       const finalTemplate = buildPipelineTemplate();
                                       setPipelineJson(finalTemplate);
-                                      
+
                                       // Show summary and ask for confirmation
                                       addAssistantMessage(
                                         `Great! I've configured your pipeline with the following details:\n\n` +
@@ -1801,26 +1795,26 @@ export const PipeLineChatPanel = ({
                                         `- Output: ${targetName || "output_data"} (Database)\n\n` +
                                         `Would you like to create this pipeline now?`
                                       );
-                                      
+
                                       setStep('confirm');
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                   />
-                                  <SuggestionButton 
-                                    text="No, use file output" 
-                                    icon={<X className="h-4 w-4 mr-2" />} 
+                                  <SuggestionButton
+                                    text="No, use file output"
+                                    icon={<X className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(false);
                                       addUserMessage("No");
-                                    
+
                                       // Move to summary
                                       setTransformationSubStep('summary');
-                                      
+
                                       // Build the final pipeline template
                                       const finalTemplate = buildPipelineTemplate();
                                       setPipelineJson(finalTemplate);
-                                      
+
                                       // Show summary and ask for confirmation
                                       addAssistantMessage(
                                         `Great! I've configured your pipeline with the following details:\n\n` +
@@ -1831,7 +1825,7 @@ export const PipeLineChatPanel = ({
                                         `- Output: ${targetName || "output_data"} (File)\n\n` +
                                         `Would you like to create this pipeline now?`
                                       );
-                                      
+
                                       setStep('confirm');
                                     }}
                                     className="justify-start py-3 px-4 bg-card hover:bg-accent"
@@ -1839,14 +1833,14 @@ export const PipeLineChatPanel = ({
                                 </div>
                               </div>
                             )}
-                            
+
                             {(step === 'transformations' && transformationSubStep === 'summary') || step === 'confirm' ? (
-                              <div className="flex flex-col gap-3 w-full mt-3 bg-muted/30 p-3 rounded-lg border border-border/30">
-                                <div className="text-sm font-medium text-foreground mb-1">Ready to Create?</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <SuggestionButton 
-                                    text="Create Pipeline" 
-                                    icon={<Check className="h-4 w-4 mr-2" />} 
+                              <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="text-sm font-medium text-muted-foreground mb-1">Ready to Create?</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <SuggestionButton
+                                    text="Create Pipeline"
+                                    icon={<Check className="h-4 w-4 mr-2" />}
                                     variant="default"
                                     onClick={() => {
                                       addUserMessage("Yes, create the pipeline");
@@ -1854,9 +1848,9 @@ export const PipeLineChatPanel = ({
                                     }}
                                     className="justify-start py-3 px-4"
                                   />
-                                  <SuggestionButton 
-                                    text="Start Over" 
-                                    icon={<X className="h-4 w-4 mr-2" />} 
+                                  <SuggestionButton
+                                    text="Start Over"
+                                    icon={<X className="h-4 w-4 mr-2" />}
                                     onClick={() => {
                                       addUserMessage("No, I want to edit it");
                                       handleConfirmStep("No");
@@ -1881,10 +1875,10 @@ export const PipeLineChatPanel = ({
                   </Avatar>
                   <div className="flex flex-col max-w-[85%]">
                     <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
-                    <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce delay-150"></div>
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce delay-300"></div>
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
                       </div>
                     </div>
                   </div>
@@ -1894,17 +1888,15 @@ export const PipeLineChatPanel = ({
             </div>
           </ScrollArea>
         )}
-        
-        <div className="p-4 bg-background/80 backdrop-blur-md border-t border-border/30 shadow-sm">
-          <div className="max-w-3xl mx-auto">
-            <AIChatInput
-              input={input}
-              onChange={setInput}
-              onSend={handleSend}
-              placeholder={mode === 'create' ? "Reply to create your pipeline..." : "Ask about your pipeline..."}
-              disabled={isProcessing}
-            />
-          </div>
+
+        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
+          <AIChatInput
+            input={input}
+            onChange={setInput}
+            onSend={handleSend}
+            placeholder={mode === 'create' ? "Reply to create your pipeline..." : "Ask about your pipeline..."}
+            disabled={isProcessing}
+          />
         </div>
       </div>
     </>

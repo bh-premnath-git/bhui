@@ -8,7 +8,7 @@
     },
     "target": {
       "type": "object",
-      "$ref": "schemas/Target.json"
+      "$ref": "@/components/bh-reactflow-comps/builddata/json/Target.json"
     }
   },
   "required": [

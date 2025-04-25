@@ -33,7 +33,6 @@ export function NavigationBreadcrumb() {
 
     // Special case for xplorer
     if (currentPath === "/data-catalog/xplorer") {
-      items.push({ title: "Data Catalog", path: "/data-catalog" });
       items.push({ title: "Xplorer", path: "/data-catalog/xplorer" });
       return items;
     }
@@ -54,7 +53,6 @@ export function NavigationBreadcrumb() {
 
     // Handle report detail paths
     if (currentPath.startsWith("/data-catalog/xplorer/")) {
-      items.push({ title: "Data Catalog", path: "/data-catalog" });
       items.push({ title: "Xplorer", path: "/data-catalog/xplorer" });
       
       // Extract report name from URL if possible

@@ -12,6 +12,8 @@ import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/Sho
 import { LoaderCircle } from 'lucide-react';
 import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
+import { PipeLineChatPanel } from './pipeline/components/PipeLineChatPanel';
 
 const BuildPlayGround: React.FC = () => {
     const { conversionLogs,
@@ -21,14 +23,17 @@ const BuildPlayGround: React.FC = () => {
         handleNext,
         handleSourceUpdate,
         handleLeavePage,
+        handleSearch,
+        handleNodeClick,
         handleFormSubmit, setShowLeavePrompt, handleNodesChange, handleEdgesChange,
         handleDialogClose, setNodes, setSelectedSchema, setFormStates,
         setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, handleRunClick, handleCut,
         handleUndo, handleRedo, handleLogsClick, handleKeyDown, handleAlignHorizontal, handleAlignVertical,
         debuggedNodes, debuggedNodesList, isPipelineRunning, isCanvasLoading, onConnect, handleDebugToggle,
-        handleCopy, handlePaste, handleSearchResultClick, handleZoomIn, handleZoomOut,
-        handleCenter, transformationCounts, highlightedNodeId, showLogs,
+        addNodeToHistory, handleCopy, handlePaste, handleSearchResultClick, handleZoomIn, handleZoomOut,
+        handleCenter, transformationCounts, searchTerm, searchResults, highlightedNodeId, copiedEdges, showLogs,
         nodes, edges, selectedSchema, sourceColumns, isFormOpen, showLeavePrompt, ctrlDTimeout, hasUnsavedChanges, setShowLogs, fetchPipelineDetails,
+        setLastSaved, lastSaved
     } = usePipelineContext()
     const onError = useCallback((id: string) => {
         // console.log('Flow Error:', id);
@@ -146,200 +151,203 @@ const BuildPlayGround: React.FC = () => {
     //   };
 
     return (
-        <div className="relative h-full">
-            {/* <ResolveSchema/> */}
-            <div className="p-1 ml-8">
+            <div className="relative h-full">
+                {/* <ResolveSchema/> */}
+                <div className="p-1 ml-8">
 
 
-                <div className="absolute  mt-2 z-50">
-                    <div className=" rounded-lg  p-2 text-sm">
-                        <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
-                    </div>
-                </div>
-                {debuggedNodesList?.length > 0 && (
-                    <div className="absolute top-2 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Debug Mode
-                            </h3>
-                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                                {debuggedNodesList.length} nodes
-                            </span>
+                    <div className="absolute  mt-2 z-50">
+                        <div className=" rounded-lg  p-2 text-sm">
+                            <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
                         </div>
-                        <div className="flex flex-wrap gap-1.5 overflow-y-auto custom-scrollbar pr-1" style={{ maxHeight: `${Math.min(40 * Math.ceil(debuggedNodesList.length / 2), 300)}px` }}>
-                            {debuggedNodesList.map(({ id, title }) => (
-                                <div
-                                    key={id}
-                                    className="group flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg text-sm text-blue-700 border border-blue-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
-                                >
-                                    <span className="truncate max-w-[180px]" title={title}>{title}</span>
-                                    <button
-                                        onClick={() => handleDebugToggle(id, title)}
-                                        className="opacity-70 hover:opacity-100 hover:text-red-500 transition-all duration-200 ml-1"
-                                        title="Remove from debug"
-                                        aria-label={`Remove ${title} from debug list`}
+                    </div>
+                    {debuggedNodesList?.length > 0 && (
+                        <div className="absolute top-2 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Debug Mode
+                                </h3>
+                                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                    {debuggedNodesList.length} nodes
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 overflow-y-auto custom-scrollbar pr-1" style={{ maxHeight: `${Math.min(40 * Math.ceil(debuggedNodesList.length / 2), 300)}px` }}>
+                                {debuggedNodesList.map(({ id, title }) => (
+                                    <div
+                                        key={id}
+                                        className="group flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg text-sm text-blue-700 border border-blue-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
                                     >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
+                                        <span className="truncate max-w-[180px]" title={title}>{title}</span>
+                                        <button
+                                            onClick={() => handleDebugToggle(id, title)}
+                                            className="opacity-70 hover:opacity-100 hover:text-red-500 transition-all duration-200 ml-1"
+                                            title="Remove from debug"
+                                            aria-label={`Remove ${title} from debug list`}
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <div style={{ height: '75vh', width: '100%', }}>
-                    <ReactFlow
-                        nodes={nodes?.map(node => ({
-                            ...node,
-                            selected: node.selected || false,
-                            style: {
-                                ...node.style,
-                                ...(highlightedNodeId === node.id && {
-                                    background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1))',
-                                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.1)',
-                                    borderRadius: '12px',
-                                    padding: '4px',
-                                    zIndex: 1000,
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                                })
-                            }
-                        }))}
-                        edges={edges}
-                        onNodesChange={handleNodesChange}
-                        onEdgesChange={handleEdgesChange}
-                        onConnect={onConnect}
-                        nodeTypes={memoizedNodeTypes}
-                        edgeTypes={edgeTypes}
-                        onError={onError}
-                        defaultViewport={defaultViewport}
-                        minZoom={0.2}
-                        maxZoom={1.5}
-                        fitView
-                        fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
-                        proOptions={{ hideAttribution: true }}
-                    />
-                </div>
-                {/* Updated FlowControls container positioning */}
-                <div className="fixed bottom-4 right-4 z-50">
-                    <FlowControls
-                        onZoomIn={handleZoomIn}
-                        onZoomOut={handleZoomOut}
-                        onCenter={handleCenter}
-                        onAlignHorizontal={handleAlignHorizontal}
-                        onAlignVertical={handleAlignVertical}
-                        handleRunClick={handleRun}
-                        onStop={handleStop}
-                        onNext={handleNext}
-                        isPipelineRunning={isPipelineRunning}
-                        isLoading={isCanvasLoading}
-                        pipelineConfig={handleRunClick}
+                    <div style={{ height: '75vh', width: '100%', }}>
+                        <ReactFlow
+                            nodes={nodes?.map(node => ({
+                                ...node,
+                                selected: node.selected || false,
+                                style: {
+                                    ...node.style,
+                                    ...(highlightedNodeId === node.id && {
+                                        background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1))',
+                                        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.1)',
+                                        borderRadius: '12px',
+                                        padding: '4px',
+                                        zIndex: 1000,
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    })
+                                }
+                            }))}
+                            edges={edges}
+                            onNodesChange={handleNodesChange}
+                            onEdgesChange={handleEdgesChange}
+                            onConnect={onConnect}
+                            nodeTypes={memoizedNodeTypes}
+                            edgeTypes={edgeTypes}
+                            onError={onError}
+                            defaultViewport={defaultViewport}
+                            minZoom={0.2}
+                            maxZoom={1.5}
+                            fitView
+                            fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
+                            proOptions={{ hideAttribution: true }}
+                        />
+                    </div>
+                    {/* Updated FlowControls container positioning */}
+                    <div className="fixed bottom-4 right-[25%] z-50">
+                        <FlowControls
+                            onZoomIn={handleZoomIn}
+                            onZoomOut={handleZoomOut}
+                            onCenter={handleCenter}
+                            onAlignHorizontal={handleAlignHorizontal}
+                            onAlignVertical={handleAlignVertical}
+                            handleRunClick={handleRun}
+                            onStop={handleStop}
+                            onNext={handleNext}
+                            isPipelineRunning={isPipelineRunning}
+                            isLoading={isCanvasLoading}
+                            pipelineConfig={handleRunClick}
+                            terminalLogs={terminalLogs}
+                            proplesLogs={conversionLogs}
+                        />
+                    </div>
+
+                    <Dialog
+                        open={isFormOpen}
+                        onOpenChange={handleDialogClose}
+                        aria-modal="true"
+                    >
+                        <DialogContent className="max-w-[60%]">
+                            {selectedSchema && (
+                                <CreateFormFormik
+                                    schema={selectedSchema}
+                                    sourceColumns={sourceColumns}
+                                    onClose={handleDialogClose}
+                                    currentNodeId={selectedSchema?.nodeId || ''}
+                                    initialValues={{
+                                        ...formStates[selectedSchema?.nodeId],
+                                        nodeId: selectedSchema?.nodeId
+                                    }}
+                                    nodes={nodes}
+                                    edges={edges}
+                                    pipelineDtl={pipelineDtl}
+                                    onSubmit={handleFormSubmit}
+                                />
+                            )}
+                        </DialogContent>
+                    </Dialog>
+
+
+
+                    <Dialog
+                        open={showLeavePrompt}
+                        onOpenChange={setShowLeavePrompt}
+                    // onClose={handleLeavePage}
+
+                    >
+                        <DialogContent >
+                            <div className="flex flex-col items-center text-center">
+                                {/* Warning Icon */}
+                                <div className="mb-4 p-3 rounded-full bg-amber-50">
+                                    <svg
+                                        className="w-8 h-8 text-amber-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {/* Title and Description */}
+                                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                                    Unsaved Changes
+                                </h2>
+                                <p className="text-gray-600 mb-6">
+                                    You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
+                                </p>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 w-full">
+                                    <Button
+                                        onClick={() => setShowLeavePrompt(false)}
+
+                                    >
+                                        Stay
+                                    </Button>
+                                    <Button
+                                        onClick={handleLeavePage}
+
+                                    >
+                                        Leave Page
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Add Terminal component */}
+                    <Terminal
+                        isOpen={showLogs}
+                        onClose={() => setShowLogs(false)}
+                        title="Pipeline Validation Logs"
                         terminalLogs={terminalLogs}
                         proplesLogs={conversionLogs}
                     />
+
+                    {/* Loading Overlay */}
+                    {isCanvasLoading && (
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
+                            <div className="flex flex-col items-center gap-2">
+                                <LoaderCircle size={40} />
+                                <span className="text-sm text-gray-600 font-medium">Processing...</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                <Dialog
-                    open={isFormOpen}
-                    onOpenChange={handleDialogClose}
-                    aria-modal="true"
-                >
-                    <DialogContent className="max-w-[60%]">
-                        {selectedSchema && (
-                            <CreateFormFormik
-                                schema={selectedSchema}
-                                sourceColumns={sourceColumns}
-                                onClose={handleDialogClose}
-                                currentNodeId={selectedSchema?.nodeId || ''}
-                                initialValues={{
-                                    ...formStates[selectedSchema?.nodeId],
-                                    nodeId: selectedSchema?.nodeId
-                                }}
-                                nodes={nodes}
-                                edges={edges}
-                                pipelineDtl={pipelineDtl}
-                                onSubmit={handleFormSubmit}
-                            />
-                        )}
-                    </DialogContent>
-                </Dialog>
-
-                <Dialog
-                    open={showLeavePrompt}
-                    onOpenChange={setShowLeavePrompt}
-                // onClose={handleLeavePage}
-
-                >
-                    <DialogContent >
-                        <div className="flex flex-col items-center text-center">
-                            {/* Warning Icon */}
-                            <div className="mb-4 p-3 rounded-full bg-amber-50">
-                                <svg
-                                    className="w-8 h-8 text-amber-500"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                    />
-                                </svg>
-                            </div>
-
-                            {/* Title and Description */}
-                            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                                Unsaved Changes
-                            </h2>
-                            <p className="text-gray-600 mb-6">
-                                You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
-                            </p>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-3 w-full">
-                                <Button
-                                    onClick={() => setShowLeavePrompt(false)}
-
-                                >
-                                    Stay
-                                </Button>
-                                <Button
-                                    onClick={handleLeavePage}
-
-                                >
-                                    Leave Page
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Add Terminal component */}
-                <Terminal
-                    isOpen={showLogs}
-                    onClose={() => setShowLogs(false)}
-                    title="Pipeline Validation Logs"
-                    terminalLogs={terminalLogs}
-                    proplesLogs={conversionLogs}
-                />
-
-                {/* Loading Overlay */}
-                {isCanvasLoading && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
-                        <div className="flex flex-col items-center gap-2">
-                            <LoaderCircle size={40} />
-                            <span className="text-sm text-gray-600 font-medium">Processing...</span>
-                        </div>
-                    </div>
-                )}
             </div>
-        </div>
+            
     );
 };
 

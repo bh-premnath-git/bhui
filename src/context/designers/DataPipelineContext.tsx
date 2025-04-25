@@ -427,13 +427,13 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         console.log(nodesOrUpdater)
         // alert()
         // console.log(typeof nodesOrUpdater)
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => 
-                nodesOrUpdater(prevNodes).map(sanitizeNode)
-            );
-        } else {
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
     }, [ sanitizeNode]);
 
     // Update handleNodesChange
@@ -1289,7 +1289,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
         };
   
-        setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
+        setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {

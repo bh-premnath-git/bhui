@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
 import logo from "/logo.svg";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
+import { useMemo } from "react";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -25,7 +26,55 @@ export function Sidebar() {
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
   const navigate = useNavigate();
-  const { navigationItems: dynamicItems, loading } = navigation;
+  const location = useLocation();
+  const { navigationItems: dynamicItems = [], loading } = navigation;
+  
+  // Generate items for the navigation menu
+  const navItems = useMemo(() => {
+    const items = [];
+    
+    dynamicItems.forEach(item => {
+      // Add parent items
+      const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
+      
+      items.push({
+        ...item,
+        showIcon: showIconForParent,
+        isParent: true // Mark as parent item
+      });
+      
+      // Only add subitems for non-Data Xplorer parents
+      // Data Xplorer subitems are handled separately
+      if (item.subItems && item.subItems.length > 0 && item.title !== "Data Xplorer") {
+        item.subItems.forEach(subItem => {
+          items.push({
+            ...subItem,
+            isSubItem: true,
+            parentPath: item.path,
+            showIcon: true // All subitems show icons
+          });
+        });
+      }
+    });
+    
+    return items;
+  }, [dynamicItems]);
+  
+  // Get Data Xplorer specific items
+  const dataXplorerSubItems = useMemo(() => {
+    const xplorerItem = dynamicItems.find(item => item.title === "Data Xplorer");
+    return xplorerItem?.subItems || [];
+  }, [dynamicItems]);
+
+  // Function to check if a parent item has an active child
+  const hasActiveChild = (parentPath) => {
+    return location.pathname.startsWith(parentPath) && 
+           navItems.some(item => 
+             item.isSubItem && 
+             item.parentPath === parentPath && 
+             location.pathname === item.path
+           );
+  };
 
   const handleLogout = async () => {
     try {
@@ -35,6 +84,8 @@ export function Sidebar() {
       console.error("Logout failed:", error);
     }
   };
+
+  const userName = userInfo?.name || userInfo?.username || "John Doe";
 
   return (
     <div
@@ -79,120 +130,136 @@ export function Sidebar() {
       </Button>
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {dynamicItems.map((item) => (
-            <li key={item.path}>
-              <div className="flex">
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center px-3 py-2 rounded-md",
-                      "transition-all duration-200 ease-in-out",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      isActive && "bg-accent text-accent-foreground",
-                      !isExpanded && "justify-center",
-                      "flex-1"
-                    )
-                  }
-                  onClick={() => item.subItems && navigation.toggleExpanded(item.path)}
-                >
-                  <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200" />
-                  {isExpanded && (
-                    <span className="ml-3 flex-1 transition-opacity duration-200">{item.title}</span>
-                  )}
-                  {isExpanded && item.subItems && (
-                    <ChevronRight
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        "transition-transform duration-200 ease-in-out",
-                        navigation.isItemExpanded(item.path) && "transform rotate-90"
-                      )}
-                    />
-                  )}
-                </NavLink>
-                {isExpanded && item.actions && (
-                  <div className="flex items-center">
-                    {item.actions.map((action, index) => (
-                      action.icon === 'ellipsis' ? (
-                        <DropdownMenu key={index}>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 ml-1"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
-                            <DropdownMenuItem 
-                              className="cursor-pointer flex items-center gap-2"
-                              onClick={() => {
-                                // Open search functionality
-                                console.log("Search clicked");
-                              }}
-                            >
-                              <Search className="h-4 w-4" />
-                              <span>Search</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="cursor-pointer flex items-center gap-2"
-                              onClick={() => {
-                                navigate(`${ROUTES.DATA_CATALOG}/xplorer`);
-                              }}
-                            >
-                              <PlusCircle className="h-4 w-4" />
-                              <span>New Report</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 ml-1"
-                          onClick={() => navigation.handleAction(action.action, item.path)}
-                        >
-                          {action.icon === 'ellipsis' && <MoreHorizontal className="h-4 w-4" />}
-                        </Button>
+          {navItems.map((item) => {
+            // Determine when to show this item based on expanded state
+            const shouldShow = isExpanded || (!isExpanded && item.showIcon);
+            
+            // For non-expanded state, only show items with icons
+            if (!shouldShow) {
+              return null;
+            }
+            
+            // Check if this is a parent with an active child
+            const hasActiveSubitem = item.isParent && hasActiveChild(item.path);
+            
+            return (
+              <li key={item.path}>
+                <div className="flex">
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center py-2 rounded-md",
+                        "transition-all duration-200 ease-in-out",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        // Only highlight the item if it's exactly active and not a parent with active child
+                        (isActive && !hasActiveSubitem) && "bg-accent text-accent-foreground",
+                        "flex-1",
+                        // Conditional classes based on expanded state and icon presence
+                        !isExpanded && item.showIcon && "justify-center px-3",
+                        isExpanded && "px-3",
+                        // Add indentation and styling for sub items when sidebar is expanded
+                        isExpanded && item.isSubItem && "pl-6 text-sm"
                       )
-                    ))}
-                  </div>
-                )}
-              </div>
-              {isExpanded && item.subItems && (
-                <ul
-                  className={cn(
-                    "mt-1 ml-4 space-y-1 border-l pl-3",
-                    "transition-all duration-200 ease-in-out origin-top",
-                    navigation.isItemExpanded(item.path)
-                      ? "opacity-100 max-h-96 transform scale-y-100"
-                      : "opacity-0 max-h-0 transform scale-y-0 pointer-events-none"
+                    }
+                  >
+                    {/* Show icon for all items that should have icons */}
+                    {item.showIcon && item.icon && (
+                      <item.icon className={cn(
+                        "shrink-0 transition-transform duration-200",
+                        item.isSubItem ? "h-4 w-4" : "h-4 w-4"
+                      )} />
+                    )}
+                    {isExpanded && (
+                      <span className={cn(
+                        "flex-1 transition-opacity duration-200",
+                        item.showIcon && "ml-3",
+                        item.isSubItem && "text-sm",
+                        // Make parent items without icons have smaller text
+                        !item.showIcon && item.isParent && "text-sm font-medium"
+                      )}>
+                        {item.title}
+                      </span>
+                    )}
+                  </NavLink>
+                  {isExpanded && item.actions && !item.isSubItem && (
+                    <div className="flex items-center">
+                      {item.actions.map((action, index) => (
+                        action.icon === 'ellipsis' ? (
+                          <DropdownMenu key={index}>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 ml-1"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                              <DropdownMenuItem 
+                                className="cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                  // Open search functionality
+                                  console.log("Search clicked");
+                                }}
+                              >
+                                <Search className="h-4 w-4" />
+                                <span>Search</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                  navigate(`${ROUTES.DATA_CATALOG}/xplorer`);
+                                }}
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                                <span>New Report</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 ml-1"
+                            onClick={() => navigation.handleAction(action.action, item.path)}
+                          >
+                            {action.icon === 'ellipsis' && <MoreHorizontal className="h-4 w-4" />}
+                          </Button>
+                        )
+                      ))}
+                    </div>
                   )}
-                >
-                  {item.subItems.map((subItem) => (
-                    <li key={subItem.path}>
-                      <NavLink
-                        to={subItem.path}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-center px-3 py-2 rounded-md text-sm",
-                            "transition-all duration-200 ease-in-out",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            isActive && "bg-accent text-accent-foreground"
-                          )
-                        }
-                      >
-                        <subItem.icon className="h-4 w-4 shrink-0" />
-                        <span className="ml-3 transition-opacity duration-200">{subItem.title}</span>
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
+                </div>
+                {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
+                {isExpanded && item.title === "Data Xplorer" && dataXplorerSubItems.length > 0 && (
+                  <ul className="mt-1 space-y-1">
+                    {dataXplorerSubItems.map(subItem => (
+                      <li key={subItem.path}>
+                        <NavLink
+                          to={subItem.path}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center px-3 py-2 rounded-md",
+                              "transition-all duration-200 ease-in-out",
+                              "hover:bg-accent hover:text-accent-foreground",
+                              isActive && "bg-accent text-accent-foreground",
+                              "text-sm pl-6"
+                            )
+                          }
+                        >
+                          {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                          <span className="ml-3 flex-1">{subItem.title}</span>
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </nav>
       <div className="h-auto border-t">
@@ -204,8 +271,8 @@ export function Sidebar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={userInfo?.avatarUrl || ""} alt={"John Doe"} />
-                  <AvatarFallback>{"John Doe"?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                  <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -219,8 +286,8 @@ export function Sidebar() {
                     : "opacity-0 max-w-0 pointer-events-none"
                 )}
               >
-                <p className="text-sm font-medium truncate">John Doe{/* {userInfo?.name || userInfo?.username} */}</p>
-                <p className="text-xs text-muted-foreground truncate">{userInfo?.email}</p>
+                <p className="text-sm font-medium truncate">{userName}</p>
+                <p className="text-xs text-muted-foreground truncate">{userInfo?.email || ""}</p>
               </div>
             )}
             <DropdownMenuContent

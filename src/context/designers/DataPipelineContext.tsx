@@ -603,7 +603,7 @@ const makePipeline = async (result: any) => {
             }));
 
             // Update node data with transformation data
-            setSanitizedNodes((nds) =>
+            setNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists

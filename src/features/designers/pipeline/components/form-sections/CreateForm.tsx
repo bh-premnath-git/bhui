@@ -1953,7 +1953,7 @@ const FormContent: React.FC<{
       )}
 
       {/* Add submit and cancel buttons for inline mode */}
-      {!isDialog && (
+      {/* {!isDialog && (
         <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
           <Button
             type="button"
@@ -1971,7 +1971,7 @@ const FormContent: React.FC<{
             Save Configuration
           </Button>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

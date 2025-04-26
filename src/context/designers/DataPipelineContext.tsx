@@ -771,7 +771,7 @@ const makePipeline = async (result: any) => {
             });
   console.log(debuggedNodesList)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
+    pipeline_name: `${pipelineDtl?.pipeline_name}`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });
@@ -795,7 +795,7 @@ debuggedNodesList.forEach(checkpoint => {
             //     message: 'Pipeline validation successful. Starting execution...',
             //     level: 'info'
             // }]);
-  
+   
             // Pass the request data directly
             let response:any = await apiService.post({
                 portNumber: CATALOG_API_PORT,

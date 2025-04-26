@@ -20,7 +20,7 @@ export interface RecentChat {
 //   { id: "5", name: "Marketing Metrics" },
 // ];
 
-export function useConnections() {
+export function useConnections(p0: { connectionId: string; }) {
   const { connections: adminConnections, isLoading: adminLoading, isError: adminError } = useAdminConnections();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);

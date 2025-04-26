@@ -130,6 +130,7 @@ function parseJsonContent(content: string, rootElement?: string, headerRow?: num
 }
 
 function parseCsvContent(content: string, delimiter: string, quoteChar: string, headerRow: number = 1): string[][] {
+  debugger
   const result = Papa.parse(content, { 
     delimiter, 
     quoteChar,

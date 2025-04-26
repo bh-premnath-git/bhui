@@ -132,7 +132,7 @@ interface  bnPipelineContextProps {
     handleZoomIn: () => void;
     handleZoomOut: () => void;
     handleCenter: () => void;
-    makePipeline: (result:any) =>void;
+    makePipeline: (result:any,isModify?:boolean) =>void;
     ctrlDTimeout: MutableRefObject<NodeJS.Timeout | null>;
     isSaving: boolean;
     hasUnsavedChanges: boolean;
@@ -490,17 +490,20 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             console.error('FitView error:', error);
         }
     }, [fitView]);
-const makePipeline = async (result: any) => {
-    let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-    console.log(optimised, "optimised");
-    
-    
-    
-    // Set the pipeline JSON first
-    setPipelineJson(optimised);
+const makePipeline = async (result: any,isModify=true) => {
+    let optimised;
+    let uiJson;
+    if(isModify){
+        optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+        console.log(optimised, "optimised");
+        setPipelineJson(optimised);
+        uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+    }else{
+        setPipelineJson(result);
+        uiJson = await convertPipelineToUIJson(result, handleSourceUpdate);
 
-    // Convert pipeline to UI JSON
-    const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+    }
+    
     
     console.log(uiJson, "uiJson");
     if (!uiJson || !uiJson.nodes) {

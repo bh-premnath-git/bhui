@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode, useMemo } from "react";
+import { useState, useEffect, useRef, ReactNode, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -63,7 +63,19 @@ export const PipeLineChatPanel = ({
   const reactFlowInstance = useReactFlow();
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { setPipelineJson, pipelineJson } = usePipelineContext();
+  const { setPipelineJson: originalSetPipelineJson, pipelineJson, makePipeline } = usePipelineContext();
+  
+  // Create a custom setPipelineJson function that also calls makePipeline
+  const setPipelineJson = useCallback((newPipelineJson: any) => {
+    // First update the pipeline JSON using the original function
+    originalSetPipelineJson(newPipelineJson);
+    
+    // Then call makePipeline with the new pipeline JSON
+    if (newPipelineJson !== null && newPipelineJson !== undefined) {
+      console.log(newPipelineJson, "pipelineJson updated and calling makePipeline");
+      makePipeline({ pipeline_definition: newPipelineJson });
+    }
+  }, [originalSetPipelineJson, makePipeline]);
   
   // Get nodes and edges for the CreateForm component
   const nodes = reactFlowInstance.getNodes();
@@ -114,6 +126,8 @@ export const PipeLineChatPanel = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
 
   // Escape key handler removed as chat panel is always visible
   // No need to close the panel with Escape key
@@ -574,6 +588,7 @@ export const PipeLineChatPanel = ({
       // Build and update the pipeline template
       const pipelineTemplate = buildPipelineTemplate();
       setPipelineJson(pipelineTemplate);
+
       console.log("Current pipeline template:", pipelineTemplate);
 
       return;

@@ -291,7 +291,7 @@
 //                     <AvatarFallback>AI</AvatarFallback>
 //                   </Avatar>
 //                   <div className="flex flex-col max-w-[85%]">
-//                     <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
+//                     <div className="rounded-2xl py-3 bg-card border border-border/40 shadow-sm">
 //                     <div className="flex space-x-2">
 //                         <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
 //                         <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>

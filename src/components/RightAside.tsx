@@ -17,21 +17,19 @@ export function RightAside({
   width = 'w-80',
   className 
 }: RightAsideProps) {
-  const { isRightAsideOpen, closeRightAside } = useSidebar();
+  const { closeRightAside } = useSidebar();
 
   return (
     <aside 
       className={cn(
-        "fixed right-0 top-0 h-screen z-30 bg-background/95 backdrop-blur-sm",
-        "border-l shadow-sm transition-all duration-300 ease-in-out",
-        "transform", 
-        isRightAsideOpen ? "translate-x-0" : "translate-x-full",
+        "h-full bg-background/95 backdrop-blur-sm",
+        "border-l shadow-sm",
         width,
         className
       )}
     >
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b flex items-center justify-between">
+        <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
           <h2 className="font-medium text-lg">{title}</h2>
           <Button 
             variant="ghost" 

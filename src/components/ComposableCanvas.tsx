@@ -22,6 +22,7 @@ import { useFlow } from '@/context/designers/FlowContext';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { cn } from '@/lib/utils';
 
 export type CanvasType = 'flow' | 'pipeline';
 
@@ -51,6 +52,18 @@ interface ComposableCanvasProps {
 
 const defaultSnapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1 };
+
+// Simple debounce utility function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => func(...args), waitFor);
+  };
+}
 
 /**
  * ComposableCanvas - A unified canvas component that works with both Flow and DataPipeline contexts
@@ -84,162 +97,167 @@ export const ComposableCanvas = ({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   
-  // Get context-specific data and functions
+  // Get contexts
+  const flowContext = useFlow();
+  const pipelineContext = usePipelineContext();
+
+  // State for nodes/edges/handlers, default to undefined
   let nodes: Node[] = [];
   let edges: Edge[] = [];
   let onNodesChange: ((changes: NodeChange[]) => void) | undefined = undefined;
   let onEdgesChange: ((changes: EdgeChange[]) => void) | undefined = undefined;
   let onConnect: ((connection: Connection) => void) | undefined = undefined;
   let setReactFlowInstance: ((instance: ReactFlowInstance) => void) | undefined = undefined;
-  let fitView: (() => void) | undefined = undefined;
   let checkNodeProximityAndConnect: (() => void) | undefined = undefined;
   let isValidConnection: ((connection: Connection) => boolean) | undefined = undefined;
   let handleKeyDown: ((event: KeyboardEvent) => void) | undefined = undefined;
-  
-  // Flow context specific functionality
-  if (type === 'flow') {
-    const flowContext = useFlow();
-    if (flowContext) {
-      nodes = flowContext.nodes;
-      edges = flowContext.edges;
-      onNodesChange = flowContext.onNodesChange;
-      onEdgesChange = flowContext.onEdgesChange;
-      setReactFlowInstance = flowContext.setReactFlowInstance;
-      // Use either context's fitView or the ReactFlow instance's fitView
-      fitView = flowContext.fitView || (() => reactFlowInstance.fitView());
-      
-      // Flow-specific connection handler
-      onConnect = useCallback(
-        (connection: Connection) => {
-          const edge = {
-            ...connection,
-            type: 'custom',
-            markerStart: {
-              type: MarkerType.ArrowClosed,
-              width: 34,
-              height: 20,
-              color: '#94a3b8',
-              orient: 'auto-start',
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 34,
-              height: 20,
-              color: '#94a3b8',
-              orient: 'auto-start',
-            },
-          };
-          flowContext.setEdges((eds) => addEdge(edge, eds));
-        },
-        [flowContext.setEdges]
-      );
-      
-      // Flow-specific proximity detection
-      checkNodeProximityAndConnect = useCallback(() => {
-        const HANDLE_WIDTH = 12;
-        const HANDLE_HEIGHT = 32;
-        const NODE_WIDTH = 56;
-        const NODE_HEIGHT = 56;
-        const HANDLE_OFFSET_X = 0;
-     
-        const handles = flowContext.nodes.flatMap((node) => [
-          {
-            nodeId: node.id,
-            handleId: 'left',
-            type: 'target',
-            x: node.position.x - HANDLE_WIDTH + HANDLE_OFFSET_X,
-            y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
-            width: HANDLE_WIDTH,
-            height: HANDLE_HEIGHT,
-          },
-          {
-            nodeId: node.id,
-            handleId: 'right',
-            type: 'source',
-            x: node.position.x + NODE_WIDTH - HANDLE_OFFSET_X,
-            y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
-            width: HANDLE_WIDTH,
-            height: HANDLE_HEIGHT,
-          },
-        ]);
-     
-        const newEdges = handles.flatMap((handleA, i) =>
-          handles.slice(i + 1).flatMap((handleB) => {
-            if (
-              handleA.type !== handleB.type &&
-              handleA.nodeId !== handleB.nodeId &&
-              rectanglesOverlap(handleA, handleB)
-            ) {
-              const [sourceHandle, targetHandle] = handleA.type === 'source' ? [handleA, handleB] : [handleB, handleA];
-              if (!flowContext.edges.some((edge) => edge.source === sourceHandle.nodeId && edge.target === targetHandle.nodeId)) {
-                return [{
-                  id: `e${sourceHandle.nodeId}-${targetHandle.nodeId}`,
-                  source: sourceHandle.nodeId,
-                  target: targetHandle.nodeId,
-                  type: 'custom',
-                  style: { stroke: '#888' },
-                  markerStart: {
-                    type: MarkerType.ArrowClosed,
-                    width: 34,
-                    height: 20,
-                    color: '#94a3b8',
-                    orient: 'auto-start',
-                  },
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    width: 34,
-                    height: 20,
-                    color: '#94a3b8',
-                    orient: 'auto-start',
-                  },
-                }];
-              }
-            }
-            return [];
-          })
-        );
-     
-        if (newEdges.length > 0) {
-          flowContext.setEdges((eds) => [...eds, ...newEdges]);
-        }
-      }, [flowContext.nodes, flowContext.edges, flowContext.setEdges]);
-      
-      // Flow-specific connection validation
-      isValidConnection = useCallback(
-        (connection: Connection) => {
-          const target = flowContext.nodes.find((node) => node.id === connection.target);
-          if (!target) return false;
-          
-          const hasCycle = (node: any, visited = new Set()) => {
-            if (visited.has(node.id)) return false;
-            visited.add(node.id);
-            for (const outgoer of getOutgoers(node, flowContext.nodes, flowContext.edges)) {
-              if (outgoer.id === connection.source) return true;
-              if (hasCycle(outgoer, visited)) return true;
-            }
-            return false;
-          };
-          
-          if (target.id === connection.source) return false;
-          return !hasCycle(target);
-        },
-        [flowContext.nodes, flowContext.edges],
-      );
+
+  // Memoize fitView function (ensure this exists and is correct)
+  const fitView = useCallback(() => {
+    if (type === 'flow' && flowContext?.fitView) {
+      // console.log('Using flowContext.fitView');
+      flowContext.fitView();
+    } else if (reactFlowInstance) {
+      // console.log('Using reactFlowInstance.fitView');
+      reactFlowInstance.fitView();
+    } else {
+      // console.log('fitView: No instance or context method available');
     }
-  } 
-  // Pipeline context specific functionality
-  else if (type === 'pipeline') {
-    const pipelineContext = usePipelineContext();
-    if (pipelineContext) {
-      nodes = pipelineContext.nodes;
-      edges = pipelineContext.edges;
-      onNodesChange = pipelineContext.handleNodesChange;
-      onEdgesChange = pipelineContext.handleEdgesChange;
-      onConnect = pipelineContext.onConnect;
-      handleKeyDown = pipelineContext.handleKeyDown;
-      // Use ReactFlow instance's fitView for pipeline type if needed
-      fitView = () => reactFlowInstance.fitView();
-    }
+  }, [type, flowContext, reactFlowInstance]);
+
+  // Assign context values based on type
+  if (type === 'flow' && flowContext) {
+    nodes = flowContext.nodes;
+    edges = flowContext.edges;
+    onNodesChange = flowContext.onNodesChange;
+    onEdgesChange = flowContext.onEdgesChange;
+    setReactFlowInstance = flowContext.setReactFlowInstance;
+    
+    // Restore original useCallback for onConnect
+    onConnect = useCallback(
+      (connection: Connection) => {
+        const edge = {
+          ...connection,
+          type: 'custom',
+          markerStart: {
+            type: MarkerType.ArrowClosed,
+            width: 34,
+            height: 20,
+            color: '#94a3b8',
+            orient: 'auto-start',
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 34,
+            height: 20,
+            color: '#94a3b8',
+            orient: 'auto-start',
+          },
+        };
+        flowContext.setEdges((eds) => addEdge(edge, eds));
+      },
+      [flowContext.setEdges]
+    );
+
+    // Restore original useCallback for checkNodeProximityAndConnect
+    checkNodeProximityAndConnect = useCallback(() => {
+      const HANDLE_WIDTH = 12;
+      const HANDLE_HEIGHT = 32;
+      const NODE_WIDTH = 56;
+      const NODE_HEIGHT = 56;
+      const HANDLE_OFFSET_X = 0;
+   
+      const handles = flowContext.nodes.flatMap((node) => [
+        {
+          nodeId: node.id,
+          handleId: 'left',
+          type: 'target',
+          x: node.position.x - HANDLE_WIDTH + HANDLE_OFFSET_X,
+          y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
+          width: HANDLE_WIDTH,
+          height: HANDLE_HEIGHT,
+        },
+        {
+          nodeId: node.id,
+          handleId: 'right',
+          type: 'source',
+          x: node.position.x + NODE_WIDTH - HANDLE_OFFSET_X,
+          y: node.position.y + NODE_HEIGHT / 2 - HANDLE_HEIGHT / 2,
+          width: HANDLE_WIDTH,
+          height: HANDLE_HEIGHT,
+        },
+      ]);
+   
+      const newEdges = handles.flatMap((handleA, i) =>
+        handles.slice(i + 1).flatMap((handleB) => {
+          if (
+            handleA.type !== handleB.type &&
+            handleA.nodeId !== handleB.nodeId &&
+            rectanglesOverlap(handleA, handleB)
+          ) {
+            const [sourceHandle, targetHandle] = handleA.type === 'source' ? [handleA, handleB] : [handleB, handleA];
+            if (!flowContext.edges.some((edge) => edge.source === sourceHandle.nodeId && edge.target === targetHandle.nodeId)) {
+              return [{
+                id: `e${sourceHandle.nodeId}-${targetHandle.nodeId}`,
+                source: sourceHandle.nodeId,
+                target: targetHandle.nodeId,
+                type: 'custom',
+                style: { stroke: '#888' },
+                markerStart: {
+                  type: MarkerType.ArrowClosed,
+                  width: 34,
+                  height: 20,
+                  color: '#94a3b8',
+                  orient: 'auto-start',
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  width: 34,
+                  height: 20,
+                  color: '#94a3b8',
+                  orient: 'auto-start',
+                },
+              }];
+            }
+          }
+          return [];
+        })
+      );
+   
+      if (newEdges.length > 0) {
+        flowContext.setEdges((eds) => [...eds, ...newEdges]);
+      }
+    }, [flowContext.nodes, flowContext.edges, flowContext.setEdges]);
+
+    // Restore original useCallback for isValidConnection
+    isValidConnection = useCallback(
+      (connection: Connection) => {
+        const target = flowContext.nodes.find((node) => node.id === connection.target);
+        if (!target) return false;
+        
+        const hasCycle = (node: any, visited = new Set()) => {
+          if (visited.has(node.id)) return false;
+          visited.add(node.id);
+          for (const outgoer of getOutgoers(node, flowContext.nodes, flowContext.edges)) {
+            if (outgoer.id === connection.source) return true;
+            if (hasCycle(outgoer, visited)) return true;
+          }
+          return false;
+        };
+        
+        if (target.id === connection.source) return false;
+        return !hasCycle(target);
+      },
+      [flowContext.nodes, flowContext.edges],
+    );
+
+  } else if (type === 'pipeline' && pipelineContext) {
+    nodes = pipelineContext.nodes;
+    edges = pipelineContext.edges;
+    onNodesChange = pipelineContext.handleNodesChange;
+    onEdgesChange = pipelineContext.handleEdgesChange;
+    onConnect = pipelineContext.onConnect;
+    handleKeyDown = pipelineContext.handleKeyDown;
   }
   
   // Initialize ReactFlow instance
@@ -275,16 +293,33 @@ export const ComposableCanvas = ({
     }
   }, [type, handleKeyDown, nodes]);
   
-  // Only run fitView when we have nodes that need positioning for flow canvas
+  // *** Use ResizeObserver to trigger fitView ***
   useEffect(() => {
-    if (type === 'flow' && nodes?.length > 0 && fitView) {
-      // Add a small delay to ensure nodes are rendered
-      const timer = setTimeout(() => {
-        fitView();
-      }, 300);
-      return () => clearTimeout(timer);
+    // Debounce the fitView call to avoid rapid firing during resize/transitions
+    const debouncedFitView = debounce(fitView, 350); // Adjust debounce delay if needed
+
+    let observer: ResizeObserver;
+    const element = reactFlowWrapper.current;
+
+    if (element && fitView) {
+      observer = new ResizeObserver(() => {
+        // console.log('ResizeObserver triggered: Calling debounced fitView');
+        debouncedFitView();
+      });
+
+      observer.observe(element);
     }
-  }, [type, nodes, fitView]);
+
+    // Cleanup function
+    return () => {
+      if (observer && element) {
+        // console.log('ResizeObserver cleanup: Unobserving element');
+        observer.unobserve(element);
+      }
+      // Also clear any pending debounced call
+      debouncedFitView(); // Call with no args potentially, or manage clearing timeout directly if debounce allows
+    };
+  }, [fitView]); // Depend only on the fitView function (which depends on context/instance)
   
   // Loading state
   if (loading) {
@@ -304,9 +339,9 @@ export const ComposableCanvas = ({
   const effectiveDefaultViewport = customDefaultViewport || defaultViewport;
   
   return (
-    <div className={className}>
+    <div className={cn(className, 'relative')}>
       <ReactFlowProvider>
-        <div ref={reactFlowWrapper} className="w-full h-full">
+        <div ref={reactFlowWrapper} className="absolute inset-0">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -339,7 +374,6 @@ export const ComposableCanvas = ({
             fitViewOptions={{ padding: 0.3 }}
           >
             {showBackground && <Background variant={backgroundVariant} gap={12} size={1} />}
-            {renderControls && !controls && <Controls />}
             {controls}
             {children}
           </ReactFlow>

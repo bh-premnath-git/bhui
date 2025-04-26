@@ -3,7 +3,7 @@ import DataPipelineCanvasNew from '@/features/designers/DataPipelineCanvasNew';
 
 const DataPipelineCanvasPage = () => {
   return (
-    <div className="h-[90%] w-full">
+    <div className="h-full w-full">
       <DataPipelineCanvasNew />
     </div>
   )

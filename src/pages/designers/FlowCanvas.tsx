@@ -3,7 +3,7 @@ import { FlowCanvasNew } from "@/features/designers/FlowCanvasNew";
 
 function FlowCanvasPage() {
     return (
-        <div className="h-[calc(100vh-80px)] w-full overflow-hidden">
+        <div className="h-full w-full">
             <FlowCanvasNew />
         </div>
     )

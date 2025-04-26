@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 interface BottomDrawerProps {
   title?: string;
   children: React.ReactNode;
-  height?: string;
-  defaultHeight?: string;
+  height?: string; // Height when open (not maximized)
   className?: string;
   showMaximize?: boolean;
 }
@@ -16,32 +15,36 @@ interface BottomDrawerProps {
 export function BottomDrawer({ 
   title = 'Console', 
   children, 
-  height = 'h-80',
-  defaultHeight = 'h-10',
+  height = 'h-80', // Default open height
   className,
   showMaximize = true
 }: BottomDrawerProps) {
-  const { isBottomDrawerOpen, toggleBottomDrawer, closeBottomDrawer } = useSidebar();
+  const { isBottomDrawerOpen, toggleBottomDrawer } = useSidebar(); 
   const [isMaximized, setIsMaximized] = React.useState(false);
 
-  const toggleMaximize = () => {
+  const toggleMaximize = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
     setIsMaximized(prev => !prev);
   };
 
-  const effectiveHeight = isMaximized ? 'h-[calc(100vh-64px)]' : height;
+  // Height class determines the drawer's size within the flex column
+  const heightClass = isMaximized ? 'flex-1' : height;
 
   return (
+    // Removed fixed positioning classes (fixed, bottom, left, right, z-index)
     <div 
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm",
-        "border-t shadow-sm transition-all duration-300 ease-in-out",
-        isBottomDrawerOpen ? effectiveHeight : defaultHeight,
-        className
+        "bg-background/95 backdrop-blur-sm", // Keep background
+        "border-t shadow-sm", // Keep border/shadow
+        "overflow-hidden", // Prevent content spilling out before internal scroll
+        heightClass, // Apply dynamic height
+        className // Allow additional classes (like flex-shrink-0 from parent)
       )}
     >
+      {/* Use flex layout internally as well */}
       <div className="flex flex-col h-full">
         <div 
-          className="px-4 py-2 border-b flex items-center justify-between cursor-pointer"
+          className="px-4 py-2 border-b flex items-center justify-between cursor-pointer flex-shrink-0" // Header shouldn't shrink
           onClick={toggleBottomDrawer}
         >
           <div className="flex items-center gap-2">
@@ -53,14 +56,11 @@ export function BottomDrawer({
           </div>
           
           <div className="flex items-center gap-1">
-            {showMaximize && isBottomDrawerOpen && (
+            {showMaximize && isBottomDrawerOpen && ( 
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleMaximize();
-                }}
+                onClick={toggleMaximize}
                 className="h-7 w-7 rounded-full hover:bg-muted"
               >
                 {isMaximized ? (
@@ -74,9 +74,11 @@ export function BottomDrawer({
           </div>
         </div>
         
+        {/* Content area takes remaining space and scrolls */}
         <div className={cn(
-          "flex-1 overflow-y-auto p-4 transition-opacity duration-200",
-          isBottomDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none h-0"
+          "flex-1 overflow-y-auto p-4",
+          // Hide content visually if not open, though parent controls rendering
+          !isBottomDrawerOpen && "hidden" 
         )}>
           {children}
         </div>

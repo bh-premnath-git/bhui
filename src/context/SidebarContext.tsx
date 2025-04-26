@@ -11,7 +11,8 @@ interface SidebarContextType {
   closeRightAside: () => void;
   rightAsideContent: ReactNode | null;
   rightAsideTitle: string;
-  setRightAsideContent: (content: ReactNode, title?: string) => void;
+  rightAsideWidth: string;
+  setRightAsideContent: (content: ReactNode, title?: string, width?: string) => void;
   
   // Bottom Drawer state
   isBottomDrawerOpen: boolean;
@@ -25,6 +26,9 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
+// Define default width
+const DEFAULT_ASIDE_WIDTH = 'w-80'; 
+
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -32,6 +36,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isRightAsideOpen, setIsRightAsideOpen] = useState(false);
   const [rightAsideContent, setRightAsideContentState] = useState<ReactNode | null>(null);
   const [rightAsideTitle, setRightAsideTitle] = useState('Details');
+  const [rightAsideWidth, setRightAsideWidth] = useState<string>(DEFAULT_ASIDE_WIDTH);
   
   // Bottom Drawer state
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
@@ -49,16 +54,22 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const openRightAside = () => {
     setIsRightAsideOpen(true);
+    setIsExpanded(false);
   };
 
   const closeRightAside = () => {
     setIsRightAsideOpen(false);
   };
   
-  const setRightAsideContent = (content: ReactNode, title?: string) => {
+  const setRightAsideContent = (content: ReactNode, title?: string, width?: string) => {
     setRightAsideContentState(content);
     if (title) setRightAsideTitle(title);
-    if (content) openRightAside();
+    setRightAsideWidth(content ? (width || DEFAULT_ASIDE_WIDTH) : DEFAULT_ASIDE_WIDTH);
+    if (content) {
+      openRightAside();
+    } else {
+      closeRightAside();
+    }
   };
 
   // Bottom Drawer methods
@@ -92,6 +103,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         closeRightAside,
         rightAsideContent,
         rightAsideTitle,
+        rightAsideWidth,
         setRightAsideContent,
         
         isBottomDrawerOpen,

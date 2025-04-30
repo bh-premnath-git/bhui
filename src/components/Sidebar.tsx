@@ -98,7 +98,7 @@ export function Sidebar() {
     >
       <div className="h-16 flex items-center px-4 border-b">
         <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigate("/dataops-hub")}>
-          <img src={logo} alt="Bighammer AI" className="h-6 w-6 text-sidebar-foreground shrink-0" />
+          <img src={logo} alt="Bighammer AI" className={cn("h-6 w-6 text-sidebar-foreground shrink-0", isExpanded ? "px-2 space-y-1" : "flex flex-col items-center")} />
           <div className="overflow-hidden">
             <h1
               className={cn(
@@ -123,65 +123,81 @@ export function Sidebar() {
           "absolute -right-4 top-9 text-muted-foreground hover:bg-accent",
           "h-10 w-4 rounded-none rounded-r-md border border-l-0",
           "bg-background/90 transition-transform duration-300",
-          !isExpanded && "hover:scale-125"
+          !isExpanded && "hover:scale-125",
+          isExpanded ? "justify-between" : "justify-center"
         )}
       >
         {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </Button>
       <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1 px-2">
+      <ul className={cn(
+    "space-y-2",
+    isExpanded ? "px-2 space-y-1" : "flex flex-col items-center w-full"
+  )}>
           {navItems.map((item) => {
-            // Determine when to show this item based on expanded state
             const shouldShow = isExpanded || (!isExpanded && item.showIcon);
             
-            // For non-expanded state, only show items with icons
             if (!shouldShow) {
               return null;
             }
-            
-            // Check if this is a parent with an active child
             const hasActiveSubitem = item.isParent && hasActiveChild(item.path);
+            
+            const needsTooltip = !isExpanded && item.showIcon;
+            
+            const navElement = (
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center py-2 rounded-md",
+                    "transition-all duration-200 ease-in-out",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    (isActive && !hasActiveSubitem) && "bg-accent text-accent-foreground",
+                    "flex-1",
+                    !isExpanded && item.showIcon && "justify-center px-3",
+                    isExpanded && "px-3",
+                    isExpanded && item.isSubItem && "pl-6 text-sm"
+                  )
+                }
+              >
+                {item.showIcon && item.icon && (
+                  <item.icon className={cn(
+                    "shrink-0 transition-transform duration-200",
+                    item.isSubItem ? "h-4 w-4" : "h-4 w-4"
+                  )} />
+                )}
+                {isExpanded && (
+                  <span className={cn(
+                    "flex-1 transition-opacity duration-200",
+                    item.showIcon && "ml-3",
+                    item.isSubItem && "text-sm",
+                    // Make parent items without icons have smaller text
+                    !item.showIcon && item.isParent && "text-sm font-medium"
+                  )}>
+                    {item.title}
+                  </span>
+                )}
+              </NavLink>
+            );
             
             return (
               <li key={item.path}>
                 <div className="flex">
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center py-2 rounded-md",
-                        "transition-all duration-200 ease-in-out",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        // Only highlight the item if it's exactly active and not a parent with active child
-                        (isActive && !hasActiveSubitem) && "bg-accent text-accent-foreground",
-                        "flex-1",
-                        // Conditional classes based on expanded state and icon presence
-                        !isExpanded && item.showIcon && "justify-center px-3",
-                        isExpanded && "px-3",
-                        // Add indentation and styling for sub items when sidebar is expanded
-                        isExpanded && item.isSubItem && "pl-6 text-sm"
-                      )
-                    }
-                  >
-                    {/* Show icon for all items that should have icons */}
-                    {item.showIcon && item.icon && (
-                      <item.icon className={cn(
-                        "shrink-0 transition-transform duration-200",
-                        item.isSubItem ? "h-4 w-4" : "h-4 w-4"
-                      )} />
-                    )}
-                    {isExpanded && (
-                      <span className={cn(
-                        "flex-1 transition-opacity duration-200",
-                        item.showIcon && "ml-3",
-                        item.isSubItem && "text-sm",
-                        // Make parent items without icons have smaller text
-                        !item.showIcon && item.isParent && "text-sm font-medium"
-                      )}>
-                        {item.title}
-                      </span>
-                    )}
-                  </NavLink>
+                  {needsTooltip ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {navElement}
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>{item.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    navElement
+                  )}
+                  
                   {isExpanded && item.actions && !item.isSubItem && (
                     <div className="flex items-center">
                       {item.actions.map((action, index) => (
@@ -267,47 +283,80 @@ export function Sidebar() {
           "p-3 flex items-center",
           isExpanded ? "justify-between" : "justify-center"
         )}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
-                  <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            {isExpanded && (
-              <div
+          {/* User profile section */}
+          {!isExpanded ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                          <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-auto min-w-[8rem]"
+                    >
+                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                        <LogOut className="h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{userName}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              {isExpanded && (
+                <div
+                  className={cn(
+                    "flex-1 ml-3 overflow-hidden",
+                    "transition-all duration-300 ease-in-out",
+                    isExpanded
+                      ? "opacity-100 max-w-[140px]"
+                      : "opacity-0 max-w-0 pointer-events-none"
+                  )}
+                >
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userInfo?.email || ""}</p>
+                </div>
+              )}
+              <DropdownMenuContent
+                align="end"
                 className={cn(
-                  "flex-1 ml-3 overflow-hidden",
-                  "transition-all duration-300 ease-in-out",
-                  isExpanded
-                    ? "opacity-100 max-w-[140px]"
-                    : "opacity-0 max-w-0 pointer-events-none"
+                  "transition-all duration-200 ease-in-out",
+                  isExpanded ? "min-w-[14rem]" : "w-auto min-w-[8rem]"
                 )}
               >
-                <p className="text-sm font-medium truncate">{userName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userInfo?.email || ""}</p>
-              </div>
-            )}
-            <DropdownMenuContent
-              align="end"
-              className={cn(
-                "transition-all duration-200 ease-in-out",
-                isExpanded ? "min-w-[14rem]" : "w-auto min-w-[8rem]"
-              )}
-            >
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
-                <LogOut className="h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         <div className={cn(
           "px-3 pb-3",
           isExpanded ? "flex justify-between items-center" : "flex justify-center"
         )}>
+          {/* Theme toggle with tooltip */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

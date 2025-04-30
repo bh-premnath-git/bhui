@@ -60,18 +60,19 @@ export const PlaybackButton = () => {
         }
 
         try {
-            const result = await dispatch(triggerDagDeployment({
+            const result: any = await dispatch(triggerDagDeployment({
                 dag_id: selectedFlow.flow_key,
                 airflow_env_name: selectedEnvironment.airflow_env_name,
                 bh_env_name: selectedEnvironment.bh_env_name
             })).unwrap();
-
-            dispatch(setDagRunId({
-                dag_run_id: result.dag_run_id,
-                airflow_env_name: selectedEnvironment.airflow_env_name,
-                dag_id: selectedFlow.flow_key,
-                bh_env_name: selectedEnvironment.bh_env_name
-            }));
+            if (result) {
+                dispatch(setDagRunId({
+                    dag_run_id: result.trigger_response.dag_run_id,
+                    airflow_env_name: selectedEnvironment.airflow_env_name,
+                    dag_id: selectedFlow.flow_key,
+                    bh_env_name: selectedEnvironment.bh_env_name
+                }));
+            }
 
             toast.success("Deployment started successfully");
             return true;

@@ -70,6 +70,7 @@ export const InputField: React.FC<InputFieldProps> = ({
     }
   }, [pipelineDetails]);
   
+  
   // When the pipeline ID changes and this is a pipeline ID field, update the value
   useEffect(() => {
     if (label === "Pipeline id" && currentPipelineId && (!value || value !== currentPipelineId)) {
@@ -111,6 +112,7 @@ export const InputField: React.FC<InputFieldProps> = ({
       });
     }
   }, [label, pipelineName, pipelineDetails, value, displayValue]);
+  debugger
 
   return (
     <div className="w-full max-w-sm space-y-4">

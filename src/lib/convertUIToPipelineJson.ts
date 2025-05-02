@@ -69,7 +69,7 @@ const source_type=source.type||source.source_type;
 console.log(source_type,"firstName")
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
-                source_type: capitalizeFirstLetter(source.type||source.source_type) || "Relational",
+                source_type: connectionConfig?.connection_type=="Local"||connectionConfig?.connection_type=="S3"?"File": "Relational",
                 table_name: source?.table_name || source.data_src_name,
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
@@ -268,6 +268,7 @@ console.log(source_type,"firstName")
         type: node?.data.source?.target_type,
         connection: node?.data.source?.connection,
         load_mode: node?.data.source?.load_mode,
+        file_name:node?.data.source?.file_name,
         
     }));
 console.log(targets,"targets")

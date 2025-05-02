@@ -1,30 +1,20 @@
-import { useState, useEffect, useRef, ReactNode } from "react";
+import { useState, useEffect, useRef, ReactNode, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { useFlow } from "@/context/designers/FlowContext";
-import {
-  clearFlowAgentConversation,
-  clearFormStates
-} from "@/store/slices/designer/flowSlice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
-import { useReactFlow } from "reactflow";
+import { useReactFlow, Node, Edge } from "reactflow";
 import { apiService } from '@/lib/api/api-service';
-import { toast } from 'sonner';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
-import SchemaFormLoader from "./SchemaFormLoader";
+import { ReaderOptionsForm } from "@/components/bh-reactflow-comps/builddata/ReaderOptionsForm";
+import TargetPopUp from "@/components/bh-reactflow-comps/TargetPopUp";
 import { DataSource } from "@/types/data-catalog/dataCatalog";
+import CreateFormFormik from "./form-sections/CreateForm";
 
 
 interface SuggestionButtonProps {
@@ -53,10 +43,10 @@ const SuggestionButton = ({
       variant={variant}
       size="sm"
       onClick={handleClick}
-      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-200 ${className}`}
+      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${className}`}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
-      <span className="truncate">{text}</span>
+      <span className="truncate font-medium">{text}</span>
     </Button>
   );
 };
@@ -70,13 +60,43 @@ export const PipeLineChatPanel = ({
 }: any) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
-  const { selectedPipeline } = useAppSelector((state) => state.pipeline);
   const reactFlowInstance = useReactFlow();
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { setPipelineJson, setNodes, setEdges, setFormStates } = usePipelineContext();
+  const { setPipelineJson: originalSetPipelineJson, pipelineJson, makePipeline } = usePipelineContext();
+  
+  // Create a custom setPipelineJson function that also calls makePipeline
+  const setPipelineJson = useCallback((newPipelineJson: any) => {
+    // First update the pipeline JSON using the original function
+    originalSetPipelineJson(newPipelineJson);
+    
+    // Then call makePipeline with the new pipeline JSON
+    if (newPipelineJson !== null && newPipelineJson !== undefined) {
+      console.log(newPipelineJson, "pipelineJson updated and calling makePipeline");
+      makePipeline({ pipeline_definition: newPipelineJson });
+    }
+  }, [originalSetPipelineJson, makePipeline]);
+  
+  // Get nodes and edges for the CreateForm component
+  const nodes = reactFlowInstance.getNodes();
+  const edges = reactFlowInstance.getEdges();
+  
+  // State declarations
   const [isNewChat, setIsNewChat] = useState(false);
+  const [currentSourceData, setCurrentSourceData] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Source columns for the CreateForm component
+  const sourceColumns = useMemo(() => {
+    // Extract columns from the current source data or return empty array
+    if (currentSourceData && currentSourceData.columns) {
+      return currentSourceData.columns.map((col: any) => ({
+        name: col.name,
+        dataType: col.dataType || 'string'
+      }));
+    }
+    return [];
+  }, [currentSourceData]);
 
   // Pipeline creation state
   const [mode, setMode] = useState<'chat' | 'create'>('chat');
@@ -106,6 +126,8 @@ export const PipeLineChatPanel = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
 
   // Escape key handler removed as chat panel is always visible
   // No need to close the panel with Escape key
@@ -399,21 +421,6 @@ export const PipeLineChatPanel = ({
     }
   };
 
-  const handleNameStep = async (input: string) => {
-    // Extract pipeline name from user input
-    const name = input.trim();
-    setPipelineName(name);
-
-    // Ask for description with yes/no options
-    addAssistantMessage(`Great! Your pipeline will be named "${name}". Would you like to add a description for your pipeline? (Yes/No)`);
-
-    // Move to description or source step based on next user input
-    setStep('source');
-
-    // Build and update the pipeline template
-    const pipelineTemplate = buildPipelineTemplate();
-    setPipelineJson(pipelineTemplate);
-  };
 
   const handleSourceStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
@@ -464,14 +471,19 @@ export const PipeLineChatPanel = ({
         // Determine if it's a relational or file source
         const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
 
-        // Create initial values for the reader form
+        // Create initial values for the reader form - format for ReaderOptionsForm
         const readerInitialValues: any = {
           reader_name: selectedSource.data_src_name,
+          name: `read_${selectedSource.data_src_name}`,
           source: {
             type: isRelational ? 'Relational' : 'File',
-            file_path: isRelational ? null : selectedSource.file_path_prefix || selectedSource.file_path || `examples/${selectedSource.data_src_name}.csv`,
+            name: selectedSource.data_src_name,
+            table_name: selectedSource.data_src_name,
             data_src_id: selectedSource?.data_src_id,
-            connection: selectedSource.connection_config.custom_metadata
+            source_name: selectedSource.data_src_name,
+            file_name: isRelational ? null : selectedSource.file_name || `${selectedSource.data_src_name}.csv`,
+            connection:selectedSource.connection_config?.custom_metadata,
+            connection_config_id: selectedSource.connection_config_id,
           },
           file_type: isRelational ? null : selectedSource.file_type || 'CSV',
           read_options: {
@@ -485,6 +497,9 @@ export const PipeLineChatPanel = ({
         if (selectedSource.query) {
           readerInitialValues.query = selectedSource.query;
         }
+
+        // Add the selected source to the pipeline
+        setSelectedSources([...selectedSources, selectedSource]);
 
         // Log the form values for debugging
         console.log("Reader form initial values:", readerInitialValues);
@@ -537,7 +552,12 @@ export const PipeLineChatPanel = ({
   const [schemaFormInitialValues, setSchemaFormInitialValues] = useState<any>({});
   const [readerFormInitialValues, setReaderFormInitialValues] = useState<any>({});
   const [writerFormInitialValues, setWriterFormInitialValues] = useState<any>({});
-  const [currentSourceData, setCurrentSourceData] = useState<any>(null);
+  
+  // Schema state for transformation forms
+  const [filterSchema, setFilterSchema] = useState<any>(null);
+  const [schemaTransformationSchema, setSchemaTransformationSchema] = useState<any>(null);
+  const [filterName, setFilterName] = useState<string>('');
+  const [schemaName, setSchemaName] = useState<string>('');
 
   const handleTransformationsStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
@@ -568,6 +588,7 @@ export const PipeLineChatPanel = ({
       // Build and update the pipeline template
       const pipelineTemplate = buildPipelineTemplate();
       setPipelineJson(pipelineTemplate);
+
       console.log("Current pipeline template:", pipelineTemplate);
 
       return;
@@ -636,8 +657,19 @@ export const PipeLineChatPanel = ({
             condition: filterCondition || '',
             name: 'filter_transformation'
           });
-          setShowFilterForm(true);
-          addAssistantMessage("Great! Please define your filter condition below:");
+          setFilterName('filter_transformation');
+          
+          // Load the filter schema
+          import('@/components/bh-reactflow-comps/builddata/json/Filter.json')
+            .then(schema => {
+              setFilterSchema(schema.default || schema);
+              setShowFilterForm(true);
+              addAssistantMessage("Great! Please define your filter condition below:");
+            })
+            .catch(error => {
+              console.error("Error loading filter schema:", error);
+              addAssistantMessage("Sorry, there was an error loading the filter form. Please try again.");
+            });
         } else if (currentSelection === 'schema') {
           // Show schema form
           setTransformationSubStep('schema_form');
@@ -645,8 +677,19 @@ export const PipeLineChatPanel = ({
             name: 'schema_transformation',
             derived_fields: [{ name: '', expression: '' }]
           });
-          setShowSchemaForm(true);
-          addAssistantMessage("Great! Please define your schema transformations below:");
+          setSchemaName('schema_transformation');
+          
+          // Load the schema transformation schema
+          import('@/components/bh-reactflow-comps/builddata/json/SchemaTransformation.json')
+            .then(schema => {
+              setSchemaTransformationSchema(schema.default || schema);
+              setShowSchemaForm(true);
+              addAssistantMessage("Great! Please define your schema transformations below:");
+            })
+            .catch(error => {
+              console.error("Error loading schema transformation schema:", error);
+              addAssistantMessage("Sorry, there was an error loading the schema transformation form. Please try again.");
+            });
         } else if (currentSelection === 'both') {
           // Start with filter form first
           setTransformationSubStep('filter_condition');
@@ -654,8 +697,19 @@ export const PipeLineChatPanel = ({
             condition: filterCondition || '',
             name: 'filter_transformation'
           });
-          setShowFilterForm(true);
-          addAssistantMessage("Great! Let's start with the filter condition. Please define your filter condition below:");
+          setFilterName('filter_transformation');
+          
+          // Load the filter schema
+          import('@/components/bh-reactflow-comps/builddata/json/Filter.json')
+            .then(schema => {
+              setFilterSchema(schema.default || schema);
+              setShowFilterForm(true);
+              addAssistantMessage("Great! Let's start with the filter condition. Please define your filter condition below:");
+            })
+            .catch(error => {
+              console.error("Error loading filter schema:", error);
+              addAssistantMessage("Sorry, there was an error loading the filter form. Please try again.");
+            });
         } else if (currentSelection === 'target') {
           // Show Writer form instead of asking questions
           setTransformationSubStep('target_form');
@@ -1120,11 +1174,93 @@ export const PipeLineChatPanel = ({
     }
   };
 
-  const handleNewChat = () => {
-    clearMessages();
-    setIsNewChat(true);
-    setMode('chat');
-    resetPipelineCreationState();
+ 
+  
+  // Handle ReaderOptionsForm source update
+  const handleReaderOptionsUpdate = (sourceData: any) => {
+    console.log("Source updated:", sourceData);
+    
+    // Handle the source update
+    if (currentSourceData && sourceData.sourceData) {
+      // Update the current source data with the new configuration
+      const updatedSource = {
+        ...currentSourceData,
+        ...sourceData.sourceData.data.source
+      };
+      
+      // Update selected sources
+      const updatedSources = selectedSources.map(source => 
+        source.data_src_id === updatedSource.data_src_id ? updatedSource : source
+      );
+      
+      if (updatedSources.length === 0) {
+        // If no sources were updated, add the new source
+        updatedSources.push(updatedSource);
+      }
+      
+      setSelectedSources(updatedSources);
+      
+      // Add a message to show the configuration
+      addAssistantMessage(
+        `Reader configuration saved for "${updatedSource.data_src_name}". ` +
+        `Would you like to add another data source, or continue to the next step? ` +
+        `Say "continue" to proceed to transformations.`
+      );
+      
+      // Build and update the pipeline template
+      const pipelineTemplate = buildPipelineTemplate();
+      setPipelineJson(pipelineTemplate);
+    }
+    
+    // Hide the form
+    setShowReaderForm(false);
+  };
+  
+  // Handle TargetPopUp source update
+  const handleTargetUpdate = (sourceData: any) => {
+    console.log("Target updated:", sourceData);
+    
+    // Save target configuration
+    if (sourceData.sourceData) {
+      const targetData = sourceData.sourceData.data;
+      
+      setTargetName(targetData.label || targetData.source.data_src_name);
+      setTargetConfig({
+        type: targetData.source.type,
+        connectionType: targetData.source.connection_type,
+        filePath: targetData.source.file_path_prefix,
+        fileFormat: targetData.source.file_type,
+        customConfig: {
+          name: targetData.label,
+          loadMode: targetData.source.load_mode
+        }
+      });
+      
+      // Add a message to show the target configuration
+      const targetType = targetData.source.type;
+      let targetDetails = '';
+      
+      if (targetType === 'File') {
+        targetDetails = `${targetData.source.file_type} file: ${targetData.source.file_name}`;
+      } else if (targetType === 'Relational') {
+        targetDetails = `Database: ${targetData.source.connection_config?.custom_metadata?.database || 'default'}`;
+      }
+      
+      addAssistantMessage(
+        `Target configuration saved: ${targetType} target (${targetDetails}). ` +
+        `Your pipeline is now ready to be created. Would you like to review the pipeline or create it now?`
+      );
+      
+      // Move to confirm step
+      setStep('confirm');
+      
+      // Build and update the pipeline template
+      const pipelineTemplate = buildPipelineTemplate();
+      setPipelineJson(pipelineTemplate);
+    }
+    
+    // Hide the form
+    setShowWriterForm(false);
   };
 
   // Handle reader form submission
@@ -1327,25 +1463,26 @@ export const PipeLineChatPanel = ({
 
       {/* Chat panel - always visible, not sliding */}
       <div
-        className={`h-full flex flex-col bg-background/95 backdrop-blur-md border-l border-border shadow-lg opacity-100 ${className}`}
+        className={`h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md opacity-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-lg ${className}`}
       >
 
 
         {isNewChat || messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+          <div className="flex flex-col items-center justify-center h-full py-6 space-y-8 px-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-blue-300/30 shadow-inner">
               <img
                 src={imageSrc}
                 alt="AI"
-                className="w-5 h-7 transform -rotate-[40deg]"
+                className="w-7 h-9 transform -rotate-[40deg] drop-shadow-sm"
               />
             </div>
-            <div className="text-center space-y-1.5 max-w-sm">
-              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
-              <div className="flex justify-center items-center"> {/* Updated here */}
+            <div className="text-center space-y-3 max-w-md">
+              <h3 className="text-2xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">How can I assist with your pipeline?</h3>
+              <p className="text-slate-500 mb-4">Create a new data pipeline or ask questions about your existing one</p>
+              <div className="flex justify-center items-center mt-2"> 
                 <Button
                   onClick={startPipelineCreation}
-                  className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
+                  className="bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 flex justify-center items-center gap-2 px-6 py-2.5 text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   <Plus className="h-4 w-4" />
                   Start Pipeline
@@ -1354,8 +1491,8 @@ export const PipeLineChatPanel = ({
             </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 py-4">
-            <div className="space-y-6 py-4">
+          <ScrollArea className="flex-1 px-4 py-6">
+            <div className="space-y-8 py-2">
               {messages.map((message, i) => (
                 <div
                   key={i}
@@ -1363,8 +1500,8 @@ export const PipeLineChatPanel = ({
                     }`}
                 >
                   {message.role === "assistant" && (
-                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
-                      <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
+                    <Avatar className="w-10 h-10 mr-0 flex-shrink-0 mt-1 justify-center bg-gradient-to-br from-primary/20 to-blue-300/30 border border-slate-100 shadow-sm">
+                      <AvatarImage src={imageSrc} className="w-5 h-7 transform -rotate-[40deg] drop-shadow-sm" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   )}
@@ -1374,56 +1511,127 @@ export const PipeLineChatPanel = ({
                   >
                     <div
                       className={`rounded-2xl px-4 py-3 ${message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border border-border/40 shadow-sm"
-                        }`}
+                          ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md"
+                          : "bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md"
+                        } transition-all duration-300 hover:shadow-lg`}
                     >
-                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
 
                       {/* Show inline forms after specific assistant messages */}
                       {message.role === "assistant" && i === messages.length - 1 && (
                         <>
                           {showReaderForm && message.content.includes("Please review and customize the reader configuration") && (
-                            <SchemaFormLoader
-                              schemaType="Reader"
-                              initialValues={readerFormInitialValues}
-                              onSubmit={handleReaderFormSubmit}
-                              submitLabel="Save Reader Configuration"
-                              updatePipelineTemplate={true}
-                            />
+                            <div className="mt-4 rounded-lg bg-white">
+                              <ReaderOptionsForm
+                                initialData={readerFormInitialValues}
+                                onSubmit={handleReaderFormSubmit}
+                                onClose={() => setShowReaderForm(false)}
+                                onSourceUpdate={handleReaderOptionsUpdate}
+                                nodeId={`source_${currentSourceData?.data_src_id}`}
+                              />
+                            </div>
                           )}
 
                           {showFilterForm && message.content.includes("Please define your filter condition") && (
-                            <SchemaFormLoader
-                              schemaType="Filter"
-                              initialValues={filterFormInitialValues}
-                              onSubmit={handleFilterFormSubmit}
-                              submitLabel="Apply Filter"
-                              updatePipelineTemplate={true}
-                            />
+                            <div className="mt-4 rounded-lg bg-white">
+                              <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                    <span className="text-white text-sm font-medium">F</span>
+                                  </div>
+                                  <h2 className="text-lg font-medium text-gray-800">
+                                    Filter Configuration
+                                  </h2>
+                                </div>
+                              </div>
+                              <div className="py-4">
+                                {/* Use CreateFormFormik directly for filter */}
+                                {filterSchema ? (
+                                  <CreateFormFormik
+                                    schema={filterSchema}
+                                    initialValues={filterFormInitialValues}
+                                    onSubmit={handleFilterFormSubmit}
+                                    nodes={nodes}
+                                    sourceColumns={sourceColumns}
+                                    onClose={() => setShowFilterForm(false)}
+                                    pipelineDtl={pipelineJson}
+                                    currentNodeId={`filter_${filterName || 'condition'}`}
+                                    edges={edges}
+                                    isDialog={false}
+                                  />
+                                ) : (
+                                  <div className="flex justify-center items-center p-4">
+                                    <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                    <span className="ml-2">Loading filter form...</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
 
                           {showSchemaForm && (
                             message.content.includes("Please define your schema transformations") ||
                             transformationSubStep === 'schema_form'
                           ) && (
-                              <SchemaFormLoader
-                                schemaType="SchemaTransformation"
-                                initialValues={schemaFormInitialValues}
-                                onSubmit={handleSchemaFormSubmit}
-                                submitLabel="Apply Schema Transformation"
-                                updatePipelineTemplate={true}
-                              />
+                              <div className="mt-4 rounded-lg bg-white">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">S</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Schema Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for schema transformation */}
+                                  {schemaTransformationSchema ? (
+                                    <CreateFormFormik
+                                      schema={schemaTransformationSchema}
+                                      initialValues={schemaFormInitialValues}
+                                      onSubmit={handleSchemaFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowSchemaForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={`schema_${schemaName || 'transformation'}`}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading schema transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             )}
 
                           {showWriterForm && message.content.includes("Please configure your output target below") && (
-                            <SchemaFormLoader
-                              schemaType="Writer"
-                              initialValues={writerFormInitialValues}
-                              onSubmit={handleWriterFormSubmit}
-                              submitLabel="Save Target Configuration"
-                              updatePipelineTemplate={true}
-                            />
+                            <div className="mt-4 rounded-lg bg-white">
+                              <TargetPopUp
+                                isOpen={false} // Use inline mode
+                                onClose={() => setShowWriterForm(false)}
+                                initialData={writerFormInitialValues}
+                                onSourceUpdate={handleTargetUpdate}
+                                nodeId={`target_${targetName || 'output'}`}
+                                source={{
+                                  title: targetName || 'output_data',
+                                  source: {
+                                    name: targetName || 'output_data',
+                                    target_type: targetConfig.type,
+                                    file_type: targetConfig.fileFormat,
+                                    load_mode: targetConfig.customConfig?.loadMode || 'append',
+                                    connection: {
+                                      connection_type: targetConfig.connectionType,
+                                      file_path_prefix: targetConfig.filePath
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
                           )}
                         </>
                       )}
@@ -1869,16 +2077,16 @@ export const PipeLineChatPanel = ({
               ))}
               {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-start gap-4 px-1">
-                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
-                    <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
+                  <Avatar className="w-12 h-12 mr-0 flex-shrink-0 mt-1 justify-center bg-gradient-to-br from-primary/20 to-blue-300/30 border border-slate-100 shadow-sm">
+                    <AvatarImage src={imageSrc} className="w-8 h-8 transform -rotate-[40deg] drop-shadow-sm" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col max-w-[85%]">
-                    <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
+                    <div className="rounded-2xl py-3 px-4 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
+                      <div className="flex space-x-3 px-2">
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse"></div>
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-150"></div>
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-300"></div>
                       </div>
                     </div>
                   </div>
@@ -1889,7 +2097,7 @@ export const PipeLineChatPanel = ({
           </ScrollArea>
         )}
 
-        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
+        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
           <AIChatInput
             input={input}
             onChange={setInput}

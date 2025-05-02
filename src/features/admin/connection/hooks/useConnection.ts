@@ -86,7 +86,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         },
     });
 
-    const updateCOnnectionMutation = updateConnection('/connection_registry/connection_config/', {
+    const updateConnectionMutation = updateConnection('/connection_registry/connection_config/', {
         mutationOptions: {
             onSuccess: () => toast.success('Connection Updated successfully'),
             onError: (error) => handleApiError(error, { action: 'update', context: 'connection' })
@@ -107,11 +107,11 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
     }, [createConnectionMutation]);
 
     const handleUpdateConnection = useCallback(async (id: string, data: ConnectionValue) => {
-        await updateCOnnectionMutation.mutateAsync({
+        await updateConnectionMutation.mutateAsync({
             data,
             params: { id }
         });
-    }, [updateCOnnectionMutation]);
+    }, [updateConnectionMutation]);
 
     const handleDeleteConnection = useCallback(async (id: string) => {
         await deleteConnectionMutation.mutateAsync({

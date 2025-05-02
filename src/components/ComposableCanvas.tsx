@@ -11,7 +11,6 @@ import ReactFlow, {
   useReactFlow,
   Background,
   BackgroundVariant,
-  Controls,
   Node,
   Edge,
   NodeChange,

@@ -1,5 +1,5 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode';
@@ -62,6 +62,16 @@ const DataPipelineCanvasNew: React.FC = () => {
 
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
+
+  // Explicitly call handleCenter (which calls fitView) when nodes change, with a slight delay
+  useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      const timer = setTimeout(() => {
+        handleCenter(); // Use the context's handleCenter function
+      }, 150); // Increased delay slightly, might need adjustment
+      return () => clearTimeout(timer);
+    }
+  }, [nodes, handleCenter]); // Depend on handleCenter from context
 
   // Update memoizedNodeTypes to include debug props
   const memoizedNodeTypes = useMemo(() => ({

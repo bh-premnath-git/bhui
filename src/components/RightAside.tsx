@@ -14,16 +14,18 @@ interface RightAsideProps {
 export function RightAside({ 
   title = 'Details', 
   children, 
-  width = 'w-80',
+  width = 'w-[30%]',
   className 
 }: RightAsideProps) {
-  const { closeRightAside } = useSidebar();
+  const { closeRightAside, isRightAsideOpen } = useSidebar();
 
   return (
     <aside 
       className={cn(
-        "h-full bg-background/95 backdrop-blur-sm",
-        "border-l shadow-sm",
+        "fixed right-0 top-0 h-screen z-30 ",
+        "border-l shadow-sm transition-all duration-300 ease-in-out",
+        "transform", 
+        isRightAsideOpen ? "translate-x-0" : "translate-x-full",
         width,
         className
       )}
@@ -42,7 +44,7 @@ export function RightAside({
           </Button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-0">
           {children}
         </div>
       </div>

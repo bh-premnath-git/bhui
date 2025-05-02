@@ -522,10 +522,14 @@ export const convertToOptimizedPipelineJson = (currentJson: any) => {
           transformCopy.source = { $ref: `#/sources/${sourceName}` };
         }
       }
+
+      if (transform.transformation === 'Target') {
+        transformCopy.transformation = 'Writer';
+      }
       
       // For Writer transformations, replace target with reference
-      if ((transform.transformation === 'Writer' || transform.transformation === 'Target') && transform.target) {
-        const targetName = transform.target.name || 'target';
+      if ((transform.transformation === 'Writer') && transform.target) {
+        const targetName = transform.target.name;
         if (optimizedJson.targets[targetName]) {
           transformCopy.target = { $ref: `#/targets/${targetName}` };
         }

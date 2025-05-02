@@ -232,8 +232,8 @@ console.log(source_type,"firstName")
                     console.log(node.data)
                     return {
                         ...baseConfig,
-                        name: node.data.title,
-                        transformation: "Target",
+                        name: "Writer",
+                        transformation: "Writer",
                         target: {
                             name: node.data.source?.name,
                             target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",

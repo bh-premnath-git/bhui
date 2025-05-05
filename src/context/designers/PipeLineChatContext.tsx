@@ -1757,6 +1757,8 @@ export const PipeLineChatProvider = ({
           // Show the writer form
           setTransformationSubStep('target_form');
           setActiveForm('writer');
+          // Set showWriterForm to true to display the TargetPopUp component
+          setShowWriterForm(true);
           addAssistantMessage(`Please configure your output target below:`);
         }
         

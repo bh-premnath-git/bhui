@@ -77,3 +77,9 @@ pre, code {
 .dragging-active .recharts-wrapper {
   pointer-events: none;
 }
+
+textarea:focus {
+  outline: none !important;
+  border: none !important;
+
+}

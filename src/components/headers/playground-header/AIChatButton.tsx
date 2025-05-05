@@ -4,6 +4,8 @@ import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
 import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
 import { Hammer } from 'lucide-react';
+import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
+import { PipeLineChatPanel } from '@/features/designers/pipeline/components/PipeLineChatPanel';
 
 interface AIButtonProps {
     variant: 'flow' | 'pipeline';
@@ -21,7 +23,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                                 (rightAsideContent as React.ReactElement).key === CHAT_UI_COMPONENT_KEY;
 
     const handleButtonClick = () => {
-        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : FlowChatUI;
+        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : PipeLineChatPanel;
 
         if (isChatCurrentlyOpen) {
             closeRightAside();
@@ -61,9 +63,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                 onClick={handleButtonClick}
                 aria-label={isChatCurrentlyOpen ? 'Close AI Chat' : 'Open AI Chat'}
             >
-                {variant === 'pipeline' ? (
-                    <Hammer className="w-4 h-4 text-white" />
-                ) : (
+                
                     <motion.img
                         src={ai}
                         alt="ai"
@@ -72,7 +72,6 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                         animate={{ rotate: -40 }}
                         transition={{ type: 'spring', stiffness: 150 }}
                     />
-                )}
             </motion.button>
         </motion.div>
     );

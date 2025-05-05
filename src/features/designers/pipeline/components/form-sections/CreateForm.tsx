@@ -12,7 +12,7 @@ import { generateInitialValues } from './get-initial-form';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Schema } from '../../types/formTypes';
-import { DialogTitle } from '@/components/ui/dialog';
+
 import {
   Select,
   SelectContent,
@@ -1946,9 +1946,9 @@ const FormContent: React.FC<{
   return (
     <div className="w-full">
       <div className="flex justify-between">
-        <DialogTitle className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold">
           {schema.title}
-        </DialogTitle>
+        </h2>
       </div>
 
       {schema.title === 'Dedup' ? (

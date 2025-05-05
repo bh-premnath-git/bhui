@@ -774,7 +774,7 @@ const makePipeline = async (result: any,isModify=true) => {
   const params = new URLSearchParams({
     pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
     pipeline_json: JSON.stringify(pipeline_json),
-    mode: 'DEBUG',
+    // mode: 'DEBUG',
 });
 debuggedNodesList.forEach(checkpoint => {
     params.append('checkpoints', checkpoint?.title);

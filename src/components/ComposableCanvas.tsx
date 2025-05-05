@@ -330,6 +330,54 @@ export const ComposableCanvas = ({
     };
   }, [fitView]); // Depend only on the fitView function (which depends on context/instance)
   
+  // Add effect to handle right aside panel visibility changes
+  useEffect(() => {
+    // If the right aside panel is opened/closed, we need to make sure ReactFlow is properly resized
+    if (reactFlowInstance) {
+      // First resize event to help ReactFlow detect the layout change
+      const timer1 = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
+      
+      // Second resize event with first fitView attempt
+      const timer2 = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        try {
+          reactFlowInstance.fitView({ duration: 300, padding: 0.2 });
+        } catch (error) {
+          console.error('Error fitting view in first attempt:', error);
+        }
+      }, 300);
+      
+      // Third resize with second fitView attempt after layout should be settled
+      const timer3 = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        try {
+          reactFlowInstance.fitView({ duration: 300, padding: 0.2 });
+        } catch (error) {
+          console.error('Error fitting view in second attempt:', error);
+        }
+      }, 600);
+      
+      // Final attempt after everything has fully rendered
+      const timer4 = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        try {
+          reactFlowInstance.fitView({ duration: 300, padding: 0.2 });
+        } catch (error) {
+          console.error('Error fitting view in final attempt:', error);
+        }
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+        clearTimeout(timer4);
+      };
+    }
+  }, [isRightAsideOpen, reactFlowInstance]);
+  
   // Loading state
   if (loading) {
     return (
@@ -350,16 +398,33 @@ export const ComposableCanvas = ({
   return (
     <div className={cn(
       className, 
-      'relative',
+      'relative reactflow-container',
       isRightAsideOpen ? 'canvas-with-aside' : ''
-    )}>
+    )}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+        zIndex: 5
+      }}
+    >
       <ReactFlowProvider>
         <div 
           ref={reactFlowWrapper} 
           className={cn(
-            "absolute inset-0",
-            isRightAsideOpen ? 'pr-2 transition-all duration-300' : ''
-          )}>
+            "absolute inset-0 reactflow-wrapper",
+            isRightAsideOpen ? 'pr-0 transition-all duration-300' : ''
+          )}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            zIndex: 10
+          }}
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}

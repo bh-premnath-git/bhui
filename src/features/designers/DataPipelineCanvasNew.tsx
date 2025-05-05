@@ -73,28 +73,47 @@ const DataPipelineCanvasNew: React.FC = () => {
     const timer = setTimeout(handleResize, 100);
     // Trigger another resize after a longer delay for smoother transition
     const secondTimer = setTimeout(handleResize, 300);
+    const thirdTimer = setTimeout(handleResize, 600);
     
     // Try to trigger fitView if possible through the context
     if (handleCenter) {
       const fitViewTimer = setTimeout(() => {
         try {
           handleCenter();
+          // Make sure nodes are visible
+          if (nodes.length > 0 && isRightAsideOpen) {
+            console.log('Centering nodes with right aside open');
+            handleCenter();
+          }
         } catch (error) {
           console.error('Error calling handleCenter:', error);
         }
       }, 350);
+      
+      // Add a second fitView attempt after a longer delay
+      const secondFitViewTimer = setTimeout(() => {
+        try {
+          handleCenter();
+        } catch (error) {
+          console.error('Error in second fitView attempt:', error);
+        }
+      }, 800);
+      
       return () => {
         clearTimeout(timer);
         clearTimeout(secondTimer);
+        clearTimeout(thirdTimer);
         clearTimeout(fitViewTimer);
+        clearTimeout(secondFitViewTimer);
       };
     }
     
     return () => {
       clearTimeout(timer);
       clearTimeout(secondTimer);
+      clearTimeout(thirdTimer);
     };
-  }, [isRightAsideOpen, handleCenter]);
+  }, [isRightAsideOpen, handleCenter, nodes.length]);
 
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
@@ -200,7 +219,7 @@ const DataPipelineCanvasNew: React.FC = () => {
     };
     
     return (
-      <div className={`fixed bottom-4 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-50 transition-all duration-300`}>
+      <div className={`fixed bottom-4 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-20 transition-all duration-300`}>
         <FlowControls
           onZoomIn={localZoomIn}
           onZoomOut={localZoomOut}
@@ -238,8 +257,17 @@ const DataPipelineCanvasNew: React.FC = () => {
   ];
 
   return (
-    <div className={`flex flex-col h-full w-full ${isRightAsideOpen ? 'with-right-aside' : ''}`}>
-      <div className={`flex-1 relative p-1 ml-8 transition-all duration-300 ${isRightAsideOpen ? 'mr-[520px]' : ''}`}>
+    <div className={`flex flex-col h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''}`}>
+      <div 
+        className={`flex-1 relative p-1 ml-8 transition-all duration-300 ${isRightAsideOpen ? '' : ''}`}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          height: '100%'
+        }}>
+
         {/* Keyboard shortcuts panel */}
         <div className={`fixed top-20 left-24 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
           <div className="rounded-lg p-2 text-sm">
@@ -286,14 +314,16 @@ const DataPipelineCanvasNew: React.FC = () => {
 
         {/* Main Canvas */}
         <div 
-          className={`flex-1 w-full h-full relative transition-all duration-300 ${isRightAsideOpen ? 'pipeline-with-aside' : ''}`}
+          className={`flex-1 h-full relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''}`}
           style={{
-            width: isRightAsideOpen ? 'calc(100% - 520px)' : '100%',
-            marginRight: isRightAsideOpen ? '0' : '0'
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto'
           }}>
 
           <ComposableCanvas
-            className={`w-full h-full bg-background transition-all duration-300 relative ${isRightAsideOpen ? 'pipeline-canvas-with-aside' : ''}`}
+            className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''}`}
             type="pipeline"
             nodeTypes={memoizedNodeTypes}
             edgeTypes={edgeTypes}

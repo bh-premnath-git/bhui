@@ -28,6 +28,7 @@ export function RightAside({
         className
       )}
       data-state="open" // Add a data attribute to assist with CSS selectors
+      style={{ zIndex: 25 }} // Higher z-index to ensure it's on top
     >
       {/* Collapse handle */}
       <Button

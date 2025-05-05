@@ -51,14 +51,18 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                 onClick={handleButtonClick}
                 aria-label={isChatCurrentlyOpen ? 'Close AI Chat' : 'Open AI Chat'}
             >
-                <motion.img
-                    src={ai}
-                    alt="ai"
-                    className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
-                    initial={{ rotate: -45 }}
-                    animate={{ rotate: -40 }}
-                    transition={{ type: 'spring', stiffness: 150 }}
-                />
+                {variant === 'pipeline' ? (
+                    <Hammer className="w-4 h-4 text-white" />
+                ) : (
+                    <motion.img
+                        src={ai}
+                        alt="ai"
+                        className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+                        initial={{ rotate: -45 }}
+                        animate={{ rotate: -40 }}
+                        transition={{ type: 'spring', stiffness: 150 }}
+                    />
+                )}
             </motion.button>
         </motion.div>
     );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode } from "react";
+import { useState, useEffect, useRef, ReactNode, useMemo, useCallback, useTransition } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -25,6 +25,10 @@ import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import SchemaFormLoader from "./SchemaFormLoader";
 import { DataSource } from "@/types/data-catalog/dataCatalog";
+import CreateFormFormik from "./form-sections/CreateForm";
+import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
+import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
+import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
 
 
 interface SuggestionButtonProps {
@@ -76,6 +80,10 @@ export const PipeLineChatPanel = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const { setPipelineJson, setNodes, setEdges, setFormStates } = usePipelineContext();
   const [isNewChat, setIsNewChat] = useState(false);
+  const [currentSourceData, setCurrentSourceData] = useState<any>(null);
+  const [foundSources, setFoundSources] = useState<DataSource[]>([]);
+  const [awaitingSourceSelection, setAwaitingSourceSelection] = useState(false);
+  const [sourceSuggestions, setSourceSuggestions] = useState<React.ReactNode[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Pipeline creation state
@@ -87,21 +95,107 @@ export const PipeLineChatPanel = ({
   const [transformations, setTransformations] = useState<string[]>([]);
 
   // Target configuration state
-  const [targetConfig, setTargetConfig] = useState<{
+  const [targetConfig, setTargetConfig]:any = useState<{
     type: 'Database' | 'File' | 'Custom';
     connectionType: string;
     schema?: string;
     database?: string;
     filePath?: string;
     fileFormat?: string;
-    customConfig?: Record<string, any>;
+    connection?: any;
   }>({
     type: 'File',
     connectionType: 'Local',
     filePath: 'examples/',
     fileFormat: 'CSV'
   });
+  
+  // Dependency selection state
+  const [showDependencySelection, setShowDependencySelection] = useState<boolean>(false);
+  const [dependencyOptions, setDependencyOptions] = useState<any[]>([]);
+  const [selectedDependency, setSelectedDependency] = useState<string>('');
+  const [useSourceConnection, setUseSourceConnection] = useState(true);
+  const [filterCondition, setFilterCondition] = useState('');
+  const [targetName, setTargetName] = useState('');
+  const [transformationSubStep, setTransformationSubStep]:any = useState<
+    'select' |
+    'filter_condition' |
+    'schema_form' |
+    'target_name' |
+    'target_type' |
+    'file_format' |
+    'file_path' |
+    'db_type' |
+    'db_schema' |
+    'db_name' |
+    'connection_choice' |
+    'summary' | 'target_form'
+  >('select');
 
+  // State for inline forms
+  const [showFilterForm, setShowFilterForm] = useState(false);
+  const [showSchemaForm, setShowSchemaForm] = useState(false);
+  const [showReaderForm, setShowReaderForm] = useState(false);
+  const [showWriterForm, setShowWriterForm] = useState(false);
+  const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
+  const [schemaFormInitialValues, setSchemaFormInitialValues] = useState<any>({});
+  const [readerFormInitialValues, setReaderFormInitialValues] = useState<any>({});
+  const [writerFormInitialValues, setWriterFormInitialValues] = useState<any>({});
+  
+  // Schema state for transformation forms
+  const [filterSchema, setFilterSchema] = useState<any>(null);
+  const [schemaTransformationSchema, setSchemaTransformationSchema] = useState<any>(null);
+  const [filterName, setFilterName] = useState<string>('');
+  const [schemaName, setSchemaName] = useState<string>('');
+  
+  // Add useTransition hook for smoother UI updates
+  const [isPending, startTransition] = useTransition();
+const dispatch = useAppDispatch();
+  // Fetch connection config list only once when component mounts
+  useEffect(() => {
+    dispatch(getConnectionConfigList({}));
+  }, [dispatch]);
+  
+  // Update pipeline template whenever selectedDependency changes
+  useEffect(() => {
+    if (selectedDependency) {
+      console.log("selectedDependency changed, updating pipeline template");
+      // Use a timeout to ensure all state updates have been processed
+      setTimeout(() => {
+        const updatedTemplate = generatePipelineTemplate();
+        setPipelineJson(updatedTemplate);
+        console.log("Pipeline template updated after dependency change:", updatedTemplate);
+      }, 0);
+    }
+  }, [selectedDependency, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
+  
+  // Update pipeline template whenever transformationSubStep changes to a dependency selection step
+  useEffect(() => {
+    const isDependencyStep = transformationSubStep.includes('dependency');
+    if (isDependencyStep) {
+      console.log("Dependency selection step detected:", transformationSubStep);
+      // Use a timeout to ensure all state updates have been processed
+      setTimeout(() => {
+        const updatedTemplate = generatePipelineTemplate();
+        setPipelineJson(updatedTemplate);
+        console.log("Pipeline template updated for dependency selection step:", updatedTemplate);
+      }, 0);
+    }
+  }, [transformationSubStep, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
+  
+  // Update pipeline template whenever showDependencySelection changes to true
+  useEffect(() => {
+    if (showDependencySelection) {
+      console.log("Dependency selection UI shown, preparing pipeline template");
+      // Use a timeout to ensure all state updates have been processed
+      setTimeout(() => {
+        const updatedTemplate = generatePipelineTemplate();
+        setPipelineJson(updatedTemplate);
+        console.log("Pipeline template updated for dependency selection UI:", updatedTemplate);
+      }, 0);
+    }
+  }, [showDependencySelection, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
+  
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,6 +232,16 @@ export const PipeLineChatPanel = ({
     setReaderFormInitialValues({});
     setWriterFormInitialValues({});
     setCurrentSourceData(null);
+    
+    // Reset source selection state
+    setFoundSources([]);
+    setAwaitingSourceSelection(false);
+    setSourceSuggestions([]);
+    
+    // Reset dependency selection state
+    setShowDependencySelection(false);
+    setDependencyOptions([]);
+    setSelectedDependency('');
   };
 
   const startPipelineCreation = () => {
@@ -155,208 +259,35 @@ export const PipeLineChatPanel = ({
     setStep('source');
 
     // Build and update the pipeline template with the default values
-    const pipelineTemplate = buildPipelineTemplate();
+    const pipelineTemplate = generatePipelineTemplate();
     setPipelineJson(pipelineTemplate);
   };
 
-  // Common function to build the pipeline template based on current state
-  // This function follows the schema defined in pipeline_template.json
-  const buildPipelineTemplate = () => {
-    // Generate pipeline JSON based on current state
-    const pipelineTemplate = {
-      "$schema": "https://json-schema.org/draft-07/schema#",
-      "name": pipelineName || "New Pipeline",
-      "description": pipelineDescription || "",
-      "version": "1.0",
-      "parameters": [],
-      "mode": "DEBUG",
-      "connections": {},
-      "sources": {},
-      "targets": {},
-      "transformations": []
-    };
-
-    // Add connections
-    const connections: Record<string, any> = {};
-    selectedSources.forEach((source: any) => {
-      const sourceId = `connection_${source.data_src_id}`;
-      if (source.connection_config?.custom_metadata?.connection_type) {
-        // Database connection
-        const connectionType = source.connection_config.custom_metadata.connection_type;
-        connections[sourceId] = {
-          "name": `${source.data_src_name}_connection`,
-          "connection_type": connectionType,
-          "schema": source.connection_config.custom_metadata.schema || "",
-          "database": source.connection_config.custom_metadata.database || "",
-          "secret_name": source.connection_config.secret_name || "default_secret"
-        };
-      } else {
-        // File connection
-        connections[sourceId] = {
-          "name": `${source.data_src_name}_connection`,
-          "connection_type": "Local",
-          "file_path_prefix": source.file_path_prefix || `examples/`
-        };
-      }
+  // Helper function to call the utility function with the current state
+  const generatePipelineTemplate = () => {
+    // Log the current state before generating the template
+    console.log("Generating pipeline template with state:", {
+      pipelineName,
+      pipelineDescription,
+      selectedSources,
+      transformations,
+      targetConfig,
+      useSourceConnection,
+      filterCondition
     });
-    pipelineTemplate.connections = connections;
-
-    // Add sources - build step by step based on selected sources
-    const sources: Record<string, any> = {};
-    selectedSources.forEach((source: any) => {
-      const sourceId = `source_${source.data_src_id}`;
-      const connectionId = `connection_${source.data_src_id}`;
-
-      if (source.connection_config?.custom_metadata?.connection_type) {
-        // Database source
-        sources[sourceId] = {
-          "name": `input_${source.data_src_name}`,
-          "source_type": "Database",
-          "file_name": source.data_src_name,
-          "data_src_id": source.data_src_id.toString(),
-          "connection": connections[connectionId]
-        };
-      } else {
-        // File source
-        sources[sourceId] = {
-          "name": `input_${source.data_src_name}`,
-          "source_type": "File",
-          "file_name": source.file_name || source.data_src_name,
-          "data_src_id": source.data_src_id.toString(),
-          "connection": connections[connectionId]
-        };
-      }
-    });
-    pipelineTemplate.sources = sources;
-
-    // Only add target if the user has explicitly selected it as a transformation
-    if (transformations.includes('target')) {
-      // Add target - dynamically build based on target configuration
-      const targetId = "target_output";
-      const targetName = targetConfig.customConfig?.name || "output_data";
-
-      // Build the target object based on the target configuration
-      const targetObj: Record<string, any> = {
-        "name": targetName,
-        "target_type": targetConfig.type,
-        "load_mode": targetConfig.customConfig?.loadMode || "overwrite"
-      };
-
-      // Add type-specific properties
-      if (targetConfig.type === 'Database') {
-        targetObj.table_name = targetName;
-        targetObj.connection = {
-          "name": `${targetName}_connection`,
-          "connection_type": targetConfig.connectionType,
-          "schema": targetConfig.schema || "",
-          "database": targetConfig.database || "",
-          "secret_name": targetConfig.customConfig?.secretName || "default_secret"
-        };
-
-        // If using source connection, copy connection details from source
-        if (useSourceConnection && selectedSources.length > 0 &&
-          selectedSources[0].connection_config?.custom_metadata?.connection_type) {
-          const sourceId = `connection_${selectedSources[0].data_src_id}`;
-          const sourceConnection = connections[sourceId];
-
-          targetObj.connection = {
-            "name": sourceConnection.name,
-            "connection_type": sourceConnection.connection_type,
-            "schema": sourceConnection.schema,
-            "database": sourceConnection.database,
-            "secret_name": sourceConnection.secret_name
-          };
-        }
-      } else if (targetConfig.type === 'File') {
-        targetObj.file_name = `${(targetName || pipelineName || "new_pipeline").toLowerCase().replace(/\s+/g, '_')}_output.${targetConfig.fileFormat?.toLowerCase() || 'csv'}`;
-        targetObj.connection = {
-          "name": "output_connection",
-          "connection_type": targetConfig.connectionType || "Local",
-          "file_path_prefix": targetConfig.filePath || "examples/"
-        };
-      } else if (targetConfig.type === 'Custom') {
-        // For custom target types, use the customConfig directly
-        Object.assign(targetObj, targetConfig.customConfig || {});
-      }
-
-      pipelineTemplate.targets[targetId] = targetObj;
-    }
-
-    // Add transformations
-    const transformationsList = [];
-
-    // Add reader transformations for each source
-    const readerTransformations = selectedSources.map((source: any, index: number) => {
-      const sourceId = `source_${source.data_src_id}`;
-      const readerTransformation = {
-        "name": `read_${source.data_src_name}`,
-        "dependent_on": [],
-        "transformation": "Reader",
-        "source": pipelineTemplate.sources[sourceId],
-        "read_options": {
-          "header": true
-        }
-      };
-      return readerTransformation;
-    });
-    transformationsList.push(...readerTransformations);
-
-    // Add schema transformation if selected
-    if (transformations.includes('schema')) {
-      transformationsList.push({
-        "name": "schema_transformation",
-        "dependent_on": readerTransformations.map(t => t.name),
-        "transformation": "SchemaTransformation",
-        "derived_fields": [
-          {
-            "name": "full_name",
-            "expression": "concat(`first_name`, ' ', `last_name`)"
-          },
-          {
-            "name": "is_adult",
-            "expression": "case when `age` >= 18 then 'Yes' else 'No' end"
-          }
-        ]
-      });
-    }
-
-    // Add filter transformation if selected
-    if (transformations.includes('filter')) {
-      // Create filter transformation with user-provided condition or default
-      transformationsList.push({
-        "name": "filter_transformation",
-        "dependent_on": transformations.includes('schema')
-          ? ["schema_transformation"]
-          : readerTransformations.map(t => t.name),
-        "transformation": "Filter",
-        "condition": filterCondition || "age >= 18"
-      });
-    }
-
-    // Add writer transformation only if target is selected
-    if (transformations.includes('target') && pipelineTemplate.targets["target_output"]) {
-      const lastTransformationName = transformationsList.length > 0
-        ? transformationsList[transformationsList.length - 1].name
-        : readerTransformations.map(t => t.name);
-
-      transformationsList.push({
-        "name": "write_output",
-        "dependent_on": Array.isArray(lastTransformationName) ? lastTransformationName : [lastTransformationName],
-        "transformation": "Target",
-        "target": pipelineTemplate.targets["target_output"],
-        "write_options": {
-          "createDisposition": "CREATE_IF_NEEDED",
-          "writeMethod": "APPEND",
-          "header": true,
-          "sep": ","
-        },
-        "file_type": targetConfig.fileFormat || "CSV"
-      });
-    }
-
-    pipelineTemplate.transformations = transformationsList;
-
-    return pipelineTemplate;
+    
+    // Generate the template
+    const template = buildPipelineTemplate(
+      pipelineName,
+      pipelineDescription,
+      selectedSources,
+      transformations,
+      targetConfig,
+      useSourceConnection,
+      filterCondition
+    );
+    
+    return template;
   };
 
   const handleSend = async () => {
@@ -383,7 +314,7 @@ export const PipeLineChatPanel = ({
         }
 
         // Log the current pipeline template
-        console.log("Current pipeline template:", buildPipelineTemplate());
+        console.log("Current pipeline template:", generatePipelineTemplate());
       } else {
         // Regular chat mode
         addAssistantMessage("This is a placeholder response. The actual API functionality has been removed.");
@@ -417,10 +348,45 @@ export const PipeLineChatPanel = ({
 
   const handleSourceStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
-    console.log(userInput)
+    console.log(userInput);
+    
+    // If we're awaiting a source selection from multiple options
+    if (awaitingSourceSelection && foundSources.length > 0) {
+      // Check if the input is a number corresponding to a source index
+      const sourceIndex = parseInt(userInput) - 1;
+      if (!isNaN(sourceIndex) && sourceIndex >= 0 && sourceIndex < foundSources.length) {
+        // User selected a valid source by number
+        processSelectedSource(foundSources[sourceIndex]);
+        setAwaitingSourceSelection(false);
+        return;
+      } 
+      // Check if the input matches a source name
+      const matchedSource = foundSources.find(source => 
+        source.data_src_name.toLowerCase() === userInput.toLowerCase()
+      );
+      if (matchedSource) {
+        // User selected a valid source by name
+        processSelectedSource(matchedSource);
+        setAwaitingSourceSelection(false);
+        return;
+      }
+      
+      // If input doesn't match any source, ask again
+      addAssistantMessage(
+        `I couldn't identify which source you want to use. Please enter the number or exact name of the source you want to select.`
+      );
+      return;
+    }
+    
     // Check if user wants to move to transformations
     if (userInput.includes('continue') || userInput.includes('next') || userInput.includes('transformation')) {
       setStep('transformations');
+      
+      // Update the pipeline template when moving to transformations step
+      const transformationsStepTemplate = generatePipelineTemplate();
+      setPipelineJson(transformationsStepTemplate);
+      console.log("Pipeline template updated when moving to transformations step:", transformationsStepTemplate);
+      
       addAssistantMessage(
         "Great! Now let's add some transformations to your pipeline. " +
         "I can add the following types of transformations:\n\n" +
@@ -450,51 +416,40 @@ export const PipeLineChatPanel = ({
       if (response && response.length > 0) {
         // Store the found sources
         const sources: DataSource[] = response;
-
-        // Get the first source
-        const selectedSource: any = sources[0];
-        console.log(selectedSource);
-
-        // Store the source data for the form
-        setCurrentSourceData(selectedSource);
-
-        // Log the source data for debugging
-        console.log("Selected source data:", selectedSource);
-
-        // Determine if it's a relational or file source
-        const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
-
-        // Create initial values for the reader form
-        const readerInitialValues: any = {
-          reader_name: selectedSource.data_src_name,
-          source: {
-            type: isRelational ? 'Relational' : 'File',
-            file_path: isRelational ? null : selectedSource.file_path_prefix || selectedSource.file_path || `examples/${selectedSource.data_src_name}.csv`,
-            data_src_id: selectedSource?.data_src_id,
-            connection: selectedSource.connection_config.custom_metadata
-          },
-          file_type: isRelational ? null : selectedSource.file_type || 'CSV',
-          read_options: {
-            header: selectedSource.read_options?.header !== undefined ? selectedSource.read_options.header : true,
-            delimiter: selectedSource.read_options?.delimiter || ',',
-            quote: selectedSource.read_options?.quote || '"'
-          }
-        };
-
-        // If there's a query, add it
-        if (selectedSource.query) {
-          readerInitialValues.query = selectedSource.query;
+        setFoundSources(sources);
+        
+        if (sources.length > 1) {
+          // Multiple sources found, ask user to select one
+          setAwaitingSourceSelection(true);
+          
+          // Create suggestion buttons for each source
+          const suggestions = sources.map((source, index) => (
+            <SuggestionButton
+              key={source.data_src_id}
+              text={source.data_src_name}
+              icon={<Database size={16} />}
+              onClick={() => {
+                processSelectedSource(source);
+                setAwaitingSourceSelection(false);
+                setSourceSuggestions([]);
+              }}
+              variant="outline"
+              className="bg-white/90 hover:bg-white"
+            />
+          ));
+          
+          // Set the suggestion buttons
+          setSourceSuggestions(suggestions);
+          
+          // Create a message with the list of sources
+          let sourcesMessage = `I found ${sources.length} data sources matching "${userInput}". Please select one:`;
+          
+          addAssistantMessage(sourcesMessage);
+        } else {
+          // Only one source found, use it directly
+          processSelectedSource(sources[0]);
+          setSourceSuggestions([]);
         }
-
-        // Log the form values for debugging
-        console.log("Reader form initial values:", readerInitialValues);
-
-        setReaderFormInitialValues(readerInitialValues);
-        setShowReaderForm(true);
-
-        addAssistantMessage(
-          `I found the data source "${selectedSource.data_src_name}". Please review and customize the reader configuration below:`
-        );
       } else {
         addAssistantMessage(
           `I couldn't find any data sources matching "${userInput}". ` +
@@ -508,36 +463,398 @@ export const PipeLineChatPanel = ({
       setIsProcessing(false);
     }
   };
+  
+  // Helper function to process a selected source
+  const processSelectedSource = (selectedSource: any) => {
+    console.log(selectedSource);
+
+    // Store the source data for the form
+    setCurrentSourceData(selectedSource);
+
+    // Log the source data for debugging
+    console.log("Selected source data:", selectedSource);
+
+    // Determine if it's a relational or file source
+    const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
+
+    // Create initial values for the reader form - format for ReaderOptionsForm
+    const readerInitialValues: any = {
+      reader_name: selectedSource.data_src_name,
+      name: `read_${selectedSource.data_src_name}`,
+      source: {
+        type: isRelational ? 'Relational' : 'File',
+        name: selectedSource.data_src_name,
+        table_name: selectedSource.data_src_name,
+        data_src_id: selectedSource?.data_src_id,
+        source_name: selectedSource.data_src_name,
+        file_name: isRelational ? null : selectedSource.file_name || `${selectedSource.data_src_name}.csv`,
+        connection: selectedSource.connection_config?.custom_metadata,
+        connection_config_id: selectedSource.connection_config_id,
+      },
+      file_type: isRelational ? null : selectedSource.file_type || 'CSV',
+      read_options: {
+        header: selectedSource.read_options?.header !== undefined ? selectedSource.read_options.header : true,
+        delimiter: selectedSource.read_options?.delimiter || ',',
+        quote: selectedSource.read_options?.quote || '"'
+      }
+    };
+
+    // If there's a query, add it
+    if (selectedSource.query) {
+      readerInitialValues.query = selectedSource.query;
+    }
+
+    // Add the selected source to the pipeline
+    setSelectedSources([...selectedSources, selectedSource]);
+
+    // Log the form values for debugging
+    console.log("Reader form initial values:", readerInitialValues);
+
+    setReaderFormInitialValues(readerInitialValues);
+    setShowReaderForm(true);
+
+    addAssistantMessage(
+      `I'll use the data source "${selectedSource.data_src_name}". Please review and customize the reader configuration below:`
+    );
+  };
 
   // State for additional pipeline configuration
-  const [filterCondition, setFilterCondition] = useState('');
-  const [targetName, setTargetName] = useState('');
-  const [useSourceConnection, setUseSourceConnection] = useState(true);
-  const [transformationSubStep, setTransformationSubStep] = useState<
-    'select' |
-    'filter_condition' |
-    'schema_form' |
-    'target_name' |
-    'target_type' |
-    'file_format' |
-    'file_path' |
-    'db_type' |
-    'db_schema' |
-    'db_name' |
-    'connection_choice' |
-    'summary' | 'target_form'
-  >('select');
+  
+  // Load schemas from mdata.json
+  useEffect(() => {
+    if (mdataJson && mdataJson.schema) {
+      // Find the filter schema
+      const filterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Filter");
+      if (filterSchemaFromMdata) {
+        // Add nodeId to the schema to match the format expected by CreateFormFormik
+        setFilterSchema({
+          ...filterSchemaFromMdata,
+          nodeId: 'filter_transformation'
+        });
+      }
+      
+      // Find the schema transformation schema
+      const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
+      if (schemaTransformationSchemaFromMdata) {
+        // Add nodeId to the schema to match the format expected by CreateFormFormik
+        setSchemaTransformationSchema({
+          ...schemaTransformationSchemaFromMdata,
+          nodeId: 'schema_transformation'
+        });
+      }
+      
+      console.log("Loaded schemas from mdata.json:", { 
+        filter: filterSchemaFromMdata, 
+        schemaTransformation: schemaTransformationSchemaFromMdata 
+      });
+    }
+  }, []);
 
-  // State for inline forms
-  const [showFilterForm, setShowFilterForm] = useState(false);
-  const [showSchemaForm, setShowSchemaForm] = useState(false);
-  const [showReaderForm, setShowReaderForm] = useState(false);
-  const [showWriterForm, setShowWriterForm] = useState(false);
-  const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
-  const [schemaFormInitialValues, setSchemaFormInitialValues] = useState<any>({});
-  const [readerFormInitialValues, setReaderFormInitialValues] = useState<any>({});
-  const [writerFormInitialValues, setWriterFormInitialValues] = useState<any>({});
-  const [currentSourceData, setCurrentSourceData] = useState<any>(null);
+  // Function to update the pipeline template with the selected dependency
+  const updatePipelineWithDependency = (dependency: string, transformationType: string) => {
+    console.log(`Updating pipeline with dependency: ${dependency} for transformation: ${transformationType}`);
+    
+    // Update the source objects with the dependency information
+    // This ensures the generatePipelineTemplate function will use the correct dependencies
+    if (transformationType === 'filter') {
+      // Update the filter transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the filter_transformation property
+          return {
+            ...source,
+            filter_transformation: {
+              ...(source.filter_transformation || {}),
+              dependent_on: [dependency]
+            }
+          };
+        });
+      });
+    } else if (transformationType === 'schema') {
+      // Update the schema transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the schema_transformation property
+          return {
+            ...source,
+            schema_transformation: {
+              ...(source.schema_transformation || {}),
+              name: 'schema_transformation',
+              transformation: 'SchemaTransformation',
+              derived_fields: source.schema_transformation?.derived_fields || [{ name: '', expression: '' }],
+              dependent_on: [dependency]
+            }
+          };
+        });
+      });
+    } else if (transformationType === 'target') {
+      // Update the target transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the target_transformation property
+          return {
+            ...source,
+            target_transformation: {
+              ...(source.target_transformation || {}),
+              dependent_on: [dependency]
+            }
+          };
+        });
+      });
+    }
+    
+    // Also update the pipeline JSON directly for immediate effect
+    const updatedPipelineJson = { ...pipelineJson };
+    
+    // Update the dependency in the pipeline template
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Update the dependency for the specific transformation
+      if (transformationType === 'filter') {
+        // Find the filter transformation
+        const filterTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'filter_transformation'
+        );
+        
+        if (filterTransformation) {
+          filterTransformation.dependent_on = [dependency];
+          console.log("Updated filter transformation dependency:", filterTransformation);
+        }
+      } else if (transformationType === 'schema') {
+        // Find the schema transformation
+        const schemaTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'schema_transformation'
+        );
+        
+        if (schemaTransformation) {
+          schemaTransformation.dependent_on = [dependency];
+          console.log("Updated schema transformation dependency:", schemaTransformation);
+        }
+      } else if (transformationType === 'target') {
+        // Find the target transformation - it might have a custom name
+        const targetName = targetConfig.customConfig?.name || targetConfig.connection?.name || "Target";
+        const targetTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === targetName || t.transformation === 'Target'
+        );
+        
+        if (targetTransformation) {
+          targetTransformation.dependent_on = [dependency];
+          console.log("Updated target transformation dependency:", targetTransformation);
+        }
+      }
+      
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+    
+    // Generate a new pipeline template with the updated dependency
+    setTimeout(() => {
+      const newTemplate = generatePipelineTemplate();
+      setPipelineJson(newTemplate);
+      console.log(`Pipeline template updated with ${transformationType} dependency:`, newTemplate);
+    }, 0);
+  };
+
+  // Handle dependency selection
+  const handleDependencySelection = (dependency: string) => {
+    console.log("Dependency selected:", dependency);
+    
+    // Use startTransition to prevent UI from being replaced with loading indicator
+    startTransition(() => {
+      // Update the selected dependency in state
+      setSelectedDependency(dependency);
+      
+      // Hide the dependency selection UI
+      setShowDependencySelection(false);
+      
+      // Find the transformation type that needs to be updated
+      const transformationToUpdate = transformationSubStep.split('_')[0]; // 'filter', 'schema', etc.
+      
+      // Update the pipeline with the selected dependency
+      updatePipelineWithDependency(dependency, transformationToUpdate);
+      
+      // Check if schemas are loaded from mdata.json
+      const preloadSchemas = () => {
+        // Check if schemas are loaded
+        const filterSchemaLoaded = !!filterSchema;
+        const schemaTransformationSchemaLoaded = !!schemaTransformationSchema;
+        
+        console.log("Schema loading status:", { 
+          filterSchemaLoaded, 
+          schemaTransformationSchemaLoaded,
+          filterSchema,
+          schemaTransformationSchema
+        });
+        
+        // Now proceed with form setup based on transformation type
+        if (transformationSubStep === 'filter_dependency') {
+          setFilterFormInitialValues(prev => ({
+            ...prev,
+            dependent_on: [dependency]
+          }));
+          
+          if (filterSchemaLoaded) {
+            setTransformationSubStep('filter_condition');
+            setShowFilterForm(true);
+            addAssistantMessage(`Great! Now please define your filter condition below:`);
+          } else {
+            addAssistantMessage("Sorry, there was an error loading the filter form. Please try again.");
+          }
+          
+        } else if (transformationSubStep === 'schema_dependency') {
+          // Make sure we're setting the proper dependency for schema transformation
+          // Initialize with an empty derived field to ensure the form renders correctly
+          const schemaInitialValues = {
+            name: 'schema_transformation',
+            derived_fields: [{ name: '', expression: '' }],
+            dependent_on: [dependency]
+          };
+          console.log("Setting schema form initial values:", schemaInitialValues);
+          setSchemaFormInitialValues(schemaInitialValues);
+          
+          // Also update the schema transformation in the selected sources
+          // This ensures the generatePipelineTemplate function will use the correct dependencies
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              // Create or update the schema_transformation property
+              return {
+                ...source,
+                schema_transformation: {
+                  ...(source.schema_transformation || {}),
+                  name: 'schema_transformation',
+                  transformation: 'SchemaTransformation',
+                  derived_fields: [{ name: '', expression: '' }],
+                  dependent_on: [dependency]
+                }
+              };
+            });
+          });
+          
+          // Update the pipeline template with the dependency selection
+          // Use a timeout to ensure state updates have been processed
+          setTimeout(() => {
+            const updatedTemplate = generatePipelineTemplate();
+            setPipelineJson(updatedTemplate);
+            console.log("Pipeline template updated after schema dependency selection:", updatedTemplate);
+            
+            // Log the schema transformation in the pipeline template
+            const schemaTransformation = updatedTemplate.transformations.find(
+              (t: any) => t.name === 'schema_transformation'
+            );
+            console.log("Schema transformation in pipeline template:", schemaTransformation);
+          }, 0);
+          
+          if (schemaTransformationSchemaLoaded) {
+            setTransformationSubStep('schema_form');
+            setShowSchemaForm(true);
+            addAssistantMessage(`Great! Now please define your schema transformations below:`);
+          } else {
+            addAssistantMessage("Sorry, there was an error loading the schema transformation form. Please try again.");
+          }
+          
+        } else if (transformationSubStep === 'both_dependency') {
+          // Update both filter and schema forms with the selected dependency
+          setFilterFormInitialValues(prev => ({
+            ...prev,
+            dependent_on: [dependency]
+          }));
+          
+          // Initialize with an empty derived field to ensure the form renders correctly
+          setSchemaFormInitialValues({
+            name: 'schema_transformation',
+            derived_fields: [{ name: '', expression: '' }],
+            dependent_on: [dependency]
+          });
+          
+          // Update both transformations in the selected sources
+          // This ensures the generatePipelineTemplate function will use the correct dependencies
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                filter_transformation: {
+                  ...(source.filter_transformation || {}),
+                  dependent_on: [dependency]
+                },
+                schema_transformation: {
+                  ...(source.schema_transformation || {}),
+                  name: 'schema_transformation',
+                  transformation: 'SchemaTransformation',
+                  derived_fields: [{ name: '', expression: '' }],
+                  dependent_on: [dependency]
+                }
+              };
+            });
+          });
+          
+          // Update the pipeline template with the dependency selection
+          // Use a timeout to ensure state updates have been processed
+          setTimeout(() => {
+            const updatedTemplate = generatePipelineTemplate();
+            setPipelineJson(updatedTemplate);
+            console.log("Pipeline template updated after both dependency selection:", updatedTemplate);
+            
+            // Log the transformations in the pipeline template
+            const filterTransformation = updatedTemplate.transformations.find(
+              (t: any) => t.name === 'filter_transformation'
+            );
+            const schemaTransformation = updatedTemplate.transformations.find(
+              (t: any) => t.name === 'schema_transformation'
+            );
+            console.log("Filter transformation in pipeline template:", filterTransformation);
+            console.log("Schema transformation in pipeline template:", schemaTransformation);
+          }, 0);
+          
+          // Make sure both schemas are loaded
+          if (filterSchemaLoaded && schemaTransformationSchemaLoaded) {
+            // Start with the filter form
+            setTransformationSubStep('filter_condition');
+            setShowFilterForm(true);
+            addAssistantMessage(`Great! Let's start with the filter condition. Please define your filter condition below. After that, we'll set up the schema transformation.`);
+          } else {
+            addAssistantMessage("Sorry, there was an error loading the forms. Please try again.");
+          }
+          
+        } else if (transformationSubStep === 'target_dependency') {
+          // Update the writer form with the selected dependency
+          setWriterFormInitialValues(prev => ({
+            ...prev,
+            dependent_on: [dependency]
+          }));
+          
+          // Also update the target transformation in the selected sources
+          // This ensures the generatePipelineTemplate function will use the correct dependencies
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              // Create or update the target_transformation property
+              return {
+                ...source,
+                target_transformation: {
+                  ...(source.target_transformation || {}),
+                  dependent_on: [dependency]
+                }
+              };
+            });
+          });
+          
+          // Show the writer form
+          setTransformationSubStep('target_form');
+          setShowWriterForm(true);
+          addAssistantMessage(`Please configure your output target below:`);
+        }
+        
+        // Update the pipeline template with the dependency selection
+        // We need to use a timeout to ensure the state updates have been processed
+        setTimeout(() => {
+          const dependencySelectionTemplate = generatePipelineTemplate();
+          setPipelineJson(dependencySelectionTemplate);
+          console.log("Pipeline template updated after dependency selection:", dependencySelectionTemplate);
+        }, 0);
+      };
+      
+      // Start preloading schemas
+      preloadSchemas();
+    });
+  };
 
   const handleTransformationsStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
@@ -546,6 +863,12 @@ export const PipeLineChatPanel = ({
     if (userInput.includes('add another') || userInput.includes('search') || userInput.includes('new source')) {
       setStep('source');
       setTransformationSubStep('select');
+      
+      // Update the pipeline template when changing steps
+      const updatedTemplate = generatePipelineTemplate();
+      setPipelineJson(updatedTemplate);
+      console.log("Pipeline template updated when returning to source step:", updatedTemplate);
+      
       addAssistantMessage("Sure! Please enter the name of another data source you'd like to search for.");
       return;
     }
@@ -566,7 +889,7 @@ export const PipeLineChatPanel = ({
       );
 
       // Build and update the pipeline template
-      const pipelineTemplate = buildPipelineTemplate();
+      const pipelineTemplate = generatePipelineTemplate();
       setPipelineJson(pipelineTemplate);
       console.log("Current pipeline template:", pipelineTemplate);
 
@@ -626,65 +949,299 @@ export const PipeLineChatPanel = ({
           }
         }
 
+        // Update transformations state
         setTransformations(newTransformations);
+        
+        // Get existing transformations and sources for suggestions
+        const existingNodes = [];
+        
+        // Add reader nodes from sources
+        if (selectedSources.length > 0) {
+          selectedSources.forEach(source => {
+            existingNodes.push(`read_${source.data_src_name}`);
+          });
+        }
+        
+        // Add existing transformation nodes
+        if (transformations.includes('schema')) {
+          existingNodes.push('schema_transformation');
+        }
+        if (transformations.includes('filter')) {
+          existingNodes.push('filter_transformation');
+        }
+        
+        // Initialize transformations with empty dependency arrays
+        // This ensures they start with empty dependencies until the user selects them
+        if (currentSelection === 'filter' || currentSelection === 'both') {
+          // Initialize filter transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                filter_transformation: {
+                  ...(source.filter_transformation || {}),
+                  dependent_on: [] // Empty array - will be filled when user selects dependency
+                }
+              };
+            });
+          });
+        }
+        
+        if (currentSelection === 'schema' || currentSelection === 'both') {
+          // Initialize schema transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                schema_transformation: {
+                  ...(source.schema_transformation || {}),
+                  dependent_on: [] // Empty array - will be filled when user selects dependency
+                }
+              };
+            });
+          });
+        }
+        
+        if (currentSelection === 'target') {
+          // Initialize target transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                target_transformation: {
+                  ...(source.target_transformation || {}),
+                  dependent_on: [] // Empty array - will be filled when user selects dependency
+                }
+              };
+            });
+          });
+        }
+        
+        // Immediately update the pipeline template with the new transformations
+        // This ensures the template is updated as soon as a transformation is selected
+        // Use a timeout to ensure state updates have been processed
+        setTimeout(() => {
+          const updatedTemplate = generatePipelineTemplate();
+          setPipelineJson(updatedTemplate);
+          console.log("Pipeline template updated with new transformations:", updatedTemplate);
+        }, 0);
 
         // Handle the current selection
         if (currentSelection === 'filter') {
-          // Show filter form
-          setTransformationSubStep('filter_condition');
-          setFilterFormInitialValues({
-            condition: filterCondition || '',
-            name: 'filter_transformation'
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('filter_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this filter? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Prepare filter form initial values (will be updated after dependency selection)
+            setFilterFormInitialValues({
+              condition: filterCondition || '',
+              name: 'filter_transformation',
+              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
+            });
+            setFilterName('filter_transformation');
+            
+            // Pre-load the filter schema in advance
+            // import('@/components/bh-reactflow-comps/builddata/json/Filter.json')
+            //   .then(schema => {
+            //     setFilterSchema(schema.default || schema);
+            //   })
+            //   .catch(error => {
+            //     console.error("Error loading filter schema:", error);
+            //   });
+              
+            // Show the dependency selection UI and add the message
+            // These should be done last to ensure everything is ready
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
           });
-          setShowFilterForm(true);
-          addAssistantMessage("Great! Please define your filter condition below:");
         } else if (currentSelection === 'schema') {
-          // Show schema form
-          setTransformationSubStep('schema_form');
-          setSchemaFormInitialValues({
-            name: 'schema_transformation',
-            derived_fields: [{ name: '', expression: '' }]
-          });
-          setShowSchemaForm(true);
-          addAssistantMessage("Great! Please define your schema transformations below:");
-        } else if (currentSelection === 'both') {
-          // Start with filter form first
-          setTransformationSubStep('filter_condition');
-          setFilterFormInitialValues({
-            condition: filterCondition || '',
-            name: 'filter_transformation'
-          });
-          setShowFilterForm(true);
-          addAssistantMessage("Great! Let's start with the filter condition. Please define your filter condition below:");
-        } else if (currentSelection === 'target') {
-          // Show Writer form instead of asking questions
-          setTransformationSubStep('target_form');
-
-          // Prepare initial values for the Writer form
-          const initialValues = {
-            name: targetName || 'write_output',
-            target: {
-              target_name: targetName || 'output_data',
-              target_type: 'File',
-              load_mode: 'append',
-              connection: {
-                connection_type: 'Local',
-                file_path_prefix: 'examples/'
-              },
-              file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
-            },
-            file_type: 'CSV',
-            write_options: {
-              header: true,
-              sep: ',',
-              createDisposition: 'CREATE_IF_NEEDED',
-              writeMethod: 'APPEND'
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('schema_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this schema transformation? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Initialize schema transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  schema_transformation: {
+                    ...(source.schema_transformation || {}),
+                    name: 'schema_transformation',
+                    transformation: 'SchemaTransformation',
+                    derived_fields: [{ name: '', expression: '' }],
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+            
+            // Prepare schema form initial values (will be updated after dependency selection)
+            // Initialize with proper structure to ensure the form renders correctly
+            setSchemaFormInitialValues({
+              name: 'schema_transformation',
+              derived_fields: [{ name: '', expression: '' }],
+              dependent_on: [] // Empty array - will be filled when user selects dependency
+            });
+            setSchemaName('schema_transformation');
+            
+            // Use schema transformation schema from mdata.json
+            if (!schemaTransformationSchema) {
+              const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
+              if (schemaTransformationSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setSchemaTransformationSchema({
+                  ...schemaTransformationSchemaFromMdata,
+                  nodeId: 'schema_transformation'
+                });
+                console.log("Loaded schema transformation schema from mdata.json");
+              } else {
+                console.error("Schema transformation schema not found in mdata.json");
+              }
             }
-          };
-
-          setWriterFormInitialValues(initialValues);
-          setShowWriterForm(true);
-          addAssistantMessage("Please configure your output target below:");
+              
+            // Show the dependency selection UI and add the message
+            // These should be done last to ensure everything is ready
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
+        } else if (currentSelection === 'both') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection for both transformations
+            setTransformationSubStep('both_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add these transformations? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Prepare filter form initial values (will be updated after dependency selection)
+            setFilterFormInitialValues({
+              condition: filterCondition || '',
+              name: 'filter_transformation',
+              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
+            });
+            setFilterName('filter_transformation');
+            
+            // Use schemas from mdata.json
+            try {
+              if (!filterSchema) {
+                const filterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Filter");
+                if (filterSchemaFromMdata) {
+                  // Add nodeId to the schema to match the format expected by CreateFormFormik
+                  setFilterSchema({
+                    ...filterSchemaFromMdata,
+                    nodeId: 'filter_transformation'
+                  });
+                  console.log("Loaded filter schema from mdata.json");
+                } else {
+                  console.error("Filter schema not found in mdata.json");
+                }
+              }
+              
+              if (!schemaTransformationSchema) {
+                const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
+                if (schemaTransformationSchemaFromMdata) {
+                  // Add nodeId to the schema to match the format expected by CreateFormFormik
+                  setSchemaTransformationSchema({
+                    ...schemaTransformationSchemaFromMdata,
+                    nodeId: 'schema_transformation'
+                  });
+                  console.log("Loaded schema transformation schema from mdata.json");
+                } else {
+                  console.error("Schema transformation schema not found in mdata.json");
+                }
+              }
+            } catch (error) {
+              console.error("Error loading schemas from mdata.json:", error);
+            }
+            
+            // Show the dependency selection UI and add the message
+            // These should be done last to ensure everything is ready
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
+        } else if (currentSelection === 'target') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('target_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this output target? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Prepare initial values for the Writer form (will be updated after dependency selection)
+            const initialValues = {
+              name: targetName || 'write_output',
+              target: {
+                target_name: targetName || 'output_data',
+                target_type: 'File',
+                load_mode: 'append',
+                connection: {
+                  connection_type: 'Local',
+                  file_path_prefix: 'examples/'
+                },
+                file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
+              },
+              file_type: 'CSV',
+              write_options: {
+                header: true,
+                sep: ',',
+                createDisposition: 'CREATE_IF_NEEDED',
+                writeMethod: 'APPEND'
+              },
+              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
+            };
+  
+            setWriterFormInitialValues(initialValues);
+            
+            // Show the dependency selection UI and add the message
+            // These should be done last to ensure everything is ready
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
         } else {
           // No valid selection made
           setTransformationSubStep('select');
@@ -722,8 +1279,8 @@ export const PipeLineChatPanel = ({
         setTransformationSubStep('select');
 
         // Build and update the pipeline template
-        const updatedTemplate = buildPipelineTemplate();
-        setPipelineJson(updatedTemplate);
+        const targetNameTemplate = generatePipelineTemplate();
+        setPipelineJson(targetNameTemplate);
 
         // Ask if the user wants to add more transformations
         addAssistantMessage(
@@ -792,8 +1349,8 @@ export const PipeLineChatPanel = ({
           setTransformationSubStep('summary');
 
           // Build the final pipeline template
-          const finalTemplate = buildPipelineTemplate();
-          setPipelineJson(finalTemplate);
+          const customTargetTemplate = generatePipelineTemplate();
+          setPipelineJson(customTargetTemplate);
 
           // Show summary and ask for confirmation
           addAssistantMessage(
@@ -819,8 +1376,8 @@ export const PipeLineChatPanel = ({
           setTransformationSubStep('summary');
 
           // Build the final pipeline template
-          const finalTemplate = buildPipelineTemplate();
-          setPipelineJson(finalTemplate);
+          const fileTargetSummaryTemplate = generatePipelineTemplate();
+          setPipelineJson(fileTargetSummaryTemplate);
 
           // Show summary and ask for confirmation
           addAssistantMessage(
@@ -890,7 +1447,7 @@ export const PipeLineChatPanel = ({
         setTransformationSubStep('summary');
 
         // Build the final pipeline template
-        const fileTargetTemplate = buildPipelineTemplate();
+        const fileTargetTemplate = generatePipelineTemplate();
         setPipelineJson(fileTargetTemplate);
 
         // Show summary and ask for confirmation
@@ -977,7 +1534,7 @@ export const PipeLineChatPanel = ({
         setTransformationSubStep('summary');
 
         // Build the final pipeline template
-        const dbTargetTemplate = buildPipelineTemplate();
+        const dbTargetTemplate = generatePipelineTemplate();
         setPipelineJson(dbTargetTemplate);
 
         // Show summary and ask for confirmation
@@ -1030,9 +1587,9 @@ export const PipeLineChatPanel = ({
         setTransformationSubStep('summary');
 
         // Build the final pipeline template with the updated connection choice
-        const finalTemplate = buildPipelineTemplate();
-        setPipelineJson(finalTemplate);
-        console.log("Final pipeline template with connection choice:", finalTemplate);
+        const connectionChoiceTemplate = generatePipelineTemplate();
+        setPipelineJson(connectionChoiceTemplate);
+        console.log("Final pipeline template with connection choice:", connectionChoiceTemplate);
 
         // Show summary and ask for confirmation
         addAssistantMessage(
@@ -1053,10 +1610,8 @@ export const PipeLineChatPanel = ({
     }
 
     // Update the pipeline template
-    setTimeout(() => {
-      const pipelineTemplate = buildPipelineTemplate();
-      setPipelineJson(pipelineTemplate);
-    }, 0);
+    const pipelineTemplate = generatePipelineTemplate();
+    setPipelineJson(pipelineTemplate);
   };
 
   const handleConfirmStep = async (input: string) => {
@@ -1068,7 +1623,7 @@ export const PipeLineChatPanel = ({
         setIsProcessing(true);
 
         // Get the final pipeline template
-        const finalTemplate = buildPipelineTemplate();
+        const finalTemplate = generatePipelineTemplate();
 
         // Log the final template for debugging
         console.log("Final pipeline template for creation:", finalTemplate);
@@ -1120,11 +1675,178 @@ export const PipeLineChatPanel = ({
     }
   };
 
-  const handleNewChat = () => {
-    clearMessages();
-    setIsNewChat(true);
-    setMode('chat');
-    resetPipelineCreationState();
+ 
+  
+  // Handle ReaderOptionsForm source update
+  const handleReaderOptionsUpdate = (sourceData: any) => {
+    console.log("Source updated:", sourceData);
+    
+    // Handle the source update
+    if (currentSourceData && sourceData.sourceData) {
+      // Update the current source data with the new configuration
+      const updatedSource = {
+        ...currentSourceData,
+        ...sourceData.sourceData.data.source
+      };
+      
+      // Update selected sources
+      const updatedSources = selectedSources.map(source => 
+        source.data_src_id === updatedSource.data_src_id ? updatedSource : source
+      );
+      
+      if (updatedSources.length === 0) {
+        // If no sources were updated, add the new source
+        updatedSources.push(updatedSource);
+      }
+      
+      setSelectedSources(updatedSources);
+      
+      // Add a message to show the configuration
+      addAssistantMessage(
+        `Reader configuration saved for "${updatedSource.data_src_name}". ` +
+        `Would you like to add another data source, or continue to the next step? ` +
+        `Say "continue" to proceed to transformations.`
+      );
+      
+      // Build and update the pipeline template
+      const pipelineTemplate = generatePipelineTemplate();
+      setPipelineJson(pipelineTemplate);
+    }
+    
+    // Hide the form
+    setShowReaderForm(false);
+  };
+  
+  // Handle TargetPopUp source update
+  const handleTargetUpdate = (sourceData: any) => {
+    console.log("Target updated:", sourceData);
+    
+    // Save target configuration
+    if (sourceData.sourceData) {
+      const targetData = sourceData.sourceData.data;
+      
+      // Extract the source data from the form
+      const source = targetData.source;
+      
+      // Update the target name
+      setTargetName(targetData.label || targetData.title || source.name);
+      
+      // Update the target configuration with the correct mapping
+      const newTargetConfig = {
+        type: source.target_type, // Use target_type instead of type
+        connectionType: source.connection?.connection_type || source.connection?.type || 'Local',
+        filePath: source.connection?.file_path_prefix || 'examples/',
+        fileFormat: source.file_type,
+        schema: source.connection?.schema,
+        database: source.connection?.database,
+        connection: source.connection,
+        customConfig: {
+          name: targetData.label || targetData.title || source.name,
+          targetName: source.target_name,
+          tableName: source.table_name,
+          loadMode: source.load_mode,
+          fileName: source.file_name,
+        }
+      };
+      
+      setTargetConfig(newTargetConfig);
+      
+      // Process dependency selection if provided
+      let dependencyMessage = "";
+      let updatedSources = [...selectedSources];
+      
+      if (targetData.dependent_on && targetData.dependent_on.length > 0) {
+        dependencyMessage = ` (after ${targetData.dependent_on.join(', ')})`;
+        
+        // Store the dependency information in the source data
+        if (selectedSources.length > 0) {
+          updatedSources = selectedSources.map(source => {
+            return {
+              ...source,
+              target_transformation: {
+                ...source.target_transformation,
+                dependent_on: targetData.dependent_on
+              }
+            };
+          });
+          setSelectedSources(updatedSources);
+        }
+      }
+      
+      // Add a message to show the target configuration
+      const targetType = source.target_type;
+      let targetDetails = '';
+      
+      if (targetType === 'File') {
+        targetDetails = `${source.file_type} file: ${source.file_name}`;
+      } else if (targetType === 'Relational') {
+        targetDetails = `Database: ${source.connection?.database || 'default'}`;
+      }
+      
+      // Get existing transformations and sources for suggestions
+      const existingNodes = [];
+      
+      // Add reader nodes from sources
+      if (updatedSources.length > 0) {
+        updatedSources.forEach(source => {
+          existingNodes.push(`read_${source.data_src_name}`);
+        });
+      }
+      
+      // Add existing transformation nodes
+      if (transformations.includes('schema')) {
+        existingNodes.push('schema_transformation');
+      }
+      if (transformations.includes('filter')) {
+        existingNodes.push('filter_transformation');
+      }
+
+      // Create a list of existing transformations for the message
+      let transformationsList = "";
+      if (existingNodes.length > 0) {
+        transformationsList = "\n\nFinal pipeline steps:\n";
+        existingNodes.forEach((node, index) => {
+          transformationsList += `${index + 1}. ${node}\n`;
+        });
+        transformationsList += `${existingNodes.length + 1}. write_output (${targetDetails})`;
+      }
+      
+      // Add 'target' to transformations if not already included
+      let updatedTransformations = [...transformations];
+      if (!transformations.includes('target')) {
+        updatedTransformations = [...transformations, 'target'];
+        setTransformations(updatedTransformations);
+      }
+      
+      addAssistantMessage(
+        `Target configuration saved: ${targetType} target (${targetDetails})${dependencyMessage}.${transformationsList}\n\n` +
+        `Your pipeline is now ready to be created. Would you like to review the pipeline or create it now?`
+      );
+      
+      // Move to confirm step
+      setStep('confirm');
+      
+      // Immediately update the pipeline template with current values
+      // This ensures we're using the most up-to-date state
+      const pipelineTemplate = buildPipelineTemplate(
+        pipelineName,
+        pipelineDescription,
+        updatedSources,
+        updatedTransformations,
+        newTargetConfig,
+        useSourceConnection,
+        filterCondition
+      );
+      
+      console.log("Updated pipeline template after target configuration:", pipelineTemplate);
+      setPipelineJson(pipelineTemplate);
+      
+      // Remove the setTimeout call that was causing the reset issue
+      // The pipeline JSON is already updated with the correct target configuration
+    }
+    
+    // Hide the form
+    setShowWriterForm(false);
   };
 
   // Handle reader form submission
@@ -1198,7 +1920,10 @@ export const PipeLineChatPanel = ({
       // Hide the form
       setShowReaderForm(false);
 
-      // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
+      // Regenerate the pipeline template with the updated reader configuration
+      const readerConfigTemplate = generatePipelineTemplate();
+      setPipelineJson(readerConfigTemplate);
+      console.log("Updated pipeline template after reader form submission:", readerConfigTemplate);
 
       // Ask if they want to add another source or continue
       addAssistantMessage(
@@ -1216,18 +1941,99 @@ export const PipeLineChatPanel = ({
     // Save filter condition
     setFilterCondition(formData.condition);
 
+    // Process dependency selection if provided
+    let dependencyMessage = "";
+    if (formData.dependent_on && formData.dependent_on.length > 0) {
+      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
+      
+      // Store the dependency information in the source data
+      if (selectedSources.length > 0) {
+        const updatedSources = selectedSources.map(source => {
+          return {
+            ...source,
+            filter_transformation: {
+              ...source.filter_transformation,
+              dependent_on: formData.dependent_on
+            }
+          };
+        });
+        setSelectedSources(updatedSources);
+      }
+      
+      // Update the pipeline JSON directly
+      const updatedPipelineJson = { ...pipelineJson };
+      if (updatedPipelineJson && updatedPipelineJson.transformations) {
+        // Find the filter transformation
+        const filterTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'filter_transformation'
+        );
+        
+        if (filterTransformation) {
+          // Update the dependency
+          filterTransformation.dependent_on = formData.dependent_on;
+          console.log("Updated filter transformation dependency in pipeline JSON:", filterTransformation);
+        }
+        
+        // Update the pipeline JSON
+        setPipelineJson(updatedPipelineJson);
+      }
+    }
+
     // Add a message to show the selected condition
-    addUserMessage(`Filter condition: ${formData.condition}`);
+    addUserMessage(`Filter condition: ${formData.condition}${dependencyMessage}`);
+    
+    // Regenerate the pipeline template with the updated filter condition
+    const filterConditionTemplate = generatePipelineTemplate();
+    setPipelineJson(filterConditionTemplate);
+    console.log("Updated pipeline template after filter form submission:", filterConditionTemplate);
 
     // Hide the form
     setShowFilterForm(false);
 
+    // Check if we need to show the schema form next (when both transformations are selected)
+    if (transformations.includes('schema') && transformations.includes('filter') && 
+        !selectedSources.some(s => s.schema_transformation)) {
+      // We need to show the schema form next
+      setTransformationSubStep('schema_form');
+      setShowSchemaForm(true);
+      addAssistantMessage(`Great! Now let's define your schema transformations below:`);
+      return; // Exit early to prevent showing the transformation selection message
+    }
+
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
 
+    // Get existing transformations and sources for suggestions
+    const existingNodes = [];
+    
+    // Add reader nodes from sources
+    if (selectedSources.length > 0) {
+      selectedSources.forEach(source => {
+        existingNodes.push(`read_${source.data_src_name}`);
+      });
+    }
+    
+    // Add existing transformation nodes
+    if (transformations.includes('schema')) {
+      existingNodes.push('schema_transformation');
+    }
+    if (transformations.includes('filter')) {
+      existingNodes.push('filter_transformation');
+    }
+
+    // Create a list of existing transformations for the message
+    let transformationsList = "";
+    if (existingNodes.length > 0) {
+      transformationsList = "\n\nCurrent pipeline steps:\n";
+      existingNodes.forEach((node, index) => {
+        transformationsList += `${index + 1}. ${node}\n`;
+      });
+      transformationsList += "\nFilter transformation has been added.";
+    }
+
     // Ask if the user wants to add more transformations
     addAssistantMessage(
-      "Great! The filter transformation has been added. Would you like to add another transformation?\n\n" +
+      `Great! The filter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
       "1. Filter Transformation - Filter data based on conditions\n" +
       "2. Schema Transformation - Create new fields or modify existing ones\n" +
       "3. Target - Skip transformations not needed\n\n" +
@@ -1241,85 +2047,150 @@ export const PipeLineChatPanel = ({
   const handleSchemaFormSubmit = (formData: any) => {
     console.log("Schema form submitted:", formData);
 
+    // Ensure derived_fields is an array
+    if (!Array.isArray(formData.derived_fields)) {
+      formData.derived_fields = [{ name: '', expression: '' }];
+    }
+
+    // Filter out empty derived fields
+    formData.derived_fields = formData.derived_fields.filter((field: any) => 
+      field.name && field.name.trim() !== '' && field.expression && field.expression.trim() !== ''
+    );
+
+    // If no valid derived fields, add a default one
+    if (formData.derived_fields.length === 0) {
+      formData.derived_fields = [{ name: 'derived_field', expression: 'column1' }];
+    }
+
     // Save schema transformation
     const derivedFields = formData.derived_fields.map((field: any) =>
       `${field.name}: ${field.expression}`
     ).join(', ');
 
+    // Process dependency selection if provided
+    let dependencyMessage = "";
+    if (formData.dependent_on && formData.dependent_on.length > 0) {
+      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
+      console.log("Using user-provided schema dependencies:", formData.dependent_on);
+    } else {
+      // If no dependency provided, check if we have a selected dependency
+      if (selectedDependency) {
+        formData.dependent_on = [selectedDependency];
+        dependencyMessage = ` (after ${selectedDependency})`;
+        console.log("Using selected dependency for schema:", selectedDependency);
+      } 
+      // Otherwise, use an empty array - this will be filled when user selects dependency
+      else {
+        formData.dependent_on = [];
+        console.log("No dependency provided for schema transformation");
+      }
+    }
+    
+    // Store the schema transformation data directly in the transformations array
+    // This ensures it's properly included in the pipeline template
+    const schemaTransformationData = {
+      name: "schema_transformation",
+      transformation: "SchemaTransformation",
+      dependent_on: formData.dependent_on,
+      derived_fields: formData.derived_fields
+    };
+    
+    // Update the selected sources with the schema transformation data
+    if (selectedSources.length > 0) {
+      const updatedSources = selectedSources.map(source => {
+        return {
+          ...source,
+          schema_transformation: schemaTransformationData
+        };
+      });
+      setSelectedSources(updatedSources);
+    }
+    
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the schema transformation
+      const schemaTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'schema_transformation'
+      );
+      
+      if (schemaTransformation) {
+        // Update existing schema transformation
+        schemaTransformation.derived_fields = formData.derived_fields;
+        schemaTransformation.dependent_on = formData.dependent_on;
+        console.log("Updated schema transformation in pipeline JSON:", schemaTransformation);
+      } else {
+        // Add new schema transformation
+        updatedPipelineJson.transformations.push(schemaTransformationData);
+        console.log("Added new schema transformation to pipeline JSON:", schemaTransformationData);
+      }
+      
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+
     // Add a message to show the selected derived fields
-    addUserMessage(`Schema transformation: ${derivedFields}`);
+    addUserMessage(`Schema transformation: ${derivedFields}${dependencyMessage}`);
 
     // Hide the form
     setShowSchemaForm(false);
 
+    // Regenerate the pipeline template with the updated schema transformation
+    // Use a timeout to ensure state updates have been processed
+    setTimeout(() => {
+      const schemaTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(schemaTransformTemplate);
+      console.log("Updated pipeline template after schema form submission:", schemaTransformTemplate);
+      
+      // Log the schema transformation in the pipeline template
+      const schemaTransformation = schemaTransformTemplate.transformations.find(
+        (t: any) => t.name === 'schema_transformation'
+      );
+      console.log("Schema transformation in pipeline template:", schemaTransformation);
+    }, 0);
+
+    // Add assistant message confirming the schema transformation was added
+    addAssistantMessage(`Great! I've added the schema transformation with the following derived fields: ${derivedFields}${dependencyMessage}`);
+
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
 
+    // Get existing transformations and sources for suggestions
+    const existingNodes = [];
+    
+    // Add reader nodes from sources
+    if (selectedSources.length > 0) {
+      selectedSources.forEach(source => {
+        existingNodes.push(`read_${source.data_src_name}`);
+      });
+    }
+    
+    // Add existing transformation nodes
+    if (transformations.includes('schema')) {
+      existingNodes.push('schema_transformation');
+    }
+    if (transformations.includes('filter')) {
+      existingNodes.push('filter_transformation');
+    }
+
+    // Create a list of existing transformations for the message
+    let transformationsList = "";
+    if (existingNodes.length > 0) {
+      transformationsList = "\n\nCurrent pipeline steps:\n";
+      existingNodes.forEach((node, index) => {
+        transformationsList += `${index + 1}. ${node}\n`;
+      });
+      transformationsList += "\nSchema transformation has been added.";
+    }
+
     // Ask if the user wants to add more transformations
     addAssistantMessage(
-      "Great! The schema transformation has been added. Would you like to add another transformation?\n\n" +
+      `Great! The schema transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
       "1. Filter Transformation - Filter data based on conditions\n" +
       "2. Schema Transformation - Create new fields or modify existing ones\n" +
       "3. Target - Skip transformations not needed\n\n" +
       "Please select an option from the buttons below."
     );
-  };
-
-  // Handle writer form submission
-  const handleWriterFormSubmit = (formData: any) => {
-    console.log("Writer form submitted:", formData);
-
-    // Save target configuration
-    setTargetName(formData.target.target_name);
-    setTargetConfig({
-      type: formData.target.target_type,
-      connectionType: formData.target.connection.connection_type,
-      filePath: formData.target.connection.file_path_prefix,
-      fileFormat: formData.file_type,
-      customConfig: {
-        name: formData.target.target_name,
-        loadMode: formData.target.load_mode
-      }
-    });
-
-    // Add a message to show the target configuration
-    const targetType = formData.target.target_type;
-    let targetDetails = '';
-
-    if (targetType === 'File') {
-      targetDetails = `${formData.file_type} file: ${formData.target.file_name}`;
-    } else if (targetType === 'Relational') {
-      targetDetails = `Database: ${formData.target.connection.database || 'default'}`;
-    }
-
-    // Add target to transformations if not already there
-    if (!transformations.includes('target')) {
-      const newTransformations = [...transformations, 'target'];
-      setTransformations(newTransformations);
-      console.log("Added target to transformations:", newTransformations);
-    }
-
-    // Update the pipeline template manually to ensure the target is added
-    const updatedTemplate = buildPipelineTemplate();
-    setPipelineJson(updatedTemplate);
-    console.log("Updated pipeline template after writer form submission:", updatedTemplate);
-
-    addUserMessage(`Target configuration: ${formData.target.target_name} (${targetDetails})`);
-
-    // Hide the form
-    setShowWriterForm(false);
-
-    // Ask for more transformations instead of going directly to target
-    setTransformationSubStep('select');
-    addAssistantMessage(
-      "Great! The target configuration has been added. Would you like to add another transformation?\n\n" +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Target - Skip transformations not needed\n\n" +
-      "Please select an option from the buttons below."
-    );
-
-    // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
   };
 
   return (
@@ -1363,8 +2234,8 @@ export const PipeLineChatPanel = ({
                     }`}
                 >
                   {message.role === "assistant" && (
-                    <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
-                      <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
+                    <Avatar className="w-10 h-10 mr-0 flex-shrink-0 mt-1 justify-center bg-gradient-to-br from-primary/20 to-blue-300/30 border border-slate-100 shadow-sm">
+                      <AvatarImage src={imageSrc} className="object-contain object-center h-full w-full p-2 drop-shadow-sm" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   )}
@@ -1383,6 +2254,13 @@ export const PipeLineChatPanel = ({
                       {/* Show inline forms after specific assistant messages */}
                       {message.role === "assistant" && i === messages.length - 1 && (
                         <>
+                          {/* Source selection suggestion buttons */}
+                          {awaitingSourceSelection && sourceSuggestions.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {sourceSuggestions}
+                            </div>
+                          )}
+                          
                           {showReaderForm && message.content.includes("Please review and customize the reader configuration") && (
                             <SchemaFormLoader
                               schemaType="Reader"
@@ -1393,37 +2271,142 @@ export const PipeLineChatPanel = ({
                             />
                           )}
 
-                          {showFilterForm && message.content.includes("Please define your filter condition") && (
-                            <SchemaFormLoader
-                              schemaType="Filter"
-                              initialValues={filterFormInitialValues}
-                              onSubmit={handleFilterFormSubmit}
-                              submitLabel="Apply Filter"
-                              updatePipelineTemplate={true}
-                            />
+                          {showFilterForm && (
+                            <div className="mt-4 rounded-lg bg-white">
+                              <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                    <span className="text-white text-sm font-medium">F</span>
+                                  </div>
+                                  <h2 className="text-lg font-medium text-gray-800">
+                                    Filter Configuration
+                                  </h2>
+                                </div>
+                              </div>
+                              <div className="py-4">
+                                {/* Use CreateFormFormik directly for filter */}
+                                {filterSchema ? (
+                                  <CreateFormFormik
+                                    schema={{
+                                      ...filterSchema,
+                                      initialValues: {
+                                        name: 'filter_transformation',
+                                        condition: '',
+                                        dependent_on: filterFormInitialValues.dependent_on || []
+                                      }
+                                    }}
+                                    initialValues={{
+                                      name: 'filter_transformation',
+                                      condition: '',
+                                      dependent_on: filterFormInitialValues.dependent_on || []
+                                    }}
+                                    onSubmit={handleFilterFormSubmit}
+                                    nodes={nodes}
+                                    sourceColumns={sourceColumns}
+                                    onClose={() => setShowFilterForm(false)}
+                                    pipelineDtl={pipelineJson}
+                                    currentNodeId={`filter_${filterName || 'condition'}`}
+                                    edges={edges}
+                                    isDialog={false}
+                                  />
+                                ) : (
+                                  <div className="flex justify-center items-center p-4">
+                                    <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                    <span className="ml-2">Loading filter form...</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
 
                           {showSchemaForm && (
-                            message.content.includes("Please define your schema transformations") ||
-                            transformationSubStep === 'schema_form'
-                          ) && (
-                              <SchemaFormLoader
-                                schemaType="SchemaTransformation"
-                                initialValues={schemaFormInitialValues}
-                                onSubmit={handleSchemaFormSubmit}
-                                submitLabel="Apply Schema Transformation"
-                                updatePipelineTemplate={true}
-                              />
+                              <div className="mt-4 rounded-lg bg-white">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">S</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Schema Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for schema transformation */}
+                                  {schemaTransformationSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...schemaTransformationSchema,
+                                        initialValues: {
+                                          name: 'schema_transformation',
+                                          derived_fields: [{ name: '', expression: '' }],
+                                          dependent_on: schemaFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'schema_transformation',
+                                        derived_fields: [{ name: '', expression: '' }],
+                                        dependent_on: schemaFormInitialValues.dependent_on || []
+                                      }}
+                                      onSubmit={handleSchemaFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowSchemaForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={`schema_${schemaName || 'transformation'}`}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading schema transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             )}
 
-                          {showWriterForm && message.content.includes("Please configure your output target below") && (
-                            <SchemaFormLoader
-                              schemaType="Writer"
-                              initialValues={writerFormInitialValues}
-                              onSubmit={handleWriterFormSubmit}
-                              submitLabel="Save Target Configuration"
-                              updatePipelineTemplate={true}
-                            />
+                          {showDependencySelection && (
+                            <div className="mt-4 rounded-lg bg-white p-4">
+                              <h3 className="text-lg font-medium mb-2">Select Dependency</h3>
+                              <div className="flex flex-col space-y-2">
+                                {dependencyOptions.map((option, index) => (
+                                  <button
+                                    key={index}
+                                    className="px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-md text-left"
+                                    onClick={() => handleDependencySelection(option.value)}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {showWriterForm && (
+                            <div className="mt-4 rounded-lg bg-white">
+                              <TargetPopUp
+                                isOpen={false} // Use inline mode
+                                onClose={() => setShowWriterForm(false)}
+                                initialData={writerFormInitialValues}
+                                onSourceUpdate={handleTargetUpdate}
+                                nodeId={`target_${targetName || 'output'}`}
+                                source={{
+                                  title: targetName || 'output_data',
+                                  source: {
+                                    name: targetName || 'output_data',
+                                    target_type: targetConfig.type,
+                                    file_type: targetConfig.fileFormat,
+                                    load_mode: targetConfig.customConfig?.loadMode || 'append',
+                                    connection: {
+                                      connection_type: targetConfig.connectionType,
+                                      file_path_prefix: targetConfig.filePath
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
                           )}
                         </>
                       )}
@@ -1450,7 +2433,7 @@ export const PipeLineChatPanel = ({
                                       const dataSource = "top_sales_regions";
                                       addUserMessage(dataSource);
                                       // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
+                                      const pipelineTemplate = generatePipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
                                       handleSourceStep(dataSource);
@@ -1464,7 +2447,7 @@ export const PipeLineChatPanel = ({
                                       const dataSource = "customer_records";
                                       addUserMessage(dataSource);
                                       // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = buildPipelineTemplate();
+                                      const pipelineTemplate = generatePipelineTemplate();
                                       setPipelineJson(pipelineTemplate);
                                       console.log("Current pipeline template:", pipelineTemplate);
                                       handleSourceStep(dataSource);
@@ -1483,7 +2466,7 @@ export const PipeLineChatPanel = ({
                                   onClick={() => {
                                     addUserMessage("Add another source");
                                     // Build and update the pipeline template before handling the step
-                                    const pipelineTemplate = buildPipelineTemplate();
+                                    const pipelineTemplate = generatePipelineTemplate();
                                     setPipelineJson(pipelineTemplate);
                                     console.log("Current pipeline template:", pipelineTemplate);
                                     handleTransformationsStep("Add another source");
@@ -1500,7 +2483,7 @@ export const PipeLineChatPanel = ({
                                     setStep('transformations');
                                     setTransformationSubStep('select');
                                     // Build and update the pipeline template before handling the step
-                                    const pipelineTemplate = buildPipelineTemplate();
+                                    const pipelineTemplate = generatePipelineTemplate();
                                     setPipelineJson(pipelineTemplate);
                                     console.log("Current pipeline template:", pipelineTemplate);
                                     handleTransformationsStep("Continue to transformations");
@@ -1526,7 +2509,7 @@ export const PipeLineChatPanel = ({
                                       onClick={() => {
                                         addUserMessage("Filter Transformation");
                                         // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = buildPipelineTemplate();
+                                        const pipelineTemplate = generatePipelineTemplate();
                                         setPipelineJson(pipelineTemplate);
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("1. Filter Transformation");
@@ -1539,7 +2522,7 @@ export const PipeLineChatPanel = ({
                                       onClick={() => {
                                         addUserMessage("Schema Transformation");
                                         // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = buildPipelineTemplate();
+                                        const pipelineTemplate = generatePipelineTemplate();
                                         setPipelineJson(pipelineTemplate);
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("2. Schema Transformation");
@@ -1552,7 +2535,7 @@ export const PipeLineChatPanel = ({
                                       onClick={() => {
                                         addUserMessage("Target - Skip transformations not needed");
                                         // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = buildPipelineTemplate();
+                                        const pipelineTemplate = generatePipelineTemplate();
                                         setPipelineJson(pipelineTemplate);
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("3. Target");
@@ -1565,7 +2548,7 @@ export const PipeLineChatPanel = ({
                                       onClick={() => {
                                         addUserMessage("Add both transformations");
                                         // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = buildPipelineTemplate();
+                                        const pipelineTemplate = generatePipelineTemplate();
                                         setPipelineJson(pipelineTemplate);
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("Add both");
@@ -1576,109 +2559,6 @@ export const PipeLineChatPanel = ({
                                 </div>
                               )}
 
-                            {step === 'transformations' && transformationSubStep === 'filter_condition' && (
-                              <div className="flex flex-col gap-2 w-full mt-2">
-                                <div className="text-sm font-medium text-muted-foreground mb-1">Common Filter Conditions:</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <SuggestionButton
-                                    text="age >= 18"
-                                    icon={<Filter className="h-4 w-4 mr-2" />}
-                                    onClick={() => {
-                                      // Set filter condition directly
-                                      setFilterCondition("age >= 18");
-                                      addUserMessage("age >= 18");
-
-                                      // Build and update the pipeline template
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-
-                                      // If schema transformation is also selected, show the schema form
-                                      if (transformations.includes('schema')) {
-                                        addAssistantMessage("Now, please fill out the schema transformation form.");
-                                      } else {
-                                        // Otherwise, move to target name
-                                        setTransformationSubStep('target_name');
-                                        addAssistantMessage("Thanks! Now, what would you like to name your output dataset?");
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton
-                                    text="sales_amount > 1000"
-                                    icon={<Filter className="h-4 w-4 mr-2" />}
-                                    onClick={() => {
-                                      // Set filter condition directly
-                                      setFilterCondition("sales_amount > 1000");
-                                      addUserMessage("sales_amount > 1000");
-
-                                      // Build and update the pipeline template
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-
-                                      // If schema transformation is also selected, show the schema form
-                                      if (transformations.includes('schema')) {
-                                        addAssistantMessage("Now, please fill out the schema transformation form.");
-                                      } else {
-                                        // Otherwise, move to target name
-                                        setTransformationSubStep('target_name');
-                                        addAssistantMessage("Thanks! Now, what would you like to name your output dataset?");
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton
-                                    text="status = 'active'"
-                                    icon={<Filter className="h-4 w-4 mr-2" />}
-                                    onClick={() => {
-                                      // Set filter condition directly
-                                      setFilterCondition("status = 'active'");
-                                      addUserMessage("status = 'active'");
-
-                                      // Build and update the pipeline template
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-
-                                      // If schema transformation is also selected, show the schema form
-                                      if (transformations.includes('schema')) {
-                                        addAssistantMessage("Now, please fill out the schema transformation form.");
-                                      } else {
-                                        // Otherwise, move to target name
-                                        setTransformationSubStep('target_name');
-                                        addAssistantMessage("Thanks! Now, what would you like to name your output dataset?");
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton
-                                    text="date_column >= '2023-01-01'"
-                                    icon={<Filter className="h-4 w-4 mr-2" />}
-                                    onClick={() => {
-                                      // Set filter condition directly
-                                      setFilterCondition("date_column >= '2023-01-01'");
-                                      addUserMessage("date_column >= '2023-01-01'");
-
-                                      // Build and update the pipeline template
-                                      const pipelineTemplate = buildPipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-
-                                      // If schema transformation is also selected, show the schema form
-                                      if (transformations.includes('schema')) {
-                                        addAssistantMessage("Now, please fill out the schema transformation form.");
-                                      } else {
-                                        // Otherwise, move to target name
-                                        setTransformationSubStep('target_name');
-                                        addAssistantMessage("Thanks! Now, what would you like to name your output dataset?");
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                </div>
-                              </div>
-                            )}
 
                             {step === 'transformations' && transformationSubStep === 'target_name' && (
                               <div className="flex flex-col gap-2 w-full mt-2">
@@ -1704,7 +2584,7 @@ export const PipeLineChatPanel = ({
                                         setTransformationSubStep('summary');
 
                                         // Build the final pipeline template
-                                        const finalTemplate = buildPipelineTemplate();
+                                        const finalTemplate = generatePipelineTemplate();
                                         setPipelineJson(finalTemplate);
 
                                         // Show summary and ask for confirmation
@@ -1743,7 +2623,7 @@ export const PipeLineChatPanel = ({
                                         setTransformationSubStep('summary');
 
                                         // Build the final pipeline template
-                                        const finalTemplate = buildPipelineTemplate();
+                                        const finalTemplate = generatePipelineTemplate();
                                         setPipelineJson(finalTemplate);
 
                                         // Show summary and ask for confirmation
@@ -1782,7 +2662,7 @@ export const PipeLineChatPanel = ({
                                       setTransformationSubStep('summary');
 
                                       // Build the final pipeline template
-                                      const finalTemplate = buildPipelineTemplate();
+                                      const finalTemplate = generatePipelineTemplate();
                                       setPipelineJson(finalTemplate);
 
                                       // Show summary and ask for confirmation
@@ -1812,7 +2692,7 @@ export const PipeLineChatPanel = ({
                                       setTransformationSubStep('summary');
 
                                       // Build the final pipeline template
-                                      const finalTemplate = buildPipelineTemplate();
+                                      const finalTemplate = generatePipelineTemplate();
                                       setPipelineJson(finalTemplate);
 
                                       // Show summary and ask for confirmation
@@ -1869,8 +2749,8 @@ export const PipeLineChatPanel = ({
               ))}
               {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-start gap-4 px-1">
-                  <Avatar className="w-8 h-8 mr-0 flex-shrink-0 mt-1 justify-center">
-                    <AvatarImage src={imageSrc} className="w-4 h-6 transform -rotate-[40deg]" />
+                  <Avatar className="w-12 h-12 mr-0 flex-shrink-0 mt-1 justify-center bg-gradient-to-br from-primary/20 to-blue-300/30 border border-slate-100 shadow-sm">
+                    <AvatarImage src={imageSrc} className="object-contain object-center h-full w-full p-2 drop-shadow-sm" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col max-w-[85%]">

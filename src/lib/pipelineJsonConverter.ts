@@ -87,6 +87,9 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
 
 
 
+// Cache for data source details to avoid redundant API calls
+const dataSourceCache = new Map<string, any>();
+
 export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpdate: (sourceData: any) => void) => {
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -125,6 +128,8 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
     let sourceIndex = 0;
 
+    console.log("Starting to process transformations:", pipelineJson.transformations);
+    
     // First, process Reader transformations from the transformations array
     for (const transform of pipelineJson.transformations) {
         if (transform.transformation === 'Reader') {
@@ -146,15 +151,34 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             processedSources.add(sourceName);
             
             try {
-                const sourceDetails: any = await apiService.get({
-                    portNumber: CATALOG_API_PORT,
-                    url: `/data_source/${sourceData?.data_src_id || ''}`,
-                    usePrefix: true,
-                    method: 'GET',
-                    metadata: {
-                        errorMessage: 'Failed to fetch source details'
-                    },
-                });
+                // Check if we already have this data source in cache
+                const dataSourceId = sourceData?.data_src_id || '';
+                let sourceDetails: any;
+                
+                if (dataSourceId && dataSourceCache.has(dataSourceId)) {
+                    // Use cached data
+                    sourceDetails = dataSourceCache.get(dataSourceId);
+                    console.log(`Using cached data for source ID: ${dataSourceId}`);
+                } else if (dataSourceId) {
+                    // Fetch data and cache it
+                    sourceDetails = await apiService.get({
+                        portNumber: CATALOG_API_PORT,
+                        url: `/data_source/${dataSourceId}`,
+                        usePrefix: true,
+                        method: 'GET',
+                        metadata: {
+                            errorMessage: 'Failed to fetch source details'
+                        },
+                    });
+                    
+                    // Cache the result for future use
+                    dataSourceCache.set(dataSourceId, sourceDetails);
+                    console.log(`Fetched and cached data for source ID: ${dataSourceId}`);
+                } else {
+                    // Handle case where no data_src_id is provided
+                    sourceDetails = { data_src_name: sourceName };
+                    console.log('No data_src_id provided, using default values');
+                }
                 
                 if (handleSourceUpdate) {
                     const nodeId = `Reader_${sourceIndex + 1}`;
@@ -190,6 +214,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 
                 const nodeId = `Reader_${sourceIndex + 1}`;
                 transformationNodes.set(transform.name, nodeId);
+                console.log(`Mapped Reader transformation: ${transform.name} -> ${nodeId}`);
                 
                 nodes.push({
                     id: nodeId,
@@ -235,17 +260,93 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         }
     }
 
-    // Process non-Reader, non-Writer transformations
-    for (const transform of pipelineJson.transformations) {
-        // Skip Reader and Writer/Target transformations (handled separately)
-        if (transform.transformation === 'Reader' || transform.transformation === 'Writer' || transform.transformation === 'Target') continue;
-
+    // Sort non-Reader, non-Writer transformations based on dependencies
+    // This ensures they appear in the correct sequence in the UI
+    const nonReaderWriterTransformations = pipelineJson.transformations.filter(
+        (t: any) => t.transformation !== 'Reader' && t.transformation !== 'Writer' && t.transformation !== 'Target'
+    );
+    
+    // Create a dependency map to track which transformations depend on which
+    const dependencyMap = new Map<string, string[]>();
+    
+    // Add Reader transformations to the dependency map
+    pipelineJson.transformations.forEach((transform: any) => {
+        if (transform.transformation === 'Reader') {
+            dependencyMap.set(transform.name, []);
+        }
+    });
+    
+    // Add non-Reader, non-Writer transformations to the dependency map
+    nonReaderWriterTransformations.forEach((transform: any) => {
+        if (transform.dependent_on && Array.isArray(transform.dependent_on)) {
+            dependencyMap.set(transform.name, transform.dependent_on);
+        } else {
+            dependencyMap.set(transform.name, []);
+        }
+    });
+    
+    // Sort transformations based on dependencies using a topological sort
+    // This ensures that transformations appear in the correct dependency order
+    const sortedTransformations: any[] = [];
+    const visited = new Set<string>();
+    const temp = new Set<string>();
+    
+    // Topological sort function to handle dependency chains
+    const visit = (transformName: string) => {
+        // If we've already processed this node, skip it
+        if (visited.has(transformName)) return;
+        
+        // If we're currently processing this node, we have a cycle
+        if (temp.has(transformName)) {
+            console.warn(`Dependency cycle detected involving ${transformName}`);
+            return;
+        }
+        
+        // Mark the node as being processed
+        temp.add(transformName);
+        
+        // Process all dependencies first
+        const dependencies = dependencyMap.get(transformName) || [];
+        for (const dependency of dependencies) {
+            visit(dependency);
+        }
+        
+        // Mark the node as processed
+        temp.delete(transformName);
+        visited.add(transformName);
+        
+        // Add the transformation to the sorted list
+        // Skip Reader transformations as they're handled separately
+        const transform = pipelineJson.transformations.find(
+            (t: any) => t.name === transformName && 
+            t.transformation !== 'Reader' && 
+            t.transformation !== 'Writer' && 
+            t.transformation !== 'Target'
+        );
+        if (transform) {
+            sortedTransformations.push(transform);
+        }
+    };
+    
+    // Process all transformations
+    for (const transform of nonReaderWriterTransformations) {
+        if (!visited.has(transform.name)) {
+            visit(transform.name);
+        }
+    }
+    
+    console.log("Sorted transformations:", sortedTransformations.map((t: any) => t.name));
+    
+    // Process non-Reader, non-Writer transformations in sorted order
+    // First pass: create all nodes
+    for (const transform of sortedTransformations) {
         const type = transform.transformation;
         const nodeId = `${type}_${nodes.length + 1}`;
         
         // Use the original transformation name if it exists
         const nodeTitle = transform.name || generateUniqueTitle(type, existingTitles);
         transformationNodes.set(transform.name, nodeId);
+        console.log(`Mapped ${type} transformation: ${transform.name} -> ${nodeId}`);
 
         // Handle regular transformations
         nodes.push({
@@ -267,12 +368,34 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             height: 72
         });
 
+        xPosition += 130;
+    }
+    
+    // Log the complete transformation nodes map for debugging
+    console.log("Complete transformation nodes map:");
+    transformationNodes.forEach((nodeId, transformName) => {
+        console.log(`${transformName} -> ${nodeId}`);
+    });
+    
+    // Second pass: create all edges after all nodes have been created
+    // This ensures that all node IDs are available in the transformationNodes map
+    // Use the sorted transformations to maintain the correct order
+    for (const transform of sortedTransformations) {
+        // Get the node ID for this transformation
+        const nodeId = transformationNodes.get(transform.name);
+        
+        if (!nodeId) continue; // Skip if node ID not found
+        
         // Create edges based on dependencies
-        if (transform.dependent_on) {
+        if (transform.dependent_on && Array.isArray(transform.dependent_on)) {
+            console.log(`Creating edges for ${transform.name} with dependencies:`, transform.dependent_on);
+            
             transform.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
                 
                 if (sourceNodeId) {
+                    console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to ${transform.name} (${nodeId})`);
+                    
                     edges.push({
                         source: sourceNodeId,
                         sourceHandle: 'output-0',
@@ -280,11 +403,13 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                         targetHandle: `input-${index}`,
                         id: `reactflow__edge-${sourceNodeId}output-0-${nodeId}input-${index}`
                     });
+                } else {
+                    console.warn(`Source node ID not found for dependency: ${dependentName}`);
                 }
             });
+        } else {
+            console.log(`No dependencies found for ${transform.name}`);
         }
-
-        xPosition += 130;
     }
 
     // Process Writer/Target transformation
@@ -296,6 +421,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         const targetId = `Target_${nodes.length + 1}`;
         const targetTitle = writerTransformation.name || generateUniqueTitle('Target', existingTitles);
         transformationNodes.set(writerTransformation.name, targetId);
+        console.log(`Mapped Target transformation: ${writerTransformation.name} -> ${targetId}`);
         
         // Resolve target reference if it exists
         let targetData = writerTransformation.target || writerTransformation;
@@ -341,15 +467,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     target_type: connection?.connection_type === "PostgreSQL" ? 'Relational' : targetData?.target_type || 'File',
                     target_name: targetData?.target_name || 'output',
                     table_name: targetData?.table_name,
-                    connection: {
-                        name: connection?.name || 'local_connection',
-                        connection_type: connection?.connection_type || 'Local',
-                        file_path_prefix: connection?.file_path_prefix || '${output_file}',
-                        connection_config_id: connection?.connection_config_id,
-                        database: connection?.database,
-                        schema: connection?.schema,
-                        secret_name: connection?.secret_name,
-                    },
+                    connection: connection,
                     file_name: targetData?.file_name || 'output.csv',
                     load_mode: targetData?.load_mode,
                     file_type: targetData?.file_type
@@ -360,11 +478,15 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         });
 
         // Create edges based on dependencies
-        if (writerTransformation.dependent_on) {
+        if (writerTransformation.dependent_on && Array.isArray(writerTransformation.dependent_on)) {
+            console.log(`Creating edges for target ${writerTransformation.name} with dependencies:`, writerTransformation.dependent_on);
+            
             writerTransformation.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
                 
                 if (sourceNodeId) {
+                    console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to target ${writerTransformation.name} (${targetId})`);
+                    
                     edges.push({
                         source: sourceNodeId,
                         sourceHandle: 'output-0',
@@ -372,11 +494,18 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                         targetHandle: `input-${index}`,
                         id: `reactflow__edge-${sourceNodeId}output-0-${targetId}input-${index}`
                     });
+                } else {
+                    console.warn(`Source node ID not found for target dependency: ${dependentName}`);
                 }
             });
+        } else {
+            console.log(`No dependencies found for target ${writerTransformation.name}`);
         }
     }
 
+    // Log the final edges array for debugging
+    console.log("Final edges array:", edges);
+    
     return await { nodes, edges };
 };
 

@@ -5,21 +5,21 @@ import { validatePipelineConnections } from './validatePipelineConnections';
 
 export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
     const uiNodes = nodes as UINode[];
-    
+
     if (validateOnly) {
         // Perform validation and return logs
         const validation = validatePipelineConnections(uiNodes, edges);
-        
+
         if (!validation.isValid) {
             const error = new Error(`Pipeline is incomplete or broken:\n${validation.errors.join('\n')}`);
             (error as any).logs = validation.logs;
             throw error;
         }
-        
+
         // Return early if only validating
         return validation;
     }
-    console.log(uiNodes,"nodes")
+    console.log(uiNodes, "nodes")
     // Get ordered nodes using topological sort
     const getOrderedNodes = () => {
         const orderedNodes: UINode[] = [];
@@ -53,11 +53,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     };
 
     const orderedUiNodes = getOrderedNodes();
-   
 
-    
+
+
     console.log(
-        uiNodes,"uiNodes"
+        uiNodes, "uiNodes"
     )
     // Update the sources mapping with defensive checks
     const sources = uiNodes
@@ -65,11 +65,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .map(node => {
             const source = node.data.source || {};
             const connectionConfig = source?.connection_config?.custom_metadata;
-const source_type=source.type||source.source_type;
-console.log(source_type,"firstName")
+            const source_type = source.type || source.source_type;
+            console.log(source_type, "firstName")
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
-                source_type: capitalizeFirstLetter(source.type||source.source_type) || "Relational",
+                source_type: connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3" ? "File" : "Relational",
                 table_name: source?.table_name || source.data_src_name,
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
@@ -81,8 +81,8 @@ console.log(source_type,"firstName")
     const readerTransformations = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
-            const connectionConfig =node.data.source?.connection_config?.custom_metadata;
-            console.log(connectionConfig,"connectionConfig")
+            const connectionConfig = node.data.source?.connection_config?.custom_metadata;
+            console.log(connectionConfig, "connectionConfig")
             return {
                 name: node.data.title,
                 dependent_on: [],
@@ -90,7 +90,7 @@ console.log(source_type,"firstName")
                 source: {
                     name: node.data.source.name || node.data.title,
                     source_type: capitalizeFirstLetter(node.data.source.type || node.data.source.source_type) || "Relational",
-                    table_name: node.data?.source?.table_name|| node.data.source.data_src_name,
+                    table_name: node.data?.source?.table_name || node.data.source.data_src_name,
                     file_name: `${node.data.source.file_name}`,
                     connection: connectionConfig
                 },
@@ -101,7 +101,7 @@ console.log(source_type,"firstName")
         });
     // Process regular transformations using ordered nodes
     const regularTransformations = orderedUiNodes
-        .filter(node => !node.id.startsWith('Reader_') )
+        .filter(node => !node.id.startsWith('Reader_'))
         .map(node => {
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
@@ -153,7 +153,7 @@ console.log(source_type,"firstName")
                     return {
                         ...baseConfig,
                         conditions: node.data.transformationData?.conditions || [],
-                        expressions: node.data.transformationData?.expressions?.map(item=>{
+                        expressions: node.data.transformationData?.expressions?.map(item => {
                             return {
                                 target_column: item?.name || item?.target_column,
                                 expression: item?.expression
@@ -176,7 +176,7 @@ console.log(source_type,"firstName")
                 case 'Sorter':
                     return {
                         ...baseConfig,
-                        sort_columns: node.data.transformationData?.sort_columns 
+                        sort_columns: node.data.transformationData?.sort_columns
                     };
                 case 'DQ Check':
                     return {
@@ -229,16 +229,26 @@ console.log(source_type,"firstName")
                         pattern: node.data.transformationData?.pattern
                     };
                 case 'Target':
-                    console.log(node.data)
+                    console.log("Target node data:", node.data);
+                    // Determine the correct target_type
+                    let targetType = node.data.source?.target_type;
+                    // If connection type is Local or S3, ensure target_type is File
+                    if (node.data.source?.connection?.connection_type?.toLowerCase() === "local" || 
+                        node.data.source?.connection?.connection_type?.toLowerCase() === "s3") {
+                        targetType = "File";
+                    } else if (targetType !== "File") {
+                        targetType = "Relational";
+                    }
+                    
                     return {
                         ...baseConfig,
                         name: node.data.title,
                         transformation: "Target",
                         target: {
                             name: node.data.source?.name,
-                            target_type: node?.data.source?.target_type?.toLowerCase()=="local" || node?.data.source?.target_type?.toLowerCase()=="s3"?"File":"Relational",
-            target_name: node?.data.source?.target_name,
-            table_name: node?.data.source?.table_name||'sample_table',
+                            target_type: targetType,
+                            target_name: node?.data.source?.target_name,
+                            table_name: node?.data.source?.table_name || 'sample_table',
                             connection: node.data.source?.connection,
                             file_name: node.data.source?.file_name,
                             load_mode: node.data.source?.load_mode
@@ -247,7 +257,9 @@ console.log(source_type,"firstName")
                         file_name: node.data.source?.file_name,
                         write_options: node.data.transformationData?.write_options || {
                             header: true,
-                            sep: "|"
+                            sep: ",",
+                            createDisposition: 'CREATE_IF_NEEDED',
+                            writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
                         },
                     };
                 default:
@@ -262,34 +274,50 @@ console.log(source_type,"firstName")
     console.log(uiNodes
         .filter(node => node.id.startsWith('Target_')), "target befor transform")
     const targets = uiNodes
-    .filter(node => node.id.startsWith('Target_'))
-    .map(node => ({
-        name: node?.data.source?.name,
-        type: node?.data.source?.target_type,
-        connection: node?.data.source?.connection,
-        load_mode: node?.data.source?.load_mode,
-        
-    }));
-console.log(targets,"targets")
-//    let optimized=convertToOptimizedPipelineJson({
-//     $schema: "https://json-schema.org/draft-07/schema#",
-//     name: pipelineDtl?.pipeline_name || "sample_pipeline",
-//     description: pipelineDtl?.pipeline_description || " ",
-//     version: "1.0",
-//     mode: "DEBUG",
-//     parameters: [],
-//     sources,
-//     targets,
-//     transformations: [
-//         ...readerTransformations,
-//         ...regularTransformations.filter(Boolean),
-//         // ...writerTransformations
-//     ]
-// })
-// console.log(optimized,"optimized")
-// let resolved=resolveRefs(optimized,optimized)
-// console.log(resolved,"resolved")
-// return optimized;
+        .filter(node => node.id.startsWith('Target_'))
+        .map(node => {
+            // Determine the correct target_type
+            let targetType = node.data.source?.target_type;
+            // If connection type is Local or S3, ensure target_type is File
+            if (node.data.source?.connection?.connection_type?.toLowerCase() === "local" || 
+                node.data.source?.connection?.connection_type?.toLowerCase() === "s3") {
+                targetType = "File";
+            } else if (targetType !== "File") {
+                targetType = "Relational";
+            }
+            
+            return {
+                name: node?.data.source?.name,
+                target_type: targetType, // Use target_type instead of type
+                connection: node?.data.source?.connection,
+                load_mode: node?.data.source?.load_mode,
+                file_name: node?.data.source?.file_name,
+                table_name: node?.data.source?.table_name,
+                target_name: node?.data.source?.target_name,
+                file_type: node?.data.source?.file_type?.toLowerCase(),
+                write_options: node.data.transformationData?.write_options
+            };
+        });
+    console.log(targets, "targets")
+    //    let optimized=convertToOptimizedPipelineJson({
+    //     $schema: "https://json-schema.org/draft-07/schema#",
+    //     name: pipelineDtl?.pipeline_name || "sample_pipeline",
+    //     description: pipelineDtl?.pipeline_description || " ",
+    //     version: "1.0",
+    //     mode: "DEBUG",
+    //     parameters: [],
+    //     sources,
+    //     targets,
+    //     transformations: [
+    //         ...readerTransformations,
+    //         ...regularTransformations.filter(Boolean),
+    //         // ...writerTransformations
+    //     ]
+    // })
+    // console.log(optimized,"optimized")
+    // let resolved=resolveRefs(optimized,optimized)
+    // console.log(resolved,"resolved")
+    // return optimized;
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -315,14 +343,14 @@ function capitalizeFirstLetter(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 }
 
-export const convertOptimisedPipelineJsonToPipelineJson=async(nodes:Node[],edges:Edge[],pipelineDtl:any,validateOnly:boolean=false)=>{
-let pipelineJson:any=await convertUIToPipelineJson(nodes,edges,pipelineDtl,validateOnly);
-console.log(pipelineJson,"pipelineJson");
-let optimized=convertToOptimizedPipelineJson(pipelineJson?.pipeline_json);
-console.log(optimized,"optimized");
-let resolved=resolveRefs(optimized,optimized);
-console.log(resolved,"resolved");
-return {pipeline_json:optimized};
+export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
+    let pipelineJson: any = await convertUIToPipelineJson(nodes, edges, pipelineDtl, validateOnly);
+    console.log(pipelineJson, "pipelineJson");
+    let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json);
+    console.log(optimized, "optimized");
+    let resolved = resolveRefs(optimized, optimized);
+    console.log(resolved, "resolved");
+    return { pipeline_json: optimized };
 }
 
 
@@ -332,24 +360,24 @@ export const resolveRefsPipelineJson = (optimized: any, pipelineJson: any) => {
         console.error("resolveRefsPipelineJson: optimized or pipelineJson is undefined/null");
         return optimized || {}; // Return the original optimized object or an empty object
     }
-    
+
     let resolved = resolveRefs(optimized, pipelineJson);
-    
+
     // Check if resolved is undefined/null
     if (!resolved) {
         console.error("resolveRefsPipelineJson: resolved is undefined/null");
         return optimized; // Return the original optimized object
     }
-    
+
     // Convert sources from object to array
     if (resolved.sources && typeof resolved.sources === 'object' && !Array.isArray(resolved.sources)) {
         resolved.sources = Object.values(resolved.sources);
     }
-    
+
     // Convert targets from object to array
     if (resolved.targets && typeof resolved.targets === 'object' && !Array.isArray(resolved.targets)) {
         resolved.targets = Object.values(resolved.targets);
     }
-    
+
     return resolved;
 }

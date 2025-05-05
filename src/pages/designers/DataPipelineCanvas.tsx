@@ -5,7 +5,7 @@ const DataPipelineCanvasPage = () => {
   return (
     <div className="h-full w-full">
       <DataPipelineCanvasNew />
-    </div>
+      </div>
   )
 }
 

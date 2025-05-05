@@ -263,15 +263,22 @@ export const ComposableCanvas = ({
   // Initialize ReactFlow instance
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
+      // Store the instance for both flow and pipeline types
       if (type === 'flow' && setReactFlowInstance) {
         setReactFlowInstance(instance);
-        // Delay to ensure all components are mounted
-        if (nodes?.length > 0 && fitView) {
-          const timer = setTimeout(() => {
-            fitView();
-          }, 300);
-          return () => clearTimeout(timer);
-        }
+      }
+      
+      // For both flow and pipeline types, fit view after a delay
+      if (nodes?.length > 0 && fitView) {
+        const timer = setTimeout(() => {
+          try {
+            // Use the instance directly for fitView to ensure it works
+            instance.fitView({ duration: 800, padding: 0.1 });
+          } catch (error) {
+            console.error('FitView error:', error);
+          }
+        }, 300);
+        return () => clearTimeout(timer);
       }
     },
     [type, setReactFlowInstance, nodes, fitView]
@@ -370,8 +377,8 @@ export const ComposableCanvas = ({
             nodesConnectable={true}
             snapToGrid={snapToGrid}
             snapGrid={snapGrid}
-            fitView={false}
-            fitViewOptions={{ padding: 0.3 }}
+            fitView={true}
+            fitViewOptions={{ padding: 0.3, duration: 800 }}
           >
             {showBackground && <Background variant={backgroundVariant} gap={12} size={1} />}
             {controls}

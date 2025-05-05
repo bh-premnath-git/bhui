@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 // import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 
 import { FormData, ReaderFormField } from "./components/form/reader-form-field";
+import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 
 interface FormSchema {
     type: string;
@@ -84,6 +85,9 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             const selectedConn = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
             );
+            console.log(selectedConn, "selectedConn");
+            console.log(initialData.source.connection.connection_config_id, "selectedConn");
+            console.log(initialData.source?.connection_config_id, "selectedConn");
 
             setFormData({
                 ...initialData,
@@ -92,7 +96,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     ...initialData.source,
                     connection: {
                         ...initialData.source.connection,
-                        connection_config_id: selectedConn?.id || initialData.source.connection.connection_config_id,
+                        connection_config_id: selectedConn?.id || initialData.source.connection.connection_config_id || initialData.source?.connection_config_id,
                         name: selectedConn?.connection_config_name || initialData.source.connection.name,
                         connection_type: selectedConn?.custom_metadata?.connection_type || initialData.source.connection.connection_type,
                         database: selectedConn?.custom_metadata?.database || initialData.source.connection.database,

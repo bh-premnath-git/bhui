@@ -58,6 +58,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   handleRunClick,
   onStop,
   onNext,
+  isPipelineRunning,
   isLoading,
   pipelineConfig,
   terminalLogs,
@@ -69,7 +70,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
-  const {isPipelineRunning}=usePipelineContext()
+  // We're already receiving isPipelineRunning as a prop, so we don't need to get it from context
 
   // --- SETTINGS (Sheet) ---
   const handleSettingsClick = () => {
@@ -121,12 +122,193 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     }
   }
 
+  // Define custom handlers that will directly manipulate the DOM
+  const handleZoomInClick = () => {
+    console.log("Zoom In clicked");
+    try {
+      // Try the provided handler
+      if (onZoomIn) onZoomIn();
+      
+      // Also try direct DOM manipulation
+      const reactFlowViewport = document.querySelector('.react-flow__viewport');
+      if (reactFlowViewport) {
+        const currentTransform = reactFlowViewport.getAttribute('transform');
+        if (currentTransform) {
+          const match = currentTransform.match(/scale\(([^)]+)\)/);
+          if (match && match[1]) {
+            const currentScale = parseFloat(match[1]);
+            const newScale = currentScale * 1.2; // Increase zoom by 20%
+            
+            // Update the transform attribute
+            const newTransform = currentTransform.replace(
+              /scale\([^)]+\)/, 
+              `scale(${newScale})`
+            );
+            reactFlowViewport.setAttribute('transform', newTransform);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in zoom in:", error);
+    }
+  };
+  
+  const handleZoomOutClick = () => {
+    console.log("Zoom Out clicked");
+    try {
+      // Try the provided handler
+      if (onZoomOut) onZoomOut();
+      
+      // Also try direct DOM manipulation
+      const reactFlowViewport = document.querySelector('.react-flow__viewport');
+      if (reactFlowViewport) {
+        const currentTransform = reactFlowViewport.getAttribute('transform');
+        if (currentTransform) {
+          const match = currentTransform.match(/scale\(([^)]+)\)/);
+          if (match && match[1]) {
+            const currentScale = parseFloat(match[1]);
+            const newScale = currentScale / 1.2; // Decrease zoom by 20%
+            
+            // Update the transform attribute
+            const newTransform = currentTransform.replace(
+              /scale\([^)]+\)/, 
+              `scale(${newScale})`
+            );
+            reactFlowViewport.setAttribute('transform', newTransform);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in zoom out:", error);
+    }
+  };
+  
+  const handleCenterClick = () => {
+    console.log("Center clicked");
+    try {
+      // Try the provided handler
+      if (onCenter) onCenter();
+      
+      // Also try to click the fitView button
+      const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+      if (fitViewButton instanceof HTMLElement) {
+        fitViewButton.click();
+      }
+    } catch (error) {
+      console.error("Error in center:", error);
+    }
+  };
+  
+  const handleAlignHorizontalClick = () => {
+    console.log("Align Horizontal clicked");
+    try {
+      // Try the provided handler
+      if (onAlignHorizontal) {
+        console.log("Calling onAlignHorizontal");
+        onAlignHorizontal();
+      } else {
+        console.error("onAlignHorizontal is not defined");
+      }
+      
+      // Dispatch a custom event that the DataPipelineContext can listen for
+      const alignHorizontalEvent = new CustomEvent('alignHorizontal', {
+        bubbles: true,
+        cancelable: true,
+        detail: { timestamp: new Date().getTime() }
+      });
+      document.dispatchEvent(alignHorizontalEvent);
+      
+      // Direct DOM manipulation approach
+      const nodes = document.querySelectorAll('.react-flow__node');
+      if (nodes.length > 0) {
+        const HORIZONTAL_SPACING = 250;
+        const VERTICAL_SPACING = 150;
+        const NODES_PER_ROW = 4;
+        const STARTING_X = 50;
+        const STARTING_Y = 50;
+        
+        nodes.forEach((node, index) => {
+          const row = Math.floor(index / NODES_PER_ROW);
+          const col = index % NODES_PER_ROW;
+          
+          const x = STARTING_X + col * HORIZONTAL_SPACING;
+          const y = STARTING_Y + row * VERTICAL_SPACING;
+          
+          // Update node position using transform
+          node.setAttribute('style', `transform: translate(${x}px, ${y}px); position: absolute;`);
+        });
+        
+        // Try to fit view
+        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+        if (fitViewButton instanceof HTMLElement) {
+          setTimeout(() => {
+            fitViewButton.click();
+          }, 100);
+        }
+      }
+    } catch (error) {
+      console.error("Error in align horizontal:", error);
+    }
+  };
+  
+  const handleAlignVerticalClick = () => {
+    console.log("Align Vertical clicked");
+    try {
+      // Try the provided handler
+      if (onAlignVertical) {
+        console.log("Calling onAlignVertical");
+        onAlignVertical();
+      } else {
+        console.error("onAlignVertical is not defined");
+      }
+      
+      // Dispatch a custom event that the DataPipelineContext can listen for
+      const alignVerticalEvent = new CustomEvent('alignVertical', {
+        bubbles: true,
+        cancelable: true,
+        detail: { timestamp: new Date().getTime() }
+      });
+      document.dispatchEvent(alignVerticalEvent);
+      
+      // Direct DOM manipulation approach
+      const nodes = document.querySelectorAll('.react-flow__node');
+      if (nodes.length > 0) {
+        const HORIZONTAL_SPACING = 250;
+        const VERTICAL_SPACING = 150;
+        const NODES_PER_COLUMN = 4;
+        const STARTING_X = 50;
+        const STARTING_Y = 50;
+        
+        nodes.forEach((node, index) => {
+          const column = Math.floor(index / NODES_PER_COLUMN);
+          const row = index % NODES_PER_COLUMN;
+          
+          const x = STARTING_X + column * HORIZONTAL_SPACING;
+          const y = STARTING_Y + row * VERTICAL_SPACING;
+          
+          // Update node position using transform
+          node.setAttribute('style', `transform: translate(${x}px, ${y}px); position: absolute;`);
+        });
+        
+        // Try to fit view
+        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+        if (fitViewButton instanceof HTMLElement) {
+          setTimeout(() => {
+            fitViewButton.click();
+          }, 100);
+        }
+      }
+    } catch (error) {
+      console.error("Error in align vertical:", error);
+    }
+  };
+
   const actions = [
-    { key: 'zoom-in', icon: BiZoomIn, handler: onZoomIn },
-    { key: 'zoom-out', icon: BiZoomOut, handler: onZoomOut },
-    { key: 'center', icon: MdOutlineCenterFocusStrong, handler: onCenter },
-    { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: onAlignHorizontal },
-    { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: onAlignVertical },
+    { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
+    { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
+    { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
+    { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
+    { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
     // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     // { key: 'stop', icon: MdOutlineStop, handler: onStop },
     // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
@@ -213,15 +395,14 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         </Sheet> */}
       </div>
 
-      {/* Logs Terminal (no MUI) */}
-      {/* <Terminal
+      {/* Logs Terminal */}
+      <Terminal
         isOpen={isLogsOpen}
         onClose={handleCloseLogs}
         title="Pipeline Logs"
         terminalLogs={terminalLogs}
         proplesLogs={proplesLogs}
-
-      /> */}
+      />
     </>
   )
 }

@@ -17,7 +17,7 @@ export function RightAside({
   width = 'w-70',
   className
 }: RightAsideProps) {
-  const { closeRightAside, isRightAsideOpen } = useSidebar();
+  const { closeRightAside } = useSidebar();
 
   return (
     <aside

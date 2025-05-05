@@ -90,7 +90,7 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen p-0 pb-8 mt-5">
+    <div className="flex flex-col min-h-screen p-0 pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 flex-shrink-0 mb-0 mt-1">
         <Filters />
       </div>

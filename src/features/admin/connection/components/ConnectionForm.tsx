@@ -24,7 +24,6 @@ interface ConnectionFormProps {
   connectionConfigName: string;
   isEdit?: boolean;
   formData?: any;
-  onSubmit?: (formData: any) => Promise<void>;
 }
 
 // Utility function to clean the connectionConfigName

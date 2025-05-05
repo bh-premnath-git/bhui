@@ -236,6 +236,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateNodeDependencies();
         setFormDataNum((p) => p + 1);
 
+        console.log("[NodeForm] Final newFormData being sent:", JSON.stringify(newFormData));
+
         // Call updateFlowDefinitionOnServer directly without setTimeout
         updateFlowDefinitionOnServer(
             selectedFlowId,

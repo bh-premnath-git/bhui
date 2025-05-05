@@ -55,7 +55,6 @@ interface CreateFormProps {
   pipelineDtl?: any;
   currentNodeId: string;
   edges: Edge[];
-  isDialog?: boolean; // New prop to determine if the form should be rendered as a dialog
 }
 
 interface SourceColumn {
@@ -65,7 +64,7 @@ interface SourceColumn {
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 
-const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges, isDialog = true }) => {
+const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
   const initialFormValues:any = useMemo(() => {
     const values = generateInitialValues(schema, initialValues,currentNodeId);
     
@@ -680,7 +679,6 @@ console.log(initialFormValues,"initialFormValues")
         currentNodeId={currentNodeId}
         nodes={nodes}
         edges={edges}
-        isDialog={isDialog}
       />
       
       <div className="mt-4">
@@ -1204,9 +1202,8 @@ const FormContent: React.FC<{
   onClose?: () => void;
   currentNodeId: string;
   nodes: Node[];
-  edges: Edge[];
-  isDialog?: boolean;
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, isDialog = true }) => {
+  edges: Edge[]
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
   const { watch } = useForm<FormValues>();
@@ -1905,13 +1902,12 @@ const FormContent: React.FC<{
     );
   };
 
-  // Create the form content that will be used in both dialog and inline modes
   return (
     <div className="w-full">
       <div className="flex justify-between">
-        <div className="text-lg font-semibold">
+        <DialogTitle className="text-lg font-semibold">
           {schema.title}
-        </div>
+        </DialogTitle>
       </div>
 
       {schema.title === 'Dedup' ? (
@@ -1952,26 +1948,7 @@ const FormContent: React.FC<{
         </div>
       )}
 
-      {/* Add submit and cancel buttons for inline mode */}
-      {/* {!isDialog && (
-        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={() => handleSubmit(onSubmit)()}
-            className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
-          >
-            Save Configuration
-          </Button>
-        </div>
-      )} */}
+      
     </div>
   );
 };

@@ -424,9 +424,9 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        // console.log(nodesOrUpdater)
-        // // alert()
-        // // console.log(typeof nodesOrUpdater)
+        console.log(nodesOrUpdater)
+        // alert()
+        // console.log(typeof nodesOrUpdater)
         // if (typeof nodesOrUpdater === 'function') {
         //     setNodes((prevNodes) => 
         //         nodesOrUpdater(prevNodes).map(sanitizeNode)
@@ -490,17 +490,18 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             console.error('FitView error:', error);
         }
     }, [fitView]);
-const makePipeline = async (result: any) => {
-    let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-    console.log(optimised, "optimised");
+const makePipeline = async (result: any,isModify=true) => {
+    let optimised;
+     
+        optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+        console.log(optimised, "optimised");
+        setPipelineJson(optimised);
+        let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
     
     
     
     // Set the pipeline JSON first
     setPipelineJson(optimised);
-
-    // Convert pipeline to UI JSON
-    const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
     
     console.log(uiJson, "uiJson");
     if (!uiJson || !uiJson.nodes) {

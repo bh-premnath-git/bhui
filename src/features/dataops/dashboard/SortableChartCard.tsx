@@ -36,7 +36,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   title, 
   children, 
   className,
-  defaultHeight = 300,
+  defaultHeight = 130,
   onSaveHeight
 }) => {
   const [height, setHeight] = useState(defaultHeight);

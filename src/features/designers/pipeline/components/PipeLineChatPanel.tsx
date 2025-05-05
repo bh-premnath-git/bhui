@@ -4,20 +4,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { useFlow } from "@/context/designers/FlowContext";
+import {
+  clearFlowAgentConversation,
+  clearFormStates
+} from "@/store/slices/designer/flowSlice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
-import { useReactFlow, Node, Edge } from "reactflow";
+import { useReactFlow } from "reactflow";
 import { apiService } from '@/lib/api/api-service';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
-import { ReaderOptionsForm } from "@/components/bh-reactflow-comps/builddata/ReaderOptionsForm";
-import TargetPopUp from "@/components/bh-reactflow-comps/TargetPopUp";
+import SchemaFormLoader from "./SchemaFormLoader";
 import { DataSource } from "@/types/data-catalog/dataCatalog";
 import CreateFormFormik from "./form-sections/CreateForm";
 import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
+import TargetPopUp from "@/components/bh-reactflow-comps/TargetPopUp";
 
 
 interface SuggestionButtonProps {
@@ -46,10 +58,10 @@ const SuggestionButton = ({
       variant={variant}
       size="sm"
       onClick={handleClick}
-      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${className}`}
+      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-200 ${className}`}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
-      <span className="truncate font-medium">{text}</span>
+      <span className="truncate">{text}</span>
     </Button>
   );
 };
@@ -63,498 +75,17 @@ export const PipeLineChatPanel = ({
 }: any) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
+  const { selectedPipeline } = useAppSelector((state) => state.pipeline);
   const reactFlowInstance = useReactFlow();
-  const location = useLocation();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { setPipelineJson: originalSetPipelineJson, pipelineJson, makePipeline } = usePipelineContext();
-  
-  // Handle filter condition input
-  const handleFilterConditionInput = (condition: string) => {
-    // Save the filter condition
-    setFilterCondition(condition);
-    
-    // Update the filter transformation in the selected sources
-    setSelectedSources(prevSources => {
-      return prevSources.map(source => {
-        return {
-          ...source,
-          filter_transformation: {
-            ...(source.filter_transformation || {}),
-            condition: condition,
-            name: 'filter_transformation',
-            transformation: 'Filter'
-          }
-        };
-      });
-    });
-    
-    // Update the pipeline template with the new filter condition
-    setTimeout(() => {
-      const updatedTemplate = generatePipelineTemplate();
-      setPipelineJson(updatedTemplate);
-      console.log("Pipeline template updated with filter condition:", updatedTemplate);
-      
-      // Log the filter transformation in the pipeline template
-      const filterTransformation = updatedTemplate.transformations.find(
-        (t: any) => t.name === 'filter_transformation'
-      );
-      console.log("Filter transformation in pipeline template:", filterTransformation);
-    }, 0);
-    
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-    
-    // Ask what to do next
-    addAssistantMessage("Filter added! What would you like to do next?", [
-      <SuggestionButton 
-        key="add-transformation" 
-        text="Add Another Transformation" 
-        icon={<Filter className="h-4 w-4" />} 
-        onClick={() => {
-          // Get existing transformations and sources for suggestions
-          const existingNodes = [];
-          
-          // Add reader nodes from sources
-          if (selectedSources.length > 0) {
-            selectedSources.forEach(source => {
-              existingNodes.push(`${source.data_src_name}`);
-            });
-          }
-          
-          // Add existing transformation nodes
-          if (transformations.includes('filter')) {
-            existingNodes.push('filter_transformation');
-          }
-          
-          // Ask what type of transformation to add
-          addAssistantMessage("What type of transformation would you like to add?", [
-            <SuggestionButton 
-              key="schema" 
-              text="Schema Transformation" 
-              icon={<Layers className="h-4 w-4" />} 
-              onClick={() => {
-                addUserMessage("Schema Transformation");
-                
-                // Add schema to transformations
-                const newTransformations = [...transformations];
-                if (!newTransformations.includes('schema')) {
-                  newTransformations.push('schema');
-                }
-                setTransformations(newTransformations);
-                
-                // Set the transformation sub-step to schema_dependency
-                setTransformationSubStep('schema_dependency');
-                
-                // Create a message with dependency options
-                let dependencyMessage = "After which step would you like to add this schema transformation? Please select from the options below:";
-                
-                // Add the dependency selection options as buttons
-                const dependencyButtons = existingNodes.map((node, index) => ({
-                  label: `${index + 1}. ${node}`,
-                  value: node
-                }));
-                
-                // Set the dependency options
-                setDependencyOptions(dependencyButtons);
-                
-                // Generate buttons UI for each dependency option
-                const dependencyButtonsUI = dependencyButtons.map((option, index) => (
-                  <SuggestionButton
-                    key={`dependency-${index}`}
-                    text={option.label}
-                    onClick={() => {
-                      addUserMessage(option.label);
-                      handleDependencySelection(option.value);
-                    }}
-                    className="justify-start py-2 px-3 bg-card hover:bg-accent"
-                  />
-                ));
-                
-                // If no dependency options are available, add a default option for the first reader
-                if (dependencyButtonsUI.length === 0 && selectedSources.length > 0) {
-                  const defaultNode = `read_${selectedSources[0].data_src_name}`;
-                  dependencyButtonsUI.push(
-                    <SuggestionButton
-                      key="default-dependency"
-                      text={`1. ${defaultNode}`}
-                      onClick={() => {
-                        addUserMessage(`1. ${defaultNode}`);
-                        handleDependencySelection(defaultNode);
-                      }}
-                      className="justify-start py-2 px-3 bg-card hover:bg-accent"
-                    />
-                  );
-                }
-                
-                // Log the dependency options for debugging
-                console.log("Dependency options:", {
-                  existingNodes,
-                  dependencyButtons,
-                  selectedSources,
-                  transformations
-                });
-                
-                // Add the message with dependency buttons
-                addAssistantMessage(dependencyMessage, dependencyButtonsUI);
-              }}
-            />
-          ]);
-        }} 
-      />,
-      <SuggestionButton 
-        key="configure-target" 
-        text="Configure Target" 
-        icon={<Database className="h-4 w-4" />} 
-        onClick={() => {
-          // Add target to transformations
-          const newTransformations = [...transformations];
-          if (!newTransformations.includes('target')) {
-            newTransformations.push('target');
-          }
-          setTransformations(newTransformations);
-          
-          // Get existing nodes for dependency selection from the pipeline template
-          const existingNodes = getExistingNodesFromTemplate();
-          
-          // Set the transformation sub-step to target_dependency
-          setTransformationSubStep('target_dependency');
-          
-          // Create a message with dependency options
-          let dependencyMessage = "After which step would you like to add the target? Please select from the options below:";
-          
-          // Add the dependency selection options as buttons
-          const dependencyButtons = existingNodes.map((node, index) => ({
-            label: `${index + 1}. ${node}`,
-            value: node
-          }));
-          
-          // Set the dependency options
-          setDependencyOptions(dependencyButtons);
-          
-          // Generate buttons UI for each dependency option
-          const dependencyButtonsUI = dependencyButtons.map((option, index) => (
-            <SuggestionButton
-              key={`dependency-${index}`}
-              text={option.label}
-              onClick={() => {
-                addUserMessage(option.label);
-                handleDependencySelection(option.value);
-              }}
-              className="justify-start py-2 px-3 bg-card hover:bg-accent"
-            />
-          ));
-          
-          // If no dependency options are available, add a default option for the first reader
-          if (dependencyButtonsUI.length === 0 && selectedSources.length > 0) {
-            const defaultNode = `read_${selectedSources[0].data_src_name}`;
-            dependencyButtonsUI.push(
-              <SuggestionButton
-                key="default-dependency"
-                text={`1. ${defaultNode}`}
-                onClick={() => {
-                  addUserMessage(`1. ${defaultNode}`);
-                  handleDependencySelection(defaultNode);
-                }}
-                className="justify-start py-2 px-3 bg-card hover:bg-accent"
-              />
-            );
-          }
-          
-          // Log the dependency options for debugging
-          console.log("Target dependency options:", {
-            existingNodes,
-            dependencyButtons,
-            selectedSources,
-            transformations
-          });
-          
-          // Add the message with dependency buttons
-          addAssistantMessage(dependencyMessage, dependencyButtonsUI);
-        }} 
-      />
-    ]);
-  };
-
-  // Handle dependency selection
-  const handleDependencySelection = (dependency: string) => {
-    // Store the selected dependency
-    setSelectedDependency(dependency);
-    
-    // Update the pipeline based on the current transformation sub-step
-    if (transformationSubStep === 'filter_dependency') {
-      // Update filter transformation with the selected dependency
-      setSelectedSources(prevSources => {
-        const updatedSources = prevSources.map(source => {
-          return {
-            ...source,
-            filter_transformation: {
-              ...(source.filter_transformation || {}),
-              name: 'filter_transformation',
-              transformation: 'Filter',
-              dependent_on: [dependency]
-            }
-          };
-        });
-        
-        // Immediately update the pipeline template after state update
-        // This ensures the template is updated with the latest state
-        setTimeout(() => {
-          const updatedTemplate = buildPipelineTemplate(
-            pipelineName,
-            pipelineDescription,
-            updatedSources,
-            transformations,
-            targetConfig,
-            useSourceConnection,
-            filterCondition
-          );
-          setPipelineJson(updatedTemplate);
-          console.log("Pipeline template updated after filter dependency selection:", updatedTemplate);
-          
-          // Log the filter transformation in the pipeline template
-          const filterTransformation = updatedTemplate.transformations.find(
-            (t: any) => t.name === 'filter_transformation'
-          );
-          console.log("Filter transformation in pipeline template:", filterTransformation);
-        }, 0);
-        
-        return updatedSources;
-      });
-      
-      // Move to filter condition step
-      setTransformationSubStep('filter_condition');
-      
-      addAssistantMessage("Please enter a filter condition (e.g., column > value):");
-    } 
-    else if (transformationSubStep === 'schema_dependency') {
-      // Update schema transformation with the selected dependency
-      setSelectedSources(prevSources => {
-        const updatedSources = prevSources.map(source => {
-          return {
-            ...source,
-            schema_transformation: {
-              ...(source.schema_transformation || {}),
-              name: 'schema_transformation',
-              transformation: 'SchemaTransformation',
-              derived_fields: [{ name: '', expression: '' }],
-              dependent_on: [dependency]
-            }
-          };
-        });
-        
-        // Immediately update the pipeline template after state update
-        setTimeout(() => {
-          const updatedTemplate = buildPipelineTemplate(
-            pipelineName,
-            pipelineDescription,
-            updatedSources,
-            transformations,
-            targetConfig,
-            useSourceConnection,
-            filterCondition
-          );
-          setPipelineJson(updatedTemplate);
-          console.log("Pipeline template updated after schema dependency selection:", updatedTemplate);
-          
-          // Log the schema transformation in the pipeline template
-          const schemaTransformation = updatedTemplate.transformations.find(
-            (t: any) => t.name === 'schema_transformation'
-          );
-          console.log("Schema transformation in pipeline template:", schemaTransformation);
-        }, 0);
-        
-        return updatedSources;
-      });
-      
-      // Move to schema form step
-      setTransformationSubStep('schema_form');
-      addAssistantMessage("Please configure your schema transformation:");
-    } 
-    else if (transformationSubStep === 'both_dependency') {
-      // Update both filter and schema transformations with the selected dependency
-      setSelectedSources(prevSources => {
-        const updatedSources = prevSources.map(source => {
-          return {
-            ...source,
-            filter_transformation: {
-              ...(source.filter_transformation || {}),
-              name: 'filter_transformation',
-              transformation: 'Filter',
-              dependent_on: [dependency]
-            },
-            schema_transformation: {
-              ...(source.schema_transformation || {}),
-              name: 'schema_transformation',
-              transformation: 'SchemaTransformation',
-              derived_fields: [{ name: '', expression: '' }],
-              dependent_on: [dependency]
-            }
-          };
-        });
-        
-        // Immediately update the pipeline template after state update
-        setTimeout(() => {
-          const updatedTemplate = buildPipelineTemplate(
-            pipelineName,
-            pipelineDescription,
-            updatedSources,
-            transformations,
-            targetConfig,
-            useSourceConnection,
-            filterCondition
-          );
-          setPipelineJson(updatedTemplate);
-          console.log("Pipeline template updated after both dependency selection:", updatedTemplate);
-          
-          // Log the transformations in the pipeline template
-          const filterTransformation = updatedTemplate.transformations.find(
-            (t: any) => t.name === 'filter_transformation'
-          );
-          const schemaTransformation = updatedTemplate.transformations.find(
-            (t: any) => t.name === 'schema_transformation'
-          );
-          console.log("Filter transformation in pipeline template:", filterTransformation);
-          console.log("Schema transformation in pipeline template:", schemaTransformation);
-        }, 0);
-        
-        return updatedSources;
-      });
-      
-      // Start with the filter form
-      setTransformationSubStep('filter_condition');
-      addAssistantMessage("Let's start with the filter condition. Please enter a filter condition (e.g., column > value):");
-    } 
-    else if (transformationSubStep === 'target_dependency') {
-      // Update target transformation with the selected dependency
-      setSelectedSources(prevSources => {
-        const updatedSources = prevSources.map(source => {
-          return {
-            ...source,
-            target_transformation: {
-              ...(source.target_transformation || {}),
-              name: 'target_transformation',
-              transformation: 'Target',
-              dependent_on: [dependency]
-            }
-          };
-        });
-        
-        // Immediately update the pipeline template after state update
-        setTimeout(() => {
-          const updatedTemplate = buildPipelineTemplate(
-            pipelineName,
-            pipelineDescription,
-            updatedSources,
-            transformations,
-            targetConfig,
-            useSourceConnection,
-            filterCondition
-          );
-          setPipelineJson(updatedTemplate);
-          console.log("Pipeline template updated after target dependency selection:", updatedTemplate);
-          
-          // Log the target transformation in the pipeline template
-          const targetTransformation = updatedTemplate.transformations.find(
-            (t: any) => t.name === 'target_transformation' || t.transformation === 'Target'
-          );
-          console.log("Target transformation in pipeline template:", targetTransformation);
-        }, 0);
-        
-        return updatedSources;
-      });
-      
-      // Move to target name step
-      setTransformationSubStep('target_name');
-      addAssistantMessage("Please enter a name for your target output:");
-    }
-    
-    // Also update the pipeline JSON directly for immediate effect
-    // This ensures we're updating the pipeline template even if the state updates haven't been processed yet
-    const updatedPipelineJson = { ...pipelineJson };
-    
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      if (transformationSubStep === 'filter_dependency') {
-        // Find the filter transformation
-        const filterTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'filter_transformation'
-        );
-        
-        if (filterTransformation) {
-          filterTransformation.dependent_on = [dependency];
-          console.log("Directly updated filter transformation dependency:", filterTransformation);
-        }
-      } else if (transformationSubStep === 'schema_dependency') {
-        // Find the schema transformation
-        const schemaTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'schema_transformation'
-        );
-        
-        if (schemaTransformation) {
-          schemaTransformation.dependent_on = [dependency];
-          console.log("Directly updated schema transformation dependency:", schemaTransformation);
-        }
-      } else if (transformationSubStep === 'both_dependency') {
-        // Find both transformations
-        const filterTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'filter_transformation'
-        );
-        
-        const schemaTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'schema_transformation'
-        );
-        
-        if (filterTransformation) {
-          filterTransformation.dependent_on = [dependency];
-          console.log("Directly updated filter transformation dependency:", filterTransformation);
-        }
-        
-        if (schemaTransformation) {
-          schemaTransformation.dependent_on = [dependency];
-          console.log("Directly updated schema transformation dependency:", schemaTransformation);
-        }
-      } else if (transformationSubStep === 'target_dependency') {
-        // Find the target transformation
-        const targetName = targetConfig.customConfig?.name || targetConfig.connection?.name || "Target";
-        const targetTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === targetName || t.transformation === 'Target'
-        );
-        
-        if (targetTransformation) {
-          targetTransformation.dependent_on = [dependency];
-          console.log("Directly updated target transformation dependency:", targetTransformation);
-        }
-      }
-      
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-  };
-  
-  // Create a custom setPipelineJson function that also calls makePipeline
-  const setPipelineJson = useCallback((newPipelineJson: any) => {
-    // First update the pipeline JSON using the original function
-    originalSetPipelineJson(newPipelineJson);
-    
-    // Then call makePipeline with the new pipeline JSON
-    if (newPipelineJson !== null && newPipelineJson !== undefined) {
-      console.log(newPipelineJson, "pipelineJson updated and calling makePipeline");
-      makePipeline({ pipeline_definition: newPipelineJson });
-    }
-  }, [originalSetPipelineJson, makePipeline]);
-  
-  // Get nodes and edges for the CreateForm component
   const nodes = reactFlowInstance.getNodes();
   const edges = reactFlowInstance.getEdges();
-  
-  // State declarations
+  const location = useLocation();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { setPipelineJson, pipelineJson, setNodes, setEdges, setFormStates } = usePipelineContext();
   const [isNewChat, setIsNewChat] = useState(false);
   const [currentSourceData, setCurrentSourceData] = useState<any>(null);
-  const [foundSources, setFoundSources] = useState<DataSource[]>([]);
-  const [awaitingSourceSelection, setAwaitingSourceSelection] = useState(false);
-  const [sourceSuggestions, setSourceSuggestions] = useState<React.ReactNode[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Source columns for the CreateForm component
+  // Define sourceColumns based on currentSourceData
   const sourceColumns = useMemo(() => {
     // Extract columns from the current source data or return empty array
     if (currentSourceData && currentSourceData.columns) {
@@ -565,6 +96,10 @@ export const PipeLineChatPanel = ({
     }
     return [];
   }, [currentSourceData]);
+  const [foundSources, setFoundSources] = useState<DataSource[]>([]);
+  const [awaitingSourceSelection, setAwaitingSourceSelection] = useState(false);
+  const [sourceSuggestions, setSourceSuggestions] = useState<React.ReactNode[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Pipeline creation state
   const [mode, setMode] = useState<'chat' | 'create'>('chat');
@@ -680,8 +215,6 @@ const dispatch = useAppDispatch();
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
 
   // Escape key handler removed as chat panel is always visible
   // No need to close the panel with Escape key
@@ -832,7 +365,7 @@ const dispatch = useAppDispatch();
     }
   };
 
-
+ 
   const handleSourceStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
     console.log(userInput);
@@ -1141,8 +674,8 @@ const dispatch = useAppDispatch();
     }, 0);
   };
 
-  // Update the existing handleDependencySelection function
-  const updateDependencySelection = (dependency: string) => {
+  // Function to handle dependency selection
+  const handleDependencySelection = (dependency: string) => {
     console.log("Dependency selected:", dependency);
     
     // Use startTransition to prevent UI from being replaced with loading indicator
@@ -1378,7 +911,6 @@ const dispatch = useAppDispatch();
       // Build and update the pipeline template
       const pipelineTemplate = generatePipelineTemplate();
       setPipelineJson(pipelineTemplate);
-
       console.log("Current pipeline template:", pipelineTemplate);
 
       return;
@@ -2686,26 +2218,25 @@ const dispatch = useAppDispatch();
 
       {/* Chat panel - always visible, not sliding */}
       <div
-        className={`h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md opacity-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-lg ${className}`}
+        className={`h-full flex flex-col bg-background/95 backdrop-blur-md border-l border-border shadow-lg opacity-100 ${className}`}
       >
 
 
         {isNewChat || messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-6 space-y-8 px-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-blue-300/30 shadow-inner">
+          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
               <img
                 src={imageSrc}
                 alt="AI"
-                className="w-7 h-9 transform -rotate-[40deg] drop-shadow-sm"
+                className="w-5 h-7 transform -rotate-[40deg]"
               />
             </div>
-            <div className="text-center space-y-3 max-w-md">
-              <h3 className="text-2xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">How can I assist with your pipeline?</h3>
-              <p className="text-slate-500 mb-4">Create a new data pipeline or ask questions about your existing one</p>
-              <div className="flex justify-center items-center mt-2"> 
+            <div className="text-center space-y-1.5 max-w-sm">
+              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
+              <div className="flex justify-center items-center"> {/* Updated here */}
                 <Button
                   onClick={startPipelineCreation}
-                  className="bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 flex justify-center items-center gap-2 px-6 py-2.5 text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300"
+                  className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
                 >
                   <Plus className="h-4 w-4" />
                   Start Pipeline
@@ -2714,8 +2245,8 @@ const dispatch = useAppDispatch();
             </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-4 py-6">
-            <div className="space-y-8 py-2">
+          <ScrollArea className="flex-1 px-6 py-4">
+            <div className="space-y-6 py-4">
               {messages.map((message, i) => (
                 <div
                   key={i}
@@ -2734,11 +2265,11 @@ const dispatch = useAppDispatch();
                   >
                     <div
                       className={`rounded-2xl px-4 py-3 ${message.role === "user"
-                          ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md"
-                          : "bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md"
-                        } transition-all duration-300 hover:shadow-lg`}
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card border border-border/40 shadow-sm"
+                        }`}
                     >
-                      <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                      <div className="whitespace-pre-wrap">{message.content}</div>
 
                       {/* Render message buttons if available */}
                       {message.role === "assistant" && message.buttons && message.buttons.length > 0 && (
@@ -2758,15 +2289,13 @@ const dispatch = useAppDispatch();
                           )}
                           
                           {showReaderForm && message.content.includes("Please review and customize the reader configuration") && (
-                            <div className="mt-4 rounded-lg bg-white">
-                              <ReaderOptionsForm
-                                initialData={readerFormInitialValues}
-                                onSubmit={handleReaderFormSubmit}
-                                onClose={() => setShowReaderForm(false)}
-                                onSourceUpdate={handleReaderOptionsUpdate}
-                                nodeId={`source_${currentSourceData?.data_src_id}`}
-                              />
-                            </div>
+                            <SchemaFormLoader
+                              schemaType="Reader"
+                              initialValues={readerFormInitialValues}
+                              onSubmit={handleReaderFormSubmit}
+                              submitLabel="Save Reader Configuration"
+                              updatePipelineTemplate={true}
+                            />
                           )}
 
                           {showFilterForm && (
@@ -3490,11 +3019,11 @@ const dispatch = useAppDispatch();
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col max-w-[85%]">
-                    <div className="rounded-2xl py-3 px-4 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
-                      <div className="flex space-x-3 px-2">
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse"></div>
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-150"></div>
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-300"></div>
+                    <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
+                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
                       </div>
                     </div>
                   </div>
@@ -3505,7 +3034,7 @@ const dispatch = useAppDispatch();
           </ScrollArea>
         )}
 
-        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
+        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
           <AIChatInput
             input={input}
             onChange={setInput}

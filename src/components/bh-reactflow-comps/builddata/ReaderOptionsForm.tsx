@@ -288,7 +288,7 @@ console.log(sourceData,"sourceData")
     return (
         <form onSubmit={handleSubmit} className="flex flex-col h-[750px] w-full max-w-5xl mx-auto bg-white">
             <Card className="shadow-md border border-gray-200 my-2">
-                <CardContent className="p-2 ">
+                <CardContent className="p-6 ">
                     {/* Header Section */}
                     <div className="mb-6 pb-3 border-b border-gray-200">
                         <h2 className="text-xl font-semibold text-gray-900">Reader Configuration</h2>
@@ -296,7 +296,7 @@ console.log(sourceData,"sourceData")
                     </div>
 
                     {/* Form Content */}
-                    <div className="flex-1 overflow-auto px-1 py-1 space-y-4">
+                    <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
                         {/* Basic Info Section */}
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="text-sm font-medium text-gray-700 mb-3">Basic Information</h3>

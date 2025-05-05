@@ -530,7 +530,7 @@ const buildPipeLineSlice = createSlice({
       state.nestedFields = action.payload;
     },
     setBuildPipeLineDtl: (state, action: PayloadAction<any>) => {
-      state.pipelineDtl = action.payload;
+      state.buildPipeLineDtl = action.payload;
     },
     setBuildPipeLineNodes: (state, action: PayloadAction<any[]>) => {
       state.nodesList = action.payload;

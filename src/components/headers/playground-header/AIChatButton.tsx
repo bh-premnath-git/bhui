@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
-import { ChatSlidingPortal } from '../flow-playground-header/components/ChatSlidingPortal';
-import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
+import { useSidebar } from '@/context/SidebarContext';
+import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
 import { Hammer } from 'lucide-react';
 
 interface AIButtonProps {
@@ -10,8 +10,41 @@ interface AIButtonProps {
     color?: string;
 }
 
+const CHAT_UI_COMPONENT_KEY = 'flow-chat-ui';
+
 export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const { setRightAsideContent, closeRightAside, isRightAsideOpen, rightAsideContent } = useSidebar();
+
+    // Check if the FlowChatUI component is currently displayed
+    const isChatCurrentlyOpen = isRightAsideOpen && 
+                                rightAsideContent && 
+                                (rightAsideContent as React.ReactElement).key === CHAT_UI_COMPONENT_KEY;
+
+    const handleButtonClick = () => {
+        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : FlowChatUI;
+
+        if (isChatCurrentlyOpen) {
+            closeRightAside();
+        } else {
+            // Add a delay to let the UI adjust layout properly
+            document.body.classList.add('right-aside-opening');
+            
+            setRightAsideContent(
+                <ChatComponentToRender 
+                  key={CHAT_UI_COMPONENT_KEY} 
+                  imageSrc={ai} 
+                />,
+                'AI Chat',
+                'w-[520px]'
+            );
+            
+            // Trigger a resize event to help ReactFlow adjust
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                document.body.classList.remove('right-aside-opening');
+            }, 50);
+        }
+    };
 
     return (
         <motion.div
@@ -25,8 +58,8 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                 style={{ backgroundColor: color }}
                 whileHover={{ scale: 1.05, opacity: 0.9 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                title={variant === 'pipeline' ? 'Toggle Pipeline Assistant' : 'Toggle AI Assistant'}
+                onClick={handleButtonClick}
+                aria-label={isChatCurrentlyOpen ? 'Close AI Chat' : 'Open AI Chat'}
             >
                 {variant === 'pipeline' ? (
                     <Hammer className="w-4 h-4 text-white" />
@@ -41,19 +74,6 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                     />
                 )}
             </motion.button>
-            {variant === 'pipeline' ? (
-                <PipeLineChatSlidingPortal
-                    isOpen={isChatOpen}
-                    onClose={() => setIsChatOpen(false)}
-                    imageSrc={ai}
-                />
-            ) : (
-                <ChatSlidingPortal
-                    isOpen={isChatOpen}
-                    onClose={() => setIsChatOpen(false)}
-                    imageSrc={ai}
-                />
-            )}
         </motion.div>
     );
 };

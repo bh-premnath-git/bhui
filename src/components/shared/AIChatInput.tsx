@@ -1,15 +1,14 @@
-import { Mic, Send, ClipboardCopy } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { Mic, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AIChatInputProps {
-  input: string
-  onChange: (value: string) => void
-  onSend: () => void
-  onVoiceInput?: () => void
-  onCopy?: () => void
-  placeholder?: string
-  disabled?: boolean
+  input: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  onVoiceInput?: () => void;
+  placeholder?: string;
+  disabled?: boolean;
 }
 
 export function AIChatInput({
@@ -17,80 +16,70 @@ export function AIChatInput({
   onChange,
   onSend,
   onVoiceInput,
-  onCopy,
-  placeholder = "Ask about your data...",
+  placeholder = "Ask about your data…",
   disabled,
 }: AIChatInputProps) {
   return (
-    <div className="relative flex items-center mt-auto w-full">
-      {/* Microphone button (optional) */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute left-2 h-8 w-8 text-muted-foreground hover:text-foreground transition-colors duration-200 z-10"
-        aria-label="Voice input"
-        onClick={onVoiceInput}
-      >
-        <Mic className="h-4 w-4" />
-      </Button>
-
-      {/* Text input */}
+    <div
+      className="
+        flex items-center w-full bg-white border border-gray-300 rounded-full
+        px-3 py-1.5 space-x-2 shadow-sm
+        focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500 transition
+      "
+    >
+      {/* Mic on the left */}
+      
+        <Button
+          onClick={onVoiceInput}
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 text-gray-500 hover:text-gray-700"
+          aria-label="Voice input"
+        >
+          <Mic className="h-5 w-5" />
+        </Button>
+  
+      {/* Auto-resizing textarea */}
       <Textarea
         value={input}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             onSend();
           }
         }}
-        className="pl-12 pr-32 min-h-[48px] max-h-[200px] rounded-full border-muted bg-background resize-none overflow-hidden shadow-sm focus:ring-1 focus:ring-green-400 focus:border-green-400 transition-all duration-200"
-        aria-label="Chat input"
         rows={1}
-        style={{
-          height: 'auto',
-          minHeight: '48px',
+        maxLength={500}
+        className="
+          flex-grow bg-transparent border-none p-0 mx-2 resize-none overflow-y-auto
+          focus:outline-none"
+        style={{ height: "auto", maxHeight: "10rem", minHeight: "2.5rem" }}
+        onInput={e => {
+          const t = e.target as HTMLTextAreaElement;
+          t.style.height = "auto";
+          t.style.height = `${t.scrollHeight}px`;
         }}
-        onInput={(e) => {
-          const target = e.target as HTMLTextAreaElement;
-          target.style.height = 'auto';
-          target.style.height = `${target.scrollHeight}px`;
-        }}
+        disabled={disabled}
       />
 
-      {/* Action icons on the right side */}
-      <div className="absolute right-2 flex items-center gap-1">
-        {/* Copy button (optional) */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors duration-200"
-          aria-label="Copy"
-          onClick={onCopy}
-        >
-          <ClipboardCopy className="h-4 w-4" />
-        </Button>
-
-        {/* Send button */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={`h-8 w-8 transition-colors duration-200 ${
-            disabled || !input.trim() 
-              ? 'bg-green-300 text-white cursor-not-allowed opacity-70' 
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
-          onClick={onSend}
-          disabled={disabled || !input.trim()}
-          aria-label="Send message"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Send on the right */}
+      <Button
+        onClick={onSend}
+        variant="ghost"
+        size="icon"
+        disabled={disabled || !input.trim()}
+        className={`
+          h-8 w-8 transition-colors duration-150
+          ${disabled || !input.trim()
+            ? "text-gray-300 hover:text-gray-300 cursor-not-allowed"
+            : "text-green-600 hover:text-green-700"}
+        `}
+        aria-label="Send message"
+      >
+        <Send className="h-4 w-4" />
+      </Button>
     </div>
-  )
+  );
 }

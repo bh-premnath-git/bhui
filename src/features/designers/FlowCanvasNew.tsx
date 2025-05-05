@@ -8,6 +8,7 @@ import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+import { Controls } from 'reactflow';
 
 export const FlowCanvasNew = () => {
   const { id } = useParams();
@@ -36,8 +37,17 @@ export const FlowCanvasNew = () => {
       errorDescription="Please try again later"
       defaultViewport={{ x: 0, y: 0, zoom: 1.8 }}
       snapGrid={[15, 15]}
-      controls={<CustomControls />}
-    />
+      renderControls={false}
+    >
+      <Controls 
+        position="bottom-right"
+        showZoom={false} 
+        showFitView={false}
+        showInteractive={false} 
+      >
+        <CustomControls />
+      </Controls>
+    </ComposableCanvas>
   );
 };
 

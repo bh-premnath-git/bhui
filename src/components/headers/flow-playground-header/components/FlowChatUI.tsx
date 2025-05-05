@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import React, { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -8,17 +7,20 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { useFlow } from "@/context/designers/FlowContext";
 import {
   createFlowAgentConversationEntry,
-  clearFlowAgentConversation,
   setFormDefinition,
   setFormValues,
-  clearFormStates,
   setTaskDependencies
 } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
+import ai from '/assets/ai/ai.svg'; 
 
-export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boolean; onClose: () => void; imageSrc: string }) => {
+interface FlowChatUIProps {
+  imageSrc?: string; // Make image optional or provide default
+}
+
+export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const { setAiflowStrructre } = useFlow();
   const dispatch = useAppDispatch();
@@ -33,23 +35,22 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
   } = useAppSelector((state: RootState) => state.flow);
 
   useEffect(() => {
-    if (!isOpen) {
-      clearMessages();
-      dispatch(clearFlowAgentConversation());
-      dispatch(clearFormStates());
-    }
-  }, [isOpen, clearMessages, dispatch]);
+    // Optional: Clear state when component mounts if needed
+    // clearMessages();
+    // dispatch(clearFlowAgentConversation());
+    // dispatch(clearFormStates());
+    // Return cleanup function if necessary
+    // return () => { ... }
+  }, [dispatch, clearMessages]);
 
   useEffect(() => {
     if (error) {
-      console.log('Flow error detected:', error);
-      // Update the last assistant message to show the error
       updateLastAssistantMessage(`Error: ${error}. Please try again or modify your request.`);
     }
   }, [error, updateLastAssistantMessage]);
 
   const extractFromJson = (jsonString: string) => {
-    try {
+     try {
       const cleanJsonString = jsonString.replace(/```json\n|\n```/g, '');
       const parsedJson = JSON.parse(cleanJsonString);
 
@@ -102,8 +103,9 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     return { formDef: null, formValues: {}, dependencies: {} };
   };
 
+
   useEffect(() => {
-    if (flowAgentConversation) {
+     if (flowAgentConversation) {
       let formattedMessage = '';
       let shouldUpdateMessage = true;
 
@@ -150,7 +152,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
         updateLastAssistantMessage(formattedMessage);
       }
     }
-  }, [flowAgentConversation]);
+  }, [flowAgentConversation, dispatch, setAiflowStrructre, updateLastAssistantMessage]); // Added missing dependencies
+
 
   const handleSend = async () => {
     if (!input.trim() || !selectedFlow?.flow_id) return;
@@ -167,7 +170,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     setInput("");
   };
 
-  const handleFormSubmit = async (values: Record<string, Record<string, string>>) => {
+   const handleFormSubmit = async (values: Record<string, Record<string, string>>) => {
     if (!selectedFlow?.flow_id) return;
 
     dispatch(setFormValues(values));
@@ -207,14 +210,14 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
     }));
   };
 
+  // Return the core UI structure WITHOUT Sheet/SheetContent
+  // Use flex-col and h-full to make it fit the RightAside container
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[600px] p-4 flex flex-col h-full">
-        <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-sm font-semibold">BigHammer.ai</h2>
-        </div>
+    <div className="flex flex-col h-full p-4">
+      {/* Message Area */}
+      <div className="flex-1 mt-4 overflow-hidden"> {/* Use overflow-hidden + ScrollArea */}
         {messages.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center flex-grow justify-center">
+          <div className="flex flex-col items-center flex-grow justify-center h-full">
             <img 
               src={imageSrc} 
               alt="AI" 
@@ -223,7 +226,7 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
             <p className="text-sm text-gray-600 mt-2">How can I assist you with flow?</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 pr-4 mt-4">
+          <ScrollArea className="h-full pr-4"> 
             <div className="space-y-6">
               {messages.map((message, i) => (
                 <div
@@ -245,7 +248,8 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                   ) : (
                     <Avatar className="h-8 w-8 bg-blue-500">
                       <AvatarFallback className="bg-blue-500 text-white">
-                        {"John Doe".charAt(0)}
+                        {/* Placeholder for User Initial */}
+                        {String(selectedFlow?.created_by).charAt(0) ?? 'U'}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -260,17 +264,19 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                         : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100"
                     )}
                   >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <div className="whitespace-pre-wrap break-words">{message.content}</div> {/* Added break-words */}
                   </div>
                 </div>
               ))}
+              {/* Loading Indicator */}
               {loading && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                      src={imageSrc} 
-                      className="w-4 h-6 transform -rotate-[40deg]"
-                    />
+                   <Avatar className="h-8 w-8 flex items-center justify-center">
+                      <AvatarImage 
+                        src={imageSrc} 
+                        className="w-3.5 h-5 transform -rotate-[40deg]"
+                        style={{ objectFit: "contain" }}
+                      />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
@@ -282,16 +288,18 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
                   </div>
                 </div>
               )}
+              {/* Form Rendering */}
               {formDefinition && !loading && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
+                 <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8 flex items-center justify-center">
                     <AvatarImage 
                       src={imageSrc} 
-                      className="w-4 h-6 transform -rotate-[40deg]"
+                      className="w-3.5 h-5 transform -rotate-[40deg]"
+                      style={{ objectFit: "contain" }}
                     />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
-                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
+                  <div className="bg-gray-100 text-black rounded-lg px-4 py-2 w-full max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"> {/* Adjusted width */}
                     <h3 className="font-medium mb-2">Flow Form</h3>
                     <MissingFieldsForm
                       flowDefinition={formDefinition}
@@ -304,16 +312,18 @@ export const ChatSlidingPortal = ({ isOpen, onClose, imageSrc }: { isOpen: boole
             </div>
           </ScrollArea>
         )}
-        <div className="flex gap-2 mt-4">
-          <AIChatInput
-            input={input}
-            onChange={setInput}
-            onSend={handleSend}
-            placeholder="Ask about your flow..."
-            disabled={loading || !selectedFlow}
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+
+      {/* Input Area */}
+      <div className="flex gap-2 mt-4 flex-shrink-0"> 
+        <AIChatInput
+          input={input}
+          onChange={setInput}
+          onSend={handleSend}
+          placeholder="Ask about your flow..."
+          disabled={loading || !selectedFlow}
+        />
+      </div>
+    </div>
   );
-};
+}; 

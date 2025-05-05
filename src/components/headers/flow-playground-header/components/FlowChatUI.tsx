@@ -7,25 +7,20 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { useFlow } from "@/context/designers/FlowContext";
 import {
   createFlowAgentConversationEntry,
-  clearFlowAgentConversation,
   setFormDefinition,
   setFormValues,
-  clearFormStates,
   setTaskDependencies
 } from "@/store/slices/designer/flowSlice";
 import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
-import ai from '/assets/ai/ai.svg'; // Assuming ai icon is needed here
+import ai from '/assets/ai/ai.svg'; 
 
-// Define Props for the UI component
 interface FlowChatUIProps {
-  // We might need to pass some state/handlers if they are lifted up later
   imageSrc?: string; // Make image optional or provide default
 }
 
 export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
-  // Keep internal state and logic for now, similar to ChatSlidingPortal
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const { setAiflowStrructre } = useFlow();
   const dispatch = useAppDispatch();
@@ -39,7 +34,6 @@ export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
     error
   } = useAppSelector((state: RootState) => state.flow);
 
-  // Clear state on initial mount might be needed if it's always fresh in the aside
   useEffect(() => {
     // Optional: Clear state when component mounts if needed
     // clearMessages();
@@ -47,7 +41,7 @@ export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
     // dispatch(clearFormStates());
     // Return cleanup function if necessary
     // return () => { ... }
-  }, [dispatch, clearMessages]); // Adjust dependencies as needed
+  }, [dispatch, clearMessages]);
 
   useEffect(() => {
     if (error) {
@@ -170,7 +164,7 @@ export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
     await dispatch(createFlowAgentConversationEntry({
       flow_id: selectedFlow.flow_id.toString(),
       request: input,
-      thread_id: selectedFlow.flow_id.toString() // Assuming thread_id is same as flow_id for now
+      thread_id: selectedFlow.flow_id.toString()
     }));
 
     setInput("");

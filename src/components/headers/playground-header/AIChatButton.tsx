@@ -2,28 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
-// Import the new, extracted UI component
-// import { ChatSlidingPortal } from '../flow-playground-header/components/ChatSlidingPortal';
 import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
-
-// Remove the placeholder component definition
-/*
-const AIChatInterface = () => {
-  return (
-    <div>
-      <h2>AI Chat</h2>
-      <p>Chat interface goes here...</p>
-    </div>
-  );
-};
-*/
 
 interface AIButtonProps {
     variant: 'flow' | 'pipeline';
     color?: string;
 }
 
-// Use a key specific to the new component
 const CHAT_UI_COMPONENT_KEY = 'flow-chat-ui';
 
 export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
@@ -35,22 +20,18 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                                 (rightAsideContent as React.ReactElement).key === CHAT_UI_COMPONENT_KEY;
 
     const handleButtonClick = () => {
-        // For now, use FlowChatUI for both variants
-        // If pipeline needs a different UI, create a similar extracted component for it
-        const ChatComponentToRender = FlowChatUI; 
+        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : FlowChatUI;
 
         if (isChatCurrentlyOpen) {
             closeRightAside();
         } else {
             setRightAsideContent(
-                // Render the extracted FlowChatUI component directly
                 <ChatComponentToRender 
                   key={CHAT_UI_COMPONENT_KEY} 
-                  // Pass any necessary props - imageSrc might be needed if FlowChatUI uses it
                   imageSrc={ai} 
                 />,
-                'AI Chat', // Set the title
-                'w-[600px]' // Set the desired width
+                'AI Chat',
+                'w-[520px]'
             );
         }
     };

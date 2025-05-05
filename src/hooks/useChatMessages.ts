@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 
 type MessageRole = 'user' | 'assistant';
 
 interface Message {
   role: MessageRole;
   content: string;
+  buttons?: ReactNode[];
 }
 
 export const useChatMessages = () => {
@@ -14,8 +15,8 @@ export const useChatMessages = () => {
     setMessages(prev => [...prev, { role: 'user', content }]);
   }, []);
 
-  const addAssistantMessage = useCallback((content: string) => {
-    setMessages(prev => [...prev, { role: 'assistant', content }]);
+  const addAssistantMessage = useCallback((content: string, buttons?: ReactNode[]) => {
+    setMessages(prev => [...prev, { role: 'assistant', content, buttons }]);
   }, []);
 
   const updateLastAssistantMessage = useCallback((content: string) => {

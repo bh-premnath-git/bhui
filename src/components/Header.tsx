@@ -12,14 +12,7 @@ export const Header = () => {
   const { isExpanded } = useSidebar();
   const location = useLocation();
 const { setRightAsideContent, rightAsideContent, isRightAsideOpen, openRightAside,closeRightAside } = useSidebar();
-  console.log(isRightAsideOpen)
-  console.log(isExpanded)
-  if(location.pathname.startsWith("/designers/build-playground/")){
-    console.log(location.pathname)
-
-
-    console.log(isExpanded)
-  }
+  
   // Helper functions to check routes
   const isBuildPlaygroundRoute = (pathname: string) => {
     // alert()

@@ -132,7 +132,7 @@ interface  bnPipelineContextProps {
     handleZoomIn: () => void;
     handleZoomOut: () => void;
     handleCenter: () => void;
-    makePipeline: (result:any,isModify?:boolean) =>void;
+    makePipeline: (result:any) =>void;
     ctrlDTimeout: MutableRefObject<NodeJS.Timeout | null>;
     isSaving: boolean;
     hasUnsavedChanges: boolean;
@@ -424,18 +424,17 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        console.log("Setting nodes:", nodesOrUpdater);
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => {
-                const newNodes = nodesOrUpdater(prevNodes);
-                console.log("New nodes from function:", newNodes);
-                return newNodes.map(sanitizeNode);
-            });
-        } else {
-            console.log("New nodes direct:", nodesOrUpdater);
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
-    }, [setNodes, sanitizeNode]);
+        // console.log(nodesOrUpdater)
+        // // alert()
+        // // console.log(typeof nodesOrUpdater)
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
+    }, [ sanitizeNode]);
 
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
@@ -465,7 +464,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [onNodesChange, dispatch, sanitizeNode]);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -482,53 +481,26 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             })
         );
         setUnsavedChanges();
-    }, [ dispatch]);
+    }, [setSanitizedNodes, dispatch]);
 
     const handleCenter = useCallback(() => {
-        console.log("Center called");
         try {
-            // Try using the ReactFlow hook
             fitView({ duration: 800, padding: 0.1 });
-            
-            // Also try to click the fitView button
-            const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-            if (fitViewButton instanceof HTMLElement) {
-                fitViewButton.click();
-            }
-            
-            // If all else fails, try to center the view manually
-            if (nodes.length > 0) {
-                // Calculate the center of all nodes
-                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                
-                nodes.forEach(node => {
-                    const x = node.position.x;
-                    const y = node.position.y;
-                    minX = Math.min(minX, x);
-                    maxX = Math.max(maxX, x + 200); // Assuming node width is about 200px
-                    minY = Math.min(minY, y);
-                    maxY = Math.max(maxY, y + 100); // Assuming node height is about 100px
-                });
-                
-                const centerX = (minX + maxX) / 2;
-                const centerY = (minY + maxY) / 2;
-                
-                // Try to center the view on these coordinates
-                reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-            }
         } catch (error) {
             console.error('FitView error:', error);
         }
-    }, [fitView, nodes, reactFlowInstance]);
-const makePipeline = async (result: any,isModify=true) => {
-    let optimised;
-    let uiJson;
-        optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-        console.log(optimised, "optimised");
-        setPipelineJson(optimised);
-        uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+    }, [fitView]);
+const makePipeline = async (result: any) => {
+    let optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+    console.log(optimised, "optimised");
     
     
+    
+    // Set the pipeline JSON first
+    setPipelineJson(optimised);
+
+    // Convert pipeline to UI JSON
+    const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
     
     console.log(uiJson, "uiJson");
     if (!uiJson || !uiJson.nodes) {
@@ -556,6 +528,7 @@ const makePipeline = async (result: any,isModify=true) => {
       return node;
     });
     
+    console.log(result.pipeline_definition,"nodesWithTitles");
     
     if(result.pipeline_definition==null){
       setPipelineJson(null);
@@ -595,7 +568,7 @@ const makePipeline = async (result: any,isModify=true) => {
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log(sourceData)
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -630,7 +603,7 @@ const makePipeline = async (result: any,isModify=true) => {
             }));
 
             // Update node data with transformation data
-            setNodes((nds) =>
+            setSanitizedNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
@@ -798,7 +771,7 @@ const makePipeline = async (result: any,isModify=true) => {
             });
   console.log(debuggedNodesList)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.pipeline_name}`,
+    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });
@@ -822,7 +795,7 @@ debuggedNodesList.forEach(checkpoint => {
             //     message: 'Pipeline validation successful. Starting execution...',
             //     level: 'info'
             // }]);
-   
+  
             // Pass the request data directly
             let response:any = await apiService.post({
                 portNumber: CATALOG_API_PORT,
@@ -1158,76 +1131,12 @@ debuggedNodesList.forEach(checkpoint => {
         setShowLogs(prev => !prev);  // Toggle logs visibility
     }, []);
     const handleZoomIn = useCallback(() => {
-        console.log("Zoom In called");
-        try {
-            // Try using the ReactFlow hook
-            zoomIn({ duration: 800 });
-            
-            // Also try direct DOM manipulation
-            const reactFlowViewport = document.querySelector('.react-flow__viewport');
-            if (reactFlowViewport) {
-                const currentTransform = reactFlowViewport.getAttribute('transform');
-                if (currentTransform) {
-                    const match = currentTransform.match(/scale\(([^)]+)\)/);
-                    if (match && match[1]) {
-                        const currentScale = parseFloat(match[1]);
-                        const newScale = currentScale * 1.2; // Increase zoom by 20%
-                        
-                        // Update the transform attribute
-                        const newTransform = currentTransform.replace(
-                            /scale\([^)]+\)/, 
-                            `scale(${newScale})`
-                        );
-                        reactFlowViewport.setAttribute('transform', newTransform);
-                    }
-                }
-            }
-            
-            // Also try to click the zoom in button
-            const zoomInButton = document.querySelector('.react-flow__controls-zoomin');
-            if (zoomInButton instanceof HTMLElement) {
-                zoomInButton.click();
-            }
-        } catch (error) {
-            console.error('Zoom in error:', error);
-        }
+        zoomIn({ duration: 800 });
     }, [zoomIn]);
   
     // Add new function for zoom out
     const handleZoomOut = useCallback(() => {
-        console.log("Zoom Out called");
-        try {
-            // Try using the ReactFlow hook
-            zoomOut({ duration: 800 });
-            
-            // Also try direct DOM manipulation
-            const reactFlowViewport = document.querySelector('.react-flow__viewport');
-            if (reactFlowViewport) {
-                const currentTransform = reactFlowViewport.getAttribute('transform');
-                if (currentTransform) {
-                    const match = currentTransform.match(/scale\(([^)]+)\)/);
-                    if (match && match[1]) {
-                        const currentScale = parseFloat(match[1]);
-                        const newScale = currentScale / 1.2; // Decrease zoom by 20%
-                        
-                        // Update the transform attribute
-                        const newTransform = currentTransform.replace(
-                            /scale\([^)]+\)/, 
-                            `scale(${newScale})`
-                        );
-                        reactFlowViewport.setAttribute('transform', newTransform);
-                    }
-                }
-            }
-            
-            // Also try to click the zoom out button
-            const zoomOutButton = document.querySelector('.react-flow__controls-zoomout');
-            if (zoomOutButton instanceof HTMLElement) {
-                zoomOutButton.click();
-            }
-        } catch (error) {
-            console.error('Zoom out error:', error);
-        }
+        zoomOut({ duration: 800 });
     }, [zoomOut]);
   
 
@@ -1380,7 +1289,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
         };
   
-        setNodes((prevNodes) => [...prevNodes, newNode]);
+        setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {
@@ -1389,139 +1298,152 @@ debuggedNodesList.forEach(checkpoint => {
     }, [nodes, setSanitizedNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleAlignHorizontal = useCallback(() => {
-        console.log("Align Horizontal called");
         if (nodes.length === 0) return;
-        
-        try {
-            // Simple horizontal alignment - arrange nodes in a grid pattern
-            const HORIZONTAL_SPACING = 250; // Space between nodes horizontally
-            const VERTICAL_SPACING = 150;   // Space between rows
-            const NODES_PER_ROW = 4;        // Number of nodes per row
-            const STARTING_X = 50;
-            const STARTING_Y = 50;
+  
+        // Create a map of node levels (columns)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+  
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node => 
+            !edges.some(edge => edge.target === node.id)
+        );
+  
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
             
-            // Create a copy of nodes with updated positions
-            const newNodes = [...nodes].map((node, index) => {
-                const row = Math.floor(index / NODES_PER_ROW);
-                const col = index % NODES_PER_ROW;
-                
-                return {
-                    ...node,
-                    position: {
-                        x: STARTING_X + col * HORIZONTAL_SPACING,
-                        y: STARTING_Y + row * VERTICAL_SPACING
-                    }
-                };
-            });
-            
-            console.log("Original nodes:", nodes);
-            console.log("New nodes for horizontal alignment:", newNodes);
-            
-            // Update nodes with new positions - use setNodes directly
-            setNodes(newNodes);
-            
-            // Center the view
-            setTimeout(() => {
-                try {
-                    // Calculate center point based on grid
-                    const rows = Math.ceil(nodes.length / NODES_PER_ROW);
-                    const cols = Math.min(nodes.length, NODES_PER_ROW);
-                    const centerX = STARTING_X + (cols * HORIZONTAL_SPACING) / 2;
-                    const centerY = STARTING_Y + (rows * VERTICAL_SPACING) / 2;
-                    
-                    // Center the view on the grid
-                    reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                    
-                    // Also try to fit view
-                    fitView({ duration: 800, padding: 0.1 });
-                } catch (error) {
-                    console.error('Center view error after horizontal alignment:', error);
+            visited.add(id);
+            nodeLevels.set(id, level);
+  
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
                 }
-            }, 100);
-            
-            setUnsavedChanges();
-        } catch (error) {
-            console.error('Error in horizontal alignment:', error);
+            });
         }
-    }, [nodes, setNodes, reactFlowInstance, fitView, setUnsavedChanges]);
+  
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelWidth = 200; // Horizontal spacing between levels
+        const nodeSpacing = 150; // Vertical spacing between nodes in the same level
+  
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+  
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (level * levelWidth),
+                    y: startY + (indexInLevel * nodeSpacing)
+                }
+            };
+        });
+  
+        setSanitizedNodes(newNodes);
+  
+        // Center the view
+        setTimeout(() => {
+            const centerX = startX + (maxLevel * levelWidth) / 2;
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+  
+        setUnsavedChanges();
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
   
     const handleAlignVertical = useCallback(() => {
-        console.log("Align Vertical called");
         if (nodes.length === 0) return;
-        
-        try {
-            // Simple vertical alignment - arrange nodes in a column-based grid
-            const HORIZONTAL_SPACING = 250; // Space between columns
-            const VERTICAL_SPACING = 150;   // Space between nodes in a column
-            const NODES_PER_COLUMN = 4;     // Number of nodes per column
-            const STARTING_X = 50;
-            const STARTING_Y = 50;
+  
+        // Create a map of node levels (rows)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+  
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node => 
+            !edges.some(edge => edge.target === node.id)
+        );
+  
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
             
-            // Create a copy of nodes with updated positions
-            const newNodes = [...nodes].map((node, index) => {
-                const column = Math.floor(index / NODES_PER_COLUMN);
-                const row = index % NODES_PER_COLUMN;
-                
-                return {
-                    ...node,
-                    position: {
-                        x: STARTING_X + column * HORIZONTAL_SPACING,
-                        y: STARTING_Y + row * VERTICAL_SPACING
-                    }
-                };
-            });
-            
-            console.log("Original nodes:", nodes);
-            console.log("New nodes for vertical alignment:", newNodes);
-            
-            // Update nodes with new positions - use setNodes directly
-            setNodes(newNodes);
-            
-            // Center the view
-            setTimeout(() => {
-                try {
-                    // Calculate center point based on grid
-                    const columns = Math.ceil(nodes.length / NODES_PER_COLUMN);
-                    const rows = Math.min(nodes.length, NODES_PER_COLUMN);
-                    const centerX = STARTING_X + (columns * HORIZONTAL_SPACING) / 2;
-                    const centerY = STARTING_Y + (rows * VERTICAL_SPACING) / 2;
-                    
-                    // Center the view on the grid
-                    reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                    
-                    // Also try to fit view
-                    fitView({ duration: 800, padding: 0.1 });
-                } catch (error) {
-                    console.error('Center view error after vertical alignment:', error);
+            visited.add(id);
+            nodeLevels.set(id, level);
+  
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
                 }
-            }, 100);
-            
-            setUnsavedChanges();
-        } catch (error) {
-            console.error('Error in vertical alignment:', error);
+            });
         }
-    }, [nodes, setNodes, reactFlowInstance, fitView, setUnsavedChanges]);
-    
-    // Add custom event listeners for alignment
-    useEffect(() => {
-        const handleAlignHorizontalEvent = () => {
-            console.log("Align Horizontal event received");
-            handleAlignHorizontal();
-        };
-        
-        const handleAlignVerticalEvent = () => {
-            console.log("Align Vertical event received");
-            handleAlignVertical();
-        };
-        
-        document.addEventListener('alignHorizontal', handleAlignHorizontalEvent);
-        document.addEventListener('alignVertical', handleAlignVerticalEvent);
-        
-        return () => {
-            document.removeEventListener('alignHorizontal', handleAlignHorizontalEvent);
-            document.removeEventListener('alignVertical', handleAlignVerticalEvent);
-        };
-    }, [handleAlignHorizontal, handleAlignVertical]);
+  
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelHeight = 150; // Vertical spacing between levels
+        const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
+  
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+  
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (indexInLevel * nodeSpacing),
+                    y: startY + (level * levelHeight)
+                }
+            };
+        });
+  
+        setSanitizedNodes(newNodes);
+  
+        // Center the view
+        setTimeout(() => {
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
+            const centerY = startY + (maxLevel * levelHeight) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+  
+        setUnsavedChanges();
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
   
     const value = useMemo(() => ({
         nodes,

@@ -22,7 +22,7 @@ export function RightAside({
   return (
     <aside
       className={cn(
-        "relative flex flex-col h-full bg-background/95 backdrop-blur-sm border-l shadow-sm",
+        "relative flex flex-col h-full bg-background/95 backdrop-blur-sm border-l shadow-sm sidebar-right",
         "transition-all duration-300 ease-in-out", // Smoother transitions
         width,
         className

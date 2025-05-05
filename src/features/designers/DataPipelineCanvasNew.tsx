@@ -1,5 +1,6 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { useSidebar } from '@/context/SidebarContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode';
@@ -13,6 +14,7 @@ import { LoaderCircle } from 'lucide-react';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
 
 const DataPipelineCanvasNew: React.FC = () => {
+  const { isRightAsideOpen } = useSidebar();
   const {
     pipelineDtl,
     nodes,
@@ -59,6 +61,40 @@ const DataPipelineCanvasNew: React.FC = () => {
     lastSaved,
     fetchPipelineDetails
   } = usePipelineContext();
+  
+  // Add resize event handler to force canvas resizing when right aside opens/closes
+  useEffect(() => {
+    const handleResize = () => {
+      // Force a resize event to make ReactFlow recalculate dimensions
+      window.dispatchEvent(new Event('resize'));
+    };
+    
+    // Trigger resize after a short delay when the aside state changes
+    const timer = setTimeout(handleResize, 100);
+    // Trigger another resize after a longer delay for smoother transition
+    const secondTimer = setTimeout(handleResize, 300);
+    
+    // Try to trigger fitView if possible through the context
+    if (handleCenter) {
+      const fitViewTimer = setTimeout(() => {
+        try {
+          handleCenter();
+        } catch (error) {
+          console.error('Error calling handleCenter:', error);
+        }
+      }, 350);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(secondTimer);
+        clearTimeout(fitViewTimer);
+      };
+    }
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(secondTimer);
+    };
+  }, [isRightAsideOpen, handleCenter]);
 
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
@@ -164,7 +200,7 @@ const DataPipelineCanvasNew: React.FC = () => {
     };
     
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className={`fixed bottom-4 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-50 transition-all duration-300`}>
         <FlowControls
           onZoomIn={localZoomIn}
           onZoomOut={localZoomOut}
@@ -202,10 +238,10 @@ const DataPipelineCanvasNew: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <div className="flex-1 relative p-1 ml-8">
+    <div className={`flex flex-col h-full w-full ${isRightAsideOpen ? 'with-right-aside' : ''}`}>
+      <div className={`flex-1 relative p-1 ml-8 transition-all duration-300 ${isRightAsideOpen ? 'mr-[520px]' : ''}`}>
         {/* Keyboard shortcuts panel */}
-        <div className="fixed top-20 left-24 z-50">
+        <div className={`fixed top-20 left-24 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
           <div className="rounded-lg p-2 text-sm">
             <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
           </div>
@@ -213,7 +249,7 @@ const DataPipelineCanvasNew: React.FC = () => {
 
         {/* Debug mode panel */}
         {debuggedNodesList?.length > 0 && (
-          <div className="fixed top-20 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
+          <div className={`fixed top-20 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -249,8 +285,15 @@ const DataPipelineCanvasNew: React.FC = () => {
         )}
 
         {/* Main Canvas */}
-        <div className="flex-1 w-full h-full relative">
+        <div 
+          className={`flex-1 w-full h-full relative transition-all duration-300 ${isRightAsideOpen ? 'pipeline-with-aside' : ''}`}
+          style={{
+            width: isRightAsideOpen ? 'calc(100% - 520px)' : '100%',
+            marginRight: isRightAsideOpen ? '0' : '0'
+          }}>
+
           <ComposableCanvas
+            className={`w-full h-full bg-background transition-all duration-300 relative ${isRightAsideOpen ? 'pipeline-canvas-with-aside' : ''}`}
             type="pipeline"
             nodeTypes={memoizedNodeTypes}
             edgeTypes={edgeTypes}
@@ -259,7 +302,6 @@ const DataPipelineCanvasNew: React.FC = () => {
             defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
             minZoom={0.2}
             maxZoom={1.5}
-            className="relative h-full"
           />
         </div>
 
@@ -343,7 +385,15 @@ const DataPipelineCanvasNew: React.FC = () => {
 
         {/* Loading Overlay */}
         {isCanvasLoading && (
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
+          <div 
+            className="fixed z-50 flex items-center justify-center pointer-events-auto bg-white/50 backdrop-blur-[1px] transition-all duration-300"
+            style={{
+              top: 0,
+              bottom: 0,
+              left: 0,
+              right: isRightAsideOpen ? '520px' : 0
+            }}
+          >
             <div className="flex flex-col items-center gap-2">
               <LoaderCircle size={40} />
               <span className="text-sm text-gray-600 font-medium">Processing...</span>

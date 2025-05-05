@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 interface SidebarContextType {
   isExpanded: boolean;
@@ -30,6 +31,7 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 const DEFAULT_ASIDE_WIDTH = 'w-70'; 
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Right Aside state
@@ -37,6 +39,15 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [rightAsideContent, setRightAsideContentState] = useState<ReactNode | null>(null);
   const [rightAsideTitle, setRightAsideTitle] = useState('Details');
   const [rightAsideWidth, setRightAsideWidth] = useState<string>(DEFAULT_ASIDE_WIDTH);
+  
+  // Route change detection
+  useEffect(() => {
+    // Close right aside and clear its content when route changes
+    setIsRightAsideOpen(false);
+    setRightAsideContentState(null);
+    setRightAsideTitle('Details');
+    setRightAsideWidth(DEFAULT_ASIDE_WIDTH);
+  }, [location.pathname]);
   
   // Bottom Drawer state
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
@@ -59,6 +70,12 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const closeRightAside = () => {
     setIsRightAsideOpen(false);
+    // Clear content after a delay
+    setTimeout(() => {
+      setRightAsideContentState(null);
+      setRightAsideTitle('Details');
+      setRightAsideWidth(DEFAULT_ASIDE_WIDTH);
+    }, 300);
   };
   
   const setRightAsideContent = (content: ReactNode, title?: string, width?: string) => {

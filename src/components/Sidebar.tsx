@@ -98,7 +98,7 @@ export function Sidebar() {
     >
       <div className="h-16 flex items-center px-4 border-b">
         <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigate("/dataops-hub")}>
-          <img src={logo} alt="Bighammer AI" className={cn("h-6 w-6 text-sidebar-foreground shrink-0", isExpanded ? "px-2 space-y-1" : "flex flex-col items-center")} />
+          
           <div className="overflow-hidden">
             <h1
               className={cn(

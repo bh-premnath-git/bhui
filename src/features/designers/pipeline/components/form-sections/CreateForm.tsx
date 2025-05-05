@@ -91,6 +91,32 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
+    // Add specific initialization for SchemaTransformation form
+    if (schema?.title === 'SchemaTransformation') {
+      console.log("Initializing SchemaTransformation form with:", {
+        initialValues,
+        schema
+      });
+      
+      const schemaFormValues = {
+        derived_fields: initialValues?.derived_fields || [{ name: '', expression: '' }],
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+      
+      console.log("Final SchemaTransformation form values:", schemaFormValues);
+      return schemaFormValues;
+    }
+    
+    // Add specific initialization for Filter form
+    if (schema?.title === 'Filter') {
+      return {
+        condition: initialValues?.condition || '',
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
     return values;
   }, [schema, initialValues]);
 console.log(initialFormValues,"initialFormValues")
@@ -703,6 +729,14 @@ const renderArrayFields = (
   sourceColumns: SourceColumn[],
   columnSuggestions: string[]
 ) => {
+  console.log(`Rendering array fields for section: ${section}`, {
+    arraySchema,
+    control: control ? "Control exists" : "No control",
+    section,
+    sourceColumns,
+    columnSuggestions
+  });
+  
   if (!arraySchema || !arraySchema.items) {
     console.warn(`Invalid array schema for section ${section}`);
     return null;
@@ -723,6 +757,12 @@ const renderArrayFields = (
 
   const itemProperties = arraySchema.items.properties || arraySchema.items;
   const requiredFields = arraySchema.items.required || [];
+  
+  console.log(`Array field properties for ${section}:`, {
+    itemProperties,
+    requiredFields,
+    fields: control._formValues[section]
+  });
 
   return (
     <div className="space-y-4">

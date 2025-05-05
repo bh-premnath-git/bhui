@@ -493,16 +493,11 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 const makePipeline = async (result: any,isModify=true) => {
     let optimised;
     let uiJson;
-    if(isModify){
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
         console.log(optimised, "optimised");
         setPipelineJson(optimised);
         uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-    }else{
-        setPipelineJson(result);
-        uiJson = await convertPipelineToUIJson(result, handleSourceUpdate);
-
-    }
+    
     
     
     console.log(uiJson, "uiJson");
@@ -531,7 +526,6 @@ const makePipeline = async (result: any,isModify=true) => {
       return node;
     });
     
-    console.log(result.pipeline_definition,"nodesWithTitles");
     
     if(result.pipeline_definition==null){
       setPipelineJson(null);

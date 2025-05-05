@@ -121,7 +121,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     useEffect(() => {
         if (source) {
             let connection={...source.source?.connection};
-            connection.connection_config_id=connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
+            connection.connection_config_id=source?.source?.connection?.connection_config_id ||connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
             console.log(source,"sdsd")
             console.log(connection,"connection")
             // Check if targets is an array before using find
@@ -507,6 +507,14 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                             file_name: formData.target?.file_name,
                             load_mode: formData.target?.load_mode
                         },
+                        transformationData: {
+                            write_options: formData.write_options || {
+                                header: true,
+                                sep: ",",
+                                createDisposition: 'CREATE_IF_NEEDED',
+                                writeMethod: formData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                            }
+                        }
                     }
                 }
             };

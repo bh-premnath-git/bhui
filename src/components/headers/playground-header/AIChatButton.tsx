@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
 import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
+import { Hammer } from 'lucide-react';
 
 interface AIButtonProps {
     variant: 'flow' | 'pipeline';

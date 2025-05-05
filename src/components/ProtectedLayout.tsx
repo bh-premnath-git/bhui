@@ -23,7 +23,6 @@ const MainContentInternal = () => {
     </div>
   );
 };
-
 // Wrapper component that orchestrates the layout based on context
 const LayoutWrapper = () => {
   const { 

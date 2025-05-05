@@ -22,7 +22,7 @@ export function RightAside({
   return (
     <aside 
       className={cn(
-        "fixed right-0 top-0 h-screen z-30 ",
+        "fixed right-0 top-0 h-screen z-0 ",
         "border-l shadow-sm transition-all duration-300 ease-in-out",
         "transform", 
         isRightAsideOpen ? "translate-x-0" : "translate-x-full",

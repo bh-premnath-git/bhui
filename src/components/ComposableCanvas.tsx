@@ -237,23 +237,30 @@ export const ComposableCanvas = ({
       onEdgesChange = pipelineContext.handleEdgesChange;
       onConnect = pipelineContext.onConnect;
       handleKeyDown = pipelineContext.handleKeyDown;
-      // Use ReactFlow instance's fitView for pipeline type if needed
-      fitView = () => reactFlowInstance.fitView();
+      // Use the context's fitView function for pipeline type
+      fitView = pipelineContext.handleCenter;
     }
   }
   
   // Initialize ReactFlow instance
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
+      // Store the instance for both flow and pipeline types
       if (type === 'flow' && setReactFlowInstance) {
         setReactFlowInstance(instance);
-        // Delay to ensure all components are mounted
-        if (nodes?.length > 0 && fitView) {
-          const timer = setTimeout(() => {
-            fitView();
-          }, 300);
-          return () => clearTimeout(timer);
-        }
+      }
+      
+      // For both flow and pipeline types, fit view after a delay
+      if (nodes?.length > 0 && fitView) {
+        const timer = setTimeout(() => {
+          try {
+            // Use the instance directly for fitView to ensure it works
+            instance.fitView({ duration: 800, padding: 0.1 });
+          } catch (error) {
+            console.error('FitView error:', error);
+          }
+        }, 300);
+        return () => clearTimeout(timer);
       }
     },
     [type, setReactFlowInstance, nodes, fitView]
@@ -275,16 +282,21 @@ export const ComposableCanvas = ({
     }
   }, [type, handleKeyDown, nodes]);
   
-  // Only run fitView when we have nodes that need positioning for flow canvas
+  // Run fitView when we have nodes that need positioning for both flow and pipeline canvas
   useEffect(() => {
-    if (type === 'flow' && nodes?.length > 0 && fitView) {
+    if (nodes?.length > 0 && fitView) {
       // Add a small delay to ensure nodes are rendered
       const timer = setTimeout(() => {
-        fitView();
+        try {
+          // Use the reactFlowInstance directly for fitView to ensure it works
+          reactFlowInstance.fitView({ duration: 800, padding: 0.1 });
+        } catch (error) {
+          console.error('FitView error:', error);
+        }
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [type, nodes, fitView]);
+  }, [nodes, fitView, reactFlowInstance]);
   
   // Loading state
   if (loading) {
@@ -335,11 +347,12 @@ export const ComposableCanvas = ({
             nodesConnectable={true}
             snapToGrid={snapToGrid}
             snapGrid={snapGrid}
-            fitView={false}
-            fitViewOptions={{ padding: 0.3 }}
+            fitView={true}
+            fitViewOptions={{ padding: 0.3, duration: 800 }}
           >
             {showBackground && <Background variant={backgroundVariant} gap={12} size={1} />}
-            {renderControls && !controls && <Controls />}
+            {/* Always render the ReactFlow controls for functionality */}
+            <Controls position="bottom-right" style={{ bottom: '80px', right: '10px',display:'none' }} />
             {controls}
             {children}
           </ReactFlow>

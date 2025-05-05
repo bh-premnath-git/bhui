@@ -77,7 +77,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
 
   return (
-    <div className="bg-[#fff] w-full p-0 border-border">
+    <div className="bg-[#fff] w-full p-0 border-border z-50">
       <div className="flex flex-col sm:flex-row items-center justify-between bg-card">
         {/* Left section - AutoSave, NameEditor, and action buttons */}
         <div className="flex items-center space-x-3 w-full sm:w-auto">

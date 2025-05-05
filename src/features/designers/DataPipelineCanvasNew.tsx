@@ -109,25 +109,80 @@ const DataPipelineCanvasNew: React.FC = () => {
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
   // Custom controls component for the pipeline canvas
-  const PipelineControls = () => (
-    <div className="fixed bottom-4 right-4 z-50">
-      <FlowControls
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onCenter={handleCenter}
-        onAlignHorizontal={handleAlignHorizontal}
-        onAlignVertical={handleAlignVertical}
-        handleRunClick={handleRun}
-        onStop={handleStop}
-        onNext={handleNext}
-        isPipelineRunning={isPipelineRunning}
-        isLoading={isCanvasLoading}
-        pipelineConfig={handleRunClick}
-        terminalLogs={terminalLogs}
-        proplesLogs={conversionLogs}
-      />
-    </div>
-  );
+  const PipelineControls = () => {
+    // Create local implementations of the zoom and center functions
+    // These will be used directly by the FlowControls component
+    const localZoomIn = () => {
+      try {
+        // Use direct DOM manipulation to trigger a zoom in event
+        const zoomInEvent = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          deltaY: -100,
+          ctrlKey: true
+        });
+        document.querySelector('.react-flow')?.dispatchEvent(zoomInEvent);
+        
+        // Also try to call the context function
+        handleZoomIn();
+      } catch (error) {
+        console.error('Zoom in error:', error);
+      }
+    };
+    
+    const localZoomOut = () => {
+      try {
+        // Use direct DOM manipulation to trigger a zoom out event
+        const zoomOutEvent = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          deltaY: 100,
+          ctrlKey: true
+        });
+        document.querySelector('.react-flow')?.dispatchEvent(zoomOutEvent);
+        
+        // Also try to call the context function
+        handleZoomOut();
+      } catch (error) {
+        console.error('Zoom out error:', error);
+      }
+    };
+    
+    const localCenter = () => {
+      try {
+        // Try to call the context function
+        handleCenter();
+        
+        // Also try to use the fitView button from ReactFlow controls
+        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+        if (fitViewButton instanceof HTMLElement) {
+          fitViewButton.click();
+        }
+      } catch (error) {
+        console.error('Center error:', error);
+      }
+    };
+    
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <FlowControls
+          onZoomIn={localZoomIn}
+          onZoomOut={localZoomOut}
+          onCenter={localCenter}
+          onAlignHorizontal={handleAlignHorizontal}
+          onAlignVertical={handleAlignVertical}
+          handleRunClick={handleRun}
+          onStop={handleStop}
+          onNext={handleNext}
+          isPipelineRunning={isPipelineRunning}
+          isLoading={isCanvasLoading}
+          pipelineConfig={handleRunClick}
+          terminalLogs={terminalLogs}
+          proplesLogs={conversionLogs}
+        />
+      </div>
+    );
+  };
 
   // Define keyboard shortcuts for display
   const keyboardShortcuts = [

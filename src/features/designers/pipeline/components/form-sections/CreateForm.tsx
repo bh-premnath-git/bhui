@@ -55,6 +55,7 @@ interface CreateFormProps {
   pipelineDtl?: any;
   currentNodeId: string;
   edges: Edge[];
+  isDialog?: boolean;
 }
 
 interface SourceColumn {

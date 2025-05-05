@@ -22,10 +22,12 @@ export function RightAside({
   return (
     <aside
       className={cn(
-        "relative flex flex-col h-full bg-background/95 backdrop-blur-sm border-l shadow-sm transition-width",
+        "relative flex flex-col h-full bg-background/95 backdrop-blur-sm border-l shadow-sm",
+        "transition-all duration-300 ease-in-out", // Smoother transitions
         width,
         className
       )}
+      data-state="open" // Add a data attribute to assist with CSS selectors
     >
       {/* Collapse handle */}
       <Button
@@ -38,7 +40,6 @@ export function RightAside({
         <ChevronRight className="h-4 w-4" />
       </Button>
 
-      {/* Header with close “X” */}
       <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
         <h2 className="font-medium text-lg">{title}</h2>
         <Button

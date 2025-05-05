@@ -202,10 +202,10 @@ const DataPipelineCanvasNew: React.FC = () => {
   ];
 
   return (
-    <div className="relative h-full">
-      <div className="p-1 ml-8">
+    <div className="flex flex-col h-full w-full">
+      <div className="flex-1 relative p-1 ml-8">
         {/* Keyboard shortcuts panel */}
-        <div className="absolute mt-2 z-50">
+        <div className="fixed top-20 left-24 z-50">
           <div className="rounded-lg p-2 text-sm">
             <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
           </div>
@@ -213,7 +213,7 @@ const DataPipelineCanvasNew: React.FC = () => {
 
         {/* Debug mode panel */}
         {debuggedNodesList?.length > 0 && (
-          <div className="absolute top-2 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
+          <div className="fixed top-20 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -249,7 +249,7 @@ const DataPipelineCanvasNew: React.FC = () => {
         )}
 
         {/* Main Canvas */}
-        <div style={{ height: '75vh', width: '100%' }}>
+        <div className="flex-1 w-full h-full relative">
           <ComposableCanvas
             type="pipeline"
             nodeTypes={memoizedNodeTypes}
@@ -343,7 +343,7 @@ const DataPipelineCanvasNew: React.FC = () => {
 
         {/* Loading Overlay */}
         {isCanvasLoading && (
-          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
+          <div className="fixed inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
             <div className="flex flex-col items-center gap-2">
               <LoaderCircle size={40} />
               <span className="text-sm text-gray-600 font-medium">Processing...</span>

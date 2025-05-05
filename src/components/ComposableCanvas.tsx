@@ -20,6 +20,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useFlow } from '@/context/designers/FlowContext';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useSidebar } from '@/context/SidebarContext';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { cn } from '@/lib/utils';
@@ -100,6 +101,7 @@ export const ComposableCanvas = ({
   // Get contexts
   const flowContext = useFlow();
   const pipelineContext = usePipelineContext();
+  const { isRightAsideOpen } = useSidebar(); // Get sidebar context to check if right aside is open
 
   // State for nodes/edges/handlers, default to undefined
   let nodes: Node[] = [];
@@ -346,9 +348,18 @@ export const ComposableCanvas = ({
   const effectiveDefaultViewport = customDefaultViewport || defaultViewport;
   
   return (
-    <div className={cn(className, 'relative')}>
+    <div className={cn(
+      className, 
+      'relative',
+      isRightAsideOpen ? 'canvas-with-aside' : ''
+    )}>
       <ReactFlowProvider>
-        <div ref={reactFlowWrapper} className="absolute inset-0">
+        <div 
+          ref={reactFlowWrapper} 
+          className={cn(
+            "absolute inset-0",
+            isRightAsideOpen ? 'pr-2 transition-all duration-300' : ''
+          )}>
           <ReactFlow
             nodes={nodes}
             edges={edges}

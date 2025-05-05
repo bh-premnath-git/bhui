@@ -26,6 +26,9 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
         if (isChatCurrentlyOpen) {
             closeRightAside();
         } else {
+            // Add a delay to let the UI adjust layout properly
+            document.body.classList.add('right-aside-opening');
+            
             setRightAsideContent(
                 <ChatComponentToRender 
                   key={CHAT_UI_COMPONENT_KEY} 
@@ -34,6 +37,12 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                 'AI Chat',
                 'w-[520px]'
             );
+            
+            // Trigger a resize event to help ReactFlow adjust
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                document.body.classList.remove('right-aside-opening');
+            }, 50);
         }
     };
 

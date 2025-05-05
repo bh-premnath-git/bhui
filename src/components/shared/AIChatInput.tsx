@@ -23,7 +23,7 @@ export function AIChatInput({
     <div
       className="
         flex items-center w-full bg-white border border-gray-300 rounded-full
-        px-4 py-2 space-x-2 shadow-sm
+        px-3 py-1.5 space-x-2 shadow-sm
         focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500 transition
       "
     >
@@ -67,17 +67,18 @@ export function AIChatInput({
       {/* Send on the right */}
       <Button
         onClick={onSend}
+        variant="ghost"
         size="icon"
         disabled={disabled || !input.trim()}
         className={`
-          h-10 w-10 rounded-full transition
+          h-8 w-8 transition-colors duration-150
           ${disabled || !input.trim()
-            ? "bg-green-300 text-white opacity-60 cursor-not-allowed"
-            : "bg-green-600 text-white hover:bg-green-700"}
+            ? "text-gray-300 hover:text-gray-300 cursor-not-allowed"
+            : "text-green-600 hover:text-green-700"}
         `}
         aria-label="Send message"
       >
-        <Send className="h-5 w-5" />
+        <Send className="h-4 w-4" />
       </Button>
     </div>
   );

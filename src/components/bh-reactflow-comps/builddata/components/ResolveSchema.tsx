@@ -6,7 +6,6 @@ const pipelineSchema = {
   "name": "sample_pipeline",
   "description": "Sample pipeline abiding by the schemas defined",
   "version": "1.0",
-  "mode": "ENGINE",
   "parameters": [
     { "key": "landing_folder", "value": "landing"},
     { "key": "output_dataset", "value": "bh_lab_1" },

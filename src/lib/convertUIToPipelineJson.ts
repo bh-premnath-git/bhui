@@ -324,7 +324,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             name: pipelineDtl?.pipeline_name || "sample_pipeline",
             description: pipelineDtl?.pipeline_description || " ",
             version: "1.0.0",
-            mode: "DEBUG",
+            // mode: "DEBUG",
             parameters: [],
             sources,
             targets,

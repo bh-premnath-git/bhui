@@ -64,6 +64,7 @@ const DataPipelineCanvasNew: React.FC = () => {
   
   // Add resize event handler to force canvas resizing when right aside opens/closes
   useEffect(() => {
+    
     const handleResize = () => {
       // Force a resize event to make ReactFlow recalculate dimensions
       window.dispatchEvent(new Event('resize'));
@@ -114,7 +115,9 @@ const DataPipelineCanvasNew: React.FC = () => {
       clearTimeout(thirdTimer);
     };
   }, [isRightAsideOpen, handleCenter, nodes.length]);
-
+useEffect(() => {
+  fetchPipelineDetails()
+},[]);
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 

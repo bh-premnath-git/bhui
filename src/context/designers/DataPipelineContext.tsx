@@ -464,7 +464,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [onNodesChange, dispatch, sanitizeNode]);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setSanitizedNodes(prevNodes =>
+        setNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -569,7 +569,7 @@ const makePipeline = async (result: any,isModify=true) => {
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log(sourceData)
-        setSanitizedNodes(prevNodes =>
+        setNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -604,7 +604,7 @@ const makePipeline = async (result: any,isModify=true) => {
             }));
 
             // Update node data with transformation data
-            setSanitizedNodes((nds) =>
+            setNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
@@ -629,7 +629,7 @@ const makePipeline = async (result: any,isModify=true) => {
             );
         }
         setIsFormOpen(false);
-    }, [selectedSchema, setSanitizedNodes]);
+    }, [selectedSchema, setNodes]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);
@@ -1082,7 +1082,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
         });
   
-        setSanitizedNodes(prevNodes => [...prevNodes, ...newNodes]);
+        setNodes(prevNodes => [...prevNodes, ...newNodes]);
         setEdges(prevEdges => [...prevEdges, ...newEdges]);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
@@ -1290,7 +1290,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
         };
   
-        setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
+        setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {

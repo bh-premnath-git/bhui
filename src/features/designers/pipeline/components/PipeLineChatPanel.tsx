@@ -6,6 +6,7 @@ import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+import { usePipeLineChat } from "@/context/designers/PipeLineChatContext";
 import { useReactFlow, Node, Edge } from "reactflow";
 import { apiService } from '@/lib/api/api-service';
 import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
@@ -18,6 +19,7 @@ import CreateFormFormik from "./form-sections/CreateForm";
 import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
+import { motion } from 'framer-motion';
 
 
 interface SuggestionButtonProps {
@@ -59,30 +61,14 @@ export const PipeLineChatPanel = ({
   onClose,
   imageSrc = "/assets/ai/ai.svg",
   onPipelineCreated,
-  className = ""
+  className = "",
+  color = '#009459' 
 }: any) => {
-  const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
-  const [input, setInput] = useState("");
+  // Use the PipeLineChat context
+ 
   const reactFlowInstance = useReactFlow();
   const location = useLocation();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { setPipelineJson: originalSetPipelineJson, pipelineJson, makePipeline } = usePipelineContext();
-  
-  // Create a custom setPipelineJson function that also calls makePipeline
-  const setPipelineJson = useCallback((newPipelineJson: any) => {
-    // First update the pipeline JSON using the original function
-    originalSetPipelineJson(newPipelineJson);
-    
-    // Then call makePipeline with the new pipeline JSON
-    if (newPipelineJson !== null && newPipelineJson !== undefined) {
-      console.log(newPipelineJson, "pipelineJson updated and calling makePipeline");
-      makePipeline({ pipeline_definition: newPipelineJson });
-    }
-  }, [originalSetPipelineJson, makePipeline]);
-  
-  // Get nodes and edges for the CreateForm component
-  const nodes = reactFlowInstance.getNodes();
-  const edges = reactFlowInstance.getEdges();
+  const { makePipeline } = usePipelineContext();
   
   // State declarations
   const [isNewChat, setIsNewChat] = useState(false);
@@ -169,6 +155,22 @@ export const PipeLineChatPanel = ({
   // Add useTransition hook for smoother UI updates
   const [isPending, startTransition] = useTransition();
 const dispatch = useAppDispatch();
+const {
+  messages,
+  addUserMessage,
+  addAssistantMessage,
+  clearMessages,
+  updateLastAssistantMessage,
+  input,
+  setInput,
+  isProcessing,
+  pipelineJson,
+  formInitialValues,
+  nodes,
+  edges,
+  setPipelineJson
+} = usePipeLineChat();
+
   // Fetch connection config list only once when component mounts
   useEffect(() => {
     dispatch(getConnectionConfigList({}));
@@ -218,6 +220,55 @@ const dispatch = useAppDispatch();
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+  
+  // Show writer form when the message contains "Please configure your output target below"
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (
+        lastMessage.role === 'assistant' && 
+        lastMessage.content.includes('Please configure your output target below') &&
+        transformationSubStep === 'target_form'
+      ) {
+        setShowWriterForm(true);
+      }
+    }
+  }, [messages, transformationSubStep]);
+  
+  // Initialize writer form when transformationSubStep changes to 'target_form'
+  useEffect(() => {
+    if (transformationSubStep === 'target_form') {
+      // Create default initial values if none exist
+      if (!writerFormInitialValues) {
+        const defaultValues = {
+          name: targetName || 'write_output',
+          target: {
+            target_name: targetName || 'output_data',
+            target_type: targetConfig.type || 'File',
+            load_mode: 'append',
+            connection: {
+              connection_type: targetConfig.connectionType || 'Local',
+              file_path_prefix: targetConfig.filePath || 'examples/'
+            },
+            file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
+          },
+          file_type: targetConfig.fileFormat || 'CSV',
+          write_options: {
+            header: true,
+            sep: ',',
+            createDisposition: 'CREATE_IF_NEEDED',
+            writeMethod: 'APPEND'
+          }
+        };
+        
+        console.log("Initializing writer form values for target_form:", defaultValues);
+        setWriterFormInitialValues(defaultValues);
+      }
+      
+      // Ensure the form is shown
+      setShowWriterForm(true);
+    }
+  }, [transformationSubStep, targetName, targetConfig, writerFormInitialValues]);
 
   // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
 
@@ -313,7 +364,6 @@ const dispatch = useAppDispatch();
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    setIsProcessing(true);
     try {
       // Add user message to chat
       addUserMessage(input);
@@ -346,7 +396,6 @@ const dispatch = useAppDispatch();
       console.error("Error in chat:", error);
       updateLastAssistantMessage("An error occurred. Please try again.");
     } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -404,7 +453,6 @@ const dispatch = useAppDispatch();
 
     // Search for data sources
     try {
-      setIsProcessing(true);
       const response: any = await apiService.get({
         portNumber: CATALOG_API_PORT,
         url: `/data_source/list/`,
@@ -465,7 +513,6 @@ const dispatch = useAppDispatch();
       console.error("Error searching for data sources:", error);
       addAssistantMessage("I encountered an error while searching for data sources. Please try again with a different search term.");
     } finally {
-      setIsProcessing(false);
     }
   };
   
@@ -820,11 +867,36 @@ const dispatch = useAppDispatch();
           }
           
         } else if (transformationSubStep === 'target_dependency') {
-          // Update the writer form with the selected dependency
-          setWriterFormInitialValues(prev => ({
-            ...prev,
+          // Update the writer form with the selected dependency and proper initial values
+          const initialValues = {
+            name: targetName || 'write_output',
+            target: {
+              target_name: targetName || 'output_data',
+              target_type: targetConfig.type || 'File',
+              load_mode: 'append',
+              connection: {
+                connection_type: targetConfig.connectionType || 'Local',
+                file_path_prefix: targetConfig.filePath || 'examples/'
+              },
+              file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
+            },
+            file_type: targetConfig.fileFormat || 'CSV',
+            write_options: {
+              header: true,
+              sep: ',',
+              createDisposition: 'CREATE_IF_NEEDED',
+              writeMethod: 'APPEND'
+            },
             dependent_on: [dependency]
-          }));
+          };
+          
+          console.log("Setting writer form initial values:", initialValues);
+          setWriterFormInitialValues(initialValues);
+          
+          // Also update the form initial values in the context
+          if (formInitialValues) {
+            formInitialValues.writer = initialValues;
+          }
           
           // Also update the target transformation in the selected sources
           // This ensures the generatePipelineTemplate function will use the correct dependencies
@@ -844,6 +916,14 @@ const dispatch = useAppDispatch();
           // Show the writer form
           setTransformationSubStep('target_form');
           setShowWriterForm(true);
+          
+          // Update the pipeline template with the dependency selection
+          setTimeout(() => {
+            const updatedTemplate = generatePipelineTemplate();
+            setPipelineJson(updatedTemplate);
+            console.log("Pipeline template updated after target dependency selection:", updatedTemplate);
+          }, 0);
+          
           addAssistantMessage(`Please configure your output target below:`);
         }
         
@@ -1626,7 +1706,6 @@ const dispatch = useAppDispatch();
     if (userInput.includes('yes') || userInput.includes('create') || userInput.includes('confirm')) {
       // User confirmed, create the pipeline
       try {
-        setIsProcessing(true);
 
         // Get the final pipeline template
         const finalTemplate = generatePipelineTemplate();
@@ -1671,7 +1750,6 @@ const dispatch = useAppDispatch();
         console.error("Error creating pipeline:", error);
         addAssistantMessage("I encountered an error while creating your pipeline. Please try again later.");
       } finally {
-        setIsProcessing(false);
       }
     } else {
       // User wants to edit, go back to the beginning
@@ -1854,8 +1932,11 @@ const dispatch = useAppDispatch();
       // The pipeline JSON is already updated with the correct target configuration
     }
     
-    // Hide the form
+    // Hide the form and reset the transformation sub-step if needed
     setShowWriterForm(false);
+    if (transformationSubStep === 'target_form') {
+      setTransformationSubStep('select');
+    }
   };
 
   // Handle reader form submission
@@ -2245,10 +2326,29 @@ const dispatch = useAppDispatch();
                     }`}
                 >
                   {message.role === "assistant" && (
-                    <Avatar className="w-10 h-10 mr-0 flex-shrink-0 mt-1 justify-center bg-gradient-to-br from-primary/20 to-blue-300/30 border border-slate-100 shadow-sm">
-                      <AvatarImage src={imageSrc} className="object-contain object-center h-full w-full p-2 drop-shadow-sm" />
-                      <AvatarFallback>AI</AvatarFallback>
-                    </Avatar>
+                    <motion.div
+                                className="relative inline-flex items-center justify-center"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <motion.button
+                                    className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+                                    style={{ backgroundColor: color }}
+                                    whileHover={{ scale: 1.05, opacity: 0.9 }}
+                                    whileTap={{ scale: 0.9 }}
+                                >
+                                    
+                                        <motion.img
+                                            src={imageSrc}
+                                            alt="ai"
+                                            className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+                                            initial={{ rotate: -45 }}
+                                            animate={{ rotate: -40 }}
+                                            transition={{ type: 'spring', stiffness: 150 }}
+                                        />
+                                </motion.button>
+                            </motion.div>
                   )}
                   <div
                     className={`flex flex-col ${message.role === "user" ? "items-end" : "max-w-[85%]"
@@ -2397,24 +2497,30 @@ const dispatch = useAppDispatch();
                             </div>
                           )}
 
-                          {showWriterForm && (
+                          {(showWriterForm || transformationSubStep === 'target_form') && (
                             <div className="mt-4 rounded-lg bg-white">
                               <TargetPopUp
-                                isOpen={false} // Use inline mode
-                                onClose={() => setShowWriterForm(false)}
-                                initialData={writerFormInitialValues}
+                                isOpen={false} // Use inline mode with Card component
+                                onClose={() => {
+                                  setShowWriterForm(false);
+                                  if (transformationSubStep === 'target_form') {
+                                    setTransformationSubStep('select');
+                                  }
+                                }}
+                                initialData={writerFormInitialValues || formInitialValues.writer}
                                 onSourceUpdate={handleTargetUpdate}
                                 nodeId={`target_${targetName || 'output'}`}
                                 source={{
                                   title: targetName || 'output_data',
                                   source: {
                                     name: targetName || 'output_data',
-                                    target_type: targetConfig.type,
-                                    file_type: targetConfig.fileFormat,
+                                    target_type: targetConfig.type || 'File',
+                                    file_type: targetConfig.fileFormat || 'CSV',
                                     load_mode: targetConfig.customConfig?.loadMode || 'append',
+                                    file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`,
                                     connection: {
-                                      connection_type: targetConfig.connectionType,
-                                      file_path_prefix: targetConfig.filePath
+                                      connection_type: targetConfig.connectionType || 'Local',
+                                      file_path_prefix: targetConfig.filePath || 'examples/'
                                     }
                                   }
                                 }}

@@ -4,15 +4,18 @@ import { Label } from "../ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import targetSchema from "@/components/bh-reactflow-comps/builddata/json/Target.json";
 import writerSchema from "@/components/bh-reactflow-comps/builddata/json/Writer.json";
 import csvOptionsSchema from "@/components/bh-reactflow-comps/builddata/json/CSVOptions.json";
+import connectionSchema from "@/components/bh-reactflow-comps/builddata/json/Connection.json";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 const schemaReferences: Record<string, any> = {
     "schemas/Target.json": targetSchema,
     "transformations/writers/CSVOptions.json": csvOptionsSchema,
+    "Connection.json": connectionSchema,
 };
 
 interface FormSchema {
@@ -28,7 +31,8 @@ interface WriterSchema extends FormSchema {
         file_type?: { type: string; enum: string[]; };
         write_options?: {
             type: string;
-            properties: Record<string, any>;
+            items?: { $ref: string; };
+            properties?: Record<string, any>; // Added for compatibility with our runtime modifications
         };
         [key: string]: any; // Allow additional properties
     };
@@ -533,8 +537,121 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         });
     };
 
-    if (!isOpen) return null;
+    // Check if we should render the component
+    if (isOpen === false) {
+        // Inline mode - render as a Card
+        return (
+            <Card className="w-full shadow-md border border-gray-200 my-2">
+                <CardContent className="p-6">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                        <div className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                <span className="text-white text-sm font-medium">T</span>
+                            </div>
+                            <h2 className="text-lg font-medium text-gray-800">
+                                Target Configuration
+                            </h2>
+                        </div>
+                        {/* <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onClose}
+                            className="rounded-full h-7 w-7 hover:bg-gray-100"
+                        >
+                            <X className="h-4 w-4 text-gray-400" />
+                        </Button> */}
+                    </div>
 
+                    {/* Content */}
+                    <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
+                        {/* Basic Info Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
+                                <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                {renderField('name', currentSchema.properties.name)}
+                                {renderField('target_name', targetSchema.properties.target_name, ['target'])}
+                            </div>
+                        </div>
+
+                        {/* Target Config Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
+                                <h3 className="text-sm font-medium text-gray-700">Target Configuration</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                    {renderField('target_type', targetSchema.properties.target_type, ['target'])}
+                                    {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
+                                </div>
+                                
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    {renderField('connection', targetSchema.properties.connection, ['target'])}
+                                </div>
+
+                                {formData.target?.load_mode === 'merge' && (
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        {renderField('merge_keys', targetSchema.properties.merge_keys, ['target'])}
+                                    </div>
+                                )}
+
+                                {formData.target?.target_type === 'File' && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                            {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
+                                            {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
+                                        </div>
+                                        
+                                        {formData.file_type === 'CSV' && (
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
+                                                        <div key={key}>
+                                                            {renderField(key, schema, ['write_options'])}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 bg-white">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
+                        >
+                            Save Configuration
+                        </Button>
+                    </div>
+                </form>
+                </CardContent>
+            </Card>
+        );
+    } else if (!isOpen) {
+        // Not open and not inline mode
+        return null;
+    }
+
+    // Dialog mode
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-hidden flex flex-col">

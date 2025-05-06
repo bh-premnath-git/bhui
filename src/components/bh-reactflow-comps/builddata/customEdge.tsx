@@ -21,6 +21,7 @@ const MetricsDrawerWrapper: React.FC<{
     metricsData: any[] | null;
     isLoading: boolean;
 }> = ({ metricsData }) => {
+    console.log(metricsData, "metricsData");
     return (
         <div className="w-full h-full">
             <MetricsDrawerContent
@@ -77,7 +78,6 @@ export const CustomEdge = memo(({
     }), [pipelineDtl?.pipeline_name, source, getNode, isShowingInDrawer, isBottomDrawerOpen]);
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
-    
     const sourceNode = getNode(source);
     
     const rowCount = transformationCounts.find(
@@ -150,7 +150,7 @@ export const CustomEdge = memo(({
                 setIsShowingInDrawer(false);
             }
         };
-    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer]);
+    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer,metricsData]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();

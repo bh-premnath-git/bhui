@@ -36,7 +36,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   title, 
   children, 
   className,
-  defaultHeight = 130,
+  defaultHeight = 110,
   onSaveHeight
 }) => {
   const [height, setHeight] = useState(defaultHeight);
@@ -75,19 +75,44 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
   // Load saved dimensions on mount
   React.useEffect(() => {
     const loadDimensions = () => {
+      // First check if there's an optimal height calculated for the grid
+      const optimalHeight = localStorage.getItem('optimal-chart-height');
+      
+      // Then check for individual chart settings
       const savedDimensions = localStorage.getItem(`chart-${title}-dimensions`);
+      
       if (savedDimensions) {
         const { height: savedHeight } = JSON.parse(savedDimensions);
         if (savedHeight) {
           // Use a reasonable maximum height
-          const maxHeight = 600;
+          const maxHeight = 400;
           setHeight(Math.min(savedHeight, maxHeight));
         }
+      } else if (optimalHeight) {
+        // If no saved dimensions for this specific chart but we have optimal height
+        // Use the calculated optimal height
+        setHeight(parseInt(optimalHeight, 10));
       }
     };
 
     // Load initial dimensions
     loadDimensions();
+    
+    // Also listen for storage events to update when optimal height changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'optimal-chart-height') {
+        const optimalHeight = localStorage.getItem('optimal-chart-height');
+        if (optimalHeight) {
+          setHeight(parseInt(optimalHeight, 10));
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [title]);
   
   // Handle download button
@@ -134,8 +159,8 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
       const deltaY = e.clientY - startYRef.current;
       
       // Use fixed min and max height constraints
-      const minHeight = 100;
-      const maxHeight = 600;
+      const minHeight = 80;
+      const maxHeight = 400;
       
       // Allow resizing within these constraints
       const newHeight = Math.min(

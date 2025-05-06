@@ -17,7 +17,7 @@ const MainContentInternal = () => {
       <div className="flex-shrink-0"> 
         <Header />
       </div>
-      <main className="flex-1 p-2 mt-10 overflow-auto"> 
+      <main className="flex-1 p-2 mt-10 overflow-auto h-[calc(100vh-64px)]"> 
         <Outlet />
       </main>
     </div>

@@ -1,0 +1,143 @@
+import React, { useState } from 'react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { useChatMessages } from '@/hooks/useChatMessages'
+import { AIChatInput } from '@/components/shared/AIChatInput'
+import { cn } from '@/lib/utils'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView'
+import { ChatVisualizeView } from '@/components/shared/chat-components/ChatVisualizeView'
+import { ChatChartView } from '@/components/shared/chat-components/ChatChartView'
+
+interface GenericChatUIProps {
+  imageSrc?: string
+}
+
+export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
+  const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage, clearMessages } = useChatMessages()
+  const [mockResponse, setMockResponse] = useState<{
+    sql: string
+    pipelineData: { label: string; value: number }[]
+    projectStatusData: { label: string; value: number }[]
+  } | null>(null)
+  const [activeTab, setActiveTab] = useState<'sql' | 'visualize' | 'chart'>('visualize')
+  const [chartConfig, setChartConfig] = useState<{ category: 'pipelineUsage' | 'projectStatusDuration'; seriesType: 'single' | 'multi'; axisType: 'vertical' | 'horizontal' }>({ category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' })
+  const [input, setInput] = useState('')
+
+  const handleSend = () => {
+    if (!input.trim()) return
+    addUserMessage(input)
+    addAssistantMessage('Processing...')
+    setInput('')
+    // Simulate AI response with mock datasets
+    setTimeout(() => {
+      const sql = 'SELECT pipeline_name, usage_count FROM pipelines;'
+      const pipelineData = [
+        { label: 'Pipeline A', value: 120 },
+        { label: 'Pipeline B', value: 85 },
+        { label: 'Pipeline C', value: 60 },
+      ]
+      const projectStatusData = [
+        { label: 'Completed', value: 15 },
+        { label: 'Running', value: 7 },
+        { label: 'Failed', value: 3 },
+      ]
+      updateLastAssistantMessage('Here are your mock analytics results:')
+      setMockResponse({ sql, pipelineData, projectStatusData })
+    }, 500)
+  }
+
+  return (
+    <div className="flex flex-col h-full p-4">
+      {/* Message Area */}
+      <div className="flex-1 mt-4 overflow-hidden">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center flex-grow justify-center h-full">
+            {imageSrc && (
+              <img src={imageSrc} alt="AI" className="w-4 h-6 transform -rotate-[40deg]" />
+            )}
+            <p className="text-sm text-gray-600 mt-2">How can I assist you?</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-full pr-4">
+            <div className="space-y-6">
+              {messages.map((message, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex items-start gap-3',
+                    message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
+                  )}
+                >
+                  {message.role === 'assistant' ? (
+                    <Avatar className="h-8 w-8 flex items-center justify-center">
+                      <AvatarImage
+                        src={imageSrc}
+                        className="w-3.5 h-5 transform -rotate-[40deg]"
+                        style={{ objectFit: 'contain' }}
+                      />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-[#009f59] text-white">B</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      'rounded-lg px-4 py-2 max-w-[80%] relative whitespace-pre-wrap break-words',
+                      message.role === 'assistant'
+                        ? 'bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100'
+                        : 'bg-blue-100 text-blue-900 before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100'
+                    )}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+              {/* Mock response tabs */}
+              {mockResponse && (
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(value: string) => setActiveTab(value as 'sql' | 'visualize' | 'chart')}
+                  className="mt-6"
+                >
+                  <TabsList className="flex space-x-2 border-b">
+                    <TabsTrigger value="visualize" className="px-4 py-2">Visualize</TabsTrigger>
+                    <TabsTrigger value="chart" className="px-4 py-2">Chart</TabsTrigger>
+                    <TabsTrigger value="sql" className="px-4 py-2">SQL</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="visualize" className="pt-4">
+                    <ChatVisualizeView config={chartConfig} onConfigChange={setChartConfig} />
+                  </TabsContent>
+                  <TabsContent value="chart" className="pt-4">
+                    <ChatChartView
+                      data={
+                        chartConfig.category === 'pipelineUsage'
+                          ? mockResponse.pipelineData
+                          : mockResponse.projectStatusData
+                      }
+                      config={chartConfig}
+                    />
+                  </TabsContent>
+                  <TabsContent value="sql" className="pt-4">
+                    <ChatSQLView sql={mockResponse.sql} />
+                  </TabsContent>
+                </Tabs>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="flex gap-2 mt-4 flex-shrink-0">
+        <AIChatInput
+          input={input}
+          onChange={setInput}
+          onSend={handleSend}
+        />
+      </div>
+    </div>
+  )
+} 

@@ -13,7 +13,6 @@ import { LoaderCircle } from 'lucide-react';
 import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
-import { PipeLineChatPanel } from './pipeline/components/PipeLineChatPanel';
 
 const BuildPlayGround: React.FC = () => {
     const { conversionLogs,

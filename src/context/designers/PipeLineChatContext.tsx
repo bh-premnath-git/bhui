@@ -61,6 +61,10 @@ interface PipeLineChatContextProps {
   schemaTransformationSchema: any;
   filterName: string;
   schemaName: string;
+  showFilterForm: boolean;
+  showSchemaForm: boolean;
+  showReaderForm: boolean;
+  showWriterForm: boolean;
   isPending: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
@@ -113,6 +117,10 @@ interface PipeLineChatContextProps {
   setSchemaTransformationSchema: (schema: any) => void;
   setFilterName: (name: string) => void;
   setSchemaName: (name: string) => void;
+  setShowFilterForm: (show: boolean) => void;
+  setShowSchemaForm: (show: boolean) => void;
+  setShowReaderForm: (show: boolean) => void;
+  setShowWriterForm: (show: boolean) => void;
   startTransition: (callback: () => void) => void;
   handleSend: () => Promise<void>;
   resetPipelineCreationState: () => void;
@@ -259,6 +267,12 @@ export const PipeLineChatProvider = ({
   const [filterName, setFilterName] = useState<string>('');
   const [schemaName, setSchemaName] = useState<string>('');
   
+  // Form visibility states
+  const [showFilterForm, setShowFilterForm] = useState(false);
+  const [showSchemaForm, setShowSchemaForm] = useState(false);
+  const [showReaderForm, setShowReaderForm] = useState(false);
+  const [showWriterForm, setShowWriterForm] = useState(false);
+  
   // Add useTransition hook for smoother UI updates
   const [isPending, startTransition] = useTransition();
 
@@ -365,6 +379,13 @@ export const PipeLineChatProvider = ({
       reader: {},
       writer: {}
     });
+    
+    // Reset form visibility states
+    setShowFilterForm(false);
+    setShowSchemaForm(false);
+    setShowReaderForm(false);
+    setShowWriterForm(false);
+    
     setCurrentSourceData(null);
     
     // Reset source selection state
@@ -2354,6 +2375,10 @@ export const PipeLineChatProvider = ({
     schemaTransformationSchema,
     filterName,
     schemaName,
+    showFilterForm,
+    showSchemaForm,
+    showReaderForm,
+    showWriterForm,
     isPending,
     messagesEndRef,
     nodes,
@@ -2390,6 +2415,10 @@ export const PipeLineChatProvider = ({
     setSchemaTransformationSchema,
     setFilterName,
     setSchemaName,
+    setShowFilterForm,
+    setShowSchemaForm,
+    setShowReaderForm,
+    setShowWriterForm,
     startTransition,
     handleSend,
     resetPipelineCreationState,

@@ -23,7 +23,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                                 (rightAsideContent as React.ReactElement).key === CHAT_UI_COMPONENT_KEY;
 
     const handleButtonClick = () => {
-        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : PipeLineChatPanel;
+        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : PipeLineChatSlidingPortal;
 
         if (isChatCurrentlyOpen) {
             closeRightAside();

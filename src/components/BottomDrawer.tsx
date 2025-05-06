@@ -15,7 +15,7 @@ interface BottomDrawerProps {
 export function BottomDrawer({ 
   title = 'Console', 
   children, 
-  height = 'h-80', // Default open height
+  height = 'h-[520px]', // Default open height 
   className,
   showMaximize = true
 }: BottomDrawerProps) {
@@ -36,7 +36,7 @@ export function BottomDrawer({
       className={cn(
         "bg-background/95 backdrop-blur-sm", // Keep background
         "border-t shadow-sm", // Keep border/shadow
-        "overflow-hidden", // Prevent content spilling out before internal scroll
+        "overflow-hidden pl-[4%]", // Prevent content spilling out before internal scroll
         heightClass, // Apply dynamic height
         className // Allow additional classes (like flex-shrink-0 from parent)
       )}

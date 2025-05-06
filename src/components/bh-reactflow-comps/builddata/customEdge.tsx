@@ -1,13 +1,14 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import { useReactFlow } from "reactflow";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
-import PipeLinePopUp from "./pipeLinePopUp";
 import { HiChartBar } from "react-icons/hi";
 import { useDispatch } from "react-redux";
 import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { AppDispatch } from '@/store';
 import { Loader } from 'lucide-react';
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+import { useSidebar } from "@/context/SidebarContext";
+import MetricsDrawerContent from "./MetricsDrawerContent";
 
 const edgeStyles = {
     stroke: '#b1b1b7',
@@ -15,25 +16,18 @@ const edgeStyles = {
     transition: 'stroke-width 0.2s, stroke 0.2s',
 };
 
-interface EdgeMetricsDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
+// Wrapper component for the BottomDrawer content
+const MetricsDrawerWrapper: React.FC<{
     metricsData: any[] | null;
     isLoading: boolean;
-}
-
-const EdgeMetricsDialog: React.FC<EdgeMetricsDialogProps> = ({
-    isOpen,
-    onClose,
-    metricsData,
-}) => {
+}> = ({ metricsData }) => {
     return (
-        <PipeLinePopUp
-            open={isOpen}
-            handleClose={onClose}
-            transformData={metricsData?.[0]?.rows ?? []}
-            pipelineName={metricsData?.[0]?.name??''}
-        />
+        <div className="w-full h-full">
+            <MetricsDrawerContent
+                transformData={metricsData?.[0]?.rows ?? []}
+                pipelineName={metricsData?.[0]?.name ?? ''}
+            />
+        </div>
     );
 };
 
@@ -65,27 +59,31 @@ export const CustomEdge = memo(({
     pipelineDtl
 }: CustomEdgeProps) => {
     const [isHovered, setIsHovered] = useState(false);
-    const [isMetricsOpen, setIsMetricsOpen] = useState(false);
-    const [isEdgeLoading, setIsEdgeLoading] = useState(false);
+    const [isEdgeLoading, setIsEdgeLoading] = useState(false); 
 
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
+    const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
+    const { debuggedNodesList } = usePipelineContext();
+    
+    // Track if our metrics are currently being shown in the drawer
+    const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
     
     const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
         transformationName: getNode(source)?.data.title,
-        // Only enable the query when the metrics dialog is open
-        enabled: isMetricsOpen
-    }), [pipelineDtl?.pipeline_name, source, getNode, isMetricsOpen]);
+        // Only enable the query when our metrics are being shown in the drawer
+        enabled: isShowingInDrawer && isBottomDrawerOpen
+    }), [pipelineDtl?.pipeline_name, source, getNode, isShowingInDrawer, isBottomDrawerOpen]);
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
-const {debuggedNodesList} = usePipelineContext()
+    
     const sourceNode = getNode(source);
     
     const rowCount = transformationCounts.find(
         (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
     )?.rowCount;
-// console.log(rowCount,"rowCount")
+
     const edgeCenter = useMemo(() => ({
         x: (sourceX + targetX) / 2,
         y: (sourceY + targetY) / 2,
@@ -99,22 +97,60 @@ const {debuggedNodesList} = usePipelineContext()
                   ${targetX} ${targetY}`;
     }, [sourceX, sourceY, targetX, targetY]);
 
+    // Create drawer content with the metrics data
+    const createDrawerContent = () => (
+        <MetricsDrawerWrapper 
+            metricsData={metricsData} 
+            isLoading={isMetricsLoading} 
+        />
+    );
+
     const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
+        e.preventDefault();
+        
         // Only proceed if rowCount exists (meaning the node is in debug list)
         if (rowCount) {
-            setIsMetricsOpen(true);
             setIsEdgeLoading(true);
+            setIsShowingInDrawer(true);
+            
             try {
+                // First fetch the data
                 await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title
                 }));
+                
+                // Then set the drawer content and open it
+                const title = `${sourceNode?.data.title || 'Transformation'} Metrics`;
+                
+                // Use setTimeout to ensure this runs after the current event loop
+                setTimeout(() => {
+                    setBottomDrawerContent(createDrawerContent(), title);
+                }, 0);
             } finally {
                 setIsEdgeLoading(false);
             }
         }
     };
+
+    // Effect to handle drawer state changes
+    useEffect(() => {
+        // If we're showing our content in the drawer and the drawer is closed externally,
+        // update our local state
+        if (isShowingInDrawer && !isBottomDrawerOpen) {
+            setIsShowingInDrawer(false);
+        }
+        
+        // Clean up when component unmounts
+        return () => {
+            // If we're showing our content in the drawer, close it when unmounting
+            if (isShowingInDrawer) {
+                closeBottomDrawer();
+                setIsShowingInDrawer(false);
+            }
+        };
+    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -157,14 +193,6 @@ const {debuggedNodesList} = usePipelineContext()
                 isLoading={isEdgeLoading}
                 debuggedNodesList={debuggedNodesList}
             />
-
-            {/* Metrics Dialog */}
-            <EdgeMetricsDialog
-                isOpen={isMetricsOpen}
-                onClose={() => setIsMetricsOpen(false)}
-                metricsData={metricsData}
-                isLoading={isMetricsLoading}
-            />
         </>
     );
 });
@@ -199,8 +227,9 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
         style={{ zIndex: 1000, pointerEvents: 'all' }}
         onMouseEnter={() => onHoverChange(true)}
         onMouseLeave={() => onHoverChange(false)}
+        onClick={e => e.stopPropagation()}
     >
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full" onClick={e => e.stopPropagation()}>
             <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} debuggedNodesList={debuggedNodesList} />
             <RemoveButton isHovered={isHovered} onClick={onRemove} />
         </div>
@@ -221,24 +250,25 @@ const MetricsButton: React.FC<MetricsButtonProps & { isLoading?: boolean }> = ({
     debuggedNodesList
 }) => {
     const handleMetricsClick = (e: React.MouseEvent) => {
-        // Only trigger onClick if rowCount exists (meaning debug list is not empty)
-        if (rowCount) {
-// console.log(debuggedNodesList,"debuggedNodesList")
-if(debuggedNodesList?.length>0){
-    onClick(e);
-
-}
+        // Prevent event propagation
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // Only trigger onClick if rowCount exists and debug list is not empty
+        if (rowCount && debuggedNodesList?.length > 0) {
+            onClick(e);
         }
     };
 
     return (
-        <div className="flex items-center">
+        <div className="flex items-center" onClick={e => e.stopPropagation()}>
             {rowCount && (
                 <div className="flex flex-col items-center ml-8">
                     <button
                         className="w-3 h-3"
                         onClick={handleMetricsClick}
                         disabled={isLoading}
+                        title="View Metrics in Bottom Drawer"
                     >
                         {isLoading ? (
                             <Loader size={12} className="animate-spin text-emerald-600" />

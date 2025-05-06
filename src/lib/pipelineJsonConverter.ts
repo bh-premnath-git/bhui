@@ -522,7 +522,6 @@ export const convertToOptimizedPipelineJson = (currentJson: any) => {
     name: currentJson.name || "pipeline",
     description: currentJson.description || "",
     version: currentJson.version || "1.0.0",
-    mode: currentJson.mode || "ENGINE",
     parameters: currentJson.parameters || [],
     connections: {},
     sources: {},

@@ -126,7 +126,6 @@ export interface PipelineTemplate {
   description: string;
   version: string;
   parameters: any[];
-  mode: string;
   connections: Record<string, any>;
   sources: Record<string, any>;
   targets: Record<string, any>;
@@ -143,7 +142,6 @@ export const createDefaultTemplate = (name: string, description: string): Pipeli
   description: description || "",
   version: "1.0",
   parameters: [],
-  mode: "DEBUG",
   connections: {},
   sources: {},
   targets: {},

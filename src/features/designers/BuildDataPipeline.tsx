@@ -10,7 +10,7 @@ import { usePipelineManagementService } from './pipeline/services/pipelineMgtSrv
 import { DeletePipelineDialog } from './pipeline/components/DeletePipelineDialog';
 import CreatePipelineDialog from './pipeline/components/CreatePipelineDialog';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import { getAllPipeline } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { getAllPipeline, setBuildPipeLineDtl } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { usePipeline } from './pipeline/hooks/usePipeline';
 import { useQueryClient } from '@tanstack/react-query';
@@ -36,6 +36,7 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
     setDebuggedNodesList([])
     setDebuggedNodes([])
     setPipeline_id(row.original.pipeline_id)
+    dispatch(setBuildPipeLineDtl(row.original))
     localStorage.setItem("pipeline_id",row.original.pipeline_id.toString())
     handleNavigation(ROUTES.DESIGNERS.BUILD_PLAYGROUND(row.original.pipeline_id.toString()))
   }

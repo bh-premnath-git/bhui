@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
+import { AIChatButton } from "@/components/shared/ai-chat-button";
 
 export const Header = () => {
   const { isExpanded } = useSidebar();
@@ -16,6 +17,8 @@ export const Header = () => {
     path.startsWith("/designers/flow-playground/");
   const isNotebookRoute = (path: string) =>
     path === "/data-catalog/notebook";
+  const isDataOpsHubRoute = (path: string) =>
+    path === "/dataops-hub";
 
   // Decide which header content to render
   const renderHeaderContent = () => {
@@ -24,6 +27,14 @@ export const Header = () => {
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
       return <PlaygroundHeader playGroundHeader="flow" />;
+    }
+    if (isDataOpsHubRoute(location.pathname)) {
+      return (
+        <>
+          <NavigationBreadcrumb />
+          <AIChatButton variant="dataops" />
+        </>
+      );
     }
     return <NavigationBreadcrumb />;
   };

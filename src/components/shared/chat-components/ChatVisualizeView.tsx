@@ -7,7 +7,7 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 
-export type ChartCategory = 'pipelineUsage' | 'projectStatusDuration'
+export type ChartCategory = 'pipelineUsage' | 'projectStatusDuration' | 'latency'
 export type SeriesType = 'single' | 'multi'
 export type AxisType = 'vertical' | 'horizontal'
 
@@ -36,6 +36,7 @@ export function ChatVisualizeView({ config, onConfigChange }: ChatVisualizeViewP
           <SelectContent>
             <SelectItem value="pipelineUsage">Pipeline Usage</SelectItem>
             <SelectItem value="projectStatusDuration">Project Status Duration</SelectItem>
+            <SelectItem value="latency">Latency Trend</SelectItem>
           </SelectContent>
         </Select>
       </div>

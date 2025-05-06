@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useChatMessages } from '@/hooks/useChatMessages'
@@ -19,9 +19,11 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
     sql: string
     pipelineData: { label: string; value: number }[]
     projectStatusData: { label: string; value: number }[]
+    latencyData: { name: string; avgLatency: number; p95Latency: number }[]
+    latencySql: string
   } | null>(null)
   const [activeTab, setActiveTab] = useState<'sql' | 'visualize' | 'chart'>('visualize')
-  const [chartConfig, setChartConfig] = useState<{ category: 'pipelineUsage' | 'projectStatusDuration'; seriesType: 'single' | 'multi'; axisType: 'vertical' | 'horizontal' }>({ category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' })
+  const [chartConfig, setChartConfig] = useState<{ category: 'pipelineUsage' | 'projectStatusDuration' | 'latency'; seriesType: 'single' | 'multi'; axisType: 'vertical' | 'horizontal' }>({ category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' })
   const [input, setInput] = useState('')
 
   const handleSend = () => {
@@ -42,8 +44,14 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
         { label: 'Running', value: 7 },
         { label: 'Failed', value: 3 },
       ]
-      updateLastAssistantMessage('Here are your mock analytics results:')
-      setMockResponse({ sql, pipelineData, projectStatusData })
+      const latencyData = [
+        { name: 'Service A', avgLatency: 120, p95Latency: 200 },
+        { name: 'Service B', avgLatency: 85, p95Latency: 150 },
+        { name: 'Service C', avgLatency: 60, p95Latency: 100 },
+      ]
+      const latencySql = 'SELECT service_name, avg_latency, p95_latency FROM service_metrics;'
+      updateLastAssistantMessage('Here are analytics results:')
+      setMockResponse({ sql, pipelineData, projectStatusData, latencyData, latencySql })
     }, 500)
   }
 
@@ -70,13 +78,13 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                   )}
                 >
                   {message.role === 'assistant' ? (
-                    <Avatar className="h-8 w-8 flex items-center justify-center">
+                    <Avatar className="h-8 w-8 flex items-center justify-center bg-[#009f59]">
                       <AvatarImage
                         src={imageSrc}
                         className="w-3.5 h-5 transform -rotate-[40deg]"
                         style={{ objectFit: 'contain' }}
                       />
-                      <AvatarFallback>AI</AvatarFallback>
+                      <AvatarFallback className="text-white">AI</AvatarFallback>
                     </Avatar>
                   ) : (
                     <Avatar className="h-8 w-8">
@@ -113,15 +121,17 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                   <TabsContent value="chart" className="pt-4">
                     <ChatChartView
                       data={
-                        chartConfig.category === 'pipelineUsage'
-                          ? mockResponse.pipelineData
-                          : mockResponse.projectStatusData
+                        chartConfig.category === 'latency'
+                          ? mockResponse.latencyData
+                          : chartConfig.category === 'pipelineUsage'
+                            ? mockResponse.pipelineData
+                            : mockResponse.projectStatusData
                       }
                       config={chartConfig}
                     />
                   </TabsContent>
                   <TabsContent value="sql" className="pt-4">
-                    <ChatSQLView sql={mockResponse.sql} />
+                    <ChatSQLView sql={chartConfig.category === 'latency' ? mockResponse.latencySql : mockResponse.sql} />
                   </TabsContent>
                 </Tabs>
               )}

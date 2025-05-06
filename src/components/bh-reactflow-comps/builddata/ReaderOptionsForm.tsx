@@ -71,7 +71,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     onSourceUpdate,
     nodeId
 }) => {
-    console.log(initialData, "initialData");
 
     const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<FormData>(initialData || {});
@@ -85,15 +84,17 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             const selectedConn = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
             );
-            console.log(selectedConn, "selectedConn");
-            console.log(initialData.source.connection.connection_config_id, "selectedConn");
-            console.log(initialData.source?.connection_config_id, "selectedConn");
-
+            
+            // Set source_name from data_src_name if it's not already set
+            const sourceName = initialData.source?.name || initialData.source?.data_src_name || initialData.data_src_name || '';
+            
             setFormData({
                 ...initialData,
+                reader_name: initialData.reader_name || sourceName,
                 file_type: initialData.source?.connection?.file_type?.toUpperCase() || initialData.file_type,
                 source: {
                     ...initialData.source,
+                    name: sourceName,
                     connection: {
                         ...initialData.source.connection,
                         connection_config_id: selectedConn?.id || initialData.source.connection.connection_config_id || initialData.source?.connection_config_id,
@@ -252,19 +253,24 @@ console.log(formData,"formData")
                 nodeId,
                 sourceData: {
                     data: {
-                        label: formData.reader_name || formData.source?.source_name,
+                        label: formData.reader_name || formData.source?.name || formData.source?.data_src_name,
                         source: {
                             data_src_id: formData.source?.data_src_id,
-                            data_src_name: formData.reader_name,
+                            data_src_name: formData.source?.name || formData.reader_name,
+                            source_name: formData.source?.name || formData.reader_name,
                             data_src_desc: formData.reader_name,
                             connection_type: formData.source?.connection?.connection_type,
-                            connection_config_id: formData.source?.connection_config_id,
+                            connection_config_id: formData.source?.connection?.connection_config_id,
                             file_name: formData.source?.file_name,
                             file_path_prefix: formData.source?.connection?.file_path_prefix,
                             file_type: formData?.file_type,
                             table_name: formData.source?.table_name,
                             type: formData.source?.type,
-                            connection_config:{custom_metadata: formData.source?.connection},
+                            connection_config:{
+                                custom_metadata: formData.source?.connection,
+                                connection_config_name: formData.source?.connection?.name
+                            },
+                            name: formData.source?.name || formData.reader_name
                         }
                     }
                 }

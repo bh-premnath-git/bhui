@@ -137,7 +137,7 @@ export interface PipelineTemplate {
 /**
  * Creates a default pipeline template
  */
-const createDefaultTemplate = (name: string, description: string): PipelineTemplate => ({
+export const createDefaultTemplate = (name: string, description: string): PipelineTemplate => ({
   $schema: "https://json-schema.org/draft-07/schema#",
   name: name || "New Pipeline",
   description: description || "",
@@ -153,7 +153,7 @@ const createDefaultTemplate = (name: string, description: string): PipelineTempl
 /**
  * Creates a connection object for a data source
  */
-const createConnectionForSource = (source: DataSource): Record<string, any> => {
+export const createConnectionForSource = (source: DataSource): Record<string, any> => {
   if (source.connection_config?.custom_metadata?.connection_type) {
     // Database connection
     return source.connection_config.custom_metadata;
@@ -170,7 +170,7 @@ const createConnectionForSource = (source: DataSource): Record<string, any> => {
 /**
  * Creates a source object for the pipeline template
  */
-const createSourceObject = (source: DataSource, connectionId: string, connection: any): Record<string, any> => {
+export const createSourceObject = (source: DataSource, connectionId: string, connection: any): Record<string, any> => {
   if (source.connection_config?.custom_metadata?.connection_type) {
     // Database source
     return {
@@ -196,7 +196,7 @@ const createSourceObject = (source: DataSource, connectionId: string, connection
 /**
  * Creates a reader transformation for a data source
  */
-const createReaderTransformation = (source: DataSource, sourceObj: any): any => ({
+export const createReaderTransformation = (source: DataSource, sourceObj: any): any => ({
   "name": `read_${source.data_src_name}`,
   "dependent_on": [],
   "transformation": "Reader",
@@ -531,6 +531,6 @@ export const buildPipelineTemplate = (
   
   // Add transformations to pipeline template
   pipelineTemplate.transformations = transformationsList;
-  
+  console.log(pipelineTemplate)
   return pipelineTemplate;
 };

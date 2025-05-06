@@ -23,7 +23,7 @@ export const PipeLineChatSlidingPortal: React.FC<PipeLineChatSlidingPortalProps>
         <PipeLineChatProvider onClose={onClose}>
           <PipeLineChatPanel 
             imageSrc={imageSrc}
-            onClose={onClose}
+            // onClose={onClose}
           />
         </PipeLineChatProvider>
       );

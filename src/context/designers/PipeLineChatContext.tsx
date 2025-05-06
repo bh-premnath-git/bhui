@@ -7,7 +7,7 @@ import { useAppDispatch } from "@/hooks/useRedux";
 import { apiService } from '@/lib/api/api-service';
 import { CATALOG_API_PORT } from "@/config/platformenv";
 import { DataSource } from "@/types/data-catalog/dataCatalog";
-import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
+import { buildPipelineTemplate, TransformationType } from "@/utils/pipelineTemplateUtils";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
 
@@ -634,25 +634,25 @@ export const PipeLineChatProvider = ({
         // Track what the user is selecting in this step
         if (userInput.includes('schema') || userInput.includes('2')) {
           currentSelection = 'schema';
-          if (!newTransformations.includes('schema')) {
-            newTransformations.push('schema');
+          if (!newTransformations.includes(TransformationType.SCHEMA)) {
+            newTransformations.push(TransformationType.SCHEMA);
           }
         }
 
         if (userInput.includes('filter') || userInput.includes('1')) {
           currentSelection = 'filter';
-          if (!newTransformations.includes('filter')) {
-            newTransformations.push('filter');
+          if (!newTransformations.includes(TransformationType.FILTER)) {
+            newTransformations.push(TransformationType.FILTER);
           }
         }
 
         if (userInput.includes('both') || userInput.includes('all')) {
           currentSelection = 'both';
-          if (!newTransformations.includes('schema')) {
-            newTransformations.push('schema');
+          if (!newTransformations.includes(TransformationType.SCHEMA)) {
+            newTransformations.push(TransformationType.SCHEMA);
           }
-          if (!newTransformations.includes('filter')) {
-            newTransformations.push('filter');
+          if (!newTransformations.includes(TransformationType.FILTER)) {
+            newTransformations.push(TransformationType.FILTER);
           }
         }
 
@@ -661,8 +661,8 @@ export const PipeLineChatProvider = ({
           userInput.includes('complete') || userInput.includes('finish')) {
           currentSelection = 'target';
           // Add target to transformations
-          if (!newTransformations.includes('target')) {
-            newTransformations.push('target');
+          if (!newTransformations.includes(TransformationType.TARGET)) {
+            newTransformations.push(TransformationType.TARGET);
           }
 
           // If the user already has a target name saved, use it
@@ -691,10 +691,10 @@ export const PipeLineChatProvider = ({
         }
         
         // Add existing transformation nodes
-        if (transformations.includes('schema')) {
+        if (transformations.includes(TransformationType.SCHEMA)) {
           existingNodes.push('schema_transformation');
         }
-        if (transformations.includes('filter')) {
+        if (transformations.includes(TransformationType.FILTER)) {
           existingNodes.push('filter_transformation');
         }
         
@@ -1424,10 +1424,20 @@ export const PipeLineChatProvider = ({
             ...source,
             filter_transformation: {
               ...(source.filter_transformation || {}),
+              name: 'filter_transformation',
+              transformation: 'Filter',
               dependent_on: [dependency]
             }
           };
         });
+      });
+      
+      // Make sure the transformation is in the transformations array
+      setTransformations(prev => {
+        if (!prev.includes(TransformationType.FILTER)) {
+          return [...prev, TransformationType.FILTER];
+        }
+        return prev;
       });
     } else if (transformationType === 'schema') {
       // Update the schema transformation in the selected sources
@@ -1446,6 +1456,14 @@ export const PipeLineChatProvider = ({
           };
         });
       });
+      
+      // Make sure the transformation is in the transformations array
+      setTransformations(prev => {
+        if (!prev.includes(TransformationType.SCHEMA)) {
+          return [...prev, TransformationType.SCHEMA];
+        }
+        return prev;
+      });
     } else if (transformationType === 'target') {
       // Update the target transformation in the selected sources
       setSelectedSources(prevSources => {
@@ -1459,6 +1477,14 @@ export const PipeLineChatProvider = ({
             }
           };
         });
+      });
+      
+      // Make sure the transformation is in the transformations array
+      setTransformations(prev => {
+        if (!prev.includes(TransformationType.TARGET)) {
+          return [...prev, TransformationType.TARGET];
+        }
+        return prev;
       });
     }
     
@@ -1511,7 +1537,7 @@ export const PipeLineChatProvider = ({
       setPipelineJson(newTemplate);
       console.log(`Pipeline template updated with ${transformationType} dependency:`, newTemplate);
     }, 0);
-  }, [pipelineJson, setPipelineJson, generatePipelineTemplate, targetConfig, setSelectedSources]);
+  }, [pipelineJson, setPipelineJson, generatePipelineTemplate, targetConfig, setSelectedSources, setTransformations, TransformationType]);
 
   const handleDependencySelection = useCallback((dependency: string) => {
     console.log("Dependency selected:", dependency);
@@ -1526,6 +1552,30 @@ export const PipeLineChatProvider = ({
       
       // Find the transformation type that needs to be updated
       const transformationToUpdate = transformationSubStep.split('_')[0]; // 'filter', 'schema', etc.
+      
+      // Make sure the transformation is in the transformations array with the correct enum value
+      if (transformationToUpdate === 'filter') {
+        setTransformations(prev => {
+          if (!prev.includes(TransformationType.FILTER)) {
+            return [...prev, TransformationType.FILTER];
+          }
+          return prev;
+        });
+      } else if (transformationToUpdate === 'schema') {
+        setTransformations(prev => {
+          if (!prev.includes(TransformationType.SCHEMA)) {
+            return [...prev, TransformationType.SCHEMA];
+          }
+          return prev;
+        });
+      } else if (transformationToUpdate === 'target') {
+        setTransformations(prev => {
+          if (!prev.includes(TransformationType.TARGET)) {
+            return [...prev, TransformationType.TARGET];
+          }
+          return prev;
+        });
+      }
       
       // Update the pipeline with the selected dependency
       updatePipelineWithDependency(dependency, transformationToUpdate);
@@ -1707,6 +1757,8 @@ export const PipeLineChatProvider = ({
           // Show the writer form
           setTransformationSubStep('target_form');
           setActiveForm('writer');
+          // Set showWriterForm to true to display the TargetPopUp component
+          setShowWriterForm(true);
           addAssistantMessage(`Please configure your output target below:`);
         }
         

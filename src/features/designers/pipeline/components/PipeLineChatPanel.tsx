@@ -4,26 +4,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { useFlow } from "@/context/designers/FlowContext";
-import {
-  clearFlowAgentConversation,
-  clearFormStates
-} from "@/store/slices/designer/flowSlice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
-import { useReactFlow } from "reactflow";
+import { useReactFlow, Node, Edge } from "reactflow";
 import { apiService } from '@/lib/api/api-service';
-import { toast } from 'sonner';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { CATALOG_API_PORT } from "@/config/platformenv";
-import SchemaFormLoader from "./SchemaFormLoader";
+import { ReaderOptionsForm } from "@/components/bh-reactflow-comps/builddata/ReaderOptionsForm";
+import TargetPopUp from "@/components/bh-reactflow-comps/TargetPopUp";
 import { DataSource } from "@/types/data-catalog/dataCatalog";
 import CreateFormFormik from "./form-sections/CreateForm";
 import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
@@ -57,10 +46,10 @@ const SuggestionButton = ({
       variant={variant}
       size="sm"
       onClick={handleClick}
-      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-200 ${className}`}
+      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${className}`}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
-      <span className="truncate">{text}</span>
+      <span className="truncate font-medium">{text}</span>
     </Button>
   );
 };
@@ -74,17 +63,46 @@ export const PipeLineChatPanel = ({
 }: any) => {
   const { messages, addUserMessage, addAssistantMessage, clearMessages, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState("");
-  const { selectedPipeline } = useAppSelector((state) => state.pipeline);
   const reactFlowInstance = useReactFlow();
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { setPipelineJson, setNodes, setEdges, setFormStates } = usePipelineContext();
+  const { setPipelineJson: originalSetPipelineJson, pipelineJson, makePipeline } = usePipelineContext();
+  
+  // Create a custom setPipelineJson function that also calls makePipeline
+  const setPipelineJson = useCallback((newPipelineJson: any) => {
+    // First update the pipeline JSON using the original function
+    originalSetPipelineJson(newPipelineJson);
+    
+    // Then call makePipeline with the new pipeline JSON
+    if (newPipelineJson !== null && newPipelineJson !== undefined) {
+      console.log(newPipelineJson, "pipelineJson updated and calling makePipeline");
+      makePipeline({ pipeline_definition: newPipelineJson });
+    }
+  }, [originalSetPipelineJson, makePipeline]);
+  
+  // Get nodes and edges for the CreateForm component
+  const nodes = reactFlowInstance.getNodes();
+  const edges = reactFlowInstance.getEdges();
+  
+  // State declarations
   const [isNewChat, setIsNewChat] = useState(false);
   const [currentSourceData, setCurrentSourceData] = useState<any>(null);
   const [foundSources, setFoundSources] = useState<DataSource[]>([]);
   const [awaitingSourceSelection, setAwaitingSourceSelection] = useState(false);
   const [sourceSuggestions, setSourceSuggestions] = useState<React.ReactNode[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Source columns for the CreateForm component
+  const sourceColumns = useMemo(() => {
+    // Extract columns from the current source data or return empty array
+    if (currentSourceData && currentSourceData.columns) {
+      return currentSourceData.columns.map((col: any) => ({
+        name: col.name,
+        dataType: col.dataType || 'string'
+      }));
+    }
+    return [];
+  }, [currentSourceData]);
 
   // Pipeline creation state
   const [mode, setMode] = useState<'chat' | 'create'>('chat');
@@ -200,6 +218,8 @@ const dispatch = useAppDispatch();
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
 
   // Escape key handler removed as chat panel is always visible
   // No need to close the panel with Escape key
@@ -330,21 +350,6 @@ const dispatch = useAppDispatch();
     }
   };
 
-  const handleNameStep = async (input: string) => {
-    // Extract pipeline name from user input
-    const name = input.trim();
-    setPipelineName(name);
-
-    // Ask for description with yes/no options
-    addAssistantMessage(`Great! Your pipeline will be named "${name}". Would you like to add a description for your pipeline? (Yes/No)`);
-
-    // Move to description or source step based on next user input
-    setStep('source');
-
-    // Build and update the pipeline template
-    const pipelineTemplate = buildPipelineTemplate();
-    setPipelineJson(pipelineTemplate);
-  };
 
   const handleSourceStep = async (input: string) => {
     const userInput = input.toLowerCase().trim();
@@ -891,6 +896,7 @@ const dispatch = useAppDispatch();
       // Build and update the pipeline template
       const pipelineTemplate = generatePipelineTemplate();
       setPipelineJson(pipelineTemplate);
+
       console.log("Current pipeline template:", pipelineTemplate);
 
       return;
@@ -1749,8 +1755,6 @@ const dispatch = useAppDispatch();
         }
       };
       
-      setTargetConfig(newTargetConfig);
-      
       // Process dependency selection if provided
       let dependencyMessage = "";
       let updatedSources = [...selectedSources];
@@ -1826,20 +1830,25 @@ const dispatch = useAppDispatch();
       // Move to confirm step
       setStep('confirm');
       
-      // Immediately update the pipeline template with current values
-      // This ensures we're using the most up-to-date state
-      const pipelineTemplate = buildPipelineTemplate(
-        pipelineName,
-        pipelineDescription,
-        updatedSources,
-        updatedTransformations,
-        newTargetConfig,
-        useSourceConnection,
-        filterCondition
-      );
+      // Update the target configuration state first
+      setTargetConfig(newTargetConfig);
+      setSelectedSources(updatedSources);
+      setTransformations(updatedTransformations);
       
-      console.log("Updated pipeline template after target configuration:", pipelineTemplate);
-      setPipelineJson(pipelineTemplate);
+      // Use setTimeout to ensure all state updates have been processed
+      setTimeout(() => {
+        // Use generatePipelineTemplate to create the updated template
+        const pipelineTemplate = generatePipelineTemplate();
+        console.log("Updated pipeline template after target configuration:", pipelineTemplate);
+        setPipelineJson(pipelineTemplate);
+        
+        // Force a second update to ensure the pipeline is fully updated
+        setTimeout(() => {
+          const finalTemplate = generatePipelineTemplate();
+          setPipelineJson(finalTemplate);
+          console.log("Final pipeline template after target configuration:", finalTemplate);
+        }, 100);
+      }, 0);
       
       // Remove the setTimeout call that was causing the reset issue
       // The pipeline JSON is already updated with the correct target configuration
@@ -2198,35 +2207,37 @@ const dispatch = useAppDispatch();
 
       {/* Chat panel - always visible, not sliding */}
       <div
-        className={`h-full flex flex-col bg-background/95 backdrop-blur-md border-l border-border shadow-lg opacity-100 ${className}`}
+        className={`h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md opacity-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-lg ${className}`}
       >
 
 
         {isNewChat || messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-8 space-y-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-              <img
-                src={imageSrc}
-                alt="AI"
-                className="w-5 h-7 transform -rotate-[40deg]"
-              />
-            </div>
-            <div className="text-center space-y-1.5 max-w-sm">
-              <p className="text-lg font-medium">How can I assist with your pipeline?</p>
-              <div className="flex justify-center items-center"> {/* Updated here */}
+          <div className="flex flex-col items-center justify-center h-full py-6 space-y-8 px-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-200/30 to-emerald-400/40 shadow-inner shadow-emerald-100">
+  <img
+    src={imageSrc}
+    alt="AI"
+    className="w-7 h-9 transform -rotate-[35deg] drop-shadow-md"
+  />
+</div>
+
+            <div className="text-center space-y-3 max-w-md">
+              <h3 className="text-2xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">How can I assist with your pipeline?</h3>
+              <p className="text-slate-500 mb-4">Create a new data pipeline or ask questions about your existing pipeline</p>
+              <div className="flex justify-center items-center mt-2"> 
                 <Button
                   onClick={startPipelineCreation}
-                  className="bg-black text-white hover:bg-black/90 flex justify-center items-center gap-2 px-4 py-2 text-sm"
+                  className="bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 flex justify-center items-center gap-2 px-6 py-2.5 text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   <Plus className="h-4 w-4" />
-                  Start Pipeline
+                  Create or edit a  data pipeline
                 </Button>
               </div>
             </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 py-4">
-            <div className="space-y-6 py-4">
+          <ScrollArea className="flex-1 px-4 py-6">
+            <div className="space-y-8 py-2">
               {messages.map((message, i) => (
                 <div
                   key={i}
@@ -2245,11 +2256,11 @@ const dispatch = useAppDispatch();
                   >
                     <div
                       className={`rounded-2xl px-4 py-3 ${message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border border-border/40 shadow-sm"
-                        }`}
+                          ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md"
+                          : "bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md"
+                        } transition-all duration-300 hover:shadow-lg`}
                     >
-                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
 
                       {/* Show inline forms after specific assistant messages */}
                       {message.role === "assistant" && i === messages.length - 1 && (
@@ -2262,13 +2273,15 @@ const dispatch = useAppDispatch();
                           )}
                           
                           {showReaderForm && message.content.includes("Please review and customize the reader configuration") && (
-                            <SchemaFormLoader
-                              schemaType="Reader"
-                              initialValues={readerFormInitialValues}
-                              onSubmit={handleReaderFormSubmit}
-                              submitLabel="Save Reader Configuration"
-                              updatePipelineTemplate={true}
-                            />
+                            <div className="mt-4 rounded-lg bg-white">
+                              <ReaderOptionsForm
+                                initialData={readerFormInitialValues}
+                                onSubmit={handleReaderFormSubmit}
+                                onClose={() => setShowReaderForm(false)}
+                                onSourceUpdate={handleReaderOptionsUpdate}
+                                nodeId={`source_${currentSourceData?.data_src_id}`}
+                              />
+                            </div>
                           )}
 
                           {showFilterForm && (
@@ -2754,11 +2767,11 @@ const dispatch = useAppDispatch();
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col max-w-[85%]">
-                    <div className="rounded-2xl px-4 py-3 bg-card border border-border/40 shadow-sm">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-150"></div>
-                        <div className="w-2 h-2 bg-primary/30 rounded-full animate-bounce delay-300"></div>
+                    <div className="rounded-2xl py-3 px-4 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
+                      <div className="flex space-x-3 px-2">
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse"></div>
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-150"></div>
+                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-300"></div>
                       </div>
                     </div>
                   </div>
@@ -2769,7 +2782,7 @@ const dispatch = useAppDispatch();
           </ScrollArea>
         )}
 
-        <div className="p-4 bg-background/70 backdrop-blur-md border-t">
+        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
           <AIChatInput
             input={input}
             onChange={setInput}

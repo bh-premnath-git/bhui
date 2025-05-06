@@ -132,7 +132,7 @@ interface  bnPipelineContextProps {
     handleZoomIn: () => void;
     handleZoomOut: () => void;
     handleCenter: () => void;
-    makePipeline: (result:any,isModify?:boolean) =>void;
+    makePipeline: (result:any) =>void;
     ctrlDTimeout: MutableRefObject<NodeJS.Timeout | null>;
     isSaving: boolean;
     hasUnsavedChanges: boolean;
@@ -464,7 +464,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [onNodesChange, dispatch, sanitizeNode]);
 
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -481,7 +481,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             })
         );
         setUnsavedChanges();
-    }, [ dispatch]);
+    }, [setSanitizedNodes, dispatch]);
 
     const handleCenter = useCallback(() => {
         try {
@@ -492,18 +492,16 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [fitView]);
 const makePipeline = async (result: any,isModify=true) => {
     let optimised;
-    let uiJson;
-    if(isModify){
+     
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
         console.log(optimised, "optimised");
         setPipelineJson(optimised);
-        uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-    }else{
-        setPipelineJson(result);
-        uiJson = await convertPipelineToUIJson(result, handleSourceUpdate);
-
-    }
+        let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
     
+    
+    
+    // Set the pipeline JSON first
+    setPipelineJson(optimised);
     
     console.log(uiJson, "uiJson");
     if (!uiJson || !uiJson.nodes) {
@@ -571,7 +569,7 @@ const makePipeline = async (result: any,isModify=true) => {
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log(sourceData)
-        setNodes(prevNodes =>
+        setSanitizedNodes(prevNodes =>
             prevNodes.map(node => {
                 if (node.id === nodeId) {
                     return {
@@ -606,7 +604,7 @@ const makePipeline = async (result: any,isModify=true) => {
             }));
 
             // Update node data with transformation data
-            setNodes((nds) =>
+            setSanitizedNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
@@ -774,9 +772,9 @@ const makePipeline = async (result: any,isModify=true) => {
             });
   console.log(debuggedNodesList)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.pipeline_name}`,
+    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
     pipeline_json: JSON.stringify(pipeline_json),
-    mode: 'DEBUG',
+    // mode: 'DEBUG',
 });
 debuggedNodesList.forEach(checkpoint => {
     params.append('checkpoints', checkpoint?.title);
@@ -798,7 +796,7 @@ debuggedNodesList.forEach(checkpoint => {
             //     message: 'Pipeline validation successful. Starting execution...',
             //     level: 'info'
             // }]);
-   
+  
             // Pass the request data directly
             let response:any = await apiService.post({
                 portNumber: CATALOG_API_PORT,
@@ -1292,7 +1290,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
         };
   
-        setNodes((prevNodes) => [...prevNodes, newNode]);
+        setSanitizedNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
   
         setTimeout(() => {

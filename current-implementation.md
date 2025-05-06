@@ -59,11 +59,10 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
   // ... existing code ...
 ```
 
-### Shared AIChatButton (src/components/shared/ai-chat-button.tsx)
-- Defines `AIChatButton` with variants `governance | explorer | dataops`
-- Toggles right-aside panel, but only inserts an animated AI icon (no chat UI)
-- Uses `React.Fragment` with a `motion.img` inside; no input field or content area
-- Button always renders the same icon inside
+### Updated Shared AIChatButton (src/components/shared/ai-chat-button.tsx)
+- Imports and uses `GenericChatUI` component instead of icon fragment for the chat panel
+- `AIChatButton` toggles the right-aside panel with `<GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />`
+- Other open/close behavior and animations remain the same
 
 ```tsx
 // ... existing code ...
@@ -76,9 +75,9 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
     if (isOpen) { closeRightAside(); return; }
     document.body.classList.add('right-aside-opening');
     setRightAsideContent(
-      <React.Fragment key={CHAT_UI_KEY}>
-        <motion.img src={aiIcon} ... />
-      </React.Fragment>, 'AI Chat', 'w-[520px]'
+      <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />,
+      'AI Chat',
+      'w-[520px]'
     );
     setTimeout(() => { window.dispatchEvent(new Event('resize')); document.body.classList.remove('right-aside-opening'); }, 50);
   };
@@ -98,6 +97,13 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
      - **Axis Orientation** (`vertical` or `horizontal`)
   2. **Chart**: `<ChatChartView>` that receives the selected mock data and `chartConfig`, processes multi-series (adding a `secondary` series) and applies the correct `layout` (vertical/horizontal)
   3. **SQL**: `<ChatSQLView>` to display the generated SQL in a formatted `<pre>`
+
+### Styling & Avatar Customization
+- **Tabs** are styled with a glassmorphic look:
+  - `TabsList` uses `bg-white/20 backdrop-blur-md p-1 text-gray-900` for a translucent panel
+  - `TabsTrigger` uses `text-gray-900`, with `data-[state=active]:bg-white/30` for active state, and white focus ring
+- **Default active tab** is set to **Visualize** for immediate chart configuration
+- **User Avatar** in `GenericChatUI` now renders a **B** with a green `bg-[#009f59]` background and white text via `AvatarFallback`
 
 ### Implementation Details (chat-components)
 - `src/components/shared/chat-components/ChatSQLView.tsx`: Displays SQL string in a styled `<pre>`

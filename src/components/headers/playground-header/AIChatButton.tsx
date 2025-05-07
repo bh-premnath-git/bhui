@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
 import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
-import { Hammer } from 'lucide-react';
 import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
-import { PipeLineChatPanel } from '@/features/designers/pipeline/components/PipeLineChatPanel';
 
 interface AIButtonProps {
     variant: 'flow' | 'pipeline';
@@ -36,7 +34,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                   key={CHAT_UI_COMPONENT_KEY} 
                   imageSrc={ai} 
                 />,
-                'AI Chat'
+                variant=== 'flow'? 'Agent Flow':  'Agent Pipeline'
             );
             
             // Trigger a resize event to help ReactFlow adjust

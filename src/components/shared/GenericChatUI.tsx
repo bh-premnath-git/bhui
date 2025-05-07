@@ -13,6 +13,14 @@ interface GenericChatUIProps {
   imageSrc?: string
 }
 
+// Four query suggestions to display
+const suggestions = [
+  'Show me jobs failed for last week',
+  'Show me jobs which cost more than $1000',
+  'Show me jobs with less than 90% accuracy',
+  'Show me jobs with latency more than 100ms',
+]
+
 export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage, clearMessages } = useChatMessages()
   const [mockResponse, setMockResponse] = useState<{
@@ -60,11 +68,25 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
       {/* Message Area */}
       <div className="flex-1 mt-4 overflow-hidden">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center flex-grow justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full">
             {imageSrc && (
-              <img src={imageSrc} alt="AI" className="w-4 h-6 transform -rotate-[40deg]" />
+              <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />
             )}
-            <p className="text-sm text-gray-600 mt-2">How can I assist you?</p>
+
+            {/* Query Suggestions */}
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              {suggestions.map((sug) => (
+                <button
+                  key={sug}
+                  onClick={() => setInput(sug)}
+                  className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-sm text-gray-600">How can I assist you?</p>
           </div>
         ) : (
           <ScrollArea className="h-full pr-4">
@@ -103,6 +125,7 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                   </div>
                 </div>
               ))}
+
               {/* Mock response tabs */}
               {mockResponse && (
                 <Tabs
@@ -111,7 +134,6 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                   className="mt-6"
                 >
                   <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="visualize" className="px-4 py-2">Visualize</TabsTrigger>
                     <TabsTrigger value="chart" className="px-4 py-2">Chart</TabsTrigger>
                     <TabsTrigger value="sql" className="px-4 py-2">SQL</TabsTrigger>
                   </TabsList>
@@ -150,4 +172,4 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
       </div>
     </div>
   )
-} 
+}

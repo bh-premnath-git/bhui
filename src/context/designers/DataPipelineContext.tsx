@@ -1297,7 +1297,7 @@ debuggedNodesList.forEach(checkpoint => {
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setSanitizedNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
+    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
 
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;

@@ -9,7 +9,7 @@ import { AIChatButton } from "@/components/shared/ai-chat-button";
 export const Header = () => {
   const { isExpanded } = useSidebar();
   const location = useLocation();
-  const {isRightAsideOpen}= useSidebar();
+  const { isRightAsideOpen } = useSidebar();
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>
@@ -24,21 +24,21 @@ export const Header = () => {
   // Decide which header content to render
   const renderHeaderContent = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
-      return <div className={cn(isRightAsideOpen?"w-[70%]":"w-[100%]")}>
-        <PlaygroundHeader playGroundHeader="pipeline"  />
+      return <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]")}>
+        <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
-      return <div className={cn(isRightAsideOpen?"w-[70%]":"w-[100%]")}>
-      <PlaygroundHeader playGroundHeader="flow" />;
+      return <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]")}>
+        <PlaygroundHeader playGroundHeader="flow" />
       </div>
     }
     if (isDataOpsHubRoute(location.pathname)) {
       return (
-        <>
+        <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]","flex justify-between")}>
           <NavigationBreadcrumb />
           <AIChatButton variant="dataops" />
-        </>
+        </div>
       );
     }
     return <NavigationBreadcrumb />;

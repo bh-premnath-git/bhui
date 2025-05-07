@@ -14,7 +14,7 @@ interface RightAsideProps {
 export function RightAside({
   title = 'Details',
   children,
-  width = 'w-70',
+  width = 'w-[100%]',
   className
 }: RightAsideProps) {
   const { closeRightAside } = useSidebar();

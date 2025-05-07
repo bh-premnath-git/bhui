@@ -43,7 +43,7 @@ const LayoutWrapper = () => {
       <div className="flex flex-1 flex-col overflow-hidden">
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 pl-[1%]">
             <BottomDrawer title={bottomDrawerTitle}>
               {bottomDrawerContent}
             </BottomDrawer>

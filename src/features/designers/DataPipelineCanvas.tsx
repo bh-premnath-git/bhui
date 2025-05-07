@@ -41,7 +41,7 @@ const BuildPlayGround: React.FC = () => {
     const filteredNodes = useMemo(() => nodeData.nodes, []);
     // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
-
+console.log(selectedSchema)
     // Update memoizedNodeTypes to include debug props
     const memoizedNodeTypes = useMemo(() => ({
         custom: (props: any) => (
@@ -255,7 +255,7 @@ const BuildPlayGround: React.FC = () => {
                         <DialogContent className="max-w-[60%]">
                             {selectedSchema && (
                                 <CreateFormFormik
-                                    schema={selectedSchema}
+                                    form_name={selectedSchema}
                                     sourceColumns={sourceColumns}
                                     onClose={handleDialogClose}
                                     currentNodeId={selectedSchema?.nodeId || ''}

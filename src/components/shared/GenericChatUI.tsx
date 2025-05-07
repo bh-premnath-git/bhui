@@ -20,11 +20,9 @@ const defaultSuggestions = [
 
 // 🤖 Mock data lives here — update this array to change your sample results
 const mockChartData = [
-  { name: 'Orders',             failed: 150 },
-  { name: 'Product Catalog',   failed: 180 },
-  { name: 'Customer Snapshot',  failed: 230 },
-  { name: 'Currency Exchange',  failed: 160 },
-  { name: 'Inventory Sync',     failed: 220 },
+  { name: 'Orders',             success: 150 },
+  { name: 'Products',   success: 180 },
+  { name: 'Customers',  success: 230 },
 ]
 
 export function GenericChatUI({

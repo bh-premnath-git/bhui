@@ -142,6 +142,20 @@ export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
     />
   </SortableChartCard>
 )
+export const MockDataChart: React.FC<{ data: any[] }> = ({ data }) => (
+  <SortableChartCard id="health" title="Latency Chart" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
+    <BarChart 
+      data={data} 
+      xAxisDataKey="name" 
+      bars={["success", "failed"]}
+      colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
+      config={{
+        ...chartDefaults.barConfig,
+        barGap: 2
+      }}
+    />
+  </SortableChartCard>
+)
 
 export const ProjectQualityChart: React.FC<{ data: any[] }> = ({ data }) => (
   <SortableChartCard id="quality" title="Quality" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">

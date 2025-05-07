@@ -36,8 +36,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                   key={CHAT_UI_COMPONENT_KEY} 
                   imageSrc={ai} 
                 />,
-                'AI Chat',
-                'w-[520px]'
+                'AI Chat'
             );
             
             // Trigger a resize event to help ReactFlow adjust

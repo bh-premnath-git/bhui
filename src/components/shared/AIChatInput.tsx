@@ -103,8 +103,8 @@ export function AIChatInput({
         className={`
           h-8 w-8 transition-all duration-150 ease-in-out
           ${disabled || !input.trim()
-            ? "text-gray-300 cursor-not-allowed opacity-70"
-            : "text-green-500 hover:text-green-600 hover:bg-green-50"}
+            ? "text-green-500 cursor-not-allowed opacity-50"
+            : "text-green-700 hover:text-green-600 hover:bg-green-50"}
         `}
         aria-label="Send message"
       >

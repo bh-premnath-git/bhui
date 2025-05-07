@@ -51,7 +51,7 @@ const LayoutWrapper = () => {
         )}
       </div>
       {isRightAsideOpen && rightAsideContent && (
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 z-50">
           <RightAside title={rightAsideTitle} width={rightAsideWidth}>
             {rightAsideContent}
           </RightAside>

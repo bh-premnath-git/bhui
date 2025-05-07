@@ -57,7 +57,7 @@ const SuggestionButton = ({
 };
 
 
-export const PipeLineChatPanel = ({
+export const PipeLineChatMock = ({
   onClose,
   imageSrc = "/assets/ai/ai.svg",
   onPipelineCreated,

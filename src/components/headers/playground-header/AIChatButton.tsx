@@ -34,7 +34,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                   key={CHAT_UI_COMPONENT_KEY} 
                   imageSrc={ai} 
                 />,
-                'Agent Flow'
+                variant=== 'flow'? 'Agent Flow':  'Agent Pipeline'
             );
             
             // Trigger a resize event to help ReactFlow adjust

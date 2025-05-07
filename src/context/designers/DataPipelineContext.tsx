@@ -373,6 +373,20 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                     // Your save logic here
                     const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl);
                     console.log(pipeline_json,"pipeline_json")
+
+                    console.log(pipeline_json?.transformations,"pipeline_json")
+
+                    pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json?.transformations?.map(transform => {
+                        if (transform.transformation.toLowerCase() === "target") {
+                            return {
+                                ...transform,
+                                transformation: "Writer"
+                            };
+                        }
+                        return transform;
+                    });
+                    console.log(pipeline_json,"pipeline_json")
+
                     if(id){
                       await apiService.patch({
                         portNumber: CATALOG_API_PORT,

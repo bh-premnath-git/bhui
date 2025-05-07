@@ -97,7 +97,7 @@ HAVING AVG(latency_seconds) / 60 > 120;
               const textColor   = isAssistant ? assistantColor : userColor
 
               return (
-                <div key={idx} className="flex items-start gap-4 px-1">
+                <div key={idx} className="flex items-center gap-4 px-1">
                   <motion.div
                     className="inline-flex items-center justify-center"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -151,7 +151,7 @@ HAVING AVG(latency_seconds) / 60 > 120;
                 </Tabs>
 
                 {/* Follow-up assistant bubble */}
-                <div className="flex items-start gap-4 px-1 mt-4">
+                <div className="flex items-center gap-4 px-1 mt-4">
                   <motion.div
                     className="inline-flex items-center justify-center"
                     initial={{ opacity: 0, scale: 0.8 }}

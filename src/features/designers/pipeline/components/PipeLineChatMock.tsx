@@ -38,7 +38,7 @@ export const PipeLineChatMock = ({
     },
     {
       role: "user",
-      content: "Load data to target and create pipeline"
+      content: "Load data to order_summary and create pipeline"
     },
     {
       role: "assistant",
@@ -67,7 +67,7 @@ export const PipeLineChatMock = ({
             {staticMessages.map((message, i) => (
               <div
                 key={i}
-                className={`flex items-start gap-4 px-1 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+                className="flex items-start gap-4 px-1"
               >
                 {message.role === "assistant" && (
                   <motion.div

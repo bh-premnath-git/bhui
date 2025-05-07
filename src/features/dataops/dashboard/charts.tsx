@@ -137,7 +137,7 @@ export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
       colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
       config={{
         ...chartDefaults.barConfig,
-        barGap: 3
+        barGap: 2
       }}
     />
   </SortableChartCard>

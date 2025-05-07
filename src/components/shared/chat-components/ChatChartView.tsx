@@ -1,4 +1,4 @@
-import { LatencyTrendChart } from '@/features/dataops/dashboard/charts'
+import { MockDataChart } from '@/features/dataops/dashboard/charts'
 
 interface ChatChartViewProps {
   data: any[]
@@ -9,5 +9,5 @@ export function ChatChartView({
   data,
   config = { category: 'pipelineUsage' },
 }: ChatChartViewProps) {
-  return <LatencyTrendChart data={data} />
+  return <MockDataChart data={data} />
 }

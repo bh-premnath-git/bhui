@@ -36,7 +36,7 @@ const LayoutWrapper = () => {
   } = useSidebar();
 
   return (
-    <div className="min-h-screen w-full flex flex-row overflow-hidden">
+    <div className="h-screen w-full flex flex-row overflow-hidden">
       <div className="flex-shrink-0">
         <Sidebar /> 
       </div>
@@ -51,7 +51,7 @@ const LayoutWrapper = () => {
         )}
       </div>
       {isRightAsideOpen && rightAsideContent && (
-        <div className="flex-shrink-0 z-50">
+        <div className="flex-shrink-0 h-full z-50">
           <RightAside title={rightAsideTitle} width={rightAsideWidth}>
             {rightAsideContent}
           </RightAside>
@@ -65,7 +65,7 @@ const ProtectedLayout = () => {
   return (
     <ThemeProvider>
       <SidebarProvider>
-        <LayoutWrapper /> 
+        <LayoutWrapper />
       </SidebarProvider>
     </ThemeProvider>
   );

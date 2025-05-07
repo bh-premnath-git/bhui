@@ -1,9 +1,10 @@
 import React from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { ChartCategory, SeriesType, AxisType } from './ChatVisualizeView'
+import { LatencyTrendChart } from '@/features/dataops/dashboard/charts'
 
 interface ChatChartViewProps {
-  data: { label: string; value: number }[]
+  data: any[]
   config?: { category: ChartCategory; seriesType: SeriesType; axisType: AxisType }
 }
 
@@ -11,6 +12,11 @@ export function ChatChartView({
   data,
   config = { category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' },
 }: ChatChartViewProps) {
+  // If latency category, render the real dashboard chart
+  if (config.category === 'latency') {
+    return <LatencyTrendChart data={data} />
+  }
+
   // Prepare data for multi-series if needed
   const processedData = config.seriesType === 'multi'
     ? data.map(d => ({ ...d, secondary: Math.round(d.value * 0.7) }))

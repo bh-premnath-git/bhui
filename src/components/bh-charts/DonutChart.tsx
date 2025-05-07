@@ -22,6 +22,8 @@ interface DonutChartProps {
   nameKey?: string;
   colors?: string[];
   config?: Record<string, any>;
+  width?: number | string;
+  height?: number | string;
 }
 
 export const DonutChart: React.FC<DonutChartProps> = ({ 
@@ -29,7 +31,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   dataKey = "value",
   nameKey = "name",
   colors = colorPalettes.supersetColors,
-  config = {}
+  config = {},
+  width = '100%',
+  height = 300,
 }) => {
   // IMPORTANT: Always declare ALL hooks at the top level
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -76,7 +80,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   );
 
   // Inner and outer radius configuration
-  const innerRadius = config.innerRadius !== undefined ? config.innerRadius : 60;
+  const innerRadius = config.innerRadius !== undefined ? config.innerRadius : 40;
   const outerRadius = config.outerRadius !== undefined ? config.outerRadius : 80;
 
   // Active shape for hover effect with adjusted values for better display
@@ -155,7 +159,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width={width} height={height}>
       <RechartsPieChart>
         <Pie
           data={processedData}

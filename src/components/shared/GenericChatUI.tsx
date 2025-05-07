@@ -24,41 +24,55 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage } = useChatMessages()
   const [mockResponse, setMockResponse] = useState<{
     sql: string
-    pipelineData: { label: string; value: number }[]
-    projectStatusData: { label: string; value: number }[]
-    latencyData: { name: string; avgLatency: number; p95Latency: number }[]
-    latencySql: string
+    chartData: any[]
   } | null>(null)
   const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart')
-  const [chartConfig, setChartConfig] = useState<{ category: 'pipelineUsage' | 'projectStatusDuration' | 'latency'; seriesType: 'single' | 'multi'; axisType: 'vertical' | 'horizontal' }>({ category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' })
   const [input, setInput] = useState('')
 
   const handleSend = () => {
-    if (!input.trim()) return
-    addUserMessage(input)
+    const query = input
+    if (!query.trim()) return
+    addUserMessage(query)
     addAssistantMessage('Processing...')
     setInput('')
-    // Simulate AI response with mock datasets
+
+    // Determine mock SQL and multi-line data based on the query
     setTimeout(() => {
-      const sql = 'SELECT pipeline_name, usage_count FROM pipelines;'
-      const pipelineData = [
-        { label: 'Pipeline A', value: 120 },
-        { label: 'Pipeline B', value: 85 },
-        { label: 'Pipeline C', value: 60 },
-      ]
-      const projectStatusData = [
-        { label: 'Completed', value: 15 },
-        { label: 'Running', value: 7 },
-        { label: 'Failed', value: 3 },
-      ]
-      const latencyData = [
-        { name: 'Service A', avgLatency: 120, p95Latency: 200 },
-        { name: 'Service B', avgLatency: 85, p95Latency: 150 },
-        { name: 'Service C', avgLatency: 60, p95Latency: 100 },
-      ]
-      const latencySql = 'SELECT service_name, avg_latency, p95_latency FROM service_metrics;'
-      updateLastAssistantMessage('Here are analytics results:')
-      setMockResponse({ sql, pipelineData, projectStatusData, latencyData, latencySql })
+      let sql = ''
+      let chartData: any[] = []
+
+      if (query.includes('failed for last week')) {
+        sql = "SELECT job_name, failure_count FROM jobs WHERE run_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY);"
+        chartData = [
+          { name: 'Job A', failure_count: 5, failure_rate: 10 },
+          { name: 'Job B', failure_count: 3, failure_rate: 5 },
+          { name: 'Job C', failure_count: 8, failure_rate: 15 },
+        ]
+      } else if (query.includes('cost more than')) {
+        sql = "SELECT job_name, cost_usd FROM jobs WHERE cost_usd > 1000;"
+        chartData = [
+          { name: 'Job X', cost_usd: 1500, budget_pct: 75 },
+          { name: 'Job Y', cost_usd: 2200, budget_pct: 90 },
+        ]
+      } else if (query.includes('less than 90% accuracy')) {
+        sql = "SELECT job_name, accuracy_pct FROM jobs WHERE accuracy_pct < 90;"
+        chartData = [
+          { name: 'Job L', accuracy_pct: 85, error_rate: 15 },
+          { name: 'Job M', accuracy_pct: 78, error_rate: 22 },
+        ]
+      } else if (query.includes('latency more than')) {
+        sql = "SELECT job_name, avg_latency_ms, p95_latency_ms FROM jobs WHERE avg_latency_ms > 100;"
+        chartData = [
+          { name: 'Job Q', avg_latency_ms: 120, p95_latency_ms: 200 },
+          { name: 'Job R', avg_latency_ms: 180, p95_latency_ms: 300 },
+        ]
+      } else {
+        sql = 'SELECT * FROM jobs LIMIT 10;'
+        chartData = []
+      }
+
+      updateLastAssistantMessage('Here are agent results:')
+      setMockResponse({ sql, chartData })
     }, 500)
   }
 
@@ -142,19 +156,10 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="chart" className="pt-4">
-                      <ChatChartView
-                        data={
-                          chartConfig.category === 'latency'
-                            ? mockResponse.latencyData
-                            : chartConfig.category === 'pipelineUsage'
-                              ? mockResponse.pipelineData
-                              : mockResponse.projectStatusData
-                        }
-                        config={chartConfig}
-                      />
+                      <ChatChartView data={mockResponse.chartData} />
                     </TabsContent>
                     <TabsContent value="sql" className="pt-4">
-                      <ChatSQLView sql={chartConfig.category === 'latency' ? mockResponse.latencySql : mockResponse.sql} />
+                      <ChatSQLView sql={mockResponse.sql} />
                     </TabsContent>
                   </Tabs>
 

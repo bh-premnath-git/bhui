@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import aiIcon from '/assets/ai/ai.svg'
 import { useSidebar } from '@/context/SidebarContext'
 import { GenericChatUI } from '@/components/shared/GenericChatUI'
+import { XplorerGenericChatUI } from './XplorerGenericChat'
 
 interface AIChatButtonProps {
   variant: 'governance' | 'explorer' | 'dataops'
@@ -32,9 +33,15 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
 
     // animate sidebar open
     document.body.classList.add('right-aside-opening')
-    setRightAsideContent(
-      <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />, 'AI Chat', 'w-[520px]'
-    )
+    const chatComponent = variant === 'explorer' 
+    ? <XplorerGenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+    : <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+
+  setRightAsideContent(
+    chatComponent, 
+    'AI Chat', 
+    'w-[520px]'
+  )
 
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'))

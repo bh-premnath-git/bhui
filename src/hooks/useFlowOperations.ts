@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { ReactFlowInstance, Node, Edge } from 'reactflow';
-import { LocalStorageService } from '@/services/localStorageServices';
-import { CustomNodeData, NodeFormData } from '@/types/flow';
+import { LocalStorageService } from '@/lib/localStorageServices';
+import { CustomNodeData, NodeFormData } from '@/types/designer/flow';
 
 export function useFlowOperations(
   reactFlowInstance: ReactFlowInstance | null,
@@ -36,6 +36,10 @@ export function useFlowOperations(
       console.warn("No flow selected. Cannot save.");
       return;
     }
+    
+    // Log the flow being saved to help with debugging
+    console.log(`Saving flow with ID: ${selectedFlowId}`);
+    
     setIsSaving(true);
     try {
       const sortedNodes = [...nodes].sort((a, b) => a.position.x - b.position.x);
@@ -50,8 +54,8 @@ export function useFlowOperations(
         const type = node.data.selectedData;
         updatedFormData.type = type
 
-        const dependsOn = prevNodeFn(matchFormData.nodeId)?.map(node => node) ?? [];
-        updatedFormData.dependsOn = dependsOn;
+        const depends_on = prevNodeFn(matchFormData.nodeId)?.map(node => node) ?? [];
+        updatedFormData.depends_on = depends_on;
 
         return { ...matchFormData, formData: updatedFormData };
       });
@@ -59,8 +63,13 @@ export function useFlowOperations(
         nodes: sortedNodes,
         edges,
         nodeFormData: sortedNodeFormData,
+        flowConfigs: LocalStorageService.getItem(`flow-${selectedFlowId}`)?.flowConfigs || [],
       };
-      LocalStorageService.setItem(`flow-${selectedFlowId}`, flowData);
+      
+      // Double-check we're saving to the correct flow ID
+      const currentFlowId = selectedFlowId;
+      LocalStorageService.setItem(`flow-${currentFlowId}`, flowData);
+      
       await new Promise((resolve) => setTimeout(resolve, 0));
       setIsSaved(true);
     } catch (error) {
@@ -72,6 +81,10 @@ export function useFlowOperations(
   }, [nodes, edges, nodeFormData, selectedFlowId, setIsSaving, setIsSaved]);
 
   const loadFlow = useCallback((flowId: string) => {
+    // Log the flow being loaded to help with debugging
+    console.log(`Loading flow with ID: ${flowId}`);
+    
+    // Ensure we're using the explicitly passed flowId, not the closure value
     const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
     return savedFlow;
   }, []);

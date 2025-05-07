@@ -1,15 +1,53 @@
-export type Status = "success" | "failed" | "in-progress"
+import type { ColumnDef, FilterFn, Table } from "@tanstack/react-table";
+import type { LucideIcon } from "lucide-react";
 
-export interface TableData {
-  id: string
-  [key: string]: any
+
+interface DropdownItem {
+  label: React.ReactNode;
+  icon?: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}
+// Button configuration for toolbar
+interface ToolbarButtonConfig {
+  label: React.ReactNode;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  icon?: LucideIcon;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  dropdownItems?: DropdownItem[]; 
 }
 
-export interface Column {
-  id: string
-  header: string
-  accessorKey: string
-  enableSorting?: boolean
-  enableFiltering?: boolean
-  cell?: (props: any) => JSX.Element
+// Generic toolbar configuration
+export interface TToolbarConfig<T = any> {
+  buttons?: ToolbarButtonConfig[];
+  selectedItems?: T[];
+  onSelectionChange?: (items: T[]) => void;
+  customContent?: React.ReactNode;
+  className?: string;
+}
+
+// Generic column definition with filtering capabilities
+export type ColumnDefWithFilters<T> = ColumnDef<T> & {
+  enableColumnFilter?: boolean;
+  filterFn?: FilterFn<T> | string;
+}
+
+export interface TopSectionProps<TData> {
+  table: Table<TData>;
+  toolbarConfig?: TToolbarConfig;
+  headerFilter?: string;
+  importSrcFn?: () => void;
+  fullData?: TData[];
+}
+
+export interface StatusMetric {
+  label: string;
+  value: number;
+  percentage: number;
+  icon: React.ReactNode;
+  color: string;
+  filterValue: string;
 }

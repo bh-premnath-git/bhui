@@ -1,0 +1,30 @@
+{
+  "title": "Schema Transformation",
+  "description": "Define derived fields for your data",
+  "type": "object",
+  "properties": {
+    "derived_fields": {
+      "type": "array",
+      "title": "Derived Fields",
+      "description": "Define new fields based on expressions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Field Name",
+            "description": "Name of the new field"
+          },
+          "expression": {
+            "type": "string",
+            "title": "Expression",
+            "description": "SQL-like expression to calculate the field value",
+            "format": "textarea"
+          }
+        },
+        "required": ["name", "expression"]
+      }
+    }
+  },
+  "required": ["derived_fields"]
+}

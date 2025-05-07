@@ -1,58 +1,89 @@
-import { useState, useEffect } from 'react';
-import { ApiService } from '@/services/apiServices';
-import { CATALOG_API_PORT } from '@/configration/environment';
+import { useQuery } from '@tanstack/react-query';
+import { CATALOG_API_PORT } from '@/config/platformenv';
+import { apiService } from '@/lib/api/api-service';
 
-export const useDropdownOptions = (endpoint: string, id: string | null) => {
-    const [options, setOptions] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+const processEndpoint = (endpoint: string | undefined) => {
+  if (!endpoint) {
+    return { path: '', connections: '' };
+  }
 
-    useEffect(() => {
-        if (!endpoint) {
-            setOptions([]);
-            return;
-        }
+  let urlParts = endpoint
+    .replace('{catalog_base_url}', '')
+    .replace('{env_id}', '')
+    .split('/')
+    .filter(Boolean);
 
-        const fetchOptions = async () => {
-            setIsLoading(true);
-            try {
-                let data: any;
-                let urlParts = endpoint
-                    .replace('{catalog_base_url}', '')
-                    .replace('{env_id}', '')
-                    .split('/')
-                    .filter(Boolean);
+  if (urlParts[0] === 'api' && urlParts[1] === 'v1') {
+    urlParts = urlParts.slice(2);
+  }
 
-                if (urlParts[0] === 'api' && urlParts[1] === 'v1') {
-                    urlParts = urlParts.slice(2);
-                }
+  const path = urlParts.slice(0, -1).join('/');
+  const connections = urlParts[urlParts.length - 1];
 
-                const path = urlParts.slice(0, -1).join('/');
-                const connections = urlParts[urlParts.length - 1];
+  return { path, connections };
+};
 
-                let url = '';
-                if (id && path !== 'pipeline') {
-                    url = `${path}/${id}/${connections}`;
-                    data = await ApiService(CATALOG_API_PORT, "get", url);
-                } else {
-                    url = `${path}/${connections}/`;
-                    data = await ApiService(CATALOG_API_PORT, "get", url);
+export const useDropdownOptions = (
+  endpoint: string | null | undefined,
+  id: string | null,
+  setFlowPipeline?: (pipeline: any) => void
+) => {
+  const queryResult = useQuery({
+    queryKey: ['dropdownOptions', endpoint, id],
 
-                    data = Array.isArray(data)
-                        ? data.map((item: any) => item.pipeline_name || '')
-                        : [];
-                }
+    queryFn: async () => {
+      if (!endpoint) {
+        console.warn('[useDropdownOptions] endpoint is falsy, returning []');
+        return [];
+      }
 
-                setOptions(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Error fetching options:', error);
-                setOptions([]);
-            } finally {
-                setIsLoading(false);
+      const { path, connections } = processEndpoint(endpoint);
+      if (!path || !connections) {
+        console.warn('[useDropdownOptions] path or connections is empty, returning []');
+        return [];
+      }
+      let url = '';
+      if (id && path !== 'pipeline') {
+        url = `/${path}/${id}/${connections}`;
+      } else {
+        url = `/${path}/${connections}/?is_pipeline_parameter_required=true`;
+      }
+
+      const data = await apiService.get({
+        url,
+        portNumber: CATALOG_API_PORT,
+        method: 'GET',
+        usePrefix: true
+      });
+
+      // 6. If path === 'pipeline', return pipeline names specifically
+      if (path === 'pipeline') {
+        setFlowPipeline(data);
+        return Array.isArray(data)
+          ? data.map((item: any) => item.pipeline_key || '')
+          : [];
+      }
+
+      if (Array.isArray(data)) {
+        return data.map((item: any) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && item !== null) {
+            const stringProps = ['name', 'id', 'value', 'label', 'title'];
+            for (const prop of stringProps) {
+              if (typeof item[prop] === 'string') return item[prop];
             }
-        };
+            return JSON.stringify(item);
+          }
+          return String(item);
+        });
+      }
+      return [];
+    },
+    enabled: !!endpoint,
 
-        fetchOptions();
-    }, [endpoint, id]);
+  });
 
-    return { options, isLoading };
+  const { data: options = [], isLoading, isError, error } = queryResult;
+
+  return { options, isLoading, isError, error };
 };

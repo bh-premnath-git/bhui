@@ -1,0 +1,128 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Connection",
+    "type": "object",
+    "properties": {
+        "connection_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "type": {
+            "type": "string",
+            "endpoint": "connection_registry/list/?connection_type=source&offset=0&limit=1000&order_desc=false"
+        }
+    },
+    "required": [
+        "id",
+        "connection_name",
+        "type"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "local"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_path_prefix": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "file_path_prefix"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "GCS"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "bucket": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "file_path_prefix": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "bucket",
+                    "file_path_prefix"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "S3"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "bucket": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "file_path_prefix": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "bucket",
+                    "file_path_prefix"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "bigquery"
+                    }
+                }
+            },
+            "then": {
+                "$ref": "connections/bigquery.json"
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "postgres"
+                    }
+                }
+            },
+            "then": {
+                "$ref": "connections/postgres.json"
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "snowflake"
+                    }
+                }
+            },
+            "then": {
+                "$ref": "connections/snowflake.json"
+            }
+        }
+    ]
+}

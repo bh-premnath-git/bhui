@@ -5,7 +5,7 @@ import { DashboardProvider } from "@/context/DashboardContext";
 
 const XplorerMockPage = () => {
   return (
-    <div className="min-h-screen p-0 bg-background">
+    <div className="p-2 bg-background">
       <DashboardProvider>
         <AnalyticsProvider>
           <XplorerMock />

@@ -4,11 +4,20 @@ import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
+import { motion } from 'framer-motion'
 
 interface XplorerGenericChatUIProps {
-  imageSrc?: string
+    imageSrc?: string
+    assistantColor?: string
+    userColor?: string
+    suggestions?: string[]
 }
+
+// Updated default suggestions to include the top 10 expensive products query
+const defaultSuggestions = [
+    'List the top ten expensive products'
+]
 
 // Mock data for orders
 const mockOrders = [
@@ -45,16 +54,21 @@ const mockOrderDetails = [
   { orderId: 10007, productId: 14, productName: 'Mouse Pad', quantity: 2, unitPrice: 12.00, subtotal: 24.00 },
 ];
 
-// Four query suggestions to display
-const suggestions = [
-  'Show me all orders above $300',
-  'Find orders with delivery status "Shipped"',
-  'Show me order details for Order #10003',
-  'Which region has the most orders?',
+// New mock data for top 10 expensive products
+const topExpensiveProducts = [
+  { productName: "Côte de Blaye", unitPrice: 263.50 },
+  { productName: "Thüringer Rostbratwurst", unitPrice: 123.79 },
+  { productName: "Mishi Kobe Niku", unitPrice: 97.00 },
+  { productName: "Sir Rodney's Marmalade", unitPrice: 81.00 },
+  { productName: "Carnarvon Tigers", unitPrice: 62.50 },
+  { productName: "Raclette Courdavault", unitPrice: 55.00 },
+  { productName: "Manjimup Dried Apples", unitPrice: 53.00 },
+  { productName: "Tarte au sucre", unitPrice: 49.30 }
 ];
 
 // Mock SQL queries for different suggestions
 const mockSQLQueries = {
+  'List the top ten expensive products': 'SELECT p.product_name AS product_name, p.unit_price FROM public.products AS p ORDER BY p.unit_price DESC LIMIT 10;',
   'Show me all orders above $300': 'SELECT * FROM orders WHERE total > 300',
   'Find orders with delivery status "Shipped"': 'SELECT * FROM orders WHERE status = "Shipped"',
   'Show me order details for Order #10003': 'SELECT od.* FROM order_details od WHERE od.orderId = 10003',
@@ -77,16 +91,13 @@ const TableView = ({ data }) => {
     // Get all column keys
     const allColumns = Object.keys(data[0]);
     
-    // Apply column limits: min 2, max 3
-    const displayColumns = allColumns.slice(0, Math.min(3, Math.max(2, allColumns.length)));
-    
     return (
       <div className="h-full w-full rounded-lg bg-white">
         <div className="h-full overflow-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
-                {displayColumns.map((key) => (
+                {allColumns.map((key) => (
                   <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {key}
                   </th>
@@ -96,9 +107,9 @@ const TableView = ({ data }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((row, rowIndex) => (
                 <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  {displayColumns.map((key, colIndex) => (
+                  {allColumns.map((key, colIndex) => (
                     <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {row[key] as React.ReactNode}
+                      {row[key]}
                     </td>
                   ))}
                 </tr>
@@ -110,17 +121,49 @@ const TableView = ({ data }) => {
     );
   };
 
-// Component to display chart view
-const ChartView = ({ data, metric, categoryKey }) => {
+// Enhanced chart view component with title and better axis labels
+const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
+  // If it's products data, format specifically for that
+  if (Array.isArray(data) && data.length > 0 && 'productName' in data[0] && 'unitPrice' in data[0]) {
+    return (
+      <div className="h-96 bg-gradient-to-br from-card to-card/95 overflow-hidden">
+        <h3 className="text-center text-sm mb-2">{chartTitle || "Top 10 Most Expensive Products"}</h3>
+        <ResponsiveContainer width="100%" height="90%">
+          <BarChart 
+            data={data} 
+            layout="vertical" 
+            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+          >
+            <XAxis 
+              type="number" 
+            />
+            <YAxis 
+              dataKey="productName" 
+              type="category" 
+              width={100}
+              label={{ value: 'Product Name', angle: -90, position: 'insideLeft', offset: -30 }} 
+            />
+            <Tooltip formatter={(value) => [`$${value}`, 'Price']} />
+            <Legend />
+            <Bar dataKey="unitPrice" fill="#A7D1F0" name="Unit Price ($)">
+              <LabelList dataKey="unitPrice" position="right" formatter={(value) => `$${value}`} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+  
   // If it's a region count query, format data differently
   if (Array.isArray(data) && data.length > 0 && 'region' in data[0] && 'count' in data[0]) {
     return (
-      <div className="h-96">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-96 bg-gradient-to-br from-card to-card/95 overflow-hidden">
+        <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Orders by Region"}</h3>
+        <ResponsiveContainer width="100%" height="90%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="region" />
-            <YAxis />
+            <XAxis dataKey="region" label={{ value: 'Region', position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: 'Number of Orders', angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
             <Bar dataKey="count" fill="#A7D1F0" name="Number of Orders" />
@@ -133,11 +176,17 @@ const ChartView = ({ data, metric, categoryKey }) => {
   // Default chart for orders or order details
   return (
     <div className="h-96">
-      <ResponsiveContainer width="100%" height="100%">
+      <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Data Visualization"}</h3>
+      <ResponsiveContainer width="100%" height="90%">
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={categoryKey || 'id'} />
-          <YAxis />
+          <XAxis 
+            dataKey={categoryKey || 'id'} 
+            label={{ value: categoryKey || 'ID', position: 'insideBottom', offset: -5 }} 
+          />
+          <YAxis 
+            label={{ value: metric.charAt(0).toUpperCase() + metric.slice(1), angle: -90, position: 'insideLeft' }} 
+          />
           <Tooltip />
           <Legend />
           <Bar dataKey={metric} fill="#A7D1F0" name={metric.charAt(0).toUpperCase() + metric.slice(1)} />
@@ -147,7 +196,8 @@ const ChartView = ({ data, metric, categoryKey }) => {
   );
 };
 
-export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
+export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
+    userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
   const [mockResponse, setMockResponse] = useState(null);
   const [activeTab, setActiveTab] = useState('table');
@@ -156,6 +206,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
   const [filteredData, setFilteredData] = useState([]);
   const [metricToVisualize, setMetricToVisualize] = useState('total');
   const [categoryKey, setCategoryKey] = useState('id');
+  const [chartTitle, setChartTitle] = useState('');
 
   // Handle sending a message
   const handleSend = async (message: string) => {
@@ -169,17 +220,28 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
     let metric = 'total'; // Default metric to visualize
     let category = 'id';
     let responseText = '';
+    let title = '';
     
     const lowerMsg = message.toLowerCase();
     
-    if (lowerMsg.includes('above $300') || lowerMsg.includes('over $300')) {
+    if (lowerMsg.includes('top ten expensive') || lowerMsg.includes('top 10 expensive') || lowerMsg.includes('expensive products')) {
+      responseData = topExpensiveProducts;
+      query = mockSQLQueries['List the top ten expensive products'];
+      metric = 'unitPrice';
+      category = 'productName';
+      title = 'Top 10 Most Expensive Products';
+      responseText = `Here are the top 10 most expensive products in our inventory, sorted by unit price.`;
+    }
+    else if (lowerMsg.includes('above $300') || lowerMsg.includes('over $300')) {
       responseData = mockOrders.filter(order => order.total > 300);
       query = mockSQLQueries['Show me all orders above $300'];
+      title = 'Orders Exceeding $300';
       responseText = `I found ${responseData.length} orders with totals exceeding $300.`;
     } 
     else if (lowerMsg.includes('shipped')) {
       responseData = mockOrders.filter(order => order.status === 'Shipped');
       query = mockSQLQueries['Find orders with delivery status "Shipped"'];
+      title = 'Orders with Shipped Status';
       responseText = `I found ${responseData.length} orders with shipping status "Shipped".`;
     } 
     else if (lowerMsg.includes('order details') && lowerMsg.includes('10003')) {
@@ -187,6 +249,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
       query = mockSQLQueries['Show me order details for Order #10003'];
       metric = 'subtotal';
       category = 'productName';
+      title = 'Order #10003 Details';
       responseText = `Here are the details for Order #10003. This order has ${responseData.length} items.`;
     } 
     else if (lowerMsg.includes('region') && (lowerMsg.includes('most') || lowerMsg.includes('highest'))) {
@@ -204,6 +267,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
       query = mockSQLQueries['Which region has the most orders?'];
       metric = 'count';
       category = 'region';
+      title = 'Orders by Region';
       
       responseText = `The ${responseData[0].region} region has the most orders with ${responseData[0].count} orders.`;
     }
@@ -217,6 +281,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
         query = `SELECT * FROM order_details WHERE orderId = ${orderId}`;
         metric = 'subtotal';
         category = 'productName';
+        title = `Order #${orderId} Details`;
         responseText = `Here are the details for Order #${orderId}. This order has ${responseData.length} items.`;
       } else {
         // Show all order details if no specific order ID was provided or found
@@ -224,6 +289,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
         query = 'SELECT * FROM order_details';
         metric = 'subtotal';
         category = 'productName';
+        title = 'All Order Details';
         responseText = `Here are all order details across all orders. There are ${responseData.length} items in total.`;
       }
     }
@@ -231,6 +297,7 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
       // Default to showing all orders
       responseData = mockOrders;
       query = 'SELECT * FROM orders';
+      title = 'All Orders';
       responseText = `Here are all orders in the system. There are ${responseData.length} orders in total.`;
     }
 
@@ -239,13 +306,15 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
     setSqlQuery(query);
     setMetricToVisualize(metric);
     setCategoryKey(category);
+    setChartTitle(title);
     
     // Add assistant response
     setTimeout(() => {
       addAssistantMessage(responseText);
       setMockResponse({
         data: responseData,
-        query: query
+        query: query,
+        title: title
       });
     }, 500);
     
@@ -254,47 +323,60 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
   };
 
   return (
-    <div className="flex flex-col h-full p-4">
-          <div className="flex-1 mt-4 overflow-hidden">
-            {!messages.length ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
-                <div className="flex flex-wrap justify-center gap-2 mb-4">
-                  {suggestions.map((sug) => (
-                    <button
-                      key={sug}
-                      onClick={() => setInput(sug)}
-                      className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
-                    >
-                      {sug}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600">How can I assist you?</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-full pr-4">
-                <div className="space-y-6">
-                  {messages.map((msg, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5"> {/* Ensure left alignment and add gap for dot */}
-                      {/* Dot Indicator */}
-                      {msg.role === 'assistant' ? (
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
-                      ) : (
-                        <span className="w-2.5 h-2.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
-                      )}
+    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md shadow-lg rounded-lg">
+    <ScrollArea className="flex-1 px-4 py-6">
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center">
+            {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setInput(s)}
+                  className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600">How can I assist you with product or order information?</p>
+          </div>
+        ) : (
+          <div className="space-y-8 py-2">
+            {messages.map((msg, idx) => {
+              const isAssistant = msg.role === 'assistant'
+              const circleColor = isAssistant ? assistantColor : userColor
+              const textColor   = isAssistant ? assistantColor : userColor
+
+              return (
+                <div key={idx} className="flex items-start gap-4 px-1">
+                  <motion.div
+                    className="inline-flex items-center justify-center"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.div
+                      className="w-8 h-8 rounded-full"
+                      style={{ backgroundColor: circleColor }}
+                      whileHover={{ scale: 1.05, opacity: 0.9 }}
+                      whileTap={{ scale: 0.9 }}
+                    />
+                  </motion.div>
+
+                  <div className="flex-1">
+                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
                       <div
-                        className={cn(
-                          'rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap break-words',
-                          msg.role === 'assistant' 
-                            ? 'bg-green-600 text-white'  // Assistant: green background, white text
-                            : 'bg-black text-white'       // User: black background, white text
-                        )}
+                        className="whitespace-pre-wrap leading-relaxed"
+                        style={{ color: textColor }}
                       >
                         {msg.content}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )
+            })}
               {/* Mock response tabs */}
               {mockResponse && (
                 <>
@@ -304,36 +386,65 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
                   className="mt-6"
                 >
                   <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="table" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Table</TabsTrigger>
                     <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Chart</TabsTrigger>
+                    <TabsTrigger value="table" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Table</TabsTrigger>
                     <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">SQL</TabsTrigger>
                   </TabsList>
+                  <TabsContent value="chart" className="pt-4">
+                    <ChartView 
+                      data={filteredData} 
+                      metric={metricToVisualize} 
+                      categoryKey={categoryKey}
+                      chartTitle={chartTitle} 
+                    />
+                  </TabsContent>
                   <TabsContent value="table" className="pt-4">
                     <TableView data={filteredData} />
-                  </TabsContent>
-                  <TabsContent value="chart" className="pt-4">
-                    <ChartView data={filteredData} metric={metricToVisualize} categoryKey={categoryKey} />
                   </TabsContent>
                   <TabsContent value="sql" className="pt-4">
                     <SQLView query={sqlQuery} />
                   </TabsContent>
                 </Tabs>
-                <div className="mt-4 text-left text-sm text-gray-600">Do you have any further queries?</div>
-                </>
-              )}
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+                        {/* Follow-up assistant bubble */}
+                        <div className="flex items-start gap-4 px-1 mt-4">
+                  <motion.div
+                    className="inline-flex items-center justify-center"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.div
+                      className="w-8 h-8 rounded-full"
+                      style={{ backgroundColor: assistantColor }}
+                    />
+                  </motion.div>
+                  <div className="flex-1">
+                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
+                      <div
+                        className="whitespace-pre-wrap leading-relaxed"
+                        style={{ color: assistantColor }}
+                      >
+                        {chartTitle.includes('product') ? 
+                          "Would you like to see sales history for any of these products?" : 
+                          "Do you want me analyze sales trend for these products?"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          )}
+        </ScrollArea>
 
-      {/* Input Area */}
-      <div className="flex gap-2 mt-4 flex-shrink-0">
+        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
         <AIChatInput
           input={input}
           onChange={setInput}
           onSend={() => handleSend(input)}
+          placeholder="Type a message..."
+          disabled={false}
         />
       </div>
     </div>
-  );
-}
+)}

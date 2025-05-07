@@ -200,7 +200,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
   const [mockResponse, setMockResponse] = useState(null);
-  const [activeTab, setActiveTab] = useState('table');
+  const [activeTab, setActiveTab] = useState('chart');
   const [input, setInput] = useState('');
   const [sqlQuery, setSqlQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);

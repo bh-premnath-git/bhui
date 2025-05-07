@@ -126,7 +126,7 @@ export function XplorerMock() {
 
   return (
     <div className="w-full p-4 bg-white">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 m-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-4">
         {/* Order Processing Status - Stacked Area Chart */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-sm font-medium mb-2">Order Processing Status</h3>
@@ -160,101 +160,6 @@ export function XplorerMock() {
           </ResponsiveContainer>
         </div>
 
-        {/* Order Distribution Chart - Pie Chart (replacing Treemap) */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={orderDistributionData}
-                cx="50%"
-                cy="50%"
-                labelLine={true}
-                label={renderCustomizedLabel}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {orderDistributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => `${value}`} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Order Status by Category - Horizontal Bar Chart */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Status by Category</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={orderStatusByCategory} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" domain={[0, 18]} />
-              <YAxis type="category" dataKey="category" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="completed" fill={colors.darkBlue} />
-              <Bar dataKey="pending" fill={colors.lightBlue} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Order Quality Metrics - Scatter Chart */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Quality</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                name="Rating"
-                domain={[30, 55]}
-                label={{ value: "Rating", position: "insideBottom", offset: -5 }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                name="Returns"
-                domain={[45, 70]}
-                label={{ value: "Returns", angle: -90, position: "insideLeft" }}
-              />
-              <Tooltip
-                cursor={{ strokeDasharray: "3 3" }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-white p-2 border border-gray-300 rounded shadow">
-                        <p className="font-bold">{payload[0].payload.name}</p>
-                        <p>Rating: {payload[0].value}</p>
-                        <p>Returns: {payload[0].payload.y}</p>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Scatter name="Quality Metrics" data={scatterData} fill={colors.oceanBlue} />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Order Incidents - Radar Chart */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Processing Metrics (May)</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="subject" />
-              <PolarRadiusAxis angle={30} domain={[0, 50]} />
-              <Radar name="Orders" dataKey="A" stroke={colors.darkBlue} fill={colors.oceanBlue} fillOpacity={0.6} />
-              <Legend />
-              <Tooltip />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </div>
   )

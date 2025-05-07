@@ -8,15 +8,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { motion } from 'framer-motion'
 
 interface XplorerGenericChatUIProps {
-    imageSrc?: string
-    assistantColor?: string
-    userColor?: string
-    suggestions?: string[]
+  imageSrc?: string
+  assistantColor?: string
+  userColor?: string
+  suggestions?: string[]
 }
 
 // Updated default suggestions to include the top 10 expensive products query
 const defaultSuggestions = [
-    'List the top ten expensive products'
+  'List the top ten expensive products'
 ]
 
 // Mock data for orders
@@ -34,22 +34,22 @@ const mockOrders = [
 const mockOrderDetails = [
   { orderId: 10001, productId: 1, productName: 'Laptop', quantity: 1, unitPrice: 199.99, subtotal: 199.99 },
   { orderId: 10001, productId: 2, productName: 'Mouse', quantity: 2, unitPrice: 23.00, subtotal: 46.00 },
-  
+
   { orderId: 10002, productId: 3, productName: 'Keyboard', quantity: 1, unitPrice: 49.50, subtotal: 49.50 },
   { orderId: 10002, productId: 4, productName: 'USB Cable', quantity: 2, unitPrice: 20.00, subtotal: 40.00 },
-  
+
   { orderId: 10003, productId: 5, productName: 'Monitor', quantity: 2, unitPrice: 249.99, subtotal: 499.98 },
   { orderId: 10003, productId: 6, productName: 'HDMI Cable', quantity: 1, unitPrice: 34.77, subtotal: 34.77 },
-  
+
   { orderId: 10004, productId: 7, productName: 'Headphones', quantity: 1, unitPrice: 78.25, subtotal: 78.25 },
   { orderId: 10004, productId: 8, productName: 'Webcam', quantity: 1, unitPrice: 50.00, subtotal: 50.00 },
-  
+
   { orderId: 10005, productId: 9, productName: 'Smartphone', quantity: 1, unitPrice: 375.00, subtotal: 375.00 },
-  
+
   { orderId: 10006, productId: 10, productName: 'Tablet', quantity: 1, unitPrice: 499.99, subtotal: 499.99 },
   { orderId: 10006, productId: 11, productName: 'Screen Protector', quantity: 1, unitPrice: 12.50, subtotal: 12.50 },
   { orderId: 10006, productId: 12, productName: 'Tablet Case', quantity: 1, unitPrice: 99.91, subtotal: 99.91 },
-  
+
   { orderId: 10007, productId: 13, productName: 'Wireless Mouse', quantity: 2, unitPrice: 34.40, subtotal: 68.80 },
   { orderId: 10007, productId: 14, productName: 'Mouse Pad', quantity: 2, unitPrice: 12.00, subtotal: 24.00 },
 ];
@@ -79,47 +79,47 @@ const mockSQLQueries = {
 const SQLView = ({ query }) => {
   return (
     <pre className="bg-gray-100 p-2 rounded whitespace-pre-wrap">
-        {query}
+      {query}
     </pre>
   );
 };
 
 // Component to display table view
 const TableView = ({ data }) => {
-    if (!data || data.length === 0) return <p>No data available</p>;
-    
-    // Get all column keys
-    const allColumns = Object.keys(data[0]);
-    
-    return (
-      <div className="h-full w-full rounded-lg bg-white">
-        <div className="h-full overflow-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                {allColumns.map((key) => (
-                  <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {key}
-                  </th>
+  if (!data || data.length === 0) return <p>No data available</p>;
+
+  // Get all column keys
+  const allColumns = Object.keys(data[0]);
+
+  return (
+    <div className="h-full w-full rounded-lg bg-white">
+      <div className="h-full overflow-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50 sticky top-0">
+            <tr>
+              {allColumns.map((key) => (
+                <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.map((row, rowIndex) => (
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                {allColumns.map((key, colIndex) => (
+                  <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row[key]}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {data.map((row, rowIndex) => (
-                <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  {allColumns.map((key, colIndex) => (
-                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {row[key]}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 // Enhanced chart view component with title and better axis labels
 const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
@@ -129,19 +129,19 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
       <div className="h-96 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         <h3 className="text-center text-sm mb-2">{chartTitle || "Top 10 Most Expensive Products"}</h3>
         <ResponsiveContainer width="100%" height="90%">
-          <BarChart 
-            data={data} 
-            layout="vertical" 
+          <BarChart
+            data={data}
+            layout="vertical"
             margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
           >
-            <XAxis 
-              type="number" 
+            <XAxis
+              type="number"
             />
-            <YAxis 
-              dataKey="productName" 
-              type="category" 
+            <YAxis
+              dataKey="productName"
+              type="category"
               width={100}
-              label={{ value: 'Product Name', angle: -90, position: 'insideLeft', offset: -30 }} 
+              label={{ value: 'Product Name', angle: -90, position: 'insideLeft', offset: -30 }}
             />
             <Tooltip formatter={(value) => [`$${value}`, 'Price']} />
             <Legend />
@@ -153,7 +153,7 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
       </div>
     );
   }
-  
+
   // If it's a region count query, format data differently
   if (Array.isArray(data) && data.length > 0 && 'region' in data[0] && 'count' in data[0]) {
     return (
@@ -172,7 +172,7 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
       </div>
     );
   }
-  
+
   // Default chart for orders or order details
   return (
     <div className="h-96">
@@ -180,12 +180,12 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
       <ResponsiveContainer width="100%" height="90%">
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey={categoryKey || 'id'} 
-            label={{ value: categoryKey || 'ID', position: 'insideBottom', offset: -5 }} 
+          <XAxis
+            dataKey={categoryKey || 'id'}
+            label={{ value: categoryKey || 'ID', position: 'insideBottom', offset: -5 }}
           />
-          <YAxis 
-            label={{ value: metric.charAt(0).toUpperCase() + metric.slice(1), angle: -90, position: 'insideLeft' }} 
+          <YAxis
+            label={{ value: metric.charAt(0).toUpperCase() + metric.slice(1), angle: -90, position: 'insideLeft' }}
           />
           <Tooltip />
           <Legend />
@@ -197,7 +197,7 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
 };
 
 export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
-    userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
+  userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
   const [mockResponse, setMockResponse] = useState(null);
   const [activeTab, setActiveTab] = useState('chart');
@@ -211,9 +211,9 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   // Handle sending a message
   const handleSend = async (message: string) => {
     if (!message.trim()) return;
-    
+
     addUserMessage(message);
-    
+
     // Process the message to determine what data to show
     let responseData = [];
     let query = '';
@@ -221,9 +221,9 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     let category = 'id';
     let responseText = '';
     let title = '';
-    
+
     const lowerMsg = message.toLowerCase();
-    
+
     if (lowerMsg.includes('top ten expensive') || lowerMsg.includes('top 10 expensive') || lowerMsg.includes('expensive products')) {
       responseData = topExpensiveProducts;
       query = mockSQLQueries['List the top ten expensive products'];
@@ -237,13 +237,13 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
       query = mockSQLQueries['Show me all orders above $300'];
       title = 'Orders Exceeding $300';
       responseText = `I found ${responseData.length} orders with totals exceeding $300.`;
-    } 
+    }
     else if (lowerMsg.includes('shipped')) {
       responseData = mockOrders.filter(order => order.status === 'Shipped');
       query = mockSQLQueries['Find orders with delivery status "Shipped"'];
       title = 'Orders with Shipped Status';
       responseText = `I found ${responseData.length} orders with shipping status "Shipped".`;
-    } 
+    }
     else if (lowerMsg.includes('order details') && lowerMsg.includes('10003')) {
       responseData = mockOrderDetails.filter(detail => detail.orderId === 10003);
       query = mockSQLQueries['Show me order details for Order #10003'];
@@ -251,31 +251,31 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
       category = 'productName';
       title = 'Order #10003 Details';
       responseText = `Here are the details for Order #10003. This order has ${responseData.length} items.`;
-    } 
+    }
     else if (lowerMsg.includes('region') && (lowerMsg.includes('most') || lowerMsg.includes('highest'))) {
       // Count orders by region
       const regionCounts = {};
       mockOrders.forEach(order => {
         regionCounts[order.region] = (regionCounts[order.region] || 0) + 1;
       });
-      
+
       responseData = Object.entries(regionCounts).map(([region, count]) => ({
         region,
         count
       })).sort((a, b) => Number(b.count) - Number(a.count));
-      
+
       query = mockSQLQueries['Which region has the most orders?'];
       metric = 'count';
       category = 'region';
       title = 'Orders by Region';
-      
+
       responseText = `The ${responseData[0].region} region has the most orders with ${responseData[0].count} orders.`;
     }
     else if (lowerMsg.includes('order details')) {
       // Extract order number if provided
       const orderIdMatch = lowerMsg.match(/\d+/);
       const orderId = orderIdMatch ? parseInt(orderIdMatch[0]) : null;
-      
+
       if (orderId && mockOrderDetails.some(detail => detail.orderId === orderId)) {
         responseData = mockOrderDetails.filter(detail => detail.orderId === orderId);
         query = `SELECT * FROM order_details WHERE orderId = ${orderId}`;
@@ -307,7 +307,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     setMetricToVisualize(metric);
     setCategoryKey(category);
     setChartTitle(title);
-    
+
     // Add assistant response
     setTimeout(() => {
       addAssistantMessage(responseText);
@@ -317,14 +317,15 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         title: title
       });
     }, 500);
-    
+
     // Clear input
     setInput('');
   };
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md shadow-lg rounded-lg">
-    <ScrollArea className="flex-1 px-4 py-6">
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 px-4 py-6">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center">
             {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
@@ -339,17 +340,17 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                 </button>
               ))}
             </div>
-            <p className="text-sm text-gray-600">How can I assist you with product or order information?</p>
+            <p className="text-sm text-gray-600">How can I assist you?</p>
           </div>
         ) : (
           <div className="space-y-8 py-2">
             {messages.map((msg, idx) => {
               const isAssistant = msg.role === 'assistant'
               const circleColor = isAssistant ? assistantColor : userColor
-              const textColor   = isAssistant ? assistantColor : userColor
+              const textColor = isAssistant ? assistantColor : userColor
 
               return (
-                <div key={idx} className="flex items-start gap-4 px-1">
+                <div key={idx} className="flex items-center gap-4 px-1">
                   <motion.div
                     className="inline-flex items-center justify-center"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -377,9 +378,9 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                 </div>
               )
             })}
-              {/* Mock response tabs */}
-              {mockResponse && (
-                <>
+            {/* Mock response tabs */}
+            {mockResponse && (
+              <>
                 <Tabs
                   value={activeTab}
                   onValueChange={(value) => setActiveTab(value)}
@@ -391,11 +392,11 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">SQL</TabsTrigger>
                   </TabsList>
                   <TabsContent value="chart" className="pt-4">
-                    <ChartView 
-                      data={filteredData} 
-                      metric={metricToVisualize} 
+                    <ChartView
+                      data={filteredData}
+                      metric={metricToVisualize}
                       categoryKey={categoryKey}
-                      chartTitle={chartTitle} 
+                      chartTitle={chartTitle}
                     />
                   </TabsContent>
                   <TabsContent value="table" className="pt-4">
@@ -405,8 +406,9 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     <SQLView query={sqlQuery} />
                   </TabsContent>
                 </Tabs>
-                        {/* Follow-up assistant bubble */}
-                        <div className="flex items-start gap-4 px-1 mt-4">
+                
+                {/* Follow-up assistant bubble */}
+                <div className="flex items-center gap-4 px-1 mt-4">
                   <motion.div
                     className="inline-flex items-center justify-center"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -424,9 +426,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                         className="whitespace-pre-wrap leading-relaxed"
                         style={{ color: assistantColor }}
                       >
-                        {chartTitle.includes('product') ? 
-                          "Would you like to see sales history for any of these products?" : 
-                          "Do you want me analyze sales trend for these products?"}
+                        Do you want me to analyze the reasons for the latency issue?
                       </div>
                     </div>
                   </div>
@@ -434,10 +434,10 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
               </>
             )}
           </div>
-          )}
-        </ScrollArea>
+        )}
+      </ScrollArea>
 
-        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
+      <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
         <AIChatInput
           input={input}
           onChange={setInput}
@@ -447,4 +447,5 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         />
       </div>
     </div>
-)}
+  )
+}

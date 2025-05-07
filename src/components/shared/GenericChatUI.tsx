@@ -6,7 +6,6 @@ import { AIChatInput } from '@/components/shared/AIChatInput'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView'
-import { ChatVisualizeView } from '@/components/shared/chat-components/ChatVisualizeView'
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView'
 
 interface GenericChatUIProps {
@@ -22,7 +21,7 @@ const suggestions = [
 ]
 
 export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
-  const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage, clearMessages } = useChatMessages()
+  const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage } = useChatMessages()
   const [mockResponse, setMockResponse] = useState<{
     sql: string
     pipelineData: { label: string; value: number }[]
@@ -30,7 +29,7 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
     latencyData: { name: string; avgLatency: number; p95Latency: number }[]
     latencySql: string
   } | null>(null)
-  const [activeTab, setActiveTab] = useState<'sql' | 'visualize' | 'chart'>('visualize')
+  const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart')
   const [chartConfig, setChartConfig] = useState<{ category: 'pipelineUsage' | 'projectStatusDuration' | 'latency'; seriesType: 'single' | 'multi'; axisType: 'vertical' | 'horizontal' }>({ category: 'pipelineUsage', seriesType: 'single', axisType: 'vertical' })
   const [input, setInput] = useState('')
 
@@ -92,13 +91,7 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
           <ScrollArea className="h-full pr-4">
             <div className="space-y-6">
               {messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'flex items-start gap-3',
-                    message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
-                  )}
-                >
+                <div key={i} className="flex items-start gap-3">
                   {message.role === 'assistant' ? (
                     <Avatar className="h-8 w-8 flex items-center justify-center bg-[#009f59]">
                       <AvatarImage
@@ -118,7 +111,7 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
                       'rounded-lg px-4 py-2 max-w-[80%] relative whitespace-pre-wrap break-words',
                       message.role === 'assistant'
                         ? 'bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100'
-                        : 'bg-blue-100 text-blue-900 before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100'
+                        : 'bg-blue-100 text-blue-900 before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-blue-100'
                     )}
                   >
                     {message.content}
@@ -128,34 +121,48 @@ export function GenericChatUI({ imageSrc }: GenericChatUIProps) {
 
               {/* Mock response tabs */}
               {mockResponse && (
-                <Tabs
-                  value={activeTab}
-                  onValueChange={(value: string) => setActiveTab(value as 'sql' | 'visualize' | 'chart')}
-                  className="mt-6"
-                >
-                  <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="chart" className="px-4 py-2">Chart</TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2">SQL</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="visualize" className="pt-4">
-                    <ChatVisualizeView config={chartConfig} onConfigChange={setChartConfig} />
-                  </TabsContent>
-                  <TabsContent value="chart" className="pt-4">
-                    <ChatChartView
-                      data={
-                        chartConfig.category === 'latency'
-                          ? mockResponse.latencyData
-                          : chartConfig.category === 'pipelineUsage'
-                            ? mockResponse.pipelineData
-                            : mockResponse.projectStatusData
-                      }
-                      config={chartConfig}
-                    />
-                  </TabsContent>
-                  <TabsContent value="sql" className="pt-4">
-                    <ChatSQLView sql={chartConfig.category === 'latency' ? mockResponse.latencySql : mockResponse.sql} />
-                  </TabsContent>
-                </Tabs>
+                <>
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={(value: string) => setActiveTab(value as 'chart' | 'sql')}
+                    className="mt-6"
+                  >
+                    <TabsList className="flex space-x-2 border-b">
+                      <TabsTrigger
+                        value="chart"
+                        className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                      >
+                        Chart
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="sql"
+                        className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                      >
+                        SQL
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chart" className="pt-4">
+                      <ChatChartView
+                        data={
+                          chartConfig.category === 'latency'
+                            ? mockResponse.latencyData
+                            : chartConfig.category === 'pipelineUsage'
+                              ? mockResponse.pipelineData
+                              : mockResponse.projectStatusData
+                        }
+                        config={chartConfig}
+                      />
+                    </TabsContent>
+                    <TabsContent value="sql" className="pt-4">
+                      <ChatSQLView sql={chartConfig.category === 'latency' ? mockResponse.latencySql : mockResponse.sql} />
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Follow-up prompt */}
+                  <div className="mt-4 text-left text-sm text-gray-600">
+                    Do you have any further queries?
+                  </div>
+                </>
               )}
             </div>
           </ScrollArea>

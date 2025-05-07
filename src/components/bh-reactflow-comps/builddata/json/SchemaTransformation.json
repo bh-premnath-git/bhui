@@ -1,30 +1,52 @@
 {
-  "title": "Schema Transformation",
-  "description": "Define derived fields for your data",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "",
   "type": "object",
+  "title": "Aggregator",
+  "ui_type": "tab-container",
   "properties": {
-    "derived_fields": {
+    "aggregations": {
       "type": "array",
-      "title": "Derived Fields",
-      "description": "Define new fields based on expressions",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Field Name",
-            "description": "Name of the new field"
-          },
-          "expression": {
-            "type": "string",
-            "title": "Expression",
-            "description": "SQL-like expression to calculate the field value",
-            "format": "textarea"
-          }
+        "target_column": {
+          "type": "string",
+          "minLength": 1
         },
-        "required": ["name", "expression"]
+        "expression": {
+          "type": "string",
+          "minLength": 1,
+          "ui-hint": "expression"
+        }
+      }
+    },
+    "group_by": {
+      "type": "array",
+      "items": {
+        "group_by": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "pivot_by": {
+      "type": "array",
+      "items": {
+        "pivot_column": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pivot_values": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   },
-  "required": ["derived_fields"]
+  "required": [
+    "group_by",
+    "aggregations"
+  ]
 }

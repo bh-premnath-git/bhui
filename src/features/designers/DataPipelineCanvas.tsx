@@ -10,9 +10,10 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle } from 'lucide-react';
-import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
+// import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
+import CreateForm from './pipeline/components/form-sections/CreateFormNew';
 
 const BuildPlayGround: React.FC = () => {
     const { conversionLogs,
@@ -254,8 +255,8 @@ console.log(selectedSchema)
                     >
                         <DialogContent className="max-w-[60%]">
                             {selectedSchema && (
-                                <CreateFormFormik
-                                    form_name={selectedSchema}
+                                <CreateForm
+                                    schema={selectedSchema}
                                     sourceColumns={sourceColumns}
                                     onClose={handleDialogClose}
                                     currentNodeId={selectedSchema?.nodeId || ''}

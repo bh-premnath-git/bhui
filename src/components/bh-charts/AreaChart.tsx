@@ -29,6 +29,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   config = {},
   isMultiSeries = false,
 }) => {
+  const yAxisLabel = config.yAxisLabel;
   // Convert string values to numbers for chart rendering
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -150,6 +151,17 @@ export const AreaChart: React.FC<AreaChartProps> = ({
         <YAxis 
           domain={[minMax.min, minMax.max]}
           tick={{ fontSize: 12 }}
+          label={
+            yAxisLabel
+              ? {
+                  value: yAxisLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 10,
+                  style: { textAnchor: 'middle', fontSize: 12 },
+                }
+              : undefined
+          }
         />
         <Tooltip 
           formatter={formatter}

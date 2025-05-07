@@ -266,7 +266,7 @@ export const SortableChartCard: React.FC<SortableChartCardProps> = ({
           className="p-0 bg-card rounded-md border border-border/30 flex-grow flex flex-col overflow-hidden"
           style={{ 
             height: `${height}px`, 
-            minHeight: '100px'
+            minHeight: '160px'
           }}
         >
           <ResponsiveContainer 

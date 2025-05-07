@@ -147,11 +147,13 @@ export const MockDataChart: React.FC<{ data: any[] }> = ({ data }) => (
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
-      bars={["success", "failed"]}
+      bars={["success"]}
       colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
+      yAxisLabel="minutes"
       config={{
         ...chartDefaults.barConfig,
-        barGap: 2
+        yAxisLabel: 'm sec',
+        barGap: 4
       }}
     />
   </SortableChartCard>

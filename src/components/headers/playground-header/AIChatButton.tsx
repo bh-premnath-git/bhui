@@ -116,18 +116,18 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
             );
             
             // Set bottom drawer content with mock data table
-            if(variant === 'pipeline') {
-            setBottomDrawerContent(
-                <div className=" w-full h-full">
-                    <DataTable 
-                        data={mockTableData}
-                        columns={mockTableColumns}
-                        topVariant="simple"
-                        pagination={true}
-                    />
-                </div>,
-                'Pipeline Transformation Results'
-            );}
+            // if(variant === 'pipeline') {
+            // setBottomDrawerContent(
+            //     <div className=" w-full h-full">
+            //         <DataTable 
+            //             data={mockTableData}
+            //             columns={mockTableColumns}
+            //             topVariant="simple"
+            //             pagination={true}
+            //         />
+            //     </div>,
+            //     'Pipeline Transformation Results'
+            // );}
             
             // Trigger a resize event to help ReactFlow adjust
             setTimeout(() => {

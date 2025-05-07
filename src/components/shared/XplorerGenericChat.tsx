@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
 import { cn } from '@/lib/utils'
@@ -65,9 +64,9 @@ const mockSQLQueries = {
 // Component to display SQL query
 const SQLView = ({ query }) => {
   return (
-    <div className="rounded-lg bg-gray-800 text-white p-4 overflow-auto">
-      <pre className="text-sm">{query}</pre>
-    </div>
+    <pre className="bg-gray-100 p-2 rounded whitespace-pre-wrap">
+        {query}
+    </pre>
   );
 };
 
@@ -124,7 +123,7 @@ const ChartView = ({ data, metric, categoryKey }) => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="count" fill="#8884d8" name="Number of Orders" />
+            <Bar dataKey="count" fill="#A7D1F0" name="Number of Orders" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -141,7 +140,7 @@ const ChartView = ({ data, metric, categoryKey }) => {
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey={metric} fill="#8884d8" name={metric.charAt(0).toUpperCase() + metric.slice(1)} />
+          <Bar dataKey={metric} fill="#A7D1F0" name={metric.charAt(0).toUpperCase() + metric.slice(1)} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -256,78 +255,58 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
 
   return (
     <div className="flex flex-col h-full p-4">
-      {/* Message Area */}
-      <div className="flex-1 mt-4 overflow-hidden">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            {imageSrc && (
-              <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />
-            )}
-
-            {/* Initial Query Suggestions */}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {suggestions.map((sug) => (
-                <button
-                  key={sug}
-                  onClick={() => setInput(sug)}
-                  className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
-                >
-                  {sug}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-sm text-gray-600">How can I help with your order data today?</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-full pr-4">
-            <div className="space-y-6">
-              {messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'flex items-start gap-3',
-                    message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
-                  )}
-                >
-                  {message.role === 'assistant' ? (
-                    <Avatar className="h-8 w-8 flex items-center justify-center bg-[#009f59]">
-                      <AvatarImage
-                        src={imageSrc}
-                        className="w-3.5 h-5 transform -rotate-[40deg]"
-                        style={{ objectFit: 'contain' }}
-                      />
-                      <AvatarFallback className="text-white">AI</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-[#009f59] text-white">U</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={cn(
-                      'rounded-lg px-4 py-2 max-w-[80%] relative whitespace-pre-wrap break-words',
-                      message.role === 'assistant'
-                        ? 'bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100'
-                        : 'bg-blue-100 text-blue-900 before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100'
-                    )}
-                  >
-                    {message.content}
-                  </div>
+          <div className="flex-1 mt-4 overflow-hidden">
+            {!messages.length ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
+                <div className="flex flex-wrap justify-center gap-2 mb-4">
+                  {suggestions.map((sug) => (
+                    <button
+                      key={sug}
+                      onClick={() => setInput(sug)}
+                      className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
+                    >
+                      {sug}
+                    </button>
+                  ))}
                 </div>
-              ))}
-
+                <p className="text-sm text-gray-600">How can I assist you?</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-full pr-4">
+                <div className="space-y-6">
+                  {messages.map((msg, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5"> {/* Ensure left alignment and add gap for dot */}
+                      {/* Dot Indicator */}
+                      {msg.role === 'assistant' ? (
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                      ) : (
+                        <span className="w-2.5 h-2.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
+                      )}
+                      <div
+                        className={cn(
+                          'rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap break-words',
+                          msg.role === 'assistant' 
+                            ? 'bg-green-600 text-white'  // Assistant: green background, white text
+                            : 'bg-black text-white'       // User: black background, white text
+                        )}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
               {/* Mock response tabs */}
               {mockResponse && (
+                <>
                 <Tabs
                   value={activeTab}
                   onValueChange={(value) => setActiveTab(value)}
                   className="mt-6"
                 >
                   <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="table" className="px-4 py-2">Table</TabsTrigger>
-                    <TabsTrigger value="chart" className="px-4 py-2">Chart</TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2">SQL</TabsTrigger>
+                    <TabsTrigger value="table" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Table</TabsTrigger>
+                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Chart</TabsTrigger>
+                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">SQL</TabsTrigger>
                   </TabsList>
                   <TabsContent value="table" className="pt-4">
                     <TableView data={filteredData} />
@@ -339,6 +318,8 @@ export function XplorerGenericChatUI({ imageSrc }: XplorerGenericChatUIProps) {
                     <SQLView query={sqlQuery} />
                   </TabsContent>
                 </Tabs>
+                <div className="mt-4 text-left text-sm text-gray-600">Do you have any further queries?</div>
+                </>
               )}
             </div>
           </ScrollArea>

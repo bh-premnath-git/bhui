@@ -33,15 +33,21 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
 
     // animate sidebar open
     document.body.classList.add('right-aside-opening')
+    document.body.classList.add('right-aside-opening')
+    
     const chatComponent = variant === 'explorer' 
-    ? <XplorerGenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
-    : <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+      ? <XplorerGenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+      : <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+    
+    const title = variant === 'explorer' 
+      ? 'Agent Xplorer' 
+      : 'Agent Dataops'
 
-  setRightAsideContent(
-    chatComponent, 
-    'AI Chat', 
-    'w-[520px]'
-  )
+    setRightAsideContent(
+      chatComponent, 
+      title, 
+      'w-[520px]'
+    )
 
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'))

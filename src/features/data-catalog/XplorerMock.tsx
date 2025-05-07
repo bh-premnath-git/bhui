@@ -77,9 +77,8 @@ export function XplorerMock() {
   ]
 
   return (
-    <div className="w-full p-4 bg-white ">
+    <div className="w-full p-4 bg-white">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 m-4">
-        {/* Order Processing Status Chart */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-sm font-medium mb-2">Order Processing Status</h3>
           <ResponsiveContainer width="100%" height={300}>

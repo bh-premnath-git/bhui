@@ -23,30 +23,26 @@ export function AIChatInput({
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Apply styles directly to the textarea element to override any browser defaults
   useEffect(() => {
     if (textareaRef.current) {
-      const textarea = textareaRef.current;
-      
-      // Override any browser-specific styling
-      textarea.style.outline = "none";
-      textarea.style.border = "none";
-      textarea.style.boxShadow = "none";
-      textarea.style.webkitAppearance = "none";
-      textarea.style.appearance = "none";
+      const ta = textareaRef.current;
+      ta.style.outline = "none";
+      ta.style.border = "none";
+      ta.style.boxShadow = "none";
+      ta.style.webkitAppearance = "none";
+      ta.style.appearance = "none";
     }
   }, []);
 
-  // Auto-resize function
-  const autoResize = (element: HTMLTextAreaElement) => {
-    element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
   };
 
   return (
     <div
       className={`
-        flex items-center w-full bg-white rounded-full
+        flex items-center w-full bg-white rounded-md
         px-3 py-1.5 space-x-2 shadow-sm
         border transition-all duration-200 ease-in-out
         ${isFocused 
@@ -54,7 +50,7 @@ export function AIChatInput({
           : "border-gray-200 hover:border-gray-300"}
       `}
     >
-      {/* Mic on the left */}
+      {/* Voice input */}
       <Button
         onClick={onVoiceInput}
         variant="ghost"
@@ -64,9 +60,9 @@ export function AIChatInput({
       >
         <Mic className="h-5 w-5" />
       </Button>
-  
-      {/* Auto-resizing textarea with enhanced styling to prevent black outline */}
-      <div className="flex-grow relative">
+
+      {/* Auto-resizing textarea */}
+      <div className="flex-grow">
         <Textarea
           ref={textareaRef}
           value={input}
@@ -84,30 +80,21 @@ export function AIChatInput({
           maxLength={500}
           className="
             w-full bg-transparent border-0 pt-2 mx-2 resize-none overflow-y-auto
-            focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0
-            focus-visible:outline-none placeholder:text-gray-400
-            !shadow-none !outline-none !border-0"
+            focus:outline-none placeholder:text-gray-400
+            !shadow-none
+          "
           style={{ 
             height: "auto", 
             maxHeight: "10rem", 
             minHeight: "2.5rem",
-            caretColor: "#10b981", // Green cursor for better UX
-            outline: "none",
-            boxShadow: "none",
-            border: "none",
-            // Additional styles to prevent browser defaults
-            WebkitAppearance: "none",
-            MozAppearance: "none",
-            appearance: "none"
+            caretColor: "#10b981",
           }}
-          onInput={e => {
-            autoResize(e.target as HTMLTextAreaElement);
-          }}
+          onInput={e => autoResize(e.currentTarget)}
           disabled={disabled}
         />
       </div>
 
-      {/* Send on the right */}
+      {/* Send button */}
       <Button
         onClick={onSend}
         variant="ghost"
@@ -116,7 +103,7 @@ export function AIChatInput({
         className={`
           h-8 w-8 transition-all duration-150 ease-in-out
           ${disabled || !input.trim()
-            ? "text-gray-300 hover:text-gray-300 cursor-not-allowed opacity-70"
+            ? "text-gray-300 cursor-not-allowed opacity-70"
             : "text-green-500 hover:text-green-600 hover:bg-green-50"}
         `}
         aria-label="Send message"

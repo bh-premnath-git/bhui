@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
 import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
-import { Hammer } from 'lucide-react';
 import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
-import { PipeLineChatPanel } from '@/features/designers/pipeline/components/PipeLineChatPanel';
 import { DataTable } from '@/components/bh-table/data-table';
 
 interface AIButtonProps {

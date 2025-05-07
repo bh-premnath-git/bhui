@@ -130,7 +130,7 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="flex flex-col h-full p-0 pb-4">
+    <div className="flex flex-col h-full p-0 pb-4 pt-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 flex-shrink-0 mb-0 mt-1">
         <Filters />
       </div>

@@ -9,10 +9,6 @@ interface AIChatButtonProps {
   color?: string
 }
 
-/**
- * Renders an animated AI chat toggle button that opens/closes the right panel.
- * Place this component anywhere (e.g., page headers) to trigger the AI chat panel.
- */
 export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) {
   const {
     setRightAsideContent,
@@ -33,7 +29,7 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
     // animate sidebar open
     document.body.classList.add('right-aside-opening')
     setRightAsideContent(
-      <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />, 'AI Chat', 'w-[520px]'
+      <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />, 'Agent DataOps', 'w-[520px]'
     )
 
     setTimeout(() => {

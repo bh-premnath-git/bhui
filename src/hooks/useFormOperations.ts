@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { NodeFormData } from '@/types/flow';
+import { NodeFormData } from '@/types/designer/flow';
 
 export function useFormOperations(
   nodeFormData: NodeFormData[],

@@ -1,166 +1,418 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { menuList } from '@/configration/menuList';
-import { jwtDecode } from 'jwt-decode';
-import { Tooltip } from '@mui/material';
-
-interface NavItem {
-  icon: React.ReactNode;
-  path: string;
-  label: string;
-  subPaths?: { 
-    path: string; 
-    label: string;
-    icon: React.ReactNode;
-  }[];
-}
-
-interface RoleAccess {
-  [key: string]: string[]; // Mapping of role to allowed menu items
-}
-
-const roleAccess: RoleAccess = {
-  'admin-user': ['BigHammer AI','Data Catalog', 'Admin Console'],
-  'designer-user': ['BigHammer AI','Data Catalog', 'Designer'],
-  'ops-user': ['BigHammer AI','Data Catalog', 'DataOps Hub'],
-};
-
-const getUserRoles = () => {
-  const token: any = sessionStorage?.getItem("token");
-  const decoded: any = token ? jwtDecode(token) : null;
-
-  return decoded?.realm_access?.roles;
-};
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
+import logo from "/logo.svg";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSidebar } from "@/context/SidebarContext";
+import { useNavigation } from "@/hooks/useNavigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/context/ThemeContext";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ROUTES } from "@/config/routes";
+import { useMemo } from "react";
 
 export function Sidebar() {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const { pathname } = useLocation();
-  const userRoles = getUserRoles();
+  const { isExpanded, toggleSidebar } = useSidebar();
+  const { theme, toggleTheme } = useTheme();
+  const navigation = useNavigation();
+  const { getUserInfo, logout } = useAuth();
+  const userInfo = getUserInfo();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { navigationItems: dynamicItems = [], loading } = navigation;
+  
+  // Generate items for the navigation menu
+  const navItems = useMemo(() => {
+    const items = [];
+    
+    dynamicItems.forEach(item => {
+      // Add parent items
+      const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
+      
+      items.push({
+        ...item,
+        showIcon: showIconForParent,
+        isParent: true // Mark as parent item
+      });
+      
+      // Only add subitems for non-Data Xplorer parents
+      // Data Xplorer subitems are handled separately
+      if (item.subItems && item.subItems.length > 0 && item.title !== "Data Xplorer") {
+        item.subItems.forEach(subItem => {
+          items.push({
+            ...subItem,
+            isSubItem: true,
+            parentPath: item.path,
+            showIcon: true // All subitems show icons
+          });
+        });
+      }
+    });
+    
+    return items;
+  }, [dynamicItems]);
+  
+  // Get Data Xplorer specific items
+  const dataXplorerSubItems = useMemo(() => {
+    const xplorerItem = dynamicItems.find(item => item.title === "Data Xplorer");
+    return xplorerItem?.subItems || [];
+  }, [dynamicItems]);
 
-  // Determine allowed items based on user role
-  const allowedItems = Array.from(
-    new Set(userRoles?.flatMap((role: any) => roleAccess[role] || []))
-  );
+  // Function to check if a parent item has an active child
+  const hasActiveChild = (parentPath) => {
+    return location.pathname.startsWith(parentPath) && 
+           navItems.some(item => 
+             item.isSubItem && 
+             item.parentPath === parentPath && 
+             location.pathname === item.path
+           );
+  };
 
-  const filteredNavItems: NavItem[] = menuList.filter((item) =>
-    allowedItems.includes(item.label)
-  );
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
-  useEffect(() => {
-    const isDesignerFlowWithId = /^\/designers\/manage-flow\/.+$/.test(pathname);
-    setIsMounted(!isDesignerFlowWithId && pathname !== '/login');
-  }, [pathname]);
-
-  if (!isMounted) {
-    return null;
-  }
+  const userName = userInfo?.name || userInfo?.username || "John Doe";
 
   return (
-    <aside
-      className={`
-        fixed top-18 left-0 h-screen
-        z-20
-        transition-all duration-300 ease-in-out
-        overflow-hidden
-        ${isExpanded ? 'w-60' : 'w-16'}
-
-        /* Sidebar background & text color 
-           Use a light gray background to match the screenshot */
-        bg-[#F6F6F7] text-[#1F1F1F]
-      `}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-      role="navigation"
-      aria-label="Main Navigation"
+    <div
+      className={cn(
+        "h-screen fixed left-0 top-0 z-40 flex flex-col",
+        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-r",
+        "transition-[width] duration-300 ease-in-out will-change-[width]",
+        isExpanded ? "w-64" : "w-20"
+      )}
     >
-      <div className="flex flex-col h-full p-2">
-        <nav className="flex-1 mt-1 overflow-y-auto">
-          <ul className="space-y-1">
-            {filteredNavItems.map((item) => (
-              <li key={item.path} className="relative">
-                <Link
-                  to={item.path}
-                  className={`
-                    flex items-center justify-between p-2 rounded-lg
-                    transition-colors duration-200
-
-                    /* Active state */
-                    ${
-                      pathname === item.path
-                        ? 'bg-[#EBEBEC] text-[#000] font-semibold'
-                        : 'hover:bg-[#EBEBEC]'
-                    }
-                    ${item.subPaths ? 'font-semibold' : ''}
-                  `}
-                >
-                  <div className="flex items-center">
-                    <span className="flex items-center min-w-[22px]">
-                      {item.icon}
-                    </span>
-                    <span
-                      className={`
-                        ml-3 whitespace-nowrap transition-all duration-300
-                        ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
-                      `}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                </Link>
-
-                {item.subPaths && (
-                  <ul className="mt-1 space-y-1">
-                    {item.subPaths.map((subPath) => (
-                      <li key={subPath.path}>
-                        <Tooltip 
-                          title={!isExpanded ? subPath.label : ""}
-                          placement="right"
-                          arrow
-                        >
-                          <Link
-                            to={subPath.path}
-                            className={`
-                              flex items-center justify-between p-2 text-sm
-                              transition-colors duration-200
-                              relative group rounded-lg font-normal
-
-                              /* Active/hover for sub-items */
-                              ${
-                                pathname === subPath.path
-                                  ? 'bg-[#EBEBEC] text-[#000]'
-                                  : 'text-[#4A4A4A] hover:bg-[#EBEBEC] hover:text-[#1F1F1F]'
-                              }
-                            `}
+      <div className="h-16 flex items-center px-4 border-b">
+        <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigate("/dataops-hub")}>
+          
+          <div className="overflow-hidden">
+            <h1
+              className={cn(
+                "text-lg font-semibold font-sans ml-2",
+                "transition-all duration-300 ease-in-out",
+                "whitespace-nowrap transform",
+                isExpanded
+                  ? "opacity-100 translate-x-0"
+                  : "opacity-0 -translate-x-4 pointer-events-none"
+              )}
+            >
+              BigHammer.ai
+            </h1>
+          </div>
+        </div>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleSidebar}
+        className={cn(
+          "absolute -right-4 top-9 text-muted-foreground hover:bg-accent",
+          "h-10 w-4 rounded-none rounded-r-md border border-l-0",
+          "bg-background/90 transition-transform duration-300",
+          !isExpanded && "hover:scale-125",
+          isExpanded ? "justify-between" : "justify-center"
+        )}
+      >
+        {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </Button>
+      <nav className="flex-1 overflow-y-auto py-4">
+      <ul className={cn(
+    "space-y-2",
+    isExpanded ? "px-2 space-y-1" : "flex flex-col items-center w-full"
+  )}>
+          {navItems.map((item) => {
+            const shouldShow = isExpanded || (!isExpanded && item.showIcon);
+            
+            if (!shouldShow) {
+              return null;
+            }
+            const hasActiveSubitem = item.isParent && hasActiveChild(item.path);
+            
+            const needsTooltip = !isExpanded && item.showIcon;
+            
+            const navElement = (
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center py-2 rounded-md",
+                    "transition-all duration-200 ease-in-out",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    (isActive && !hasActiveSubitem) && "bg-accent text-accent-foreground",
+                    "flex-1",
+                    !isExpanded && item.showIcon && "justify-center px-3",
+                    isExpanded && "px-3",
+                    isExpanded && item.isSubItem && "pl-6 text-sm"
+                  )
+                }
+              >
+                {item.showIcon && item.icon && (
+                  <item.icon className={cn(
+                    "shrink-0 transition-transform duration-200",
+                    item.isSubItem ? "h-4 w-4" : "h-4 w-4"
+                  )} />
+                )}
+                {isExpanded && (
+                  <span className={cn(
+                    "flex-1 transition-opacity duration-200",
+                    item.showIcon && "ml-3",
+                    item.isSubItem && "text-sm",
+                    // Make parent items without icons have smaller text
+                    !item.showIcon && item.isParent && "text-sm font-medium"
+                  )}>
+                    {item.title}
+                  </span>
+                )}
+              </NavLink>
+            );
+            
+            return (
+              <li key={item.path}>
+                <div className="flex">
+                  {needsTooltip ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {navElement}
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>{item.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    navElement
+                  )}
+                  
+                  {isExpanded && item.actions && !item.isSubItem && (
+                    <div className="flex items-center">
+                      {item.actions.map((action, index) => (
+                        action.icon === 'ellipsis' ? (
+                          <DropdownMenu key={index}>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 ml-1"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                              <DropdownMenuItem 
+                                className="cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                  // Open search functionality
+                                  console.log("Search clicked");
+                                }}
+                              >
+                                <Search className="h-4 w-4" />
+                                <span>Search</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                  navigate(`${ROUTES.DATA_CATALOG}/xplorer`);
+                                }}
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                                <span>New Report</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 ml-1"
+                            onClick={() => navigation.handleAction(action.action, item.path)}
                           >
-                            <div className="flex items-center">
-                              <span
-                                className={`flex items-center min-w-[22px] ${
-                                  !isExpanded ? 'mx-0' : ''
-                                }`}
-                              >
-                                {subPath.icon}
-                              </span>
-                              <span
-                                className={`
-                                  whitespace-nowrap transition-all duration-300 ml-3
-                                  ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 w-0 -translate-x-4'}
-                                `}
-                              >
-                                {subPath.label}
-                              </span>
-                            </div>
-                          </Link>
-                        </Tooltip>
+                            {action.icon === 'ellipsis' && <MoreHorizontal className="h-4 w-4" />}
+                          </Button>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
+                {isExpanded && item.title === "Data Xplorer" && dataXplorerSubItems.length > 0 && (
+                  <ul className="mt-1 space-y-1">
+                    {dataXplorerSubItems.map(subItem => (
+                      <li key={subItem.path}>
+                        <NavLink
+                          to={subItem.path}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center px-3 py-2 rounded-md",
+                              "transition-all duration-200 ease-in-out",
+                              "hover:bg-accent hover:text-accent-foreground",
+                              isActive && "bg-accent text-accent-foreground",
+                              "text-sm pl-6"
+                            )
+                          }
+                        >
+                          {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                          <span className="ml-3 flex-1">{subItem.title}</span>
+                        </NavLink>
                       </li>
                     ))}
                   </ul>
                 )}
               </li>
-            ))}
-          </ul>
-        </nav>
+            );
+          })}
+        </ul>
+      </nav>
+      <div className="h-auto border-t">
+        <div className={cn(
+          "p-3 flex items-center",
+          isExpanded ? "justify-between" : "justify-center"
+        )}>
+          {/* User profile section */}
+          {!isExpanded ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                          <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-auto min-w-[8rem]"
+                    >
+                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                        <LogOut className="h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{userName}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              {isExpanded && (
+                <div
+                  className={cn(
+                    "flex-1 ml-3 overflow-hidden",
+                    "transition-all duration-300 ease-in-out",
+                    isExpanded
+                      ? "opacity-100 max-w-[140px]"
+                      : "opacity-0 max-w-0 pointer-events-none"
+                  )}
+                >
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userInfo?.email || ""}</p>
+                </div>
+              )}
+              <DropdownMenuContent
+                align="end"
+                className={cn(
+                  "transition-all duration-200 ease-in-out",
+                  isExpanded ? "min-w-[14rem]" : "w-auto min-w-[8rem]"
+                )}
+              >
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+        <div className={cn(
+          "px-3 pb-3",
+          isExpanded ? "flex justify-between items-center" : "flex justify-center"
+        )}>
+          {/* Theme toggle with tooltip */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 relative">
+                  <div className="relative">
+                    <Switch
+                      checked={theme === 'dark'}
+                      onCheckedChange={toggleTheme}
+                      className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-90"
+                    />
+                    
+                    {/* Custom thumb with icon */}
+                    <div 
+                      className={cn(
+                        "absolute top-0 left-0 pointer-events-none",
+                        "h-5 w-10 flex items-center",
+                        "transition-all duration-300"
+                      )}
+                    >
+                      <div 
+                        className={cn(
+                          "h-[18px] w-[18px] rounded-full flex items-center justify-center",
+                          "transition-all duration-300 transform shadow-sm",
+                          theme === 'dark' 
+                            ? "translate-x-[18px] bg-primary/90" 
+                            : "translate-x-[2px] bg-amber-50"
+                        )}
+                      >
+                        {theme === 'dark' ? (
+                          <Moon className="h-3 w-3 text-white drop-shadow-[0_0_1px_rgba(255,255,255,0.5)]" />
+                        ) : (
+                          <Sun className="h-3 w-3 text-amber-600 drop-shadow-[0_0_1px_rgba(180,83,9,0.3)]" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {isExpanded && (
+                    <span className={cn(
+                      "text-sm ml-1 font-medium",
+                      theme === 'dark' ? "text-blue-100" : "text-amber-600"
+                    )}>
+                      {theme === 'dark' ? 'Dark' : 'Light'}
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
-    </aside>
+    </div>
   );
 }
+
+export default Sidebar;

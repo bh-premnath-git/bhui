@@ -1,4 +1,4 @@
-import { GroupedProperties, Property } from '@/types/flow';
+import { GroupedProperties, Property } from '@/types/designer/flow';
 import { useMemo } from 'react';
 
 export const useGroupedProperties = (selectedNode: any) => {
@@ -7,20 +7,22 @@ export const useGroupedProperties = (selectedNode: any) => {
     if (!selectedNode) {
       return {
         property: [],
-        settings: []
+        settings: [],
+        parameters: []
       };
     }
 
     const properties = selectedNode.properties || {};
     const grouped: GroupedProperties = {
       property: [],
-      settings: []
+      settings: [],
+      parameters: []
     };
 
     Object.entries(properties).forEach(([key, value]: [string, any]) => {
       if (key !== 'type' && key !== 'task_id' && key !== 'depends_on') {
         const group = value.ui_properties?.group_key;
-        if (group === "property" || group === "settings") {
+        if (group === "property" || group === "settings" || group === "parameters") {
           grouped[group].push({
             key,
             ...value,
@@ -38,6 +40,7 @@ export const useGroupedProperties = (selectedNode: any) => {
         (a.ui_properties?.order || 0) - (b.ui_properties?.order || 0)
       );
     });
+    
     return grouped;
   }, [selectedNode]); // Keep a single dependency
 };

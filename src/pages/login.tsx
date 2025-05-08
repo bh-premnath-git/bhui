@@ -1,46 +1,84 @@
-import { useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import {  Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ChevronRight } from "lucide-react";
+import { LogIn } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function Component() {
+const Login = () => {
+  const { isAuthenticated, isInitialized, login } = useAuth();
   const navigate = useNavigate();
-
-  const token = sessionStorage.getItem("token");
-  useLayoutEffect(() => {
-    if (token) {
-      navigate("/dashboard");
+  const [loginAttempted, setLoginAttempted] = useState(false);
+  
+  // Always redirect to dashboard when authenticated
+  const from = "/dataops-hub";
+  
+  // Effect to redirect to dashboard when authenticated
+  useEffect(() => {
+    if (isAuthenticated && isInitialized) {
+      navigate(from, { replace: true });
     }
-  }, [token, navigate]);
+  }, [isAuthenticated, isInitialized, from, navigate]);
+  
+  // Handle login button click
+  const handleLogin = async () => {
+    setLoginAttempted(true);
+    try {
+      await login();
+    } catch (error) {
+      console.error("Login attempt failed:", error);
+      setLoginAttempted(false);
+    }
+  };
+  
+  // Show loading state while Keycloak initializes
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Don't show login page if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/dataops-hub" replace />;
+  }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full relative">
-        {/* Abstract background shapes */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -left-4 -top-4 w-24 h-24 bg-gray-100 rounded-full"></div>
-          <div className="absolute right-10 top-10 w-16 h-16 bg-gray-100 transform rotate-45"></div>
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-gray-100 rounded-full"></div>
-        </div>
-        <div className="relative z-10 bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
-          <AlertCircle className="w-20 h-20 mx-auto mb-6 text-gray-800" />
-          <h1 className="text-4xl font-bold mb-4 text-gray-900">Login Redirect Issue</h1>
-          <p className="text-xl text-gray-700 mb-8">
-            We encountered a problem with the Keycloak login
-          </p>
-          <Button
-            className="bg-black text-white hover:bg-gray-800 transition-colors duration-300 text-lg px-6 py-3 rounded-full"
-            onClick={() => navigate("/")}
-          >
-            Return to Home
-            <ChevronRight className="ml-2 w-5 h-5" />
-          </Button>
-        </div>
-        {/* Futuristic lines */}
-        <div className="absolute left-0 right-0 bottom-0 h-1 bg-gradient-to-r from-gray-200 via-gray-400 to-gray-200"></div>
-        <div className="absolute left-0 top-1/2 bottom-0 w-1 bg-gradient-to-b from-gray-200 via-gray-400 to-gray-200"></div>
-        <div className="absolute right-0 top-0 bottom-1/2 w-1 bg-gradient-to-t from-gray-200 via-gray-400 to-gray-200"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-panel p-8 max-w-md w-full text-center"
+      >
+        <h1 className="text-2xl font-bold mb-6">Authentication Required</h1>
+        <p className="text-muted-foreground mb-8">
+          Please log in to access this application
+        </p>
+        
+        <Button 
+          onClick={handleLogin} 
+          size="lg" 
+          className="glass-button w-full"
+          disabled={loginAttempted}
+        >
+          {loginAttempted ? (
+            <>
+              <div className="w-4 h-4 border-t-2 border-b-2 border-current rounded-full animate-spin mr-2" />
+              Signing in...
+            </>
+          ) : (
+            <>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign in with Bighammer
+            </>
+          )}
+        </Button>
+      </motion.div>
     </div>
   );
-}
+};
+
+export default Login;

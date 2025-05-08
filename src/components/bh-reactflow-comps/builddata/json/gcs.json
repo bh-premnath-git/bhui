@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "documentationUrl": "N/A",
+    "supportsIncremental": true,
+    "supportsNormalization": false,
+    "supportsDBT": false,
+    "supported_destination_sync_modes": ["overwrite", "append"],
+    "connectionSpecification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GCS Destination Spec",
+      "type": "object",
+      "required": ["gcs_bucket_name", "gcs_bucket_path", "credential", "format"],
+      "properties": {
+        "bucket_name": {
+          "title": "GCS Bucket Name",
+          "order": 1,
+          "type": "string",
+          "description": "You can find the bucket name in the App Engine Admin console Application Settings page, under the label Google Cloud Storage Bucket. Read more <a href=\"https://cloud.google.com/storage/docs/naming-buckets\">here</a>.",
+          "examples": ["bh_sync"]
+        },
+        "credentials_json": {
+        "type": "json",
+        "description": "The contents of your Service Account Key JSON file.",
+        "title": "Credentials JSON",
+        "bh_secret": true
+      }
+      }
+    }
+  }

@@ -69,7 +69,7 @@ export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) 
   );
 
   const handleCreateImportSource = useCallback(
-    async (connectionId: string, projectId: string, schema: string, createDescription: boolean, data: string[]) => {
+    async (connectionId: string, projectId: string, schema: string, createDescription: boolean, identifyPII: boolean, data: string[]) => {
       try {
         await apiService.post({
           portNumber: CATALOG_API_PORT,
@@ -80,6 +80,7 @@ export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) 
           params: {
             bh_project_id: projectId,
             create_description: createDescription,
+            identify_pii_elements: identifyPII,  
             schema,
           }
         });

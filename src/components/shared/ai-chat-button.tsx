@@ -3,12 +3,17 @@ import { motion } from 'framer-motion'
 import aiIcon from '/assets/ai/ai.svg'
 import { useSidebar } from '@/context/SidebarContext'
 import { GenericChatUI } from '@/components/shared/GenericChatUI'
+import { XplorerGenericChatUI } from './XplorerGenericChat'
 
 interface AIChatButtonProps {
   variant: 'governance' | 'explorer' | 'dataops'
   color?: string
 }
 
+/**
+ * Renders an animated AI chat toggle button that opens/closes the right panel.
+ * Place this component anywhere (e.g., page headers) to trigger the AI chat panel.
+ */
 export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) {
   const {
     setRightAsideContent,
@@ -28,8 +33,20 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
 
     // animate sidebar open
     document.body.classList.add('right-aside-opening')
+    document.body.classList.add('right-aside-opening')
+    
+    const chatComponent = variant === 'explorer' 
+      ? <XplorerGenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+      : <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />
+    
+    const title = variant === 'explorer' 
+      ? 'Agent Xplorer' 
+      : 'Agent Dataops'
+
     setRightAsideContent(
-      <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} />, 'Agent DataOps', 'w-[520px]'
+      chatComponent, 
+      title, 
+      'w-[520px]'
     )
 
     setTimeout(() => {

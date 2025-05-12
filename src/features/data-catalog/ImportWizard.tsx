@@ -42,7 +42,7 @@ export function ImportWizard() {
   };
 
 
-  const onSubmit = async (tables: string[], createDescription: boolean, createPII: boolean) => {
+  const onSubmit = async (tables: string[], createDescription: boolean, identifyPII: boolean) => {
     if (!selectedProject || !selectedConnection || !selectedSchema) {
       throw new Error("Project, connection, and schema must be selected.");
     }
@@ -54,7 +54,7 @@ export function ImportWizard() {
         selectedProject,
         selectedSchema,
         createDescription,
-        createPII,
+        identifyPII,
         tables
       );
       handleNavigation(ROUTES.DATA_CATALOG);

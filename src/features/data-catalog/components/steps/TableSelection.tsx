@@ -15,7 +15,7 @@ interface TableSelectionProps {
   toggleTable: (tableName: string) => void;
   toggleAll: () => void;
   isImporting: boolean;
-  onSubmit: (data: string[], createDescription: boolean, createPII: boolean) => Promise<void>
+  onSubmit: (data: string[], createDescription: boolean, identifyPII: boolean) => Promise<void>
 }
 
 export const TableSelection: React.FC<TableSelectionProps> = ({
@@ -30,7 +30,7 @@ export const TableSelection: React.FC<TableSelectionProps> = ({
   onSubmit,
 }) => {
   const [createDescription, setCreateDescription] = useState(false);
-  const [createPII, setCreatePII] = useState(false);
+  const [identifyPII, setIdentifyPII] = useState(false);
   const { fetchTable } = useDatabase();
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
@@ -60,7 +60,7 @@ export const TableSelection: React.FC<TableSelectionProps> = ({
   const handleSubmit = async () => {
     try {
       setFormState("submitting");
-      await onSubmit(selectedTables, createDescription, createPII);
+      await onSubmit(selectedTables, createDescription, identifyPII);
       setFormState("success");
     } catch (error) {
       setFormState("error");
@@ -123,8 +123,8 @@ export const TableSelection: React.FC<TableSelectionProps> = ({
       <div className="flex items-center space-x-4">
         <Checkbox
           id="create-description"
-          checked={createPII}
-          onCheckedChange={() => setCreatePII(!createPII)}
+          checked={identifyPII}
+          onCheckedChange={() => setIdentifyPII(!identifyPII)}
         />
         <label htmlFor="create-description" className="text-sm font-medium">
           Identify PII Columns

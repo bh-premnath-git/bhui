@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import schema from '@bh-ai/flow-schema';
+import {flowSchema as schema} from "@bh-ai/schemas";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { updateFormValues } from '@/store/slices/designer/flowSlice';
 import { MissingFieldsFormProps, FormState, OperatorFieldPair, FieldTypeInfo } from './types';

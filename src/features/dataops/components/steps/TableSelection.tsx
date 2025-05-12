@@ -4,7 +4,7 @@ import { Table2, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { useDatabase } from '../../hooks/useDatabase';
+import { useDatabase } from '@/features/data-catalog/hooks/useDatabase';
 
 interface TableSelectionProps {
   selectedConnection: string;

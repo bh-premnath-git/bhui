@@ -68,7 +68,7 @@ Install the dependencies for the UI project:
 npm install
 ```
 
-This will automatically resolve the local dependency for `@bh-ai/flow-schema` from the sibling directory.
+This will automatically resolve the local dependency for `@bh-ai/schemas` from the sibling directory.
 
 ### 4. Run the Project
 

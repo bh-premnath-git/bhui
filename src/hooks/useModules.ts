@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import schema from '@bh-ai/flow-schema';
+import {flowSchema as schema} from "@bh-ai/schemas";
 
 export function useModules() {
   return useMemo(() => {

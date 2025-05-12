@@ -18,7 +18,7 @@ export const PipeLineChatSlidingPortal: React.FC<PipeLineChatSlidingPortalProps>
   return(
     <>
     <PipeLineChatProvider onClose={onClose}>
-    <PipeLineChatMock
+    <PipeLineChatPanel
       // onClose={onClose}
     />
   </PipeLineChatProvider>

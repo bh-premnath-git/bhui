@@ -70,9 +70,9 @@ HAVING AVG(latency_seconds) / 60 > 120;
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md shadow-lg rounded-lg">
+    <div className="h-full flex flex-col bg-white backdrop-blur-md shadow-lg rounded-lg">
       {/* Messages Area */}
-      <ScrollArea className="flex-1 px-4 py-6">
+      <ScrollArea className="flex-1 px-2 py-6">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center">
             {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
@@ -94,7 +94,6 @@ HAVING AVG(latency_seconds) / 60 > 120;
             {messages.map((msg, idx) => {
               const isAssistant = msg.role === 'assistant'
               const circleColor = isAssistant ? assistantColor : userColor
-              const textColor   = isAssistant ? assistantColor : userColor
 
               return (
                 <div key={idx} className="flex items-center gap-4 px-1">
@@ -113,14 +112,22 @@ HAVING AVG(latency_seconds) / 60 > 120;
                   </motion.div>
 
                   <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                      <div
-                        className="whitespace-pre-wrap leading-relaxed"
-                        style={{ color: textColor }}
-                      >
-                        {msg.content}
+                    {isAssistant ? (
+                      <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
+                        <div className="whitespace-pre-wrap leading-relaxed text-black">
+                          {msg.content}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
+                        <div
+                          className="whitespace-pre-wrap leading-relaxed"
+                          style={{ color: userColor }}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -135,10 +142,10 @@ HAVING AVG(latency_seconds) / 60 > 120;
                   className="mt-6"
                 >
                   <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
                       Chart
                     </TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
                       SQL
                     </TabsTrigger>
                   </TabsList>
@@ -164,11 +171,8 @@ HAVING AVG(latency_seconds) / 60 > 120;
                     />
                   </motion.div>
                   <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
-                      <div
-                        className="whitespace-pre-wrap leading-relaxed"
-                        style={{ color: assistantColor }}
-                      >
+                    <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md">
+                      <div className="whitespace-pre-wrap leading-relaxed text-black">
                         Do you want me to analyze the reasons for the latency issue?
                       </div>
                     </div>
@@ -181,7 +185,7 @@ HAVING AVG(latency_seconds) / 60 > 120;
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
+      <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
         <AIChatInput
           input={input}
           onChange={setInput}

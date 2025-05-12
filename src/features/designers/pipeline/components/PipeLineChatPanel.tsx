@@ -141,16 +141,24 @@ export const PipeLineChatPanel = ({
   const [showSchemaForm, setShowSchemaForm] = useState(false);
   const [showReaderForm, setShowReaderForm] = useState(false);
   const [showWriterForm, setShowWriterForm] = useState(false);
+  const [showSorterForm, setShowSorterForm] = useState(false);
+  const [showAggregatorForm, setShowAggregatorForm] = useState(false);
   const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
   const [schemaFormInitialValues, setSchemaFormInitialValues] = useState<any>({});
   const [readerFormInitialValues, setReaderFormInitialValues] = useState<any>({});
   const [writerFormInitialValues, setWriterFormInitialValues] = useState<any>({});
+  const [sorterFormInitialValues, setSorterFormInitialValues] = useState<any>({});
+  const [aggregatorFormInitialValues, setAggregatorFormInitialValues] = useState<any>({});
   
   // Schema state for transformation forms
   const [filterSchema, setFilterSchema] = useState<any>(null);
   const [schemaTransformationSchema, setSchemaTransformationSchema] = useState<any>(null);
+  const [sorterSchema, setSorterSchema] = useState<any>(null);
+  const [aggregatorSchema, setAggregatorSchema] = useState<any>(null);
   const [filterName, setFilterName] = useState<string>('');
   const [schemaName, setSchemaName] = useState<string>('');
+  const [sorterName, setSorterName] = useState<string>('');
+  const [aggregatorName, setAggregatorName] = useState<string>('');
   
   // Add useTransition hook for smoother UI updates
   const [isPending, startTransition] = useTransition();
@@ -639,6 +647,41 @@ const {
           };
         });
       });
+    } else if (transformationType === 'sorter') {
+      // Update the sorter transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the sorter_transformation property
+          return {
+            ...source,
+            sorter_transformation: {
+              ...(source.sorter_transformation || {}),
+              name: 'sorter_transformation',
+              transformation: 'Sorter',
+              sort_columns: source.sorter_transformation?.sort_columns || [{ column_name: 'id', sort_order: 'asc' }],
+              dependent_on: [dependency]
+            }
+          };
+        });
+      });
+    } else if (transformationType === 'aggregator') {
+      // Update the aggregator transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the aggregator_transformation property
+          return {
+            ...source,
+            aggregator_transformation: {
+              ...(source.aggregator_transformation || {}),
+              name: 'aggregator_transformation',
+              transformation: 'Aggregator',
+              aggregations: source.aggregator_transformation?.aggregations || [{ target_column: 'total_count', expression: 'count(*)' }],
+              group_by: source.aggregator_transformation?.group_by || [{ group_by: 'category' }],
+              dependent_on: [dependency]
+            }
+          };
+        });
+      });
     } else if (transformationType === 'target') {
       // Update the target transformation in the selected sources
       setSelectedSources(prevSources => {
@@ -680,6 +723,26 @@ const {
         if (schemaTransformation) {
           schemaTransformation.dependent_on = [dependency];
           console.log("Updated schema transformation dependency:", schemaTransformation);
+        }
+      } else if (transformationType === 'sorter') {
+        // Find the sorter transformation
+        const sorterTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'sorter_transformation'
+        );
+        
+        if (sorterTransformation) {
+          sorterTransformation.dependent_on = [dependency];
+          console.log("Updated sorter transformation dependency:", sorterTransformation);
+        }
+      } else if (transformationType === 'aggregator') {
+        // Find the aggregator transformation
+        const aggregatorTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'aggregator_transformation'
+        );
+        
+        if (aggregatorTransformation) {
+          aggregatorTransformation.dependent_on = [dependency];
+          console.log("Updated aggregator transformation dependency:", aggregatorTransformation);
         }
       } else if (transformationType === 'target') {
         // Find the target transformation - it might have a custom name
@@ -866,6 +929,172 @@ const {
             addAssistantMessage("Sorry, there was an error loading the forms. Please try again.");
           }
           
+        } else if (transformationSubStep === 'sorter_dependency') {
+          // Update the sorter transformation with the selected dependency
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                sorter_transformation: {
+                  ...(source.sorter_transformation || {}),
+                  name: 'sorter_transformation',
+                  transformation: 'Sorter',
+                  sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
+                  dependent_on: [dependency]
+                }
+              };
+            });
+          });
+          
+          // Update the pipeline template with the dependency selection
+          setTimeout(() => {
+            const updatedTemplate = generatePipelineTemplate();
+            setPipelineJson(updatedTemplate);
+            console.log("Pipeline template updated after sorter dependency selection:", updatedTemplate);
+            
+            // Log the sorter transformation in the pipeline template
+            const sorterTransformation = updatedTemplate.transformations.find(
+              (t: any) => t.name === 'sorter_transformation'
+            );
+            console.log("Sorter transformation in pipeline template:", sorterTransformation);
+          }, 0);
+          
+          // Try to load the Sorter schema from mdata.json
+          try {
+            const sorterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sorter");
+            if (sorterSchemaFromMdata) {
+              // Add nodeId to the schema to match the format expected by CreateFormFormik
+              setSorterSchema({
+                ...sorterSchemaFromMdata,
+                nodeId: 'sorter_transformation'
+              });
+              console.log("Loaded sorter schema from mdata.json");
+              
+              // Prepare sorter form initial values
+              setSorterFormInitialValues({
+                name: 'sorter_transformation',
+                sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
+                dependent_on: [dependency]
+              });
+              setSorterName('sorter_transformation');
+              
+              // Show the sorter form
+              setTransformationSubStep('sorter_form');
+              setShowSorterForm(true);
+              addAssistantMessage("Please configure your sorter transformation below:");
+            } else {
+              console.error("Sorter schema not found in mdata.json");
+              // Return to transformation selection if schema not found
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
+                "1. Filter Transformation - Filter data based on conditions\n" +
+                "2. Schema Transformation - Create new fields or modify existing ones\n" +
+                "3. Sorter Transformation - Sort data based on columns\n" +
+                "4. Aggregation Transformation - Aggregate data with group by\n" +
+                "5. Target - Configure output target\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } catch (error) {
+            console.error("Error loading sorter schema from mdata.json:", error);
+            // Return to transformation selection if error
+            setTransformationSubStep('select');
+            addAssistantMessage(
+              "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
+              "1. Filter Transformation - Filter data based on conditions\n" +
+              "2. Schema Transformation - Create new fields or modify existing ones\n" +
+              "3. Sorter Transformation - Sort data based on columns\n" +
+              "4. Aggregation Transformation - Aggregate data with group by\n" +
+              "5. Target - Configure output target\n\n" +
+              "Please select an option from the buttons below."
+            );
+          }
+          
+        } else if (transformationSubStep === 'aggregator_dependency') {
+          // Update the aggregator transformation with the selected dependency
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                aggregator_transformation: {
+                  ...(source.aggregator_transformation || {}),
+                  name: 'aggregator_transformation',
+                  transformation: 'Aggregator',
+                  aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                  group_by: [{ group_by: 'category' }],
+                  dependent_on: [dependency]
+                }
+              };
+            });
+          });
+          
+          // Update the pipeline template with the dependency selection
+          setTimeout(() => {
+            const updatedTemplate = generatePipelineTemplate();
+            setPipelineJson(updatedTemplate);
+            console.log("Pipeline template updated after aggregator dependency selection:", updatedTemplate);
+            
+            // Log the aggregator transformation in the pipeline template
+            const aggregatorTransformation = updatedTemplate.transformations.find(
+              (t: any) => t.name === 'aggregator_transformation'
+            );
+            console.log("Aggregator transformation in pipeline template:", aggregatorTransformation);
+          }, 0);
+          
+          // Try to load the Aggregator schema from mdata.json
+          try {
+            const aggregatorSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Aggregator");
+            if (aggregatorSchemaFromMdata) {
+              // Add nodeId to the schema to match the format expected by CreateFormFormik
+              setAggregatorSchema({
+                ...aggregatorSchemaFromMdata,
+                nodeId: 'aggregator_transformation'
+              });
+              console.log("Loaded aggregator schema from mdata.json");
+              
+              // Prepare aggregator form initial values
+              setAggregatorFormInitialValues({
+                name: 'aggregator_transformation',
+                aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                group_by: [{ group_by: 'category' }],
+                dependent_on: [dependency]
+              });
+              setAggregatorName('aggregator_transformation');
+              
+              // Show the aggregator form
+              setTransformationSubStep('aggregator_form');
+              setShowAggregatorForm(true);
+              addAssistantMessage("Please configure your aggregation transformation below:");
+            } else {
+              console.error("Aggregator schema not found in mdata.json");
+              // Return to transformation selection if schema not found
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
+                "1. Filter Transformation - Filter data based on conditions\n" +
+                "2. Schema Transformation - Create new fields or modify existing ones\n" +
+                "3. Sorter Transformation - Sort data based on columns\n" +
+                "4. Aggregation Transformation - Aggregate data with group by\n" +
+                "5. Target - Configure output target\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } catch (error) {
+            console.error("Error loading aggregator schema from mdata.json:", error);
+            // Return to transformation selection if error
+            setTransformationSubStep('select');
+            addAssistantMessage(
+              "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
+              "1. Filter Transformation - Filter data based on conditions\n" +
+              "2. Schema Transformation - Create new fields or modify existing ones\n" +
+              "3. Sorter Transformation - Sort data based on columns\n" +
+              "4. Aggregation Transformation - Aggregate data with group by\n" +
+              "5. Target - Configure output target\n\n" +
+              "Please select an option from the buttons below."
+            );
+          }
+          
         } else if (transformationSubStep === 'target_dependency') {
           // Update the writer form with the selected dependency and proper initial values
           const initialValues = {
@@ -1004,13 +1233,17 @@ const {
           }
         }
 
-        if (userInput.includes('both') || userInput.includes('all')) {
-          currentSelection = 'both';
-          if (!newTransformations.includes('schema')) {
-            newTransformations.push('schema');
+        if (userInput.includes('sorter')) {
+          currentSelection = 'sorter';
+          if (!newTransformations.includes('sorter')) {
+            newTransformations.push('sorter');
           }
-          if (!newTransformations.includes('filter')) {
-            newTransformations.push('filter');
+        }
+        
+        if (userInput.includes('aggregation') || userInput.includes('aggregator')) {
+          currentSelection = 'aggregator';
+          if (!newTransformations.includes('aggregator')) {
+            newTransformations.push('aggregator');
           }
         }
 
@@ -1055,6 +1288,12 @@ const {
         if (transformations.includes('filter')) {
           existingNodes.push('filter_transformation');
         }
+        if (transformations.includes('sorter')) {
+          existingNodes.push('sorter_transformation');
+        }
+        if (transformations.includes('aggregator')) {
+          existingNodes.push('aggregator_transformation');
+        }
         
         // Initialize transformations with empty dependency arrays
         // This ensures they start with empty dependencies until the user selects them
@@ -1082,6 +1321,39 @@ const {
                 schema_transformation: {
                   ...(source.schema_transformation || {}),
                   dependent_on: [] // Empty array - will be filled when user selects dependency
+                }
+              };
+            });
+          });
+        }
+        
+        if (currentSelection === 'sorter') {
+          // Initialize sorter transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                sorter_transformation: {
+                  ...(source.sorter_transformation || {}),
+                  dependent_on: [], // Empty array - will be filled when user selects dependency
+                  sort_columns: [{ column_name: 'id', sort_order: 'asc' }]
+                }
+              };
+            });
+          });
+        }
+        
+        if (currentSelection === 'aggregator') {
+          // Initialize aggregator transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                aggregator_transformation: {
+                  ...(source.aggregator_transformation || {}),
+                  dependent_on: [], // Empty array - will be filled when user selects dependency
+                  aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                  group_by: [{ group_by: 'category' }]
                 }
               };
             });
@@ -1280,6 +1552,83 @@ const {
             setShowDependencySelection(true);
             addAssistantMessage(dependencyMessage);
           });
+        } else if (currentSelection === 'sorter') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('sorter_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this sorter transformation? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Initialize sorter transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  sorter_transformation: {
+                    ...(source.sorter_transformation || {}),
+                    name: 'sorter_transformation',
+                    transformation: 'Sorter',
+                    sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+            
+            // Show the dependency selection UI and add the message
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
+        } else if (currentSelection === 'aggregator') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('aggregator_dependency');
+            
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this aggregation transformation? Please select from the options below:";
+            
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+            
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+            
+            // Initialize aggregator transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  aggregator_transformation: {
+                    ...(source.aggregator_transformation || {}),
+                    name: 'aggregator_transformation',
+                    transformation: 'Aggregator',
+                    aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                    group_by: [{ group_by: 'category' }],
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+            
+            // Show the dependency selection UI and add the message
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
         } else if (currentSelection === 'target') {
           // Use startTransition to prevent UI from being replaced with loading indicator
           startTransition(() => {
@@ -1345,7 +1694,9 @@ const {
           "Great! The filter transformation has been added. Would you like to add another transformation?\n\n" +
           "1. Filter Transformation - Filter data based on conditions\n" +
           "2. Schema Transformation - Create new fields or modify existing ones\n" +
-          "3. Target - Skip transformations not needed\n\n" +
+          "3. Sorter Transformation - Sort data based on columns\n" +
+          "4. Aggregation Transformation - Aggregate data with group by\n" +
+          "5. Target - Configure output target\n\n" +
           "Please select an option from the buttons below."
         );
         break;
@@ -2278,7 +2629,336 @@ const {
       `Great! The schema transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
       "1. Filter Transformation - Filter data based on conditions\n" +
       "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Target - Skip transformations not needed\n\n" +
+      "3. Sorter Transformation - Sort data based on columns\n" +
+      "4. Aggregation Transformation - Aggregate data with group by\n" +
+      "5. Target - Configure output target\n\n" +
+      "Please select an option from the buttons below."
+    );
+  };
+  
+  // Handle sorter form submission
+  const handleSorterFormSubmit = (formData: any) => {
+    console.log("Sorter form submitted:", formData);
+    
+    // Ensure sort_columns is an array
+    if (!Array.isArray(formData.sort_columns)) {
+      formData.sort_columns = [{ column_name: 'id', sort_order: 'asc' }];
+    }
+    
+    // Filter out empty sort columns
+    formData.sort_columns = formData.sort_columns.filter((column: any) => 
+      column.column_name && column.column_name.trim() !== ''
+    );
+    
+    // If no valid sort columns, add a default one
+    if (formData.sort_columns.length === 0) {
+      formData.sort_columns = [{ column_name: 'id', sort_order: 'asc' }];
+    }
+    
+    // Save sorter transformation
+    const sortColumns = formData.sort_columns.map((column: any) =>
+      `${column.column_name} ${column.sort_order}`
+    ).join(', ');
+    
+    // Process dependency selection if provided
+    let dependencyMessage = "";
+    if (formData.dependent_on && formData.dependent_on.length > 0) {
+      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
+      console.log("Using user-provided sorter dependencies:", formData.dependent_on);
+    } else {
+      // If no dependency provided, check if we have a selected dependency
+      if (selectedDependency) {
+        formData.dependent_on = [selectedDependency];
+        dependencyMessage = ` (after ${selectedDependency})`;
+        console.log("Using selected dependency for sorter:", selectedDependency);
+      } 
+      // Otherwise, use an empty array - this will be filled when user selects dependency
+      else {
+        formData.dependent_on = [];
+        console.log("No dependency provided for sorter transformation");
+      }
+    }
+    
+    // Store the sorter transformation data directly in the transformations array
+    const sorterTransformationData = {
+      name: "sorter_transformation",
+      transformation: "Sorter",
+      dependent_on: formData.dependent_on,
+      sort_columns: formData.sort_columns
+    };
+    
+    // Update the selected sources with the sorter transformation data
+    if (selectedSources.length > 0) {
+      const updatedSources = selectedSources.map(source => {
+        return {
+          ...source,
+          sorter_transformation: sorterTransformationData
+        };
+      });
+      setSelectedSources(updatedSources);
+    }
+    
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the sorter transformation
+      const sorterTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'sorter_transformation'
+      );
+      
+      if (sorterTransformation) {
+        // Update existing sorter transformation
+        sorterTransformation.sort_columns = formData.sort_columns;
+        sorterTransformation.dependent_on = formData.dependent_on;
+        console.log("Updated sorter transformation in pipeline JSON:", sorterTransformation);
+      } else {
+        // Add new sorter transformation
+        updatedPipelineJson.transformations.push(sorterTransformationData);
+        console.log("Added new sorter transformation to pipeline JSON:", sorterTransformationData);
+      }
+      
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+    
+    // Add a message to show the selected sort columns
+    addUserMessage(`Sorter transformation: ${sortColumns}${dependencyMessage}`);
+    
+    // Hide the form
+    setShowSorterForm(false);
+    
+    // Regenerate the pipeline template with the updated sorter transformation
+    setTimeout(() => {
+      const sorterTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(sorterTransformTemplate);
+      console.log("Updated pipeline template after sorter form submission:", sorterTransformTemplate);
+      
+      // Log the sorter transformation in the pipeline template
+      const sorterTransformation = sorterTransformTemplate.transformations.find(
+        (t: any) => t.name === 'sorter_transformation'
+      );
+      console.log("Sorter transformation in pipeline template:", sorterTransformation);
+    }, 0);
+    
+    // Return to transformation selection to allow adding more transformations
+    setTransformationSubStep('select');
+    
+    // Get existing transformations and sources for suggestions
+    const existingNodes = [];
+    
+    // Add reader nodes from sources
+    if (selectedSources.length > 0) {
+      selectedSources.forEach(source => {
+        existingNodes.push(`read_${source.data_src_name}`);
+      });
+    }
+    
+    // Add existing transformation nodes
+    if (transformations.includes('schema')) {
+      existingNodes.push('schema_transformation');
+    }
+    if (transformations.includes('filter')) {
+      existingNodes.push('filter_transformation');
+    }
+    if (transformations.includes('sorter')) {
+      existingNodes.push('sorter_transformation');
+    }
+    if (transformations.includes('aggregator')) {
+      existingNodes.push('aggregator_transformation');
+    }
+    
+    // Create a list of existing transformations for the message
+    let transformationsList = "";
+    if (existingNodes.length > 0) {
+      transformationsList = "\n\nCurrent pipeline steps:\n";
+      existingNodes.forEach((node, index) => {
+        transformationsList += `${index + 1}. ${node}\n`;
+      });
+      transformationsList += "\nSorter transformation has been added.";
+    }
+    
+    // Ask if the user wants to add more transformations
+    addAssistantMessage(
+      `Great! The sorter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
+      "1. Filter Transformation - Filter data based on conditions\n" +
+      "2. Schema Transformation - Create new fields or modify existing ones\n" +
+      "3. Sorter Transformation - Sort data based on columns\n" +
+      "4. Aggregation Transformation - Aggregate data with group by\n" +
+      "5. Target - Configure output target\n\n" +
+      "Please select an option from the buttons below."
+    );
+  };
+  
+  // Handle aggregator form submission
+  const handleAggregatorFormSubmit = (formData: any) => {
+    console.log("Aggregator form submitted:", formData);
+    
+    // Ensure aggregations is an array
+    if (!Array.isArray(formData.aggregations)) {
+      formData.aggregations = [{ target_column: 'total_count', expression: 'count(*)' }];
+    }
+    
+    // Filter out empty aggregations
+    formData.aggregations = formData.aggregations.filter((agg: any) => 
+      agg.target_column && agg.target_column.trim() !== '' && agg.expression && agg.expression.trim() !== ''
+    );
+    
+    // If no valid aggregations, add a default one
+    if (formData.aggregations.length === 0) {
+      formData.aggregations = [{ target_column: 'total_count', expression: 'count(*)' }];
+    }
+    
+    // Ensure group_by is an array
+    if (!Array.isArray(formData.group_by)) {
+      formData.group_by = [{ group_by: 'category' }];
+    }
+    
+    // Filter out empty group_by
+    formData.group_by = formData.group_by.filter((group: any) => 
+      group.group_by && group.group_by.trim() !== ''
+    );
+    
+    // If no valid group_by, add a default one
+    if (formData.group_by.length === 0) {
+      formData.group_by = [{ group_by: 'category' }];
+    }
+    
+    // Save aggregator transformation
+    const aggregations = formData.aggregations.map((agg: any) =>
+      `${agg.target_column}: ${agg.expression}`
+    ).join(', ');
+    
+    const groupBy = formData.group_by.map((group: any) =>
+      group.group_by
+    ).join(', ');
+    
+    // Process dependency selection if provided
+    let dependencyMessage = "";
+    if (formData.dependent_on && formData.dependent_on.length > 0) {
+      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
+      console.log("Using user-provided aggregator dependencies:", formData.dependent_on);
+    } else {
+      // If no dependency provided, check if we have a selected dependency
+      if (selectedDependency) {
+        formData.dependent_on = [selectedDependency];
+        dependencyMessage = ` (after ${selectedDependency})`;
+        console.log("Using selected dependency for aggregator:", selectedDependency);
+      } 
+      // Otherwise, use an empty array - this will be filled when user selects dependency
+      else {
+        formData.dependent_on = [];
+        console.log("No dependency provided for aggregator transformation");
+      }
+    }
+    
+    // Store the aggregator transformation data directly in the transformations array
+    const aggregatorTransformationData = {
+      name: "aggregator_transformation",
+      transformation: "Aggregator",
+      dependent_on: formData.dependent_on,
+      aggregations: formData.aggregations,
+      group_by: formData.group_by
+    };
+    
+    // Update the selected sources with the aggregator transformation data
+    if (selectedSources.length > 0) {
+      const updatedSources = selectedSources.map(source => {
+        return {
+          ...source,
+          aggregator_transformation: aggregatorTransformationData
+        };
+      });
+      setSelectedSources(updatedSources);
+    }
+    
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the aggregator transformation
+      const aggregatorTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'aggregator_transformation'
+      );
+      
+      if (aggregatorTransformation) {
+        // Update existing aggregator transformation
+        aggregatorTransformation.aggregations = formData.aggregations;
+        aggregatorTransformation.group_by = formData.group_by;
+        aggregatorTransformation.dependent_on = formData.dependent_on;
+        console.log("Updated aggregator transformation in pipeline JSON:", aggregatorTransformation);
+      } else {
+        // Add new aggregator transformation
+        updatedPipelineJson.transformations.push(aggregatorTransformationData);
+        console.log("Added new aggregator transformation to pipeline JSON:", aggregatorTransformationData);
+      }
+      
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+    
+    // Add a message to show the selected aggregations and group by
+    addUserMessage(`Aggregator transformation: ${aggregations} grouped by ${groupBy}${dependencyMessage}`);
+    
+    // Hide the form
+    setShowAggregatorForm(false);
+    
+    // Regenerate the pipeline template with the updated aggregator transformation
+    setTimeout(() => {
+      const aggregatorTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(aggregatorTransformTemplate);
+      console.log("Updated pipeline template after aggregator form submission:", aggregatorTransformTemplate);
+      
+      // Log the aggregator transformation in the pipeline template
+      const aggregatorTransformation = aggregatorTransformTemplate.transformations.find(
+        (t: any) => t.name === 'aggregator_transformation'
+      );
+      console.log("Aggregator transformation in pipeline template:", aggregatorTransformation);
+    }, 0);
+    
+    // Return to transformation selection to allow adding more transformations
+    setTransformationSubStep('select');
+    
+    // Get existing transformations and sources for suggestions
+    const existingNodes = [];
+    
+    // Add reader nodes from sources
+    if (selectedSources.length > 0) {
+      selectedSources.forEach(source => {
+        existingNodes.push(`read_${source.data_src_name}`);
+      });
+    }
+    
+    // Add existing transformation nodes
+    if (transformations.includes('schema')) {
+      existingNodes.push('schema_transformation');
+    }
+    if (transformations.includes('filter')) {
+      existingNodes.push('filter_transformation');
+    }
+    if (transformations.includes('sorter')) {
+      existingNodes.push('sorter_transformation');
+    }
+    if (transformations.includes('aggregator')) {
+      existingNodes.push('aggregator_transformation');
+    }
+    
+    // Create a list of existing transformations for the message
+    let transformationsList = "";
+    if (existingNodes.length > 0) {
+      transformationsList = "\n\nCurrent pipeline steps:\n";
+      existingNodes.forEach((node, index) => {
+        transformationsList += `${index + 1}. ${node}\n`;
+      });
+      transformationsList += "\nAggregator transformation has been added.";
+    }
+    
+    // Ask if the user wants to add more transformations
+    addAssistantMessage(
+      `Great! The aggregation transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
+      "1. Filter Transformation - Filter data based on conditions\n" +
+      "2. Schema Transformation - Create new fields or modify existing ones\n" +
+      "3. Sorter Transformation - Sort data based on columns\n" +
+      "4. Aggregation Transformation - Aggregate data with group by\n" +
+      "5. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   };
@@ -2484,6 +3164,104 @@ const {
                                 </div>
                               </div>
                             )}
+                            
+                            {showSorterForm && (
+                              <div className="mt-4 rounded-lg bg-white">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">SO</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Sorter Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for sorter transformation */}
+                                  {sorterSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...sorterSchema,
+                                        initialValues: {
+                                          name: 'sorter_transformation',
+                                          sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
+                                          dependent_on: sorterFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'sorter_transformation',
+                                        sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
+                                        dependent_on: sorterFormInitialValues.dependent_on || []
+                                      }}
+                                      onSubmit={handleSorterFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowSorterForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={`sorter_${sorterName || 'transformation'}`}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading sorter transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {showAggregatorForm && (
+                              <div className="mt-4 rounded-lg bg-white">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">AG</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Aggregation Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for aggregator transformation */}
+                                  {aggregatorSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...aggregatorSchema,
+                                        initialValues: {
+                                          name: 'aggregator_transformation',
+                                          aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                                          group_by: [{ group_by: 'category' }],
+                                          dependent_on: aggregatorFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'aggregator_transformation',
+                                        aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
+                                        group_by: [{ group_by: 'category' }],
+                                        dependent_on: aggregatorFormInitialValues.dependent_on || []
+                                      }}
+                                      onSubmit={handleAggregatorFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowAggregatorForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={`aggregator_${aggregatorName || 'transformation'}`}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading aggregator transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                           {showDependencySelection && (
                             <div className="mt-4 rounded-lg bg-white p-4">
@@ -2654,6 +3432,32 @@ const {
                                       className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                     />
                                     <SuggestionButton
+                                      text="Sorter Transformation"
+                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Sorter Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Sorter Transformation");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                    <SuggestionButton
+                                      text="Aggregation Transformation"
+                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      onClick={() => {
+                                        addUserMessage("Aggregation Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Aggregation Transformation");
+                                      }}
+                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    />
+                                    <SuggestionButton
                                       text="Target (Skip Transformations)"
                                       icon={<FileText className="h-4 w-4 mr-2" />}
                                       onClick={() => {
@@ -2663,19 +3467,6 @@ const {
                                         setPipelineJson(pipelineTemplate);
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("3. Target");
-                                      }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                    />
-                                    <SuggestionButton
-                                      text="Add Both Transformations"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
-                                      onClick={() => {
-                                        addUserMessage("Add both transformations");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Add both");
                                       }}
                                       className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                     />

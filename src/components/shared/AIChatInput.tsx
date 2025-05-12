@@ -79,10 +79,16 @@ export function AIChatInput({
           rows={1}
           maxLength={500}
           className="
-            w-full bg-transparent border-0 pt-2 mx-2 resize-none overflow-y-auto
-            focus:outline-none placeholder:text-gray-400
-            !shadow-none
-          "
+            w-full
+            bg-transparent
+            resize-none
+            overflow-y-auto
+            placeholder:text-gray-400
+            !border-none
+            !outline-none
+            !ring-0
+            px-3 py-2 mx-2
+            !shadow-none"
           style={{ 
             height: "auto", 
             maxHeight: "10rem", 

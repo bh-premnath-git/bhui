@@ -35,14 +35,20 @@ export function RightAside({
         variant="ghost"
         size="icon"
         onClick={closeRightAside}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 h-8 w-8 rounded-full hover:bg-muted z-10"
+        className="
+          absolute left-0 top-1/2 -translate-y-1/2 -ml-4
+          h-10 w-10 rounded-full border bg-background
+          hover:bg-accent shadow-sm hover:shadow-md
+          transition-all duration-200
+          group z-10
+        "
         aria-label="Collapse panel"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Button>
 
       <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
-        <h2 className="font-medium text-lg">{title}</h2>
+        <h2 className="font-medium text-lg text-green-600">{title}</h2>
         <Button
           variant="ghost"
           size="icon"

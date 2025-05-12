@@ -23,7 +23,8 @@ Project Architecture Tree Diagram
 
 Packages:
 
-  -   @bh-ai/flow-schema (Implicit - inferred from import)
+  -   import {flowSchema as schema} from "@bh-ai/schemas";
+ (Implicit - inferred from import)
 
 Project Structure:
 
@@ -600,7 +601,7 @@ Includes EMR cluster management (clusterSlice.ts).
 Flow Manager (src/features/designers/flow):
 Manages and designs data flows (useFlow.ts, flowSlice.ts).
 Visual flow editor using React Flow (useFlowOperations.ts, useNodeOperations.ts).
-Includes a form component (NodeForm/index.ts) for configuring nodes, likely based on @bh-ai/flow-schema (useModules.ts).
+Includes a form component (NodeForm/index.ts) for configuring nodes, likely based on @bh-ai/schemas (useModules.ts).
 Features like auto-saving (autoSaveSlice.ts) and handling missing fields (missing-fields-form/index.ts).
 Flow node validation (flowNodeValidator.ts).
 Notebook (src/features/designers/notebook): Likely a code or markdown editor for data exploration or documentation, integrated within the Designer section (src/types/data-catalog/notebook/note.ts).

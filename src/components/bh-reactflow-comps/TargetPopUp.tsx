@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { Database, Save, FileText } from "lucide-react";
 import targetSchema from "@/components/bh-reactflow-comps/builddata/json/Target.json";
 import writerSchema from "@/components/bh-reactflow-comps/builddata/json/Writer.json";
 import csvOptionsSchema from "@/components/bh-reactflow-comps/builddata/json/CSVOptions.json";
@@ -456,7 +457,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         );
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const errors: Record<string, string> = {};
 
@@ -470,17 +471,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             toast.error("Please fill all required fields");
             return;
         }
-        console.log(formData,"formData")
 
         try {
             const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
             let connection ={...connectionData?.custom_metadata};
             connection.connection_config_id=formData.target?.connection?.connection_config_id;
-            console.log(selectedConnection,"connectionData")
-            console.log(connectionData?.custom_metadata,"connectionData")
-            console.log(connection,"formData")
-            // Use formData.name as the nodeTitle
-            // const nodeTitle = formData.name;
+            
             // Create a properly structured source data object
             const sourceData = {
                 nodeId,
@@ -509,7 +505,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
-            console.log(sourceData,"sourceData")
+            
             if (onSourceUpdate) {
                 onSourceUpdate(sourceData);
             }
@@ -541,16 +537,16 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     if (isOpen === false) {
         // Inline mode - render as a Card
         return (
-            <Card className="w-full shadow-md border border-gray-200 my-2">
-                <CardContent className="p-6">
+            <Card className="w-full shadow-md border border-gray-200 my-2 overflow-hidden">
+                <CardContent className="p-0">
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                         <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">T</span>
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md">
+                                <Database className="h-4 w-4 text-white" />
                             </div>
-                            <h2 className="text-lg font-medium text-gray-800">
+                            <h2 className="text-lg font-semibold text-gray-800">
                                 Target Configuration
                             </h2>
                         </div>
@@ -657,12 +653,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-hidden flex flex-col">
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                         <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">T</span>
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md">
+                                <Database className="h-4 w-4 text-white" />
                             </div>
-                            <h2 className="text-lg font-medium text-gray-800">
+                            <h2 className="text-lg font-semibold text-gray-800">
                                 Target Configuration
                             </h2>
                         </div>

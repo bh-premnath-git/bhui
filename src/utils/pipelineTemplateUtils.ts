@@ -10,8 +10,21 @@ export enum TransformationType {
   FILTER = 'filter',
   AGGREGATOR = 'aggregator',
   SORTER = 'sorter',
-  TARGET = 'target'
+  TARGET = 'target',
+  JOIN = 'join',
+  UNION = 'union'
 }
+
+// Map string transformation types to enum values for easier lookup
+export const transformationTypeMap: Record<string, TransformationType> = {
+  'schema': TransformationType.SCHEMA,
+  'filter': TransformationType.FILTER,
+  'aggregator': TransformationType.AGGREGATOR,
+  'sorter': TransformationType.SORTER,
+  'target': TransformationType.TARGET,
+  'join': TransformationType.JOIN,
+  'union': TransformationType.UNION
+};
 
 /**
  * Enum for target types
@@ -66,6 +79,8 @@ export interface DataSource {
   aggregator_transformation?: TransformationConfig;
   sorter_transformation?: TransformationConfig;
   target_transformation?: TransformationConfig;
+  join_transformation?: TransformationConfig;
+  union_transformation?: TransformationConfig;
   columns?: Array<{ name: string; dataType: string }>;
   [key: string]: any;
 }
@@ -319,6 +334,108 @@ const createSorterTransformation = (sources: DataSource[]): any => {
 };
 
 /**
+ * Creates a join transformation
+ */
+const createJoinTransformation = (sources: DataSource[]): any => {
+  // Find join transformation in existing transformations
+  const joinTransformation = sources.find(source => 
+    source.join_transformation);
+  
+  if (!joinTransformation) {
+    console.warn("No join transformation found in sources");
+    return null;
+  }
+  
+  // Determine dependencies - Join requires at least two dependencies
+  let dependencies = joinTransformation.join_transformation?.dependent_on || [];
+  
+  // Ensure dependencies is an array
+  if (!Array.isArray(dependencies)) {
+    // If it's a comma-separated string, split it
+    if (typeof dependencies === 'string' && dependencies.includes(',')) {
+      dependencies = dependencies.split(',').map(dep => dep.trim());
+    } else {
+      // If it's a single string or other value, convert to array
+      dependencies = [dependencies].filter(Boolean);
+    }
+  }
+  
+  // Get user-provided join conditions or use defaults
+  const conditions = joinTransformation.join_transformation?.conditions || [
+    {
+      join_type: 'inner',
+      join_condition: 'a.id = b.id'
+    }
+  ];
+  
+  console.log("Creating join transformation with dependencies:", dependencies);
+  console.log("Join transformation source data:", joinTransformation.join_transformation);
+  
+  // Ensure we have at least two dependencies for join transformation
+  if (dependencies.length < 2) {
+    console.warn("Join transformation requires at least two dependencies, but only found:", dependencies);
+    return null; // Return null if we still don't have enough dependencies
+  }
+  
+  return {
+    "name": "join_transformation",
+    "dependent_on": dependencies,
+    "transformation": "Joiner",
+    "conditions": conditions,
+    "join_type": conditions[0]?.join_type || 'inner'
+  };
+};
+
+/**
+ * Creates a union transformation
+ */
+const createUnionTransformation = (sources: DataSource[]): any => {
+  // Find union transformation in existing transformations
+  const unionTransformation = sources.find(source => 
+    source.union_transformation);
+  
+  // If no union transformation is found in sources, return null
+  // This prevents automatic dependency selection
+  if (!unionTransformation) {
+    console.warn("No union transformation found in sources");
+    return null;
+  }
+  
+  // Determine dependencies - Union requires at least two dependencies
+  let dependencies = unionTransformation.union_transformation?.dependent_on || [];
+  
+  // Ensure dependencies is an array
+  if (!Array.isArray(dependencies)) {
+    // If it's a comma-separated string, split it
+    if (typeof dependencies === 'string' && dependencies.includes(',')) {
+      dependencies = dependencies.split(',').map(dep => dep.trim());
+    } else {
+      // If it's a single string or other value, convert to array
+      dependencies = [dependencies].filter(Boolean);
+    }
+  }
+  
+  // Get user-provided union settings or use defaults
+  const unionType = unionTransformation.union_transformation?.union_type || 'distinct';
+  
+  console.log("Creating union transformation with dependencies:", dependencies);
+  console.log("Union transformation source data:", unionTransformation.union_transformation);
+  
+  // Ensure we have at least two dependencies for union transformation
+  if (dependencies.length < 2) {
+    console.warn("Union transformation requires at least two dependencies, but only found:", dependencies);
+    return null; // Return null if we still don't have enough dependencies
+  }
+  
+  return {
+    "name": "union_transformation",
+    "dependent_on": dependencies,
+    "transformation": "Union",
+    "union_type": unionType
+  };
+};
+
+/**
  * Creates a target object for the pipeline template
  */
 const createTargetObject = (
@@ -475,28 +592,112 @@ export const buildPipelineTemplate = (
     transformationsList.push(createReaderTransformation(source, pipelineTemplate.sources[sourceId]));
   });
 
+  // Convert string transformation types to enum values
+  const transformationTypes = transformations.map(t => 
+    transformationTypeMap[t] || t
+  );
+
   // Add schema transformation if selected
-  if (transformations.includes(TransformationType.SCHEMA)) {
+  if (transformationTypes.includes(TransformationType.SCHEMA) || transformations.includes(TransformationType.SCHEMA)) {
     transformationsList.push(createSchemaTransformation(selectedSources));
   }
 
   // Add filter transformation if selected
-  if (transformations.includes(TransformationType.FILTER)) {
+  if (transformationTypes.includes(TransformationType.FILTER) || transformations.includes(TransformationType.FILTER)) {
     transformationsList.push(createFilterTransformation(selectedSources, filterCondition));
   }
   
   // Add aggregator transformation if selected
-  if (transformations.includes(TransformationType.AGGREGATOR)) {
+  if (transformationTypes.includes(TransformationType.AGGREGATOR) || transformations.includes(TransformationType.AGGREGATOR)) {
     transformationsList.push(createAggregatorTransformation(selectedSources));
   }
   
   // Add sorter transformation if selected
-  if (transformations.includes(TransformationType.SORTER)) {
+  if (transformationTypes.includes(TransformationType.SORTER) || transformations.includes(TransformationType.SORTER)) {
     transformationsList.push(createSorterTransformation(selectedSources));
+  }
+  
+  // Add join transformation if selected
+  if (transformationTypes.includes(TransformationType.JOIN) || transformations.includes(TransformationType.JOIN) || transformations.includes('join')) {
+    const joinTransform = createJoinTransformation(selectedSources);
+    console.log("Adding join transformation to pipeline:", joinTransform);
+    if (joinTransform) {
+      transformationsList.push(joinTransform);
+    } else {
+      console.warn("Join transformation was selected but could not be created");
+      
+      // Check if any source has a join_transformation property with empty dependencies
+      const sourceWithEmptyDependencies = selectedSources.find(
+        source => source.join_transformation && 
+                 (!source.join_transformation.dependent_on || 
+                  (Array.isArray(source.join_transformation.dependent_on) && 
+                   source.join_transformation.dependent_on.length === 0))
+      );
+      
+      // Only create a placeholder if we have a source with join_transformation but no dependencies
+      if (sourceWithEmptyDependencies) {
+        const placeholderJoinTransform = {
+          "name": "join_transformation",
+          "dependent_on": [], // Empty array - will be filled when user selects dependencies
+          "transformation": "Joiner",
+          "conditions": [{ join_type: 'inner', join_condition: '' }],
+          "join_type": 'inner'
+        };
+        
+        console.log("Created placeholder join transformation:", placeholderJoinTransform);
+        transformationsList.push(placeholderJoinTransform);
+      }
+    }
+  }
+  
+  // Add union transformation if selected
+  if (transformationTypes.includes(TransformationType.UNION) || transformations.includes(TransformationType.UNION) || transformations.includes('union')) {
+    // Log the selected sources to help with debugging
+    console.log("Selected sources for union transformation:", selectedSources);
+    
+    // Check if we have at least two sources for union
+    if (selectedSources.length < 2) {
+      console.warn("Union transformation requires at least two sources, but only found:", selectedSources.length);
+    }
+    
+    // Try to create the union transformation
+    const unionTransform = createUnionTransformation(selectedSources);
+    console.log("Adding union transformation to pipeline:", unionTransform);
+    
+    if (unionTransform) {
+      // Add the union transformation to the list
+      transformationsList.push(unionTransform);
+      
+      // Log the updated transformations list
+      console.log("Updated transformations list with union:", transformationsList);
+    } else {
+      console.warn("Union transformation was selected but could not be created");
+      
+      // Check if any source has a union_transformation property with empty dependencies
+      const sourceWithEmptyDependencies = selectedSources.find(
+        source => source.union_transformation && 
+                 (!source.union_transformation.dependent_on || 
+                  (Array.isArray(source.union_transformation.dependent_on) && 
+                   source.union_transformation.dependent_on.length === 0))
+      );
+      
+      // Only create a placeholder if we have a source with union_transformation but no dependencies
+      if (sourceWithEmptyDependencies) {
+        const placeholderUnionTransform = {
+          "name": "union_transformation",
+          "dependent_on": [], // Empty array - will be filled when user selects dependencies
+          "transformation": "Union",
+          "union_type": "distinct"
+        };
+        
+        console.log("Created placeholder union transformation:", placeholderUnionTransform);
+        transformationsList.push(placeholderUnionTransform);
+      }
+    }
   }
 
   // Only add target if the user has explicitly selected it as a transformation
-  if (transformations.includes(TransformationType.TARGET)) {
+  if (transformationTypes.includes(TransformationType.TARGET) || transformations.includes(TransformationType.TARGET) || transformations.includes('target')) {
     // Add target - dynamically build based on target configuration
     const targetName = targetConfig.customConfig?.name || targetConfig.connection?.name || "Target";
     const targetId = targetName; // Use the target name as the ID to match the sample JSON

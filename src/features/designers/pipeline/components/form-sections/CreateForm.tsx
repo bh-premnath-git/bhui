@@ -4,9 +4,9 @@ import { FormField } from './FormField';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Node, Edge } from 'reactflow';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 // import { generatePipelineAgent } from '@/store/slices/buildPipeLine/BuildPipeLineSlice';
-import { AppDispatch } from '@/store';
+import { AppDispatch, RootState } from '@/store';
 import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 import { generateInitialValues } from './get-initial-form';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ interface SourceColumn {
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
 
-const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, pipelineDtl, currentNodeId, edges }) => {
+const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, currentNodeId, edges }) => {
   const initialFormValues:any = useMemo(() => {
     const values = generateInitialValues(schema, initialValues,currentNodeId);
     
@@ -117,6 +117,31 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
+    // Add specific initialization for Joiner form
+    if (schema?.title === 'Joiner') {
+      return {
+        conditions: initialValues?.conditions || [{ 
+          join_type: 'inner', 
+          join_condition: '' 
+        }],
+        dependent_on: initialValues?.dependent_on || [],
+        expressions: initialValues?.expressions || [{ 
+          name: '', 
+          expression: '' 
+        }],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for Union form
+    if (schema?.title === 'Union') {
+      return {
+        union_type: initialValues?.union_type || 'distinct',
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
     return values;
   }, [schema, initialValues]);
 console.log(initialFormValues,"initialFormValues")
@@ -131,6 +156,8 @@ console.log(initialFormValues,"initialFormValues")
 
 
   const dispatch=useDispatch<AppDispatch>();
+    const {pipelineDtl}= useSelector((state: RootState) => state.buildPipeline);
+
   // Add debounce state and ref
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedFields, setGeneratedFields] = useState<Set<string>>(new Set());
@@ -143,7 +170,6 @@ console.log(initialFormValues,"initialFormValues")
     if (!['SchemaTransformation', 'Joiner', 'Aggregator'].includes(schema?.title || '') || isGenerating) {
       return;
     }
-
     // If AI has already been attempted for this field, allow typing
     if (aiAttempted.has(fieldName)) {
       return;
@@ -163,7 +189,7 @@ console.log(initialFormValues,"initialFormValues")
             return;
           }
 
-          const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
+          const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges,pipelineDtl);
           const schemaString = suggestions.map(col => `${col}:string`).join(', ');
 
           const response: any = await dispatch(generatePipelineAgent({ 
@@ -1154,6 +1180,7 @@ const FormContent: React.FC<{
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
+        console.log(currentNodeId, nodes, edges);
         const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges);
         console.log('Fetched suggestions:', suggestions); // Add this debug log
         setColumnSuggestions(suggestions);

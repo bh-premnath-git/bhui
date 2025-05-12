@@ -1,4 +1,4 @@
-import schema from "@bh-ai/flow-schema";
+import {flowSchema as schema} from "@bh-ai/schemas";
 import { convertLiteralStrings } from "./formUtils";
 import { updateFlowDefinition } from "@/store/slices/designer/flowSlice";
 

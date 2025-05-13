@@ -13,5 +13,5 @@ export CODEARTIFACT_AUTH_TOKEN=$(
 echo "📦 Installing NPM dependencies…"
 npm install --force
 
-# exec the CMD from the Dockerfile (e.g. 'npm run dev')
+# Run the service in the foreground
 npm run dev

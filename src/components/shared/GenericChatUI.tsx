@@ -159,131 +159,21 @@ export function GenericChatUI({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white backdrop-blur-md shadow-lg rounded-lg">
+    <div className="h-full w-full flex flex-col">
       {/* Messages Area */}
-      <ScrollArea className="flex-1 px-2 py-6">
-        {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="w-full max-w-md"
-            >
-              <div className="flex items-start gap-4 px-1">
-                <motion.div
-                  className="inline-flex items-center justify-center mt-1"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+      <ScrollArea className="flex-1 w-full">
+        <div className="px-4 py-6 w-full">
+          {messages.length === 0 ? (
+            <div className="flex h-full flex-col items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="w-full"
+              >
+                <div className="flex items-start gap-4">
                   <motion.div
-                    className="w-8 h-8 rounded-full"
-                    style={{ backgroundColor: assistantColor }}
-                    whileHover={{ scale: 1.05, opacity: 0.9 }}
-                  />
-                </motion.div>
-                
-                <div className="flex-1">
-                  <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md">
-                    <p className="text-sm text-gray-600 mb-3">How can I assist you?</p>
-                    <div className="flex flex-col space-y-2">
-                      {suggestions.map((s, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -5 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.5 + (i * 0.1) }}
-                          className="group"
-                        >
-                          <div
-                            onClick={() => setInput(s)}
-                            className="py-2 px-3 rounded-lg bg-white/80 hover:bg-white border border-gray-200 cursor-pointer transition-all duration-200 group-hover:shadow-sm"
-                          >
-                            <div className="text-sm text-gray-800 group-hover:text-black">
-                              {s}
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        ) : (
-          <div className="space-y-8 py-2">
-            {messages.map((msg, idx) => {
-              const isAssistant = msg.role === 'assistant'
-              const circleColor = isAssistant ? assistantColor : userColor
-
-              return (
-                <div key={idx} className="flex items-center gap-4 px-1">
-                  <motion.div
-                    className="inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: circleColor }}
-                      whileHover={{ scale: 1.05, opacity: 0.9 }}
-                      whileTap={{ scale: 0.9 }}
-                    />
-                  </motion.div>
-
-                  <div className="flex-1">
-                    {isAssistant ? (
-                      <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                        <div className="whitespace-pre-wrap leading-relaxed text-black">
-                          {msg.content}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                        <div
-                          className="whitespace-pre-wrap leading-relaxed"
-                          style={{ color: userColor }}
-                        >
-                          {msg.content}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-
-            {mockResponse && (
-              <>
-                {/* Chart / SQL Tabs */}
-                <Tabs
-                  value={activeTab}
-                  onValueChange={val => setActiveTab(val as 'chart' | 'sql')}
-                  className="mt-6"
-                >
-                  <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
-                      Chart
-                    </TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
-                      SQL
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="chart" className="pt-4">
-                    <ChatChartView data={mockResponse.data} />
-                  </TabsContent>
-                  <TabsContent value="sql" className="pt-4">
-                    <ChatSQLView sql={mockResponse.sql} />
-                  </TabsContent>
-                </Tabs>
-
-                {/* Follow-up assistant bubble */}
-                <div className="flex items-center gap-4 px-1 mt-4">
-                  <motion.div
-                    className="inline-flex items-center justify-center"
+                    className="inline-flex items-center justify-center mt-1 flex-shrink-0"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
@@ -291,24 +181,136 @@ export function GenericChatUI({
                     <motion.div
                       className="w-8 h-8 rounded-full"
                       style={{ backgroundColor: assistantColor }}
+                      whileHover={{ scale: 1.05, opacity: 0.9 }}
                     />
                   </motion.div>
-                  <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md">
-                      <div className="whitespace-pre-wrap leading-relaxed text-black">
-                        Do you want me to analyze the reasons for the latency issue?
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md w-full">
+                      <p className="text-sm text-gray-600 mb-3">How can I assist you?</p>
+                      <div className="flex flex-col space-y-2">
+                        {suggestions.map((s, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5 + (i * 0.1) }}
+                            className="group"
+                          >
+                            <div
+                              onClick={() => setInput(s)}
+                              className="py-2 px-3 rounded-lg bg-white/80 hover:bg-white border border-gray-200 cursor-pointer transition-all duration-200 group-hover:shadow-sm"
+                            >
+                              <div className="text-sm text-gray-800 group-hover:text-black">
+                                {s}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              </motion.div>
+            </div>
+          ) : (
+            <div className="space-y-8 py-2 w-full">
+              {messages.map((msg, idx) => {
+                const isAssistant = msg.role === 'assistant'
+                const circleColor = isAssistant ? assistantColor : userColor
+
+                return (
+                  <div key={idx} className="flex items-start gap-4 w-full">
+                    <motion.div
+                      className="inline-flex items-center justify-center mt-1"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <motion.div
+                        className="w-8 h-8 rounded-full"
+                        style={{ backgroundColor: circleColor }}
+                        whileHover={{ scale: 1.05, opacity: 0.9 }}
+                        whileTap={{ scale: 0.9 }}
+                      />
+                    </motion.div>
+
+                    <div className="flex-1">
+                      {isAssistant ? (
+                        <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md transition-shadow hover:shadow-lg w-full">
+                          <div className="whitespace-pre-wrap leading-relaxed text-black">
+                            {msg.content}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg w-full">
+                          <div
+                            className="whitespace-pre-wrap leading-relaxed"
+                            style={{ color: userColor }}
+                          >
+                            {msg.content}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {mockResponse && (
+                <>
+                  {/* Chart / SQL Tabs */}
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={val => setActiveTab(val as 'chart' | 'sql')}
+                    className="mt-6 w-full"
+                  >
+                    <TabsList className="flex space-x-2 border-b w-full mb-2">
+                      <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
+                        Chart
+                      </TabsTrigger>
+                      <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
+                        SQL
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chart" className="pt-4 w-full">
+                      <ChatChartView data={mockResponse.data} />
+                    </TabsContent>
+                    <TabsContent value="sql" className="pt-4 w-full">
+                      <ChatSQLView sql={mockResponse.sql} />
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Follow-up assistant bubble */}
+                  <div className="flex items-start gap-4 mt-4 w-full">
+                    <motion.div
+                      className="inline-flex items-center justify-center mt-1"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <motion.div
+                        className="w-8 h-8 rounded-full"
+                        style={{ backgroundColor: assistantColor }}
+                      />
+                    </motion.div>
+                    <div className="flex-1">
+                      <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md w-full">
+                        <div className="whitespace-pre-wrap leading-relaxed text-black">
+                          Do you want me to analyze the reasons for the latency issue?
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
+      <div className="p-4 border-t border-slate-200 bg-white w-full">
         <AIChatInput
           input={input}
           onChange={setInput}

@@ -135,7 +135,7 @@ export function GenericChatUI({
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
-        <div className="px-4 py-6 w-full max-w-md mx-auto">
+        <div className="px-2 py-4 w-full max-w-md mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
               <p className="text-lg font-medium text-gray-800 mb-4">How can I assist you?</p>
@@ -154,7 +154,7 @@ export function GenericChatUI({
                     />
                     <div
                       onClick={() => setInput(s)}
-                      className="flex-1 rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 italic text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                      className="flex-1 rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
                     >
                       {s}
                     </div>
@@ -173,11 +173,11 @@ export function GenericChatUI({
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
-                      className={`flex-1 rounded-2xl px-4 py-3 shadow ${
+                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${
                         isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
                       }`}
                     >
-                      <pre className="whitespace-pre-wrap leading-relaxed">{m.content}</pre>
+                      <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                     </div>
                   </div>
                 );
@@ -202,7 +202,7 @@ export function GenericChatUI({
                       </TabsTrigger>
                       <TabsTrigger
                         value="sql"
-                        className={`px-4 py-2 rounded-t-lg ${
+                        className={`px-2 py-2 rounded-t-lg ${
                           activeTab === 'sql'
                             ? 'bg-gray-200 text-gray-800'
                             : 'bg-white text-gray-500'

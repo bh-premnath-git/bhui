@@ -16,7 +16,10 @@ interface XplorerGenericChatUIProps {
 
 // Updated default suggestions to include the top 10 expensive products query
 const defaultSuggestions = [
-  'List the top ten expensive products'
+  'List the top ten expensive products',
+  'Show me all orders above $300',
+  'Find orders with delivery status "Shipped"',
+  'Which region has the most orders?',
 ]
 
 // Mock data for orders
@@ -323,75 +326,95 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md shadow-lg rounded-lg">
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 px-4 py-6">
-        {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center">
-            {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => setInput(s)}
-                  className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600">How can I assist you?</p>
-          </div>
-        ) : (
-          <div className="space-y-8 py-2">
-            {messages.map((msg, idx) => {
-              const isAssistant = msg.role === 'assistant'
-              const circleColor = isAssistant ? assistantColor : userColor
-              const textColor = isAssistant ? assistantColor : userColor
-
-              return (
-                <div key={idx} className="flex items-center gap-4 px-1">
+    <div className="h-full w-full flex flex-col">
+      <ScrollArea className="flex-1 w-full">
+        <div className="px-2 py-4 w-full max-w-md mx-auto">
+          {messages.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <p className="text-lg font-medium text-gray-800 mb-4">How can I assist you?</p>
+              <div className="space-y-3">
+                {suggestions.map((s, i) => (
                   <motion.div
-                    className="inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    key={i}
+                    className="flex items-start gap-4"
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 + i * 0.1 }}
                   >
-                    <motion.div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: circleColor }}
-                      whileHover={{ scale: 1.05, opacity: 0.9 }}
-                      whileTap={{ scale: 0.9 }}
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
+                      style={{ backgroundColor: assistantColor }}
                     />
+                    <div
+                      onClick={() => setInput(s)}
+                      className="flex-1 rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                    >
+                      {s}
+                    </div>
                   </motion.div>
-
-                  <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                      <div
-                        className="whitespace-pre-wrap leading-relaxed"
-                        style={{ color: textColor }}
-                      >
-                        {msg.content}
-                      </div>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {messages.map((m, i) => {
+                const isA = m.role === 'assistant';
+                return (
+                  <div key={i} className="flex items-start gap-4 py-2">
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
+                      style={{ backgroundColor: isA ? assistantColor : userColor }}
+                    />
+                    <div
+                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${
+                        isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-            {/* Mock response tabs */}
-            {mockResponse && (
-              <>
-                <Tabs
-                  value={activeTab}
-                  onValueChange={(value) => setActiveTab(value)}
-                  className="mt-6"
-                >
-                  <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Chart</TabsTrigger>
-                    <TabsTrigger value="table" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Table</TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">SQL</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="chart" className="pt-4">
+                );
+              })}
+              {mockResponse && (
+                <>
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={(value) => setActiveTab(value)}
+                    className="mt-6"
+                  >
+                    <TabsList className="flex space-x-2 mb-2">
+                      <TabsTrigger
+                        value="chart"
+                        className={`px-4 py-2 rounded-t-lg ${
+                          activeTab === 'chart'
+                            ? 'bg-gray-200 text-gray-800'
+                            : 'bg-white text-gray-500'
+                        }`}
+                      >
+                        Chart
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="table"
+                        className={`px-4 py-2 rounded-t-lg ${
+                          activeTab === 'table'
+                            ? 'bg-gray-200 text-gray-800'
+                            : 'bg-white text-gray-500'
+                        }`}
+                      >
+                        Table
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="sql"
+                        className={`px-2 py-2 rounded-t-lg ${
+                          activeTab === 'sql'
+                            ? 'bg-gray-200 text-gray-800'
+                            : 'bg-white text-gray-500'
+                        }`}
+                      >
+                        SQL
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chart" className="pt-4">
                     <ChartView
                       data={filteredData}
                       metric={metricToVisualize}
@@ -405,47 +428,27 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                   <TabsContent value="sql" className="pt-4">
                     <SQLView query={sqlQuery} />
                   </TabsContent>
-                </Tabs>
-                
-                {/* Follow-up assistant bubble */}
-                <div className="flex items-center gap-4 px-1 mt-4">
-                  <motion.div
-                    className="inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      className="w-8 h-8 rounded-full"
+                  </Tabs>
+                  <div className="flex items-start gap-4 mt-4">
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
                       style={{ backgroundColor: assistantColor }}
                     />
-                  </motion.div>
-                  <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
-                      <div
-                        className="whitespace-pre-wrap leading-relaxed"
-                        style={{ color: assistantColor }}
-                      >
+                    <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
+                      <p className="leading-relaxed text-black">
                         Do you want me to analyze the reasons for the latency issue?
-                      </div>
+                      </p>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </ScrollArea>
-
-      <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
-        <AIChatInput
-          input={input}
-          onChange={setInput}
-          onSend={() => handleSend(input)}
-          placeholder="Type a message..."
-          disabled={false}
-        />
+      <div className="p-4 border-t border-slate-200 bg-white">
+        <AIChatInput input={input} onChange={setInput} onSend={() => handleSend(input)} placeholder="Type a message..." />
       </div>
     </div>
-  )
+  );
 }

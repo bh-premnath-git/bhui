@@ -699,7 +699,7 @@
             ],
             "properties": {
               "column_list": {
-                "type": "autocomplete",
+                "type": "string",
                 "minLength": 1
               }
             }

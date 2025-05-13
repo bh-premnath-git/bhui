@@ -13,6 +13,8 @@ import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
 import SuggestionButton from "@/features/designers/pipeline/components/SuggestionButton";
 import { Database } from "lucide-react";
 import { setBuildPipeLineDtl } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { RootState } from "@/store";
+import { useSelector } from "react-redux";
 
 // Define the context interface
 interface PipeLineChatContextProps {
@@ -56,12 +58,10 @@ interface PipeLineChatContextProps {
     'union_form' |
     'drop_form' |
     'select_form' |
-    'sequence_form' |
     'join_dependency' |
     'union_dependency' |
     'drop_dependency' |
-    'select_dependency' |
-    'sequence_dependency';
+    'select_dependency' ;
   showDependencySelection: boolean;
   dependencyOptions: any[];
   selectedDependency: string;
@@ -83,7 +83,6 @@ interface PipeLineChatContextProps {
   unionFormInitialValues: any;
   dropFormInitialValues: any;
   selectFormInitialValues: any;
-  sequenceFormInitialValues: any;
   filterSchema: any;
   schemaTransformationSchema: any;
   sorterSchema: any;
@@ -92,7 +91,6 @@ interface PipeLineChatContextProps {
   unionSchema: any;
   dropSchema: any;
   selectSchema: any;
-  sequenceSchema: any;
   filterName: string;
   schemaName: string;
   sorterName: string;
@@ -101,7 +99,6 @@ interface PipeLineChatContextProps {
   unionName: string;
   dropName: string;
   selectName: string;
-  sequenceName: string;
   showFilterForm: boolean;
   showSchemaForm: boolean;
   showReaderForm: boolean;
@@ -112,7 +109,6 @@ interface PipeLineChatContextProps {
   showUnionForm: boolean;
   showDropForm: boolean;
   showSelectForm: boolean;
-  showSequenceForm: boolean;
   isPending: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
@@ -157,12 +153,10 @@ interface PipeLineChatContextProps {
     'union_form' |
     'drop_form' |
     'select_form' |
-    'sequence_form' |
     'join_dependency' |
     'union_dependency' |
     'drop_dependency' |
-    'select_dependency' |
-    'sequence_dependency'>>;
+    'select_dependency' >>;
   setShowDependencySelection: (show: boolean) => void;
   setDependencyOptions: (options: any[]) => void;
   setSelectedDependency: (dependency: string) => void;
@@ -184,7 +178,6 @@ interface PipeLineChatContextProps {
   setUnionFormInitialValues: (values: any) => void;
   setDropFormInitialValues: (values: any) => void;
   setSelectFormInitialValues: (values: any) => void;
-  setSequenceFormInitialValues: (values: any) => void;
   setFilterSchema: (schema: any) => void;
   setSchemaTransformationSchema: (schema: any) => void;
   setSorterSchema: (schema: any) => void;
@@ -193,7 +186,6 @@ interface PipeLineChatContextProps {
   setUnionSchema: (schema: any) => void;
   setDropSchema: (schema: any) => void;
   setSelectSchema: (schema: any) => void;
-  setSequenceSchema: (schema: any) => void;
   setFilterName: (name: string) => void;
   setSchemaName: (name: string) => void;
   setSorterName: (name: string) => void;
@@ -202,7 +194,6 @@ interface PipeLineChatContextProps {
   setUnionName: (name: string) => void;
   setDropName: (name: string) => void;
   setSelectName: (name: string) => void;
-  setSequenceName: (name: string) => void;
   setShowFilterForm: (show: boolean) => void;
   setShowSchemaForm: (show: boolean) => void;
   setShowReaderForm: (show: boolean) => void;
@@ -213,7 +204,6 @@ interface PipeLineChatContextProps {
   setShowUnionForm: (show: boolean) => void;
   setShowDropForm: (show: boolean) => void;
   setShowSelectForm: (show: boolean) => void;
-  setShowSequenceForm: (show: boolean) => void;
   startTransition: (callback: () => void) => void;
   handleSend: () => Promise<void>;
   resetPipelineCreationState: () => void;
@@ -236,7 +226,6 @@ interface PipeLineChatContextProps {
   handleUnionFormSubmit : (formData: any) => void;
   handleDropFormSubmit : (formData: any) => void;
   handleSelectFormSubmit : (formData: any) => void;
-  handleSequenceFormSubmit : (formData: any) => void;
   handleWriterFormSubmit: (formData: any) => void;
   handleMultiDependencySelection: (dependencies: string[]) => void;
 
@@ -310,6 +299,8 @@ export const PipeLineChatProvider = ({
   const [pipelineDescription, setPipelineDescription] = useState('');
   const [selectedSources, setSelectedSources] = useState<any[]>([]);
   const [transformations, setTransformations] = useState<string[]>([]);
+    const {pipelineDtl}=useSelector((state: RootState) => state.buildPipeline);
+
   // Target configuration state
   const [targetConfig, setTargetConfig] = useState<{
     type: 'Database' | 'File' | 'Custom';
@@ -355,12 +346,9 @@ export const PipeLineChatProvider = ({
     'union_form' |
     'drop_form' |
     'select_form' |
-    'sequence_form' |
-    'join_dependency' |
     'union_dependency' |
     'drop_dependency' |
-    'select_dependency' |
-    'sequence_dependency'
+    'select_dependency' 
   >('select');
 
   // State for inline forms - using a single state for form visibility and initial values
@@ -381,7 +369,6 @@ export const PipeLineChatProvider = ({
   const [unionSchema, setUnionSchema] = useState<any>(null);
   const [dropSchema, setDropSchema] = useState<any>(null);
   const [selectSchema, setSelectSchema] = useState<any>(null);
-  const [sequenceSchema, setSequenceSchema] = useState<any>(null);
   const [filterName, setFilterName] = useState<string>('');
   const [schemaName, setSchemaName] = useState<string>('');
   const [sorterName, setSorterName] = useState<string>('');
@@ -390,7 +377,6 @@ export const PipeLineChatProvider = ({
   const [unionName, setUnionName] = useState<string>('');
   const [dropName, setDropName] = useState<string>('');
   const [selectName, setSelectName] = useState<string>('');
-  const [sequenceName, setSequenceName] = useState<string>('');
   
   // Form visibility states
   const [showFilterForm, setShowFilterForm] = useState(false);
@@ -403,7 +389,6 @@ export const PipeLineChatProvider = ({
   const [showUnionForm, setShowUnionForm] = useState(false);
   const [showDropForm, setShowDropForm] = useState(false);
   const [showSelectForm, setShowSelectForm] = useState(false);
-  const [showSequenceForm, setShowSequenceForm] = useState(false);
   
   // Form initial values
   const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
@@ -416,7 +401,6 @@ export const PipeLineChatProvider = ({
   const [unionFormInitialValues, setUnionFormInitialValues] = useState<any>({});
   const [dropFormInitialValues, setDropFormInitialValues] = useState<any>({});
   const [selectFormInitialValues, setSelectFormInitialValues] = useState<any>({});
-  const [sequenceFormInitialValues, setSequenceFormInitialValues] = useState<any>({});
   
   // Add useTransition hook for smoother UI updates
   const [isPending, startTransition] = useTransition();
@@ -527,7 +511,6 @@ export const PipeLineChatProvider = ({
     setShowUnionForm(false);
     setShowDropForm(false);
     setShowSelectForm(false);
-    setShowSequenceForm(false);
     setFilterFormInitialValues({});
     setSchemaFormInitialValues({});
     setReaderFormInitialValues({});
@@ -586,10 +569,10 @@ export const PipeLineChatProvider = ({
         useSourceConnection,
         filterCondition
       });
-  
+  console.log(pipelineDtl)
       // Generate the template
       const template = buildPipelineTemplate(
-        pipelineName,
+        pipelineDtl.name,
         pipelineDescription,
         sourcesToUse,
         transformations,
@@ -597,9 +580,15 @@ export const PipeLineChatProvider = ({
         useSourceConnection,
         filterCondition
       );
+      
+      // Log the generated template for debugging
+      console.log("Generated pipeline template:", template);
+      
+      // Update the pipeline JSON immediately
+      setPipelineJson(template);
   
       return template;
-    }, [pipelineName, pipelineDescription, selectedSources, transformations, targetConfig, useSourceConnection, filterCondition]);
+    }, [pipelineName, pipelineDescription, selectedSources, transformations, targetConfig, useSourceConnection, filterCondition, setPipelineJson]);
 
   const processSelectedSource = useCallback((selectedSource: any) => {
     console.log(selectedSource);
@@ -809,7 +798,6 @@ export const PipeLineChatProvider = ({
   "6. **Aggregate** – Group and summarize\n" +
   "7. **Drop** – Remove columns\n" +
   "8. **Select** – Keep specific columns\n" +
-  "9. **Sequence** – Add index/ID\n\n" +
   "Which ones would you like to add?"
 );
 
@@ -897,14 +885,6 @@ export const PipeLineChatProvider = ({
           }
         }
 
-        if (userInput.includes('sequence')) {
-          currentSelection = 'sequence';
-          if (!newTransformations.includes('sequence')) {
-            newTransformations.push('sequence');
-          }
-        }
-        
-        // Ensure that only join and union use multi-select
         if (currentSelection !== 'join' && currentSelection !== 'union') {
           setIsMultiSelect(false);
           setMinDependencies(1);
@@ -969,12 +949,6 @@ export const PipeLineChatProvider = ({
         if (transformations.includes('select')) {
           existingNodes.push('select_transformation');
         }
-        if (transformations.includes('sequence')) {
-          existingNodes.push('sequence_transformation');
-        }
-
-        // Initialize transformations with empty dependency arrays
-        // This ensures they start with empty dependencies until the user selects them
         if (currentSelection === 'filter' || currentSelection === 'both') {
           // Initialize filter transformation with empty dependency array
           setSelectedSources(prevSources => {
@@ -1085,27 +1059,6 @@ export const PipeLineChatProvider = ({
           });
         }
 
-        if (currentSelection === 'sequence') {
-          // Initialize sequence transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                sequence_transformation: {
-                  ...(source.sequence_transformation || {}),
-                  dependent_on: [], // Empty array - will be filled when user selects dependency
-                  sequence_column: 'id',
-                  start_value: 1,
-                  increment_by: 1
-                }
-              };
-            });
-          });
-        }
-
-        // Immediately update the pipeline template with the new transformations
-        // This ensures the template is updated as soon as a transformation is selected
-        // Use a timeout to ensure state updates have been processed
         setTimeout(() => {
           const updatedTemplate = generatePipelineTemplate();
           setPipelineJson(updatedTemplate);
@@ -1481,68 +1434,7 @@ export const PipeLineChatProvider = ({
             setShowDependencySelection(true);
             addAssistantMessage(dependencyMessage);
           });
-        } else if (currentSelection === 'sequence') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('sequence_dependency');
-
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this sequence transformation? Please select from the options below:";
-
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-
-            // Try to load the Sequence schema from mdata.json in advance
-            try {
-              // First check for "SequenceGenerator" title
-              let sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
-              
-              // If not found, try "Sequence" title as fallback
-              if (!sequenceSchemaFromMdata) {
-                sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sequence");
-              }
-             
-              
-              // Add nodeId to the schema to match the format expected by CreateFormFormik
-              setSequenceSchema({
-                ...sequenceSchemaFromMdata,
-                nodeId: 'sequence_transformation'
-              });
-              console.log("Preloaded sequence schema:", sequenceSchemaFromMdata);
-            } catch (error) {
-              console.error("Error preloading sequence schema:", error);
-            }
-
-            // Initialize sequence transformation with empty dependency array in selectedSources
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  sequence_transformation: {
-                    ...(source.sequence_transformation || {}),
-                    name: 'sequence_transformation',
-                    transformation: 'Sequence',
-                    for_column_name: 'id',
-                    order_by: [{ column: 'id', order: 'asc' }],
-                    increment_by: 1,
-                    dependent_on: [] // Empty array - will be filled when user selects dependency
-                  }
-                };
-              });
-            });
-
-            // Show the dependency selection UI and add the message
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'aggregator') {
+        }  else if (currentSelection === 'aggregator') {
           // Use startTransition to prevent UI from being replaced with loading indicator
           startTransition(() => {
             // First, ask for dependency selection
@@ -2246,6 +2138,14 @@ export const PipeLineChatProvider = ({
       // Update the drop transformation in the selected sources
       setSelectedSources(prevSources => {
         return prevSources.map(source => {
+          // Get existing drop columns or use defaults
+          const dropColumns = source.drop_transformation?.drop_columns || ['column_to_drop_1', 'column_to_drop_2'];
+          
+          // Create column array from drop_columns if it doesn't exist
+          const columnArray = source.drop_transformation?.column && Array.isArray(source.drop_transformation.column)
+            ? source.drop_transformation.column
+            : dropColumns.map(col => ({ column_list: col }));
+          
           // Create or update the drop_transformation property
           return {
             ...source,
@@ -2253,7 +2153,8 @@ export const PipeLineChatProvider = ({
               ...(source.drop_transformation || {}),
               name: 'drop_transformation',
               transformation: 'Drop',
-              drop_columns: source.drop_transformation?.drop_columns || ['column_to_drop_1', 'column_to_drop_2'],
+              drop_columns: dropColumns,
+              column: columnArray,
               dependent_on: dependencyArray
             }
           };
@@ -2263,6 +2164,14 @@ export const PipeLineChatProvider = ({
       // Update the select transformation in the selected sources
       setSelectedSources(prevSources => {
         return prevSources.map(source => {
+          // Get existing select columns or use defaults
+          const selectColumns = source.select_transformation?.select_columns || ['column_to_select_1', 'column_to_select_2'];
+          
+          // Create column_list array from select_columns if it doesn't exist
+          const columnListArray = source.select_transformation?.column_list && Array.isArray(source.select_transformation.column_list)
+            ? source.select_transformation.column_list
+            : selectColumns.map(col => ({ name: col, expression: '' }));
+          
           // Create or update the select_transformation property
           return {
             ...source,
@@ -2270,32 +2179,14 @@ export const PipeLineChatProvider = ({
               ...(source.select_transformation || {}),
               name: 'select_transformation',
               transformation: 'Select',
-              select_columns: source.select_transformation?.select_columns || ['column_to_select_1', 'column_to_select_2'],
+              select_columns: selectColumns,
+              column_list: columnListArray,
               dependent_on: dependencyArray
             }
           };
         });
       });
-    } else if (transformationType === 'sequence') {
-      // Update the sequence transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the sequence_transformation property
-          return {
-            ...source,
-            sequence_transformation: {
-              ...(source.sequence_transformation || {}),
-              name: 'sequence_transformation',
-              transformation: 'Sequence',
-              sequence_column: source.sequence_transformation?.sequence_column || 'id',
-              start_value: source.sequence_transformation?.start_value || 1,
-              increment_by: source.sequence_transformation?.increment_by || 1,
-              dependent_on: dependencyArray
-            }
-          };
-        });
-      });
-    }
+    } 
 
     // Also update the pipeline JSON directly for immediate effect
     const updatedPipelineJson = { ...pipelineJson };
@@ -2381,8 +2272,40 @@ export const PipeLineChatProvider = ({
         );
 
         if (dropTransformation) {
-          dropTransformation.dependent_on = dependencyArray;
-          console.log("Updated drop transformation dependency:", dropTransformation);
+          // Get the source with drop transformation
+          const sourceWithDrop = selectedSources.find(source => source.drop_transformation);
+          
+          if (sourceWithDrop) {
+            // Update all properties
+            const dropColumns = sourceWithDrop.drop_transformation?.drop_columns || 
+                               dropTransformation.drop_columns || 
+                               ['column_to_drop_1', 'column_to_drop_2'];
+            
+            const columnArray = sourceWithDrop.drop_transformation?.column && 
+                               Array.isArray(sourceWithDrop.drop_transformation.column) 
+              ? sourceWithDrop.drop_transformation.column
+              : dropColumns.map(col => ({ column_list: col }));
+            
+            const pattern = sourceWithDrop.drop_transformation?.pattern || 
+                           dropTransformation.pattern || 
+                           '';
+            
+            const transformationType = sourceWithDrop.drop_transformation?.transformation || 
+                                      dropTransformation.transformation || 
+                                      'Drop';
+            
+            dropTransformation.dependent_on = dependencyArray;
+            dropTransformation.drop_columns = dropColumns;
+            dropTransformation.column = columnArray;
+            dropTransformation.pattern = pattern;
+            dropTransformation.transformation = transformationType;
+            
+            console.log("Updated drop transformation dependency and properties:", dropTransformation);
+          } else {
+            // Just update the dependency
+            dropTransformation.dependent_on = dependencyArray;
+            console.log("Updated drop transformation dependency:", dropTransformation);
+          }
         }
       } else if (transformationType === 'select') {
         // Find the select transformation
@@ -2391,21 +2314,45 @@ export const PipeLineChatProvider = ({
         );
 
         if (selectTransformation) {
-          selectTransformation.dependent_on = dependencyArray;
-          console.log("Updated select transformation dependency:", selectTransformation);
+          // Get the source with select transformation
+          const sourceWithSelect = selectedSources.find(source => source.select_transformation);
+          
+          if (sourceWithSelect) {
+            // Update all properties
+            const selectColumns = sourceWithSelect.select_transformation?.select_columns || 
+                                 selectTransformation.select_columns || 
+                                 ['column_to_select_1', 'column_to_select_2'];
+            
+            const columnListArray = sourceWithSelect.select_transformation?.column_list && 
+                                   Array.isArray(sourceWithSelect.select_transformation.column_list) 
+              ? sourceWithSelect.select_transformation.column_list
+              : selectColumns.map(col => ({ name: col, expression: '' }));
+            
+            const transformationType = sourceWithSelect.select_transformation?.transformation || 
+                                      selectTransformation.transformation || 
+                                      'Select';
+            
+            // Get limit if available
+            const limit = sourceWithSelect.select_transformation?.limit;
+            
+            selectTransformation.dependent_on = dependencyArray;
+            selectTransformation.select_columns = selectColumns;
+            selectTransformation.column_list = columnListArray;
+            selectTransformation.transformation = transformationType;
+            
+            // Add limit only if it exists
+            if (limit !== undefined) {
+              selectTransformation.limit = limit;
+            }
+            
+            console.log("Updated select transformation dependency and properties:", selectTransformation);
+          } else {
+            // Just update the dependency
+            selectTransformation.dependent_on = dependencyArray;
+            console.log("Updated select transformation dependency:", selectTransformation);
+          }
         }
-      } else if (transformationType === 'sequence') {
-        // Find the sequence transformation
-        const sequenceTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'sequence_transformation'
-        );
-
-        if (sequenceTransformation) {
-          sequenceTransformation.dependent_on = dependencyArray;
-          console.log("Updated sequence transformation dependency:", sequenceTransformation);
-        }
-      }
-
+      } 
       // Update the pipeline JSON
       setPipelineJson(updatedPipelineJson);
     }
@@ -3148,116 +3095,7 @@ export const PipeLineChatProvider = ({
                 "Please select an option from the buttons below."
               );
             }
-          } else if (transformationSubStep === 'sequence_dependency') {
-            // Update the sequence transformation with the selected dependency
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  sequence_transformation: {
-                    ...(source.sequence_transformation || {}),
-                    name: 'sequence_transformation',
-                    transformation: 'Sequence',
-                    sequence_column: 'id',
-                    start_value: 1,
-                    increment_by: 1,
-                    dependent_on: [dependency]
-                  }
-                };
-              });
-            });
-
-            // Update the pipeline template with the dependency selection
-            setTimeout(() => {
-              const updatedTemplate = generatePipelineTemplate();
-              setPipelineJson(updatedTemplate);
-              console.log("Pipeline template updated after sequence dependency selection:", updatedTemplate);
-
-              // Log the sequence transformation in the pipeline template
-              const sequenceTransformation = updatedTemplate.transformations.find(
-                (t: any) => t.name === 'sequence_transformation'
-              );
-              console.log("Sequence transformation in pipeline template:", sequenceTransformation);
-            }, 0);
-
-            // Try to load the Sequence schema from mdata.json
-            try {
-              // First check for "SequenceGenerator" title
-              let sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
-              
-              // If not found, try "Sequence" title as fallback
-              if (!sequenceSchemaFromMdata) {
-                sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sequence");
-              }
-              
-              // If still not found, create a basic schema
-              
-              // Add nodeId to the schema to match the format expected by CreateFormFormik
-              setSequenceSchema({
-                ...sequenceSchemaFromMdata,
-                nodeId: 'sequence_transformation'
-              });
-              console.log("Loaded/created sequence schema:", sequenceSchemaFromMdata);
-
-              // Prepare sequence form initial values
-              setSequenceFormInitialValues({
-                name: 'sequence_transformation',
-                for_column_name: "id",
-                order_by: [{ column: "id", order: "asc" }],
-                increment_by: 1,
-                dependent_on: [dependency]
-              });
-              setSequenceName('sequence_transformation');
-
-              // Show the sequence form
-              setTransformationSubStep('sequence_form');
-              setShowSequenceForm(true);
-              addAssistantMessage("Please configure your sequence transformation below:");
-            } catch (error) {
-              console.error("Error loading sequence schema from mdata.json:", error);
-              // Create a basic schema as fallback
-              const basicSchema = {
-                title: "Sequence",
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  for_column_name: { type: "string" },
-                  order_by: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        column: { type: "string" },
-                        order: { type: "string", enum: ["asc", "desc"] }
-                      }
-                    }
-                  },
-                  increment_by: { type: "number" },
-                  dependent_on: { type: "array", items: { type: "string" } }
-                }
-              };
-              
-              setSequenceSchema({
-                ...basicSchema,
-                nodeId: 'sequence_transformation'
-              });
-              
-              // Prepare sequence form initial values
-              setSequenceFormInitialValues({
-                name: 'sequence_transformation',
-                for_column_name: "id",
-                order_by: [{ column: "id", order: "asc" }],
-                increment_by: 1,
-                dependent_on: [dependency]
-              });
-              setSequenceName('sequence_transformation');
-
-              // Show the sequence form
-              setTransformationSubStep('sequence_form');
-              setShowSequenceForm(true);
-              addAssistantMessage("Please configure your sequence transformation below:");
-            }
-          } else if (transformationSubStep === 'drop_dependency') {
+          }else if (transformationSubStep === 'drop_dependency') {
             // Update the drop transformation with the selected dependency
             setSelectedSources(prevSources => {
               return prevSources.map(source => {
@@ -3399,81 +3237,6 @@ export const PipeLineChatProvider = ({
                 "Please select an option from the buttons below."
               );
             }
-          } else if (transformationSubStep === 'sequence_dependency') {
-            // Update the sequence transformation with the selected dependency
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  sequence_transformation: {
-                    ...(source.sequence_transformation || {}),
-                    name: 'sequence_transformation',
-                    transformation: 'Sequence',
-                    sequence_column: 'id',
-                    start_value: 1,
-                    increment_by: 1,
-                    dependent_on: [dependency]
-                  }
-                };
-              });
-            });
-
-            // Update the pipeline template with the dependency selection
-            setTimeout(() => {
-              const updatedTemplate = generatePipelineTemplate();
-              setPipelineJson(updatedTemplate);
-              console.log("Pipeline template updated after sequence dependency selection:", updatedTemplate);
-
-              // Log the sequence transformation in the pipeline template
-              const sequenceTransformation = updatedTemplate.transformations.find(
-                (t: any) => t.name === 'sequence_transformation'
-              );
-              console.log("Sequence transformation in pipeline template:", sequenceTransformation);
-            }, 0);
-
-            // Try to load the Sequence schema from mdata.json
-            try {
-              const sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
-              if (sequenceSchemaFromMdata) {
-                // Add nodeId to the schema to match the format expected by CreateFormFormik
-                setSequenceSchema({
-                  ...sequenceSchemaFromMdata,
-                  nodeId: 'sequence_transformation'
-                });
-                console.log("Loaded sequence schema from mdata.json");
-
-                // Prepare sequence form initial values
-                setSequenceFormInitialValues({
-                  name: 'sequence_transformation',
-                  sequence_column: 'id',
-                  start_value: 1,
-                  increment_by: 1,
-                  dependent_on: [dependency]
-                });
-                setSequenceName('sequence_transformation');
-
-                // Show the sequence form
-                setTransformationSubStep('sequence_form');
-                setShowSequenceForm(true);
-                addAssistantMessage("Please configure your sequence transformation below:");
-              } else {
-                console.error("Sequence schema not found in mdata.json");
-                // Return to transformation selection if schema not found
-                setTransformationSubStep('select');
-                addAssistantMessage(
-                  "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
-                  "Please select an option from the buttons below."
-                );
-              }
-            } catch (error) {
-              console.error("Error loading sequence schema from mdata.json:", error);
-              // Return to transformation selection if error
-              setTransformationSubStep('select');
-              addAssistantMessage(
-                "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
-                "Please select an option from the buttons below."
-              );
-            }
           } else if (transformationSubStep === 'aggregator_dependency') {
             // Update the aggregator transformation with the selected dependency
             setSelectedSources(prevSources => {
@@ -3535,6 +3298,7 @@ export const PipeLineChatProvider = ({
                 setTransformationSubStep('select');
                 addAssistantMessage(
                   "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
+                  
                   "Please select an option from the buttons below."
                 );
               }
@@ -3816,7 +3580,7 @@ export const PipeLineChatProvider = ({
       // Immediately update the pipeline template with current values
       // This ensures we're using the most up-to-date state
       const pipelineTemplate = buildPipelineTemplate(
-        pipelineName,
+        pipelineDtl.name,
         pipelineDescription,
         updatedSources,
         updatedTransformations,
@@ -4787,7 +4551,7 @@ export const PipeLineChatProvider = ({
     setTimeout(() => {
       // Create a new pipeline template using the updated sources
       const unionTransformTemplate = buildPipelineTemplate(
-        pipelineName,
+        pipelineDtl.name,
         pipelineDescription,
         updatedSources, // Use the updated sources with the form data
         transformations.includes('union') ? transformations : [...transformations, 'union'],
@@ -5168,13 +4932,13 @@ export const PipeLineChatProvider = ({
   const handleDropFormSubmit = (formData: any) => {
     console.log("Drop form submitted with data:", formData);
 
-    // Extract the column and dependent_on from the form data
-    const { column, dependent_on } = formData;
+    // Extract the column, pattern, and dependent_on from the form data
+    const { column, pattern, dependent_on, transformation = 'Drop' } = formData;
     
     // Ensure column is an array before calling map
     const columnArray = Array.isArray(column) ? column : [column].filter(Boolean);
     
-    // Convert column array to drop_columns array
+    // Convert column array to drop_columns array for display purposes
     const drop_columns = columnArray.length > 0 
       ? columnArray.map((col: any) => col.column_list)
       : [];
@@ -5192,8 +4956,10 @@ export const PipeLineChatProvider = ({
         data_src_name: 'drop_source',
         drop_transformation: {
           name: 'drop_transformation',
-          transformation: 'Drop',
+          transformation: transformation,
           column: columnArray,
+          drop_columns: drop_columns, // Add this for backward compatibility
+          pattern: pattern || '', // Add pattern field
           dependent_on: dependent_on
         }
       };
@@ -5210,6 +4976,9 @@ export const PipeLineChatProvider = ({
               drop_transformation: {
                 ...source.drop_transformation,
                 column: columnArray,
+                drop_columns: drop_columns, // Add this for backward compatibility
+                pattern: pattern || '', // Add pattern field
+                transformation: transformation,
                 dependent_on: dependent_on
               }
             };
@@ -5227,9 +4996,11 @@ export const PipeLineChatProvider = ({
     // Store the drop transformation data directly in the transformations array
     const dropTransformationData = {
       name: "drop_transformation",
-      transformation: "Drop",
+      transformation: transformation,
       dependent_on: dependent_on,
-      column: columnArray
+      column: columnArray,
+      drop_columns: drop_columns,
+      pattern: pattern || '' // Add pattern field
     };
 
     // Update the pipeline JSON directly
@@ -5243,6 +5014,9 @@ export const PipeLineChatProvider = ({
       if (dropTransformation) {
         // Update existing drop transformation
         dropTransformation.column = columnArray;
+        dropTransformation.drop_columns = drop_columns;
+        dropTransformation.pattern = pattern || '';
+        dropTransformation.transformation = transformation;
         dropTransformation.dependent_on = dependent_on;
         console.log("Updated drop transformation in pipeline JSON:", dropTransformation);
       } else {
@@ -5261,18 +5035,63 @@ export const PipeLineChatProvider = ({
     // Hide the form
     setShowDropForm(false);
 
-    // Regenerate the pipeline template with the updated drop transformation
-    setTimeout(() => {
-      const dropTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(dropTransformTemplate);
-      console.log("Updated pipeline template after drop form submission:", dropTransformTemplate);
+    // Regenerate the pipeline template with the updated drop transformation immediately
+    // First, create a copy of the current sources with the updated drop transformation
+    const updatedSources = selectedSources.map(source => {
+      if (source.drop_transformation) {
+        return {
+          ...source,
+          drop_transformation: {
+            ...source.drop_transformation,
+            column: columnArray,
+            drop_columns: drop_columns,
+            pattern: pattern || '',
+            transformation: transformation,
+            dependent_on: dependent_on
+          }
+        };
+      }
+      return source;
+    });
+    
+    // If no source has a drop transformation, add a dummy source
+    if (!updatedSources.some(source => source.drop_transformation)) {
+      updatedSources.push({
+        data_src_id: 'drop_source',
+        data_src_name: 'drop_source',
+        drop_transformation: {
+          name: 'drop_transformation',
+          transformation: transformation,
+          column: columnArray,
+          drop_columns: drop_columns,
+          pattern: pattern || '',
+          dependent_on: dependent_on
+        }
+      });
+    }
+    
+    console.log("Immediately generating template with updated sources:", updatedSources);
+    
+    // Generate the template with the updated sources
+    const dropTransformTemplate = buildPipelineTemplate(
+      pipelineDtl.name,
+      pipelineDescription,
+      updatedSources,
+      transformations.includes('drop') ? transformations : [...transformations, 'drop'],
+      targetConfig,
+      useSourceConnection,
+      filterCondition
+    );
+    
+    // Update the pipeline JSON immediately
+    setPipelineJson(dropTransformTemplate);
+    console.log("Updated pipeline template after drop form submission:", dropTransformTemplate);
 
-      // Log the drop transformation in the pipeline template
-      const dropTransformation = dropTransformTemplate.transformations.find(
-        (t: any) => t.name === 'drop_transformation'
-      );
-      console.log("Drop transformation in pipeline template:", dropTransformation);
-    }, 0);
+    // Log the drop transformation in the pipeline template
+    const dropTransformation = dropTransformTemplate.transformations.find(
+      (t: any) => t.name === 'drop_transformation'
+    );
+    console.log("Drop transformation in pipeline template:", dropTransformation);
 
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
@@ -5327,12 +5146,7 @@ export const PipeLineChatProvider = ({
         onClick={() => handleTransformationsStep("select transformation")}
         text="Select Transformation" 
       />,
-      <SuggestionButton 
-        key="sequence" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("sequence transformation")}
-        text="Sequence Transformation" 
-      />
+     
     ];
     
     setSourceSuggestions(dropTransformationSuggestions);
@@ -5347,13 +5161,13 @@ export const PipeLineChatProvider = ({
   const handleSelectFormSubmit = (formData: any) => {
     console.log("Select form submitted with data:", formData);
 
-    // Extract the column_list and dependent_on from the form data
-    const { column_list, dependent_on } = formData;
+    // Extract the column_list, transformation, limit, and dependent_on from the form data
+    const { column_list, dependent_on, transformation = 'Select', limit } = formData;
     
     // Ensure column_list is an array before calling map
     const columnListArray = Array.isArray(column_list) ? column_list : [column_list].filter(Boolean);
     
-    // Convert column_list array to select_columns array
+    // Convert column_list array to select_columns array for display purposes
     const select_columns = columnListArray.length > 0
       ? columnListArray.map((col: any) => col.name)
       : [];
@@ -5371,8 +5185,10 @@ export const PipeLineChatProvider = ({
         data_src_name: 'select_source',
         select_transformation: {
           name: 'select_transformation',
-          transformation: 'Select',
+          transformation: transformation,
           column_list: columnListArray,
+          select_columns: select_columns, // Add this for backward compatibility
+          limit: limit, // Add limit field
           dependent_on: dependent_on
         }
       };
@@ -5388,7 +5204,10 @@ export const PipeLineChatProvider = ({
               ...source,
               select_transformation: {
                 ...source.select_transformation,
+                transformation: transformation,
                 column_list: columnListArray,
+                select_columns: select_columns, // Add this for backward compatibility
+                limit: limit, // Add limit field
                 dependent_on: dependent_on
               }
             };
@@ -5406,9 +5225,11 @@ export const PipeLineChatProvider = ({
     // Store the select transformation data directly in the transformations array
     const selectTransformationData = {
       name: "select_transformation",
-      transformation: "Select",
+      transformation: transformation,
       dependent_on: dependent_on,
-      column_list: columnListArray
+      column_list: columnListArray,
+      select_columns: select_columns, // Add this for backward compatibility
+      limit: limit // Add limit field
     };
 
     // Update the pipeline JSON directly
@@ -5421,7 +5242,10 @@ export const PipeLineChatProvider = ({
 
       if (selectTransformation) {
         // Update existing select transformation
+        selectTransformation.transformation = transformation;
         selectTransformation.column_list = columnListArray;
+        selectTransformation.select_columns = select_columns;
+        selectTransformation.limit = limit; // Add limit field
         selectTransformation.dependent_on = dependent_on;
         console.log("Updated select transformation in pipeline JSON:", selectTransformation);
       } else {
@@ -5434,24 +5258,70 @@ export const PipeLineChatProvider = ({
       setPipelineJson(updatedPipelineJson);
     }
 
-    // Add a message to show the selected columns
-    addUserMessage(`Select transformation: Keeping only columns ${select_columns.join(', ')}${dependencyMessage}`);
+    // Add a message to show the selected columns and limit if provided
+    const limitMessage = limit ? ` with limit ${limit}` : '';
+    addUserMessage(`Select transformation: Keeping only columns ${select_columns.join(', ')}${limitMessage}${dependencyMessage}`);
 
     // Hide the form
     setShowSelectForm(false);
 
-    // Regenerate the pipeline template with the updated select transformation
-    setTimeout(() => {
-      const selectTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(selectTransformTemplate);
-      console.log("Updated pipeline template after select form submission:", selectTransformTemplate);
+    // Regenerate the pipeline template with the updated select transformation immediately
+    // First, create a copy of the current sources with the updated select transformation
+    const updatedSources = selectedSources.map(source => {
+      if (source.select_transformation) {
+        return {
+          ...source,
+          select_transformation: {
+            ...source.select_transformation,
+            transformation: transformation,
+            column_list: columnListArray,
+            select_columns: select_columns,
+            limit: limit, // Add limit field
+            dependent_on: dependent_on
+          }
+        };
+      }
+      return source;
+    });
+    
+    // If no source has a select transformation, add a dummy source
+    if (!updatedSources.some(source => source.select_transformation)) {
+      updatedSources.push({
+        data_src_id: 'select_source',
+        data_src_name: 'select_source',
+        select_transformation: {
+          name: 'select_transformation',
+          transformation: transformation,
+          column_list: columnListArray,
+          select_columns: select_columns,
+          limit: limit, // Add limit field
+          dependent_on: dependent_on
+        }
+      });
+    }
+    
+    console.log("Immediately generating template with updated sources:", updatedSources);
+    
+    // Generate the template with the updated sources
+    const selectTransformTemplate = buildPipelineTemplate(
+      pipelineDtl.name,
+      pipelineDescription,
+      updatedSources,
+      transformations.includes('select') ? transformations : [...transformations, 'select'],
+      targetConfig,
+      useSourceConnection,
+      filterCondition
+    );
+    
+    // Update the pipeline JSON immediately
+    setPipelineJson(selectTransformTemplate);
+    console.log("Updated pipeline template after select form submission:", selectTransformTemplate);
 
-      // Log the select transformation in the pipeline template
-      const selectTransformation = selectTransformTemplate.transformations.find(
-        (t: any) => t.name === 'select_transformation'
-      );
-      console.log("Select transformation in pipeline template:", selectTransformation);
-    }, 0);
+    // Log the select transformation in the pipeline template
+    const selectTransformation = selectTransformTemplate.transformations.find(
+      (t: any) => t.name === 'select_transformation'
+    );
+    console.log("Select transformation in pipeline template:", selectTransformation);
 
     // Return to transformation selection to allow adding more transformations
     setTransformationSubStep('select');
@@ -5506,12 +5376,7 @@ export const PipeLineChatProvider = ({
         onClick={() => handleTransformationsStep("select transformation")}
         text="Select Transformation" 
       />,
-      <SuggestionButton 
-        key="sequence" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("sequence transformation")}
-        text="Sequence Transformation" 
-      />
+      
     ];
     
     setSourceSuggestions(selectTransformationSuggestions);
@@ -5522,183 +5387,6 @@ export const PipeLineChatProvider = ({
     );
   };
 
-  // Handle sequence form submission
-  const handleSequenceFormSubmit = (formData: any) => {
-    console.log("Sequence form submitted with data:", formData);
-
-    // Extract the for_column_name, order_by and dependent_on from the form data
-    const { for_column_name, order_by, dependent_on, increment_by = 1 } = formData;
-
-    // Format the dependencies for display
-    const dependencyMessage = dependent_on && dependent_on.length > 0
-      ? ` (depends on: ${dependent_on.join(', ')})`
-      : '';
-
-    // Create a dummy source with the sequence transformation if none exists
-    if (!selectedSources.some(source => source.sequence_transformation)) {
-      // Create a dummy source with the sequence transformation
-      const dummySource: any = {
-        data_src_id: 'sequence_source',
-        data_src_name: 'sequence_source',
-        sequence_transformation: {
-          name: 'sequence_transformation',
-          transformation: 'Sequence',
-          for_column_name: for_column_name,
-          order_by: order_by,
-          increment_by: increment_by,
-          dependent_on: dependent_on
-        }
-      };
-
-      // Add the dummy source to the selected sources
-      setSelectedSources([...selectedSources, dummySource]);
-    } else {
-      // Update the existing sequence transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          if (source.sequence_transformation) {
-            return {
-              ...source,
-              sequence_transformation: {
-                ...source.sequence_transformation,
-                for_column_name: for_column_name,
-                order_by: order_by,
-                increment_by: increment_by,
-                dependent_on: dependent_on
-              }
-            };
-          }
-          return source;
-        });
-      });
-    }
-
-    // Add the sequence transformation to the transformations list if not already there
-    if (!transformations.includes('sequence')) {
-      setTransformations([...transformations, 'sequence']);
-    }
-
-    // Store the sequence transformation data directly in the transformations array
-    const sequenceTransformationData = {
-      name: "sequence_transformation",
-      transformation: "Sequence",
-      dependent_on: dependent_on,
-      for_column_name: for_column_name,
-      order_by: order_by,
-      increment_by: increment_by
-    };
-
-    // Update the pipeline JSON directly
-    const updatedPipelineJson = { ...pipelineJson };
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      // Find the sequence transformation
-      const sequenceTransformation = updatedPipelineJson.transformations.find(
-        (t: any) => t.name === 'sequence_transformation'
-      );
-
-      if (sequenceTransformation) {
-        // Update existing sequence transformation
-        sequenceTransformation.for_column_name = for_column_name;
-        sequenceTransformation.order_by = order_by;
-        sequenceTransformation.dependent_on = dependent_on;
-        console.log("Updated sequence transformation in pipeline JSON:", sequenceTransformation);
-      } else {
-        // Add new sequence transformation
-        updatedPipelineJson.transformations.push(sequenceTransformationData);
-        console.log("Added new sequence transformation to pipeline JSON:", sequenceTransformationData);
-      }
-
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-
-    // Add a message to show the sequence configuration
-    addUserMessage(`Sequence transformation: Adding sequence column '${for_column_name}' with ordering by ${order_by.map((o: any) => `${o.column} ${o.order}`).join(', ')}${dependencyMessage}`);
-
-    // Hide the form
-    setShowSequenceForm(false);
-
-    // Regenerate the pipeline template with the updated sequence transformation
-    setTimeout(() => {
-      const sequenceTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(sequenceTransformTemplate);
-      console.log("Updated pipeline template after sequence form submission:", sequenceTransformTemplate);
-
-      // Log the sequence transformation in the pipeline template
-      const sequenceTransformation = sequenceTransformTemplate.transformations.find(
-        (t: any) => t.name === 'sequence_transformation'
-      );
-      console.log("Sequence transformation in pipeline template:", sequenceTransformation);
-    }, 0);
-
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-    
-    // Add message asking for more transformations with suggestion buttons
-    const sequenceTransformationSuggestions = [
-      <SuggestionButton 
-        key="schema" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("schema transformation")}
-        text="Schema Transformation" 
-      />,
-      <SuggestionButton 
-        key="filter" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("filter transformation")}
-        text="Filter Transformation" 
-      />,
-      <SuggestionButton 
-        key="join" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("join transformation")}
-        text="Join Transformation" 
-      />,
-      <SuggestionButton 
-        key="union" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("union transformation")}
-        text="Union Transformation" 
-      />,
-      <SuggestionButton 
-        key="sorter" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("sorter transformation")}
-        text="Sorter Transformation" 
-      />,
-      <SuggestionButton 
-        key="aggregator" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("aggregation transformation")}
-        text="Aggregation Transformation" 
-      />,
-      <SuggestionButton 
-        key="drop" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("drop transformation")}
-        text="Drop Transformation" 
-      />,
-      <SuggestionButton 
-        key="select" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("select transformation")}
-        text="Select Transformation" 
-      />,
-      <SuggestionButton 
-        key="sequence" 
-        icon={<Database size={16} />} 
-        onClick={() => handleTransformationsStep("sequence transformation")}
-        text="Sequence Transformation" 
-      />
-    ];
-    
-    setSourceSuggestions(sequenceTransformationSuggestions);
-    
-    addAssistantMessage(
-      "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
-      "Please select an option from the buttons below."
-    );
-  };
 
   const handleWriterFormSubmit = useCallback((formData: any) => {
     console.log("Writer form submitted:", formData);
@@ -5875,16 +5563,12 @@ export const PipeLineChatProvider = ({
     setShowUnionForm,
     setShowDropForm,
     setShowSelectForm,
-    setShowSequenceForm,
     setDropFormInitialValues,
     setSelectFormInitialValues,
-    setSequenceFormInitialValues,
     setDropSchema,
     setSelectSchema,
-    setSequenceSchema,
     setDropName,
     setSelectName,
-    setSequenceName,
     startTransition,
     handleSend,
     resetPipelineCreationState,
@@ -5907,21 +5591,16 @@ export const PipeLineChatProvider = ({
     handleUnionFormSubmit,
     handleDropFormSubmit,
     handleSelectFormSubmit,
-    handleSequenceFormSubmit,
     handleWriterFormSubmit,
     handleMultiDependencySelection,
     showDropForm,
     showSelectForm,
-    showSequenceForm,
     dropFormInitialValues,
     selectFormInitialValues,
-    sequenceFormInitialValues,
     dropSchema,
     selectSchema,
-    sequenceSchema,
     dropName,
     selectName,
-    sequenceName
   };
 
   return (

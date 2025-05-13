@@ -2,6 +2,8 @@
  * Utility functions for building pipeline templates with strong typing
  */
 
+import { useSelector } from "react-redux";
+
 /**
  * Enum for pipeline transformation types
  */
@@ -466,15 +468,40 @@ const createDropTransformation = (sources: DataSource[]): any => {
   // Determine dependencies
   const dependencies = dropTransformation?.drop_transformation?.dependent_on || [];
   
-  // Get user-provided drop columns or use defaults
-  const dropColumns = dropTransformation?.drop_transformation?.drop_columns || 
-                     ['column_to_drop_1', 'column_to_drop_2'];
+  // Get user-provided drop columns from the column property or fall back to drop_columns
+  let dropColumns;
   
+  // Check if column property exists and is an array (from form submission)
+  if (dropTransformation?.drop_transformation?.column && 
+      Array.isArray(dropTransformation.drop_transformation.column)) {
+    // Extract column_list values from each object in the column array
+    dropColumns = dropTransformation.drop_transformation.column
+      .map(col => col.column_list)
+      .filter(Boolean);
+    console.log("Using column_list values from column array:", dropColumns);
+  } else {
+    // Fall back to drop_columns if available
+    dropColumns = dropTransformation?.drop_transformation?.drop_columns || 
+                 ['column_to_drop_1', 'column_to_drop_2'];
+    console.log("Using fallback drop_columns:", dropColumns);
+  }
+  
+  // Get pattern if available
+  const pattern = dropTransformation?.drop_transformation?.pattern || '';
+  
+  // Get transformation type if available, default to "Drop"
+  const transformationType = dropTransformation?.drop_transformation?.transformation || "Drop";
+  
+  // Create the transformation object with all properties for compatibility
   return {
     "name": "drop_transformation",
     "dependent_on": dependencies,
-    "transformation": "Drop",
-    "drop_columns": dropColumns
+    "transformation": transformationType,
+    "drop_columns": dropColumns,
+    "pattern": pattern,
+    "column": Array.isArray(dropTransformation?.drop_transformation?.column) 
+      ? dropTransformation.drop_transformation.column 
+      : dropColumns.map(col => ({ column_list: col }))
   };
 };
 
@@ -495,15 +522,40 @@ const createSelectTransformation = (sources: DataSource[]): any => {
   // Determine dependencies
   const dependencies = selectTransformation?.select_transformation?.dependent_on || [];
   
-  // Get user-provided select columns or use defaults
-  const selectColumns = selectTransformation?.select_transformation?.select_columns || 
-                       ['column_to_select_1', 'column_to_select_2'];
+  // Get user-provided select columns from the column_list property or fall back to select_columns
+  let selectColumns;
   
+  // Check if column_list property exists and is an array (from form submission)
+  if (selectTransformation?.select_transformation?.column_list && 
+      Array.isArray(selectTransformation.select_transformation.column_list)) {
+    // Extract name values from each object in the column_list array
+    selectColumns = selectTransformation.select_transformation.column_list
+      .map(col => col.name)
+      .filter(Boolean);
+    console.log("Using name values from column_list array:", selectColumns);
+  } else {
+    // Fall back to select_columns if available
+    selectColumns = selectTransformation?.select_transformation?.select_columns || 
+                   ['column_to_select_1', 'column_to_select_2'];
+    console.log("Using fallback select_columns:", selectColumns);
+  }
+  
+  // Get transformation type if available, default to "Select"
+  const transformationType = selectTransformation?.select_transformation?.transformation || "Select";
+  
+  // Get limit if available
+  const limit = selectTransformation?.select_transformation?.limit;
+  
+  // Create the transformation object with all properties for compatibility
   return {
     "name": "select_transformation",
     "dependent_on": dependencies,
-    "transformation": "Select",
-    "select_columns": selectColumns
+    "transformation": transformationType,
+    "select_columns": selectColumns,
+    "column_list": Array.isArray(selectTransformation?.select_transformation?.column_list) 
+      ? selectTransformation.select_transformation.column_list 
+      : selectColumns.map(col => ({ name: col, expression: '' })),
+    ...(limit !== undefined && { limit }) // Add limit only if it exists
   };
 };
 
@@ -667,6 +719,8 @@ export const buildPipelineTemplate = (
   useSourceConnection: boolean,
   filterCondition: string
 ): PipelineTemplate => {
+  console.log(pipelineName)
+
   // Create the base pipeline template
   const pipelineTemplate = createDefaultTemplate(pipelineName, pipelineDescription);
 
@@ -819,11 +873,37 @@ export const buildPipelineTemplate = (
       
       // Only create a placeholder if we have a source with drop_transformation but no dependencies
       if (sourceWithEmptyDependencies) {
+        // Check if we have column data from the form
+        let dropColumns;
+        let columnArray;
+        
+        if (sourceWithEmptyDependencies.drop_transformation?.column && 
+            Array.isArray(sourceWithEmptyDependencies.drop_transformation.column)) {
+          // Extract column_list values from each object in the column array
+          columnArray = sourceWithEmptyDependencies.drop_transformation.column;
+          dropColumns = columnArray
+            .map(col => col.column_list)
+            .filter(Boolean);
+          console.log("Using column_list values from column array for placeholder:", dropColumns);
+        } else {
+          // Use default columns
+          dropColumns = ['column_to_drop_1', 'column_to_drop_2'];
+          columnArray = dropColumns.map(col => ({ column_list: col }));
+        }
+        
+        // Get pattern if available
+        const pattern = sourceWithEmptyDependencies.drop_transformation?.pattern || '';
+        
+        // Get transformation type if available, default to "Drop"
+        const transformationType = sourceWithEmptyDependencies.drop_transformation?.transformation || "Drop";
+        
         const placeholderDropTransform = {
           "name": "drop_transformation",
           "dependent_on": [], // Empty array - will be filled when user selects dependencies
-          "transformation": "Drop",
-          "drop_columns": ['column_to_drop_1', 'column_to_drop_2']
+          "transformation": transformationType,
+          "drop_columns": dropColumns,
+          "pattern": pattern,
+          "column": columnArray
         };
         
         console.log("Created placeholder drop transformation:", placeholderDropTransform);
@@ -851,11 +931,37 @@ export const buildPipelineTemplate = (
       
       // Only create a placeholder if we have a source with select_transformation but no dependencies
       if (sourceWithEmptyDependencies) {
+        // Check if we have column_list data from the form
+        let selectColumns;
+        let columnListArray;
+        
+        if (sourceWithEmptyDependencies.select_transformation?.column_list && 
+            Array.isArray(sourceWithEmptyDependencies.select_transformation.column_list)) {
+          // Extract name values from each object in the column_list array
+          columnListArray = sourceWithEmptyDependencies.select_transformation.column_list;
+          selectColumns = columnListArray
+            .map(col => col.name)
+            .filter(Boolean);
+          console.log("Using name values from column_list array for placeholder:", selectColumns);
+        } else {
+          // Use default columns
+          selectColumns = ['column_to_select_1', 'column_to_select_2'];
+          columnListArray = selectColumns.map(col => ({ name: col, expression: '' }));
+        }
+        
+        // Get transformation type if available, default to "Select"
+        const transformationType = sourceWithEmptyDependencies.select_transformation?.transformation || "Select";
+        
+        // Get limit if available
+        const limit = sourceWithEmptyDependencies.select_transformation?.limit;
+        
         const placeholderSelectTransform = {
           "name": "select_transformation",
           "dependent_on": [], // Empty array - will be filled when user selects dependencies
-          "transformation": "Select",
-          "select_columns": ['column_to_select_1', 'column_to_select_2']
+          "transformation": transformationType,
+          "select_columns": selectColumns,
+          "column_list": columnListArray,
+          ...(limit !== undefined && { limit }) // Add limit only if it exists
         };
         
         console.log("Created placeholder select transformation:", placeholderSelectTransform);

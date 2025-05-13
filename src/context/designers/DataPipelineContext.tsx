@@ -23,7 +23,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
 import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
-import { getPipelineById, getTransformationCount, runNextCheckpoint, stopPipeLine, updatePipeline,
+import { getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
     } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 import { AppDispatch, RootState } from '@/store';
@@ -254,6 +254,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                 console.log(response,"response")
                 // Update pipeline name and JSON safely
                 setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
+                dispatch(setBuildPipeLineDtl(response.pipeline_json));
                 let optimised=await resolveRefsPipelineJson(response?.pipeline_json,response?.pipeline_json)
                 console.log(optimised,"optimised")
                 setPipelineJson(optimised);
@@ -786,8 +787,9 @@ const makePipeline = async (result: any,isModify=true) => {
                 return transform;
             });
   console.log(debuggedNodesList)
+  console.log(pipelineDtl)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.pipeline_name || "sample_pipeline"}`,
+    pipeline_name: `${pipelineDtl?.name||pipelineDtl?.pipeline_name || "sample_pipeline"}`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });
@@ -825,7 +827,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
   
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineDtl?.pipeline_name
+                params: pipelineDtl?.pipeline_name||pipelineDtl?.name
             })).unwrap();
             console.log(countsResponse,"countsResponse")
             
@@ -858,7 +860,7 @@ debuggedNodesList.forEach(checkpoint => {
 
     const handleStop = useCallback(async () => {
         try {
-          let response=await dispatch(stopPipeLine({params:pipelineDtl?.pipeline_name})).unwrap();
+          let response=await dispatch(stopPipeLine({params:pipelineDtl?.name})).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -872,10 +874,10 @@ debuggedNodesList.forEach(checkpoint => {
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineDtl?.pipeline_name})).unwrap();
+            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineDtl?.name})).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-              let countsResponse=await dispatch(getTransformationCount({params:pipelineDtl?.pipeline_name})).unwrap();
+              let countsResponse=await dispatch(getTransformationCount({params:pipelineDtl?.name})).unwrap();
               console.log(countsResponse,"countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);

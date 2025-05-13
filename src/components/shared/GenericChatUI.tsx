@@ -1,60 +1,35 @@
-import { useState } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useChatMessages } from '@/hooks/useChatMessages'
-import { AIChatInput } from '@/components/shared/AIChatInput'
-import { motion } from 'framer-motion'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView'
-import { ChatChartView } from '@/components/shared/chat-components/ChatChartView'
+import { useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useChatMessages } from '@/hooks/useChatMessages';
+import { AIChatInput } from '@/components/shared/AIChatInput';
+import { motion } from 'framer-motion';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
+import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 
 interface GenericChatUIProps {
-  imageSrc?: string
-  assistantColor?: string
-  userColor?: string
-  suggestions?: string[]
+  imageSrc?: string;
+  assistantColor?: string;
+  userColor?: string;
+  suggestions?: string[];
 }
 
 const defaultSuggestions = [
   'Show me the data pipeline jobs with latency greater than 2 hours?',
-]
+  'List of jobs failed today?',
+  'Jobs with latency more than 2 hours this week',
+  'List 20 most expensive workloads',
+];
 
-// 🤖 Mock data lives here — update this array to change your sample results
 const mockChartData = [
   { name: 'Orders', success: 150 },
   { name: 'Products', success: 180 },
   { name: 'Customers', success: 230 },
-]
+];
 
-export function GenericChatUI({
-  imageSrc,
-  assistantColor = '#009459',
-  userColor = '#000000',
-  suggestions = defaultSuggestions,
-}: GenericChatUIProps) {
-  const {
-    messages,
-    addUserMessage,
-    addAssistantMessage,
-    updateLastAssistantMessage,
-  } = useChatMessages()
-
-  const [input, setInput] = useState('')
-  const [mockResponse, setMockResponse] = useState<{
-    sql: string
-    chartData: typeof mockChartData
-  } | null>(null)
-  const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart')
-
-  const handleSend = () => {
-    const query = input.trim()
-    if (!query) return
-
-    addUserMessage(query)
-    addAssistantMessage('Processing...')
-    setInput('')
-
-    setTimeout(() => {
-      const sql = `
+const mockResponses = {
+  default: {
+    sql: `
 SELECT
   pipeline_name AS name,
   ROUND(AVG(latency_seconds) / 60, 2) AS avg_latency_min,
@@ -62,138 +37,207 @@ SELECT
 FROM pipeline_runs
 GROUP BY pipeline_name
 HAVING AVG(latency_seconds) / 60 > 120;
-      `.trim()
+`.trim(),
+    message: 'Here are the pipelines with latency above 120 minutes:',
+    data: mockChartData,
+  },
+  failed: {
+    sql: `
+SELECT 
+  error_category AS name,
+  COUNT(*) AS count
+FROM jobs
+WHERE status = 'FAILED' 
+  AND failure_time >= CURRENT_DATE
+GROUP BY error_category
+ORDER BY count DESC;
+`.trim(),
+    message: "Here's the breakdown of today's failed jobs by error category:",
+    data: [
+      { name: 'Network Issues', count: 42 },
+      { name: 'Resource Limits', count: 28 },
+      { name: 'API Timeouts', count: 15 },
+      { name: 'Data Validation', count: 10 },
+      { name: 'Other', count: 5 },
+    ],
+  },
+  weekly: {
+    sql: `
+SELECT
+  pipeline_name AS name,
+  ROUND(AVG(latency_seconds) / 60, 2) AS latency_mins
+FROM pipeline_runs
+WHERE run_start_time >= CURRENT_DATE - INTERVAL '7 days'
+GROUP BY pipeline_name
+HAVING AVG(latency_seconds) / 60 > 120
+ORDER BY latency_mins DESC;
+`.trim(),
+    message: 'These pipelines had average latency greater than 2 hours this week:',
+    data: [
+      { name: 'Data Pipeline Alpha', latency_mins: 185 },
+      { name: 'ETL Process Beta', latency_mins: 164 },
+      { name: 'Nightly Batch Job', latency_mins: 142 },
+      { name: 'Customer Analytics', latency_mins: 130 },
+      { name: 'Recommendation Engine', latency_mins: 125 },
+    ],
+  },
+  expensive: {
+    sql: `
+SELECT 
+  workload_name AS name,
+  ROUND(SUM(cost_usd), 2) AS cost
+FROM workloads
+GROUP BY workload_name
+ORDER BY cost DESC
+LIMIT 20;
+`.trim(),
+    message: 'Here are the 20 most expensive workloads:',
+    data: [
+      { name: 'ML Training Cluster', cost: 12500 },
+      { name: 'Real-time Analytics', cost: 9800 },
+      { name: 'Data Lake Processing', cost: 7600 },
+      { name: 'BI Dashboard Backend', cost: 5400 },
+      { name: 'Log Analytics Pipeline', cost: 4200 },
+      { name: 'Customer Data Platform', cost: 3800 },
+    ],
+  },
+};
 
-      updateLastAssistantMessage('Here are the pipelines with latency above 120 minutes:')
-      setMockResponse({ sql, chartData: mockChartData })
-    }, 500)
-  }
+export function GenericChatUI({
+  imageSrc,
+  assistantColor = '#009459',
+  userColor = '#000000',
+  suggestions = defaultSuggestions,
+}: GenericChatUIProps) {
+  const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage } = useChatMessages();
+  const [input, setInput] = useState('');
+  const [mockResponse, setMockResponse] = useState<{ sql: string; data: any } | null>(null);
+  const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart');
+
+  const handleSend = () => {
+    const q = input.trim();
+    if (!q) return;
+    addUserMessage(q);
+    addAssistantMessage('Processing...');
+    setInput('');
+    setTimeout(() => {
+      let type: keyof typeof mockResponses = 'default';
+      const lower = q.toLowerCase();
+      if (lower.includes('failed')) type = 'failed';
+      else if (lower.includes('expensive') || lower.includes('cost')) type = 'expensive';
+      else if (lower.includes('week')) type = 'weekly';
+      const r = mockResponses[type];
+      updateLastAssistantMessage(r.message);
+      setMockResponse({ sql: r.sql, data: r.data });
+    }, 500);
+  };
 
   return (
-    <div className="h-full flex flex-col bg-white backdrop-blur-md shadow-lg rounded-lg">
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 px-2 py-6">
-        {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center">
-            {imageSrc && <img src={imageSrc} alt="AI logo" className="w-12 h-12 mb-4" />}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => setInput(s)}
-                  className="px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600">How can I assist you?</p>
-          </div>
-        ) : (
-          <div className="space-y-8 py-2">
-            {messages.map((msg, idx) => {
-              const isAssistant = msg.role === 'assistant'
-              const circleColor = isAssistant ? assistantColor : userColor
-
-              return (
-                <div key={idx} className="flex items-center gap-4 px-1">
+    <div className="h-full w-full flex flex-col">
+      <ScrollArea className="flex-1 w-full">
+        <div className="px-2 py-4 w-full max-w-md mx-auto">
+          {messages.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <p className="text-lg font-medium text-gray-800 mb-4">How can I assist you?</p>
+              <div className="space-y-3">
+                {suggestions.map((s, i) => (
                   <motion.div
-                    className="inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    key={i}
+                    className="flex items-start gap-4"
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 + i * 0.1 }}
                   >
-                    <motion.div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: circleColor }}
-                      whileHover={{ scale: 1.05, opacity: 0.9 }}
-                      whileTap={{ scale: 0.9 }}
-                    />
-                  </motion.div>
-
-                  <div className="flex-1">
-                    {isAssistant ? (
-                      <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                        <div className="whitespace-pre-wrap leading-relaxed text-black">
-                          {msg.content}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-shadow hover:shadow-lg">
-                        <div
-                          className="whitespace-pre-wrap leading-relaxed"
-                          style={{ color: userColor }}
-                        >
-                          {msg.content}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-
-            {mockResponse && (
-              <>
-                {/* Chart / SQL Tabs */}
-                <Tabs
-                  value={activeTab}
-                  onValueChange={val => setActiveTab(val as 'chart' | 'sql')}
-                  className="mt-6"
-                >
-                  <TabsList className="flex space-x-2 border-b">
-                    <TabsTrigger value="chart" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
-                      Chart
-                    </TabsTrigger>
-                    <TabsTrigger value="sql" className="px-4 py-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
-                      SQL
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="chart" className="pt-4">
-                    <ChatChartView data={mockResponse.chartData} />
-                  </TabsContent>
-                  <TabsContent value="sql" className="pt-4">
-                    <ChatSQLView sql={mockResponse.sql} />
-                  </TabsContent>
-                </Tabs>
-
-                {/* Follow-up assistant bubble */}
-                <div className="flex items-center gap-4 px-1 mt-4">
-                  <motion.div
-                    className="inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      className="w-8 h-8 rounded-full"
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
                       style={{ backgroundColor: assistantColor }}
                     />
+                    <div
+                      onClick={() => setInput(s)}
+                      className="flex-1 rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                    >
+                      {s}
+                    </div>
                   </motion.div>
-                  <div className="flex-1">
-                    <div className="rounded-2xl px-4 py-3 bg-gray-100 border border-border/40 shadow-md">
-                      <div className="whitespace-pre-wrap leading-relaxed text-black">
-                        Do you want me to analyze the reasons for the latency issue?
-                      </div>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {messages.map((m, i) => {
+                const isA = m.role === 'assistant';
+                return (
+                  <div key={i} className="flex items-start gap-4 py-2">
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
+                      style={{ backgroundColor: isA ? assistantColor : userColor }}
+                    />
+                    <div
+                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${
+                        isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                );
+              })}
+              {mockResponse && (
+                <>
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={v => setActiveTab(v as 'chart' | 'sql')}
+                    className="mt-6"
+                  >
+                    <TabsList className="flex space-x-2 mb-2">
+                      <TabsTrigger
+                        value="chart"
+                        className={`px-4 py-2 rounded-t-lg ${
+                          activeTab === 'chart'
+                            ? 'bg-gray-200 text-gray-800'
+                            : 'bg-white text-gray-500'
+                        }`}
+                      >
+                        Chart
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="sql"
+                        className={`px-2 py-2 rounded-t-lg ${
+                          activeTab === 'sql'
+                            ? 'bg-gray-200 text-gray-800'
+                            : 'bg-white text-gray-500'
+                        }`}
+                      >
+                        SQL
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chart" className="pt-4">
+                      <ChatChartView data={mockResponse.data} />
+                    </TabsContent>
+                    <TabsContent value="sql" className="pt-4">
+                      <ChatSQLView sql={mockResponse.sql} />
+                    </TabsContent>
+                  </Tabs>
+                  <div className="flex items-start gap-4 mt-4">
+                    <div
+                      className="w-8 h-8 rounded-full mt-1"
+                      style={{ backgroundColor: assistantColor }}
+                    />
+                    <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
+                      <p className="leading-relaxed text-black">
+                        Do you want me to analyze the reasons for the latency issue?
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </ScrollArea>
-
-      {/* Input Area */}
-      <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
-        <AIChatInput
-          input={input}
-          onChange={setInput}
-          onSend={handleSend}
-          placeholder="Type a message..."
-          disabled={false}
-        />
+      <div className="p-4 border-t border-slate-200 bg-white">
+        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
       </div>
     </div>
-  )
+  );
 }

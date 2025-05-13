@@ -26,8 +26,10 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 
-import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
+import { Terminal, PreviewData } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext'
+import { useEventStream } from '@/features/admin/connection/hooks/useEventStream'
+import { useSidebar } from '@/context/SidebarContext'
 
 interface Log {
   timestamp: string
@@ -70,24 +72,50 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
-  // We're already receiving isPipelineRunning as a prop, so we don't need to get it from context
+  const { pipelineDtl } = usePipelineContext()
+  const [logs,setLogs]=useState<any>([])
+  
+ const { start, stop } = useEventStream({
+     url: `http://localhost:8011/api/v1/pipeline/stream-logs/${pipelineDtl?.pipeline_name}`,
+     token: sessionStorage.getItem("kc_token")!.replace("Bearer ", ""),
+     onMessage: (msg) => {
+       console.log("SSE:", msg);
+       setLogs((prev:any) => [...prev, msg]);
 
-  // --- SETTINGS (Sheet) ---
-  const handleSettingsClick = () => {
-    setIsSettingsOpen(true)
-  }
-
-  const handleCloseSettings = () => {
-    setIsSettingsOpen(false)
-  }
+     },
+   });
 
   // --- LOGS (Custom Terminal) ---
-  const handleLogsClick = () => {
-    setIsLogsOpen(true)
+  const { setBottomDrawerContent, closeBottomDrawer } = useSidebar();
+  
+  const handleLogsClick = async () => {
+    // Stop any existing stream
+    stop()
+    
+    // Format logs for the Terminal component
+    const terminalLogs = logs.map((msg: any) => ({
+      timestamp: new Date().toISOString(),
+      message: typeof msg === 'string' ? msg : JSON.stringify(msg),
+      level: "info"
+    }));
+    
+    // Set the Terminal component as the bottom drawer content
+    setBottomDrawerContent(
+      <Terminal 
+        isOpen={true}
+        onClose={closeBottomDrawer}
+        title="Pipeline Logs"
+        terminalLogs={terminalLogs}
+        proplesLogs={proplesLogs || []}
+        pipelineName={pipelineDtl?.pipeline_name}
+        activeTabOnOpen="terminal"
+      />,
+      `Terminal - ${pipelineDtl?.pipeline_name || 'Pipeline'}`
+    );
   }
 
   const handleCloseLogs = () => {
-    setIsLogsOpen(false)
+    closeBottomDrawer();
   }
 
   // --- MINIMIZE/MAXIMIZE EXAMPLE ---
@@ -312,9 +340,9 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     // { key: 'stop', icon: MdOutlineStop, handler: onStop },
     // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
-    // { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
+    { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
   ]
-
+  console.log(logs)
   return (
     <>
       <div
@@ -400,8 +428,9 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         isOpen={isLogsOpen}
         onClose={handleCloseLogs}
         title="Pipeline Logs"
-        terminalLogs={terminalLogs}
+        terminalLogs={logs}
         proplesLogs={proplesLogs}
+        pipelineName={pipelineConfig?.pipeline_name}
       />
     </>
   )

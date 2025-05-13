@@ -12,9 +12,10 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { LoaderCircle } from 'lucide-react';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
+import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 
 const DataPipelineCanvasNew: React.FC = () => {
-  const { isRightAsideOpen } = useSidebar();
+  const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
   const {
     pipelineDtl,
     nodes,
@@ -62,7 +63,7 @@ const DataPipelineCanvasNew: React.FC = () => {
     fetchPipelineDetails
   } = usePipelineContext();
   
-  // Add resize event handler to force canvas resizing when right aside opens/closes
+  // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
   useEffect(() => {
     
     const handleResize = () => {
@@ -70,7 +71,7 @@ const DataPipelineCanvasNew: React.FC = () => {
       window.dispatchEvent(new Event('resize'));
     };
     
-    // Trigger resize after a short delay when the aside state changes
+    // Trigger resize after a short delay when the layout state changes
     const timer = setTimeout(handleResize, 100);
     // Trigger another resize after a longer delay for smoother transition
     const secondTimer = setTimeout(handleResize, 300);
@@ -81,9 +82,9 @@ const DataPipelineCanvasNew: React.FC = () => {
       const fitViewTimer = setTimeout(() => {
         try {
           handleCenter();
-          // Make sure nodes are visible
-          if (nodes.length > 0 && isRightAsideOpen) {
-            console.log('Centering nodes with right aside open');
+          // Make sure nodes are visible when layout changes
+          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
+            console.log('Centering nodes after layout change');
             handleCenter();
           }
         } catch (error) {
@@ -114,7 +115,7 @@ const DataPipelineCanvasNew: React.FC = () => {
       clearTimeout(secondTimer);
       clearTimeout(thirdTimer);
     };
-  }, [isRightAsideOpen, handleCenter, nodes.length]);
+  }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 useEffect(() => {
   fetchPipelineDetails()
 },[]);
@@ -222,7 +223,7 @@ useEffect(() => {
     };
     
     return (
-      <div className={`fixed bottom-4 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-20 transition-all duration-300`}>
+      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-20 transition-all duration-300`}>
         <FlowControls
           onZoomIn={localZoomIn}
           onZoomOut={localZoomOut}
@@ -260,15 +261,16 @@ useEffect(() => {
   ];
 
   return (
-    <div className={`flex flex-col h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''}`}>
+    <div className={`flex flex-col h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
       <div 
-        className={`flex-1 relative p-1 ml-8 transition-all duration-300 ${isRightAsideOpen ? '' : ''}`}
+        className={`flex-1 relative p-1 ml-8 transition-all duration-300`}
         style={{
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           flexGrow: 1,
-          height: '100%'
+          height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
+          width: isRightAsideOpen ? 'calc(100% - 50px)' : '100%'
         }}>
 
         {/* Keyboard shortcuts panel */}
@@ -280,7 +282,7 @@ useEffect(() => {
 
         {/* Debug mode panel */}
         {debuggedNodesList?.length > 0 && (
-          <div className={`fixed top-20 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto transition-all duration-300`}>
+          <div className={`fixed top-20 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[${isBottomDrawerOpen ? '30vh' : '50vh'}] overflow-auto transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -317,16 +319,17 @@ useEffect(() => {
 
         {/* Main Canvas */}
         <div 
-          className={`flex-1 h-full relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''}`}
+          className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
           style={{
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            flex: '1 1 auto'
+            flex: '1 1 auto',
+            height: isBottomDrawerOpen ? 'calc(100% - 20px)' : '100%'
           }}>
 
           <ComposableCanvas
-            className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''}`}
+            className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
             type="pipeline"
             nodeTypes={memoizedNodeTypes}
             edgeTypes={edgeTypes}

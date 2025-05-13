@@ -2,6 +2,8 @@ import { Node, Edge } from 'reactflow';
 import { UINode } from "./pipelineJsonConverter";
 import { apiService } from './api/api-service';
 import { CATALOG_API_PORT } from '@/config/platformenv';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 interface LayoutField {
   lyt_fld_name: string;
@@ -33,9 +35,11 @@ async function fetchLayoutFields(dataSrcId: string): Promise<LayoutField[]> {
 export const getColumnSuggestions = async ( 
   currentNodeId: string,
   nodes: Node[],
-  edges: Edge[]
+  edges: Edge[],
+  pipelineDtl?:any
 ): Promise<string[]> => {
   try {
+    console.log(pipelineDtl)
     const columns = new Set<string>();
     
     // Get all nodes that feed into the current node

@@ -16,9 +16,12 @@ RUN apk add --no-cache \
 # Set the working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
-COPY .npmrc ./
+
+# Copy package config and .npmrc
+COPY package.json package-lock.json .npmrc ./
+
+# Copy entrypoint
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Copy the @bh-ai directory if it exists locally
 COPY ../@bh-ai ./@bh-ai
@@ -43,8 +46,14 @@ RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
 # Copy the rest of the application
 COPY . .
 
-# Expose port 5000 for both HTTP & HTTPS
-EXPOSE 5000
+
+# Ensure entrypoint runs first
+ENTRYPOINT ["entrypoint.sh"]
 
 # Start the app
 CMD ["npm", "run", "dev"]
+
+# Expose port 5000 for both HTTP & HTTPS
+EXPOSE 5000
+
+

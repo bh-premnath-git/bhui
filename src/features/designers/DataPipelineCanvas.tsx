@@ -196,7 +196,7 @@ const BuildPlayGround: React.FC = () => {
     //   };
 
     return (
-            <div className={`relative h-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+            <div className={`relative h-full w-[98%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
                 {/* <ResolveSchema/> */}
                 <div className="p-1 ml-8" style={{
                     height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',

@@ -20,7 +20,7 @@
 /* Combined state adjustments */
 .with-right-panel.with-bottom-drawer-panel {
   width: calc(100% - 10px) !important;
-  height: calc(100% - 300px) !important;
+  height: calc(100% - 100px) !important;
 }
 
 /* Canvas adjustments */

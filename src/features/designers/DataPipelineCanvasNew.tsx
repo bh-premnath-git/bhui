@@ -223,7 +223,7 @@ useEffect(() => {
     };
     
     return (
-      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-20 transition-all duration-300`}>
+      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[10px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[31%]' : 'right-4'} z-20 transition-all duration-300`}>
         <FlowControls
           onZoomIn={localZoomIn}
           onZoomOut={localZoomOut}
@@ -261,7 +261,7 @@ useEffect(() => {
   ];
 
   return (
-    <div className={`flex flex-col h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+    <div className={`flex flex-col h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
       <div 
         className={`flex-1 relative p-1 ml-8 transition-all duration-300`}
         style={{

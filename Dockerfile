@@ -46,14 +46,9 @@ RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
 # Copy the rest of the application
 COPY . .
 
+EXPOSE 5000
 
 # Ensure entrypoint runs first
 ENTRYPOINT ["entrypoint.sh"]
-
-# Start the app
-CMD ["npm", "run", "dev"]
-
-# Expose port 5000 for both HTTP & HTTPS
-EXPOSE 5000
 
 

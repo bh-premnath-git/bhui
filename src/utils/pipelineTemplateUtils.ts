@@ -12,7 +12,10 @@ export enum TransformationType {
   SORTER = 'sorter',
   TARGET = 'target',
   JOIN = 'join',
-  UNION = 'union'
+  UNION = 'union',
+  DROP = 'drop',
+  SELECT = 'select',
+  SEQUENCE = 'sequence'
 }
 
 // Map string transformation types to enum values for easier lookup
@@ -23,7 +26,10 @@ export const transformationTypeMap: Record<string, TransformationType> = {
   'sorter': TransformationType.SORTER,
   'target': TransformationType.TARGET,
   'join': TransformationType.JOIN,
-  'union': TransformationType.UNION
+  'union': TransformationType.UNION,
+  'drop': TransformationType.DROP,
+  'select': TransformationType.SELECT,
+  'sequence': TransformationType.SEQUENCE
 };
 
 /**
@@ -81,6 +87,9 @@ export interface DataSource {
   target_transformation?: TransformationConfig;
   join_transformation?: TransformationConfig;
   union_transformation?: TransformationConfig;
+  drop_transformation?: TransformationConfig;
+  select_transformation?: TransformationConfig;
+  sequence_transformation?: TransformationConfig;
   columns?: Array<{ name: string; dataType: string }>;
   [key: string]: any;
 }
@@ -97,6 +106,11 @@ export interface TransformationConfig {
   aggregations?: Array<{ target_column: string; expression: string }>;
   group_by?: Array<{ group_by: string }>;
   sort_columns?: Array<{ column_name: string; sort_order: 'asc' | 'desc' }>;
+  drop_columns?: string[];
+  select_columns?: string[];
+  sequence_column?: string;
+  start_value?: number;
+  increment_by?: number;
   [key: string]: any;
 }
 
@@ -436,6 +450,96 @@ const createUnionTransformation = (sources: DataSource[]): any => {
 };
 
 /**
+ * Creates a drop transformation
+ */
+const createDropTransformation = (sources: DataSource[]): any => {
+  // Find drop transformation in existing transformations
+  const dropTransformation = sources.find(source => 
+    source.drop_transformation);
+  
+  // If no drop transformation is found in sources, return null
+  if (!dropTransformation) {
+    console.warn("No drop transformation found in sources");
+    return null;
+  }
+  
+  // Determine dependencies
+  const dependencies = dropTransformation?.drop_transformation?.dependent_on || [];
+  
+  // Get user-provided drop columns or use defaults
+  const dropColumns = dropTransformation?.drop_transformation?.drop_columns || 
+                     ['column_to_drop_1', 'column_to_drop_2'];
+  
+  return {
+    "name": "drop_transformation",
+    "dependent_on": dependencies,
+    "transformation": "Drop",
+    "drop_columns": dropColumns
+  };
+};
+
+/**
+ * Creates a select transformation
+ */
+const createSelectTransformation = (sources: DataSource[]): any => {
+  // Find select transformation in existing transformations
+  const selectTransformation = sources.find(source => 
+    source.select_transformation);
+  
+  // If no select transformation is found in sources, return null
+  if (!selectTransformation) {
+    console.warn("No select transformation found in sources");
+    return null;
+  }
+  
+  // Determine dependencies
+  const dependencies = selectTransformation?.select_transformation?.dependent_on || [];
+  
+  // Get user-provided select columns or use defaults
+  const selectColumns = selectTransformation?.select_transformation?.select_columns || 
+                       ['column_to_select_1', 'column_to_select_2'];
+  
+  return {
+    "name": "select_transformation",
+    "dependent_on": dependencies,
+    "transformation": "Select",
+    "select_columns": selectColumns
+  };
+};
+
+/**
+ * Creates a sequence transformation
+ */
+const createSequenceTransformation = (sources: DataSource[]): any => {
+  // Find sequence transformation in existing transformations
+  const sequenceTransformation = sources.find(source => 
+    source.sequence_transformation);
+  
+  // If no sequence transformation is found in sources, return null
+  if (!sequenceTransformation) {
+    console.warn("No sequence transformation found in sources");
+    return null;
+  }
+  
+  // Determine dependencies
+  const dependencies = sequenceTransformation?.sequence_transformation?.dependent_on || [];
+  
+  // Get user-provided sequence settings or use defaults
+  const sequenceColumn = sequenceTransformation?.sequence_transformation?.sequence_column || 'id';
+  const startValue = sequenceTransformation?.sequence_transformation?.start_value || 1;
+  const incrementBy = sequenceTransformation?.sequence_transformation?.increment_by || 1;
+  
+  return {
+    "name": "sequence_transformation",
+    "dependent_on": dependencies,
+    "transformation": "SequenceGenerator",
+    "sequence_column": sequenceColumn,
+    "start_value": startValue,
+    "increment_by": incrementBy
+  };
+};
+
+/**
  * Creates a target object for the pipeline template
  */
 const createTargetObject = (
@@ -692,6 +796,104 @@ export const buildPipelineTemplate = (
         
         console.log("Created placeholder union transformation:", placeholderUnionTransform);
         transformationsList.push(placeholderUnionTransform);
+      }
+    }
+  }
+  
+  // Add drop transformation if selected
+  if (transformationTypes.includes(TransformationType.DROP) || transformations.includes(TransformationType.DROP) || transformations.includes('drop')) {
+    const dropTransform = createDropTransformation(selectedSources);
+    console.log("Adding drop transformation to pipeline:", dropTransform);
+    if (dropTransform) {
+      transformationsList.push(dropTransform);
+    } else {
+      console.warn("Drop transformation was selected but could not be created");
+      
+      // Check if any source has a drop_transformation property with empty dependencies
+      const sourceWithEmptyDependencies = selectedSources.find(
+        source => source.drop_transformation && 
+                 (!source.drop_transformation.dependent_on || 
+                  (Array.isArray(source.drop_transformation.dependent_on) && 
+                   source.drop_transformation.dependent_on.length === 0))
+      );
+      
+      // Only create a placeholder if we have a source with drop_transformation but no dependencies
+      if (sourceWithEmptyDependencies) {
+        const placeholderDropTransform = {
+          "name": "drop_transformation",
+          "dependent_on": [], // Empty array - will be filled when user selects dependencies
+          "transformation": "Drop",
+          "drop_columns": ['column_to_drop_1', 'column_to_drop_2']
+        };
+        
+        console.log("Created placeholder drop transformation:", placeholderDropTransform);
+        transformationsList.push(placeholderDropTransform);
+      }
+    }
+  }
+  
+  // Add select transformation if selected
+  if (transformationTypes.includes(TransformationType.SELECT) || transformations.includes(TransformationType.SELECT) || transformations.includes('select')) {
+    const selectTransform = createSelectTransformation(selectedSources);
+    console.log("Adding select transformation to pipeline:", selectTransform);
+    if (selectTransform) {
+      transformationsList.push(selectTransform);
+    } else {
+      console.warn("Select transformation was selected but could not be created");
+      
+      // Check if any source has a select_transformation property with empty dependencies
+      const sourceWithEmptyDependencies = selectedSources.find(
+        source => source.select_transformation && 
+                 (!source.select_transformation.dependent_on || 
+                  (Array.isArray(source.select_transformation.dependent_on) && 
+                   source.select_transformation.dependent_on.length === 0))
+      );
+      
+      // Only create a placeholder if we have a source with select_transformation but no dependencies
+      if (sourceWithEmptyDependencies) {
+        const placeholderSelectTransform = {
+          "name": "select_transformation",
+          "dependent_on": [], // Empty array - will be filled when user selects dependencies
+          "transformation": "Select",
+          "select_columns": ['column_to_select_1', 'column_to_select_2']
+        };
+        
+        console.log("Created placeholder select transformation:", placeholderSelectTransform);
+        transformationsList.push(placeholderSelectTransform);
+      }
+    }
+  }
+  
+  // Add sequence transformation if selected
+  if (transformationTypes.includes(TransformationType.SEQUENCE) || transformations.includes(TransformationType.SEQUENCE) || transformations.includes('sequence')) {
+    const sequenceTransform = createSequenceTransformation(selectedSources);
+    console.log("Adding sequence transformation to pipeline:", sequenceTransform);
+    if (sequenceTransform) {
+      transformationsList.push(sequenceTransform);
+    } else {
+      console.warn("Sequence transformation was selected but could not be created");
+      
+      // Check if any source has a sequence_transformation property with empty dependencies
+      const sourceWithEmptyDependencies = selectedSources.find(
+        source => source.sequence_transformation && 
+                 (!source.sequence_transformation.dependent_on || 
+                  (Array.isArray(source.sequence_transformation.dependent_on) && 
+                   source.sequence_transformation.dependent_on.length === 0))
+      );
+      
+      // Only create a placeholder if we have a source with sequence_transformation but no dependencies
+      if (sourceWithEmptyDependencies) {
+        const placeholderSequenceTransform = {
+          "name": "sequence_transformation",
+          "dependent_on": [], // Empty array - will be filled when user selects dependencies
+          "transformation": "Sequence",
+          "sequence_column": 'id',
+          "start_value": 1,
+          "increment_by": 1
+        };
+        
+        console.log("Created placeholder sequence transformation:", placeholderSequenceTransform);
+        transformationsList.push(placeholderSequenceTransform);
       }
     }
   }

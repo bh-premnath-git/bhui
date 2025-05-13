@@ -54,8 +54,14 @@ interface PipeLineChatContextProps {
     'target_form' |
     'join_form' |
     'union_form' |
+    'drop_form' |
+    'select_form' |
+    'sequence_form' |
     'join_dependency' |
-    'union_dependency';
+    'union_dependency' |
+    'drop_dependency' |
+    'select_dependency' |
+    'sequence_dependency';
   showDependencySelection: boolean;
   dependencyOptions: any[];
   selectedDependency: string;
@@ -75,18 +81,27 @@ interface PipeLineChatContextProps {
   aggregatorFormInitialValues: any;
   joinFormInitialValues: any;
   unionFormInitialValues: any;
+  dropFormInitialValues: any;
+  selectFormInitialValues: any;
+  sequenceFormInitialValues: any;
   filterSchema: any;
   schemaTransformationSchema: any;
   sorterSchema: any;
   aggregatorSchema: any;
   joinSchema: any;
   unionSchema: any;
+  dropSchema: any;
+  selectSchema: any;
+  sequenceSchema: any;
   filterName: string;
   schemaName: string;
   sorterName: string;
   aggregatorName: string;
   joinName: string;
   unionName: string;
+  dropName: string;
+  selectName: string;
+  sequenceName: string;
   showFilterForm: boolean;
   showSchemaForm: boolean;
   showReaderForm: boolean;
@@ -95,6 +110,9 @@ interface PipeLineChatContextProps {
   showAggregatorForm: boolean;
   showJoinForm: boolean;
   showUnionForm: boolean;
+  showDropForm: boolean;
+  showSelectForm: boolean;
+  showSequenceForm: boolean;
   isPending: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
@@ -137,8 +155,14 @@ interface PipeLineChatContextProps {
     'target_form' |
     'join_form' |
     'union_form' |
+    'drop_form' |
+    'select_form' |
+    'sequence_form' |
     'join_dependency' |
-    'union_dependency'>>;
+    'union_dependency' |
+    'drop_dependency' |
+    'select_dependency' |
+    'sequence_dependency'>>;
   setShowDependencySelection: (show: boolean) => void;
   setDependencyOptions: (options: any[]) => void;
   setSelectedDependency: (dependency: string) => void;
@@ -158,18 +182,27 @@ interface PipeLineChatContextProps {
   setAggregatorFormInitialValues: (values: any) => void;
   setJoinFormInitialValues: (values: any) => void;
   setUnionFormInitialValues: (values: any) => void;
+  setDropFormInitialValues: (values: any) => void;
+  setSelectFormInitialValues: (values: any) => void;
+  setSequenceFormInitialValues: (values: any) => void;
   setFilterSchema: (schema: any) => void;
   setSchemaTransformationSchema: (schema: any) => void;
   setSorterSchema: (schema: any) => void;
   setAggregatorSchema: (schema: any) => void;
   setJoinSchema: (schema: any) => void;
   setUnionSchema: (schema: any) => void;
+  setDropSchema: (schema: any) => void;
+  setSelectSchema: (schema: any) => void;
+  setSequenceSchema: (schema: any) => void;
   setFilterName: (name: string) => void;
   setSchemaName: (name: string) => void;
   setSorterName: (name: string) => void;
   setAggregatorName: (name: string) => void;
   setJoinName: (name: string) => void;
   setUnionName: (name: string) => void;
+  setDropName: (name: string) => void;
+  setSelectName: (name: string) => void;
+  setSequenceName: (name: string) => void;
   setShowFilterForm: (show: boolean) => void;
   setShowSchemaForm: (show: boolean) => void;
   setShowReaderForm: (show: boolean) => void;
@@ -178,6 +211,9 @@ interface PipeLineChatContextProps {
   setShowAggregatorForm: (show: boolean) => void;
   setShowJoinForm: (show: boolean) => void;
   setShowUnionForm: (show: boolean) => void;
+  setShowDropForm: (show: boolean) => void;
+  setShowSelectForm: (show: boolean) => void;
+  setShowSequenceForm: (show: boolean) => void;
   startTransition: (callback: () => void) => void;
   handleSend: () => Promise<void>;
   resetPipelineCreationState: () => void;
@@ -198,6 +234,9 @@ interface PipeLineChatContextProps {
   handleAggregatorFormSubmit : (formData: any) => void;
   handleJoinFormSubmit : (formData: any) => void;
   handleUnionFormSubmit : (formData: any) => void;
+  handleDropFormSubmit : (formData: any) => void;
+  handleSelectFormSubmit : (formData: any) => void;
+  handleSequenceFormSubmit : (formData: any) => void;
   handleWriterFormSubmit: (formData: any) => void;
   handleMultiDependencySelection: (dependencies: string[]) => void;
 
@@ -314,8 +353,14 @@ export const PipeLineChatProvider = ({
     'target_form' |
     'join_form' |
     'union_form' |
+    'drop_form' |
+    'select_form' |
+    'sequence_form' |
     'join_dependency' |
-    'union_dependency'
+    'union_dependency' |
+    'drop_dependency' |
+    'select_dependency' |
+    'sequence_dependency'
   >('select');
 
   // State for inline forms - using a single state for form visibility and initial values
@@ -334,12 +379,18 @@ export const PipeLineChatProvider = ({
   const [aggregatorSchema, setAggregatorSchema] = useState<any>(null);
   const [joinSchema, setJoinSchema] = useState<any>(null);
   const [unionSchema, setUnionSchema] = useState<any>(null);
+  const [dropSchema, setDropSchema] = useState<any>(null);
+  const [selectSchema, setSelectSchema] = useState<any>(null);
+  const [sequenceSchema, setSequenceSchema] = useState<any>(null);
   const [filterName, setFilterName] = useState<string>('');
   const [schemaName, setSchemaName] = useState<string>('');
   const [sorterName, setSorterName] = useState<string>('');
   const [aggregatorName, setAggregatorName] = useState<string>('');
   const [joinName, setJoinName] = useState<string>('');
   const [unionName, setUnionName] = useState<string>('');
+  const [dropName, setDropName] = useState<string>('');
+  const [selectName, setSelectName] = useState<string>('');
+  const [sequenceName, setSequenceName] = useState<string>('');
   
   // Form visibility states
   const [showFilterForm, setShowFilterForm] = useState(false);
@@ -350,6 +401,9 @@ export const PipeLineChatProvider = ({
   const [showAggregatorForm, setShowAggregatorForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showUnionForm, setShowUnionForm] = useState(false);
+  const [showDropForm, setShowDropForm] = useState(false);
+  const [showSelectForm, setShowSelectForm] = useState(false);
+  const [showSequenceForm, setShowSequenceForm] = useState(false);
   
   // Form initial values
   const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
@@ -360,6 +414,9 @@ export const PipeLineChatProvider = ({
   const [aggregatorFormInitialValues, setAggregatorFormInitialValues] = useState<any>({});
   const [joinFormInitialValues, setJoinFormInitialValues] = useState<any>({});
   const [unionFormInitialValues, setUnionFormInitialValues] = useState<any>({});
+  const [dropFormInitialValues, setDropFormInitialValues] = useState<any>({});
+  const [selectFormInitialValues, setSelectFormInitialValues] = useState<any>({});
+  const [sequenceFormInitialValues, setSequenceFormInitialValues] = useState<any>({});
   
   // Add useTransition hook for smoother UI updates
   const [isPending, startTransition] = useTransition();
@@ -468,6 +525,9 @@ export const PipeLineChatProvider = ({
     setShowAggregatorForm(false);
     setShowJoinForm(false);
     setShowUnionForm(false);
+    setShowDropForm(false);
+    setShowSelectForm(false);
+    setShowSequenceForm(false);
     setFilterFormInitialValues({});
     setSchemaFormInitialValues({});
     setReaderFormInitialValues({});
@@ -501,7 +561,7 @@ export const PipeLineChatProvider = ({
     setPipelineDescription("Data pipeline created with AI assistant");
 
     // Skip asking for name and description, directly ask for data source
-    addAssistantMessage("Hi! I'll help you create a new data pipeline. Let's add a data source to your pipeline. Please enter the name of a data source you'd like to search for (e.g., \"sales_data\").");
+    addAssistantMessage("Let’s start. Add a data source (e.g., sales_data)");
 
     // Set step directly to source
     setStep('source');
@@ -590,7 +650,7 @@ export const PipeLineChatProvider = ({
     setShowReaderForm(true);
 
     addAssistantMessage(
-      `I'll use the data source "${selectedSource.data_src_name}". Please review and customize the reader configuration below:`
+      `Using source: ${selectedSource.data_src_name}. Review and edit reader config.`
     );
   }, [addAssistantMessage, setCurrentSourceData, setSelectedSources, setFormInitialValues, setActiveForm]);
 
@@ -740,15 +800,19 @@ export const PipeLineChatProvider = ({
 
       // Ask the user what transformations they want to add
       addAssistantMessage(
-        "Great! Now let's add some transformations to your pipeline. I can add the following types of transformations:\n\n" +
-        "1. Schema Transformation - Create new fields or modify existing ones\n" +
-        "2. Filter Transformation - Filter data based on conditions\n" +
-        "3. Join Transformation - Combine data from multiple sources\n" +
-        "4. Union Transformation - Append data from multiple sources\n" +
-        "5. Sorter Transformation - Sort data based on columns\n" +
-        "6. Aggregation Transformation - Aggregate data with group by\n\n" +
-        "Which transformations would you like to add? You can select one or more transformations."
-      );
+  "Great! Time to add transformations. Here’s what you can do:\n\n" +
+  "1. **Schema** – Create or edit fields\n" +
+  "2. **Filter** – Apply conditions\n" +
+  "3. **Join** – Merge sources\n" +
+  "4. **Union** – Stack datasets\n" +
+  "5. **Sort** – Order by columns\n" +
+  "6. **Aggregate** – Group and summarize\n" +
+  "7. **Drop** – Remove columns\n" +
+  "8. **Select** – Keep specific columns\n" +
+  "9. **Sequence** – Add index/ID\n\n" +
+  "Which ones would you like to add?"
+);
+
 
       // Build and update the pipeline template
       const pipelineTemplate = generatePipelineTemplate();
@@ -818,6 +882,27 @@ export const PipeLineChatProvider = ({
           setIsMultiSelect(true);
           setMinDependencies(2);
         }
+
+        if (userInput.includes('drop')) {
+          currentSelection = 'drop';
+          if (!newTransformations.includes('drop')) {
+            newTransformations.push('drop');
+          }
+        }
+
+        if (userInput.includes('select')) {
+          currentSelection = 'select';
+          if (!newTransformations.includes('select')) {
+            newTransformations.push('select');
+          }
+        }
+
+        if (userInput.includes('sequence')) {
+          currentSelection = 'sequence';
+          if (!newTransformations.includes('sequence')) {
+            newTransformations.push('sequence');
+          }
+        }
         
         // Ensure that only join and union use multi-select
         if (currentSelection !== 'join' && currentSelection !== 'union') {
@@ -877,6 +962,15 @@ export const PipeLineChatProvider = ({
         }
         if (transformations.includes('union')) {
           existingNodes.push('union_transformation');
+        }
+        if (transformations.includes('drop')) {
+          existingNodes.push('drop_transformation');
+        }
+        if (transformations.includes('select')) {
+          existingNodes.push('select_transformation');
+        }
+        if (transformations.includes('sequence')) {
+          existingNodes.push('sequence_transformation');
         }
 
         // Initialize transformations with empty dependency arrays
@@ -953,6 +1047,56 @@ export const PipeLineChatProvider = ({
                 target_transformation: {
                   ...(source.target_transformation || {}),
                   dependent_on: [] // Empty array - will be filled when user selects dependency
+                }
+              };
+            });
+          });
+        }
+
+        if (currentSelection === 'drop') {
+          // Initialize drop transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                drop_transformation: {
+                  ...(source.drop_transformation || {}),
+                  dependent_on: [], // Empty array - will be filled when user selects dependency
+                  drop_columns: ['column_to_drop_1', 'column_to_drop_2']
+                }
+              };
+            });
+          });
+        }
+
+        if (currentSelection === 'select') {
+          // Initialize select transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                select_transformation: {
+                  ...(source.select_transformation || {}),
+                  dependent_on: [], // Empty array - will be filled when user selects dependency
+                  select_columns: ['column_to_select_1', 'column_to_select_2']
+                }
+              };
+            });
+          });
+        }
+
+        if (currentSelection === 'sequence') {
+          // Initialize sequence transformation with empty dependency array
+          setSelectedSources(prevSources => {
+            return prevSources.map(source => {
+              return {
+                ...source,
+                sequence_transformation: {
+                  ...(source.sequence_transformation || {}),
+                  dependent_on: [], // Empty array - will be filled when user selects dependency
+                  sequence_column: 'id',
+                  start_value: 1,
+                  increment_by: 1
                 }
               };
             });
@@ -1261,6 +1405,143 @@ export const PipeLineChatProvider = ({
             setShowDependencySelection(true);
             addAssistantMessage(dependencyMessage);
           });
+        } else if (currentSelection === 'drop') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('drop_dependency');
+
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this drop transformation? Please select from the options below:";
+
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+
+            // Initialize drop transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  drop_transformation: {
+                    ...(source.drop_transformation || {}),
+                    name: 'drop_transformation',
+                    transformation: 'Drop',
+                    drop_columns: ['column_to_drop_1', 'column_to_drop_2'],
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+
+            // Show the dependency selection UI and add the message
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
+        } else if (currentSelection === 'select') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('select_dependency');
+
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this select transformation? Please select from the options below:";
+
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+
+            // Initialize select transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  select_transformation: {
+                    ...(source.select_transformation || {}),
+                    name: 'select_transformation',
+                    transformation: 'Select',
+                    select_columns: ['column_to_select_1', 'column_to_select_2'],
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+
+            // Show the dependency selection UI and add the message
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
+        } else if (currentSelection === 'sequence') {
+          // Use startTransition to prevent UI from being replaced with loading indicator
+          startTransition(() => {
+            // First, ask for dependency selection
+            setTransformationSubStep('sequence_dependency');
+
+            // Create a message with dependency options
+            let dependencyMessage = "After which step would you like to add this sequence transformation? Please select from the options below:";
+
+            // Add the dependency selection options as buttons
+            const dependencyButtons = existingNodes.map((node, index) => ({
+              label: `${index + 1}. ${node}`,
+              value: node
+            }));
+
+            // Set the dependency selection options
+            setDependencyOptions(dependencyButtons);
+
+            // Try to load the Sequence schema from mdata.json in advance
+            try {
+              // First check for "SequenceGenerator" title
+              let sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
+              
+              // If not found, try "Sequence" title as fallback
+              if (!sequenceSchemaFromMdata) {
+                sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sequence");
+              }
+             
+              
+              // Add nodeId to the schema to match the format expected by CreateFormFormik
+              setSequenceSchema({
+                ...sequenceSchemaFromMdata,
+                nodeId: 'sequence_transformation'
+              });
+              console.log("Preloaded sequence schema:", sequenceSchemaFromMdata);
+            } catch (error) {
+              console.error("Error preloading sequence schema:", error);
+            }
+
+            // Initialize sequence transformation with empty dependency array in selectedSources
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  sequence_transformation: {
+                    ...(source.sequence_transformation || {}),
+                    name: 'sequence_transformation',
+                    transformation: 'Sequence',
+                    for_column_name: 'id',
+                    order_by: [{ column: 'id', order: 'asc' }],
+                    increment_by: 1,
+                    dependent_on: [] // Empty array - will be filled when user selects dependency
+                  }
+                };
+              });
+            });
+
+            // Show the dependency selection UI and add the message
+            setShowDependencySelection(true);
+            addAssistantMessage(dependencyMessage);
+          });
         } else if (currentSelection === 'aggregator') {
           // Use startTransition to prevent UI from being replaced with loading indicator
           startTransition(() => {
@@ -1366,16 +1647,17 @@ export const PipeLineChatProvider = ({
         // Return to transformation selection to allow adding more transformations
         setTransformationSubStep('select');
         addAssistantMessage(
-          "Great! The filter transformation has been added. Would you like to add another transformation?\n\n" +
-          "1. Filter Transformation - Filter data based on conditions\n" +
-          "2. Schema Transformation - Create new fields or modify existing ones\n" +
-          "3. Join Transformation - Combine data from multiple sources\n" +
-          "4. Union Transformation - Append data from multiple sources\n" +
-          "5. Sorter Transformation - Sort data based on columns\n" +
-          "6. Aggregation Transformation - Aggregate data with group by\n" +
-          "7. Target - Configure output target\n\n" +
-          "Please select an option from the buttons below."
-        );
+  "✅ Filter added. Want to add another?\n\n" +
+  "1. Filter – Apply conditions\n" +
+  "2. Schema – Modify fields\n" +
+  "3. Join – Merge sources\n" +
+  "4. Union – Stack datasets\n" +
+  "5. Sort – Order rows\n" +
+  "6. Aggregate – Group & summarize\n" +
+  "7. Target – Set output\n\n" +
+  "Pick an option below to continue."
+);
+
         break;
 
       case 'target_name':
@@ -1960,6 +2242,59 @@ export const PipeLineChatProvider = ({
           };
         });
       });
+    } else if (transformationType === 'drop') {
+      // Update the drop transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the drop_transformation property
+          return {
+            ...source,
+            drop_transformation: {
+              ...(source.drop_transformation || {}),
+              name: 'drop_transformation',
+              transformation: 'Drop',
+              drop_columns: source.drop_transformation?.drop_columns || ['column_to_drop_1', 'column_to_drop_2'],
+              dependent_on: dependencyArray
+            }
+          };
+        });
+      });
+    } else if (transformationType === 'select') {
+      // Update the select transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the select_transformation property
+          return {
+            ...source,
+            select_transformation: {
+              ...(source.select_transformation || {}),
+              name: 'select_transformation',
+              transformation: 'Select',
+              select_columns: source.select_transformation?.select_columns || ['column_to_select_1', 'column_to_select_2'],
+              dependent_on: dependencyArray
+            }
+          };
+        });
+      });
+    } else if (transformationType === 'sequence') {
+      // Update the sequence transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          // Create or update the sequence_transformation property
+          return {
+            ...source,
+            sequence_transformation: {
+              ...(source.sequence_transformation || {}),
+              name: 'sequence_transformation',
+              transformation: 'Sequence',
+              sequence_column: source.sequence_transformation?.sequence_column || 'id',
+              start_value: source.sequence_transformation?.start_value || 1,
+              increment_by: source.sequence_transformation?.increment_by || 1,
+              dependent_on: dependencyArray
+            }
+          };
+        });
+      });
     }
 
     // Also update the pipeline JSON directly for immediate effect
@@ -2039,6 +2374,36 @@ export const PipeLineChatProvider = ({
           targetTransformation.dependent_on = [dependency];
           console.log("Updated target transformation dependency:", targetTransformation);
         }
+      } else if (transformationType === 'drop') {
+        // Find the drop transformation
+        const dropTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'drop_transformation'
+        );
+
+        if (dropTransformation) {
+          dropTransformation.dependent_on = dependencyArray;
+          console.log("Updated drop transformation dependency:", dropTransformation);
+        }
+      } else if (transformationType === 'select') {
+        // Find the select transformation
+        const selectTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'select_transformation'
+        );
+
+        if (selectTransformation) {
+          selectTransformation.dependent_on = dependencyArray;
+          console.log("Updated select transformation dependency:", selectTransformation);
+        }
+      } else if (transformationType === 'sequence') {
+        // Find the sequence transformation
+        const sequenceTransformation = updatedPipelineJson.transformations.find(
+          (t: any) => t.name === 'sequence_transformation'
+        );
+
+        if (sequenceTransformation) {
+          sequenceTransformation.dependent_on = dependencyArray;
+          console.log("Updated sequence transformation dependency:", sequenceTransformation);
+        }
       }
 
       // Update the pipeline JSON
@@ -2054,7 +2419,10 @@ export const PipeLineChatProvider = ({
   }, [pipelineJson, setPipelineJson, generatePipelineTemplate, targetConfig, setSelectedSources, setTransformations, TransformationType]);
 
   const handleDependencySelection = useCallback((dependency: string) => {
-      console.log("Dependency selected:", dependency);
+      console.log("Dependency selected:", dependency, "transformationSubStep:", transformationSubStep);
+      
+      // Log all schema titles to help debug
+      console.log("Available schema titles:", mdataJson.schema.map((schema: any) => schema.title));
   
       // Use startTransition to prevent UI from being replaced with loading indicator
       startTransition(() => {
@@ -2268,32 +2636,34 @@ export const PipeLineChatProvider = ({
                 // Return to transformation selection if schema not found
                 setTransformationSubStep('select');
                 addAssistantMessage(
-                  "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Filter Transformation - Filter data based on conditions\n" +
-                  "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "3. Join Transformation - Combine data from multiple sources\n" +
-                  "4. Union Transformation - Append data from multiple sources\n" +
-                  "5. Sorter Transformation - Sort data based on columns\n" +
-                  "6. Aggregation Transformation - Aggregate data with group by\n" +
-                  "7. Target - Configure output target\n\n" +
-                  "Please select an option from the buttons below."
-                );
+  "✅ Sorter added. Add another?\n\n" +
+  "1. Filter – Apply conditions\n" +
+  "2. Schema – Modify fields\n" +
+  "3. Join – Merge sources\n" +
+  "4. Union – Stack datasets\n" +
+  "5. Sort – Order rows\n" +
+  "6. Aggregate – Group & summarize\n" +
+  "7. Target – Set output\n\n" +
+  "Choose an option below to continue."
+);
+
               }
             } catch (error) {
               console.error("Error loading sorter schema from mdata.json:", error);
               // Return to transformation selection if error
               setTransformationSubStep('select');
               addAssistantMessage(
-                "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Filter Transformation - Filter data based on conditions\n" +
-                "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                "3. Join Transformation - Combine data from multiple sources\n" +
-                "4. Union Transformation - Append data from multiple sources\n" +
-                "5. Sorter Transformation - Sort data based on columns\n" +
-                "6. Aggregation Transformation - Aggregate data with group by\n" +
-                "7. Target - Configure output target\n\n" +
-                "Please select an option from the buttons below."
-              );
+  "✅ Sorter added. Want to add another?\n\n" +
+  "1. Filter – Apply conditions\n" +
+  "2. Schema – Modify fields\n" +
+  "3. Join – Merge sources\n" +
+  "4. Union – Stack datasets\n" +
+  "5. Sort – Order rows\n" +
+  "6. Aggregate – Group & summarize\n" +
+  "7. Target – Set output\n\n" +
+  "Pick an option to continue."
+);
+
             }
   
           } else if (transformationSubStep === 'join_dependency') {
@@ -2360,32 +2730,34 @@ export const PipeLineChatProvider = ({
                 // Return to transformation selection if schema not found
                 setTransformationSubStep('select');
                 addAssistantMessage(
-                  "Great! The join transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "2. Filter Transformation - Filter data based on conditions\n" +
-                  "3. Join Transformation - Combine data from multiple sources\n" +
-                  "4. Union Transformation - Append data from multiple sources\n" +
-                  "5. Sorter Transformation - Sort data based on columns\n" +
-                  "6. Aggregation Transformation - Aggregate data with group by\n" +
-                  "7. Target - Configure output target\n\n" +
-                  "Please select an option from the buttons below."
-                );
+  "✅ Join added. Add another?\n\n" +
+  "1. Schema – Modify fields\n" +
+  "2. Filter – Apply conditions\n" +
+  "3. Join – Merge sources\n" +
+  "4. Union – Stack datasets\n" +
+  "5. Sort – Order rows\n" +
+  "6. Aggregate – Group & summarize\n" +
+  "7. Target – Set output\n\n" +
+  "Pick an option below."
+);
+
               }
             } catch (error) {
               console.error("Error loading join schema from mdata.json:", error);
               // Return to transformation selection if error
               setTransformationSubStep('select');
               addAssistantMessage(
-                "Great! The join transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Schema Transformation - Create new fields or modify existing ones\n" +
-                "2. Filter Transformation - Filter data based on conditions\n" +
-                "3. Join Transformation - Combine data from multiple sources\n" +
-                "4. Union Transformation - Append data from multiple sources\n" +
-                "5. Sorter Transformation - Sort data based on columns\n" +
-                "6. Aggregation Transformation - Aggregate data with group by\n" +
-                "7. Target - Configure output target\n\n" +
-                "Please select an option from the buttons below."
-              );
+  "Join transformation added. Want to add another?\n\n" +
+  "1. Schema - Create/modify fields\n" +
+  "2. Filter - Filter data by conditions\n" +
+  "3. Join - Combine data from sources\n" +
+  "4. Union - Append data from sources\n" +
+  "5. Sorter - Sort data by columns\n" +
+  "6. Aggregation - Aggregate data (group by)\n" +
+  "7. Target - Set output target\n\n" +
+  "Select an option below."
+);
+
             }
           } else if (transformationSubStep === 'union_dependency') {
             // Update the union transformation with the selected dependency
@@ -2445,32 +2817,34 @@ export const PipeLineChatProvider = ({
                 // Return to transformation selection if schema not found
                 setTransformationSubStep('select');
                 addAssistantMessage(
-                  "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "2. Filter Transformation - Filter data based on conditions\n" +
-                  "3. Join Transformation - Combine data from multiple sources\n" +
-                  "4. Union Transformation - Append data from multiple sources\n" +
-                  "5. Sorter Transformation - Sort data based on columns\n" +
-                  "6. Aggregation Transformation - Aggregate data with group by\n" +
-                  "7. Target - Configure output target\n\n" +
-                  "Please select an option from the buttons below."
-                );
+  "Union transformation added. Want to add another?\n\n" +
+  "1. Schema - Create/modify fields\n" +
+  "2. Filter - Filter data by conditions\n" +
+  "3. Join - Combine data from sources\n" +
+  "4. Union - Append data from sources\n" +
+  "5. Sorter - Sort data by columns\n" +
+  "6. Aggregation - Aggregate data (group by)\n" +
+  "7. Target - Set output target\n\n" +
+  "Select an option below."
+);
+
               }
             } catch (error) {
               console.error("Error loading union schema from mdata.json:", error);
               // Return to transformation selection if error
               setTransformationSubStep('select');
               addAssistantMessage(
-                "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Schema Transformation - Create new fields or modify existing ones\n" +
-                "2. Filter Transformation - Filter data based on conditions\n" +
-                "3. Join Transformation - Combine data from multiple sources\n" +
-                "4. Union Transformation - Append data from multiple sources\n" +
-                "5. Sorter Transformation - Sort data based on columns\n" +
-                "6. Aggregation Transformation - Aggregate data with group by\n" +
-                "7. Target - Configure output target\n\n" +
-                "Please select an option from the buttons below."
-              );
+  "Union transformation added. Add another?\n\n" +
+  "1. Schema - Create/modify fields\n" +
+  "2. Filter - Filter by conditions\n" +
+  "3. Join - Combine data from sources\n" +
+  "4. Union - Append data from sources\n" +
+  "5. Sorter - Sort by columns\n" +
+  "6. Aggregation - Aggregate (group by)\n" +
+  "7. Target - Set output target\n\n" +
+  "Select an option below."
+);
+
             }
           } else if (transformationSubStep === 'join_dependency') {
             // Update the join transformation with the selected dependency
@@ -2532,16 +2906,17 @@ export const PipeLineChatProvider = ({
                 // Return to transformation selection if schema not found
                 setTransformationSubStep('select');
                 addAssistantMessage(
-                  "Great! The join transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Filter Transformation - Filter data based on conditions\n" +
-                  "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "3. Join Transformation - Combine data from multiple sources\n" +
-                  "4. Union Transformation - Append data from multiple sources\n" +
-                  "5. Sorter Transformation - Sort data based on columns\n" +
-                  "6. Aggregation Transformation - Aggregate data with group by\n" +
-                  "7. Target - Configure output target\n\n" +
-                  "Please select an option from the buttons below."
-                );
+  "Join transformation added. Add another?\n\n" +
+  "1. Filter - Filter by conditions\n" +
+  "2. Schema - Create/modify fields\n" +
+  "3. Join - Combine data from sources\n" +
+  "4. Union - Append data from sources\n" +
+  "5. Sorter - Sort by columns\n" +
+  "6. Aggregation - Aggregate (group by)\n" +
+  "7. Target - Set output target\n\n" +
+  "Select an option below."
+);
+
               }
             } catch (error) {
               console.error("Error loading join schema from mdata.json:", error);
@@ -2610,16 +2985,17 @@ export const PipeLineChatProvider = ({
                 // Return to transformation selection if schema not found
                 setTransformationSubStep('select');
                 addAssistantMessage(
-                  "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Filter Transformation - Filter data based on conditions\n" +
-                  "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "3. Join Transformation - Combine data from multiple sources\n" +
-                  "4. Union Transformation - Append data from multiple sources\n" +
-                  "5. Sorter Transformation - Sort data based on columns\n" +
-                  "6. Aggregation Transformation - Aggregate data with group by\n" +
-                  "7. Target - Configure output target\n\n" +
-                  "Please select an option from the buttons below."
-                );
+  "Union transformation added. Add another?\n\n" +
+  "1. Filter - Filter by conditions\n" +
+  "2. Schema - Create/modify fields\n" +
+  "3. Join - Combine data from sources\n" +
+  "4. Union - Append data from sources\n" +
+  "5. Sorter - Sort by columns\n" +
+  "6. Aggregation - Aggregate (group by)\n" +
+  "7. Target - Set output target\n\n" +
+  "Select an option below."
+);
+
               }
             } catch (error) {
               console.error("Error loading union schema from mdata.json:", error);
@@ -2627,6 +3003,474 @@ export const PipeLineChatProvider = ({
               setTransformationSubStep('select');
               addAssistantMessage(
                 "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } else if (transformationSubStep === 'drop_dependency') {
+            // Update the drop transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  drop_transformation: {
+                    ...(source.drop_transformation || {}),
+                    name: 'drop_transformation',
+                    transformation: 'Drop',
+                    drop_columns: ['column_to_drop_1', 'column_to_drop_2'],
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after drop dependency selection:", updatedTemplate);
+
+              // Log the drop transformation in the pipeline template
+              const dropTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'drop_transformation'
+              );
+              console.log("Drop transformation in pipeline template:", dropTransformation);
+            }, 0);
+
+            // Try to load the Drop schema from mdata.json
+            try {
+              const dropSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Drop");
+              if (dropSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setDropSchema({
+                  ...dropSchemaFromMdata,
+                  nodeId: 'drop_transformation'
+                });
+                console.log("Loaded drop schema from mdata.json");
+
+                // Prepare drop form initial values
+                setDropFormInitialValues({
+                  name: 'drop_transformation',
+                  drop_columns: ['column_to_drop_1', 'column_to_drop_2'],
+                  dependent_on: [dependency]
+                });
+                setDropName('drop_transformation');
+
+                // Show the drop form
+                setTransformationSubStep('drop_form');
+                setShowDropForm(true);
+                addAssistantMessage("Please select the columns you want to drop below:");
+              } else {
+                console.error("Drop schema not found in mdata.json");
+                // Return to transformation selection if schema not found
+                setTransformationSubStep('select');
+                addAssistantMessage(
+                  "Great! The drop transformation has been added. Would you like to add another transformation?\n\n" +
+                  "Please select an option from the buttons below."
+                );
+              }
+            } catch (error) {
+              console.error("Error loading drop schema from mdata.json:", error);
+              // Return to transformation selection if error
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The drop transformation has been added. Would you like to add another transformation?\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } else if (transformationSubStep === 'select_dependency') {
+            // Update the select transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  select_transformation: {
+                    ...(source.select_transformation || {}),
+                    name: 'select_transformation',
+                    transformation: 'Select',
+                    select_columns: ['column_to_select_1', 'column_to_select_2'],
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after select dependency selection:", updatedTemplate);
+
+              // Log the select transformation in the pipeline template
+              const selectTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'select_transformation'
+              );
+              console.log("Select transformation in pipeline template:", selectTransformation);
+            }, 0);
+
+            // Try to load the Select schema from mdata.json
+            try {
+              const selectSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Select");
+              if (selectSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setSelectSchema({
+                  ...selectSchemaFromMdata,
+                  nodeId: 'select_transformation'
+                });
+                console.log("Loaded select schema from mdata.json");
+
+                // Prepare select form initial values
+                setSelectFormInitialValues({
+                  name: 'select_transformation',
+                  select_columns: ['column_to_select_1', 'column_to_select_2'],
+                  dependent_on: [dependency]
+                });
+                setSelectName('select_transformation');
+
+                // Show the select form
+                setTransformationSubStep('select_form');
+                setShowSelectForm(true);
+                addAssistantMessage("Please select the columns you want to keep below:");
+              } else {
+                console.error("Select schema not found in mdata.json");
+                // Return to transformation selection if schema not found
+                setTransformationSubStep('select');
+                addAssistantMessage(
+                  "Great! The select transformation has been added. Would you like to add another transformation?\n\n" +
+                  "Please select an option from the buttons below."
+                );
+              }
+            } catch (error) {
+              console.error("Error loading select schema from mdata.json:", error);
+              // Return to transformation selection if error
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The select transformation has been added. Would you like to add another transformation?\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } else if (transformationSubStep === 'sequence_dependency') {
+            // Update the sequence transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  sequence_transformation: {
+                    ...(source.sequence_transformation || {}),
+                    name: 'sequence_transformation',
+                    transformation: 'Sequence',
+                    sequence_column: 'id',
+                    start_value: 1,
+                    increment_by: 1,
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after sequence dependency selection:", updatedTemplate);
+
+              // Log the sequence transformation in the pipeline template
+              const sequenceTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'sequence_transformation'
+              );
+              console.log("Sequence transformation in pipeline template:", sequenceTransformation);
+            }, 0);
+
+            // Try to load the Sequence schema from mdata.json
+            try {
+              // First check for "SequenceGenerator" title
+              let sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
+              
+              // If not found, try "Sequence" title as fallback
+              if (!sequenceSchemaFromMdata) {
+                sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sequence");
+              }
+              
+              // If still not found, create a basic schema
+              
+              // Add nodeId to the schema to match the format expected by CreateFormFormik
+              setSequenceSchema({
+                ...sequenceSchemaFromMdata,
+                nodeId: 'sequence_transformation'
+              });
+              console.log("Loaded/created sequence schema:", sequenceSchemaFromMdata);
+
+              // Prepare sequence form initial values
+              setSequenceFormInitialValues({
+                name: 'sequence_transformation',
+                for_column_name: "id",
+                order_by: [{ column: "id", order: "asc" }],
+                increment_by: 1,
+                dependent_on: [dependency]
+              });
+              setSequenceName('sequence_transformation');
+
+              // Show the sequence form
+              setTransformationSubStep('sequence_form');
+              setShowSequenceForm(true);
+              addAssistantMessage("Please configure your sequence transformation below:");
+            } catch (error) {
+              console.error("Error loading sequence schema from mdata.json:", error);
+              // Create a basic schema as fallback
+              const basicSchema = {
+                title: "Sequence",
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  for_column_name: { type: "string" },
+                  order_by: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        column: { type: "string" },
+                        order: { type: "string", enum: ["asc", "desc"] }
+                      }
+                    }
+                  },
+                  increment_by: { type: "number" },
+                  dependent_on: { type: "array", items: { type: "string" } }
+                }
+              };
+              
+              setSequenceSchema({
+                ...basicSchema,
+                nodeId: 'sequence_transformation'
+              });
+              
+              // Prepare sequence form initial values
+              setSequenceFormInitialValues({
+                name: 'sequence_transformation',
+                for_column_name: "id",
+                order_by: [{ column: "id", order: "asc" }],
+                increment_by: 1,
+                dependent_on: [dependency]
+              });
+              setSequenceName('sequence_transformation');
+
+              // Show the sequence form
+              setTransformationSubStep('sequence_form');
+              setShowSequenceForm(true);
+              addAssistantMessage("Please configure your sequence transformation below:");
+            }
+          } else if (transformationSubStep === 'drop_dependency') {
+            // Update the drop transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  drop_transformation: {
+                    ...(source.drop_transformation || {}),
+                    name: 'drop_transformation',
+                    transformation: 'Drop',
+                    drop_columns: ['column_to_drop_1', 'column_to_drop_2'],
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after drop dependency selection:", updatedTemplate);
+
+              // Log the drop transformation in the pipeline template
+              const dropTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'drop_transformation'
+              );
+              console.log("Drop transformation in pipeline template:", dropTransformation);
+            }, 0);
+
+            // Try to load the Drop schema from mdata.json
+            try {
+              const dropSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Drop");
+              if (dropSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setDropSchema({
+                  ...dropSchemaFromMdata,
+                  nodeId: 'drop_transformation'
+                });
+                console.log("Loaded drop schema from mdata.json");
+
+                // Prepare drop form initial values
+                setDropFormInitialValues({
+                  name: 'drop_transformation',
+                  drop_columns: ['column_to_drop_1', 'column_to_drop_2'],
+                  dependent_on: [dependency]
+                });
+                setDropName('drop_transformation');
+
+                // Show the drop form
+                setTransformationSubStep('drop_form');
+                setShowDropForm(true);
+                addAssistantMessage("Please select the columns you want to drop below:");
+              } else {
+                console.error("Drop schema not found in mdata.json");
+                // Return to transformation selection if schema not found
+                setTransformationSubStep('select');
+                addAssistantMessage(
+                  "Great! The drop transformation has been added. Would you like to add another transformation?\n\n" +
+                  "Please select an option from the buttons below."
+                );
+              }
+            } catch (error) {
+              console.error("Error loading drop schema from mdata.json:", error);
+              // Return to transformation selection if error
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The drop transformation has been added. Would you like to add another transformation?\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } else if (transformationSubStep === 'select_dependency') {
+            // Update the select transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  select_transformation: {
+                    ...(source.select_transformation || {}),
+                    name: 'select_transformation',
+                    transformation: 'Select',
+                    select_columns: ['column_to_select_1', 'column_to_select_2'],
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after select dependency selection:", updatedTemplate);
+
+              // Log the select transformation in the pipeline template
+              const selectTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'select_transformation'
+              );
+              console.log("Select transformation in pipeline template:", selectTransformation);
+            }, 0);
+
+            // Try to load the Select schema from mdata.json
+            try {
+              const selectSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Select");
+              if (selectSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setSelectSchema({
+                  ...selectSchemaFromMdata,
+                  nodeId: 'select_transformation'
+                });
+                console.log("Loaded select schema from mdata.json");
+
+                // Prepare select form initial values
+                setSelectFormInitialValues({
+                  name: 'select_transformation',
+                  select_columns: ['column_to_select_1', 'column_to_select_2'],
+                  dependent_on: [dependency]
+                });
+                setSelectName('select_transformation');
+
+                // Show the select form
+                setTransformationSubStep('select_form');
+                setShowSelectForm(true);
+                addAssistantMessage("Please select the columns you want to keep below:");
+              } else {
+                console.error("Select schema not found in mdata.json");
+                // Return to transformation selection if schema not found
+                setTransformationSubStep('select');
+                addAssistantMessage(
+                  "Great! The select transformation has been added. Would you like to add another transformation?\n\n" +
+                  "Please select an option from the buttons below."
+                );
+              }
+            } catch (error) {
+              console.error("Error loading select schema from mdata.json:", error);
+              // Return to transformation selection if error
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The select transformation has been added. Would you like to add another transformation?\n\n" +
+                "Please select an option from the buttons below."
+              );
+            }
+          } else if (transformationSubStep === 'sequence_dependency') {
+            // Update the sequence transformation with the selected dependency
+            setSelectedSources(prevSources => {
+              return prevSources.map(source => {
+                return {
+                  ...source,
+                  sequence_transformation: {
+                    ...(source.sequence_transformation || {}),
+                    name: 'sequence_transformation',
+                    transformation: 'Sequence',
+                    sequence_column: 'id',
+                    start_value: 1,
+                    increment_by: 1,
+                    dependent_on: [dependency]
+                  }
+                };
+              });
+            });
+
+            // Update the pipeline template with the dependency selection
+            setTimeout(() => {
+              const updatedTemplate = generatePipelineTemplate();
+              setPipelineJson(updatedTemplate);
+              console.log("Pipeline template updated after sequence dependency selection:", updatedTemplate);
+
+              // Log the sequence transformation in the pipeline template
+              const sequenceTransformation = updatedTemplate.transformations.find(
+                (t: any) => t.name === 'sequence_transformation'
+              );
+              console.log("Sequence transformation in pipeline template:", sequenceTransformation);
+            }, 0);
+
+            // Try to load the Sequence schema from mdata.json
+            try {
+              const sequenceSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SequenceGenerator");
+              if (sequenceSchemaFromMdata) {
+                // Add nodeId to the schema to match the format expected by CreateFormFormik
+                setSequenceSchema({
+                  ...sequenceSchemaFromMdata,
+                  nodeId: 'sequence_transformation'
+                });
+                console.log("Loaded sequence schema from mdata.json");
+
+                // Prepare sequence form initial values
+                setSequenceFormInitialValues({
+                  name: 'sequence_transformation',
+                  sequence_column: 'id',
+                  start_value: 1,
+                  increment_by: 1,
+                  dependent_on: [dependency]
+                });
+                setSequenceName('sequence_transformation');
+
+                // Show the sequence form
+                setTransformationSubStep('sequence_form');
+                setShowSequenceForm(true);
+                addAssistantMessage("Please configure your sequence transformation below:");
+              } else {
+                console.error("Sequence schema not found in mdata.json");
+                // Return to transformation selection if schema not found
+                setTransformationSubStep('select');
+                addAssistantMessage(
+                  "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
+                  "Please select an option from the buttons below."
+                );
+              }
+            } catch (error) {
+              console.error("Error loading sequence schema from mdata.json:", error);
+              // Return to transformation selection if error
+              setTransformationSubStep('select');
+              addAssistantMessage(
+                "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
                 "Please select an option from the buttons below."
               );
             }
@@ -2691,11 +3535,6 @@ export const PipeLineChatProvider = ({
                 setTransformationSubStep('select');
                 addAssistantMessage(
                   "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
-                  "1. Filter Transformation - Filter data based on conditions\n" +
-                  "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                  "3. Sorter Transformation - Sort data based on columns\n" +
-                  "4. Aggregation Transformation - Aggregate data with group by\n" +
-                  "5. Target - Configure output target\n\n" +
                   "Please select an option from the buttons below."
                 );
               }
@@ -2705,11 +3544,6 @@ export const PipeLineChatProvider = ({
               setTransformationSubStep('select');
               addAssistantMessage(
                 "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Filter Transformation - Filter data based on conditions\n" +
-                "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                "3. Sorter Transformation - Sort data based on columns\n" +
-                "4. Aggregation Transformation - Aggregate data with group by\n" +
-                "5. Target - Configure output target\n\n" +
                 "Please select an option from the buttons below."
               );
             }
@@ -2831,9 +3665,7 @@ export const PipeLineChatProvider = ({
       
       // Add a message to show the configuration
       addAssistantMessage(
-        `Reader configuration saved for "${updatedSource.data_src_name}". ` +
-        `Would you like to add another data source, or continue to the next step? ` +
-        `Say "continue" to proceed to transformations.`
+        `Saved reader for "${updatedSource.data_src_name}". Add another source or say "continue" to proceed to transformations.`
       );
       
       // Build and update the pipeline template
@@ -3194,10 +4026,7 @@ export const PipeLineChatProvider = ({
 
     // Ask if the user wants to add more transformations
     addAssistantMessage(
-      `Great! The filter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Target - Skip transformations not needed\n\n" +
+      `Great! The filter transformation has been added.\nWould you like to add another transformation?\n\n` +
       "Please select an option from the buttons below."
     );
 
@@ -3351,13 +4180,6 @@ export const PipeLineChatProvider = ({
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       `Great! The schema transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Join Transformation - Combine data from multiple sources\n" +
-      "4. Union Transformation - Append data from multiple sources\n" +
-      "5. Sorter Transformation - Sort data based on columns\n" +
-      "6. Aggregation Transformation - Aggregate data with group by\n" +
-      "7. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   }, [
@@ -3380,9 +4202,16 @@ export const PipeLineChatProvider = ({
       column.column_name && column.column_name.trim() !== ''
     );
 
+    // Ensure sort_columns is an array
+    const sortColumnsArray = Array.isArray(formData.sort_columns) 
+      ? formData.sort_columns 
+      : [formData.sort_columns].filter(Boolean);
+    
     // If no valid sort columns, add a default one
-    if (formData.sort_columns.length === 0) {
+    if (sortColumnsArray.length === 0) {
       formData.sort_columns = [{ column_name: 'id', sort_order: 'asc' }];
+    } else {
+      formData.sort_columns = sortColumnsArray;
     }
 
     // Save sorter transformation
@@ -3510,13 +4339,6 @@ export const PipeLineChatProvider = ({
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       `Great! The sorter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Join Transformation - Combine data from multiple sources\n" +
-      "4. Union Transformation - Append data from multiple sources\n" +
-      "5. Sorter Transformation - Sort data based on columns\n" +
-      "6. Aggregation Transformation - Aggregate data with group by\n" +
-      "7. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   };
@@ -3686,13 +4508,6 @@ export const PipeLineChatProvider = ({
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       `Great! The aggregation transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Join Transformation - Combine data from multiple sources\n" +
-      "4. Union Transformation - Append data from multiple sources\n" +
-      "5. Sorter Transformation - Sort data based on columns\n" +
-      "6. Aggregation Transformation - Aggregate data with group by\n" +
-      "7. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   };
@@ -3825,13 +4640,6 @@ export const PipeLineChatProvider = ({
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       `Great! The join transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Join Transformation - Combine data from multiple sources\n" +
-      "4. Union Transformation - Append data from multiple sources\n" +
-      "5. Sorter Transformation - Sort data based on columns\n" +
-      "6. Aggregation Transformation - Aggregate data with group by\n" +
-      "7. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   };
@@ -4045,13 +4853,6 @@ export const PipeLineChatProvider = ({
     // Ask if the user wants to add more transformations
     addAssistantMessage(
       `Great! The union transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Join Transformation - Combine data from multiple sources\n" +
-      "4. Union Transformation - Append data from multiple sources\n" +
-      "5. Sorter Transformation - Sort data based on columns\n" +
-      "6. Aggregation Transformation - Aggregate data with group by\n" +
-      "7. Target - Configure output target\n\n" +
       "Please select an option from the buttons below."
     );
   };
@@ -4209,13 +5010,6 @@ export const PipeLineChatProvider = ({
             setTransformationSubStep('select');
             addAssistantMessage(
               "Great! The join transformation has been added. Would you like to add another transformation?\n\n" +
-              "1. Schema Transformation - Create new fields or modify existing ones\n" +
-              "2. Filter Transformation - Filter data based on conditions\n" +
-              "3. Join Transformation - Combine data from multiple sources\n" +
-              "4. Union Transformation - Append data from multiple sources\n" +
-              "5. Sorter Transformation - Sort data based on columns\n" +
-              "6. Aggregation Transformation - Aggregate data with group by\n" +
-              "7. Target - Configure output target\n\n" +
               "Please select an option from the buttons below."
             );
           }
@@ -4225,13 +5019,6 @@ export const PipeLineChatProvider = ({
           setTransformationSubStep('select');
           addAssistantMessage(
             "Great! The join transformation has been added. Would you like to add another transformation?\n\n" +
-            "1. Schema Transformation - Create new fields or modify existing ones\n" +
-            "2. Filter Transformation - Filter data based on conditions\n" +
-            "3. Join Transformation - Combine data from multiple sources\n" +
-            "4. Union Transformation - Append data from multiple sources\n" +
-            "5. Sorter Transformation - Sort data based on columns\n" +
-            "6. Aggregation Transformation - Aggregate data with group by\n" +
-            "7. Target - Configure output target\n\n" +
             "Please select an option from the buttons below."
           );
         }
@@ -4360,13 +5147,6 @@ export const PipeLineChatProvider = ({
             setTransformationSubStep('select');
             addAssistantMessage(
               "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
-              "1. Schema Transformation - Create new fields or modify existing ones\n" +
-              "2. Filter Transformation - Filter data based on conditions\n" +
-              "3. Join Transformation - Combine data from multiple sources\n" +
-              "4. Union Transformation - Append data from multiple sources\n" +
-              "5. Sorter Transformation - Sort data based on columns\n" +
-              "6. Aggregation Transformation - Aggregate data with group by\n" +
-              "7. Target - Configure output target\n\n" +
               "Please select an option from the buttons below."
             );
           }
@@ -4376,13 +5156,6 @@ export const PipeLineChatProvider = ({
           setTransformationSubStep('select');
           addAssistantMessage(
             "Great! The union transformation has been added. Would you like to add another transformation?\n\n" +
-            "1. Schema Transformation - Create new fields or modify existing ones\n" +
-            "2. Filter Transformation - Filter data based on conditions\n" +
-            "3. Join Transformation - Combine data from multiple sources\n" +
-            "4. Union Transformation - Append data from multiple sources\n" +
-            "5. Sorter Transformation - Sort data based on columns\n" +
-            "6. Aggregation Transformation - Aggregate data with group by\n" +
-            "7. Target - Configure output target\n\n" +
             "Please select an option from the buttons below."
           );
         }
@@ -4391,6 +5164,542 @@ export const PipeLineChatProvider = ({
   )}
 
   // Handle writer form submission
+  // Handle drop form submission
+  const handleDropFormSubmit = (formData: any) => {
+    console.log("Drop form submitted with data:", formData);
+
+    // Extract the column and dependent_on from the form data
+    const { column, dependent_on } = formData;
+    
+    // Ensure column is an array before calling map
+    const columnArray = Array.isArray(column) ? column : [column].filter(Boolean);
+    
+    // Convert column array to drop_columns array
+    const drop_columns = columnArray.length > 0 
+      ? columnArray.map((col: any) => col.column_list)
+      : [];
+
+    // Format the dependencies for display
+    const dependencyMessage = dependent_on && dependent_on.length > 0
+      ? ` (depends on: ${dependent_on.join(', ')})`
+      : '';
+
+    // Create a dummy source with the drop transformation if none exists
+    if (!selectedSources.some(source => source.drop_transformation)) {
+      // Create a dummy source with the drop transformation
+      const dummySource: any = {
+        data_src_id: 'drop_source',
+        data_src_name: 'drop_source',
+        drop_transformation: {
+          name: 'drop_transformation',
+          transformation: 'Drop',
+          column: columnArray,
+          dependent_on: dependent_on
+        }
+      };
+
+      // Add the dummy source to the selected sources
+      setSelectedSources([...selectedSources, dummySource]);
+    } else {
+      // Update the existing drop transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          if (source.drop_transformation) {
+            return {
+              ...source,
+              drop_transformation: {
+                ...source.drop_transformation,
+                column: columnArray,
+                dependent_on: dependent_on
+              }
+            };
+          }
+          return source;
+        });
+      });
+    }
+
+    // Add the drop transformation to the transformations list if not already there
+    if (!transformations.includes('drop')) {
+      setTransformations([...transformations, 'drop']);
+    }
+
+    // Store the drop transformation data directly in the transformations array
+    const dropTransformationData = {
+      name: "drop_transformation",
+      transformation: "Drop",
+      dependent_on: dependent_on,
+      column: columnArray
+    };
+
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the drop transformation
+      const dropTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'drop_transformation'
+      );
+
+      if (dropTransformation) {
+        // Update existing drop transformation
+        dropTransformation.column = columnArray;
+        dropTransformation.dependent_on = dependent_on;
+        console.log("Updated drop transformation in pipeline JSON:", dropTransformation);
+      } else {
+        // Add new drop transformation
+        updatedPipelineJson.transformations.push(dropTransformationData);
+        console.log("Added new drop transformation to pipeline JSON:", dropTransformationData);
+      }
+
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+
+    // Add a message to show the selected drop columns
+    addUserMessage(`Drop transformation: Dropping columns ${drop_columns.join(', ')}${dependencyMessage}`);
+
+    // Hide the form
+    setShowDropForm(false);
+
+    // Regenerate the pipeline template with the updated drop transformation
+    setTimeout(() => {
+      const dropTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(dropTransformTemplate);
+      console.log("Updated pipeline template after drop form submission:", dropTransformTemplate);
+
+      // Log the drop transformation in the pipeline template
+      const dropTransformation = dropTransformTemplate.transformations.find(
+        (t: any) => t.name === 'drop_transformation'
+      );
+      console.log("Drop transformation in pipeline template:", dropTransformation);
+    }, 0);
+
+    // Return to transformation selection to allow adding more transformations
+    setTransformationSubStep('select');
+    
+    // Add message asking for more transformations with suggestion buttons
+    const dropTransformationSuggestions = [
+      <SuggestionButton 
+        key="schema" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("schema transformation")}
+        text="Schema Transformation" 
+      />,
+      <SuggestionButton 
+        key="filter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("filter transformation")}
+        text="Filter Transformation" 
+      />,
+      <SuggestionButton 
+        key="join" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("join transformation")}
+        text="Join Transformation" 
+      />,
+      <SuggestionButton 
+        key="union" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("union transformation")}
+        text="Union Transformation" 
+      />,
+      <SuggestionButton 
+        key="sorter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sorter transformation")}
+        text="Sorter Transformation" 
+      />,
+      <SuggestionButton 
+        key="aggregator" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("aggregation transformation")}
+        text="Aggregation Transformation" 
+      />,
+      <SuggestionButton 
+        key="drop" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("drop transformation")}
+        text="Drop Transformation" 
+      />,
+      <SuggestionButton 
+        key="select" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("select transformation")}
+        text="Select Transformation" 
+      />,
+      <SuggestionButton 
+        key="sequence" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sequence transformation")}
+        text="Sequence Transformation" 
+      />
+    ];
+    
+    setSourceSuggestions(dropTransformationSuggestions);
+    
+    addAssistantMessage(
+      "Great! The drop transformation has been added. Would you like to add another transformation?\n\n" +
+      "Please select an option from the buttons below."
+    );
+  };
+
+  // Handle select form submission
+  const handleSelectFormSubmit = (formData: any) => {
+    console.log("Select form submitted with data:", formData);
+
+    // Extract the column_list and dependent_on from the form data
+    const { column_list, dependent_on } = formData;
+    
+    // Ensure column_list is an array before calling map
+    const columnListArray = Array.isArray(column_list) ? column_list : [column_list].filter(Boolean);
+    
+    // Convert column_list array to select_columns array
+    const select_columns = columnListArray.length > 0
+      ? columnListArray.map((col: any) => col.name)
+      : [];
+
+    // Format the dependencies for display
+    const dependencyMessage = dependent_on && dependent_on.length > 0
+      ? ` (depends on: ${dependent_on.join(', ')})`
+      : '';
+
+    // Create a dummy source with the select transformation if none exists
+    if (!selectedSources.some(source => source.select_transformation)) {
+      // Create a dummy source with the select transformation
+      const dummySource: any = {
+        data_src_id: 'select_source',
+        data_src_name: 'select_source',
+        select_transformation: {
+          name: 'select_transformation',
+          transformation: 'Select',
+          column_list: columnListArray,
+          dependent_on: dependent_on
+        }
+      };
+
+      // Add the dummy source to the selected sources
+      setSelectedSources([...selectedSources, dummySource]);
+    } else {
+      // Update the existing select transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          if (source.select_transformation) {
+            return {
+              ...source,
+              select_transformation: {
+                ...source.select_transformation,
+                column_list: columnListArray,
+                dependent_on: dependent_on
+              }
+            };
+          }
+          return source;
+        });
+      });
+    }
+
+    // Add the select transformation to the transformations list if not already there
+    if (!transformations.includes('select')) {
+      setTransformations([...transformations, 'select']);
+    }
+
+    // Store the select transformation data directly in the transformations array
+    const selectTransformationData = {
+      name: "select_transformation",
+      transformation: "Select",
+      dependent_on: dependent_on,
+      column_list: columnListArray
+    };
+
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the select transformation
+      const selectTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'select_transformation'
+      );
+
+      if (selectTransformation) {
+        // Update existing select transformation
+        selectTransformation.column_list = columnListArray;
+        selectTransformation.dependent_on = dependent_on;
+        console.log("Updated select transformation in pipeline JSON:", selectTransformation);
+      } else {
+        // Add new select transformation
+        updatedPipelineJson.transformations.push(selectTransformationData);
+        console.log("Added new select transformation to pipeline JSON:", selectTransformationData);
+      }
+
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+
+    // Add a message to show the selected columns
+    addUserMessage(`Select transformation: Keeping only columns ${select_columns.join(', ')}${dependencyMessage}`);
+
+    // Hide the form
+    setShowSelectForm(false);
+
+    // Regenerate the pipeline template with the updated select transformation
+    setTimeout(() => {
+      const selectTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(selectTransformTemplate);
+      console.log("Updated pipeline template after select form submission:", selectTransformTemplate);
+
+      // Log the select transformation in the pipeline template
+      const selectTransformation = selectTransformTemplate.transformations.find(
+        (t: any) => t.name === 'select_transformation'
+      );
+      console.log("Select transformation in pipeline template:", selectTransformation);
+    }, 0);
+
+    // Return to transformation selection to allow adding more transformations
+    setTransformationSubStep('select');
+    
+    // Add message asking for more transformations with suggestion buttons
+    const selectTransformationSuggestions = [
+      <SuggestionButton 
+        key="schema" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("schema transformation")}
+        text="Schema Transformation" 
+      />,
+      <SuggestionButton 
+        key="filter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("filter transformation")}
+        text="Filter Transformation" 
+      />,
+      <SuggestionButton 
+        key="join" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("join transformation")}
+        text="Join Transformation" 
+      />,
+      <SuggestionButton 
+        key="union" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("union transformation")}
+        text="Union Transformation" 
+      />,
+      <SuggestionButton 
+        key="sorter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sorter transformation")}
+        text="Sorter Transformation" 
+      />,
+      <SuggestionButton 
+        key="aggregator" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("aggregation transformation")}
+        text="Aggregation Transformation" 
+      />,
+      <SuggestionButton 
+        key="drop" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("drop transformation")}
+        text="Drop Transformation" 
+      />,
+      <SuggestionButton 
+        key="select" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("select transformation")}
+        text="Select Transformation" 
+      />,
+      <SuggestionButton 
+        key="sequence" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sequence transformation")}
+        text="Sequence Transformation" 
+      />
+    ];
+    
+    setSourceSuggestions(selectTransformationSuggestions);
+    
+    addAssistantMessage(
+      "Great! The select transformation has been added. Would you like to add another transformation?\n\n" +
+      "Please select an option from the buttons below."
+    );
+  };
+
+  // Handle sequence form submission
+  const handleSequenceFormSubmit = (formData: any) => {
+    console.log("Sequence form submitted with data:", formData);
+
+    // Extract the for_column_name, order_by and dependent_on from the form data
+    const { for_column_name, order_by, dependent_on, increment_by = 1 } = formData;
+
+    // Format the dependencies for display
+    const dependencyMessage = dependent_on && dependent_on.length > 0
+      ? ` (depends on: ${dependent_on.join(', ')})`
+      : '';
+
+    // Create a dummy source with the sequence transformation if none exists
+    if (!selectedSources.some(source => source.sequence_transformation)) {
+      // Create a dummy source with the sequence transformation
+      const dummySource: any = {
+        data_src_id: 'sequence_source',
+        data_src_name: 'sequence_source',
+        sequence_transformation: {
+          name: 'sequence_transformation',
+          transformation: 'Sequence',
+          for_column_name: for_column_name,
+          order_by: order_by,
+          increment_by: increment_by,
+          dependent_on: dependent_on
+        }
+      };
+
+      // Add the dummy source to the selected sources
+      setSelectedSources([...selectedSources, dummySource]);
+    } else {
+      // Update the existing sequence transformation in the selected sources
+      setSelectedSources(prevSources => {
+        return prevSources.map(source => {
+          if (source.sequence_transformation) {
+            return {
+              ...source,
+              sequence_transformation: {
+                ...source.sequence_transformation,
+                for_column_name: for_column_name,
+                order_by: order_by,
+                increment_by: increment_by,
+                dependent_on: dependent_on
+              }
+            };
+          }
+          return source;
+        });
+      });
+    }
+
+    // Add the sequence transformation to the transformations list if not already there
+    if (!transformations.includes('sequence')) {
+      setTransformations([...transformations, 'sequence']);
+    }
+
+    // Store the sequence transformation data directly in the transformations array
+    const sequenceTransformationData = {
+      name: "sequence_transformation",
+      transformation: "Sequence",
+      dependent_on: dependent_on,
+      for_column_name: for_column_name,
+      order_by: order_by,
+      increment_by: increment_by
+    };
+
+    // Update the pipeline JSON directly
+    const updatedPipelineJson = { ...pipelineJson };
+    if (updatedPipelineJson && updatedPipelineJson.transformations) {
+      // Find the sequence transformation
+      const sequenceTransformation = updatedPipelineJson.transformations.find(
+        (t: any) => t.name === 'sequence_transformation'
+      );
+
+      if (sequenceTransformation) {
+        // Update existing sequence transformation
+        sequenceTransformation.for_column_name = for_column_name;
+        sequenceTransformation.order_by = order_by;
+        sequenceTransformation.dependent_on = dependent_on;
+        console.log("Updated sequence transformation in pipeline JSON:", sequenceTransformation);
+      } else {
+        // Add new sequence transformation
+        updatedPipelineJson.transformations.push(sequenceTransformationData);
+        console.log("Added new sequence transformation to pipeline JSON:", sequenceTransformationData);
+      }
+
+      // Update the pipeline JSON
+      setPipelineJson(updatedPipelineJson);
+    }
+
+    // Add a message to show the sequence configuration
+    addUserMessage(`Sequence transformation: Adding sequence column '${for_column_name}' with ordering by ${order_by.map((o: any) => `${o.column} ${o.order}`).join(', ')}${dependencyMessage}`);
+
+    // Hide the form
+    setShowSequenceForm(false);
+
+    // Regenerate the pipeline template with the updated sequence transformation
+    setTimeout(() => {
+      const sequenceTransformTemplate = generatePipelineTemplate();
+      setPipelineJson(sequenceTransformTemplate);
+      console.log("Updated pipeline template after sequence form submission:", sequenceTransformTemplate);
+
+      // Log the sequence transformation in the pipeline template
+      const sequenceTransformation = sequenceTransformTemplate.transformations.find(
+        (t: any) => t.name === 'sequence_transformation'
+      );
+      console.log("Sequence transformation in pipeline template:", sequenceTransformation);
+    }, 0);
+
+    // Return to transformation selection to allow adding more transformations
+    setTransformationSubStep('select');
+    
+    // Add message asking for more transformations with suggestion buttons
+    const sequenceTransformationSuggestions = [
+      <SuggestionButton 
+        key="schema" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("schema transformation")}
+        text="Schema Transformation" 
+      />,
+      <SuggestionButton 
+        key="filter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("filter transformation")}
+        text="Filter Transformation" 
+      />,
+      <SuggestionButton 
+        key="join" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("join transformation")}
+        text="Join Transformation" 
+      />,
+      <SuggestionButton 
+        key="union" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("union transformation")}
+        text="Union Transformation" 
+      />,
+      <SuggestionButton 
+        key="sorter" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sorter transformation")}
+        text="Sorter Transformation" 
+      />,
+      <SuggestionButton 
+        key="aggregator" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("aggregation transformation")}
+        text="Aggregation Transformation" 
+      />,
+      <SuggestionButton 
+        key="drop" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("drop transformation")}
+        text="Drop Transformation" 
+      />,
+      <SuggestionButton 
+        key="select" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("select transformation")}
+        text="Select Transformation" 
+      />,
+      <SuggestionButton 
+        key="sequence" 
+        icon={<Database size={16} />} 
+        onClick={() => handleTransformationsStep("sequence transformation")}
+        text="Sequence Transformation" 
+      />
+    ];
+    
+    setSourceSuggestions(sequenceTransformationSuggestions);
+    
+    addAssistantMessage(
+      "Great! The sequence transformation has been added. Would you like to add another transformation?\n\n" +
+      "Please select an option from the buttons below."
+    );
+  };
+
   const handleWriterFormSubmit = useCallback((formData: any) => {
     console.log("Writer form submitted:", formData);
 
@@ -4564,6 +5873,18 @@ export const PipeLineChatProvider = ({
     setShowAggregatorForm,
     setShowJoinForm,
     setShowUnionForm,
+    setShowDropForm,
+    setShowSelectForm,
+    setShowSequenceForm,
+    setDropFormInitialValues,
+    setSelectFormInitialValues,
+    setSequenceFormInitialValues,
+    setDropSchema,
+    setSelectSchema,
+    setSequenceSchema,
+    setDropName,
+    setSelectName,
+    setSequenceName,
     startTransition,
     handleSend,
     resetPipelineCreationState,
@@ -4584,8 +5905,23 @@ export const PipeLineChatProvider = ({
     handleAggregatorFormSubmit,
     handleJoinFormSubmit,
     handleUnionFormSubmit,
+    handleDropFormSubmit,
+    handleSelectFormSubmit,
+    handleSequenceFormSubmit,
     handleWriterFormSubmit,
-    handleMultiDependencySelection
+    handleMultiDependencySelection,
+    showDropForm,
+    showSelectForm,
+    showSequenceForm,
+    dropFormInitialValues,
+    selectFormInitialValues,
+    sequenceFormInitialValues,
+    dropSchema,
+    selectSchema,
+    sequenceSchema,
+    dropName,
+    selectName,
+    sequenceName
   };
 
   return (

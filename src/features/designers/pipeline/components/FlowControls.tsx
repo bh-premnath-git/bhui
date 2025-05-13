@@ -118,38 +118,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     closeBottomDrawer();
   }
 
-  // --- MINIMIZE/MAXIMIZE EXAMPLE ---
-  // If you have a shadcn "Sheet" or "Dialog" for logs/settings, 
-  // you can reference it by a className or ref for dynamic sizing.
-  const handleMinimize = () => {
-    setIsMinimized(true)
-    setIsMaximized(false)
-    // Example: For a Sheet with class ".mySheetContent":
-    const sheetEl = document.querySelector<HTMLElement>('.mySheetContent')
-    if (sheetEl) {
-      sheetEl.style.height = '40px'
-    }
-  }
-
-  const handleMaximize = () => {
-    setIsMinimized(false)
-    setIsMaximized(!isMaximized)
-    // Example: Toggle between 40% and 100% for a Sheet
-    const sheetEl = document.querySelector<HTMLElement>('.mySheetContent')
-    if (sheetEl) {
-      sheetEl.style.height = isMaximized ? '40%' : '100%'
-    }
-  }
-
-  const handleRestore = () => {
-    setIsMinimized(false)
-    setIsMaximized(false)
-    const sheetEl = document.querySelector<HTMLElement>('.mySheetContent')
-    if (sheetEl) {
-      sheetEl.style.height = '40%'
-    }
-  }
-
+  
   // Define custom handlers that will directly manipulate the DOM
   const handleZoomInClick = () => {
     console.log("Zoom In clicked");

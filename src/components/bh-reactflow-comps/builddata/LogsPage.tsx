@@ -251,6 +251,13 @@ export const Terminal: React.FC<TerminalProps> = ({
         >
           <TabsList className="border-b bg-neutral-100 w-full text-start justify-start">
             <TabsTrigger
+              value="preview"
+              className="px-4 py-1 text-sm"
+              disabled={!localPreviewData}
+            >
+              Preview
+            </TabsTrigger>
+            <TabsTrigger
               value="terminal"
               className="px-4 py-1 text-sm"
             >
@@ -262,13 +269,7 @@ export const Terminal: React.FC<TerminalProps> = ({
             >
               Problems
             </TabsTrigger>
-            <TabsTrigger
-              value="preview"
-              className="px-4 py-1 text-sm"
-              disabled={!localPreviewData}
-            >
-              Preview
-            </TabsTrigger>
+            
           </TabsList>
 
           <div
@@ -390,6 +391,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                             data={output.rows}
                             columns={columns}
                             pagination={true}
+                            topVariant="status"
                           />
                         ) : (
                           <div className="italic text-neutral-500 p-4 text-center border rounded">

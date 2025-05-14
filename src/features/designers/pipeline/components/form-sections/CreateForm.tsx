@@ -250,6 +250,7 @@ console.log(initialFormValues,"initialFormValues")
           }
         }
       } else if (schema?.title === 'Joiner') {
+
         // Check if this is for the expression tab
         if (fieldName.includes('expressions')) {
           const match = fieldName.match(/expressions\.(\d+)\.expression/);
@@ -312,10 +313,10 @@ console.log(initialFormValues,"initialFormValues")
           const currentJoinCondition = watch('conditions');
           const match = fieldName.match(/conditions\.(\d+)\.join_condition/);
           const index = match ? parseInt(match[1]) : 0;
-          
+          console.log(currentNodeId, nodes, edges)
           if (!currentJoinCondition[index]?.join_condition) {
             const joinPayload: any = await generateJoinPayload(currentNodeId, nodes, edges);
-            console.log(joinPayload, "joinPayload");
+            // console.log(joinPayload, "joinPayload");
 
             const response: any = await dispatch(generatePipelineAgent({ 
               params: joinPayload.params,
@@ -666,6 +667,95 @@ const renderArrayFields = (
     return null;
   }
 
+  // Special handling for the column array structure with column_list
+  if (arraySchema.items && arraySchema.items.column_list && arraySchema.items.column_list.type === 'autocomplete') {
+    const { fields, append, remove } = useFieldArray({
+      control,
+      name: section,
+      rules: {
+        required: arraySchema.minItems ? `Minimum ${arraySchema.minItems} items required` : undefined,
+        validate: {
+          minItems: (value) => 
+            !arraySchema.minItems || (value?.length >= arraySchema.minItems) || 
+            `Minimum ${arraySchema.minItems} items required`,
+        }
+      }
+    });
+    
+    // Initialize with empty fields if none exist
+    useEffect(() => {
+      // Only initialize if fields are empty
+      if (fields.length === 0) {
+        const minItems = arraySchema.minItems || 1; // Default to at least 1 item
+        
+        // Add initial empty fields based on minItems
+        Array.from({ length: minItems }).forEach(() => {
+          append({ column_list: '' });
+        });
+      }
+    }, []);
+
+    return (
+      <div className="space-y-4">
+        <label className="block font-medium mb-1">
+          {section.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
+        </label>
+        
+        {/* Form Fields */}
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex justify-between gap-2 mb-2">
+            <div className="w-full">
+              <Controller
+                name={`${section}.${index}.column_list`}
+                control={control}
+                render={({ field }) => (
+                  <Autocomplete
+                    options={columnSuggestions}
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    renderInput={(params) => (
+                      <Input
+                        {...params}
+                        placeholder="Select column"
+                        required={arraySchema.minItems && arraySchema.minItems > 0}
+                      />
+                    )}
+                    className=""
+                    required={arraySchema.minItems && arraySchema.minItems > 0}
+                  />
+                )}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              disabled={fields.length <= (arraySchema.minItems || 1)}
+              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100"
+            >
+              <span className="text-gray-500 text-xl">×</span>
+            </button>
+          </div>
+        ))}
+
+        {/* Add Button */}
+        <Button
+          type="button"
+          onClick={() => {
+            append({ column_list: '' });
+          }}
+          variant="outline"
+          className="w-full"
+        >
+          <span className="text-green-600">+ Add Column</span>
+        </Button>
+      </div>
+    );
+  }
+
+  // Standard array field handling
   const { fields, append, remove } = useFieldArray({
     control,
     name: section,
@@ -678,6 +768,29 @@ const renderArrayFields = (
       }
     }
   });
+  
+  // Initialize with empty fields if none exist
+  useEffect(() => {
+    // Only initialize if fields are empty
+    if (fields.length === 0) {
+      const itemProperties = arraySchema.items.properties || arraySchema.items;
+      const emptyItem = Object.keys(itemProperties).reduce(
+        (acc, key) => ({
+          ...acc,
+          [key]: itemProperties[key].enum ? 
+            (itemProperties[key].default || itemProperties[key].enum[0]) : ''
+        }),
+        {}
+      );
+      
+      const minItems = arraySchema.minItems || 1; // Default to at least 1 item
+      
+      // Add initial empty fields based on minItems
+      Array.from({ length: minItems }).forEach(() => {
+        append(emptyItem);
+      });
+    }
+  }, []);
 
   const itemProperties = arraySchema.items.properties || arraySchema.items;
   const requiredFields = arraySchema.items.required || [];
@@ -690,6 +803,13 @@ const renderArrayFields = (
 
   return (
     <div className="space-y-4">
+      <label className="block font-medium mb-1">
+        {section.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')}
+        {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
+      </label>
+      
       {/* Headers */}
       <div className="flex justify-between gap-2">
         {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => (
@@ -1278,13 +1398,24 @@ const FormContent: React.FC<{
   // Update renderField to properly handle different field types
   const renderField = (
     fieldKey: string, 
-    fieldSchema: Schema, 
+    fieldSchema: any, 
     control: any, 
     parentKey?: string
   ) => {
     if (!fieldSchema || typeof fieldSchema !== 'object') {
       console.error(`Invalid schema for field ${fieldKey}`);
       return null;
+    }
+
+    // Special handling for array type with nested structure
+    if (fieldSchema.type === 'array') {
+      // Check if this is a special case with column_list structure
+      if (fieldSchema.items && fieldSchema.items.column_list && fieldSchema.items.column_list.type === 'autocomplete') {
+        return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
+      }
+      
+      // For other array types, use the standard array rendering
+      return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
     }
 
     const isExpression = fieldSchema.type === 'expression' || 
@@ -1370,7 +1501,7 @@ const FormContent: React.FC<{
   const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string) => {
     const fields = Object.entries(properties)
       .filter(([key, value]) => shouldRenderField(key, value));
-
+    console.log(fields)
     let currentRow: [string, any][] = [];
     const rows: [string, any][][] = [];
 
@@ -1402,11 +1533,22 @@ const FormContent: React.FC<{
         key={rowIndex} 
         className="mb-4"
       >
-        {row.map(([key, value]) => (
-          <div key={key} className="mb-2">
-            {renderField(key, value, control, parentKey)}
-          </div>
-        ))}
+        {row.map(([key, value]) => {
+          // Special handling for array type with nested structure like column_list
+          if (value.type === 'array' && value.items && value.items.column_list && value.items.column_list.type === 'autocomplete') {
+            return (
+              <div key={key} className="mb-2">
+                {renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions)}
+              </div>
+            );
+          }
+          
+          return (
+            <div key={key} className="mb-2">
+              {renderField(key, value, control, parentKey)}
+            </div>
+          );
+        })}
         {row.length < 3 && 
          row[0][1].ui_type !== 'full-width' && 
          row[0][1].type !== 'array' && 

@@ -110,6 +110,7 @@ export interface TransformationConfig {
   sort_columns?: Array<{ column_name: string; sort_order: 'asc' | 'desc' }>;
   drop_columns?: string[];
   select_columns?: string[];
+  column_list?: Array<{ column: string }>;  // For Drop transformation
   sequence_column?: string;
   start_value?: number;
   increment_by?: number;
@@ -363,7 +364,7 @@ const createJoinTransformation = (sources: DataSource[]): any => {
   }
   
   // Determine dependencies - Join requires at least two dependencies
-  let dependencies = joinTransformation.join_transformation?.dependent_on || [];
+  let dependencies:any = joinTransformation.join_transformation?.dependent_on || [];
   
   // Ensure dependencies is an array
   if (!Array.isArray(dependencies)) {
@@ -384,6 +385,9 @@ const createJoinTransformation = (sources: DataSource[]): any => {
     }
   ];
   
+  // Get user-provided expressions if available
+  const expressions = joinTransformation.join_transformation?.expressions || [];
+  
   console.log("Creating join transformation with dependencies:", dependencies);
   console.log("Join transformation source data:", joinTransformation.join_transformation);
   
@@ -393,13 +397,21 @@ const createJoinTransformation = (sources: DataSource[]): any => {
     return null; // Return null if we still don't have enough dependencies
   }
   
-  return {
+  // Create the join transformation object
+  const joinTransformationObj: any = {
     "name": "join_transformation",
     "dependent_on": dependencies,
     "transformation": "Joiner",
     "conditions": conditions,
     "join_type": conditions[0]?.join_type || 'inner'
   };
+  
+  // Add expressions if they exist
+  if (expressions && expressions.length > 0) {
+    joinTransformationObj.expressions = expressions;
+  }
+  
+  return joinTransformationObj;
 };
 
 /**
@@ -418,7 +430,7 @@ const createUnionTransformation = (sources: DataSource[]): any => {
   }
   
   // Determine dependencies - Union requires at least two dependencies
-  let dependencies = unionTransformation.union_transformation?.dependent_on || [];
+  let dependencies:any = unionTransformation.union_transformation?.dependent_on || [];
   
   // Ensure dependencies is an array
   if (!Array.isArray(dependencies)) {
@@ -468,19 +480,29 @@ const createDropTransformation = (sources: DataSource[]): any => {
   // Determine dependencies
   const dependencies = dropTransformation?.drop_transformation?.dependent_on || [];
   
-  // Get user-provided drop columns from the column property or fall back to drop_columns
-  let dropColumns;
+  // Get user-provided drop columns from various possible properties
+  let dropColumns = [];
   
-  // Check if column property exists and is an array (from form submission)
-  if (dropTransformation?.drop_transformation?.column && 
+  // Check if column_list property exists and is an array (from form submission)
+  if (dropTransformation?.drop_transformation?.column_list && 
+      Array.isArray(dropTransformation.drop_transformation.column_list)) {
+    // Extract column values from each object in the column_list array
+    dropColumns = dropTransformation.drop_transformation.column_list
+      .map(col => col.column)
+      .filter(Boolean);
+    console.log("Using column values from column_list array:", dropColumns);
+  } 
+  // Check if column property exists and is an array (from older form submission)
+  else if (dropTransformation?.drop_transformation?.column && 
       Array.isArray(dropTransformation.drop_transformation.column)) {
     // Extract column_list values from each object in the column array
     dropColumns = dropTransformation.drop_transformation.column
       .map(col => col.column_list)
       .filter(Boolean);
     console.log("Using column_list values from column array:", dropColumns);
-  } else {
-    // Fall back to drop_columns if available
+  } 
+  // Fall back to drop_columns if available
+  else {
     dropColumns = dropTransformation?.drop_transformation?.drop_columns || 
                  ['column_to_drop_1', 'column_to_drop_2'];
     console.log("Using fallback drop_columns:", dropColumns);
@@ -499,9 +521,9 @@ const createDropTransformation = (sources: DataSource[]): any => {
     "transformation": transformationType,
     "drop_columns": dropColumns,
     "pattern": pattern,
-    "column": Array.isArray(dropTransformation?.drop_transformation?.column) 
-      ? dropTransformation.drop_transformation.column 
-      : dropColumns.map(col => ({ column_list: col }))
+    "column_list": Array.isArray(dropTransformation?.drop_transformation?.column_list) 
+      ? dropTransformation.drop_transformation.column_list 
+      : dropColumns.map(col => ({ column: col }))
   };
 };
 
@@ -530,7 +552,7 @@ const createSelectTransformation = (sources: DataSource[]): any => {
       Array.isArray(selectTransformation.select_transformation.column_list)) {
     // Extract name values from each object in the column_list array
     selectColumns = selectTransformation.select_transformation.column_list
-      .map(col => col.name)
+      .map((col:any) => col.name)
       .filter(Boolean);
     console.log("Using name values from column_list array:", selectColumns);
   } else {
@@ -719,7 +741,17 @@ export const buildPipelineTemplate = (
   useSourceConnection: boolean,
   filterCondition: string
 ): PipelineTemplate => {
-  console.log(pipelineName)
+  console.log("Building pipeline template with name:", "Building pipeline template with name:", pipelineName);
+  console.log("Selected sources count:", selectedSources.length);
+  console.log("Selected sources:", JSON.stringify(selectedSources.map(s => ({
+    id: s.data_src_id,
+    name: s.data_src_name
+  })), null, 2));;
+  console.log("Selected sources count:", selectedSources.length);
+  console.log("Selected sources:", JSON.stringify(selectedSources.map(s => ({
+    id: s.data_src_id,
+    name: s.data_src_name
+  })), null, 2));
 
   // Create the base pipeline template
   const pipelineTemplate = createDefaultTemplate(pipelineName, pipelineDescription);
@@ -729,8 +761,10 @@ export const buildPipelineTemplate = (
   selectedSources.forEach((source) => {
     const sourceId = `connection_${source.data_src_id}`;
     connections[sourceId] = createConnectionForSource(source);
+    console.log(`Added connection for source ${source.data_src_name} with ID ${source.data_src_id}`);
   });
   pipelineTemplate.connections = connections;
+  console.log("Total connections added:", Object.keys(connections).length);
 
   // Add sources
   const sources: Record<string, any> = {};
@@ -738,16 +772,20 @@ export const buildPipelineTemplate = (
     const sourceId = `source_${source.data_src_id}`;
     const connectionId = `connection_${source.data_src_id}`;
     sources[sourceId] = createSourceObject(source, connectionId, connections[connectionId]);
+    console.log(`Added source ${source.data_src_name} with ID ${sourceId}`);
   });
   pipelineTemplate.sources = sources;
+  console.log("Total sources added:", Object.keys(sources).length);
 
-  // Add transformations
+  // Initialize transformations list
   const transformationsList: any[] = [];
 
   // Add reader transformations for each source
   selectedSources.forEach((source) => {
     const sourceId = `source_${source.data_src_id}`;
-    transformationsList.push(createReaderTransformation(source, pipelineTemplate.sources[sourceId]));
+    const readerTransformation = createReaderTransformation(source, pipelineTemplate.sources[sourceId]);
+    transformationsList.push(readerTransformation);
+    console.log(`Added reader transformation for source ${source.data_src_name}: ${readerTransformation.name}`);
   });
 
   // Convert string transformation types to enum values
@@ -1038,6 +1076,17 @@ export const buildPipelineTemplate = (
   
   // Add transformations to pipeline template
   pipelineTemplate.transformations = transformationsList;
-  console.log(pipelineTemplate)
+  
+  // Final logging of the complete pipeline template
+  console.log("Final pipeline template summary:");
+  console.log("- Total connections:", Object.keys(pipelineTemplate.connections).length);
+  console.log("- Total sources:", Object.keys(pipelineTemplate.sources).length);
+  console.log("- Total transformations:", pipelineTemplate.transformations.length);
+  console.log("- Source names:", Object.values(pipelineTemplate.sources).map((s: any) => s.name));
+  console.log("- Reader transformations:", pipelineTemplate.transformations
+    .filter((t: any) => t.transformation === "Reader")
+    .map((t: any) => t.name));
+  
+  console.log(pipelineTemplate);
   return pipelineTemplate;
 };

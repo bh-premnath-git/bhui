@@ -57,6 +57,7 @@ export const generateJoinPayload = async (
 ): Promise<JoinPayload> => {
   // Get incoming edges to the join node
   const incomingEdges = edges.filter(edge => edge.target === joinNodeId);
+  console.log(incomingEdges)
   if (incomingEdges.length !== 2) {
     throw new Error('Join node must have exactly 2 inputs');
   }

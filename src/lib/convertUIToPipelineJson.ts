@@ -225,7 +225,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'Drop':
                     return {
                         ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || [],
+                        column_list: node.data.transformationData?.column_list || node.data.transformationData?.column || [],
                         pattern: node.data.transformationData?.pattern
                     };
                 case 'Target':

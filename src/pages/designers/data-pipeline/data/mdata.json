@@ -7,7 +7,6 @@
       "type": "object",
       "ui_type": "normal",
       "properties": {
-        
         "condition": {
           "type": "expression",
           "minLength": 1,
@@ -380,7 +379,9 @@
             }
           },
           "then": {
-            "required": ["order_by"]
+            "required": [
+              "order_by"
+            ]
           }
         },
         {
@@ -392,13 +393,15 @@
             }
           },
           "then": {
-            "required": ["order_by"]
+            "required": [
+              "order_by"
+            ]
           }
         }
       ]
     },
     {
-      "id" : "file://repartition_schema.json",
+      "id": "file://repartition_schema.json",
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",
       "type": "object",
@@ -466,41 +469,63 @@
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "repartition" }
+              "repartition_type": {
+                "const": "repartition"
+              }
             }
           },
           "then": {
-            "required": ["repartition_type","repartition_value"]
+            "required": [
+              "repartition_type",
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "coalesce" }
+              "repartition_type": {
+                "const": "coalesce"
+              }
             }
           },
           "then": {
-            "required": ["repartition_type","repartition_value"]
+            "required": [
+              "repartition_type",
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "hash_repartition" }
+              "repartition_type": {
+                "const": "hash_repartition"
+              }
             }
           },
           "then": {
-            "required": ["repartition_type","repartition_expression", "repartition_value"]
+            "required": [
+              "repartition_type",
+              "repartition_expression",
+              "repartition_value"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "repartition_type": { "const": "repartition_by_range" }
+              "repartition_type": {
+                "const": "repartition_by_range"
+              }
             }
           },
           "then": {
-            "required": ["repartition_type","repartition_expression", "repartition_value"]
+            "required": [
+              "repartition_type",
+              "repartition_expression",
+              "repartition_value"
+            ]
           }
         }
       ]
@@ -634,7 +659,6 @@
       "ui_type": "object",
       "title": "SequenceGenerator",
       "properties": {
-        
         "for_column_name": {
           "type": "string",
           "minLength": 1
@@ -644,9 +668,7 @@
           "uniqueItems": true,
           "minItems": 1,
           "items": {
-            "required": [
-              
-            ],
+            "required": [],
             "properties": {
               "column": {
                 "type": "string",
@@ -685,25 +707,20 @@
       "ui_type": "object",
       "title": "Drop",
       "properties": {
+        
         "transformation": {
           "type": "string",
           "minLength": 1
         },
-       "column": {
-          "type": "array-container",
-          "uniqueItems": true,
-          "minItems": 1,
+        "column": {
+          "type": "array",
           "items": {
-            "required": [
-              
-            ],
-            "properties": {
-              "column_list": {
-                "type": "string",
-                "minLength": 1
-              }
+            "column_list": {
+              "type": "autocomplete",
+              "minLength": 1
             }
-          }
+          },
+          "minItems": 1
         },
         "pattern": {
           "type": "string",

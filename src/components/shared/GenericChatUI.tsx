@@ -6,19 +6,21 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
+import { Button } from '@/components/ui/button';
+import { Zap } from 'lucide-react';
 
 interface GenericChatUIProps {
   imageSrc?: string;
   assistantColor?: string;
   userColor?: string;
   suggestions?: string[];
+  onAddToDashboard?: (chart: any) => void;
 }
 
 const defaultSuggestions = [
   'Show me the data pipeline jobs with latency greater than 2 hours?',
   'List of jobs failed today?',
   'Jobs with latency more than 2 hours this week',
-  'List 20 most expensive workloads',
 ];
 
 const mockChartData = [
@@ -89,9 +91,9 @@ SELECT
 FROM workloads
 GROUP BY workload_name
 ORDER BY cost DESC
-LIMIT 20;
+LIMIT 6;
 `.trim(),
-    message: 'Here are the 20 most expensive workloads:',
+    message: 'Here are the 6 most expensive workloads:',
     data: [
       { name: 'ML Training Cluster', cost: 12500 },
       { name: 'Real-time Analytics', cost: 9800 },
@@ -108,6 +110,7 @@ export function GenericChatUI({
   assistantColor = '#009459',
   userColor = '#000000',
   suggestions = defaultSuggestions,
+  onAddToDashboard,
 }: GenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage } = useChatMessages();
   const [input, setInput] = useState('');
@@ -132,30 +135,81 @@ export function GenericChatUI({
     }, 500);
   };
 
+  const handleAddToDashboard = (data: any) => {
+    if (onAddToDashboard) {
+      // Determine chart type and appropriate labels based on data structure
+      const dataKeys = Object.keys(data[0] || {}).filter(key => key !== 'name');
+      
+      // Determine X and Y axis labels based on the query content and data structure
+      const userQuery = messages[messages.length - 2]?.content.toLowerCase() || '';
+      
+      // Default labels
+      let xAxisLabel = 'Categories';
+      let yAxisLabel = dataKeys[0] || 'Value';
+      
+      // Try to extract more meaningful labels from the query
+      if (userQuery.includes('latency')) {
+        yAxisLabel = 'Time (minutes)';
+      } else if (userQuery.includes('cost') || userQuery.includes('expensive')) {
+        yAxisLabel = 'Cost (USD)';
+      } else if (userQuery.includes('failed') || userQuery.includes('error')) {
+        yAxisLabel = 'Count';
+      }
+      
+      const chartData = {
+        id: `chart-${Date.now()}`,
+        title: messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data',
+        type: 'bar',
+        data: data,
+        config: {
+          xAxis: {
+            label: xAxisLabel,
+            labelOffset: 10
+          },
+          yAxis: {
+            label: yAxisLabel,
+            labelOffset: 15
+          },
+          children: messages[messages.length - 1]?.content || 'Chart visualization based on query results'
+        }
+      };
+      onAddToDashboard(chartData);
+    }
+  };
+
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
-        <div className="px-2 py-4 w-full max-w-md mx-auto">
+        <div className="px-2 py-4 w-full max-w-lg mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <p className="text-lg font-medium text-gray-800 mb-4">How can I assist you?</p>
-              <div className="space-y-3">
+              <div className="flex items-start gap-4 mb-4">
+                <div
+                  className="w-8 h-8 rounded-full mt-1"
+                  style={{ backgroundColor: assistantColor }}
+                />
+                <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
+                  <p className="text-lg font-medium text-gray-800 py-1">How can I assist you?</p>
+                </div>
+              </div>
+              <div className="space-y-2 pl-16 ml-2">
                 {suggestions.map((s, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start gap-4"
+                    className="flex items-start"
                     initial={{ x: -10, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.2 + i * 0.1 }}
                   >
                     <div
-                      className="w-8 h-8 rounded-full mt-1"
                       style={{ backgroundColor: assistantColor }}
                     />
                     <div
                       onClick={() => setInput(s)}
-                      className="flex-1 italic rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                      className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
+                      style={{ color: assistantColor }}
                     >
+                      <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
                       {s}
                     </div>
                   </motion.div>
@@ -212,7 +266,22 @@ export function GenericChatUI({
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="chart" className="pt-4">
-                      <ChatChartView data={mockResponse.data} />
+                      <div className="mt-3 bg-card rounded-md p-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-sm text-foreground">
+                            {messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data'}
+                          </h4>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddToDashboard(mockResponse.data)}
+                            className="h-7 text-xs"
+                          >
+                            Add to Dashboard
+                          </Button>
+                        </div>
+                        <ChatChartView data={mockResponse.data} />
+                      </div>
                     </TabsContent>
                     <TabsContent value="sql" className="pt-4">
                       <ChatSQLView sql={mockResponse.sql} />

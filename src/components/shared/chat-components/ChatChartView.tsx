@@ -17,7 +17,17 @@ const palettes = {
 }
 
 interface ChatChartViewProps {
-  data: any[]
+  data: any[];
+  config?: {
+    xAxis?: {
+      label?: string;
+      labelOffset?: number;
+    };
+    yAxis?: {
+      label?: string;
+      labelOffset?: number;
+    };
+  };
 }
 
 // Helper to detect main data property from array items
@@ -51,13 +61,17 @@ const determineChartType = (data: any[]): 'bar' | 'line' | 'donut' => {
   return 'bar'; // Default
 };
 
-export function ChatChartView({ data }: ChatChartViewProps) {
+export function ChatChartView({ data, config }: ChatChartViewProps) {
   if (!data || !data.length) {
     return <div className="p-6 text-center text-gray-500">No data available</div>;
   }
   
   const chartType = determineChartType(data);
   const dataKey = detectDataProperty(data);
+  
+  // Extract axis labels from config
+  const xAxisLabel = config?.xAxis?.label || '';
+  const yAxisLabel = config?.yAxis?.label || '';
   
   // Render different chart types based on detection
   switch (chartType) {
@@ -74,6 +88,13 @@ export function ChatChartView({ data }: ChatChartViewProps) {
       );
       
     case 'line':
+      // For LineChart, include the axis labels in the config object
+      const lineChartConfig = {
+        ...(config || {}),
+        xAxisLabel,
+        yAxisLabel
+      };
+      
       return (
         <div className="h-[300px]">
           <LineChart 
@@ -81,6 +102,7 @@ export function ChatChartView({ data }: ChatChartViewProps) {
             xAxisDataKey="name"
             lines={[dataKey]}
             colors={palettes.trend}
+            config={lineChartConfig}
           />
         </div>
       );
@@ -94,6 +116,8 @@ export function ChatChartView({ data }: ChatChartViewProps) {
             xAxisDataKey="name"
             bars={[dataKey]}
             colors={palettes.status}
+            xAxisLabel={xAxisLabel}
+            yAxisLabel={yAxisLabel}
           />
         </div>
       );

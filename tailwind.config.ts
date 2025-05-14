@@ -130,7 +130,10 @@ export default {
 			boxShadow: {
 				'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
 				'subtle': '0 2px 10px rgba(0, 0, 0, 0.05)',
-			}
+			},
+			scale: {
+				'80': '0.8',
+			  }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

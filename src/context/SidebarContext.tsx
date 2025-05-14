@@ -23,6 +23,7 @@ interface SidebarContextType {
   bottomDrawerContent: ReactNode | null;
   bottomDrawerTitle: string;
   setBottomDrawerContent: (content: ReactNode, title?: string) => void;
+  location: ReturnType<typeof useLocation>;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -129,7 +130,8 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         closeBottomDrawer,
         bottomDrawerContent,
         bottomDrawerTitle,
-        setBottomDrawerContent
+        setBottomDrawerContent,
+        location,
       }}
     >
       {children}

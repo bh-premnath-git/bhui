@@ -45,7 +45,7 @@ export const Header = () => {
     }
     if (isDataXploreRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
           <NavigationBreadcrumb />
           <AIChatButton variant="explorer" />
         </div>

@@ -347,7 +347,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     />
                     <div
                       onClick={() => setInput(s)}
-                      className="flex-1 rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                      className="flex-1 italic rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
                     >
                       {s}
                     </div>

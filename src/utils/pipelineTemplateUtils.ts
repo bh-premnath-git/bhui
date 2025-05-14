@@ -364,7 +364,7 @@ const createJoinTransformation = (sources: DataSource[]): any => {
   }
   
   // Determine dependencies - Join requires at least two dependencies
-  let dependencies: string[] | string | any = joinTransformation.join_transformation?.dependent_on || [];
+  let dependencies:any = joinTransformation.join_transformation?.dependent_on || [];
   
   // Ensure dependencies is an array
   if (!Array.isArray(dependencies)) {
@@ -430,7 +430,7 @@ const createUnionTransformation = (sources: DataSource[]): any => {
   }
   
   // Determine dependencies - Union requires at least two dependencies
-  let dependencies: string[] | string | any = unionTransformation.union_transformation?.dependent_on || [];
+  let dependencies:any = unionTransformation.union_transformation?.dependent_on || [];
   
   // Ensure dependencies is an array
   if (!Array.isArray(dependencies)) {

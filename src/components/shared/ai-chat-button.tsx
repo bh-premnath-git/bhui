@@ -41,7 +41,7 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
     
     const title = variant === 'explorer' 
       ? 'Agent Xplorer' 
-      : 'Agent Dataops'
+      : 'Agent DataOps'
 
     setRightAsideContent(
       chatComponent, 

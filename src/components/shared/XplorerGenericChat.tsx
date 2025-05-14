@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
 import { motion } from 'framer-motion'
+import { Zap } from 'lucide-react'
+import { Button } from '../ui/button'
 
 interface XplorerGenericChatUIProps {
   imageSrc?: string
@@ -211,6 +213,12 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const [categoryKey, setCategoryKey] = useState('id');
   const [chartTitle, setChartTitle] = useState('');
 
+  // Function to handle adding data to the dashboard
+  const handleAddToDashboard = (data: any) => {
+    console.log('Data added to dashboard:', data);
+    // Add your logic to integrate with the dashboard here
+  };
+
   // Handle sending a message
   const handleSend = async (message: string) => {
     if (!message.trim()) return;
@@ -331,24 +339,33 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         <div className="px-2 py-4 w-full max-w-md mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <p className="text-lg font-medium text-gray-800 mb-4">How can I assist you?</p>
-              <div className="space-y-3">
+              <div className="flex items-start gap-4 mb-4">
+                <div
+                  className="w-8 h-8 rounded-full mt-1"
+                  style={{ backgroundColor: assistantColor }}
+                />
+                <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
+                  <p className="text-lg font-medium text-gray-800 py-1">How can I assist you?</p>
+                </div>
+              </div>
+              <div className="space-y-2 pl-16 ml-2">
                 {suggestions.map((s, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start gap-4"
+                    className="flex items-start"
                     initial={{ x: -10, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.2 + i * 0.1 }}
                   >
                     <div
-                      className="w-8 h-8 rounded-full mt-1"
                       style={{ backgroundColor: assistantColor }}
                     />
                     <div
                       onClick={() => setInput(s)}
-                      className="flex-1 italic rounded-2xl bg-gray-100 border border-border/40 px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-200 transition"
+                      className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
+                      style={{ color: assistantColor }}
                     >
+                      <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
                       {s}
                     </div>
                   </motion.div>
@@ -366,9 +383,8 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
-                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${
-                        isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
-                      }`}
+                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
+                        }`}
                     >
                       <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                     </div>
@@ -385,49 +401,61 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     <TabsList className="flex space-x-2 mb-2">
                       <TabsTrigger
                         value="chart"
-                        className={`px-4 py-2 rounded-t-lg ${
-                          activeTab === 'chart'
-                            ? 'bg-gray-200 text-gray-800'
-                            : 'bg-white text-gray-500'
-                        }`}
+                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'chart'
+                          ? 'bg-gray-200 text-gray-800'
+                          : 'bg-white text-gray-500'
+                          }`}
                       >
                         Chart
                       </TabsTrigger>
                       <TabsTrigger
                         value="table"
-                        className={`px-4 py-2 rounded-t-lg ${
-                          activeTab === 'table'
-                            ? 'bg-gray-200 text-gray-800'
-                            : 'bg-white text-gray-500'
-                        }`}
+                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'table'
+                          ? 'bg-gray-200 text-gray-800'
+                          : 'bg-white text-gray-500'
+                          }`}
                       >
                         Table
                       </TabsTrigger>
                       <TabsTrigger
                         value="sql"
-                        className={`px-2 py-2 rounded-t-lg ${
-                          activeTab === 'sql'
-                            ? 'bg-gray-200 text-gray-800'
-                            : 'bg-white text-gray-500'
-                        }`}
+                        className={`px-2 py-2 rounded-t-lg ${activeTab === 'sql'
+                          ? 'bg-gray-200 text-gray-800'
+                          : 'bg-white text-gray-500'
+                          }`}
                       >
                         SQL
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="chart" className="pt-4">
-                    <ChartView
-                      data={filteredData}
-                      metric={metricToVisualize}
-                      categoryKey={categoryKey}
-                      chartTitle={chartTitle}
-                    />
-                  </TabsContent>
-                  <TabsContent value="table" className="pt-4">
-                    <TableView data={filteredData} />
-                  </TabsContent>
-                  <TabsContent value="sql" className="pt-4">
-                    <SQLView query={sqlQuery} />
-                  </TabsContent>
+                      <div className="mt-3 bg-card rounded-md p-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-sm text-foreground">
+                            {messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data'}
+                          </h4>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddToDashboard(mockResponse.data)}
+                            className="h-7 text-xs"
+                          >
+                            Add to Dashboard
+                          </Button>
+                        </div>
+                        <ChartView
+                          data={filteredData}
+                          metric={metricToVisualize}
+                          categoryKey={categoryKey}
+                          chartTitle={chartTitle}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="table" className="pt-4">
+                      <TableView data={filteredData} />
+                    </TabsContent>
+                    <TabsContent value="sql" className="pt-4">
+                      <SQLView query={sqlQuery} />
+                    </TabsContent>
                   </Tabs>
                   <div className="flex items-start gap-4 mt-4">
                     <div

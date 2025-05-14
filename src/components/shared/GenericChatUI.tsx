@@ -183,9 +183,9 @@ export function GenericChatUI({
         <div className="px-2 py-4 w-full max-w-lg mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <div className="flex items-start gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-4">
                 <div
-                  className="w-8 h-8 rounded-full mt-1"
+                  className="w-8 h-8 rounded-full flex-shrink-0"
                   style={{ backgroundColor: assistantColor }}
                 />
                 <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
@@ -196,7 +196,7 @@ export function GenericChatUI({
                 {suggestions.map((s, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start"
+                    className="flex items-center"
                     initial={{ x: -10, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.2 + i * 0.1 }}
@@ -221,9 +221,9 @@ export function GenericChatUI({
               {messages.map((m, i) => {
                 const isA = m.role === 'assistant';
                 return (
-                  <div key={i} className="flex items-start gap-4 py-2">
+                  <div key={i} className="flex items-center gap-4 py-2">
                     <div
-                      className="w-8 h-8 rounded-full mt-1"
+                      className="w-8 h-8 rounded-full flex-shrink-0"
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
@@ -287,9 +287,9 @@ export function GenericChatUI({
                       <ChatSQLView sql={mockResponse.sql} />
                     </TabsContent>
                   </Tabs>
-                  <div className="flex items-start gap-4 mt-4">
+                  <div className="flex items-center gap-4 mt-4">
                     <div
-                      className="w-8 h-8 rounded-full mt-1"
+                      className="w-8 h-8 rounded-full flex-shrink-0"
                       style={{ backgroundColor: assistantColor }}
                     />
                     <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">

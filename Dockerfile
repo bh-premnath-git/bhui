@@ -1,5 +1,5 @@
 # Switch to a newer Node.js version for better compatibility
-FROM node:18-bullseye
+FROM node:current-bullseye
 
 # Ensure curl is installed and available
 RUN apt-get update && apt-get install -y curl unzip && curl --version && echo "curl installed successfully."

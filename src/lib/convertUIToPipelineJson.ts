@@ -321,7 +321,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
-            name: pipelineDtl?.pipeline_name || "sample_pipeline",
+            name: pipelineDtl?.pipeline_name||pipelineDtl?.name || "sample_pipeline",
             description: pipelineDtl?.pipeline_description || " ",
             version: "1.0.0",
             // mode: "DEBUG",

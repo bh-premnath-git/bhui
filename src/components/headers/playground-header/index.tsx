@@ -35,6 +35,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
+  const { pipelineDtl } = useAppSelector((state: RootState) => state.buildPipeline);
   const autoSaveStatus = 'saved';
   const lastSavedTime = new Date().toISOString();
   const toggleAutoSave = () => { };
@@ -49,11 +50,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     isPipelineRunning, handleNext, handleStop, handleRun
   } = usePipelineContext();
 
-  const currentItem = isFlow ? selectedFlow : selectedPipeline;
+  const currentItem = isFlow ? selectedFlow : (selectedPipeline||pipelineDtl);
 
   const itemName = isFlow
     ? (currentItem as Flow)?.flow_name
-    : (currentItem as Pipeline)?.pipeline_name;
+    : (currentItem as Pipeline)?.pipeline_name||(currentItem as any)?.name;
 
   const itemId = isFlow
     ? (currentItem as Flow)?.flow_id

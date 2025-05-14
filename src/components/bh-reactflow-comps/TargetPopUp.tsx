@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Database, Save, FileText } from "lucide-react";
+import { Database, Save, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import targetSchema from "@/components/bh-reactflow-comps/builddata/json/Target.json";
 import writerSchema from "@/components/bh-reactflow-comps/builddata/json/Writer.json";
 import csvOptionsSchema from "@/components/bh-reactflow-comps/builddata/json/CSVOptions.json";
@@ -13,6 +13,7 @@ import connectionSchema from "@/components/bh-reactflow-comps/builddata/json/Con
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 const schemaReferences: Record<string, any> = {
     "schemas/Target.json": targetSchema,
     "transformations/writers/CSVOptions.json": csvOptionsSchema,
@@ -185,6 +186,53 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         }
 
         setCurrentSchema(resolvedSchema);
+    };
+    
+    // Function to render CSV options with basic and advanced sections
+    const renderCSVOptions = () => {
+        return (
+            <div className="p-3 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
+                
+                {/* Basic CSV Options */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    {/* Show only the required fields by default */}
+                    {Object.entries(csvOptionsSchema.properties)
+                        .filter(([key]) => csvOptionsSchema.required.includes(key))
+                        .map(([key, schema]: [string, any]) => (
+                            <div key={key}>
+                                {renderField(key, schema, ['write_options'])}
+                            </div>
+                        ))
+                    }
+                </div>
+                
+                {/* Advanced CSV Options */}
+                <Collapsible className="w-full">
+                    <div className="flex items-center justify-between py-2 border-t border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-700">Advanced Options</h4>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="p-0 h-7 w-7 rounded-full hover:bg-gray-100">
+                                <ChevronDown className="h-4 w-4" />
+                            </Button>
+                        </CollapsibleTrigger>
+                    </div>
+                    
+                    <CollapsibleContent>
+                        <div className="grid grid-cols-3 gap-3 pt-2">
+                            {Object.entries(csvOptionsSchema.properties)
+                                .filter(([key]) => !csvOptionsSchema.required.includes(key))
+                                .map(([key, schema]: [string, any]) => (
+                                    <div key={key}>
+                                        {renderField(key, schema, ['write_options'])}
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </CollapsibleContent>
+                </Collapsible>
+            </div>
+        );
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {

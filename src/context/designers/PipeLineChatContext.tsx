@@ -569,7 +569,9 @@ export const PipeLineChatProvider = ({
         useSourceConnection,
         filterCondition
       });
-  console.log(pipelineDtl)
+          console.log("Pipeline details from Redux:", "Pipeline details from Redux:", pipelineDtl);;
+      
+      
       // Generate the template
       const template = buildPipelineTemplate(
         pipelineDtl.name,
@@ -588,7 +590,7 @@ export const PipeLineChatProvider = ({
       setPipelineJson(template);
   
       return template;
-    }, [pipelineName, pipelineDescription, selectedSources, transformations, targetConfig, useSourceConnection, filterCondition, setPipelineJson]);
+    }, [pipelineName, pipelineDescription, selectedSources, transformations, targetConfig, useSourceConnection, filterCondition, setPipelineJson, pipelineDtl, pipelineDtl]);
 
   const processSelectedSource = useCallback((selectedSource: any) => {
     console.log(selectedSource);
@@ -598,6 +600,19 @@ export const PipeLineChatProvider = ({
 
     // Log the source data for debugging
     console.log("Selected source data:", selectedSource);
+
+    // Check if this source is already in the selectedSources array to avoid duplicates
+    const isDuplicate = selectedSources.some(
+      source => source.data_src_id === selectedSource.data_src_id
+    );
+
+    if (isDuplicate) {
+      console.log(`Source ${selectedSource.data_src_name} is already in the pipeline.`);
+      addAssistantMessage(
+        `The source ${selectedSource.data_src_name} is already in your pipeline. Would you like to select a different source?`
+      );
+      return;
+    }
 
     // Determine if it's a relational or file source
     const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
@@ -629,19 +644,79 @@ export const PipeLineChatProvider = ({
       readerInitialValues.query = selectedSource.query;
     }
 
-    // Add the selected source to the pipeline
-    setSelectedSources([...selectedSources, selectedSource]);
+    // Add the selected source to the pipeline using functional update to ensure we have the latest state
+    setSelectedSources(prevSources => [...prevSources, selectedSource]);
 
     // Log the form values for debugging
     console.log("Reader form initial values:", readerInitialValues);
 
+    // First close the reader form if it's open
+    setShowReaderForm(false);
+    
+    // Make sure any previous form is closed
+    setShowFilterForm(false);
+    setShowSchemaForm(false);
+    setShowWriterForm(false);
+    setShowSorterForm(false);
+    setShowAggregatorForm(false);
+    setShowJoinForm(false);
+    setShowUnionForm(false);
+    setShowDropForm(false);
+    setShowSelectForm(false);
+    
+    // Reset the active form
+    setActiveForm(null);
+    
+    // Set the form values
     setReaderFormInitialValues(readerInitialValues);
-    setShowReaderForm(true);
+    
+    // Use setTimeout to ensure the form is properly reset before showing it again
+    setTimeout(() => {
+      setActiveForm('reader');
+      setShowReaderForm(true);
+      console.log("Reader form should now be visible with new source data");
+    }, 100);
 
-    addAssistantMessage(
-      `Using source: ${selectedSource.data_src_name}. Review and edit reader config.`
-    );
-  }, [addAssistantMessage, setCurrentSourceData, setSelectedSources, setFormInitialValues, setActiveForm]);
+    // Generate an updated pipeline template with the new source
+    setTimeout(() => {
+      const updatedTemplate = generatePipelineTemplate();
+      setPipelineJson(updatedTemplate);
+      console.log("Pipeline template updated with new source:", updatedTemplate);
+    }, 0);
+
+    // Create a message that indicates they can add more sources
+    const message = `Added source: ${selectedSource.data_src_name}. Review and edit reader config.`;
+    
+    addAssistantMessage(message);
+    
+    // After a short delay, provide guidance on next steps if this isn't the first source
+    if (selectedSources.length > 0) {
+      setTimeout(() => {
+        addAssistantMessage(
+          `You now have ${selectedSources.length + 1} sources in your pipeline. After configuring this source, you can search for another source to add or say "continue" to proceed with your current selections.`
+        );
+      }, 500);
+    }
+  }, [
+    addAssistantMessage, 
+    setCurrentSourceData, 
+    setSelectedSources, 
+    selectedSources, 
+    generatePipelineTemplate, 
+    setPipelineJson,
+    setShowFilterForm,
+    setShowSchemaForm,
+    setShowReaderForm,
+    setShowWriterForm,
+    setShowSorterForm,
+    setShowAggregatorForm,
+    setShowJoinForm,
+    setShowUnionForm,
+    setShowDropForm,
+    setShowSelectForm,
+    setActiveForm,
+    setReaderFormInitialValues
+  ]);
 
   const handleSourceStep = useCallback(async (input: string) => {
     const userInput = input.toLowerCase().trim();
@@ -739,18 +814,43 @@ export const PipeLineChatProvider = ({
 
           // Create a message with the list of sources
           let sourcesMessage = `I found ${sources.length} data sources matching "${userInput}". Please select one:`;
+          
+          // If we already have sources, mention that they can add more
+          if (selectedSources.length > 0) {
+            sourcesMessage += `\n\nYou already have ${selectedSources.length} source(s) in your pipeline. You can add another one or say "continue" to proceed with your current selections.`;
+          }
 
           addAssistantMessage(sourcesMessage);
         } else {
           // Only one source found, use it directly
           processSelectedSource(sources[0]);
           setSourceSuggestions([]);
+          
+          // If we already have sources, offer to continue
+          if (selectedSources.length > 0) {
+            setTimeout(() => {
+              addAssistantMessage(
+                `You now have ${selectedSources.length + 1} sources in your pipeline. You can search for another source to add or say "continue" to proceed with your current selections.`
+              );
+            }, 500);
+          }
         }
       } else {
-        addAssistantMessage(
-          `I couldn't find any data sources matching "${userInput}". ` +
-          `Please try a different search term, or say "continue" to proceed with your current selections.`
-        );
+        // No sources found
+        if (selectedSources.length > 0) {
+          // If we already have sources, offer to continue
+          addAssistantMessage(
+            `I couldn't find any data sources matching "${userInput}". ` +
+            `You already have ${selectedSources.length} source(s) in your pipeline. ` +
+            `You can try a different search term to add another source, or say "continue" to proceed with your current selections.`
+          );
+        } else {
+          // No sources yet, ask to try again
+          addAssistantMessage(
+            `I couldn't find any data sources matching "${userInput}". ` +
+            `Please try a different search term.`
+          );
+        }
       }
     } catch (error) {
       console.error("Error searching for data sources:", error);
@@ -790,14 +890,14 @@ export const PipeLineChatProvider = ({
       // Ask the user what transformations they want to add
       addAssistantMessage(
   "Great! Time to add transformations. Here’s what you can do:\n\n" +
-  "1. **Schema** – Create or edit fields\n" +
-  "2. **Filter** – Apply conditions\n" +
-  "3. **Join** – Merge sources\n" +
-  "4. **Union** – Stack datasets\n" +
-  "5. **Sort** – Order by columns\n" +
-  "6. **Aggregate** – Group and summarize\n" +
-  "7. **Drop** – Remove columns\n" +
-  "8. **Select** – Keep specific columns\n" +
+  "1. Schema – Create or edit fields\n" +
+  "2. Filter – Apply conditions\n" +
+  "3. Join – Merge sources\n" +
+  "4. Union – Stack datasets\n" +
+  "5. Sort – Order by columns\n" +
+  "6. Aggregate – Group and summarize\n" +
+  "7. Drop – Remove columns\n" +
+  "8. Select – Keep specific columns\n" +
   "Which ones would you like to add?"
 );
 
@@ -2141,10 +2241,12 @@ export const PipeLineChatProvider = ({
           // Get existing drop columns or use defaults
           const dropColumns = source.drop_transformation?.drop_columns || ['column_to_drop_1', 'column_to_drop_2'];
           
-          // Create column array from drop_columns if it doesn't exist
-          const columnArray = source.drop_transformation?.column && Array.isArray(source.drop_transformation.column)
-            ? source.drop_transformation.column
-            : dropColumns.map(col => ({ column_list: col }));
+          // Create column_list array from drop_columns if it doesn't exist
+          const columnListArray = source.drop_transformation?.column_list && Array.isArray(source.drop_transformation.column_list)
+            ? source.drop_transformation.column_list
+            : source.drop_transformation?.column && Array.isArray(source.drop_transformation.column)
+              ? source.drop_transformation.column.map(col => ({ column: col.column_list }))
+              : dropColumns.map(col => ({ column: col }));
           
           // Create or update the drop_transformation property
           return {
@@ -2154,7 +2256,7 @@ export const PipeLineChatProvider = ({
               name: 'drop_transformation',
               transformation: 'Drop',
               drop_columns: dropColumns,
-              column: columnArray,
+              column_list: columnListArray,
               dependent_on: dependencyArray
             }
           };
@@ -2281,10 +2383,13 @@ export const PipeLineChatProvider = ({
                                dropTransformation.drop_columns || 
                                ['column_to_drop_1', 'column_to_drop_2'];
             
-            const columnArray = sourceWithDrop.drop_transformation?.column && 
-                               Array.isArray(sourceWithDrop.drop_transformation.column) 
-              ? sourceWithDrop.drop_transformation.column
-              : dropColumns.map(col => ({ column_list: col }));
+            const columnListArray = sourceWithDrop.drop_transformation?.column_list && 
+                                   Array.isArray(sourceWithDrop.drop_transformation.column_list)
+              ? sourceWithDrop.drop_transformation.column_list
+              : sourceWithDrop.drop_transformation?.column && 
+                Array.isArray(sourceWithDrop.drop_transformation.column)
+                ? sourceWithDrop.drop_transformation.column.map(col => ({ column: col.column_list }))
+                : dropColumns.map(col => ({ column: col }));
             
             const pattern = sourceWithDrop.drop_transformation?.pattern || 
                            dropTransformation.pattern || 
@@ -2296,7 +2401,7 @@ export const PipeLineChatProvider = ({
             
             dropTransformation.dependent_on = dependencyArray;
             dropTransformation.drop_columns = dropColumns;
-            dropTransformation.column = columnArray;
+            dropTransformation.column_list = columnListArray;
             dropTransformation.pattern = pattern;
             dropTransformation.transformation = transformationType;
             
@@ -3664,18 +3769,24 @@ export const PipeLineChatProvider = ({
       // Log the updated source for debugging
       console.log("Updated source:", updatedSource);
 
-      // Add to selected sources
+      // Add to selected sources - create a new array with all existing sources plus the new one - create a new array with all existing sources plus the new one
       const updatedSources = [...selectedSources, updatedSource];
+      
+      // Update the state with the new sources array
+      
+      // Update the state with the new sources array
       setSelectedSources(updatedSources);
-
+            
       // Add a message to show the configuration
       addUserMessage(`Reader configuration saved for "${formData.reader_name}"`);
 
       // Hide the form
+      setShowReaderForm(false);
       setActiveForm(null);
 
-      // Regenerate the pipeline template with the updated reader configuration
-      const readerConfigTemplate = generatePipelineTemplate();
+      // Important: Use the updated sources array directly when generating the template
+      // This ensures we're using the most current sources including the one just added
+      const readerConfigTemplate = generatePipelineTemplate(updatedSources);
       setPipelineJson(readerConfigTemplate);
       console.log("Updated pipeline template after reader form submission:", readerConfigTemplate);
 
@@ -4280,8 +4391,8 @@ export const PipeLineChatProvider = ({
   const handleJoinFormSubmit = (formData: any) => {
     console.log("Join form submitted with data:", formData);
 
-    // Extract the join conditions and dependent_on from the form data
-    const { conditions, dependent_on } = formData;
+    // Extract the join conditions, expressions, and dependent_on from the form data
+    const { conditions, dependent_on, expressions } = formData;
 
     // Format the join conditions for display
     const joinConditions = conditions.map((condition: any) =>
@@ -4302,7 +4413,8 @@ export const PipeLineChatProvider = ({
           name: 'join_transformation',
           transformation: 'Join',
           conditions: conditions,
-          dependent_on: dependent_on
+          dependent_on: dependent_on,
+          expressions: expressions // Add expressions to the join transformation
         }
       };
     });
@@ -4320,15 +4432,27 @@ export const PipeLineChatProvider = ({
         // Update existing join transformation
         joinTransformation.conditions = conditions;
         joinTransformation.dependent_on = dependent_on;
+        
+        // Add expressions if they exist
+        if (expressions && expressions.length > 0) {
+          joinTransformation.expressions = expressions;
+        }
+        
         console.log("Updated join transformation in pipeline JSON:", joinTransformation);
       } else {
         // Add new join transformation
-        const joinTransformationData = {
+        const joinTransformationData: any = {
           name: 'join_transformation',
           transformation: 'Joiner',
           conditions: conditions,
           dependent_on: dependent_on
         };
+        
+        // Add expressions if they exist
+        if (expressions && expressions.length > 0) {
+          joinTransformationData.expressions = expressions;
+        }
+        
         updatedPipelineJson.transformations.push(joinTransformationData);
         console.log("Added new join transformation to pipeline JSON:", joinTransformationData);
       }
@@ -4932,15 +5056,15 @@ export const PipeLineChatProvider = ({
   const handleDropFormSubmit = (formData: any) => {
     console.log("Drop form submitted with data:", formData);
 
-    // Extract the column, pattern, and dependent_on from the form data
-    const { column, pattern, dependent_on, transformation = 'Drop' } = formData;
+    // Extract the column_list, pattern, and dependent_on from the form data
+    const { column_list, pattern, dependent_on, transformation = 'Drop' } = formData;
     
-    // Ensure column is an array before calling map
-    const columnArray = Array.isArray(column) ? column : [column].filter(Boolean);
+    // Ensure column_list is an array before processing
+    const columnListArray = Array.isArray(column_list) ? column_list : [column_list].filter(Boolean);
     
-    // Convert column array to drop_columns array for display purposes
-    const drop_columns = columnArray.length > 0 
-      ? columnArray.map((col: any) => col.column_list)
+    // Convert column_list array to drop_columns array for display purposes
+    const drop_columns = columnListArray.length > 0 
+      ? columnListArray.map((col: any) => col.column)
       : [];
 
     // Format the dependencies for display
@@ -4957,7 +5081,7 @@ export const PipeLineChatProvider = ({
         drop_transformation: {
           name: 'drop_transformation',
           transformation: transformation,
-          column: columnArray,
+          column: columnListArray,
           drop_columns: drop_columns, // Add this for backward compatibility
           pattern: pattern || '', // Add pattern field
           dependent_on: dependent_on
@@ -4975,7 +5099,7 @@ export const PipeLineChatProvider = ({
               ...source,
               drop_transformation: {
                 ...source.drop_transformation,
-                column: columnArray,
+                column: columnListArray,
                 drop_columns: drop_columns, // Add this for backward compatibility
                 pattern: pattern || '', // Add pattern field
                 transformation: transformation,
@@ -4998,7 +5122,7 @@ export const PipeLineChatProvider = ({
       name: "drop_transformation",
       transformation: transformation,
       dependent_on: dependent_on,
-      column: columnArray,
+      column: columnListArray,
       drop_columns: drop_columns,
       pattern: pattern || '' // Add pattern field
     };
@@ -5013,7 +5137,7 @@ export const PipeLineChatProvider = ({
 
       if (dropTransformation) {
         // Update existing drop transformation
-        dropTransformation.column = columnArray;
+        dropTransformation.column = columnListArray;
         dropTransformation.drop_columns = drop_columns;
         dropTransformation.pattern = pattern || '';
         dropTransformation.transformation = transformation;
@@ -5043,7 +5167,7 @@ export const PipeLineChatProvider = ({
           ...source,
           drop_transformation: {
             ...source.drop_transformation,
-            column: columnArray,
+            column: columnListArray,
             drop_columns: drop_columns,
             pattern: pattern || '',
             transformation: transformation,
@@ -5062,7 +5186,7 @@ export const PipeLineChatProvider = ({
         drop_transformation: {
           name: 'drop_transformation',
           transformation: transformation,
-          column: columnArray,
+          column: columnListArray,
           drop_columns: drop_columns,
           pattern: pattern || '',
           dependent_on: dependent_on

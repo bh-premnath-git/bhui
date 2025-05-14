@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, ReactNode, useMemo, useCallback, useTransition } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
@@ -198,46 +197,6 @@ export const PipeLineChatPanel = ({
 
   // Function to find the appropriate node ID based on transformation type
   const findNodeIdByType = useCallback((transformationType: string) => {
-    if (!nodes || nodes.length === 0) {
-      console.log(`No nodes available, using fallback ID for ${transformationType}`);
-      return `${transformationType}_1`; // Fallback if no nodes available
-    }
-
-    // Find the node with the matching transformation type
-    const matchingNodes = nodes.filter(node =>
-      node.data?.transformationType === transformationType
-    );
-
-    if (matchingNodes.length > 0) {
-      // If we have matching nodes, return the ID of the first one
-      console.log(`Found ${matchingNodes.length} nodes of type ${transformationType}, using ID: ${matchingNodes[0].id}`);
-      return matchingNodes[0].id;
-    }
-
-    // Special case for Reader which might be named differently
-    if (transformationType === "Reader" && nodes.some(node => node.data?.label === "Reader")) {
-      const readerNode = nodes.find(node => node.data?.label === "Reader");
-      console.log(`Found Reader node with ID: ${readerNode?.id}`);
-      return readerNode?.id || "Reader_1";
-    }
-
-    // Special case for Drop transformation
-    if (transformationType === "Drop" && nodes.some(node => node.data?.label === "Drop")) {
-      const dropNode = nodes.find(node => node.data?.label === "Drop");
-      console.log(`Found Drop node with ID: ${dropNode?.id}`);
-      return dropNode?.id || "drop_transformation";
-    }
-
-    // Special case for Select transformation
-    if (transformationType === "Select" && nodes.some(node => node.data?.label === "Select")) {
-      const selectNode = nodes.find(node => node.data?.label === "Select");
-      console.log(`Found Select node with ID: ${selectNode?.id}`);
-      return selectNode?.id || "select_transformation";
-    }
-
-    
-
-    // If no matching node found, create a fallback ID with the next available number
     const existingNodesOfType = nodes
       .filter(node => node.id.startsWith(transformationType))
       .map(node => {
@@ -245,14 +204,14 @@ export const PipeLineChatPanel = ({
         return match ? parseInt(match[1]) : 0;
       })
       .filter(num => !isNaN(num));
-
+    console.log(existingNodesOfType)
     const nextNumber = existingNodesOfType.length > 0
       ? Math.max(...existingNodesOfType) + 1
       : 1;
 
     const fallbackId = `${transformationType}_${nextNumber}`;
     console.log(`No matching node found for ${transformationType}, using generated ID: ${fallbackId}`);
-    return fallbackId;
+    return nodes.filter(node => node.id.startsWith(transformationType))?.[0]?.id || fallbackId;
   }, [nodes]);
 
   // Fetch connection config list only once when component mounts
@@ -406,17 +365,15 @@ export const PipeLineChatPanel = ({
         <div className="flex-1 mt-4 overflow-hidden">
           {isNewChat || messages.length === 0 ? (
             <div className="flex flex-col items-center flex-grow justify-center h-full">
-              <img
-                src={imageSrc}
-                alt="AI"
-                className="w-4 h-6 transform -rotate-[40deg]"
-              />
+              <div className="h-8 w-8 my-2">
+                <img src="/logo.svg" alt="" />
+              </div>
               <p className="text-sm text-gray-600 mt-2">How can I assist you with your pipeline?</p>
               <Button
                 onClick={startPipelineCreation}
                 className="mt-4 bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 flex justify-center items-center gap-2 px-6 py-2.5 text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-8 w-8" />
                 Create a data pipeline
               </Button>
             </div>
@@ -434,20 +391,9 @@ export const PipeLineChatPanel = ({
                         )}
                       >
                         {message.role === "assistant" ? (
-                          <Avatar className="h-8 w-8 flex items-center justify-center">
-                            <AvatarImage
-                              src={imageSrc}
-                              className="w-3.5 h-5 transform -rotate-[40deg]"
-                              style={{ objectFit: "contain" }}
-                            />
-                            <AvatarFallback>AI</AvatarFallback>
-                          </Avatar>
+                          <div className="h-8 w-8 rounded-full bg-green-500 mt-2"></div>
                         ) : (
-                          <Avatar className="h-8 w-8 bg-blue-500">
-                            <AvatarFallback className="bg-blue-500 text-white">
-                              U
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="h-8 w-8 rounded-full bg-black mt-2"></div>
                         )}
 
 
@@ -457,12 +403,10 @@ export const PipeLineChatPanel = ({
                       <div
                         className={cn(
                           "rounded-lg px-4 py-2 max-w-[80%] relative",
-                          message.role === "assistant"
-                            ? "bg-gray-100 text-black"
-                            : "bg-blue-100 text-blue-900",
+                          "bg-gray-100 text-black",
                           message.role === "assistant"
                             ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
-                            : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100"
+                            : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-gray-100"
                         )}
                       >
                         <div className="whitespace-pre-wrap break-words">{message.content}</div>
@@ -477,7 +421,7 @@ export const PipeLineChatPanel = ({
                               </div>
                             )}
 
-                            {showReaderForm && message.content.includes("Review and edit reader config.") && (
+                            {showReaderForm && (
                               <div className="mt-4 rounded-lg bg-gray-100">
                                 <ReaderOptionsForm
                                   initialData={readerFormInitialValues}
@@ -931,7 +875,7 @@ export const PipeLineChatPanel = ({
                                     >
                                       <span>{option.label}</span>
                                       {isMultiSelect && selectedDependencies.includes(option.value) && (
-                                        <Check className="h-4 w-4" />
+                                        <Check className="h-8 w-8" />
                                       )}
                                     </button>
                                   ))}
@@ -995,7 +939,7 @@ export const PipeLineChatPanel = ({
 
                     </div>
                     {message.role === "assistant" && i === messages.length - 1 && (
-                      <div className="mt-3 flex flex-wrap">
+                      <div className="mt-3 flex flex-wrap ml-12 ">
                         {mode === 'create' && (
                           <>
                             {/* Description question buttons removed as we're skipping this step */}
@@ -1006,10 +950,10 @@ export const PipeLineChatPanel = ({
                             {step === 'source' && messages.length === 1 && message.content.includes("start. Add a data source") && (
                               <div className="flex flex-col gap-2 w-full mt-2">
                                 <div className="text-sm font-medium text-muted-foreground mb-1">Common Data Sources:</div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="flex gap-2">
                                   <SuggestionButton
                                     text="top_sales_regions"
-                                    icon={<Database className="h-4 w-4 mr-2" />}
+                                    icon={<Database className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       const dataSource = "top_sales_regions";
                                       addUserMessage(dataSource);
@@ -1023,7 +967,7 @@ export const PipeLineChatPanel = ({
                                   />
                                   <SuggestionButton
                                     text="customer_records"
-                                    icon={<Database className="h-4 w-4 mr-2" />}
+                                    icon={<Database className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       const dataSource = "customer_records";
                                       addUserMessage(dataSource);
@@ -1086,7 +1030,7 @@ export const PipeLineChatPanel = ({
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <SuggestionButton
                                       text="Filter Transformation"
-                                      icon={<Filter className="h-4 w-4 mr-2" />}
+                                      icon={<Filter className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Filter Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1099,7 +1043,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Schema Transformation"
-                                      icon={<Database className="h-4 w-4 mr-2" />}
+                                      icon={<Database className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Schema Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1112,7 +1056,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Sorter Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Sorter Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1125,7 +1069,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Aggregation Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Aggregation Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1138,7 +1082,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Join Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Join Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1151,7 +1095,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Union Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Union Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1164,7 +1108,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Drop Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Drop Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1177,7 +1121,7 @@ export const PipeLineChatPanel = ({
                                     />
                                     <SuggestionButton
                                       text="Select Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
+                                      icon={<Layers className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Select Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -1188,10 +1132,10 @@ export const PipeLineChatPanel = ({
                                       }}
                                       className="justify-start py-3 px-4 bg-card hover:bg-accent"
                                     />
-                                   
+
                                     <SuggestionButton
                                       text="Target (Skip Transformations)"
-                                      icon={<FileText className="h-4 w-4 mr-2" />}
+                                      icon={<FileText className="h-8 w-8 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Target - Skip transformations not needed");
                                         // Build and update the pipeline template before handling the step
@@ -1213,7 +1157,7 @@ export const PipeLineChatPanel = ({
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   <SuggestionButton
                                     text="processed_data"
-                                    icon={<FileText className="h-4 w-4 mr-2" />}
+                                    icon={<FileText className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("processed_data");
@@ -1252,7 +1196,7 @@ export const PipeLineChatPanel = ({
                                   />
                                   <SuggestionButton
                                     text="analysis_results"
-                                    icon={<FileText className="h-4 w-4 mr-2" />}
+                                    icon={<FileText className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("analysis_results");
@@ -1299,7 +1243,7 @@ export const PipeLineChatPanel = ({
                                 <div className="grid grid-cols-2 gap-2">
                                   <SuggestionButton
                                     text="Yes, use same database"
-                                    icon={<Check className="h-4 w-4 mr-2" />}
+                                    icon={<Check className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(true);
@@ -1329,7 +1273,7 @@ export const PipeLineChatPanel = ({
                                   />
                                   <SuggestionButton
                                     text="No, use file output"
-                                    icon={<X className="h-4 w-4 mr-2" />}
+                                    icon={<X className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(false);
@@ -1367,7 +1311,7 @@ export const PipeLineChatPanel = ({
                                 <div className="grid grid-cols-2 gap-2">
                                   <SuggestionButton
                                     text="Create Pipeline"
-                                    icon={<Check className="h-4 w-4 mr-2" />}
+                                    icon={<Check className="h-8 w-8 mr-2" />}
                                     variant="default"
                                     onClick={() => {
                                       addUserMessage("Yes, create the pipeline");
@@ -1377,7 +1321,7 @@ export const PipeLineChatPanel = ({
                                   />
                                   <SuggestionButton
                                     text="Start Over"
-                                    icon={<X className="h-4 w-4 mr-2" />}
+                                    icon={<X className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       addUserMessage("No, I want to edit it");
                                       handleConfirmStep("No");
@@ -1396,14 +1340,7 @@ export const PipeLineChatPanel = ({
                 {/* Loading Indicator */}
                 {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 flex items-center justify-center">
-                      <AvatarImage
-                        src={imageSrc}
-                        className="w-3.5 h-5 transform -rotate-[40deg]"
-                        style={{ objectFit: "contain" }}
-                      />
-                      <AvatarFallback>AI</AvatarFallback>
-                    </Avatar>
+                    <div className="h-8 w-8 rounded-full bg-green-500 mt-2"></div>
                     <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
                       <div className="flex space-x-2">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>

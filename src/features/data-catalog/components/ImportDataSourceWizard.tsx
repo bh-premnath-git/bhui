@@ -171,7 +171,7 @@ console.log(props.gitProjectList)
     const createDataSourceLayout = async (data: any) => {
         try {
             return await apiService.post({
-                url: '/data_source_layout',
+                url: '/data_source_layout/',
                 data: data,
                 usePrefix: true,
                 portNumber: CATALOG_API_PORT,

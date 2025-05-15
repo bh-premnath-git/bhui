@@ -514,12 +514,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
  * @param currentJson The current pipeline JSON
  * @returns The optimized pipeline JSON with references
  */
-export const convertToOptimizedPipelineJson = (currentJson: any) => {
+export const convertToOptimizedPipelineJson = (currentJson: any,pipelineName?:string) => {
   console.log(currentJson,"currentJson");
   // Create the base structure for the optimized JSON
   const optimizedJson: any = {
     $schema: currentJson.$schema || "https://json-schema.org/draft-07/schema#",
-    name: currentJson.name || "pipeline",
+    name: pipelineName||currentJson.name || "pipeline",
     description: currentJson.description || "",
     version: currentJson.version || "1.0.0",
     parameters: currentJson.parameters || [],

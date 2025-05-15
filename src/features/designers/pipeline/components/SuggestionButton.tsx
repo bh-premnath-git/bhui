@@ -30,7 +30,7 @@ const SuggestionButton = ({
 
   return (
     <motion.div
-      className="mb-2 flex flex-row justify-end align-middle items-center"
+      className="mb-2 flex flex-row justify-start align-middle items-center"
       initial={{ x: -10, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.2 + index * 0.1 }}

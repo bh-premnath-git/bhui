@@ -123,6 +123,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     }, [dispatch]);
 
     useEffect(() => {
+
         if (source) {
             let connection = { ...source.source?.connection };
             connection.connection_config_id = source?.source?.connection?.connection_config_id || connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
@@ -162,7 +163,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             }
         }
         console.log(selectedConnection, "formData")
-    }, []);
+    }, [source, initialData, connectionConfigList]);
 
     useEffect(() => {
         resolveSchema();

@@ -180,7 +180,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-  const {pipelineDtl}=useSelector((state:RootState)=>state.buildPipeline)
+    const {pipelineDtl}=useSelector((state:RootState)=>state.buildPipeline)
+  
 const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [formStates, setFormStates] = useState<{ [key: string]: any }>({});
     const [runDialogOpen, setRunDialogOpen] = useState(false);
@@ -202,7 +203,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
     // Add this at the component level, outside any callbacks
     const { selectedPipeline } = useAppSelector((state) => state.pipeline);
-
     const fetchedIdsRef = useRef(new Set<string>());
 
     const setSaving = useCallback(() => {
@@ -252,7 +252,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                 
                 console.log(response,"response")
                 // Update pipeline name and JSON safely
-                setPipeLineName({ pipeLineName: response.pipeline_json.name || '' });
+                setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name );
                 dispatch(setBuildPipeLineDtl(response.pipeline_json));
                 let optimised=await resolveRefsPipelineJson(response?.pipeline_json,response?.pipeline_json)
                 console.log(optimised,"optimised")
@@ -371,7 +371,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                         }
                     }));
                     // Your save logic here
-                    const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl);
+                    const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl,pipelineName);
                     console.log(pipeline_json,"pipeline_json")
 
                     console.log(pipeline_json?.transformations,"pipeline_json")
@@ -652,7 +652,7 @@ const makePipeline = async (result: any,isModify=true) => {
 
     const handleRunClick = useCallback(async(e: React.MouseEvent) => {
     
-        const pipelineConfig:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
+        const pipelineConfig:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
           setSelectedFormState(pipelineConfig);
           return pipelineConfig;
       }, [edges, formStates, reactFlowInstance]);
@@ -773,7 +773,7 @@ const makePipeline = async (result: any,isModify=true) => {
             }]);
   
           
-            const {pipeline_json}:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
+            const {pipeline_json}:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
             console.log(pipeline_json)
   
             pipeline_json.transformations = pipeline_json.transformations.map(transform => {
@@ -788,7 +788,7 @@ const makePipeline = async (result: any,isModify=true) => {
   console.log(debuggedNodesList)
   console.log(pipelineDtl)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.name||pipelineDtl?.pipeline_name || "sample_pipeline"}`,
+    pipeline_name: `${pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });
@@ -797,7 +797,7 @@ debuggedNodesList.forEach(checkpoint => {
 });
             // Create the request data object with array
             // const requestData = {
-            //     pipeline_name: pipelineDtl?.pipeline_name || "sample_pipeline",
+            //     pipeline_name: pipelineDtl?.pipeline_name,
             //     pipeline_json: pipeline_json,
             //     mode: 'DEBUG',
             //     checkpoints: debuggedNodesList.map(checkpoint => checkpoint.title)
@@ -826,7 +826,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
   
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineDtl?.pipeline_name||pipelineDtl?.name
+                params: pipelineName
             })).unwrap();
             console.log(countsResponse,"countsResponse")
             
@@ -859,7 +859,8 @@ debuggedNodesList.forEach(checkpoint => {
 
     const handleStop = useCallback(async () => {
         try {
-          let response=await dispatch(stopPipeLine({params:pipelineDtl?.name})).unwrap();
+            console.log(pipelineName)
+          let response=await dispatch(stopPipeLine({params:pipelineName||pipelineDtl?.name})).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -873,10 +874,10 @@ debuggedNodesList.forEach(checkpoint => {
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineDtl?.name})).unwrap();
+            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName})).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-              let countsResponse=await dispatch(getTransformationCount({params:pipelineDtl?.name})).unwrap();
+              let countsResponse=await dispatch(getTransformationCount({params:pipelineName})).unwrap();
               console.log(countsResponse,"countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);
@@ -1017,7 +1018,7 @@ debuggedNodesList.forEach(checkpoint => {
     const handleLeavePage = useCallback(async () => {
         try {
             setSaving();
-            const pipeline_json =await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl);
+            const pipeline_json =await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
             if (id) {
               await dispatch(updatePipeline({ id: id, data: pipeline_json }));
   

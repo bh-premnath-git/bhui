@@ -73,11 +73,11 @@ const prepareDonutData = (data: any[], colors: string[]) => {
 };
 
 // Chart components with direct color prop
-export const LatencyTrendChart: React.FC<{ data: any[] }> = ({ data }) => {
+export const LatencyTrendChart: React.FC<{ title?:string; data: any[] }> = ({ title="Latency", data }) => {
   const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
   return (
-    <SortableChartCard id="latency" title="Latency" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
+    <SortableChartCard id="latency" title={title} className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
       <LineChart 
         data={data} 
         xAxisDataKey="name" 
@@ -128,8 +128,8 @@ export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ tit
   </SortableChartCard>
 )
 
-export const ProjectHealthChart: React.FC<{ data: any[] }> = ({ data }) => (
-  <SortableChartCard id="health" title="Health Status" className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
+export const ProjectHealthChart: React.FC<{ title?:string; data: any[] }> = ({ title="Health Status", data }) => (
+  <SortableChartCard id="health" title={title} className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 

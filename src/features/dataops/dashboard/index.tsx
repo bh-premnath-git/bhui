@@ -111,6 +111,12 @@ const DashboardContent = () => {
   };
 
   const renderChart = (chartId: string) => {
+    if (chartId.startsWith('custom-')) {
+      const customChartId = chartId.replace('custom-', '');
+      const customChart = customCharts.find(chart => chart.id === customChartId);
+      return <ProjectHealthChart title={"Latency 2"} data={customChart?.data} />
+    }
+      
     switch (chartId) {
       case "latency":
         return <LatencyTrendChart data={chartData.latency} />

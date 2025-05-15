@@ -59,11 +59,11 @@ ORDER BY count DESC;
 `.trim(),
     message: "Here's the breakdown of today's failed jobs by error category:",
     data: [
-      { name: 'Network Issues', count: 42 },
-      { name: 'Resource Limits', count: 28 },
-      { name: 'API Timeouts', count: 15 },
-      { name: 'Data Validation', count: 10 },
-      { name: 'Other', count: 5 },
+      { name: 'Network Issues', success: 42 },
+      { name: 'Resource Limits', success: 28 },
+      { name: 'API Timeouts', success: 15 },
+      { name: 'Data Validation', success: 10 },
+      { name: 'Other', success: 5 },
     ],
   },
   weekly: {
@@ -79,11 +79,11 @@ ORDER BY latency_mins DESC;
 `.trim(),
     message: 'These pipelines had average latency greater than 2 hours this week:',
     data: [
-      { name: 'Data Pipeline Alpha', latency_mins: 185 },
-      { name: 'ETL Process Beta', latency_mins: 164 },
-      { name: 'Nightly Batch Job', latency_mins: 142 },
-      { name: 'Customer Analytics', latency_mins: 130 },
-      { name: 'Recommendation Engine', latency_mins: 125 },
+      { name: 'Data Pipeline Alpha', success: 185 },
+      { name: 'ETL Process Beta', success: 164 },
+      { name: 'Nightly Batch Job', success: 142 },
+      { name: 'Customer Analytics', success: 130 },
+      { name: 'Recommendation Engine', success: 125 },
     ],
   },
   expensive: {

@@ -73,11 +73,11 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
-  const { pipelineDtl } = usePipelineContext()
+  const { pipelineDtl,pipelineName } = usePipelineContext()
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
-    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${pipelineDtl?.pipeline_name}`,
+    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${pipelineName||pipelineDtl?.name}`,
      token: sessionStorage.getItem("kc_token")!.replace("Bearer ", ""),
      onMessage: (msg) => {
        console.log("SSE:", msg);

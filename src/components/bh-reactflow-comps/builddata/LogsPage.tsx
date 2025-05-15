@@ -73,7 +73,7 @@ export const Terminal: React.FC<TerminalProps> = ({
 
   // Determine the actual pipeline name to use
   const actualPipelineName = propPipelineName ||
-    (pipelineDtl?.pipeline_name) ||
+    (pipelineDtl?.name) ||
     (contextPipelineName?.pipeLineName) ||
     "Unknown Pipeline"
 

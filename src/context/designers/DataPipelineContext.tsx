@@ -237,7 +237,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             try {
                 // Check if id exists and is valid
                 if (!id) {
-                    alert()
                     return;
                 }
 

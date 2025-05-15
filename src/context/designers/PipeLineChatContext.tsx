@@ -293,7 +293,7 @@ export const PipeLineChatProvider = ({
   }, [currentSourceData]);
 
   // Pipeline creation state
-  const [mode, setMode] = useState<'chat' | 'create'>('chat');
+  const [mode, setMode] = useState<'chat' | 'create'>('create');
   const [step, setStep] = useState<'name' | 'source' | 'transformations' | 'confirm'>('name');
   const [pipelineName, setPipelineName] = useState('');
   const [pipelineDescription, setPipelineDescription] = useState('');
@@ -5724,7 +5724,7 @@ export const PipeLineChatProvider = ({
     dropSchema,
     selectSchema,
     dropName,
-    selectName,
+    selectName
   };
 
   return (

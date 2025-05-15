@@ -668,7 +668,7 @@ const createTargetObject = (
     
     targetObj.connection = targetConfig.connection || {};
     if (targetConfig.connection?.connection_config_id) {
-      targetObj.connection.connection_config_id = targetConfig.connection.connection_config_id;
+      targetObj.connection.connection_config_id = targetConfig.connection?.connection_config_id;
     }
   } else if (targetConfig.type === TargetType.CUSTOM) {
     // For custom target types, use the customConfig directly

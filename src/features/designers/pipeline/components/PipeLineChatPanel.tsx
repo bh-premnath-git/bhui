@@ -371,24 +371,27 @@ export const PipeLineChatPanel = ({
                 {messages.map((message, i) => (
                   <div key={i}>
                     <div className={cn(
-                      "flex items-start gap-3 my-2 justify-end",
-                      message.role === "assistant" ? "flex-row" : "flex-row-reverse"
+                      "flex items-start gap-3 my-2",
+                      message.role === "assistant" ? "justify-start flex-row" : "justify-start flex-row"
                     )}>
-                      {message.role === "assistant" && (
+                      {message.role === "assistant" ? (
                         <div className="h-8 w-8 rounded-full bg-green-500 overflow-hidden mt-2">
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-black overflow-hidden mt-2">
                         </div>
                       )}
                       <div className={cn(
                         "px-4 py-2 max-w-[80%] relative rounded-lg",
                         message.role === "assistant" 
                           ? "bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100" 
-                          : "bg-primary text-white ml-auto before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-primary"
+                          : "bg-primary text-white before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-primary"
                       )}>
                         {message.content}
                       </div>
                     </div>
                     {i === messages.length - 1 && message.role === "assistant" && (
-                      <div className="flex flex-col gap-2 justify-end mt-2">
+                      <div className="flex flex-col gap-2 justify-start mt-2 ml-11">
                           <SuggestionButton
                             text="Create a data pipeline"
                             onClick={() => {
@@ -416,10 +419,10 @@ export const PipeLineChatPanel = ({
               <div className="space-y-6">
                 {messages.map((message, i) => (
                   <div>
-                    <div key={i} className="flex justify-end gap-2 items-center">
+                    <div key={i} className="flex justify-start gap-2 items-center">
                       <div
                         key={i}
-                        className="flex items-center gap-3 my-2 justify-end"
+                        className="flex items-center gap-3 my-2 justify-start"
                       >
                         {message.role === "assistant" ? (
                           <div className="h-8 w-8 rounded-full bg-green-500 flex-shrink-0"></div>
@@ -445,7 +448,7 @@ export const PipeLineChatPanel = ({
                           <>
                             {/* Source selection suggestion buttons */}
                             {awaitingSourceSelection && sourceSuggestions.length > 0 && (
-                              <div className="mt-4 flex flex-wrap gap-2">
+                              <div className="mt-4 flex flex-wrap gap-2 justify-start">
                                 {sourceSuggestions}
                               </div>
                             )}
@@ -979,7 +982,7 @@ export const PipeLineChatPanel = ({
                             {step === 'source' && message.content.includes("start. Add a data source") && (
                               <div className="flex flex-col gap-2 w-full mt-2">
                                 <div className="text-sm font-medium text-muted-foreground mb-1">Common Data Sources:</div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2 justify-start">
                                   <SuggestionButton
                                     text="orders"
                                     onClick={() => {
@@ -1013,7 +1016,7 @@ export const PipeLineChatPanel = ({
                             )}
 
                             {step === 'source' && messages.length > 3 && selectedSources.length > 0 && (
-                              <div className="flex flex-col gap-2">
+                              <div className="flex flex-col gap-2 justify-start">
                                 <SuggestionButton
                                   text="Add another source"
                                   onClick={() => {
@@ -1054,9 +1057,9 @@ export const PipeLineChatPanel = ({
                               messages[messages.length - 1]?.content?.includes("Which transformations would you like to add") ||
                               messages[messages.length - 1]?.content?.includes("Would you like to add another transformation")
                             ) && (
-                                <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="flex flex-col gap-2 w-full mt-2 justify-start">
                                   <div className="text-sm font-medium text-muted-foreground mb-1">Select Transformation(s):</div>
-                                  <div className="flex flex-col gap-2">
+                                  <div className="flex flex-col gap-2 justify-start">
                                     <SuggestionButton
                                       text="Filter Transformation"
                                       onClick={() => {
@@ -1181,9 +1184,9 @@ export const PipeLineChatPanel = ({
 
 
                             {step === 'transformations' && transformationSubStep === 'target_name' && (
-                              <div className="flex flex-col gap-2 w-full mt-2">
+                              <div className="flex flex-col gap-2 w-full mt-2 justify-start">
                                 <div className="text-sm font-medium text-muted-foreground mb-1">Suggested Output Names:</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 justify-start">
                                   <SuggestionButton
                                     text="processed_data"
                                     icon={<FileText className="h-8 w-8 mr-2" />}

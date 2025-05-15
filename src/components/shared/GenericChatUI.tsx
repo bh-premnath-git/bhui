@@ -17,6 +17,9 @@ interface GenericChatUIProps {
   onAddToDashboard?: (chart: any) => void;
 }
 
+// Custom event name constant
+export const CHART_ADDED_EVENT = 'chart-added-to-dashboard';
+
 const defaultSuggestions = [
   'Show me the data pipeline jobs with latency greater than 2 hours?',
   'List of jobs failed today?',
@@ -136,43 +139,53 @@ export function GenericChatUI({
   };
 
   const handleAddToDashboard = (data: any) => {
-    if (onAddToDashboard) {
-      // Determine chart type and appropriate labels based on data structure
-      const dataKeys = Object.keys(data[0] || {}).filter(key => key !== 'name');
-      
-      // Determine X and Y axis labels based on the query content and data structure
-      const userQuery = messages[messages.length - 2]?.content.toLowerCase() || '';
-      
-      // Default labels
-      let xAxisLabel = 'Categories';
-      let yAxisLabel = dataKeys[0] || 'Value';
-      
-      // Try to extract more meaningful labels from the query
-      if (userQuery.includes('latency')) {
-        yAxisLabel = 'Time (minutes)';
-      } else if (userQuery.includes('cost') || userQuery.includes('expensive')) {
-        yAxisLabel = 'Cost (USD)';
-      } else if (userQuery.includes('failed') || userQuery.includes('error')) {
-        yAxisLabel = 'Count';
+    // Determine chart type and appropriate labels based on data structure
+    const dataKeys = Object.keys(data[0] || {}).filter(key => key !== 'name');
+    
+    // Determine X and Y axis labels based on the query content and data structure
+    const userQuery = messages[messages.length - 2]?.content.toLowerCase() || '';
+    
+    // Default labels
+    let xAxisLabel = 'Categories';
+    let yAxisLabel = dataKeys[0] || 'Value';
+    
+    // Try to extract more meaningful labels from the query
+    if (userQuery.includes('latency')) {
+      yAxisLabel = 'Time (minutes)';
+    } else if (userQuery.includes('cost') || userQuery.includes('expensive')) {
+      yAxisLabel = 'Cost (USD)';
+    } else if (userQuery.includes('failed') || userQuery.includes('error')) {
+      yAxisLabel = 'Count';
+    }
+    
+    const chartData = {
+      id: `chart-${Date.now()}`,
+      title: messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data',
+      type: 'bar',
+      data: data,
+      config: {
+        xAxis: {
+          label: xAxisLabel,
+          labelOffset: 10
+        },
+        yAxis: {
+          label: yAxisLabel,
+          labelOffset: 15
+        },
+        children: messages[messages.length - 1]?.content || 'Chart visualization based on query results'
       }
-      
-      const chartData = {
-        id: `chart-${Date.now()}`,
-        title: messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data',
-        type: 'bar',
-        data: data,
-        config: {
-          xAxis: {
-            label: xAxisLabel,
-            labelOffset: 10
-          },
-          yAxis: {
-            label: yAxisLabel,
-            labelOffset: 15
-          },
-          children: messages[messages.length - 1]?.content || 'Chart visualization based on query results'
-        }
-      };
+    };
+    
+    // Dispatch custom event with chart data
+    const chartEvent = new CustomEvent(CHART_ADDED_EVENT, { 
+      detail: chartData,
+      bubbles: true,
+      cancelable: true
+    });
+    document.dispatchEvent(chartEvent);
+    
+    // Still call the prop callback if provided (for backward compatibility)
+    if (onAddToDashboard) {
       onAddToDashboard(chartData);
     }
   };

@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/sortable';
 
 const DashboardContent = () => {
-  const { chartData, chartOrder, setChartOrder } = useDataOps()
+  const { chartData, chartOrder, customCharts, setChartOrder } = useDataOps()
   const { loadSavedFilters } = useFilters()
   
   // State to track if we're actively dragging

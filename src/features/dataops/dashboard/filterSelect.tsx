@@ -15,7 +15,7 @@ interface FilterSelectProps {
 const FilterSelect: React.FC<FilterSelectProps> = ({ label, value, onChange, options }) => (
   <div>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[90px] h-6 text-xs text-accent-foreground">
+      <SelectTrigger id={`${label.toLowerCase()}-select`} className="w-[120px] h-6 text-xs text-accent-foreground">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>

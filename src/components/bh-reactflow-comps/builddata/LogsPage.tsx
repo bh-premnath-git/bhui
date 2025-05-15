@@ -12,6 +12,7 @@ import { Loader2, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-reac
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEventStream } from "@/features/admin/connection/hooks/useEventStream"
 import { DataTable } from "@/components/bh-table/data-table"
+import { API_DOMAIN, API_PREFIX_URL, CATALOG_API_PORT } from '@/config/platformenv';
 
 export interface Log {
   timestamp: string
@@ -78,7 +79,7 @@ export const Terminal: React.FC<TerminalProps> = ({
 
   // Setup event stream for logs
   const { start, stop } = useEventStream({
-    url: `http://localhost:8011/api/v1/pipeline/stream-logs/${actualPipelineName}`,
+    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${actualPipelineName}`,
     token: sessionStorage.getItem("kc_token")?.replace("Bearer ", "") || "",
     onMessage: (msg: any) => {
       console.log("SSE:", msg);

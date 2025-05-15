@@ -128,12 +128,12 @@ export const StatusDonutChart: React.FC<{ title: string; data: any[] }> = ({ tit
   </SortableChartCard>
 )
 
-export const ProjectHealthChart: React.FC<{ title?:string; data: any[] }> = ({ title="Health Status", data }) => (
+export const ProjectHealthChart: React.FC<{ title?:string; data: any[], bars?: string[] }> = ({ title="Health Status", data, bars = ["success", "failed"] }) => (
   <SortableChartCard id="health" title={title} className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
     <BarChart 
       data={data} 
       xAxisDataKey="name" 
-      bars={["success", "failed"]}
+      bars={bars}
       colors={[CHART_COLORS.chart1, CHART_COLORS.chart4]}
       config={{
         ...chartDefaults.barConfig,

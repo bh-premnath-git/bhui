@@ -114,7 +114,7 @@ const DashboardContent = () => {
     if (chartId.startsWith('custom-')) {
       const customChartId = chartId.replace('custom-', '');
       const customChart = customCharts.find(chart => chart.id === customChartId);
-      return <ProjectHealthChart title={"Latency 2"} data={customChart?.data} />
+      return <ProjectHealthChart title={"Latency 2"} data={customChart?.data} bars={["success"]} />
     }
       
     switch (chartId) {

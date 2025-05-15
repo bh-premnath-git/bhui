@@ -788,7 +788,7 @@ const makePipeline = async (result: any,isModify=true) => {
   console.log(debuggedNodesList)
   console.log(pipelineDtl)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
+    pipeline_name: `${pipelineName || pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });

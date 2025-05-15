@@ -826,7 +826,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
   
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName
+                params: pipelineName||pipelineDtl?.name
             })).unwrap();
             console.log(countsResponse,"countsResponse")
             
@@ -874,10 +874,10 @@ debuggedNodesList.forEach(checkpoint => {
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName})).unwrap();
+            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName||pipelineDtl?.name})).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-              let countsResponse=await dispatch(getTransformationCount({params:pipelineName})).unwrap();
+              let countsResponse=await dispatch(getTransformationCount({params:pipelineName||pipelineDtl?.name})).unwrap();
               console.log(countsResponse,"countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);

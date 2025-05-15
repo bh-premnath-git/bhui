@@ -336,7 +336,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
-        <div className="px-2 py-4 w-full max-w-md mx-auto">
+        <div className="px-6 py-4 w-full mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
               <div className="flex items-start gap-4 mb-4">

@@ -162,7 +162,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             }
         }
         console.log(selectedConnection, "formData")
-    }, [source, initialData, connectionConfigList]);
+    }, []);
 
     useEffect(() => {
         resolveSchema();

@@ -40,7 +40,7 @@ return (
                         <img className='absolute w-5 h-5' src={`/assets/buildPipeline/connection/${source}.svg`} alt="" style={{ bottom: 0, right: 0 }} />
                     )}
 
-                    {(data.label?.toLowerCase() === 'target' || data.title?.toLowerCase() === 'target') && (
+                    {(data.label?.toLowerCase() === 'target'  && source!=null || data.title?.toLowerCase() === 'target' && source!=null) && (
                         <img className='absolute w-5 h-5' src={`/assets/buildPipeline/connection/${source}.svg`} alt="" style={{ bottom: 0, right: 0 }} />
                     )}
                 </div>

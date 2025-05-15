@@ -30,6 +30,7 @@ import { Terminal, PreviewData } from '@/components/bh-reactflow-comps/builddata
 import { usePipelineContext } from '@/context/designers/DataPipelineContext'
 import { useEventStream } from '@/features/admin/connection/hooks/useEventStream'
 import { useSidebar } from '@/context/SidebarContext'
+import { API_DOMAIN, API_PREFIX_URL, CATALOG_API_PORT } from '@/config/platformenv';
 
 interface Log {
   timestamp: string
@@ -76,7 +77,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
-     url: `http://localhost:8011/api/v1/pipeline/stream-logs/${pipelineDtl?.pipeline_name}`,
+    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${pipelineDtl?.pipeline_name}`,
      token: sessionStorage.getItem("kc_token")!.replace("Bearer ", ""),
      onMessage: (msg) => {
        console.log("SSE:", msg);

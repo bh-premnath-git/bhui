@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
 import { motion } from 'framer-motion'
 import { Zap } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -83,7 +83,7 @@ const mockSQLQueries = {
 // Component to display SQL query
 const SQLView = ({ query }) => {
   return (
-    <pre className="bg-gray-100 p-2 rounded whitespace-pre-wrap">
+    <pre className="bg-gray-700 text-white p-2 rounded whitespace-pre-wrap">
       {query}
     </pre>
   );
@@ -166,7 +166,6 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
         <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Orders by Region"}</h3>
         <ResponsiveContainer width="100%" height="90%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="region" label={{ value: 'Region', position: 'insideBottom', offset: -5 }} />
             <YAxis label={{ value: 'Number of Orders', angle: -90, position: 'insideLeft' }} />
             <Tooltip />
@@ -184,7 +183,6 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
       <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Data Visualization"}</h3>
       <ResponsiveContainer width="100%" height="90%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey={categoryKey || 'id'}
             label={{ value: categoryKey || 'ID', position: 'insideBottom', offset: -5 }}
@@ -214,9 +212,23 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const [chartTitle, setChartTitle] = useState('');
 
   // Function to handle adding data to the dashboard
-  const handleAddToDashboard = (data: any) => {
-    console.log('Data added to dashboard:', data);
-    // Add your logic to integrate with the dashboard here
+  const handleAddToDashboard = (data) => {
+    // Create a custom event with all the necessary chart data
+    const chartData = {
+      data: filteredData,
+      metric: metricToVisualize,
+      category: categoryKey,
+      title: chartTitle,
+      chartType: 'bar', 
+    };
+    
+    // Dispatch a custom event that XplorerMock can listen for
+    const addToDashboardEvent = new CustomEvent('addChartToDashboard', {
+      detail: chartData,
+      bubbles: true
+    });
+    
+    document.dispatchEvent(addToDashboardEvent);
   };
 
   // Handle sending a message
@@ -464,7 +476,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     />
                     <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
                       <p className="leading-relaxed text-black">
-                        Do you want me to analyze the reasons for the latency issue?
+                        Do you want to analyze the Order and other details of this data?
                       </p>
                     </div>
                   </div>

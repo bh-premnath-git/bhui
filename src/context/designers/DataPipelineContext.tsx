@@ -507,13 +507,8 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [fitView]);
 const makePipeline = async (result: any,isModify=true) => {
     let optimised;
-     
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-        console.log(optimised, "optimised");
-        setPipelineJson(optimised);
         let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-    
-    
     
     // Set the pipeline JSON first
     setPipelineJson(optimised);

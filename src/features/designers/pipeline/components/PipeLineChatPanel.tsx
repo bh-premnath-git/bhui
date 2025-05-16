@@ -1,1406 +1,1221 @@
-import { useState, useEffect, useRef, ReactNode, useMemo, useCallback, useTransition } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChatMessages } from "@/hooks/useChatMessages";
-import { AIChatInput } from "@/components/shared/AIChatInput";
-import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { useLocation, useNavigate } from "react-router-dom";
-import { usePipelineContext } from "@/context/designers/DataPipelineContext";
-import { usePipeLineChat } from "@/context/designers/PipeLineChatContext";
-import { useReactFlow, Node, Edge } from "reactflow";
-import { apiService } from '@/lib/api/api-service';
-import { Plus, MessageSquare, ChevronDown, Check, X, Filter, Database, FileText, Layers } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { CATALOG_API_PORT } from "@/config/platformenv";
-import { ReaderOptionsForm } from "@/components/bh-reactflow-comps/builddata/ReaderOptionsForm";
-import TargetPopUp from "@/components/bh-reactflow-comps/TargetPopUp";
-import { DataSource } from "@/types/data-catalog/dataCatalog";
-import CreateFormFormik from "./form-sections/CreateForm";
-import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
-import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
-import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
-import { motion } from 'framer-motion';
-import SuggestionButton from "./SuggestionButton";
-import { cn } from "@/lib/utils";
-import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
+  import React, { useState, useEffect } from 'react';
+  import { ScrollArea } from '@/components/ui/scroll-area';
+  import { AIChatInput } from '@/components/shared/AIChatInput';
+  import { motion } from 'framer-motion';
+  import { addEdge } from 'reactflow';
+  import SuggestionButton from './SuggestionButton'; // Import the SuggestionButton
+  import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+  import { Input } from '@/components/ui/input';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+  import { Button } from '@/components/ui/button';
+  import { useForm } from 'react-hook-form';
+  import { zodResolver } from '@hookform/resolvers/zod';
+  import * as z from 'zod';
+  import { apiService } from '@/lib/api/api-service';
+  import { toast } from 'sonner';
+  import { CATALOG_API_PORT } from '@/config/platformenv';
+  import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/ReaderOptionsForm';
+  import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+  import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.json';
+  import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
+  import { useAppDispatch } from '@/hooks/useRedux';
+  import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
+  import { Dialog, DialogContent } from '@/components/ui/dialog';
+  import CreateFormFormik from './form-sections/CreateForm';
 
+  // Define the form schema based on Reader.json
+  const readerFormSchema = z.object({
+    reader_name: z.string().min(1, { message: "Reader name is required" }),
+    source_type: z.enum(["File", "Relational"]),
+    // Additional fields that will be shown conditionally
+    file_type: z.string().optional(),
+    query: z.string().optional(),
+  });
 
-export const PipeLineChatPanel = ({
-  onClose,
-  imageSrc = "/assets/ai/ai.svg",
-  onPipelineCreated,
-  className = "",
-  color = '#009459'
-}: any) => {
+  type ReaderFormValues = z.infer<typeof readerFormSchema>;
 
-  const filteredNodes = useMemo(() => nodeData.nodes, []);
+  // Define the type for suggestion buttons
+  type Suggestion = {
+    text: string;
+    onClick: () => void;
+  };
 
+  // Define the type for chat messages
+  type ChatMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+    suggestions?: Suggestion[];
+    formData?: {
+      schema: any;
+      sourceColumns: any[];
+      currentNodeId: string;
+      initialValues: any;
+    };
+  };
 
-  const dispatch = useAppDispatch();
-  const {
-    // State variables
-    input,
-    setInput,
-    messages,
-    isProcessing,
-    pipelineJson,
-    isNewChat,
-    currentSourceData,
-    foundSources,
-    awaitingSourceSelection,
-    sourceSuggestions,
-    sourceColumns,
-    mode,
-    step,
-    pipelineName,
-    pipelineDescription,
-    selectedSources,
-    transformations,
-    targetConfig,
-    transformationSubStep,
-    showDependencySelection,
-    dependencyOptions,
-    selectedDependency,
-    selectedDependencies,
-    isMultiSelect,
-    minDependencies,
-    useSourceConnection,
-    filterCondition,
-    targetName,
-    activeForm,
-    formInitialValues,
-    filterFormInitialValues,
-    schemaFormInitialValues,
-    readerFormInitialValues,
-    writerFormInitialValues,
-    sorterFormInitialValues,
-    aggregatorFormInitialValues,
-    joinFormInitialValues,
-    unionFormInitialValues,
-    filterSchema,
-    schemaTransformationSchema,
-    sorterSchema,
-    aggregatorSchema,
-    joinSchema,
-    unionSchema,
-    dropSchema,
-    selectSchema,
-    filterName,
-    schemaName,
-    sorterName,
-    aggregatorName,
-    joinName,
-    unionName,
-    dropName,
-    selectName,
-    showFilterForm,
-    showSchemaForm,
-    showReaderForm,
-    showWriterForm,
-    showSorterForm,
-    showAggregatorForm,
-    showJoinForm,
-    showUnionForm,
-    showDropForm,
-    showSelectForm,
-    isPending,
-    messagesEndRef,
-    dropFormInitialValues,
-    selectFormInitialValues,
-    addUserMessage,
-    addAssistantMessage,
-    clearMessages,
-    updateLastAssistantMessage,
-    setPipelineJson,
-    setIsNewChat,
-    setCurrentSourceData,
-    setFoundSources,
-    setAwaitingSourceSelection,
-    setSourceSuggestions,
-    setMode,
-    setStep,
-    setPipelineName,
-    setPipelineDescription,
-    setSelectedSources,
-    setTransformations,
-    setTargetConfig,
-    setTransformationSubStep,
-    setShowDependencySelection,
-    setDependencyOptions,
-    setSelectedDependency,
-    setSelectedDependencies,
-    setIsMultiSelect,
-    setMinDependencies,
-    setUseSourceConnection,
-    setFilterCondition,
-    setTargetName,
-    setActiveForm,
-    setFormInitialValues,
-    setFilterFormInitialValues,
-    setSchemaFormInitialValues,
-    setReaderFormInitialValues,
-    setWriterFormInitialValues,
-    setSorterFormInitialValues,
-    setAggregatorFormInitialValues,
-    setJoinFormInitialValues,
-    setUnionFormInitialValues,
-    setFilterSchema,
-    setSchemaTransformationSchema,
-    setSorterSchema,
-    setAggregatorSchema,
-    setJoinSchema,
-    setUnionSchema,
-    setFilterName,
-    setSchemaName,
-    setSorterName,
-    setAggregatorName,
-    setJoinName,
-    setUnionName,
-    setShowFilterForm,
-    setShowSchemaForm,
-    setShowReaderForm,
-    setShowWriterForm,
-    setShowSorterForm,
-    setShowAggregatorForm,
-    setShowJoinForm,
-    setShowUnionForm,
-    startTransition,
-    handleSend,
-    resetPipelineCreationState,
-    startPipelineCreation,
-    generatePipelineTemplate,
-    handleSourceStep,
-    processSelectedSource,
-    handleTransformationsStep,
-    handleConfirmStep,
-    handleDependencySelection,
-    updatePipelineWithDependency,
-    handleReaderOptionsUpdate,
-    handleTargetUpdate,
-    handleReaderFormSubmit,
-    handleFilterFormSubmit,
-    handleSchemaFormSubmit,
-    handleSorterFormSubmit,
-    handleAggregatorFormSubmit,
-    handleJoinFormSubmit,
-    handleUnionFormSubmit,
-    handleMultiDependencySelection,
-    handleDropFormSubmit,
-    setShowDropForm,
-    handleSelectFormSubmit,
-    setShowSelectForm,
-  } = usePipeLineChat();
-  const { nodes, edges,handleNodeClick } = usePipelineContext()
-
-  // Debug log to see available nodes
-  useEffect(() => {
-    if (nodes && nodes.length > 0) {
-      console.log("Available nodes in PipeLineChatPanel:", nodes);
-    }
-  }, [nodes]);
-
-  // Function to find the appropriate node ID based on transformation type
-  const findNodeIdByType = useCallback((transformationType: string) => {
-    const existingNodesOfType = nodes
-      .filter(node => node.id.startsWith(transformationType))
-      .map(node => {
-        const match = node.id.match(new RegExp(`${transformationType}_(\\d+)`));
-        return match ? parseInt(match[1]) : 0;
-      })
-      .filter(num => !isNaN(num));
-    console.log(existingNodesOfType)
-    const nextNumber = existingNodesOfType.length > 0
-      ? Math.max(...existingNodesOfType) + 1
-      : 1;
-
-    const fallbackId = `${transformationType}_${nextNumber}`;
-    console.log(`No matching node found for ${transformationType}, using generated ID: ${fallbackId}`);
-    return nodes.filter(node => node.id.startsWith(transformationType))?.[0]?.id || fallbackId;
-  }, [nodes]);
-
-  // Fetch connection config list only once when component mounts
-  useEffect(() => {
-    dispatch(getConnectionConfigList({}));
-                      addAssistantMessage("How can I assist you with your pipeline?");
-
-  }, [dispatch]);
-
-  // Update pipeline template whenever selectedDependency changes
-  useEffect(() => {
-    if (selectedDependency) {
-      console.log("selectedDependency changed, updating pipeline template");
-      // Use a timeout to ensure all state updates have been processed
-      setTimeout(() => {
-        const updatedTemplate = generatePipelineTemplate();
-        setPipelineJson(updatedTemplate);
-        console.log("Pipeline template updated after dependency change:", updatedTemplate);
-      }, 0);
-    }
-  }, [selectedDependency, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-
-  // Update pipeline template whenever transformationSubStep changes to a dependency selection step
-  useEffect(() => {
-    const isDependencyStep = transformationSubStep.includes('dependency');
-    if (isDependencyStep) {
-      console.log("Dependency selection step detected:", transformationSubStep);
-      // Use a timeout to ensure all state updates have been processed
-      setTimeout(() => {
-        const updatedTemplate = generatePipelineTemplate();
-        setPipelineJson(updatedTemplate);
-        console.log("Pipeline template updated for dependency selection step:", updatedTemplate);
-      }, 0);
-    }
-  }, [transformationSubStep, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-
-  // Update pipeline template whenever showDependencySelection changes to true
-  useEffect(() => {
-    if (showDependencySelection) {
-      console.log("Dependency selection UI shown, preparing pipeline template");
-      // Use a timeout to ensure all state updates have been processed
-      setTimeout(() => {
-        const updatedTemplate = generatePipelineTemplate();
-        setPipelineJson(updatedTemplate);
-        console.log("Pipeline template updated for dependency selection UI:", updatedTemplate);
-      }, 0);
-    }
-  }, [showDependencySelection, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Show writer form when the message contains "Please configure your output target below"
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (
-        lastMessage.role === 'assistant' &&
-        lastMessage.content.includes('Please configure your output target below') &&
-        transformationSubStep === 'target_form'
-      ) {
-        setShowWriterForm(true);
+  const PipeLineChatPanel = () => {
+    const dispatch = useAppDispatch();
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState('');
+    const [showReaderForm, setShowReaderForm] = useState(false);
+    const [showReaderOptionsForm, setShowReaderOptionsForm] = useState(false);
+    const [selectedSourceType, setSelectedSourceType] = useState<"File" | "Relational" | null>(null);
+    const [readerNode, setReaderNode] = useState<any>(null);
+    const [selectedDataSource, setSelectedDataSource] = useState<any>(null);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [selectedSchema, setSelectedSchema] = useState<any>(null);
+    const [sourceColumns, setSourceColumns] = useState<any[]>([]);
+    const [formsHanStates, setformsHanStates] = useState<Record<string, any>>({});
+    const pipelineContext = usePipelineContext();
+    const { 
+      handleNodeClick, 
+      addNodeToHistory, 
+      setUnsavedChanges, 
+      nodes, 
+      edges, 
+      onConnect, 
+      setEdges,
+      handleAlignHorizontal,
+      handleFormSubmit,
+      pipelineDtl,
+      setFormStates,formStates
+    } = pipelineContext;
+    
+    // Initialize the Reader node from node_display.json and load connection configs
+    useEffect(() => {
+      // Find the Reader node from the node_display.json file
+      const reader = nodeDisplayData.nodes.find(node => node.ui_properties.module_name === "Reader");
+      if (reader) {
+        setReaderNode(reader);
       }
-    }
-  }, [messages, transformationSubStep]);
-
-  // Initialize writer form when transformationSubStep changes to 'target_form'
-  useEffect(() => {
-    if (transformationSubStep === 'target_form') {
-      // Create default initial values if none exist
-      if (!writerFormInitialValues) {
-        const defaultValues = {
-          name: targetName || 'write_output',
-          target: {
-            target_name: targetName || 'output_data',
-            target_type: targetConfig.type || 'File',
-            load_mode: 'append',
-            connection: {
-              connection_type: targetConfig.connectionType || 'Local',
-              file_path_prefix: targetConfig.filePath || 'examples/'
-            },
-            file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
-          },
-          file_type: targetConfig.fileFormat || 'CSV',
-          write_options: {
-            header: true,
-            sep: ',',
-            createDisposition: 'CREATE_IF_NEEDED',
-            writeMethod: 'APPEND'
+      
+      // Load connection configs for the ReaderOptionsForm
+      dispatch(getConnectionConfigList({}));
+    }, [dispatch]);
+    
+    // Track the last added transformation node
+    const [lastAddedTransformation, setLastAddedTransformation] = useState<any>(null);
+    
+    // Track node changes to handle dependency selection
+    useEffect(() => {
+      // If we have a new transformation node added
+      if (nodes.length > 0 && lastAddedTransformation) {
+        const lastNode = nodes[nodes.length - 1];
+        
+        // Check if this is a new node that needs dependencies
+        if (lastNode && lastNode.data.label === lastAddedTransformation.type) {
+          console.log('New transformation node detected:', lastNode);
+          
+          // Check if the transformation needs dependencies
+          const maxInputs = lastAddedTransformation.maxInputs;
+          if (maxInputs > 0 || maxInputs === "unlimited") {
+            console.log(`Asking for dependencies for ${lastAddedTransformation.type}`);
+            
+            // Clear the last added transformation to avoid repeated prompts
+            setLastAddedTransformation(null);
+            
+            // Ask for dependencies after a short delay
+            setTimeout(() => {
+              askForDependencies(lastAddedTransformation.node, maxInputs, lastNode.id);
+            }, 500);
+          } else {
+            // No dependencies needed, show confirmation
+            setLastAddedTransformation(null);
+            setTimeout(() => {
+              setMessages(prevMessages => [
+                ...prevMessages,
+                { 
+                  role: 'assistant', 
+                  content: `Great! I've added a ${lastAddedTransformation.type} transformation to your pipeline. What would you like to do next?`,
+                  suggestions: [
+                    { text: "Add another source", onClick: handleAddAnotherSource },
+                    { text: "Add another transformation", onClick: handleShowTransformations }
+                  ]
+                },
+              ]);
+            }, 300);
           }
-        };
-
-        console.log("Initializing writer form values for target_form:", defaultValues);
-        setWriterFormInitialValues(defaultValues);
+        }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [nodes, lastAddedTransformation]);
+    
+    // Track edge changes to handle connection visualization
+    useEffect(() => {
+      console.log('Current edges:', edges);
+    }, [edges]);
 
-      // Ensure the form is shown
-      setShowWriterForm(true);
-    }
-  }, [transformationSubStep, targetName, targetConfig, writerFormInitialValues]);
+    const form = useForm<ReaderFormValues>({
+      resolver: zodResolver(readerFormSchema),
+      defaultValues: {
+        reader_name: "",
+        source_type: "File",
+      },
+    });
 
-  // No need for a separate updatePipelineJson function since we've overridden setPipelineJson
+    const handleSend = () => {
+      const trimmedInput = input.trim();
+      if (!trimmedInput) return;
+      setMessages([...messages, { role: 'user', content: trimmedInput }]);
+      setInput('');
+      // Simulate assistant response
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { role: 'assistant', content: 'Processing your request...' },
+        ]);
+      }, 500);
+    };
 
-  // Escape key handler removed as chat panel is always visible
-  // No need to close the panel with Escape key
+    const handleCreatePipeline = () => {
+      // Define what happens when the "Create Pipeline" suggestion is clicked
+      setMessages([...messages, { role: 'user', content: 'Create a data pipeline' }]);
+      // Simulate assistant response
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "Let's start creating your data pipeline. First, I need some information about the data source:"
+          },
+        ]);
+        setShowReaderForm(true);
+      }, 500);
+    };
 
-  // Panel is always open, so we don't need to clear state when closed
-  // This effect has been removed
+    const onSubmitReaderForm = async (data: ReaderFormValues) => {
+      // Add the form data to the messages
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Searching for reader: ${data.reader_name}`
+        },
+      ]);
 
-
-
-
-  // State for additional pipeline configuration
-
-  // Load schemas from mdata.json
-  useEffect(() => {
-    if (mdataJson && mdataJson.schema) {
-      // Find the filter schema
-      const filterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Filter");
-      if (filterSchemaFromMdata) {
-        // Add nodeId to the schema to match the format expected by CreateFormFormik
-        setFilterSchema({
-          ...filterSchemaFromMdata,
-          nodeId: 'filter_transformation'
+      // Hide the form
+      setShowReaderForm(false);
+      
+      // Show loading message
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'assistant', 
+          content: `Searching for data sources matching "${data.reader_name}"...`
+        },
+      ]);
+      
+      try {
+        // Call the API to get data sources
+        const response: any = await apiService.get({
+          portNumber: CATALOG_API_PORT,
+          url: `/data_source/list/`,
+          usePrefix: true,
+          method: 'GET',
+          params: {
+            data_src_name: data.reader_name,
+            offset: 0,
+            limit: 10,
+            order_desc: false
+          }
         });
-      }
-
-      // Find the schema transformation schema
-      const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
-      if (schemaTransformationSchemaFromMdata) {
-        // Add nodeId to the schema to match the format expected by CreateFormFormik
-        setSchemaTransformationSchema({
-          ...schemaTransformationSchemaFromMdata,
-          nodeId: 'schema_transformation'
-        });
-      }
-
-      console.log("Loaded schemas from mdata.json:", {
-        filter: filterSchemaFromMdata,
-        schemaTransformation: schemaTransformationSchemaFromMdata
-      });
-    }
-  }, []);
-
-
-  return (
-    <>
-      {/* Chat panel - always visible, not sliding */}
-      <div className={`flex flex-col h-full p-4 ${className}`}>
-        {/* Message Area */}
-        <div className="flex-1 mt-4 overflow-hidden">
-          { mode === 'create' && messages.length === 1 ? (
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-6">
-                {messages.map((message, i) => (
-                  <div key={i}>
-                    <div className={cn(
-                      "flex items-start gap-3 my-2",
-                      message.role === "assistant" ? "justify-start flex-row" : "justify-start flex-row"
-                    )}>
-                      {message.role === "assistant" ? (
-                        <div className="h-8 w-8 rounded-full bg-green-500 overflow-hidden mt-2">
-                        </div>
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-black overflow-hidden mt-2">
-                        </div>
-                      )}
-                      <div className={cn(
-                        "px-4 py-2 max-w-[80%] relative rounded-lg",
-                        message.role === "assistant" 
-                          ? "bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100" 
-                          : "bg-primary text-white before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-primary"
-                      )}>
-                        {message.content}
-                      </div>
-                    </div>
-                    {i === messages.length - 1 && message.role === "assistant" && (
-                      <div className="flex flex-col gap-2 justify-start mt-2 ml-11">
-                          <SuggestionButton
-                            text="Create a data pipeline"
-                            onClick={() => {
-                             
-                                addUserMessage("Create a data pipeline");
-                                addAssistantMessage("Let's start. Add a data source (e.g., sales_data)");
-                                setStep('source');
-                                setPipelineName("New Pipeline");
-                                setPipelineDescription("Data pipeline created with AI assistant");
-                                const pipelineTemplate = generatePipelineTemplate();
-                                setPipelineJson(pipelineTemplate);
-                            }}
-                            index={0}
-                            assistantColor={color}
-                          />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-          ) : (
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-6">
-                {messages.map((message, i) => (
-                  <div>
-                    <div key={i} className="flex justify-start gap-2 items-center">
-                      <div
-                        key={i}
-                        className="flex items-center gap-3 my-2 justify-start"
-                      >
-                        {message.role === "assistant" ? (
-                          <div className="h-8 w-8 rounded-full bg-green-500 flex-shrink-0"></div>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-black flex-shrink-0"></div>
-                        )}
-
-
-                        {/* Suggestion buttons for guided flow */}
-
-                      </div>
-                      <div
-                        className={cn(
-                          "rounded-lg px-4 py-2 max-w-[90%] relative",
-                          "bg-gray-100 text-black",
-                          )}
-                      >
+        
+        // Check if we got results
+        if (response && response.length > 0) {
+          // Show success message
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { 
+              role: 'assistant', 
+              content: `I found ${response.length} data source(s) matching "${data.reader_name}".`
+            },
+          ]);
+          
+          // Show data sources as suggestion buttons
+          setTimeout(() => {
+            setMessages(prevMessages => [
+              ...prevMessages,
+              { 
+                role: 'assistant', 
+                content: "Please select a data source to add to your pipeline:",
+                suggestions: response.map(item => ({
+                  text: item.data_src_name,
+                  onClick: () => {
+                    if (readerNode) {
+                      setUnsavedChanges();
+                      
+                      addNodeToHistory();
+                      
+                      // Create initial data for the ReaderOptionsForm
+                      const initialData = {
+                        reader_name: item.data_src_name,
+                        source: {
+                          ...item,
+                          name: item.data_src_name,
+                          type: item.connection_config?.custom_metadata?.connection_type === "Local" ? "File" : "Relational",
+                          connection: {
+                            ...item.connection_config?.custom_metadata,
+                            name: item.connection_config?.connection_config_name,
+                            connection_config_id: item.connection_config_id
+                          }
+                        }
+                      };
+                      
+                      // Add a message to show that the data source was selected
+                      setMessages(prevMessages => [
+                        ...prevMessages,
+                        { 
+                          role: 'user', 
+                          content: `Selected data source: ${item.data_src_name}`
+                        },
+                      ]);
+                      
+                      // Add a message asking to configure the reader
+                      setTimeout(() => {
+                        setMessages(prevMessages => [
+                          ...prevMessages,
+                          { 
+                            role: 'assistant', 
+                            content: `Great! Now let's configure the reader for "${item.data_src_name}". Please review and adjust the settings below:`
+                          },
+                        ]);
                         
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                        // Set the selected data source and show the ReaderOptionsForm
+                        setSelectedDataSource(initialData);
+                        setShowReaderOptionsForm(true);
+                      }, 300);
+                    } else {
+                      toast.error("Reader node not found. Please try again.");
+                    }
+                  }
+                }))
+              },
+            ]);
+          }, 300);
+        } else {
+          // No results found
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { 
+              role: 'assistant', 
+              content: `I couldn't find any data sources matching "${data.reader_name}". Would you like to create a new one?`,
+              suggestions: [
+                { text: "Yes, create new", onClick: () => handleCreateNewDataSource(data.reader_name) },
+                { text: "No, try another search", onClick: () => handleRetrySearch() }
+              ]
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("API Error:", error);
+        toast.error("Failed to fetch data sources. Please try again.");
+        
+        // Show error message
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "I encountered an error while searching for data sources. Please try again or check your connection."
+          },
+        ]);
+      }
+    };
 
-                        {/* Show inline forms after specific assistant messages */}
-                        {message.role === "assistant" && i === messages.length - 1 && (
-                          <>
-                            {/* Source selection suggestion buttons */}
-                            {awaitingSourceSelection && sourceSuggestions.length > 0 && (
-                              <div className="mt-4 flex flex-wrap gap-2 justify-start">
-                                {sourceSuggestions}
-                              </div>
-                            )}
+    
+    const handleCreateNewDataSource = (readerName: string) => {
+      // Add the user's selection to the messages
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Create new data source: ${readerName}`
+        },
+      ]);
+      
+      // Create a mock data source object with the provided name
+      const mockDataSource = {
+        data_src_name: readerName,
+        data_src_id: `new-${Date.now()}`, // Generate a temporary ID
+        file_name: null,
+        connection_config: {
+          connection_config_name: "New Connection",
+          custom_metadata: {
+            connection_type: "Local",
+            file_path_prefix: ""
+          }
+        }
+      };
+      
+      // Add a message to confirm
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "I'll create a new data source for you. Would you like to add it to your pipeline now?",
+            suggestions: [
+              { 
+                text: "Yes, add to pipeline", 
+                onClick: () => {
+                  if (readerNode) {
+                    setUnsavedChanges();
+                    addNodeToHistory();
+                    handleNodeClick(readerNode, mockDataSource);
+                    
+                    setMessages(prevMessages => [
+                      ...prevMessages,
+                      { 
+                        role: 'user', 
+                        content: `Add "${readerName}" to pipeline`
+                      },
+                    ]);
+                    
+                    setTimeout(() => {
+                      setMessages(prevMessages => [
+                        ...prevMessages,
+                        { 
+                          role: 'assistant', 
+                          content: `Great! I've added a Reader node with the new "${readerName}" data source to your pipeline. What would you like to do next?`,
+                          suggestions: [
+                            { text: "Add another source", onClick: handleAddAnotherSource },
+                            { text: "Add transformation", onClick: handleShowTransformations }
+                          ]
+                        },
+                      ]);
+                    }, 300);
+                  } else {
+                    toast.error("Reader node not found. Please try again.");
+                  }
+                }
+              },
+              { 
+                text: "No, configure first", 
+                onClick: () => handleSourceTypeSelection(readerName, "File") 
+              }
+            ]
+          },
+        ]);
+      }, 500);
+    };
+    
+    const handleRetrySearch = () => {
+      // Add the user's selection to the messages
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: "Try another search"
+        },
+      ]);
+      
+      // Show the form again
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "Please enter a different reader name to search:"
+          },
+        ]);
+        setShowReaderForm(true);
+      }, 500);
+    };
+    
+    const handleSourceTypeSelection = async (readerName: string, sourceType: string) => {
+      // Add the user's selection to the messages
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Selected source type: ${sourceType}`
+        },
+      ]);
+      
+      // Create initial data for the ReaderOptionsForm
+      const initialData = {
+        reader_name: readerName,
+        source: {
+          name: readerName,
+          type: sourceType,
+          data_src_name: readerName,
+          data_src_id: `new-${Date.now()}`,
+          connection: {
+            connection_type: sourceType === "File" ? "Local" : "Postgres",
+            file_path_prefix: sourceType === "File" ? "data" : "",
+            name: "New Connection"
+          }
+        }
+      };
+      
+      // Set the selected data source and show the ReaderOptionsForm
+      setSelectedDataSource(initialData);
+      setShowReaderOptionsForm(true);
+      
+      // Create a mock data source object with the provided name and source type
+      const mockDataSource = {
+        data_src_name: readerName,
+        data_src_id: `new-${Date.now()}`, // Generate a temporary ID
+        file_name: sourceType === "File" ? `${readerName}.csv` : null,
+        connection_config: {
+          connection_config_name: "New Connection",
+          custom_metadata: {
+            connection_type: sourceType === "File" ? "Local" : "Postgres",
+            file_path_prefix: sourceType === "File" ? "data" : ""
+          }
+        }
+      };
+      
+      
+     
+    };
+    
+    // Handle the submission of the ReaderOptionsForm
+    const handleReaderOptionsSubmit = (sourceData: any) => {
+      // Add a message to show the configuration was saved
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Configured reader: ${sourceData.sourceData.data.label}`
+        },
+      ]);
+      
+      // Hide the form
+      setShowReaderOptionsForm(false);
+      
+      if (readerNode) {
+        // Mark unsaved changes
+        setUnsavedChanges();
+        
+        // Add node to history for undo functionality
+        addNodeToHistory();
+        
+        // Add the node to the pipeline
+        handleNodeClick(readerNode, sourceData.sourceData.data.source);
+        
+        // Add a confirmation message with transformation suggestions
+        setTimeout(() => {
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { 
+              role: 'assistant', 
+              content: `Great! I've added a Reader node with the "${sourceData.sourceData.data.label}" data source to your pipeline. What would you like to do next?`,
+              suggestions: [
+                { text: "Add another source", onClick: handleAddAnotherSource },
+                { text: "Add transformation", onClick: handleShowTransformations }
+              ]
+            },
+          ]);
+        }, 300);
+      } else {
+        toast.error("Reader node not found. Please try again.");
+      }
+    };
+    
+    // Function to handle adding another source
+    const handleAddAnotherSource = () => {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Add another source`
+        },
+      ]);
+      
+      // Show the reader form again
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "Let's add another data source to your pipeline. Please enter a reader name to search:"
+          },
+        ]);
+        setShowReaderForm(true);
+      }, 300);
+    };
+    
+    // Function to handle showing transformation options
+    const handleShowTransformations = () => {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Show transformation options`
+        },
+      ]);
+      
+      // Get all transformation nodes from nodeDisplayData (excluding Reader)
+      const transformationNodes = nodeDisplayData.nodes.filter(
+        node => node.ui_properties.module_name !== "Reader"
+      );
+      
+      // Show transformation options as suggestion buttons
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: "Here are the available transformations you can add to your pipeline:",
+            suggestions: transformationNodes.map(node => ({
+              text: node.ui_properties.module_name,
+              onClick: () => {
+                // Add a message to show the selection
+                setMessages(prevMessages => [
+                  ...prevMessages,
+                  { 
+                    role: 'user', 
+                    content: `Add ${node.ui_properties.module_name} transformation`
+                  },
+                ]);
+                
+                // Mark unsaved changes
+                setUnsavedChanges();
+                
+                // Add node to history for undo functionality
+                addNodeToHistory();
+                
+                // Store the transformation info for later use
+                const transformationInfo = {
+                  type: node.ui_properties.module_name,
+                  maxInputs: node.ui_properties.ports.maxInputs,
+                  node: node
+                };
+                
+                // Set the last added transformation to track in useEffect
+                setLastAddedTransformation(transformationInfo);
+                
+                // Add the transformation node to the pipeline
+                handleNodeClick(node);
+                
+                // Add a message to confirm the transformation was added
+                setTimeout(() => {
+                  setMessages(prevMessages => [
+                    ...prevMessages,
+                    { 
+                      role: 'assistant', 
+                      content: `Adding a ${node.ui_properties.module_name} transformation to your pipeline...`
+                    },
+                  ]);
+                }, 300);
+                
+                // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
+              }
+            }))
+          },
+        ]);
+      }, 300);
+    };
+    
+    // Function to ask for dependencies based on maxInputs
+    const askForDependencies = (node, maxInputs, targetNodeId) => {
+      console.log(`askForDependencies called for ${node.ui_properties.module_name} with maxInputs: ${maxInputs}`);
+      console.log(`Target node ID: ${targetNodeId}`);
+      console.log('All nodes in context:', nodes);
+      
+      // Filter out nodes that can be used as dependencies
+      const availableDependencies = nodes.filter(existingNode => 
+        // Exclude the target node itself
+        existingNode.id !== targetNodeId
+      );
+      
+      console.log('Available dependencies:', availableDependencies);
+      
+      if (availableDependencies.length === 0) {
+        // No available dependencies, show message
+        setTimeout(() => {
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { 
+              role: 'assistant', 
+              content: `I've added a ${node.ui_properties.module_name} transformation to your pipeline, but there are no existing nodes to connect it to. Add more nodes first, then you can create connections.`,
+              suggestions: [
+                { text: "Add another source", onClick: handleAddAnotherSource },
+                { text: "Add another transformation", onClick: handleShowTransformations }
+              ]
+            },
+          ]);
+        }, 300);
+        return;
+      }
+      
+      // Determine how many dependencies to ask for
+      const numDependenciesToAsk = maxInputs === "unlimited" ? 
+        Math.min(availableDependencies.length, 5) : // Limit to 5 for unlimited
+        Math.min(maxInputs, availableDependencies.length);
+      
+      // Create a message asking for dependencies
+      const dependencyMessage = maxInputs === 1 ?
+        `The ${node.ui_properties.module_name} transformation needs a dependency. Select a node to connect it to:` :
+        `The ${node.ui_properties.module_name} transformation can have up to ${maxInputs === "unlimited" ? "multiple" : maxInputs} dependencies. Select nodes to connect it to:`;
+      
+      // Show message asking for dependencies
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: dependencyMessage,
+            suggestions: availableDependencies.map(depNode => ({
+              text: depNode.data.title || depNode.data.label,
+              onClick: () => handleDependencySelection(depNode, node, targetNodeId, maxInputs, numDependenciesToAsk)
+            }))
+          },
+        ]);
+      }, 300);
+    };
+    
+    // Function to handle dependency selection
+    const handleDependencySelection = (sourceNode, targetNodeType, targetNodeId, maxInputs, numDependenciesToAsk) => {
+      // Add a message to show the selection
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Connect to: ${sourceNode.data.title || sourceNode.data.label}`
+        },
+      ]);
+      
+      // Create a connection between the source node and the target node
+      const connection = {
+        source: sourceNode.id,
+        target: targetNodeId
+      };
+      
+      // Create a unique edge ID
+      const edgeId = `e${sourceNode.id}-${targetNodeId}`;
+      
+      // Create a complete edge object with all required properties
+      const newEdge = {
+        id: edgeId,
+        source: sourceNode.id,
+        target: targetNodeId,
+        type: 'default',
+        animated: false,
+        style: { stroke: '#b1b1b7', strokeWidth: 2 }
+      };
+      
+      console.log('Creating edge:', newEdge);
+      console.log('Current edges before connection:', edges);
+      
+      // Add the edge directly to the edges array
+      setEdges(prevEdges => {
+        // Check if the edge already exists to avoid duplicates
+        const edgeExists = prevEdges.some(
+          edge => edge.source === sourceNode.id && edge.target === targetNodeId
+        );
+        
+        if (edgeExists) {
+          console.log('Edge already exists, not adding duplicate');
+          return prevEdges;
+        }
+        
+        return [...prevEdges, newEdge];
+      });
+      
+      // Call onConnect to ensure any side effects are triggered
+      // This is important as it may update node forms or other state
+      onConnect(connection);
+      
+      // Force a re-render of the ReactFlow component
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        
+        // Try to trigger a layout update to make the connection visible
+        if (pipelineContext.handleAlignHorizontal) {
+          pipelineContext.handleAlignHorizontal();
+        }
+      }, 100);
+      
+      // Check if the connection was added after a short delay
+      setTimeout(() => {
+        console.log('Current edges after connection:', edges);
+      }, 500);
+      
+      // If this is a single-input transformation or we've reached the max inputs, show the form
+      if (maxInputs === 1 || numDependenciesToAsk === 1) {
+        console.log("Single input transformation or last dependency selected");
+        console.log("Target node type:", targetNodeType);
+        
+        // Find the schema for this transformation type
+        const transformationType = targetNodeType.ui_properties.module_name;
+        console.log("Transformation type:", transformationType);
+        
+        // Check if schemaData has a schema property (array) or is an array itself
+        const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
+        console.log("Schema array:", schemaArray);
+        
+        const schema = schemaArray.find(s => s.title === transformationType);
+        console.log("Found schema:", schema ? "Yes" : "No", schema);
+        
+        if (schema) {
+          // Set up the schema with the node ID for the form
+          const schemaWithNodeId = {
+            ...schema,
+            nodeId: targetNodeId
+          };
+          
+          // Set the selected schema
+          setSelectedSchema(schemaWithNodeId);
+          
+          // Get column suggestions for the form
+          import('@/lib/pipelineAutoSuggestion').then(module => {
+            module.getColumnSuggestions(targetNodeId, nodes, edges, pipelineContext.pipelineDtl)
+              .then(columns => {
+                console.log(`Got column suggestions for ${transformationType}:`, columns);
+                
+                // Add a message to show that we're configuring the transformation
+                setTimeout(() => {
+                  const newMessage = { 
+                    role: 'assistant', 
+                    content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your ${transformationType} transformation. Now let's configure it:`,
+                    formData: {
+                      schema: schemaWithNodeId,
+                      sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
+                      currentNodeId: targetNodeId,
+                      initialValues: {
+                        ...formsHanStates[targetNodeId],
+                        nodeId: targetNodeId,
+                        dependent_on: edges
+                          .filter(edge => edge.target === targetNodeId)
+                          .map(edge => edge.source)
+                      }
+                    }
+                  };
+                  
+                  console.log("Adding form message to chat (single-input):", newMessage);
+                  
+                  setMessages(prevMessages => {
+                    const newMessages = [...prevMessages, newMessage];
+                    console.log("New messages array (single-input):", newMessages);
+                    return newMessages;
+                  });
+                }, 300);
+              })
+              .catch(err => {
+                console.error('Error getting column suggestions:', err);
+                
+                // Fallback if we can't get column suggestions
+                setTimeout(() => {
+                  const newMessage = { 
+                    role: 'assistant', 
+                    content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your ${transformationType} transformation. Now let's configure it:`,
+                    formData: {
+                      schema: schemaWithNodeId,
+                      sourceColumns: [],
+                      currentNodeId: targetNodeId,
+                      initialValues: {
+                        ...formsHanStates[targetNodeId],
+                        nodeId: targetNodeId,
+                        dependent_on: edges
+                          .filter(edge => edge.target === targetNodeId)
+                          .map(edge => edge.source)
+                      }
+                    }
+                  };
+                  
+                  console.log("Adding form message to chat (fallback):", newMessage);
+                  
+                  setMessages(prevMessages => {
+                    const newMessages = [...prevMessages, newMessage];
+                    console.log("New messages array (fallback):", newMessages);
+                    return newMessages;
+                  });
+                }, 300);
+              });
+          });
+        } else {
+          // Fallback if schema not found
+          setTimeout(() => {
+            setMessages(prevMessages => [
+              ...prevMessages,
+              { 
+                role: 'assistant', 
+                content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your ${targetNodeType.ui_properties.module_name} transformation. What would you like to do next?`,
+                suggestions: [
+                  { text: "Add another source", onClick: handleAddAnotherSource },
+                  { text: "Add another transformation", onClick: handleShowTransformations }
+                ]
+              },
+            ]);
+          }, 300);
+        }
+      } else {
+        // For multi-input transformations, ask for more dependencies
+        const remainingDeps = numDependenciesToAsk - 1;
+        
+        // Get updated list of available dependencies (excluding already selected ones)
+        const connectedNodeIds = edges
+          .filter(edge => edge.target === targetNodeId)
+          .map(edge => edge.source);
+        
+        const availableDependencies = nodes.filter(node => 
+          node.id !== targetNodeId && !connectedNodeIds.includes(node.id)
+        );
+        
+        if (availableDependencies.length === 0 || remainingDeps === 0) {
+          // No more available dependencies or we've reached the limit
+          setTimeout(() => {
+            // Find the target node in the nodes array
+            const targetNode = nodes.find(node => node.id === targetNodeId);
+            
+            if (targetNode) {
+              // Find the schema for this transformation type
+              const transformationType = targetNodeType.ui_properties.module_name;
+              console.log("Multi-input transformation type:", transformationType);
+              
+              // Check if schemaData has a schema property (array) or is an array itself
+              const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
+              console.log("Multi-input schema array:", schemaArray);
+              
+              const schema = schemaArray.find(s => s.title === transformationType);
+              console.log("Multi-input found schema:", schema ? "Yes" : "No", schema);
+              
+              if (schema) {
+                // Set up the schema with the node ID for the form
+                const schemaWithNodeId = {
+                  ...schema,
+                  nodeId: targetNodeId
+                };
+                
+                // Set the selected schema and open the form
+                setSelectedSchema(schemaWithNodeId);
+                
+                // Get column suggestions for the form
+                import('@/lib/pipelineAutoSuggestion').then(module => {
+                  module.getColumnSuggestions(targetNodeId, nodes, edges, pipelineContext.pipelineDtl)
+                    .then(columns => {
+                      console.log(`Got column suggestions for ${transformationType}:`, columns);
+                      setSourceColumns(columns.map(col => ({ name: col, dataType: 'string' })));
+                      
+                      // Add a message to show that we're configuring the transformation
+                      setMessages(prevMessages => [
+                        ...prevMessages,
+                        { 
+                          role: 'assistant', 
+                          content: `Great! I've connected the dependencies to your ${transformationType} transformation. Now let's configure it:`
+                        },
+                      ]);
+                      
+                      // Instead of opening a dialog, add the form directly to the chat
+                      setTimeout(() => {
+                        console.log(`Adding form for ${transformationType} with node ID ${targetNodeId} to chat`);
+                        
+                        // Add the form to the chat messages
+                        const newMessage = { 
+                          role: 'assistant', 
+                          content: `Please configure your ${transformationType} transformation:`,
+                          formData: {
+                            schema: schemaWithNodeId,
+                            sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
+                            currentNodeId: targetNodeId,
+                            initialValues: {
+                              ...formsHanStates[targetNodeId],
+                              nodeId: targetNodeId,
+                              dependent_on: edges
+                                .filter(edge => edge.target === targetNodeId)
+                                .map(edge => edge.source)
+                            }
+                          }
+                        };
+                        
+                        console.log("Adding form message to chat:", newMessage);
+                        
+                        setMessages(prevMessages => {
+                          const newMessages = [...prevMessages, newMessage];
+                          console.log("New messages array:", newMessages);
+                          return newMessages;
+                        });
+                      }, 300);
+                    })
+                    .catch(err => {
+                      console.error('Error getting column suggestions:', err);
+                      
+                      // Add a message to show that we're configuring the transformation
+                      setMessages(prevMessages => [
+                        ...prevMessages,
+                        { 
+                          role: 'assistant', 
+                          content: `Great! I've connected the dependencies to your ${transformationType} transformation. Now let's configure it:`
+                        },
+                      ]);
+                      
+                      // Instead of opening a dialog, add the form directly to the chat (fallback)
+                      setTimeout(() => {
+                        console.log(`Adding form for ${transformationType} with node ID ${targetNodeId} to chat (fallback)`);
+                        
+                        // Add the form to the chat messages
+                        const newMessage = { 
+                          role: 'assistant', 
+                          content: `Please configure your ${transformationType} transformation:`,
+                          formData: {
+                            schema: schemaWithNodeId,
+                            sourceColumns: [],
+                            currentNodeId: targetNodeId,
+                            initialValues: {
+                              ...formsHanStates[targetNodeId],
+                              nodeId: targetNodeId,
+                              dependent_on: edges
+                                .filter(edge => edge.target === targetNodeId)
+                                .map(edge => edge.source)
+                            }
+                          }
+                        };
+                        
+                        console.log("Adding form message to chat (multi-input fallback):", newMessage);
+                        
+                        setMessages(prevMessages => {
+                          const newMessages = [...prevMessages, newMessage];
+                          console.log("New messages array (multi-input fallback):", newMessages);
+                          return newMessages;
+                        });
+                      }, 300);
+                    });
+                });
+              } else {
+                // Fallback if schema not found
+                setMessages(prevMessages => [
+                  ...prevMessages,
+                  { 
+                    role: 'assistant', 
+                    content: `Great! I've connected the dependencies to your ${targetNodeType.ui_properties.module_name} transformation. What would you like to do next?`,
+                    suggestions: [
+                      { text: "Add another source", onClick: handleAddAnotherSource },
+                      { text: "Add another transformation", onClick: handleShowTransformations }
+                    ]
+                  },
+                ]);
+              }
+            } else {
+              // Fallback if node not found
+              setMessages(prevMessages => [
+                ...prevMessages,
+                { 
+                  role: 'assistant', 
+                  content: `Great! I've connected the dependencies to your ${targetNodeType.ui_properties.module_name} transformation. What would you like to do next?`,
+                  suggestions: [
+                    { text: "Add another source", onClick: handleAddAnotherSource },
+                    { text: "Add another transformation", onClick: handleShowTransformations }
+                  ]
+                },
+              ]);
+            }
+          }, 300);
+        } else {
+          // Ask for more dependencies
+          setTimeout(() => {
+            setMessages(prevMessages => [
+              ...prevMessages,
+              { 
+                role: 'assistant', 
+                content: `You can add ${remainingDeps} more connection${remainingDeps > 1 ? 's' : ''}. Select another node to connect:`,
+                suggestions: availableDependencies.map(depNode => ({
+                  text: depNode.data.title || depNode.data.label,
+                  onClick: () => handleDependencySelection(depNode, targetNodeType, targetNodeId, maxInputs, remainingDeps)
+                }))
+              },
+            ]);
+          }, 300);
+        }
+      }
+    };
+    
+   
+    
+    // Handle closing the ReaderOptionsForm
+    const handleReaderOptionsClose = () => {
+      setShowReaderOptionsForm(false);
+      
+      // Add a message to show the user cancelled
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { 
+          role: 'user', 
+          content: `Cancelled reader configuration`
+        },
+      ]);
+      
+      // Add a message asking what transformation they want next with suggestion buttons
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { 
+            role: 'assistant', 
+            content: `What transformation would you like to add next?`,
+            suggestions: [
+              { text: "Add another source", onClick: handleAddAnotherSource },
+              { text: "Add transformation", onClick: handleShowTransformations }
+            ]
+          },
+        ]);
+      }, 300);
+    };
 
-                            {showReaderForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <ReaderOptionsForm
-                                  initialData={readerFormInitialValues}
-                                  onSubmit={handleReaderFormSubmit}
-                                  onClose={() => setShowReaderForm(false)}
-                                  onSourceUpdate={handleReaderOptionsUpdate}
-                                  nodeId={`source_${currentSourceData?.data_src_id}`}
-                                />
-                              </div>
-                            )}
-
-                            {showFilterForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">F</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Filter Configuration
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for filter */}
-                                  {filterSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...filterSchema,
-                                        initialValues: {
-                                          name: 'filter_transformation',
-                                          condition: '',
-                                          dependent_on: filterFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'filter_transformation',
-                                        condition: '',
-                                        dependent_on: filterFormInitialValues.dependent_on || []
-                                      }}
-                                      onSubmit={handleFilterFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowFilterForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Filter")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading filter form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showSchemaForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">S</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Schema Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for schema transformation */}
-                                  {schemaTransformationSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...schemaTransformationSchema,
-                                        initialValues: {
-                                          name: 'schema_transformation',
-                                          derived_fields: [{ name: '', expression: '' }],
-                                          dependent_on: schemaFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'schema_transformation',
-                                        derived_fields: [{ name: '', expression: '' }],
-                                        dependent_on: schemaFormInitialValues.dependent_on || []
-                                      }}
-                                      onSubmit={handleSchemaFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowSchemaForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("SchemaTransformation")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading schema transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showSorterForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">SO</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Sorter Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for sorter transformation */}
-                                  {sorterSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...sorterSchema,
-                                        initialValues: {
-                                          name: 'sorter_transformation',
-                                          sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
-                                          dependent_on: sorterFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'sorter_transformation',
-                                        sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
-                                        dependent_on: sorterFormInitialValues.dependent_on || []
-                                      }}
-                                      onSubmit={handleSorterFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowSorterForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Sorter")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading sorter transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showAggregatorForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">AG</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Aggregation Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for aggregator transformation */}
-                                  {aggregatorSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...aggregatorSchema,
-                                        initialValues: {
-                                          name: 'aggregator_transformation',
-                                          aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                                          group_by: [{ group_by: 'category' }],
-                                          dependent_on: aggregatorFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'aggregator_transformation',
-                                        aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                                        group_by: [{ group_by: 'category' }],
-                                        dependent_on: aggregatorFormInitialValues.dependent_on || []
-                                      }}
-                                      onSubmit={handleAggregatorFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowAggregatorForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Aggregator")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading aggregator transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showJoinForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">JN</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Join Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for join transformation */}
-                                  {joinSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...joinSchema,
-                                        initialValues: {
-                                          name: 'join_transformation',
-                                          conditions: [{ join_type: 'inner', join_condition: '' }],
-                                          dependent_on: joinFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'join_transformation',
-                                        conditions: [{ join_type: 'inner', join_condition: '' }],
-                                        dependent_on: joinFormInitialValues.dependent_on || []
-                                      }}
-                                      key={`join-form-${JSON.stringify(joinFormInitialValues.dependent_on)}`}
-                                      onSubmit={handleJoinFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowJoinForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Join")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading join transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showUnionForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">UN</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Union Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for union transformation */}
-                                  {unionSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...unionSchema,
-                                        initialValues: {
-                                          name: 'union_transformation',
-                                          union_type: 'distinct',
-                                          dependent_on: unionFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'union_transformation',
-                                        union_type: 'distinct',
-                                        dependent_on: unionFormInitialValues.dependent_on || []
-                                      }}
-                                      key={`union-form-${JSON.stringify(unionFormInitialValues.dependent_on)}`}
-                                      onSubmit={handleUnionFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowUnionForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Union")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading union transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showDropForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">DR</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Drop Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for drop transformation */}
-                                  {dropSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...dropSchema,
-                                        initialValues: {
-                                          name: 'drop_transformation',
-                                          transformation: 'Drop',
-                                          column: [{ column_list: 'column_to_drop_1' }, { column_list: 'column_to_drop_2' }],
-                                          pattern: '',
-                                          dependent_on: dropFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'drop_transformation',
-                                        transformation: 'Drop',
-                                        column: [{ column_list: 'column_to_drop_1' }, { column_list: 'column_to_drop_2' }],
-                                        pattern: '',
-                                        dependent_on: dropFormInitialValues.dependent_on || []
-                                      }}
-                                      key={`drop-form-${JSON.stringify(dropFormInitialValues.dependent_on)}`}
-                                      onSubmit={handleDropFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowDropForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Drop")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading drop transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {showSelectForm && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium">SL</span>
-                                    </div>
-                                    <h2 className="text-lg font-medium text-gray-800">
-                                      Select Transformation
-                                    </h2>
-                                  </div>
-                                </div>
-                                <div className="py-4">
-                                  {/* Use CreateFormFormik directly for select transformation */}
-                                  {selectSchema ? (
-                                    <CreateFormFormik
-                                      schema={{
-                                        ...selectSchema,
-                                        initialValues: {
-                                          name: 'select_transformation',
-                                          transformation: 'Select',
-                                          column_list: [{ name: 'column_to_select_1' }, { name: 'column_to_select_2' }],
-                                          limit: selectFormInitialValues.limit || '',
-                                          dependent_on: selectFormInitialValues.dependent_on || []
-                                        }
-                                      }}
-                                      initialValues={{
-                                        name: 'select_transformation',
-                                        transformation: 'Select',
-                                        column_list: [{ name: 'column_to_select_1' }, { name: 'column_to_select_2' }],
-                                        limit: selectFormInitialValues.limit || '',
-                                        dependent_on: selectFormInitialValues.dependent_on || []
-                                      }}
-                                      key={`select-form-${JSON.stringify(selectFormInitialValues.dependent_on)}`}
-                                      onSubmit={handleSelectFormSubmit}
-                                      nodes={nodes}
-                                      sourceColumns={sourceColumns}
-                                      onClose={() => setShowSelectForm(false)}
-                                      pipelineDtl={pipelineJson}
-                                      currentNodeId={findNodeIdByType("Select")}
-                                      edges={edges}
-                                      isDialog={false}
-                                    />
-                                  ) : (
-                                    <div className="flex justify-center items-center p-4">
-                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                      <span className="ml-2">Loading select transformation form...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-
-
-                            {showDependencySelection && (
-                              <div className="mt-4 rounded-lg bg-gray-100 p-4">
-                                <h3 className="text-lg font-medium mb-2">
-                                  {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union'))
-                                    ? `Select Dependencies (minimum ${minDependencies}, selected: ${selectedDependencies.length})`
-                                    : "Select Dependency"}
-                                </h3>
-                                {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union')) && (
-                                  <p className="text-sm text-gray-600 mb-2">
-                                    Note: Only Join and Union transformations require multiple dependencies.
-                                    Please select at least {minDependencies} dependencies.
-                                  </p>
-                                )}
-                                <div className="flex flex-col space-y-2">
-                                  {dependencyOptions.map((option, index) => (
-                                    <button
-                                      key={index}
-                                      className={`px-4 py-2 ${isMultiSelect && selectedDependencies.includes(option.value)
-                                        ? "bg-blue-300 hover:bg-blue-400"
-                                        : "bg-blue-100 hover:bg-blue-200"
-                                        } rounded-md text-left flex justify-between items-center`}
-                                      onClick={() => {
-                                        // Only use multi-select for join and union transformations
-                                        if (isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union'))) {
-                                          // Toggle selection for multi-select
-                                          if (selectedDependencies.includes(option.value)) {
-                                            // Create a new array without the selected option
-                                            const updatedDependencies = selectedDependencies.filter(dep => dep !== option.value);
-                                            setSelectedDependencies(updatedDependencies);
-                                          } else {
-                                            // Create a new array with the selected option added
-                                            const updatedDependencies = [...selectedDependencies, option.value];
-                                            setSelectedDependencies(updatedDependencies);
-                                          }
-                                        } else {
-                                          // Single selection for all other transformations
-                                          handleDependencySelection(option.value);
-                                        }
-                                      }}
-                                    >
-                                      <span>{option.label}</span>
-                                      {isMultiSelect && selectedDependencies.includes(option.value) && (
-                                        <Check className="h-8 w-8" />
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-
-                                {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union')) && (
-                                  <div className="mt-4 flex justify-end">
-                                    <button
-                                      className={`px-4 py-2 rounded-md ${selectedDependencies.length >= minDependencies
-                                        ? "bg-green-500 hover:bg-green-600 text-white"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        }`}
-                                      onClick={() => {
-                                        if (selectedDependencies.length >= minDependencies) {
-                                          handleMultiDependencySelection(selectedDependencies);
-                                        }
-                                      }}
-                                      disabled={selectedDependencies.length < minDependencies}
-                                    >
-                                      Confirm Selection
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {(showWriterForm || transformationSubStep === 'target_form') && (
-                              <div className="mt-4 rounded-lg bg-gray-100">
-                                <TargetPopUp
-                                  isOpen={false} // Use inline mode with Card component
-                                  onClose={() => {
-                                    setShowWriterForm(false);
-                                    if (transformationSubStep === 'target_form') {
-                                      setTransformationSubStep('select');
-                                    }
-                                  }}
-                                  initialData={writerFormInitialValues || formInitialValues.writer}
-                                  onSourceUpdate={handleTargetUpdate}
-                                  nodeId={`target_${targetName || 'output'}`}
-                                  source={{
-                                    title: targetName || 'output_data',
-                                    source: {
-                                      name: targetName || 'output_data',
-                                      target_type: targetConfig.type || 'File',
-                                      file_type: targetConfig.fileFormat || 'CSV',
-                                      load_mode: targetConfig.customConfig?.loadMode || 'append',
-                                      file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`,
-                                      connection: {
-                                        connection_type: targetConfig.connectionType || 'Local',
-                                        file_path_prefix: targetConfig.filePath || 'examples/'
-                                      }
-                                    }
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </>
-                        )}
+    return (
+      <div className="h-full w-full flex flex-col">
+        <ScrollArea className="flex-1 w-full">
+          <div className="px-6 py-4 w-full mx-auto">
+            {messages.length === 0 ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex-shrink-0" />
+                  <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
+                    <p className="text-lg font-medium text-gray-800 py-1">How can I assist you?</p>
+                  </div>
+                </div>
+                <SuggestionButton
+                  text="Create Pipeline"
+                  onClick={handleCreatePipeline}
+                  assistantColor="#009459"
+                />
+              </motion.div>
+            ) : (
+              <>
+                {messages.map((message, index) => (
+                  <div key={index} className="flex flex-col gap-2 py-2">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-8 h-8 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: message.role === 'assistant' ? '#009459' : '#000000' }}
+                      />
+                      <div
+                        className={`flex-1 rounded-2xl px-2 py-3 shadow ${
+                          message.role === 'assistant' ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                       </div>
-
-
                     </div>
-                    {message.role === "assistant" && i === messages.length - 1 && (
-                      <div className="mt-3 flex flex-wrap ml-12 ">
-                        {mode === 'create' && (
-                          <>
-                            {/* Description question buttons removed as we're skipping this step */}
-
-                            {/* Description input suggestions removed as we're skipping this step */}
-
-                            {/* Add data source buttons - appears immediately after starting pipeline creation */}
-                            {step === 'source' && message.content.includes("start. Add a data source") && (
-                              <div className="flex flex-col gap-2 w-full mt-2">
-                                <div className="text-sm font-medium text-muted-foreground mb-1">Common Data Sources:</div>
-                                <div className="flex flex-col gap-2 justify-start">
-                                  <SuggestionButton
-                                    text="orders"
-                                    onClick={() => {
-                                      const dataSource = "orders.csv";
-                                      addUserMessage(dataSource);
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = generatePipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleSourceStep(dataSource);
+                    
+                    {/* Render suggestion buttons if they exist */}
+                    {message.role === 'assistant' && message.suggestions && (
+                      <div className="ml-12 mt-1 flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, suggestionIndex) => (
+                          <SuggestionButton
+                            key={suggestionIndex}
+                            text={suggestion.text}
+                            onClick={suggestion.onClick}
+                            assistantColor="#009459"
+                            index={suggestionIndex}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Render form if formData exists */}
+                    {message.role === 'assistant' && message.formData && (
+                      <div className="ml-12 mt-3 bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                        
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">{message.formData.schema?.title} Configuration</h3>
+                          
+                          {/* Use the CreateFormFormik component directly */}
+                          <div className="form-wrapper">
+                            <CreateFormFormik
+                              schema={message.formData.schema}
+                              sourceColumns={message.formData.sourceColumns || []}
+                              onClose={() => {
+                                // Handle form close
+                                setMessages(prevMessages => [
+                                  ...prevMessages,
+                                  { 
+                                    role: 'user', 
+                                    content: `Cancelled ${message.formData?.schema?.title} configuration`
+                                  },
+                                  {
+                                    role: 'assistant',
+                                    content: 'What would you like to do next?',
+                                    suggestions: [
+                                      { text: "Add another source", onClick: handleAddAnotherSource },
+                                      { text: "Add another transformation", onClick: handleShowTransformations }
+                                    ]
+                                  }
+                                ]);
+                              }}
+                              currentNodeId={message.formData.currentNodeId}
+                              initialValues={{
+                                        ...formStates[message.formData.currentNodeId],
+                                        nodeId: message.formData.currentNodeId
                                     }}
-                                    index={0}
-                                    assistantColor={color}
-                                  />
-                                  <SuggestionButton
-                                    text="employee"
-                                    onClick={() => {
-                                      const dataSource = "employee.csv";
-                                      addUserMessage(dataSource);
-                                      // Build and update the pipeline template before handling the step
-                                      const pipelineTemplate = generatePipelineTemplate();
-                                      setPipelineJson(pipelineTemplate);
-                                      console.log("Current pipeline template:", pipelineTemplate);
-                                      handleSourceStep(dataSource);
-                                    }}
-                                    index={1}
-                                    assistantColor={color}
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {step === 'source' && messages.length > 3 && selectedSources.length > 0 && (
-                              <div className="flex flex-col gap-2 justify-start">
-                                <SuggestionButton
-                                  text="Add another source"
-                                  onClick={() => {
-                                    addUserMessage("Add another source");
-                                    // Build and update the pipeline template before handling the step
-                                    const pipelineTemplate = generatePipelineTemplate();
-                                    setPipelineJson(pipelineTemplate);
-                                    console.log("Current pipeline template:", pipelineTemplate);
-                                    handleTransformationsStep("Add another source");
-                                  }}
-                                  index={0}
-                                  assistantColor={color}
-                                />
-                                <SuggestionButton
-                                  text="Continue to transformations"
-                                  //tooltip="Proceed to the next step"
-                                  onClick={() => {
-                                    addUserMessage("Continue to transformations");
-                                    // Explicitly set the step to 'transformations' and sub-step to 'select'
-                                    setStep('transformations');
-                                    setTransformationSubStep('select');
-                                    // Build and update the pipeline template before handling the step
-                                    const pipelineTemplate = generatePipelineTemplate();
-                                    setPipelineJson(pipelineTemplate);
-                                    console.log("Current pipeline template:", pipelineTemplate);
-                                    handleTransformationsStep("Continue to transformations");
-                                  }}
-                                  index={1}
-                                  assistantColor={color}
-                                />
-                              </div>
-                            )}
-
-                            {step === 'transformations' && (
-                              transformationSubStep === 'select' ||
-                              messages[messages.length - 1]?.content?.includes("Please select an option from the buttons below") ||
-                              messages[messages.length - 1]?.content?.includes("What type of transformation would you like to add") ||
-                              messages[messages.length - 1]?.content?.includes("Which transformations would you like to add") ||
-                              messages[messages.length - 1]?.content?.includes("Would you like to add another transformation")
-                            ) && (
-                                <div className="flex flex-col gap-2 w-full mt-2 justify-start">
-                                  <div className="text-sm font-medium text-muted-foreground mb-1">Select Transformation(s):</div>
-                                  <div className="flex flex-col gap-2 justify-start">
-                                    <SuggestionButton
-                                      text="Filter Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Filter Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("1. Filter Transformation");
-                                      }}
-                                      index={0}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Schema Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Schema Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("2. Schema Transformation");
-                                      }}
-                                      index={1}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Sorter Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Sorter Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Sorter Transformation");
-                                      }}
-                                      index={2}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Aggregation Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Aggregation Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Aggregation Transformation");
-                                      }}
-                                      index={3}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Join Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Join Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Join Transformation");
-                                      }}
-                                      index={4}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Union Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Union Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Union Transformation");
-                                      }}
-                                      index={5}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Drop Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Drop Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Drop Transformation");
-                                      }}
-                                      index={6}
-                                      assistantColor={color}
-                                    />
-                                    <SuggestionButton
-                                      text="Select Transformation"
-                                      onClick={() => {
-                                        addUserMessage("Select Transformation");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("Select Transformation");
-                                      }}
-                                      index={7}
-                                      assistantColor={color}
-                                    />
-
-                                    <SuggestionButton
-                                      text="Target (Skip Transformations)"
-                                      onClick={() => {
-                                        addUserMessage("Target - Skip transformations not needed");
-                                        // Build and update the pipeline template before handling the step
-                                        const pipelineTemplate = generatePipelineTemplate();
-                                        setPipelineJson(pipelineTemplate);
-                                        console.log("Current pipeline template:", pipelineTemplate);
-                                        handleTransformationsStep("3. Target");
-                                      }}
-                                      index={8}
-                                      assistantColor={color}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-
-
-                            {step === 'transformations' && transformationSubStep === 'target_name' && (
-                              <div className="flex flex-col gap-2 w-full mt-2 justify-start">
-                                <div className="text-sm font-medium text-muted-foreground mb-1">Suggested Output Names:</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 justify-start">
-                                  <SuggestionButton
-                                    text="processed_data"
-                                    icon={<FileText className="h-8 w-8 mr-2" />}
-                                    onClick={() => {
-                                      // Set target name directly
-                                      setTargetName("processed_data");
-                                      addUserMessage("processed_data");
-
-                                      // If we have a source with connection config, ask if they want to use the same connection
-                                      if (selectedSources.length > 0 && selectedSources[0].connection_config?.custom_metadata?.connection_type) {
-                                        setTransformationSubStep('connection_choice');
-                                        addAssistantMessage(
-                                          `Would you like to use the same connection (${selectedSources[0].connection_config.custom_metadata.connection_type}) ` +
-                                          `for your output? This will write the results to a table named "processed_data" in the same database.`
-                                        );
-                                      } else {
-                                        // Skip to summary
-                                        setTransformationSubStep('summary');
-
-                                        // Build the final pipeline template
-                                        const finalTemplate = generatePipelineTemplate();
-                                        setPipelineJson(finalTemplate);
-
-                                        // Show summary and ask for confirmation
-                                        addAssistantMessage(
-                                          `Great! I've configured your pipeline with the following details:\n\n` +
-                                          `- Name: ${pipelineName}\n` +
-                                          `- Description: ${pipelineDescription || "(none)"}\n` +
-                                          `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-                                          `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-                                          `- Output: processed_data\n\n` +
-                                          `Would you like to create this pipeline now?`
-                                        );
-
-                                        setStep('confirm');
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton
-                                    text="analysis_results"
-                                    icon={<FileText className="h-8 w-8 mr-2" />}
-                                    onClick={() => {
-                                      // Set target name directly
-                                      setTargetName("analysis_results");
-                                      addUserMessage("analysis_results");
-
-                                      // If we have a source with connection config, ask if they want to use the same connection
-                                      if (selectedSources.length > 0 && selectedSources[0].connection_config?.custom_metadata?.connection_type) {
-                                        setTransformationSubStep('connection_choice');
-                                        addAssistantMessage(
-                                          `Would you like to use the same connection (${selectedSources[0].connection_config.custom_metadata.connection_type}) ` +
-                                          `for your output? This will write the results to a table named "analysis_results" in the same database.`
-                                        );
-                                      } else {
-                                        // Skip to summary
-                                        setTransformationSubStep('summary');
-
-                                        // Build the final pipeline template
-                                        const finalTemplate = generatePipelineTemplate();
-                                        setPipelineJson(finalTemplate);
-
-                                        // Show summary and ask for confirmation
-                                        addAssistantMessage(
-                                          `Great! I've configured your pipeline with the following details:\n\n` +
-                                          `- Name: ${pipelineName}\n` +
-                                          `- Description: ${pipelineDescription || "(none)"}\n` +
-                                          `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-                                          `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-                                          `- Output: analysis_results\n\n` +
-                                          `Would you like to create this pipeline now?`
-                                        );
-
-                                        setStep('confirm');
-                                      }
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {step === 'transformations' && transformationSubStep === 'connection_choice' && (
-                              <div className="flex flex-col gap-2 w-full mt-2">
-                                <div className="text-sm font-medium text-muted-foreground mb-1">Use Same Database Connection?</div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <SuggestionButton
-                                    text="Yes, use same database"
-                                    icon={<Check className="h-8 w-8 mr-2" />}
-                                    onClick={() => {
-                                      // Set connection choice directly
-                                      setUseSourceConnection(true);
-                                      addUserMessage("Yes");
-
-                                      // Move to summary
-                                      setTransformationSubStep('summary');
-
-                                      // Build the final pipeline template
-                                      const finalTemplate = generatePipelineTemplate();
-                                      setPipelineJson(finalTemplate);
-
-                                      // Show summary and ask for confirmation
-                                      addAssistantMessage(
-                                        `Great! I've configured your pipeline with the following details:\n\n` +
-                                        `- Name: ${pipelineName}\n` +
-                                        `- Description: ${pipelineDescription || "(none)"}\n` +
-                                        `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-                                        `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-                                        `- Output: ${targetName || "output_data"} (Database)\n\n` +
-                                        `Would you like to create this pipeline now?`
-                                      );
-
-                                      setStep('confirm');
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                  <SuggestionButton
-                                    text="No, use file output"
-                                    icon={<X className="h-8 w-8 mr-2" />}
-                                    onClick={() => {
-                                      // Set connection choice directly
-                                      setUseSourceConnection(false);
-                                      addUserMessage("No");
-
-                                      // Move to summary
-                                      setTransformationSubStep('summary');
-
-                                      // Build the final pipeline template
-                                      const finalTemplate = generatePipelineTemplate();
-                                      setPipelineJson(finalTemplate);
-
-                                      // Show summary and ask for confirmation
-                                      addAssistantMessage(
-                                        `Great! I've configured your pipeline with the following details:\n\n` +
-                                        `- Name: ${pipelineName}\n` +
-                                        `- Description: ${pipelineDescription || "(none)"}\n` +
-                                        `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-                                        `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-                                        `- Output: ${targetName || "output_data"} (File)\n\n` +
-                                        `Would you like to create this pipeline now?`
-                                      );
-
-                                      setStep('confirm');
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {(step === 'transformations' && transformationSubStep === 'summary') || step === 'confirm' ? (
-                              <div className="flex flex-col gap-2 w-full mt-2">
-                                <div className="text-sm font-medium text-muted-foreground mb-1">Ready to Create?</div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <SuggestionButton
-                                    text="Create Pipeline"
-                                    icon={<Check className="h-8 w-8 mr-2" />}
-                                    variant="default"
-                                    onClick={() => {
-                                      addUserMessage("Yes, create the pipeline");
-                                      handleConfirmStep("Yes");
-                                    }}
-                                    className="justify-start py-3 px-4"
-                                  />
-                                  <SuggestionButton
-                                    text="Start Over"
-                                    icon={<X className="h-8 w-8 mr-2" />}
-                                    onClick={() => {
-                                      addUserMessage("No, I want to edit it");
-                                      handleConfirmStep("No");
-                                    }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
-                                  />
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
-                        )}
+                              nodes={nodes}
+                              edges={edges}
+                              pipelineDtl={pipelineDtl}
+                              onSubmit={handleFormSubmit}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 ))}
-                {/* Loading Indicator */}
-                {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
-                  <div className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-full bg-green-500 mt-2"></div>
-                    <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
+                
+                {/* Reader Form */}
+                {showReaderForm && (
+                  <div className="mt-4 mb-6">
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex-shrink-0" />
+                      <div className="flex-1 rounded-2xl px-4 py-4 shadow bg-gray-100">
+                        <Form {...form}>
+                          <form onSubmit={form.handleSubmit(onSubmitReaderForm)} className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="reader_name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Reader Name</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Enter reader name" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="flex justify-end">
+                              <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                                search Reader
+                              </Button>
+                            </div>
+                          </form>
+                        </Form>
                       </div>
                     </div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-          )}
-        </div>
-        {/* Input Area */}
-        <div className="flex gap-2 mt-4 flex-shrink-0">
-          <AIChatInput
-            input={input}
-            onChange={setInput}
-            onSend={handleSend}
-            placeholder={mode === 'create' ? "Reply to create your pipeline..." : "Ask about your pipeline..."}
-            disabled={isProcessing}
-          />
+                
+                {/* Reader Options Form */}
+                {showReaderOptionsForm && selectedDataSource && (
+                  <div className="mt-4 mb-6">
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex-shrink-0" />
+                      <div className="flex-1 rounded-2xl px-4 py-4 shadow bg-gray-100">
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Configure Reader</h3>
+                        <div className="max-h-[500px] overflow-y-auto">
+                          <div className="transform scale-[0.85] origin-top -mt-6 -ml-6">
+                            <ReaderOptionsForm
+                              initialData={selectedDataSource}
+                              onSourceUpdate={handleReaderOptionsSubmit}
+                              onClose={handleReaderOptionsClose}
+                              nodeId={`reader-${Date.now()}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+              </>
+            )}
+          </div>
+          
+        </ScrollArea>
+        <div className="p-4 border-t border-slate-200 bg-white">
+          <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
         </div>
       </div>
-    </>
-  );
-};   
+      
+     
+    );
+  };
+
+  export default PipeLineChatPanel;

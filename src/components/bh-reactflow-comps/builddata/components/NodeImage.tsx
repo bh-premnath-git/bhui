@@ -17,9 +17,7 @@ export const NodeImage: React.FC<NodeImageProps> = ({
     onMouseEnter,
     onMouseLeave,
 }) => {
-console.log(data.source)
 let source=data.source?.connection?.connection_type?.toLowerCase()||data.source?.connection_config?.custom_metadata?.connection_type?.toLowerCase()
-console.log(source)   
 return (
         <div className="relative bg-white rounded-lg">
             <div

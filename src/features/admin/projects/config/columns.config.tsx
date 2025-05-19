@@ -13,14 +13,7 @@ const columns: ColumnDefWithFilters<Project>[] = [
     header: 'Name',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('ytd_cost', {
-    header: 'Ytd Cost',
-    enableColumnFilter: false,
-  }),
-  columnHelper.accessor('current_month_cost', {
-    header: 'Current Month Cost',
-    enableColumnFilter: false,
-  }),
+  
   columnHelper.accessor('total_data_sources', {
     header: 'Data Sources',
     enableColumnFilter: false,

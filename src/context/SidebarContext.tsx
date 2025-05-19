@@ -29,7 +29,7 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 // Define default width
-const DEFAULT_ASIDE_WIDTH = 'w-70'; 
+const DEFAULT_ASIDE_WIDTH = 'w-50'; 
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();

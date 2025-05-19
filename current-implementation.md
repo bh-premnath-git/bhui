@@ -59,14 +59,3 @@
 ### File Locations
 - Core components:
   - `src/components/Header.tsx` (integration point)
-  - `src/components/shared/ai-chat-button.tsx`
-  - `src/components/shared/GenericChatUI.tsx`
-- Sub-components:
-  - `src/components/shared/chat-components/ChatSQLView.tsx`
-  - `src/components/shared/chat-components/ChatChartView.tsx`
-  - `src/components/shared/AIChatInput.tsx`
-
-## check also
-  - `src/pages/data-catalog/XplorerMockPage.tsx`
-  - `src/features/data-catalog/XplorerMock.tsx`
-  - `src/components/shared/XplorerGenericChat.tsx`

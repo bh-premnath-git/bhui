@@ -1,0 +1,43 @@
+/* Pipeline Canvas Styles */
+
+/* Container transitions */
+.pipeline-container {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Right aside panel adjustments */
+.with-right-aside {
+  width: calc(100% - 10px) !important;
+  margin-right: 500px;
+}
+
+/* Bottom drawer panel adjustments */
+.with-bottom-drawer {
+  height: calc(100% - 10px) !important;
+  margin-bottom: 300px;
+}
+
+/* Combined state adjustments */
+.with-right-panel.with-bottom-drawer-panel {
+  width: calc(100% - 10px) !important;
+  height: calc(100% - 100px) !important;
+}
+
+/* Canvas adjustments */
+.with-right-panel-canvas {
+  width: 100% !important;
+}
+
+.with-bottom-drawer-canvas {
+  height: 100% !important;
+}
+
+/* Debug panel adjustments */
+.with-right-aside-panel {
+  left: calc(24px + 5%);
+}
+
+/* Ensure smooth transitions for all elements */
+.reactflow-wrapper {
+  transition: all 0.3s ease-in-out;
+}

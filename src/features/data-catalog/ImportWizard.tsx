@@ -9,6 +9,7 @@ import { SchemaSelection } from '@/features/data-catalog/components/steps/Schema
 import { TableSelection } from '@/features/data-catalog/components/steps/TableSelection';
 import { ImportSummary } from '@/features/data-catalog/components/steps/ImportSummary';
 import { useDatabase } from './hooks/useDatabase';
+import { create } from 'lodash';
 
 export function ImportWizard() {
   const { handleNavigation } = useNavigation();
@@ -41,7 +42,7 @@ export function ImportWizard() {
   };
 
 
-  const onSubmit = async (tables: string[], createDescription: boolean) => {
+  const onSubmit = async (tables: string[], createDescription: boolean, identifyPII: boolean) => {
     if (!selectedProject || !selectedConnection || !selectedSchema) {
       throw new Error("Project, connection, and schema must be selected.");
     }
@@ -53,6 +54,7 @@ export function ImportWizard() {
         selectedProject,
         selectedSchema,
         createDescription,
+        identifyPII,
         tables
       );
       handleNavigation(ROUTES.DATA_CATALOG);

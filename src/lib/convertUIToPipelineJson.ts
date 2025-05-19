@@ -225,7 +225,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'Drop':
                     return {
                         ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || [],
+                        column_list: node.data.transformationData?.column_list || node.data.transformationData?.column || [],
                         pattern: node.data.transformationData?.pattern
                     };
                 case 'Target':
@@ -301,7 +301,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     console.log(targets, "targets")
     //    let optimized=convertToOptimizedPipelineJson({
     //     $schema: "https://json-schema.org/draft-07/schema#",
-    //     name: pipelineDtl?.pipeline_name || "sample_pipeline",
+    //     name: pipelineDtl?.pipeline_name ,
     //     description: pipelineDtl?.pipeline_description || " ",
     //     version: "1.0",
     //     mode: "DEBUG",
@@ -321,7 +321,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
-            name: pipelineDtl?.pipeline_name || "sample_pipeline",
+            name: pipelineDtl?.pipeline_name||pipelineDtl?.name ,
             description: pipelineDtl?.pipeline_description || " ",
             version: "1.0.0",
             // mode: "DEBUG",
@@ -343,10 +343,10 @@ function capitalizeFirstLetter(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 }
 
-export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any, validateOnly: boolean = false) => {
+export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any,pipelineName?:string, validateOnly: boolean = false) => {
     let pipelineJson: any = await convertUIToPipelineJson(nodes, edges, pipelineDtl, validateOnly);
     console.log(pipelineJson, "pipelineJson");
-    let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json);
+    let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json,pipelineName);
     console.log(optimized, "optimized");
     let resolved = resolveRefs(optimized, optimized);
     console.log(resolved, "resolved");

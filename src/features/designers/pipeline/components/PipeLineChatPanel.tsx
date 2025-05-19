@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, ReactNode, useMemo, useCallback, useTransition } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { AIChatInput } from "@/components/shared/AIChatInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
@@ -20,41 +19,9 @@ import { buildPipelineTemplate } from "@/utils/pipelineTemplateUtils";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
 import { motion } from 'framer-motion';
-
-
-interface SuggestionButtonProps {
-  text: string;
-  icon?: ReactNode;
-  onClick: () => void;
-  variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
-  className?: string;
-}
-
-const SuggestionButton = ({
-  text,
-  icon,
-  onClick,
-  variant = 'outline',
-  className = ''
-}: SuggestionButtonProps) => {
-  // Create a handler that directly executes the action without setting input
-  const handleClick = () => {
-    // Call the onClick handler directly
-    onClick();
-  };
-
-  return (
-    <Button
-      variant={variant}
-      size="sm"
-      onClick={handleClick}
-      className={`mr-2 mb-2 flex items-center gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${className}`}
-    >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
-      <span className="truncate font-medium">{text}</span>
-    </Button>
-  );
-};
+import SuggestionButton from "./SuggestionButton";
+import { cn } from "@/lib/utils";
+import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 
 
 export const PipeLineChatPanel = ({
@@ -62,128 +29,201 @@ export const PipeLineChatPanel = ({
   imageSrc = "/assets/ai/ai.svg",
   onPipelineCreated,
   className = "",
-  color = '#009459' 
+  color = '#009459'
 }: any) => {
-  // Use the PipeLineChat context
- 
-  const reactFlowInstance = useReactFlow();
-  const location = useLocation();
-  const { makePipeline } = usePipelineContext();
-  
-  // State declarations
-  const [isNewChat, setIsNewChat] = useState(false);
-  const [currentSourceData, setCurrentSourceData] = useState<any>(null);
-  const [foundSources, setFoundSources] = useState<DataSource[]>([]);
-  const [awaitingSourceSelection, setAwaitingSourceSelection] = useState(false);
-  const [sourceSuggestions, setSourceSuggestions] = useState<React.ReactNode[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Source columns for the CreateForm component
-  const sourceColumns = useMemo(() => {
-    // Extract columns from the current source data or return empty array
-    if (currentSourceData && currentSourceData.columns) {
-      return currentSourceData.columns.map((col: any) => ({
-        name: col.name,
-        dataType: col.dataType || 'string'
-      }));
+
+  const filteredNodes = useMemo(() => nodeData.nodes, []);
+
+
+  const dispatch = useAppDispatch();
+  const {
+    // State variables
+    input,
+    setInput,
+    messages,
+    isProcessing,
+    pipelineJson,
+    isNewChat,
+    currentSourceData,
+    foundSources,
+    awaitingSourceSelection,
+    sourceSuggestions,
+    sourceColumns,
+    mode,
+    step,
+    pipelineName,
+    pipelineDescription,
+    selectedSources,
+    transformations,
+    targetConfig,
+    transformationSubStep,
+    showDependencySelection,
+    dependencyOptions,
+    selectedDependency,
+    selectedDependencies,
+    isMultiSelect,
+    minDependencies,
+    useSourceConnection,
+    filterCondition,
+    targetName,
+    activeForm,
+    formInitialValues,
+    filterFormInitialValues,
+    schemaFormInitialValues,
+    readerFormInitialValues,
+    writerFormInitialValues,
+    sorterFormInitialValues,
+    aggregatorFormInitialValues,
+    joinFormInitialValues,
+    unionFormInitialValues,
+    filterSchema,
+    schemaTransformationSchema,
+    sorterSchema,
+    aggregatorSchema,
+    joinSchema,
+    unionSchema,
+    dropSchema,
+    selectSchema,
+    filterName,
+    schemaName,
+    sorterName,
+    aggregatorName,
+    joinName,
+    unionName,
+    dropName,
+    selectName,
+    showFilterForm,
+    showSchemaForm,
+    showReaderForm,
+    showWriterForm,
+    showSorterForm,
+    showAggregatorForm,
+    showJoinForm,
+    showUnionForm,
+    showDropForm,
+    showSelectForm,
+    isPending,
+    messagesEndRef,
+    dropFormInitialValues,
+    selectFormInitialValues,
+    addUserMessage,
+    addAssistantMessage,
+    clearMessages,
+    updateLastAssistantMessage,
+    setPipelineJson,
+    setIsNewChat,
+    setCurrentSourceData,
+    setFoundSources,
+    setAwaitingSourceSelection,
+    setSourceSuggestions,
+    setMode,
+    setStep,
+    setPipelineName,
+    setPipelineDescription,
+    setSelectedSources,
+    setTransformations,
+    setTargetConfig,
+    setTransformationSubStep,
+    setShowDependencySelection,
+    setDependencyOptions,
+    setSelectedDependency,
+    setSelectedDependencies,
+    setIsMultiSelect,
+    setMinDependencies,
+    setUseSourceConnection,
+    setFilterCondition,
+    setTargetName,
+    setActiveForm,
+    setFormInitialValues,
+    setFilterFormInitialValues,
+    setSchemaFormInitialValues,
+    setReaderFormInitialValues,
+    setWriterFormInitialValues,
+    setSorterFormInitialValues,
+    setAggregatorFormInitialValues,
+    setJoinFormInitialValues,
+    setUnionFormInitialValues,
+    setFilterSchema,
+    setSchemaTransformationSchema,
+    setSorterSchema,
+    setAggregatorSchema,
+    setJoinSchema,
+    setUnionSchema,
+    setFilterName,
+    setSchemaName,
+    setSorterName,
+    setAggregatorName,
+    setJoinName,
+    setUnionName,
+    setShowFilterForm,
+    setShowSchemaForm,
+    setShowReaderForm,
+    setShowWriterForm,
+    setShowSorterForm,
+    setShowAggregatorForm,
+    setShowJoinForm,
+    setShowUnionForm,
+    startTransition,
+    handleSend,
+    resetPipelineCreationState,
+    startPipelineCreation,
+    generatePipelineTemplate,
+    handleSourceStep,
+    processSelectedSource,
+    handleTransformationsStep,
+    handleConfirmStep,
+    handleDependencySelection,
+    updatePipelineWithDependency,
+    handleReaderOptionsUpdate,
+    handleTargetUpdate,
+    handleReaderFormSubmit,
+    handleFilterFormSubmit,
+    handleSchemaFormSubmit,
+    handleSorterFormSubmit,
+    handleAggregatorFormSubmit,
+    handleJoinFormSubmit,
+    handleUnionFormSubmit,
+    handleMultiDependencySelection,
+    handleDropFormSubmit,
+    setShowDropForm,
+    handleSelectFormSubmit,
+    setShowSelectForm,
+  } = usePipeLineChat();
+  const { nodes, edges,handleNodeClick } = usePipelineContext()
+
+  // Debug log to see available nodes
+  useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      console.log("Available nodes in PipeLineChatPanel:", nodes);
     }
-    return [];
-  }, [currentSourceData]);
+  }, [nodes]);
 
-  // Pipeline creation state
-  const [mode, setMode] = useState<'chat' | 'create'>('chat');
-  const [step, setStep] = useState<'name' | 'source' | 'transformations' | 'confirm'>('name');
-  const [pipelineName, setPipelineName] = useState('');
-  const [pipelineDescription, setPipelineDescription] = useState('');
-  const [selectedSources, setSelectedSources] = useState<any[]>([]);
-  const [transformations, setTransformations] = useState<string[]>([]);
+  // Function to find the appropriate node ID based on transformation type
+  const findNodeIdByType = useCallback((transformationType: string) => {
+    const existingNodesOfType = nodes
+      .filter(node => node.id.startsWith(transformationType))
+      .map(node => {
+        const match = node.id.match(new RegExp(`${transformationType}_(\\d+)`));
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(num => !isNaN(num));
+    console.log(existingNodesOfType)
+    const nextNumber = existingNodesOfType.length > 0
+      ? Math.max(...existingNodesOfType) + 1
+      : 1;
 
-  // Target configuration state
-  const [targetConfig, setTargetConfig]:any = useState<{
-    type: 'Database' | 'File' | 'Custom';
-    connectionType: string;
-    schema?: string;
-    database?: string;
-    filePath?: string;
-    fileFormat?: string;
-    connection?: any;
-  }>({
-    type: 'File',
-    connectionType: 'Local',
-    filePath: 'examples/',
-    fileFormat: 'CSV'
-  });
-  
-  // Dependency selection state
-  const [showDependencySelection, setShowDependencySelection] = useState<boolean>(false);
-  const [dependencyOptions, setDependencyOptions] = useState<any[]>([]);
-  const [selectedDependency, setSelectedDependency] = useState<string>('');
-  const [useSourceConnection, setUseSourceConnection] = useState(true);
-  const [filterCondition, setFilterCondition] = useState('');
-  const [targetName, setTargetName] = useState('');
-  const [transformationSubStep, setTransformationSubStep]:any = useState<
-    'select' |
-    'filter_condition' |
-    'schema_form' |
-    'target_name' |
-    'target_type' |
-    'file_format' |
-    'file_path' |
-    'db_type' |
-    'db_schema' |
-    'db_name' |
-    'connection_choice' |
-    'summary' | 'target_form'
-  >('select');
-
-  // State for inline forms
-  const [showFilterForm, setShowFilterForm] = useState(false);
-  const [showSchemaForm, setShowSchemaForm] = useState(false);
-  const [showReaderForm, setShowReaderForm] = useState(false);
-  const [showWriterForm, setShowWriterForm] = useState(false);
-  const [showSorterForm, setShowSorterForm] = useState(false);
-  const [showAggregatorForm, setShowAggregatorForm] = useState(false);
-  const [filterFormInitialValues, setFilterFormInitialValues] = useState<any>({});
-  const [schemaFormInitialValues, setSchemaFormInitialValues] = useState<any>({});
-  const [readerFormInitialValues, setReaderFormInitialValues] = useState<any>({});
-  const [writerFormInitialValues, setWriterFormInitialValues] = useState<any>({});
-  const [sorterFormInitialValues, setSorterFormInitialValues] = useState<any>({});
-  const [aggregatorFormInitialValues, setAggregatorFormInitialValues] = useState<any>({});
-  
-  // Schema state for transformation forms
-  const [filterSchema, setFilterSchema] = useState<any>(null);
-  const [schemaTransformationSchema, setSchemaTransformationSchema] = useState<any>(null);
-  const [sorterSchema, setSorterSchema] = useState<any>(null);
-  const [aggregatorSchema, setAggregatorSchema] = useState<any>(null);
-  const [filterName, setFilterName] = useState<string>('');
-  const [schemaName, setSchemaName] = useState<string>('');
-  const [sorterName, setSorterName] = useState<string>('');
-  const [aggregatorName, setAggregatorName] = useState<string>('');
-  
-  // Add useTransition hook for smoother UI updates
-  const [isPending, startTransition] = useTransition();
-const dispatch = useAppDispatch();
-const {
-  messages,
-  addUserMessage,
-  addAssistantMessage,
-  clearMessages,
-  updateLastAssistantMessage,
-  input,
-  setInput,
-  isProcessing,
-  pipelineJson,
-  formInitialValues,
-  nodes,
-  edges,
-  setPipelineJson
-} = usePipeLineChat();
+    const fallbackId = `${transformationType}_${nextNumber}`;
+    console.log(`No matching node found for ${transformationType}, using generated ID: ${fallbackId}`);
+    return nodes.filter(node => node.id.startsWith(transformationType))?.[0]?.id || fallbackId;
+  }, [nodes]);
 
   // Fetch connection config list only once when component mounts
   useEffect(() => {
     dispatch(getConnectionConfigList({}));
+                      addAssistantMessage("How can I assist you with your pipeline?");
+
   }, [dispatch]);
-  
+
   // Update pipeline template whenever selectedDependency changes
   useEffect(() => {
     if (selectedDependency) {
@@ -196,7 +236,7 @@ const {
       }, 0);
     }
   }, [selectedDependency, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-  
+
   // Update pipeline template whenever transformationSubStep changes to a dependency selection step
   useEffect(() => {
     const isDependencyStep = transformationSubStep.includes('dependency');
@@ -210,7 +250,7 @@ const {
       }, 0);
     }
   }, [transformationSubStep, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-  
+
   // Update pipeline template whenever showDependencySelection changes to true
   useEffect(() => {
     if (showDependencySelection) {
@@ -223,18 +263,18 @@ const {
       }, 0);
     }
   }, [showDependencySelection, selectedSources, transformations, pipelineName, pipelineDescription, targetConfig, useSourceConnection, filterCondition]);
-  
+
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-  
+
   // Show writer form when the message contains "Please configure your output target below"
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (
-        lastMessage.role === 'assistant' && 
+        lastMessage.role === 'assistant' &&
         lastMessage.content.includes('Please configure your output target below') &&
         transformationSubStep === 'target_form'
       ) {
@@ -242,7 +282,7 @@ const {
       }
     }
   }, [messages, transformationSubStep]);
-  
+
   // Initialize writer form when transformationSubStep changes to 'target_form'
   useEffect(() => {
     if (transformationSubStep === 'target_form') {
@@ -268,11 +308,11 @@ const {
             writeMethod: 'APPEND'
           }
         };
-        
+
         console.log("Initializing writer form values for target_form:", defaultValues);
         setWriterFormInitialValues(defaultValues);
       }
-      
+
       // Ensure the form is shown
       setShowWriterForm(true);
     }
@@ -286,300 +326,11 @@ const {
   // Panel is always open, so we don't need to clear state when closed
   // This effect has been removed
 
-  const resetPipelineCreationState = () => {
-    setStep('name');
-    setPipelineName('');
-    setPipelineDescription('');
-    setSelectedSources([]);
-    setTransformations([]);
-
-    // Reset target configuration
-    setTargetConfig({
-      type: 'File',
-      connectionType: 'Local',
-      filePath: 'examples/',
-      fileFormat: 'CSV'
-    });
-
-    // Reset form states
-    setShowFilterForm(false);
-    setShowSchemaForm(false);
-    setShowReaderForm(false);
-    setShowWriterForm(false);
-    setFilterFormInitialValues({});
-    setSchemaFormInitialValues({});
-    setReaderFormInitialValues({});
-    setWriterFormInitialValues({});
-    setCurrentSourceData(null);
-    
-    // Reset source selection state
-    setFoundSources([]);
-    setAwaitingSourceSelection(false);
-    setSourceSuggestions([]);
-    
-    // Reset dependency selection state
-    setShowDependencySelection(false);
-    setDependencyOptions([]);
-    setSelectedDependency('');
-  };
-
-  const startPipelineCreation = () => {
-    setMode('create');
-    clearMessages();
-
-    // Set default values for pipeline name and description
-    setPipelineName("New Pipeline");
-    setPipelineDescription("Data pipeline created with AI assistant");
-
-    // Skip asking for name and description, directly ask for data source
-    addAssistantMessage("Hi! I'll help you create a new data pipeline. Let's add a data source to your pipeline. Please enter the name of a data source you'd like to search for (e.g., \"sales_data\").");
-
-    // Set step directly to source
-    setStep('source');
-
-    // Build and update the pipeline template with the default values
-    const pipelineTemplate = generatePipelineTemplate();
-    setPipelineJson(pipelineTemplate);
-  };
-
-  // Helper function to call the utility function with the current state
-  const generatePipelineTemplate = () => {
-    // Log the current state before generating the template
-    console.log("Generating pipeline template with state:", {
-      pipelineName,
-      pipelineDescription,
-      selectedSources,
-      transformations,
-      targetConfig,
-      useSourceConnection,
-      filterCondition
-    });
-    
-    // Generate the template
-    const template = buildPipelineTemplate(
-      pipelineName,
-      pipelineDescription,
-      selectedSources,
-      transformations,
-      targetConfig,
-      useSourceConnection,
-      filterCondition
-    );
-    
-    return template;
-  };
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    try {
-      // Add user message to chat
-      addUserMessage(input);
-
-      if (mode === 'create') {
-        // Handle pipeline creation flow
-        switch (step) {
-          // Name step is skipped as we set a default name
-          case 'source':
-            await handleSourceStep(input);
-            break;
-          case 'transformations':
-            await handleTransformationsStep(input);
-            break;
-          case 'confirm':
-            await handleConfirmStep(input);
-            break;
-        }
-
-        // Log the current pipeline template
-        console.log("Current pipeline template:", generatePipelineTemplate());
-      } else {
-        // Regular chat mode
-        addAssistantMessage("This is a placeholder response. The actual API functionality has been removed.");
-      }
-
-      // Clear the input field
-      setInput("");
-    } catch (error) {
-      console.error("Error in chat:", error);
-      updateLastAssistantMessage("An error occurred. Please try again.");
-    } finally {
-    }
-  };
 
 
-  const handleSourceStep = async (input: string) => {
-    const userInput = input.toLowerCase().trim();
-    console.log(userInput);
-    
-    // If we're awaiting a source selection from multiple options
-    if (awaitingSourceSelection && foundSources.length > 0) {
-      // Check if the input is a number corresponding to a source index
-      const sourceIndex = parseInt(userInput) - 1;
-      if (!isNaN(sourceIndex) && sourceIndex >= 0 && sourceIndex < foundSources.length) {
-        // User selected a valid source by number
-        processSelectedSource(foundSources[sourceIndex]);
-        setAwaitingSourceSelection(false);
-        return;
-      } 
-      // Check if the input matches a source name
-      const matchedSource = foundSources.find(source => 
-        source.data_src_name.toLowerCase() === userInput.toLowerCase()
-      );
-      if (matchedSource) {
-        // User selected a valid source by name
-        processSelectedSource(matchedSource);
-        setAwaitingSourceSelection(false);
-        return;
-      }
-      
-      // If input doesn't match any source, ask again
-      addAssistantMessage(
-        `I couldn't identify which source you want to use. Please enter the number or exact name of the source you want to select.`
-      );
-      return;
-    }
-    
-    // Check if user wants to move to transformations
-    if (userInput.includes('continue') || userInput.includes('next') || userInput.includes('transformation')) {
-      setStep('transformations');
-      
-      // Update the pipeline template when moving to transformations step
-      const transformationsStepTemplate = generatePipelineTemplate();
-      setPipelineJson(transformationsStepTemplate);
-      console.log("Pipeline template updated when moving to transformations step:", transformationsStepTemplate);
-      
-      addAssistantMessage(
-        "Great! Now let's add some transformations to your pipeline. " +
-        "I can add the following types of transformations:\n\n" +
-        "1. Schema Transformation - Create new fields or modify existing ones\n" +
-        "2. Filter Transformation - Filter data based on conditions\n\n" +
-        "Which transformations would you like to add? You can say things like 'add schema transformation' or 'add both'."
-      );
-      return;
-    }
-
-    // Search for data sources
-    try {
-      const response: any = await apiService.get({
-        portNumber: CATALOG_API_PORT,
-        url: `/data_source/list/`,
-        usePrefix: true,
-        method: 'GET',
-        params: {
-          data_src_name: userInput,
-          offset: 0,
-          limit: 10,
-          order_desc: false
-        }
-      });
-
-      if (response && response.length > 0) {
-        // Store the found sources
-        const sources: DataSource[] = response;
-        setFoundSources(sources);
-        
-        if (sources.length > 1) {
-          // Multiple sources found, ask user to select one
-          setAwaitingSourceSelection(true);
-          
-          // Create suggestion buttons for each source
-          const suggestions = sources.map((source, index) => (
-            <SuggestionButton
-              key={source.data_src_id}
-              text={source.data_src_name}
-              icon={<Database size={16} />}
-              onClick={() => {
-                processSelectedSource(source);
-                setAwaitingSourceSelection(false);
-                setSourceSuggestions([]);
-              }}
-              variant="outline"
-              className="bg-white/90 hover:bg-white"
-            />
-          ));
-          
-          // Set the suggestion buttons
-          setSourceSuggestions(suggestions);
-          
-          // Create a message with the list of sources
-          let sourcesMessage = `I found ${sources.length} data sources matching "${userInput}". Please select one:`;
-          
-          addAssistantMessage(sourcesMessage);
-        } else {
-          // Only one source found, use it directly
-          processSelectedSource(sources[0]);
-          setSourceSuggestions([]);
-        }
-      } else {
-        addAssistantMessage(
-          `I couldn't find any data sources matching "${userInput}". ` +
-          `Please try a different search term, or say "continue" to proceed with your current selections.`
-        );
-      }
-    } catch (error) {
-      console.error("Error searching for data sources:", error);
-      addAssistantMessage("I encountered an error while searching for data sources. Please try again with a different search term.");
-    } finally {
-    }
-  };
-  
-  // Helper function to process a selected source
-  const processSelectedSource = (selectedSource: any) => {
-    console.log(selectedSource);
-
-    // Store the source data for the form
-    setCurrentSourceData(selectedSource);
-
-    // Log the source data for debugging
-    console.log("Selected source data:", selectedSource);
-
-    // Determine if it's a relational or file source
-    const isRelational = selectedSource.connection_config.custom_metadata.connection_type == "S3" || selectedSource.connection_config.custom_metadata.connection_type == "Local" ? false : true;
-
-    // Create initial values for the reader form - format for ReaderOptionsForm
-    const readerInitialValues: any = {
-      reader_name: selectedSource.data_src_name,
-      name: `read_${selectedSource.data_src_name}`,
-      source: {
-        type: isRelational ? 'Relational' : 'File',
-        name: selectedSource.data_src_name,
-        table_name: selectedSource.data_src_name,
-        data_src_id: selectedSource?.data_src_id,
-        source_name: selectedSource.data_src_name,
-        file_name: isRelational ? null : selectedSource.file_name || `${selectedSource.data_src_name}.csv`,
-        connection: selectedSource.connection_config?.custom_metadata,
-        connection_config_id: selectedSource.connection_config_id,
-      },
-      file_type: isRelational ? null : selectedSource.file_type || 'CSV',
-      read_options: {
-        header: selectedSource.read_options?.header !== undefined ? selectedSource.read_options.header : true,
-        delimiter: selectedSource.read_options?.delimiter || ',',
-        quote: selectedSource.read_options?.quote || '"'
-      }
-    };
-
-    // If there's a query, add it
-    if (selectedSource.query) {
-      readerInitialValues.query = selectedSource.query;
-    }
-
-    // Add the selected source to the pipeline
-    setSelectedSources([...selectedSources, selectedSource]);
-
-    // Log the form values for debugging
-    console.log("Reader form initial values:", readerInitialValues);
-
-    setReaderFormInitialValues(readerInitialValues);
-    setShowReaderForm(true);
-
-    addAssistantMessage(
-      `I'll use the data source "${selectedSource.data_src_name}". Please review and customize the reader configuration below:`
-    );
-  };
 
   // State for additional pipeline configuration
-  
+
   // Load schemas from mdata.json
   useEffect(() => {
     if (mdataJson && mdataJson.schema) {
@@ -592,7 +343,7 @@ const {
           nodeId: 'filter_transformation'
         });
       }
-      
+
       // Find the schema transformation schema
       const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
       if (schemaTransformationSchemaFromMdata) {
@@ -602,2523 +353,171 @@ const {
           nodeId: 'schema_transformation'
         });
       }
-      
-      console.log("Loaded schemas from mdata.json:", { 
-        filter: filterSchemaFromMdata, 
-        schemaTransformation: schemaTransformationSchemaFromMdata 
+
+      console.log("Loaded schemas from mdata.json:", {
+        filter: filterSchemaFromMdata,
+        schemaTransformation: schemaTransformationSchemaFromMdata
       });
     }
   }, []);
 
-  // Function to update the pipeline template with the selected dependency
-  const updatePipelineWithDependency = (dependency: string, transformationType: string) => {
-    console.log(`Updating pipeline with dependency: ${dependency} for transformation: ${transformationType}`);
-    
-    // Update the source objects with the dependency information
-    // This ensures the generatePipelineTemplate function will use the correct dependencies
-    if (transformationType === 'filter') {
-      // Update the filter transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the filter_transformation property
-          return {
-            ...source,
-            filter_transformation: {
-              ...(source.filter_transformation || {}),
-              dependent_on: [dependency]
-            }
-          };
-        });
-      });
-    } else if (transformationType === 'schema') {
-      // Update the schema transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the schema_transformation property
-          return {
-            ...source,
-            schema_transformation: {
-              ...(source.schema_transformation || {}),
-              name: 'schema_transformation',
-              transformation: 'SchemaTransformation',
-              derived_fields: source.schema_transformation?.derived_fields || [{ name: '', expression: '' }],
-              dependent_on: [dependency]
-            }
-          };
-        });
-      });
-    } else if (transformationType === 'sorter') {
-      // Update the sorter transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the sorter_transformation property
-          return {
-            ...source,
-            sorter_transformation: {
-              ...(source.sorter_transformation || {}),
-              name: 'sorter_transformation',
-              transformation: 'Sorter',
-              sort_columns: source.sorter_transformation?.sort_columns || [{ column_name: 'id', sort_order: 'asc' }],
-              dependent_on: [dependency]
-            }
-          };
-        });
-      });
-    } else if (transformationType === 'aggregator') {
-      // Update the aggregator transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the aggregator_transformation property
-          return {
-            ...source,
-            aggregator_transformation: {
-              ...(source.aggregator_transformation || {}),
-              name: 'aggregator_transformation',
-              transformation: 'Aggregator',
-              aggregations: source.aggregator_transformation?.aggregations || [{ target_column: 'total_count', expression: 'count(*)' }],
-              group_by: source.aggregator_transformation?.group_by || [{ group_by: 'category' }],
-              dependent_on: [dependency]
-            }
-          };
-        });
-      });
-    } else if (transformationType === 'target') {
-      // Update the target transformation in the selected sources
-      setSelectedSources(prevSources => {
-        return prevSources.map(source => {
-          // Create or update the target_transformation property
-          return {
-            ...source,
-            target_transformation: {
-              ...(source.target_transformation || {}),
-              dependent_on: [dependency]
-            }
-          };
-        });
-      });
-    }
-    
-    // Also update the pipeline JSON directly for immediate effect
-    const updatedPipelineJson = { ...pipelineJson };
-    
-    // Update the dependency in the pipeline template
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      // Update the dependency for the specific transformation
-      if (transformationType === 'filter') {
-        // Find the filter transformation
-        const filterTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'filter_transformation'
-        );
-        
-        if (filterTransformation) {
-          filterTransformation.dependent_on = [dependency];
-          console.log("Updated filter transformation dependency:", filterTransformation);
-        }
-      } else if (transformationType === 'schema') {
-        // Find the schema transformation
-        const schemaTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'schema_transformation'
-        );
-        
-        if (schemaTransformation) {
-          schemaTransformation.dependent_on = [dependency];
-          console.log("Updated schema transformation dependency:", schemaTransformation);
-        }
-      } else if (transformationType === 'sorter') {
-        // Find the sorter transformation
-        const sorterTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'sorter_transformation'
-        );
-        
-        if (sorterTransformation) {
-          sorterTransformation.dependent_on = [dependency];
-          console.log("Updated sorter transformation dependency:", sorterTransformation);
-        }
-      } else if (transformationType === 'aggregator') {
-        // Find the aggregator transformation
-        const aggregatorTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'aggregator_transformation'
-        );
-        
-        if (aggregatorTransformation) {
-          aggregatorTransformation.dependent_on = [dependency];
-          console.log("Updated aggregator transformation dependency:", aggregatorTransformation);
-        }
-      } else if (transformationType === 'target') {
-        // Find the target transformation - it might have a custom name
-        const targetName = targetConfig.customConfig?.name || targetConfig.connection?.name || "Target";
-        const targetTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === targetName || t.transformation === 'Target'
-        );
-        
-        if (targetTransformation) {
-          targetTransformation.dependent_on = [dependency];
-          console.log("Updated target transformation dependency:", targetTransformation);
-        }
-      }
-      
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-    
-    // Generate a new pipeline template with the updated dependency
-    setTimeout(() => {
-      const newTemplate = generatePipelineTemplate();
-      setPipelineJson(newTemplate);
-      console.log(`Pipeline template updated with ${transformationType} dependency:`, newTemplate);
-    }, 0);
-  };
-
-  // Handle dependency selection
-  const handleDependencySelection = (dependency: string) => {
-    console.log("Dependency selected:", dependency);
-    
-    // Use startTransition to prevent UI from being replaced with loading indicator
-    startTransition(() => {
-      // Update the selected dependency in state
-      setSelectedDependency(dependency);
-      
-      // Hide the dependency selection UI
-      setShowDependencySelection(false);
-      
-      // Find the transformation type that needs to be updated
-      const transformationToUpdate = transformationSubStep.split('_')[0]; // 'filter', 'schema', etc.
-      
-      // Update the pipeline with the selected dependency
-      updatePipelineWithDependency(dependency, transformationToUpdate);
-      
-      // Check if schemas are loaded from mdata.json
-      const preloadSchemas = () => {
-        // Check if schemas are loaded
-        const filterSchemaLoaded = !!filterSchema;
-        const schemaTransformationSchemaLoaded = !!schemaTransformationSchema;
-        
-        console.log("Schema loading status:", { 
-          filterSchemaLoaded, 
-          schemaTransformationSchemaLoaded,
-          filterSchema,
-          schemaTransformationSchema
-        });
-        
-        // Now proceed with form setup based on transformation type
-        if (transformationSubStep === 'filter_dependency') {
-          setFilterFormInitialValues(prev => ({
-            ...prev,
-            dependent_on: [dependency]
-          }));
-          
-          if (filterSchemaLoaded) {
-            setTransformationSubStep('filter_condition');
-            setShowFilterForm(true);
-            addAssistantMessage(`Great! Now please define your filter condition below:`);
-          } else {
-            addAssistantMessage("Sorry, there was an error loading the filter form. Please try again.");
-          }
-          
-        } else if (transformationSubStep === 'schema_dependency') {
-          // Make sure we're setting the proper dependency for schema transformation
-          // Initialize with an empty derived field to ensure the form renders correctly
-          const schemaInitialValues = {
-            name: 'schema_transformation',
-            derived_fields: [{ name: '', expression: '' }],
-            dependent_on: [dependency]
-          };
-          console.log("Setting schema form initial values:", schemaInitialValues);
-          setSchemaFormInitialValues(schemaInitialValues);
-          
-          // Also update the schema transformation in the selected sources
-          // This ensures the generatePipelineTemplate function will use the correct dependencies
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              // Create or update the schema_transformation property
-              return {
-                ...source,
-                schema_transformation: {
-                  ...(source.schema_transformation || {}),
-                  name: 'schema_transformation',
-                  transformation: 'SchemaTransformation',
-                  derived_fields: [{ name: '', expression: '' }],
-                  dependent_on: [dependency]
-                }
-              };
-            });
-          });
-          
-          // Update the pipeline template with the dependency selection
-          // Use a timeout to ensure state updates have been processed
-          setTimeout(() => {
-            const updatedTemplate = generatePipelineTemplate();
-            setPipelineJson(updatedTemplate);
-            console.log("Pipeline template updated after schema dependency selection:", updatedTemplate);
-            
-            // Log the schema transformation in the pipeline template
-            const schemaTransformation = updatedTemplate.transformations.find(
-              (t: any) => t.name === 'schema_transformation'
-            );
-            console.log("Schema transformation in pipeline template:", schemaTransformation);
-          }, 0);
-          
-          if (schemaTransformationSchemaLoaded) {
-            setTransformationSubStep('schema_form');
-            setShowSchemaForm(true);
-            addAssistantMessage(`Great! Now please define your schema transformations below:`);
-          } else {
-            addAssistantMessage("Sorry, there was an error loading the schema transformation form. Please try again.");
-          }
-          
-        } else if (transformationSubStep === 'both_dependency') {
-          // Update both filter and schema forms with the selected dependency
-          setFilterFormInitialValues(prev => ({
-            ...prev,
-            dependent_on: [dependency]
-          }));
-          
-          // Initialize with an empty derived field to ensure the form renders correctly
-          setSchemaFormInitialValues({
-            name: 'schema_transformation',
-            derived_fields: [{ name: '', expression: '' }],
-            dependent_on: [dependency]
-          });
-          
-          // Update both transformations in the selected sources
-          // This ensures the generatePipelineTemplate function will use the correct dependencies
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                filter_transformation: {
-                  ...(source.filter_transformation || {}),
-                  dependent_on: [dependency]
-                },
-                schema_transformation: {
-                  ...(source.schema_transformation || {}),
-                  name: 'schema_transformation',
-                  transformation: 'SchemaTransformation',
-                  derived_fields: [{ name: '', expression: '' }],
-                  dependent_on: [dependency]
-                }
-              };
-            });
-          });
-          
-          // Update the pipeline template with the dependency selection
-          // Use a timeout to ensure state updates have been processed
-          setTimeout(() => {
-            const updatedTemplate = generatePipelineTemplate();
-            setPipelineJson(updatedTemplate);
-            console.log("Pipeline template updated after both dependency selection:", updatedTemplate);
-            
-            // Log the transformations in the pipeline template
-            const filterTransformation = updatedTemplate.transformations.find(
-              (t: any) => t.name === 'filter_transformation'
-            );
-            const schemaTransformation = updatedTemplate.transformations.find(
-              (t: any) => t.name === 'schema_transformation'
-            );
-            console.log("Filter transformation in pipeline template:", filterTransformation);
-            console.log("Schema transformation in pipeline template:", schemaTransformation);
-          }, 0);
-          
-          // Make sure both schemas are loaded
-          if (filterSchemaLoaded && schemaTransformationSchemaLoaded) {
-            // Start with the filter form
-            setTransformationSubStep('filter_condition');
-            setShowFilterForm(true);
-            addAssistantMessage(`Great! Let's start with the filter condition. Please define your filter condition below. After that, we'll set up the schema transformation.`);
-          } else {
-            addAssistantMessage("Sorry, there was an error loading the forms. Please try again.");
-          }
-          
-        } else if (transformationSubStep === 'sorter_dependency') {
-          // Update the sorter transformation with the selected dependency
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                sorter_transformation: {
-                  ...(source.sorter_transformation || {}),
-                  name: 'sorter_transformation',
-                  transformation: 'Sorter',
-                  sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
-                  dependent_on: [dependency]
-                }
-              };
-            });
-          });
-          
-          // Update the pipeline template with the dependency selection
-          setTimeout(() => {
-            const updatedTemplate = generatePipelineTemplate();
-            setPipelineJson(updatedTemplate);
-            console.log("Pipeline template updated after sorter dependency selection:", updatedTemplate);
-            
-            // Log the sorter transformation in the pipeline template
-            const sorterTransformation = updatedTemplate.transformations.find(
-              (t: any) => t.name === 'sorter_transformation'
-            );
-            console.log("Sorter transformation in pipeline template:", sorterTransformation);
-          }, 0);
-          
-          // Try to load the Sorter schema from mdata.json
-          try {
-            const sorterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Sorter");
-            if (sorterSchemaFromMdata) {
-              // Add nodeId to the schema to match the format expected by CreateFormFormik
-              setSorterSchema({
-                ...sorterSchemaFromMdata,
-                nodeId: 'sorter_transformation'
-              });
-              console.log("Loaded sorter schema from mdata.json");
-              
-              // Prepare sorter form initial values
-              setSorterFormInitialValues({
-                name: 'sorter_transformation',
-                sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
-                dependent_on: [dependency]
-              });
-              setSorterName('sorter_transformation');
-              
-              // Show the sorter form
-              setTransformationSubStep('sorter_form');
-              setShowSorterForm(true);
-              addAssistantMessage("Please configure your sorter transformation below:");
-            } else {
-              console.error("Sorter schema not found in mdata.json");
-              // Return to transformation selection if schema not found
-              setTransformationSubStep('select');
-              addAssistantMessage(
-                "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Filter Transformation - Filter data based on conditions\n" +
-                "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                "3. Sorter Transformation - Sort data based on columns\n" +
-                "4. Aggregation Transformation - Aggregate data with group by\n" +
-                "5. Target - Configure output target\n\n" +
-                "Please select an option from the buttons below."
-              );
-            }
-          } catch (error) {
-            console.error("Error loading sorter schema from mdata.json:", error);
-            // Return to transformation selection if error
-            setTransformationSubStep('select');
-            addAssistantMessage(
-              "Great! The sorter transformation has been added. Would you like to add another transformation?\n\n" +
-              "1. Filter Transformation - Filter data based on conditions\n" +
-              "2. Schema Transformation - Create new fields or modify existing ones\n" +
-              "3. Sorter Transformation - Sort data based on columns\n" +
-              "4. Aggregation Transformation - Aggregate data with group by\n" +
-              "5. Target - Configure output target\n\n" +
-              "Please select an option from the buttons below."
-            );
-          }
-          
-        } else if (transformationSubStep === 'aggregator_dependency') {
-          // Update the aggregator transformation with the selected dependency
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                aggregator_transformation: {
-                  ...(source.aggregator_transformation || {}),
-                  name: 'aggregator_transformation',
-                  transformation: 'Aggregator',
-                  aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                  group_by: [{ group_by: 'category' }],
-                  dependent_on: [dependency]
-                }
-              };
-            });
-          });
-          
-          // Update the pipeline template with the dependency selection
-          setTimeout(() => {
-            const updatedTemplate = generatePipelineTemplate();
-            setPipelineJson(updatedTemplate);
-            console.log("Pipeline template updated after aggregator dependency selection:", updatedTemplate);
-            
-            // Log the aggregator transformation in the pipeline template
-            const aggregatorTransformation = updatedTemplate.transformations.find(
-              (t: any) => t.name === 'aggregator_transformation'
-            );
-            console.log("Aggregator transformation in pipeline template:", aggregatorTransformation);
-          }, 0);
-          
-          // Try to load the Aggregator schema from mdata.json
-          try {
-            const aggregatorSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Aggregator");
-            if (aggregatorSchemaFromMdata) {
-              // Add nodeId to the schema to match the format expected by CreateFormFormik
-              setAggregatorSchema({
-                ...aggregatorSchemaFromMdata,
-                nodeId: 'aggregator_transformation'
-              });
-              console.log("Loaded aggregator schema from mdata.json");
-              
-              // Prepare aggregator form initial values
-              setAggregatorFormInitialValues({
-                name: 'aggregator_transformation',
-                aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                group_by: [{ group_by: 'category' }],
-                dependent_on: [dependency]
-              });
-              setAggregatorName('aggregator_transformation');
-              
-              // Show the aggregator form
-              setTransformationSubStep('aggregator_form');
-              setShowAggregatorForm(true);
-              addAssistantMessage("Please configure your aggregation transformation below:");
-            } else {
-              console.error("Aggregator schema not found in mdata.json");
-              // Return to transformation selection if schema not found
-              setTransformationSubStep('select');
-              addAssistantMessage(
-                "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
-                "1. Filter Transformation - Filter data based on conditions\n" +
-                "2. Schema Transformation - Create new fields or modify existing ones\n" +
-                "3. Sorter Transformation - Sort data based on columns\n" +
-                "4. Aggregation Transformation - Aggregate data with group by\n" +
-                "5. Target - Configure output target\n\n" +
-                "Please select an option from the buttons below."
-              );
-            }
-          } catch (error) {
-            console.error("Error loading aggregator schema from mdata.json:", error);
-            // Return to transformation selection if error
-            setTransformationSubStep('select');
-            addAssistantMessage(
-              "Great! The aggregation transformation has been added. Would you like to add another transformation?\n\n" +
-              "1. Filter Transformation - Filter data based on conditions\n" +
-              "2. Schema Transformation - Create new fields or modify existing ones\n" +
-              "3. Sorter Transformation - Sort data based on columns\n" +
-              "4. Aggregation Transformation - Aggregate data with group by\n" +
-              "5. Target - Configure output target\n\n" +
-              "Please select an option from the buttons below."
-            );
-          }
-          
-        } else if (transformationSubStep === 'target_dependency') {
-          // Update the writer form with the selected dependency and proper initial values
-          const initialValues = {
-            name: targetName || 'write_output',
-            target: {
-              target_name: targetName || 'output_data',
-              target_type: targetConfig.type || 'File',
-              load_mode: 'append',
-              connection: {
-                connection_type: targetConfig.connectionType || 'Local',
-                file_path_prefix: targetConfig.filePath || 'examples/'
-              },
-              file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
-            },
-            file_type: targetConfig.fileFormat || 'CSV',
-            write_options: {
-              header: true,
-              sep: ',',
-              createDisposition: 'CREATE_IF_NEEDED',
-              writeMethod: 'APPEND'
-            },
-            dependent_on: [dependency]
-          };
-          
-          console.log("Setting writer form initial values:", initialValues);
-          setWriterFormInitialValues(initialValues);
-          
-          // Also update the form initial values in the context
-          if (formInitialValues) {
-            formInitialValues.writer = initialValues;
-          }
-          
-          // Also update the target transformation in the selected sources
-          // This ensures the generatePipelineTemplate function will use the correct dependencies
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              // Create or update the target_transformation property
-              return {
-                ...source,
-                target_transformation: {
-                  ...(source.target_transformation || {}),
-                  dependent_on: [dependency]
-                }
-              };
-            });
-          });
-          
-          // Show the writer form
-          setTransformationSubStep('target_form');
-          setShowWriterForm(true);
-          
-          // Update the pipeline template with the dependency selection
-          setTimeout(() => {
-            const updatedTemplate = generatePipelineTemplate();
-            setPipelineJson(updatedTemplate);
-            console.log("Pipeline template updated after target dependency selection:", updatedTemplate);
-          }, 0);
-          
-          addAssistantMessage(`Please configure your output target below:`);
-        }
-        
-        // Update the pipeline template with the dependency selection
-        // We need to use a timeout to ensure the state updates have been processed
-        setTimeout(() => {
-          const dependencySelectionTemplate = generatePipelineTemplate();
-          setPipelineJson(dependencySelectionTemplate);
-          console.log("Pipeline template updated after dependency selection:", dependencySelectionTemplate);
-        }, 0);
-      };
-      
-      // Start preloading schemas
-      preloadSchemas();
-    });
-  };
-
-  const handleTransformationsStep = async (input: string) => {
-    const userInput = input.toLowerCase().trim();
-
-    // Check if user wants to add another source
-    if (userInput.includes('add another') || userInput.includes('search') || userInput.includes('new source')) {
-      setStep('source');
-      setTransformationSubStep('select');
-      
-      // Update the pipeline template when changing steps
-      const updatedTemplate = generatePipelineTemplate();
-      setPipelineJson(updatedTemplate);
-      console.log("Pipeline template updated when returning to source step:", updatedTemplate);
-      
-      addAssistantMessage("Sure! Please enter the name of another data source you'd like to search for.");
-      return;
-    }
-
-    // Check if this is the initial "continue to transformations" request
-    if ((userInput.includes('continue to transformation') || userInput.includes('continue')) &&
-      !userInput.includes('filter') && !userInput.includes('schema') && !userInput.includes('target')) {
-      // Make sure we're in the transformations step and select sub-step
-      setStep('transformations');
-      setTransformationSubStep('select');
-
-      // Ask the user what transformations they want to add
-      addAssistantMessage(
-        "Great! Now let's add some transformations to your pipeline. I can add the following types of transformations:\n\n" +
-        "1. Schema Transformation - Create new fields or modify existing ones\n" +
-        "2. Filter Transformation - Filter data based on conditions\n\n" +
-        "Which transformations would you like to add? You can say things like 'add schema transformation' or 'add both'."
-      );
-
-      // Build and update the pipeline template
-      const pipelineTemplate = generatePipelineTemplate();
-      setPipelineJson(pipelineTemplate);
-
-      console.log("Current pipeline template:", pipelineTemplate);
-
-      return;
-    }
-
-    // Handle different sub-steps within the transformations step
-    switch (transformationSubStep) {
-      case 'select':
-        // Process transformation selection
-        const newTransformations = [...transformations];
-        let currentSelection = '';
-
-        // Track what the user is selecting in this step
-        if (userInput.includes('schema') || userInput.includes('2')) {
-          currentSelection = 'schema';
-          if (!newTransformations.includes('schema')) {
-            newTransformations.push('schema');
-          }
-        }
-
-        if (userInput.includes('filter') || userInput.includes('1')) {
-          currentSelection = 'filter';
-          if (!newTransformations.includes('filter')) {
-            newTransformations.push('filter');
-          }
-        }
-
-        if (userInput.includes('sorter')) {
-          currentSelection = 'sorter';
-          if (!newTransformations.includes('sorter')) {
-            newTransformations.push('sorter');
-          }
-        }
-        
-        if (userInput.includes('aggregation') || userInput.includes('aggregator')) {
-          currentSelection = 'aggregator';
-          if (!newTransformations.includes('aggregator')) {
-            newTransformations.push('aggregator');
-          }
-        }
-
-        // Check if user wants to move to target
-        if (userInput.includes('target') || userInput.includes('3') || userInput.includes('skip') ||
-          userInput.includes('complete') || userInput.includes('finish')) {
-          currentSelection = 'target';
-          // Add target to transformations
-          if (!newTransformations.includes('target')) {
-            newTransformations.push('target');
-          }
-
-          // If the user already has a target name saved, use it
-          if (targetName) {
-            setTargetConfig(prev => ({
-              ...prev,
-              customConfig: {
-                ...prev.customConfig,
-                name: targetName
-              }
-            }));
-          }
-        }
-
-        // Update transformations state
-        setTransformations(newTransformations);
-        
-        // Get existing transformations and sources for suggestions
-        const existingNodes = [];
-        
-        // Add reader nodes from sources
-        if (selectedSources.length > 0) {
-          selectedSources.forEach(source => {
-            existingNodes.push(`read_${source.data_src_name}`);
-          });
-        }
-        
-        // Add existing transformation nodes
-        if (transformations.includes('schema')) {
-          existingNodes.push('schema_transformation');
-        }
-        if (transformations.includes('filter')) {
-          existingNodes.push('filter_transformation');
-        }
-        if (transformations.includes('sorter')) {
-          existingNodes.push('sorter_transformation');
-        }
-        if (transformations.includes('aggregator')) {
-          existingNodes.push('aggregator_transformation');
-        }
-        
-        // Initialize transformations with empty dependency arrays
-        // This ensures they start with empty dependencies until the user selects them
-        if (currentSelection === 'filter' || currentSelection === 'both') {
-          // Initialize filter transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                filter_transformation: {
-                  ...(source.filter_transformation || {}),
-                  dependent_on: [] // Empty array - will be filled when user selects dependency
-                }
-              };
-            });
-          });
-        }
-        
-        if (currentSelection === 'schema' || currentSelection === 'both') {
-          // Initialize schema transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                schema_transformation: {
-                  ...(source.schema_transformation || {}),
-                  dependent_on: [] // Empty array - will be filled when user selects dependency
-                }
-              };
-            });
-          });
-        }
-        
-        if (currentSelection === 'sorter') {
-          // Initialize sorter transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                sorter_transformation: {
-                  ...(source.sorter_transformation || {}),
-                  dependent_on: [], // Empty array - will be filled when user selects dependency
-                  sort_columns: [{ column_name: 'id', sort_order: 'asc' }]
-                }
-              };
-            });
-          });
-        }
-        
-        if (currentSelection === 'aggregator') {
-          // Initialize aggregator transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                aggregator_transformation: {
-                  ...(source.aggregator_transformation || {}),
-                  dependent_on: [], // Empty array - will be filled when user selects dependency
-                  aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                  group_by: [{ group_by: 'category' }]
-                }
-              };
-            });
-          });
-        }
-        
-        if (currentSelection === 'target') {
-          // Initialize target transformation with empty dependency array
-          setSelectedSources(prevSources => {
-            return prevSources.map(source => {
-              return {
-                ...source,
-                target_transformation: {
-                  ...(source.target_transformation || {}),
-                  dependent_on: [] // Empty array - will be filled when user selects dependency
-                }
-              };
-            });
-          });
-        }
-        
-        // Immediately update the pipeline template with the new transformations
-        // This ensures the template is updated as soon as a transformation is selected
-        // Use a timeout to ensure state updates have been processed
-        setTimeout(() => {
-          const updatedTemplate = generatePipelineTemplate();
-          setPipelineJson(updatedTemplate);
-          console.log("Pipeline template updated with new transformations:", updatedTemplate);
-        }, 0);
-
-        // Handle the current selection
-        if (currentSelection === 'filter') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('filter_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this filter? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Prepare filter form initial values (will be updated after dependency selection)
-            setFilterFormInitialValues({
-              condition: filterCondition || '',
-              name: 'filter_transformation',
-              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
-            });
-            setFilterName('filter_transformation');
-            
-            // Pre-load the filter schema in advance
-            // import('@/components/bh-reactflow-comps/builddata/json/Filter.json')
-            //   .then(schema => {
-            //     setFilterSchema(schema.default || schema);
-            //   })
-            //   .catch(error => {
-            //     console.error("Error loading filter schema:", error);
-            //   });
-              
-            // Show the dependency selection UI and add the message
-            // These should be done last to ensure everything is ready
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'schema') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('schema_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this schema transformation? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Initialize schema transformation with empty dependency array in selectedSources
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  schema_transformation: {
-                    ...(source.schema_transformation || {}),
-                    name: 'schema_transformation',
-                    transformation: 'SchemaTransformation',
-                    derived_fields: [{ name: '', expression: '' }],
-                    dependent_on: [] // Empty array - will be filled when user selects dependency
-                  }
-                };
-              });
-            });
-            
-            // Prepare schema form initial values (will be updated after dependency selection)
-            // Initialize with proper structure to ensure the form renders correctly
-            setSchemaFormInitialValues({
-              name: 'schema_transformation',
-              derived_fields: [{ name: '', expression: '' }],
-              dependent_on: [] // Empty array - will be filled when user selects dependency
-            });
-            setSchemaName('schema_transformation');
-            
-            // Use schema transformation schema from mdata.json
-            if (!schemaTransformationSchema) {
-              const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
-              if (schemaTransformationSchemaFromMdata) {
-                // Add nodeId to the schema to match the format expected by CreateFormFormik
-                setSchemaTransformationSchema({
-                  ...schemaTransformationSchemaFromMdata,
-                  nodeId: 'schema_transformation'
-                });
-                console.log("Loaded schema transformation schema from mdata.json");
-              } else {
-                console.error("Schema transformation schema not found in mdata.json");
-              }
-            }
-              
-            // Show the dependency selection UI and add the message
-            // These should be done last to ensure everything is ready
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'both') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection for both transformations
-            setTransformationSubStep('both_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add these transformations? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Prepare filter form initial values (will be updated after dependency selection)
-            setFilterFormInitialValues({
-              condition: filterCondition || '',
-              name: 'filter_transformation',
-              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
-            });
-            setFilterName('filter_transformation');
-            
-            // Use schemas from mdata.json
-            try {
-              if (!filterSchema) {
-                const filterSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "Filter");
-                if (filterSchemaFromMdata) {
-                  // Add nodeId to the schema to match the format expected by CreateFormFormik
-                  setFilterSchema({
-                    ...filterSchemaFromMdata,
-                    nodeId: 'filter_transformation'
-                  });
-                  console.log("Loaded filter schema from mdata.json");
-                } else {
-                  console.error("Filter schema not found in mdata.json");
-                }
-              }
-              
-              if (!schemaTransformationSchema) {
-                const schemaTransformationSchemaFromMdata = mdataJson.schema.find((schema: any) => schema.title === "SchemaTransformation");
-                if (schemaTransformationSchemaFromMdata) {
-                  // Add nodeId to the schema to match the format expected by CreateFormFormik
-                  setSchemaTransformationSchema({
-                    ...schemaTransformationSchemaFromMdata,
-                    nodeId: 'schema_transformation'
-                  });
-                  console.log("Loaded schema transformation schema from mdata.json");
-                } else {
-                  console.error("Schema transformation schema not found in mdata.json");
-                }
-              }
-            } catch (error) {
-              console.error("Error loading schemas from mdata.json:", error);
-            }
-            
-            // Show the dependency selection UI and add the message
-            // These should be done last to ensure everything is ready
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'sorter') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('sorter_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this sorter transformation? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Initialize sorter transformation with empty dependency array in selectedSources
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  sorter_transformation: {
-                    ...(source.sorter_transformation || {}),
-                    name: 'sorter_transformation',
-                    transformation: 'Sorter',
-                    sort_columns: [{ column_name: 'id', sort_order: 'asc' }],
-                    dependent_on: [] // Empty array - will be filled when user selects dependency
-                  }
-                };
-              });
-            });
-            
-            // Show the dependency selection UI and add the message
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'aggregator') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('aggregator_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this aggregation transformation? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Initialize aggregator transformation with empty dependency array in selectedSources
-            setSelectedSources(prevSources => {
-              return prevSources.map(source => {
-                return {
-                  ...source,
-                  aggregator_transformation: {
-                    ...(source.aggregator_transformation || {}),
-                    name: 'aggregator_transformation',
-                    transformation: 'Aggregator',
-                    aggregations: [{ target_column: 'total_count', expression: 'count(*)' }],
-                    group_by: [{ group_by: 'category' }],
-                    dependent_on: [] // Empty array - will be filled when user selects dependency
-                  }
-                };
-              });
-            });
-            
-            // Show the dependency selection UI and add the message
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else if (currentSelection === 'target') {
-          // Use startTransition to prevent UI from being replaced with loading indicator
-          startTransition(() => {
-            // First, ask for dependency selection
-            setTransformationSubStep('target_dependency');
-            
-            // Create a message with dependency options
-            let dependencyMessage = "After which step would you like to add this output target? Please select from the options below:";
-            
-            // Add the dependency selection options as buttons
-            const dependencyButtons = existingNodes.map((node, index) => ({
-              label: `${index + 1}. ${node}`,
-              value: node
-            }));
-            
-            // Set the dependency selection options
-            setDependencyOptions(dependencyButtons);
-            
-            // Prepare initial values for the Writer form (will be updated after dependency selection)
-            const initialValues = {
-              name: targetName || 'write_output',
-              target: {
-                target_name: targetName || 'output_data',
-                target_type: 'File',
-                load_mode: 'append',
-                connection: {
-                  connection_type: 'Local',
-                  file_path_prefix: 'examples/'
-                },
-                file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`
-              },
-              file_type: 'CSV',
-              write_options: {
-                header: true,
-                sep: ',',
-                createDisposition: 'CREATE_IF_NEEDED',
-                writeMethod: 'APPEND'
-              },
-              dependent_on: existingNodes.length > 0 ? [existingNodes[existingNodes.length - 1]] : []
-            };
-  
-            setWriterFormInitialValues(initialValues);
-            
-            // Show the dependency selection UI and add the message
-            // These should be done last to ensure everything is ready
-            setShowDependencySelection(true);
-            addAssistantMessage(dependencyMessage);
-          });
-        } else {
-          // No valid selection made
-          setTransformationSubStep('select');
-          addAssistantMessage("Please select at least one transformation type or target configuration.");
-        }
-        break;
-
-      case 'filter_condition':
-        // Save the filter condition
-        setFilterCondition(input);
-
-        // Return to transformation selection to allow adding more transformations
-        setTransformationSubStep('select');
-        addAssistantMessage(
-          "Great! The filter transformation has been added. Would you like to add another transformation?\n\n" +
-          "1. Filter Transformation - Filter data based on conditions\n" +
-          "2. Schema Transformation - Create new fields or modify existing ones\n" +
-          "3. Sorter Transformation - Sort data based on columns\n" +
-          "4. Aggregation Transformation - Aggregate data with group by\n" +
-          "5. Target - Configure output target\n\n" +
-          "Please select an option from the buttons below."
-        );
-        break;
-
-      case 'target_name':
-        // Save the target name and update target configuration
-        setTargetConfig(prev => ({
-          ...prev,
-          customConfig: {
-            ...prev.customConfig,
-            name: input
-          }
-        }));
-        setTargetName(input);
-
-        // Return to transformation selection to allow adding more transformations
-        setTransformationSubStep('select');
-
-        // Build and update the pipeline template
-        const targetNameTemplate = generatePipelineTemplate();
-        setPipelineJson(targetNameTemplate);
-
-        // Ask if the user wants to add more transformations
-        addAssistantMessage(
-          "Great! I've saved your output name. Would you like to add more transformations to your pipeline?\n\n" +
-          "1. Filter Transformation - Filter data based on conditions\n" +
-          "2. Schema Transformation - Create new fields or modify existing ones\n" +
-          "3. Target - Skip transformations not needed\n\n" +
-          "Please select an option from the buttons below."
-        );
-        break;
-
-      case 'target_type':
-        // Process target type selection
-        let targetType: 'File' | 'Database' | 'Custom' = 'File';
-        const typeInput = input.toLowerCase().trim();
-
-        if (typeInput.includes('1') || typeInput.includes('file')) {
-          targetType = 'File';
-          setTargetConfig(prev => ({
-            ...prev,
-            type: 'File',
-            connectionType: 'Local',
-            filePath: 'examples/'
-          }));
-
-          // Ask for file format
-          setTransformationSubStep('file_format');
-          addAssistantMessage(
-            `What file format would you like to use for your output?\n\n` +
-            `1. CSV\n` +
-            `2. JSON\n` +
-            `3. Parquet\n` +
-            `4. Other\n\n` +
-            `Please select a number or type your preference.`
-          );
-        } else if (typeInput.includes('2') || typeInput.includes('database') || typeInput.includes('db')) {
-          targetType = 'Database';
-          setTargetConfig(prev => ({
-            ...prev,
-            type: 'Database',
-            connectionType: 'PostgreSQL' // Default, can be changed
-          }));
-
-          // Ask for database type
-          setTransformationSubStep('db_type');
-          addAssistantMessage(
-            `What type of database would you like to use?\n\n` +
-            `1. PostgreSQL\n` +
-            `2. MySQL\n` +
-            `3. SQLite\n` +
-            `4. Other\n\n` +
-            `Please select a number or type your preference.`
-          );
-        } else if (typeInput.includes('3') || typeInput.includes('custom')) {
-          targetType = 'Custom';
-          setTargetConfig(prev => ({
-            ...prev,
-            type: 'Custom',
-            customConfig: {
-              ...prev.customConfig,
-              target_type: 'Custom'
-            }
-          }));
-
-          // Skip to summary for custom - user can configure details elsewhere
-          setTransformationSubStep('summary');
-
-          // Build the final pipeline template
-          const customTargetTemplate = generatePipelineTemplate();
-          setPipelineJson(customTargetTemplate);
-
-          // Show summary and ask for confirmation
-          addAssistantMessage(
-            `Great! I've configured your pipeline with the following details:\n\n` +
-            `- Name: ${pipelineName}\n` +
-            `- Description: ${pipelineDescription || "(none)"}\n` +
-            `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-            `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-            `- Output: ${input || "output_data"} (Custom)\n\n` +
-            `Would you like to create this pipeline now?`
-          );
-
-          setStep('confirm');
-        } else {
-          // Default to File if input is unclear
-          targetType = 'File';
-          setTargetConfig(prev => ({
-            ...prev,
-            type: 'File'
-          }));
-
-          // Skip to summary
-          setTransformationSubStep('summary');
-
-          // Build the final pipeline template
-          const fileTargetSummaryTemplate = generatePipelineTemplate();
-          setPipelineJson(fileTargetSummaryTemplate);
-
-          // Show summary and ask for confirmation
-          addAssistantMessage(
-            `Great! I've configured your pipeline with the following details:\n\n` +
-            `- Name: ${pipelineName}\n` +
-            `- Description: ${pipelineDescription || "(none)"}\n` +
-            `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-            `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-            `- Output: ${input || "output_data"} (File)\n\n` +
-            `Would you like to create this pipeline now?`
-          );
-
-          setStep('confirm');
-        }
-        break;
-
-      case 'file_format':
-        // Process file format selection
-        let fileFormat = 'CSV';
-        const formatInput = input.toLowerCase().trim();
-
-        if (formatInput.includes('1') || formatInput.includes('csv')) {
-          fileFormat = 'CSV';
-        } else if (formatInput.includes('2') || formatInput.includes('json')) {
-          fileFormat = 'JSON';
-        } else if (formatInput.includes('3') || formatInput.includes('parquet')) {
-          fileFormat = 'Parquet';
-        } else if (formatInput.includes('4') || formatInput.includes('other')) {
-          // If other, use what they typed after "other"
-          const match = formatInput.match(/other\s+(.+)/i);
-          if (match && match[1]) {
-            fileFormat = match[1].toUpperCase();
-          } else {
-            // Ask for the specific format
-            addAssistantMessage("Please specify the file format you'd like to use:");
-            return; // Wait for next input
-          }
-        } else {
-          // Use whatever they typed
-          fileFormat = input.trim();
-        }
-
-        // Update target config with file format
-        setTargetConfig(prev => ({
-          ...prev,
-          fileFormat
-        }));
-
-        // Ask for file path
-        setTransformationSubStep('file_path');
-        addAssistantMessage(
-          `What directory path would you like to use for your output file? (Default: examples/)`
-        );
-        break;
-
-      case 'file_path':
-        // Process file path
-        const filePath = input.trim() || 'examples/';
-
-        // Update target config with file path
-        setTargetConfig(prev => ({
-          ...prev,
-          filePath
-        }));
-
-        // Move to summary
-        setTransformationSubStep('summary');
-
-        // Build the final pipeline template
-        const fileTargetTemplate = generatePipelineTemplate();
-        setPipelineJson(fileTargetTemplate);
-
-        // Show summary and ask for confirmation
-        addAssistantMessage(
-          `Great! I've configured your pipeline with the following details:\n\n` +
-          `- Name: ${pipelineName}\n` +
-          `- Description: ${pipelineDescription || "(none)"}\n` +
-          `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-          `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-          `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.fileFormat})\n\n` +
-          `Would you like to create this pipeline now?`
-        );
-
-        setStep('confirm');
-        break;
-
-      case 'db_type':
-        // Process database type selection
-        let dbType = 'PostgreSQL';
-        const dbTypeInput = input.toLowerCase().trim();
-
-        if (dbTypeInput.includes('1') || dbTypeInput.includes('postgres')) {
-          dbType = 'PostgreSQL';
-        } else if (dbTypeInput.includes('2') || dbTypeInput.includes('mysql')) {
-          dbType = 'MySQL';
-        } else if (dbTypeInput.includes('3') || dbTypeInput.includes('sqlite')) {
-          dbType = 'SQLite';
-        } else if (dbTypeInput.includes('4') || dbTypeInput.includes('other')) {
-          // If other, use what they typed after "other"
-          const match = dbTypeInput.match(/other\s+(.+)/i);
-          if (match && match[1]) {
-            dbType = match[1];
-          } else {
-            // Ask for the specific database type
-            addAssistantMessage("Please specify the database type you'd like to use:");
-            return; // Wait for next input
-          }
-        } else {
-          // Use whatever they typed
-          dbType = input.trim();
-        }
-
-        // Update target config with database type
-        setTargetConfig(prev => ({
-          ...prev,
-          connectionType: dbType
-        }));
-
-        // Ask for schema
-        setTransformationSubStep('db_schema');
-        addAssistantMessage(
-          `What schema would you like to use for your database target? (Default: public)`
-        );
-        break;
-
-      case 'db_schema':
-        // Process database schema
-        const schema = input.trim() || 'public';
-
-        // Update target config with schema
-        setTargetConfig(prev => ({
-          ...prev,
-          schema
-        }));
-
-        // Ask for database name
-        setTransformationSubStep('db_name');
-        addAssistantMessage(
-          `What is the name of the database you'd like to use? (Default: postgres)`
-        );
-        break;
-
-      case 'db_name':
-        // Process database name
-        const database = input.trim() || 'postgres';
-
-        // Update target config with database name
-        setTargetConfig(prev => ({
-          ...prev,
-          database
-        }));
-
-        // Move to summary
-        setTransformationSubStep('summary');
-
-        // Build the final pipeline template
-        const dbTargetTemplate = generatePipelineTemplate();
-        setPipelineJson(dbTargetTemplate);
-
-        // Show summary and ask for confirmation
-        addAssistantMessage(
-          `Great! I've configured your pipeline with the following details:\n\n` +
-          `- Name: ${pipelineName}\n` +
-          `- Description: ${pipelineDescription || "(none)"}\n` +
-          `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-          `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-          `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.connectionType})\n\n` +
-          `Would you like to create this pipeline now?`
-        );
-
-        setStep('confirm');
-        break;
-
-      case 'connection_choice':
-        // Save the connection choice
-        const useDbConnection = input.toLowerCase().includes('yes') || input.toLowerCase().includes('y');
-        setUseSourceConnection(useDbConnection);
-
-        if (useDbConnection) {
-          // Update target config to use database connection from source
-          const sourceConnectionType = selectedSources[0].connection_config?.custom_metadata?.connection_type || 'PostgreSQL';
-          const sourceSchema = selectedSources[0].connection_config?.custom_metadata?.schema || 'public';
-          const sourceDatabase = selectedSources[0].connection_config?.custom_metadata?.database || 'postgres';
-
-          setTargetConfig(prev => ({
-            ...prev,
-            type: 'Database',
-            connectionType: sourceConnectionType,
-            schema: sourceSchema,
-            database: sourceDatabase
-          }));
-        } else {
-          // Ask for target type since they don't want to use source connection
-          setTransformationSubStep('target_type');
-
-          addAssistantMessage(
-            `What type of target would you like to use for your output?\n\n` +
-            `1. File (CSV, JSON, etc.)\n` +
-            `2. Database (different from source)\n` +
-            `3. Custom\n\n` +
-            `Please select a number or type your preference.`
-          );
-          return; // Wait for next input
-        }
-
-        // Move to summary
-        setTransformationSubStep('summary');
-
-        // Build the final pipeline template with the updated connection choice
-        const connectionChoiceTemplate = generatePipelineTemplate();
-        setPipelineJson(connectionChoiceTemplate);
-        console.log("Final pipeline template with connection choice:", connectionChoiceTemplate);
-
-        // Show summary and ask for confirmation
-        addAssistantMessage(
-          `Great! I've configured your pipeline with the following details:\n\n` +
-          `- Name: ${pipelineName}\n` +
-          `- Description: ${pipelineDescription || "(none)"}\n` +
-          `- Sources: ${selectedSources.map(s => s.data_src_name).join(", ")}\n` +
-          `- Transformations: ${transformations.filter(t => t !== 'target').join(", ") || "(none)"}\n` +
-          `- Output: ${targetConfig.customConfig?.name || "output_data"} (${targetConfig.type}: ${targetConfig.connectionType})\n\n` +
-          `Would you like to create this pipeline now?`
-        );
-
-        setStep('confirm');
-        break;
-
-      default:
-        break;
-    }
-
-    // Update the pipeline template
-    const pipelineTemplate = generatePipelineTemplate();
-    setPipelineJson(pipelineTemplate);
-  };
-
-  const handleConfirmStep = async (input: string) => {
-    const userInput = input.toLowerCase().trim();
-
-    if (userInput.includes('yes') || userInput.includes('create') || userInput.includes('confirm')) {
-      // User confirmed, create the pipeline
-      try {
-
-        // Get the final pipeline template
-        const finalTemplate = generatePipelineTemplate();
-
-        // Log the final template for debugging
-        console.log("Final pipeline template for creation:", finalTemplate);
-
-        // Create the pipeline
-        const response: any = await apiService.post({
-          portNumber: CATALOG_API_PORT,
-          url: `/pipeline/`,
-          usePrefix: true,
-          method: 'POST',
-          data: {
-            pipeline_name: pipelineName,
-            pipeline_desc: pipelineDescription || `Pipeline created with AI assistant`,
-            pipeline_json: JSON.stringify(finalTemplate),
-            pipeline_type: "DATA"
-          }
-        });
-
-        if (response && response.pipeline_id) {
-          // Success!
-          addAssistantMessage(
-            `Success! I've created your pipeline "${pipelineName}". ` +
-            `You can now view and edit it in the pipeline designer.`
-          );
-
-          // Notify the parent component that a pipeline was created
-          if (onPipelineCreated) {
-            onPipelineCreated(response.pipeline_id);
-          }
-
-          // Close the chat after a delay
-          setTimeout(() => {
-            onClose();
-          }, 3000);
-        } else {
-          throw new Error("Failed to create pipeline");
-        }
-      } catch (error) {
-        console.error("Error creating pipeline:", error);
-        addAssistantMessage("I encountered an error while creating your pipeline. Please try again later.");
-      } finally {
-      }
-    } else {
-      // User wants to edit, go back to the beginning
-      addAssistantMessage("No problem! Let's start over. What would you like to name your pipeline?");
-      setStep('name');
-      resetPipelineCreationState();
-    }
-  };
-
- 
-  
-  // Handle ReaderOptionsForm source update
-  const handleReaderOptionsUpdate = (sourceData: any) => {
-    console.log("Source updated:", sourceData);
-    
-    // Handle the source update
-    if (currentSourceData && sourceData.sourceData) {
-      // Update the current source data with the new configuration
-      const updatedSource = {
-        ...currentSourceData,
-        ...sourceData.sourceData.data.source
-      };
-      
-      // Update selected sources
-      const updatedSources = selectedSources.map(source => 
-        source.data_src_id === updatedSource.data_src_id ? updatedSource : source
-      );
-      
-      if (updatedSources.length === 0) {
-        // If no sources were updated, add the new source
-        updatedSources.push(updatedSource);
-      }
-      
-      setSelectedSources(updatedSources);
-      
-      // Add a message to show the configuration
-      addAssistantMessage(
-        `Reader configuration saved for "${updatedSource.data_src_name}". ` +
-        `Would you like to add another data source, or continue to the next step? ` +
-        `Say "continue" to proceed to transformations.`
-      );
-      
-      // Build and update the pipeline template
-      const pipelineTemplate = generatePipelineTemplate();
-      setPipelineJson(pipelineTemplate);
-    }
-    
-    // Hide the form
-    setShowReaderForm(false);
-  };
-  
-  // Handle TargetPopUp source update
-  const handleTargetUpdate = (sourceData: any) => {
-    console.log("Target updated:", sourceData);
-    
-    // Save target configuration
-    if (sourceData.sourceData) {
-      const targetData = sourceData.sourceData.data;
-      
-      // Extract the source data from the form
-      const source = targetData.source;
-      
-      // Update the target name
-      setTargetName(targetData.label || targetData.title || source.name);
-      
-      // Update the target configuration with the correct mapping
-      const newTargetConfig = {
-        type: source.target_type, // Use target_type instead of type
-        connectionType: source.connection?.connection_type || source.connection?.type || 'Local',
-        filePath: source.connection?.file_path_prefix || 'examples/',
-        fileFormat: source.file_type,
-        schema: source.connection?.schema,
-        database: source.connection?.database,
-        connection: source.connection,
-        customConfig: {
-          name: targetData.label || targetData.title || source.name,
-          targetName: source.target_name,
-          tableName: source.table_name,
-          loadMode: source.load_mode,
-          fileName: source.file_name,
-        }
-      };
-      
-      // Process dependency selection if provided
-      let dependencyMessage = "";
-      let updatedSources = [...selectedSources];
-      
-      if (targetData.dependent_on && targetData.dependent_on.length > 0) {
-        dependencyMessage = ` (after ${targetData.dependent_on.join(', ')})`;
-        
-        // Store the dependency information in the source data
-        if (selectedSources.length > 0) {
-          updatedSources = selectedSources.map(source => {
-            return {
-              ...source,
-              target_transformation: {
-                ...source.target_transformation,
-                dependent_on: targetData.dependent_on
-              }
-            };
-          });
-          setSelectedSources(updatedSources);
-        }
-      }
-      
-      // Add a message to show the target configuration
-      const targetType = source.target_type;
-      let targetDetails = '';
-      
-      if (targetType === 'File') {
-        targetDetails = `${source.file_type} file: ${source.file_name}`;
-      } else if (targetType === 'Relational') {
-        targetDetails = `Database: ${source.connection?.database || 'default'}`;
-      }
-      
-      // Get existing transformations and sources for suggestions
-      const existingNodes = [];
-      
-      // Add reader nodes from sources
-      if (updatedSources.length > 0) {
-        updatedSources.forEach(source => {
-          existingNodes.push(`read_${source.data_src_name}`);
-        });
-      }
-      
-      // Add existing transformation nodes
-      if (transformations.includes('schema')) {
-        existingNodes.push('schema_transformation');
-      }
-      if (transformations.includes('filter')) {
-        existingNodes.push('filter_transformation');
-      }
-
-      // Create a list of existing transformations for the message
-      let transformationsList = "";
-      if (existingNodes.length > 0) {
-        transformationsList = "\n\nFinal pipeline steps:\n";
-        existingNodes.forEach((node, index) => {
-          transformationsList += `${index + 1}. ${node}\n`;
-        });
-        transformationsList += `${existingNodes.length + 1}. write_output (${targetDetails})`;
-      }
-      
-      // Add 'target' to transformations if not already included
-      let updatedTransformations = [...transformations];
-      if (!transformations.includes('target')) {
-        updatedTransformations = [...transformations, 'target'];
-        setTransformations(updatedTransformations);
-      }
-      
-      addAssistantMessage(
-        `Target configuration saved: ${targetType} target (${targetDetails})${dependencyMessage}.${transformationsList}\n\n` +
-        `Your pipeline is now ready to be created. Would you like to review the pipeline or create it now?`
-      );
-      
-      // Move to confirm step
-      setStep('confirm');
-      
-      // Update the target configuration state first
-      setTargetConfig(newTargetConfig);
-      setSelectedSources(updatedSources);
-      setTransformations(updatedTransformations);
-      
-      // Use setTimeout to ensure all state updates have been processed
-      setTimeout(() => {
-        // Use generatePipelineTemplate to create the updated template
-        const pipelineTemplate = generatePipelineTemplate();
-        console.log("Updated pipeline template after target configuration:", pipelineTemplate);
-        setPipelineJson(pipelineTemplate);
-        
-        // Force a second update to ensure the pipeline is fully updated
-        setTimeout(() => {
-          const finalTemplate = generatePipelineTemplate();
-          setPipelineJson(finalTemplate);
-          console.log("Final pipeline template after target configuration:", finalTemplate);
-        }, 100);
-      }, 0);
-      
-      // Remove the setTimeout call that was causing the reset issue
-      // The pipeline JSON is already updated with the correct target configuration
-    }
-    
-    // Hide the form and reset the transformation sub-step if needed
-    setShowWriterForm(false);
-    if (transformationSubStep === 'target_form') {
-      setTransformationSubStep('select');
-    }
-  };
-
-  // Handle reader form submission
-  const handleReaderFormSubmit = (formData: any) => {
-    console.log("Reader form submitted:", formData);
-
-    // Add the source with the updated configuration
-    if (currentSourceData) {
-      // Create a deep copy of the current source data
-      const updatedSource = JSON.parse(JSON.stringify(currentSourceData));
-
-      // Update basic properties
-      updatedSource.data_src_name = formData.reader_name;
-      updatedSource.file_type = formData.file_type;
-
-      // Update source-specific properties
-      if (formData.source.type === 'File') {
-        updatedSource.file_path = formData.source.file_path;
-        updatedSource.file_path_prefix = formData.source.file_path;
-
-        // Update read options if present
-        if (formData.read_options) {
-          updatedSource.read_options = {
-            header: formData.read_options.header,
-            delimiter: formData.read_options.delimiter,
-            quote: formData.read_options.quote
-          };
-        }
-
-        // Clear any relational-specific properties
-        delete updatedSource.table_name;
-        delete updatedSource.query;
-
-        // Set connection config to null or default for file sources
-        updatedSource.connection_config = null;
-      } else if (formData.source.type === 'Relational') {
-        // Set up connection config for relational sources
-        updatedSource.connection_config = {
-          connection_config_name: currentSourceData.connection_config?.connection_config_name || "custom",
-          custom_metadata: {
-            connection_type: formData.source.connection.type,
-            database: formData.source.connection.database,
-            schema: formData.source.connection.schema
-          }
-        };
-
-        // Set table name
-        updatedSource.table_name = formData.source.connection.table;
-
-        // Set query if present
-        if (formData.query) {
-          updatedSource.query = formData.query;
-        }
-
-        // Clear any file-specific properties
-        delete updatedSource.file_path;
-        delete updatedSource.file_path_prefix;
-        delete updatedSource.read_options;
-      }
-
-      // Log the updated source for debugging
-      console.log("Updated source:", updatedSource);
-
-      // Add to selected sources
-      const updatedSources = [...selectedSources, updatedSource];
-      setSelectedSources(updatedSources);
-
-      // Add a message to show the configuration
-      addUserMessage(`Reader configuration saved for "${formData.reader_name}"`);
-
-      // Hide the form
-      setShowReaderForm(false);
-
-      // Regenerate the pipeline template with the updated reader configuration
-      const readerConfigTemplate = generatePipelineTemplate();
-      setPipelineJson(readerConfigTemplate);
-      console.log("Updated pipeline template after reader form submission:", readerConfigTemplate);
-
-      // Ask if they want to add another source or continue
-      addAssistantMessage(
-        `I've added the data source "${formData.reader_name}" to your pipeline. ` +
-        `Would you like to add another data source, or shall we move on to adding transformations? ` +
-        `Say "add another" to search for another source, or "continue" to proceed to transformations.`
-      );
-    }
-  };
-
-  // Handle filter form submission
-  const handleFilterFormSubmit = (formData: any) => {
-    console.log("Filter form submitted:", formData);
-
-    // Save filter condition
-    setFilterCondition(formData.condition);
-
-    // Process dependency selection if provided
-    let dependencyMessage = "";
-    if (formData.dependent_on && formData.dependent_on.length > 0) {
-      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
-      
-      // Store the dependency information in the source data
-      if (selectedSources.length > 0) {
-        const updatedSources = selectedSources.map(source => {
-          return {
-            ...source,
-            filter_transformation: {
-              ...source.filter_transformation,
-              dependent_on: formData.dependent_on
-            }
-          };
-        });
-        setSelectedSources(updatedSources);
-      }
-      
-      // Update the pipeline JSON directly
-      const updatedPipelineJson = { ...pipelineJson };
-      if (updatedPipelineJson && updatedPipelineJson.transformations) {
-        // Find the filter transformation
-        const filterTransformation = updatedPipelineJson.transformations.find(
-          (t: any) => t.name === 'filter_transformation'
-        );
-        
-        if (filterTransformation) {
-          // Update the dependency
-          filterTransformation.dependent_on = formData.dependent_on;
-          console.log("Updated filter transformation dependency in pipeline JSON:", filterTransformation);
-        }
-        
-        // Update the pipeline JSON
-        setPipelineJson(updatedPipelineJson);
-      }
-    }
-
-    // Add a message to show the selected condition
-    addUserMessage(`Filter condition: ${formData.condition}${dependencyMessage}`);
-    
-    // Regenerate the pipeline template with the updated filter condition
-    const filterConditionTemplate = generatePipelineTemplate();
-    setPipelineJson(filterConditionTemplate);
-    console.log("Updated pipeline template after filter form submission:", filterConditionTemplate);
-
-    // Hide the form
-    setShowFilterForm(false);
-
-    // Check if we need to show the schema form next (when both transformations are selected)
-    if (transformations.includes('schema') && transformations.includes('filter') && 
-        !selectedSources.some(s => s.schema_transformation)) {
-      // We need to show the schema form next
-      setTransformationSubStep('schema_form');
-      setShowSchemaForm(true);
-      addAssistantMessage(`Great! Now let's define your schema transformations below:`);
-      return; // Exit early to prevent showing the transformation selection message
-    }
-
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-
-    // Get existing transformations and sources for suggestions
-    const existingNodes = [];
-    
-    // Add reader nodes from sources
-    if (selectedSources.length > 0) {
-      selectedSources.forEach(source => {
-        existingNodes.push(`read_${source.data_src_name}`);
-      });
-    }
-    
-    // Add existing transformation nodes
-    if (transformations.includes('schema')) {
-      existingNodes.push('schema_transformation');
-    }
-    if (transformations.includes('filter')) {
-      existingNodes.push('filter_transformation');
-    }
-
-    // Create a list of existing transformations for the message
-    let transformationsList = "";
-    if (existingNodes.length > 0) {
-      transformationsList = "\n\nCurrent pipeline steps:\n";
-      existingNodes.forEach((node, index) => {
-        transformationsList += `${index + 1}. ${node}\n`;
-      });
-      transformationsList += "\nFilter transformation has been added.";
-    }
-
-    // Ask if the user wants to add more transformations
-    addAssistantMessage(
-      `Great! The filter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Target - Skip transformations not needed\n\n" +
-      "Please select an option from the buttons below."
-    );
-
-    // Note: The pipeline template is now automatically updated by the SchemaFormLoader component
-  };
-
-  // Handle schema transformation form submission
-  const handleSchemaFormSubmit = (formData: any) => {
-    console.log("Schema form submitted:", formData);
-
-    // Ensure derived_fields is an array
-    if (!Array.isArray(formData.derived_fields)) {
-      formData.derived_fields = [{ name: '', expression: '' }];
-    }
-
-    // Filter out empty derived fields
-    formData.derived_fields = formData.derived_fields.filter((field: any) => 
-      field.name && field.name.trim() !== '' && field.expression && field.expression.trim() !== ''
-    );
-
-    // If no valid derived fields, add a default one
-    if (formData.derived_fields.length === 0) {
-      formData.derived_fields = [{ name: 'derived_field', expression: 'column1' }];
-    }
-
-    // Save schema transformation
-    const derivedFields = formData.derived_fields.map((field: any) =>
-      `${field.name}: ${field.expression}`
-    ).join(', ');
-
-    // Process dependency selection if provided
-    let dependencyMessage = "";
-    if (formData.dependent_on && formData.dependent_on.length > 0) {
-      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
-      console.log("Using user-provided schema dependencies:", formData.dependent_on);
-    } else {
-      // If no dependency provided, check if we have a selected dependency
-      if (selectedDependency) {
-        formData.dependent_on = [selectedDependency];
-        dependencyMessage = ` (after ${selectedDependency})`;
-        console.log("Using selected dependency for schema:", selectedDependency);
-      } 
-      // Otherwise, use an empty array - this will be filled when user selects dependency
-      else {
-        formData.dependent_on = [];
-        console.log("No dependency provided for schema transformation");
-      }
-    }
-    
-    // Store the schema transformation data directly in the transformations array
-    // This ensures it's properly included in the pipeline template
-    const schemaTransformationData = {
-      name: "schema_transformation",
-      transformation: "SchemaTransformation",
-      dependent_on: formData.dependent_on,
-      derived_fields: formData.derived_fields
-    };
-    
-    // Update the selected sources with the schema transformation data
-    if (selectedSources.length > 0) {
-      const updatedSources = selectedSources.map(source => {
-        return {
-          ...source,
-          schema_transformation: schemaTransformationData
-        };
-      });
-      setSelectedSources(updatedSources);
-    }
-    
-    // Update the pipeline JSON directly
-    const updatedPipelineJson = { ...pipelineJson };
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      // Find the schema transformation
-      const schemaTransformation = updatedPipelineJson.transformations.find(
-        (t: any) => t.name === 'schema_transformation'
-      );
-      
-      if (schemaTransformation) {
-        // Update existing schema transformation
-        schemaTransformation.derived_fields = formData.derived_fields;
-        schemaTransformation.dependent_on = formData.dependent_on;
-        console.log("Updated schema transformation in pipeline JSON:", schemaTransformation);
-      } else {
-        // Add new schema transformation
-        updatedPipelineJson.transformations.push(schemaTransformationData);
-        console.log("Added new schema transformation to pipeline JSON:", schemaTransformationData);
-      }
-      
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-
-    // Add a message to show the selected derived fields
-    addUserMessage(`Schema transformation: ${derivedFields}${dependencyMessage}`);
-
-    // Hide the form
-    setShowSchemaForm(false);
-
-    // Regenerate the pipeline template with the updated schema transformation
-    // Use a timeout to ensure state updates have been processed
-    setTimeout(() => {
-      const schemaTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(schemaTransformTemplate);
-      console.log("Updated pipeline template after schema form submission:", schemaTransformTemplate);
-      
-      // Log the schema transformation in the pipeline template
-      const schemaTransformation = schemaTransformTemplate.transformations.find(
-        (t: any) => t.name === 'schema_transformation'
-      );
-      console.log("Schema transformation in pipeline template:", schemaTransformation);
-    }, 0);
-
-    // Add assistant message confirming the schema transformation was added
-    addAssistantMessage(`Great! I've added the schema transformation with the following derived fields: ${derivedFields}${dependencyMessage}`);
-
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-
-    // Get existing transformations and sources for suggestions
-    const existingNodes = [];
-    
-    // Add reader nodes from sources
-    if (selectedSources.length > 0) {
-      selectedSources.forEach(source => {
-        existingNodes.push(`read_${source.data_src_name}`);
-      });
-    }
-    
-    // Add existing transformation nodes
-    if (transformations.includes('schema')) {
-      existingNodes.push('schema_transformation');
-    }
-    if (transformations.includes('filter')) {
-      existingNodes.push('filter_transformation');
-    }
-
-    // Create a list of existing transformations for the message
-    let transformationsList = "";
-    if (existingNodes.length > 0) {
-      transformationsList = "\n\nCurrent pipeline steps:\n";
-      existingNodes.forEach((node, index) => {
-        transformationsList += `${index + 1}. ${node}\n`;
-      });
-      transformationsList += "\nSchema transformation has been added.";
-    }
-
-    // Ask if the user wants to add more transformations
-    addAssistantMessage(
-      `Great! The schema transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Sorter Transformation - Sort data based on columns\n" +
-      "4. Aggregation Transformation - Aggregate data with group by\n" +
-      "5. Target - Configure output target\n\n" +
-      "Please select an option from the buttons below."
-    );
-  };
-  
-  // Handle sorter form submission
-  const handleSorterFormSubmit = (formData: any) => {
-    console.log("Sorter form submitted:", formData);
-    
-    // Ensure sort_columns is an array
-    if (!Array.isArray(formData.sort_columns)) {
-      formData.sort_columns = [{ column_name: 'id', sort_order: 'asc' }];
-    }
-    
-    // Filter out empty sort columns
-    formData.sort_columns = formData.sort_columns.filter((column: any) => 
-      column.column_name && column.column_name.trim() !== ''
-    );
-    
-    // If no valid sort columns, add a default one
-    if (formData.sort_columns.length === 0) {
-      formData.sort_columns = [{ column_name: 'id', sort_order: 'asc' }];
-    }
-    
-    // Save sorter transformation
-    const sortColumns = formData.sort_columns.map((column: any) =>
-      `${column.column_name} ${column.sort_order}`
-    ).join(', ');
-    
-    // Process dependency selection if provided
-    let dependencyMessage = "";
-    if (formData.dependent_on && formData.dependent_on.length > 0) {
-      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
-      console.log("Using user-provided sorter dependencies:", formData.dependent_on);
-    } else {
-      // If no dependency provided, check if we have a selected dependency
-      if (selectedDependency) {
-        formData.dependent_on = [selectedDependency];
-        dependencyMessage = ` (after ${selectedDependency})`;
-        console.log("Using selected dependency for sorter:", selectedDependency);
-      } 
-      // Otherwise, use an empty array - this will be filled when user selects dependency
-      else {
-        formData.dependent_on = [];
-        console.log("No dependency provided for sorter transformation");
-      }
-    }
-    
-    // Store the sorter transformation data directly in the transformations array
-    const sorterTransformationData = {
-      name: "sorter_transformation",
-      transformation: "Sorter",
-      dependent_on: formData.dependent_on,
-      sort_columns: formData.sort_columns
-    };
-    
-    // Update the selected sources with the sorter transformation data
-    if (selectedSources.length > 0) {
-      const updatedSources = selectedSources.map(source => {
-        return {
-          ...source,
-          sorter_transformation: sorterTransformationData
-        };
-      });
-      setSelectedSources(updatedSources);
-    }
-    
-    // Update the pipeline JSON directly
-    const updatedPipelineJson = { ...pipelineJson };
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      // Find the sorter transformation
-      const sorterTransformation = updatedPipelineJson.transformations.find(
-        (t: any) => t.name === 'sorter_transformation'
-      );
-      
-      if (sorterTransformation) {
-        // Update existing sorter transformation
-        sorterTransformation.sort_columns = formData.sort_columns;
-        sorterTransformation.dependent_on = formData.dependent_on;
-        console.log("Updated sorter transformation in pipeline JSON:", sorterTransformation);
-      } else {
-        // Add new sorter transformation
-        updatedPipelineJson.transformations.push(sorterTransformationData);
-        console.log("Added new sorter transformation to pipeline JSON:", sorterTransformationData);
-      }
-      
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-    
-    // Add a message to show the selected sort columns
-    addUserMessage(`Sorter transformation: ${sortColumns}${dependencyMessage}`);
-    
-    // Hide the form
-    setShowSorterForm(false);
-    
-    // Regenerate the pipeline template with the updated sorter transformation
-    setTimeout(() => {
-      const sorterTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(sorterTransformTemplate);
-      console.log("Updated pipeline template after sorter form submission:", sorterTransformTemplate);
-      
-      // Log the sorter transformation in the pipeline template
-      const sorterTransformation = sorterTransformTemplate.transformations.find(
-        (t: any) => t.name === 'sorter_transformation'
-      );
-      console.log("Sorter transformation in pipeline template:", sorterTransformation);
-    }, 0);
-    
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-    
-    // Get existing transformations and sources for suggestions
-    const existingNodes = [];
-    
-    // Add reader nodes from sources
-    if (selectedSources.length > 0) {
-      selectedSources.forEach(source => {
-        existingNodes.push(`read_${source.data_src_name}`);
-      });
-    }
-    
-    // Add existing transformation nodes
-    if (transformations.includes('schema')) {
-      existingNodes.push('schema_transformation');
-    }
-    if (transformations.includes('filter')) {
-      existingNodes.push('filter_transformation');
-    }
-    if (transformations.includes('sorter')) {
-      existingNodes.push('sorter_transformation');
-    }
-    if (transformations.includes('aggregator')) {
-      existingNodes.push('aggregator_transformation');
-    }
-    
-    // Create a list of existing transformations for the message
-    let transformationsList = "";
-    if (existingNodes.length > 0) {
-      transformationsList = "\n\nCurrent pipeline steps:\n";
-      existingNodes.forEach((node, index) => {
-        transformationsList += `${index + 1}. ${node}\n`;
-      });
-      transformationsList += "\nSorter transformation has been added.";
-    }
-    
-    // Ask if the user wants to add more transformations
-    addAssistantMessage(
-      `Great! The sorter transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Sorter Transformation - Sort data based on columns\n" +
-      "4. Aggregation Transformation - Aggregate data with group by\n" +
-      "5. Target - Configure output target\n\n" +
-      "Please select an option from the buttons below."
-    );
-  };
-  
-  // Handle aggregator form submission
-  const handleAggregatorFormSubmit = (formData: any) => {
-    console.log("Aggregator form submitted:", formData);
-    
-    // Ensure aggregations is an array
-    if (!Array.isArray(formData.aggregations)) {
-      formData.aggregations = [{ target_column: 'total_count', expression: 'count(*)' }];
-    }
-    
-    // Filter out empty aggregations
-    formData.aggregations = formData.aggregations.filter((agg: any) => 
-      agg.target_column && agg.target_column.trim() !== '' && agg.expression && agg.expression.trim() !== ''
-    );
-    
-    // If no valid aggregations, add a default one
-    if (formData.aggregations.length === 0) {
-      formData.aggregations = [{ target_column: 'total_count', expression: 'count(*)' }];
-    }
-    
-    // Ensure group_by is an array
-    if (!Array.isArray(formData.group_by)) {
-      formData.group_by = [{ group_by: 'category' }];
-    }
-    
-    // Filter out empty group_by
-    formData.group_by = formData.group_by.filter((group: any) => 
-      group.group_by && group.group_by.trim() !== ''
-    );
-    
-    // If no valid group_by, add a default one
-    if (formData.group_by.length === 0) {
-      formData.group_by = [{ group_by: 'category' }];
-    }
-    
-    // Save aggregator transformation
-    const aggregations = formData.aggregations.map((agg: any) =>
-      `${agg.target_column}: ${agg.expression}`
-    ).join(', ');
-    
-    const groupBy = formData.group_by.map((group: any) =>
-      group.group_by
-    ).join(', ');
-    
-    // Process dependency selection if provided
-    let dependencyMessage = "";
-    if (formData.dependent_on && formData.dependent_on.length > 0) {
-      dependencyMessage = ` (after ${formData.dependent_on.join(', ')})`;
-      console.log("Using user-provided aggregator dependencies:", formData.dependent_on);
-    } else {
-      // If no dependency provided, check if we have a selected dependency
-      if (selectedDependency) {
-        formData.dependent_on = [selectedDependency];
-        dependencyMessage = ` (after ${selectedDependency})`;
-        console.log("Using selected dependency for aggregator:", selectedDependency);
-      } 
-      // Otherwise, use an empty array - this will be filled when user selects dependency
-      else {
-        formData.dependent_on = [];
-        console.log("No dependency provided for aggregator transformation");
-      }
-    }
-    
-    // Store the aggregator transformation data directly in the transformations array
-    const aggregatorTransformationData = {
-      name: "aggregator_transformation",
-      transformation: "Aggregator",
-      dependent_on: formData.dependent_on,
-      aggregations: formData.aggregations,
-      group_by: formData.group_by
-    };
-    
-    // Update the selected sources with the aggregator transformation data
-    if (selectedSources.length > 0) {
-      const updatedSources = selectedSources.map(source => {
-        return {
-          ...source,
-          aggregator_transformation: aggregatorTransformationData
-        };
-      });
-      setSelectedSources(updatedSources);
-    }
-    
-    // Update the pipeline JSON directly
-    const updatedPipelineJson = { ...pipelineJson };
-    if (updatedPipelineJson && updatedPipelineJson.transformations) {
-      // Find the aggregator transformation
-      const aggregatorTransformation = updatedPipelineJson.transformations.find(
-        (t: any) => t.name === 'aggregator_transformation'
-      );
-      
-      if (aggregatorTransformation) {
-        // Update existing aggregator transformation
-        aggregatorTransformation.aggregations = formData.aggregations;
-        aggregatorTransformation.group_by = formData.group_by;
-        aggregatorTransformation.dependent_on = formData.dependent_on;
-        console.log("Updated aggregator transformation in pipeline JSON:", aggregatorTransformation);
-      } else {
-        // Add new aggregator transformation
-        updatedPipelineJson.transformations.push(aggregatorTransformationData);
-        console.log("Added new aggregator transformation to pipeline JSON:", aggregatorTransformationData);
-      }
-      
-      // Update the pipeline JSON
-      setPipelineJson(updatedPipelineJson);
-    }
-    
-    // Add a message to show the selected aggregations and group by
-    addUserMessage(`Aggregator transformation: ${aggregations} grouped by ${groupBy}${dependencyMessage}`);
-    
-    // Hide the form
-    setShowAggregatorForm(false);
-    
-    // Regenerate the pipeline template with the updated aggregator transformation
-    setTimeout(() => {
-      const aggregatorTransformTemplate = generatePipelineTemplate();
-      setPipelineJson(aggregatorTransformTemplate);
-      console.log("Updated pipeline template after aggregator form submission:", aggregatorTransformTemplate);
-      
-      // Log the aggregator transformation in the pipeline template
-      const aggregatorTransformation = aggregatorTransformTemplate.transformations.find(
-        (t: any) => t.name === 'aggregator_transformation'
-      );
-      console.log("Aggregator transformation in pipeline template:", aggregatorTransformation);
-    }, 0);
-    
-    // Return to transformation selection to allow adding more transformations
-    setTransformationSubStep('select');
-    
-    // Get existing transformations and sources for suggestions
-    const existingNodes = [];
-    
-    // Add reader nodes from sources
-    if (selectedSources.length > 0) {
-      selectedSources.forEach(source => {
-        existingNodes.push(`read_${source.data_src_name}`);
-      });
-    }
-    
-    // Add existing transformation nodes
-    if (transformations.includes('schema')) {
-      existingNodes.push('schema_transformation');
-    }
-    if (transformations.includes('filter')) {
-      existingNodes.push('filter_transformation');
-    }
-    if (transformations.includes('sorter')) {
-      existingNodes.push('sorter_transformation');
-    }
-    if (transformations.includes('aggregator')) {
-      existingNodes.push('aggregator_transformation');
-    }
-    
-    // Create a list of existing transformations for the message
-    let transformationsList = "";
-    if (existingNodes.length > 0) {
-      transformationsList = "\n\nCurrent pipeline steps:\n";
-      existingNodes.forEach((node, index) => {
-        transformationsList += `${index + 1}. ${node}\n`;
-      });
-      transformationsList += "\nAggregator transformation has been added.";
-    }
-    
-    // Ask if the user wants to add more transformations
-    addAssistantMessage(
-      `Great! The aggregation transformation has been added.${transformationsList}\n\nWould you like to add another transformation?\n\n` +
-      "1. Filter Transformation - Filter data based on conditions\n" +
-      "2. Schema Transformation - Create new fields or modify existing ones\n" +
-      "3. Sorter Transformation - Sort data based on columns\n" +
-      "4. Aggregation Transformation - Aggregate data with group by\n" +
-      "5. Target - Configure output target\n\n" +
-      "Please select an option from the buttons below."
-    );
-  };
 
   return (
     <>
-
       {/* Chat panel - always visible, not sliding */}
-      <div
-        className={`h-full flex flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50 backdrop-blur-md opacity-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-lg ${className}`}
-      >
-
-
-        {isNewChat || messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-6 space-y-8 px-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-200/30 to-emerald-400/40 shadow-inner shadow-emerald-100">
-  <img
-    src={imageSrc}
-    alt="AI"
-    className="w-7 h-9 transform -rotate-[35deg] drop-shadow-md"
-  />
-</div>
-
-            <div className="text-center space-y-3 max-w-md">
-              <h3 className="text-2xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">How can I assist with your pipeline?</h3>
-              <p className="text-slate-500 mb-4">Create a new data pipeline or ask questions about your existing pipeline</p>
-              <div className="flex justify-center items-center mt-2"> 
-                <Button
-                  onClick={startPipelineCreation}
-                  className="bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 flex justify-center items-center gap-2 px-6 py-2.5 text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create or edit a  data pipeline
-                </Button>
+      <div className={`flex flex-col h-full p-4 ${className}`}>
+        {/* Message Area */}
+        <div className="flex-1 mt-4 overflow-hidden">
+          { mode === 'create' && messages.length === 1 ? (
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-6">
+                {messages.map((message, i) => (
+                  <div key={i}>
+                    <div className={cn(
+                      "flex items-start gap-3 my-2",
+                      message.role === "assistant" ? "justify-start flex-row" : "justify-start flex-row"
+                    )}>
+                      {message.role === "assistant" ? (
+                        <div className="h-8 w-8 rounded-full bg-green-500 overflow-hidden mt-2">
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-black overflow-hidden mt-2">
+                        </div>
+                      )}
+                      <div className={cn(
+                        "px-4 py-2 max-w-[80%] relative rounded-lg",
+                        message.role === "assistant" 
+                          ? "bg-gray-100 text-black before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100" 
+                          : "bg-primary text-white before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-primary"
+                      )}>
+                        {message.content}
+                      </div>
+                    </div>
+                    {i === messages.length - 1 && message.role === "assistant" && (
+                      <div className="flex flex-col gap-2 justify-start mt-2 ml-11">
+                          <SuggestionButton
+                            text="Create a data pipeline"
+                            onClick={() => {
+                             
+                                addUserMessage("Create a data pipeline");
+                                addAssistantMessage("Let's start. Add a data source (e.g., sales_data)");
+                                setStep('source');
+                                setPipelineName("New Pipeline");
+                                setPipelineDescription("Data pipeline created with AI assistant");
+                                const pipelineTemplate = generatePipelineTemplate();
+                                setPipelineJson(pipelineTemplate);
+                            }}
+                            index={0}
+                            assistantColor={color}
+                          />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
               </div>
-            </div>
-          </div>
-        ) : (
-          <ScrollArea className="flex-1 px-4 py-6">
-            <div className="space-y-8 py-2">
-              {messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-4 px-1 ${message.role === "user" ? "flex-row-reverse" : ""
-                    }`}
-                >
-                  {message.role === "assistant" && (
-                    <motion.div
-                                className="relative inline-flex items-center justify-center"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <motion.button
-                                    className="relative w-8 h-8 rounded-full group flex items-center justify-center"
-                                    style={{ backgroundColor: color }}
-                                    whileHover={{ scale: 1.05, opacity: 0.9 }}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    {/* Plain green circle with no icon */}
-                                </motion.button>
-                            </motion.div>
-                  )}
-                  {message.role === "user" && (
-                    <motion.div
-                                className="relative inline-flex items-center justify-center"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <motion.button
-                                    className="relative w-8 h-8 rounded-full group flex items-center justify-center"
-                                    style={{ backgroundColor: "#000000" }}
-                                    whileHover={{ scale: 1.05, opacity: 0.9 }}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    {/* Plain black circle with no icon */}
-                                </motion.button>
-                            </motion.div>
-                  )}
-                  <div
-                    className="flex flex-col max-w-[85%]"
-                  >
-                    <div
-                      className="rounded-2xl px-4 py-3 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md transition-all duration-300 hover:shadow-lg"
-                    >
-                      <div className="whitespace-pre-wrap leading-relaxed" style={{ color: message.role === "assistant" ? "#009459" : "#000000" }}>{message.content}</div>
+            </ScrollArea>
+          ) : (
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-6">
+                {messages.map((message, i) => (
+                  <div>
+                    <div key={i} className="flex justify-start gap-2 items-center">
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 my-2 justify-start"
+                      >
+                        {message.role === "assistant" ? (
+                          <div className="h-8 w-8 rounded-full bg-green-500 flex-shrink-0"></div>
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-black flex-shrink-0"></div>
+                        )}
 
-                      {/* Show inline forms after specific assistant messages */}
-                      {message.role === "assistant" && i === messages.length - 1 && (
-                        <>
-                          {/* Source selection suggestion buttons */}
-                          {awaitingSourceSelection && sourceSuggestions.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {sourceSuggestions}
-                            </div>
-                          )}
-                          
-                          {showReaderForm && message.content.includes("Please review and customize the reader configuration") && (
-                            <div className="mt-4 rounded-lg bg-white">
-                              <ReaderOptionsForm
-                                initialData={readerFormInitialValues}
-                                onSubmit={handleReaderFormSubmit}
-                                onClose={() => setShowReaderForm(false)}
-                                onSourceUpdate={handleReaderOptionsUpdate}
-                                nodeId={`source_${currentSourceData?.data_src_id}`}
-                              />
-                            </div>
-                          )}
 
-                          {showFilterForm && (
-                            <div className="mt-4 rounded-lg bg-white">
-                              <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                    <span className="text-white text-sm font-medium">F</span>
-                                  </div>
-                                  <h2 className="text-lg font-medium text-gray-800">
-                                    Filter Configuration
-                                  </h2>
-                                </div>
+                        {/* Suggestion buttons for guided flow */}
+
+                      </div>
+                      <div
+                        className={cn(
+                          "rounded-lg px-4 py-2 max-w-[90%] relative",
+                          "bg-gray-100 text-black",
+                          )}
+                      >
+                        
+                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+
+                        {/* Show inline forms after specific assistant messages */}
+                        {message.role === "assistant" && i === messages.length - 1 && (
+                          <>
+                            {/* Source selection suggestion buttons */}
+                            {awaitingSourceSelection && sourceSuggestions.length > 0 && (
+                              <div className="mt-4 flex flex-wrap gap-2 justify-start">
+                                {sourceSuggestions}
                               </div>
-                              <div className="py-4">
-                                {/* Use CreateFormFormik directly for filter */}
-                                {filterSchema ? (
-                                  <CreateFormFormik
-                                    schema={{
-                                      ...filterSchema,
-                                      initialValues: {
+                            )}
+
+                            {showReaderForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <ReaderOptionsForm
+                                  initialData={readerFormInitialValues}
+                                  onSubmit={handleReaderFormSubmit}
+                                  onClose={() => setShowReaderForm(false)}
+                                  onSourceUpdate={handleReaderOptionsUpdate}
+                                  nodeId={`source_${currentSourceData?.data_src_id}`}
+                                />
+                              </div>
+                            )}
+
+                            {showFilterForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">F</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Filter Configuration
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for filter */}
+                                  {filterSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...filterSchema,
+                                        initialValues: {
+                                          name: 'filter_transformation',
+                                          condition: '',
+                                          dependent_on: filterFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
                                         name: 'filter_transformation',
                                         condition: '',
                                         dependent_on: filterFormInitialValues.dependent_on || []
-                                      }
-                                    }}
-                                    initialValues={{
-                                      name: 'filter_transformation',
-                                      condition: '',
-                                      dependent_on: filterFormInitialValues.dependent_on || []
-                                    }}
-                                    onSubmit={handleFilterFormSubmit}
-                                    nodes={nodes}
-                                    sourceColumns={sourceColumns}
-                                    onClose={() => setShowFilterForm(false)}
-                                    pipelineDtl={pipelineJson}
-                                    currentNodeId={`filter_${filterName || 'condition'}`}
-                                    edges={edges}
-                                    isDialog={false}
-                                  />
-                                ) : (
-                                  <div className="flex justify-center items-center p-4">
-                                    <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
-                                    <span className="ml-2">Loading filter form...</span>
-                                  </div>
-                                )}
+                                      }}
+                                      onSubmit={handleFilterFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowFilterForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={findNodeIdByType("Filter")}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading filter form...</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {showSchemaForm && (
-                              <div className="mt-4 rounded-lg bg-white">
+                            {showSchemaForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
                                 <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
                                   <div className="flex items-center gap-3">
                                     <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
@@ -3151,7 +550,7 @@ const {
                                       sourceColumns={sourceColumns}
                                       onClose={() => setShowSchemaForm(false)}
                                       pipelineDtl={pipelineJson}
-                                      currentNodeId={`schema_${schemaName || 'transformation'}`}
+                                      currentNodeId={findNodeIdByType("SchemaTransformation")}
                                       edges={edges}
                                       isDialog={false}
                                     />
@@ -3164,9 +563,9 @@ const {
                                 </div>
                               </div>
                             )}
-                            
+
                             {showSorterForm && (
-                              <div className="mt-4 rounded-lg bg-white">
+                              <div className="mt-4 rounded-lg bg-gray-100">
                                 <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
                                   <div className="flex items-center gap-3">
                                     <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
@@ -3199,7 +598,7 @@ const {
                                       sourceColumns={sourceColumns}
                                       onClose={() => setShowSorterForm(false)}
                                       pipelineDtl={pipelineJson}
-                                      currentNodeId={`sorter_${sorterName || 'transformation'}`}
+                                      currentNodeId={findNodeIdByType("Sorter")}
                                       edges={edges}
                                       isDialog={false}
                                     />
@@ -3212,9 +611,9 @@ const {
                                 </div>
                               </div>
                             )}
-                            
+
                             {showAggregatorForm && (
-                              <div className="mt-4 rounded-lg bg-white">
+                              <div className="mt-4 rounded-lg bg-gray-100">
                                 <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
                                   <div className="flex items-center gap-3">
                                     <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
@@ -3249,7 +648,7 @@ const {
                                       sourceColumns={sourceColumns}
                                       onClose={() => setShowAggregatorForm(false)}
                                       pipelineDtl={pipelineJson}
-                                      currentNodeId={`aggregator_${aggregatorName || 'transformation'}`}
+                                      currentNodeId={findNodeIdByType("Aggregator")}
                                       edges={edges}
                                       isDialog={false}
                                     />
@@ -3263,60 +662,319 @@ const {
                               </div>
                             )}
 
-                          {showDependencySelection && (
-                            <div className="mt-4 rounded-lg bg-white p-4">
-                              <h3 className="text-lg font-medium mb-2">Select Dependency</h3>
-                              <div className="flex flex-col space-y-2">
-                                {dependencyOptions.map((option, index) => (
-                                  <button
-                                    key={index}
-                                    className="px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-md text-left"
-                                    onClick={() => handleDependencySelection(option.value)}
-                                  >
-                                    {option.label}
-                                  </button>
-                                ))}
+                            {showJoinForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">JN</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Join Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for join transformation */}
+                                  {joinSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...joinSchema,
+                                        initialValues: {
+                                          name: 'join_transformation',
+                                          conditions: [{ join_type: 'inner', join_condition: '' }],
+                                          dependent_on: joinFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'join_transformation',
+                                        conditions: [{ join_type: 'inner', join_condition: '' }],
+                                        dependent_on: joinFormInitialValues.dependent_on || []
+                                      }}
+                                      key={`join-form-${JSON.stringify(joinFormInitialValues.dependent_on)}`}
+                                      onSubmit={handleJoinFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowJoinForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={findNodeIdByType("Join")}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading join transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {(showWriterForm || transformationSubStep === 'target_form') && (
-                            <div className="mt-4 rounded-lg bg-white">
-                              <TargetPopUp
-                                isOpen={false} // Use inline mode with Card component
-                                onClose={() => {
-                                  setShowWriterForm(false);
-                                  if (transformationSubStep === 'target_form') {
-                                    setTransformationSubStep('select');
-                                  }
-                                }}
-                                initialData={writerFormInitialValues || formInitialValues.writer}
-                                onSourceUpdate={handleTargetUpdate}
-                                nodeId={`target_${targetName || 'output'}`}
-                                source={{
-                                  title: targetName || 'output_data',
-                                  source: {
-                                    name: targetName || 'output_data',
-                                    target_type: targetConfig.type || 'File',
-                                    file_type: targetConfig.fileFormat || 'CSV',
-                                    load_mode: targetConfig.customConfig?.loadMode || 'append',
-                                    file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`,
-                                    connection: {
-                                      connection_type: targetConfig.connectionType || 'Local',
-                                      file_path_prefix: targetConfig.filePath || 'examples/'
+                            {showUnionForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">UN</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Union Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for union transformation */}
+                                  {unionSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...unionSchema,
+                                        initialValues: {
+                                          name: 'union_transformation',
+                                          union_type: 'distinct',
+                                          dependent_on: unionFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'union_transformation',
+                                        union_type: 'distinct',
+                                        dependent_on: unionFormInitialValues.dependent_on || []
+                                      }}
+                                      key={`union-form-${JSON.stringify(unionFormInitialValues.dependent_on)}`}
+                                      onSubmit={handleUnionFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowUnionForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={findNodeIdByType("Union")}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading union transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {showDropForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">DR</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Drop Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for drop transformation */}
+                                  {dropSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...dropSchema,
+                                        initialValues: {
+                                          name: 'drop_transformation',
+                                          transformation: 'Drop',
+                                          column: [{ column_list: 'column_to_drop_1' }, { column_list: 'column_to_drop_2' }],
+                                          pattern: '',
+                                          dependent_on: dropFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'drop_transformation',
+                                        transformation: 'Drop',
+                                        column: [{ column_list: 'column_to_drop_1' }, { column_list: 'column_to_drop_2' }],
+                                        pattern: '',
+                                        dependent_on: dropFormInitialValues.dependent_on || []
+                                      }}
+                                      key={`drop-form-${JSON.stringify(dropFormInitialValues.dependent_on)}`}
+                                      onSubmit={handleDropFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowDropForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={findNodeIdByType("Drop")}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading drop transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {showSelectForm && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">SL</span>
+                                    </div>
+                                    <h2 className="text-lg font-medium text-gray-800">
+                                      Select Transformation
+                                    </h2>
+                                  </div>
+                                </div>
+                                <div className="py-4">
+                                  {/* Use CreateFormFormik directly for select transformation */}
+                                  {selectSchema ? (
+                                    <CreateFormFormik
+                                      schema={{
+                                        ...selectSchema,
+                                        initialValues: {
+                                          name: 'select_transformation',
+                                          transformation: 'Select',
+                                          column_list: [{ name: 'column_to_select_1' }, { name: 'column_to_select_2' }],
+                                          limit: selectFormInitialValues.limit || '',
+                                          dependent_on: selectFormInitialValues.dependent_on || []
+                                        }
+                                      }}
+                                      initialValues={{
+                                        name: 'select_transformation',
+                                        transformation: 'Select',
+                                        column_list: [{ name: 'column_to_select_1' }, { name: 'column_to_select_2' }],
+                                        limit: selectFormInitialValues.limit || '',
+                                        dependent_on: selectFormInitialValues.dependent_on || []
+                                      }}
+                                      key={`select-form-${JSON.stringify(selectFormInitialValues.dependent_on)}`}
+                                      onSubmit={handleSelectFormSubmit}
+                                      nodes={nodes}
+                                      sourceColumns={sourceColumns}
+                                      onClose={() => setShowSelectForm(false)}
+                                      pipelineDtl={pipelineJson}
+                                      currentNodeId={findNodeIdByType("Select")}
+                                      edges={edges}
+                                      isDialog={false}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-center items-center p-4">
+                                      <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div>
+                                      <span className="ml-2">Loading select transformation form...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+
+
+                            {showDependencySelection && (
+                              <div className="mt-4 rounded-lg bg-gray-100 p-4">
+                                <h3 className="text-lg font-medium mb-2">
+                                  {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union'))
+                                    ? `Select Dependencies (minimum ${minDependencies}, selected: ${selectedDependencies.length})`
+                                    : "Select Dependency"}
+                                </h3>
+                                {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union')) && (
+                                  <p className="text-sm text-gray-600 mb-2">
+                                    Note: Only Join and Union transformations require multiple dependencies.
+                                    Please select at least {minDependencies} dependencies.
+                                  </p>
+                                )}
+                                <div className="flex flex-col space-y-2">
+                                  {dependencyOptions.map((option, index) => (
+                                    <button
+                                      key={index}
+                                      className={`px-4 py-2 ${isMultiSelect && selectedDependencies.includes(option.value)
+                                        ? "bg-blue-300 hover:bg-blue-400"
+                                        : "bg-blue-100 hover:bg-blue-200"
+                                        } rounded-md text-left flex justify-between items-center`}
+                                      onClick={() => {
+                                        // Only use multi-select for join and union transformations
+                                        if (isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union'))) {
+                                          // Toggle selection for multi-select
+                                          if (selectedDependencies.includes(option.value)) {
+                                            // Create a new array without the selected option
+                                            const updatedDependencies = selectedDependencies.filter(dep => dep !== option.value);
+                                            setSelectedDependencies(updatedDependencies);
+                                          } else {
+                                            // Create a new array with the selected option added
+                                            const updatedDependencies = [...selectedDependencies, option.value];
+                                            setSelectedDependencies(updatedDependencies);
+                                          }
+                                        } else {
+                                          // Single selection for all other transformations
+                                          handleDependencySelection(option.value);
+                                        }
+                                      }}
+                                    >
+                                      <span>{option.label}</span>
+                                      {isMultiSelect && selectedDependencies.includes(option.value) && (
+                                        <Check className="h-8 w-8" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {isMultiSelect && (transformationSubStep.startsWith('join') || transformationSubStep.startsWith('union')) && (
+                                  <div className="mt-4 flex justify-end">
+                                    <button
+                                      className={`px-4 py-2 rounded-md ${selectedDependencies.length >= minDependencies
+                                        ? "bg-green-500 hover:bg-green-600 text-white"
+                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                        }`}
+                                      onClick={() => {
+                                        if (selectedDependencies.length >= minDependencies) {
+                                          handleMultiDependencySelection(selectedDependencies);
+                                        }
+                                      }}
+                                      disabled={selectedDependencies.length < minDependencies}
+                                    >
+                                      Confirm Selection
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {(showWriterForm || transformationSubStep === 'target_form') && (
+                              <div className="mt-4 rounded-lg bg-gray-100">
+                                <TargetPopUp
+                                  isOpen={false} // Use inline mode with Card component
+                                  onClose={() => {
+                                    setShowWriterForm(false);
+                                    if (transformationSubStep === 'target_form') {
+                                      setTransformationSubStep('select');
                                     }
-                                  }
-                                }}
-                              />
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                                  }}
+                                  initialData={writerFormInitialValues || formInitialValues.writer}
+                                  onSourceUpdate={handleTargetUpdate}
+                                  nodeId={`target_${targetName || 'output'}`}
+                                  source={{
+                                    title: targetName || 'output_data',
+                                    source: {
+                                      name: targetName || 'output_data',
+                                      target_type: targetConfig.type || 'File',
+                                      file_type: targetConfig.fileFormat || 'CSV',
+                                      load_mode: targetConfig.customConfig?.loadMode || 'append',
+                                      file_name: `${(targetName || 'output').toLowerCase().replace(/\s+/g, '_')}.csv`,
+                                      connection: {
+                                        connection_type: targetConfig.connectionType || 'Local',
+                                        file_path_prefix: targetConfig.filePath || 'examples/'
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
 
-                    {/* Suggestion buttons for guided flow */}
+
+                    </div>
                     {message.role === "assistant" && i === messages.length - 1 && (
-                      <div className="mt-3 flex flex-wrap">
+                      <div className="mt-3 flex flex-wrap ml-12 ">
                         {mode === 'create' && (
                           <>
                             {/* Description question buttons removed as we're skipping this step */}
@@ -3324,15 +982,14 @@ const {
                             {/* Description input suggestions removed as we're skipping this step */}
 
                             {/* Add data source buttons - appears immediately after starting pipeline creation */}
-                            {step === 'source' && messages.length === 1 && message.content.includes("Please enter the name of a data source") && (
+                            {step === 'source' && message.content.includes("start. Add a data source") && (
                               <div className="flex flex-col gap-2 w-full mt-2">
                                 <div className="text-sm font-medium text-muted-foreground mb-1">Common Data Sources:</div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="flex flex-col gap-2 justify-start">
                                   <SuggestionButton
-                                    text="top_sales_regions"
-                                    icon={<Database className="h-4 w-4 mr-2" />}
+                                    text="orders"
                                     onClick={() => {
-                                      const dataSource = "top_sales_regions";
+                                      const dataSource = "orders.csv";
                                       addUserMessage(dataSource);
                                       // Build and update the pipeline template before handling the step
                                       const pipelineTemplate = generatePipelineTemplate();
@@ -3340,13 +997,13 @@ const {
                                       console.log("Current pipeline template:", pipelineTemplate);
                                       handleSourceStep(dataSource);
                                     }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    index={0}
+                                    assistantColor={color}
                                   />
                                   <SuggestionButton
-                                    text="customer_records"
-                                    icon={<Database className="h-4 w-4 mr-2" />}
+                                    text="employee"
                                     onClick={() => {
-                                      const dataSource = "customer_records";
+                                      const dataSource = "employee.csv";
                                       addUserMessage(dataSource);
                                       // Build and update the pipeline template before handling the step
                                       const pipelineTemplate = generatePipelineTemplate();
@@ -3354,17 +1011,17 @@ const {
                                       console.log("Current pipeline template:", pipelineTemplate);
                                       handleSourceStep(dataSource);
                                     }}
-                                    className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                    index={1}
+                                    assistantColor={color}
                                   />
                                 </div>
                               </div>
                             )}
 
                             {step === 'source' && messages.length > 3 && selectedSources.length > 0 && (
-                              <>
+                              <div className="flex flex-col gap-2 justify-start">
                                 <SuggestionButton
                                   text="Add another source"
-                                  icon={<Plus className="h-3 w-3 mr-1" />}
                                   onClick={() => {
                                     addUserMessage("Add another source");
                                     // Build and update the pipeline template before handling the step
@@ -3373,11 +1030,11 @@ const {
                                     console.log("Current pipeline template:", pipelineTemplate);
                                     handleTransformationsStep("Add another source");
                                   }}
-                                  className="justify-start py-2 px-3"
+                                  index={0}
+                                  assistantColor={color}
                                 />
                                 <SuggestionButton
                                   text="Continue to transformations"
-                                  icon={<ChevronDown className="h-3 w-3" />}
                                   //tooltip="Proceed to the next step"
                                   onClick={() => {
                                     addUserMessage("Continue to transformations");
@@ -3390,9 +1047,10 @@ const {
                                     console.log("Current pipeline template:", pipelineTemplate);
                                     handleTransformationsStep("Continue to transformations");
                                   }}
-                                  className="justify-start py-2 px-3"
+                                  index={1}
+                                  assistantColor={color}
                                 />
-                              </>
+                              </div>
                             )}
 
                             {step === 'transformations' && (
@@ -3402,12 +1060,11 @@ const {
                               messages[messages.length - 1]?.content?.includes("Which transformations would you like to add") ||
                               messages[messages.length - 1]?.content?.includes("Would you like to add another transformation")
                             ) && (
-                                <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="flex flex-col gap-2 w-full mt-2 justify-start">
                                   <div className="text-sm font-medium text-muted-foreground mb-1">Select Transformation(s):</div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <div className="flex flex-col gap-2 justify-start">
                                     <SuggestionButton
                                       text="Filter Transformation"
-                                      icon={<Filter className="h-4 w-4 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Filter Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -3416,11 +1073,11 @@ const {
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("1. Filter Transformation");
                                       }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                      index={0}
+                                      assistantColor={color}
                                     />
                                     <SuggestionButton
                                       text="Schema Transformation"
-                                      icon={<Database className="h-4 w-4 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Schema Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -3429,11 +1086,11 @@ const {
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("2. Schema Transformation");
                                       }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                      index={1}
+                                      assistantColor={color}
                                     />
                                     <SuggestionButton
                                       text="Sorter Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Sorter Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -3442,11 +1099,11 @@ const {
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("Sorter Transformation");
                                       }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                      index={2}
+                                      assistantColor={color}
                                     />
                                     <SuggestionButton
                                       text="Aggregation Transformation"
-                                      icon={<Layers className="h-4 w-4 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Aggregation Transformation");
                                         // Build and update the pipeline template before handling the step
@@ -3455,11 +1112,64 @@ const {
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("Aggregation Transformation");
                                       }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                      index={3}
+                                      assistantColor={color}
                                     />
                                     <SuggestionButton
+                                      text="Join Transformation"
+                                      onClick={() => {
+                                        addUserMessage("Join Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Join Transformation");
+                                      }}
+                                      index={4}
+                                      assistantColor={color}
+                                    />
+                                    <SuggestionButton
+                                      text="Union Transformation"
+                                      onClick={() => {
+                                        addUserMessage("Union Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Union Transformation");
+                                      }}
+                                      index={5}
+                                      assistantColor={color}
+                                    />
+                                    <SuggestionButton
+                                      text="Drop Transformation"
+                                      onClick={() => {
+                                        addUserMessage("Drop Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Drop Transformation");
+                                      }}
+                                      index={6}
+                                      assistantColor={color}
+                                    />
+                                    <SuggestionButton
+                                      text="Select Transformation"
+                                      onClick={() => {
+                                        addUserMessage("Select Transformation");
+                                        // Build and update the pipeline template before handling the step
+                                        const pipelineTemplate = generatePipelineTemplate();
+                                        setPipelineJson(pipelineTemplate);
+                                        console.log("Current pipeline template:", pipelineTemplate);
+                                        handleTransformationsStep("Select Transformation");
+                                      }}
+                                      index={7}
+                                      assistantColor={color}
+                                    />
+
+                                    <SuggestionButton
                                       text="Target (Skip Transformations)"
-                                      icon={<FileText className="h-4 w-4 mr-2" />}
                                       onClick={() => {
                                         addUserMessage("Target - Skip transformations not needed");
                                         // Build and update the pipeline template before handling the step
@@ -3468,7 +1178,8 @@ const {
                                         console.log("Current pipeline template:", pipelineTemplate);
                                         handleTransformationsStep("3. Target");
                                       }}
-                                      className="justify-start py-3 px-4 bg-card hover:bg-accent"
+                                      index={8}
+                                      assistantColor={color}
                                     />
                                   </div>
                                 </div>
@@ -3476,12 +1187,12 @@ const {
 
 
                             {step === 'transformations' && transformationSubStep === 'target_name' && (
-                              <div className="flex flex-col gap-2 w-full mt-2">
+                              <div className="flex flex-col gap-2 w-full mt-2 justify-start">
                                 <div className="text-sm font-medium text-muted-foreground mb-1">Suggested Output Names:</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 justify-start">
                                   <SuggestionButton
                                     text="processed_data"
-                                    icon={<FileText className="h-4 w-4 mr-2" />}
+                                    icon={<FileText className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("processed_data");
@@ -3520,7 +1231,7 @@ const {
                                   />
                                   <SuggestionButton
                                     text="analysis_results"
-                                    icon={<FileText className="h-4 w-4 mr-2" />}
+                                    icon={<FileText className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set target name directly
                                       setTargetName("analysis_results");
@@ -3567,7 +1278,7 @@ const {
                                 <div className="grid grid-cols-2 gap-2">
                                   <SuggestionButton
                                     text="Yes, use same database"
-                                    icon={<Check className="h-4 w-4 mr-2" />}
+                                    icon={<Check className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(true);
@@ -3597,7 +1308,7 @@ const {
                                   />
                                   <SuggestionButton
                                     text="No, use file output"
-                                    icon={<X className="h-4 w-4 mr-2" />}
+                                    icon={<X className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       // Set connection choice directly
                                       setUseSourceConnection(false);
@@ -3635,7 +1346,7 @@ const {
                                 <div className="grid grid-cols-2 gap-2">
                                   <SuggestionButton
                                     text="Create Pipeline"
-                                    icon={<Check className="h-4 w-4 mr-2" />}
+                                    icon={<Check className="h-8 w-8 mr-2" />}
                                     variant="default"
                                     onClick={() => {
                                       addUserMessage("Yes, create the pipeline");
@@ -3645,7 +1356,7 @@ const {
                                   />
                                   <SuggestionButton
                                     text="Start Over"
-                                    icon={<X className="h-4 w-4 mr-2" />}
+                                    icon={<X className="h-8 w-8 mr-2" />}
                                     onClick={() => {
                                       addUserMessage("No, I want to edit it");
                                       handleConfirmStep("No");
@@ -3660,42 +1371,27 @@ const {
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
-              {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-start gap-4 px-1">
-                  <motion.div
-                    className="relative inline-flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.button
-                      className="relative w-8 h-8 rounded-full group flex items-center justify-center"
-                      style={{ backgroundColor: color }}
-                      whileHover={{ scale: 1.05, opacity: 0.9 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      {/* Plain green circle with no icon */}
-                    </motion.button>
-                  </motion.div>
-                  <div className="flex flex-col max-w-[85%]">
-                    <div className="rounded-2xl py-3 px-4 bg-gradient-to-r from-white to-slate-50 border border-border/40 shadow-md">
-                      <div className="flex space-x-3 px-2">
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse"></div>
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-150"></div>
-                        <div className="w-2.5 h-2.5 bg-primary/60 rounded-full animate-pulse delay-300"></div>
+                ))}
+                {/* Loading Indicator */}
+                {isProcessing && messages[messages.length - 1]?.role !== "assistant" && (
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-green-500 mt-2"></div>
+                    <div className="bg-gray-100 text-black rounded-lg px-4 py-2 max-w-[80%] relative before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-        )}
-
-        <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 rounded-b-lg">
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+        {/* Input Area */}
+        <div className="flex gap-2 mt-4 flex-shrink-0">
           <AIChatInput
             input={input}
             onChange={setInput}
@@ -3707,4 +1403,4 @@ const {
       </div>
     </>
   );
-};
+};   

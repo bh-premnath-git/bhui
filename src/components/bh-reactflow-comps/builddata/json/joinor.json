@@ -1,0 +1,85 @@
+{
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Joiner",
+      "ui_type": "tab-container",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The name of input dataframe to join"
+            },
+            "join_condition": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            },
+            "join_type": {
+              "type": "select",
+              "minLength": 1,
+              "enum": [
+                "inner",
+                "left",
+                "right",
+                "full",
+                "left_semi",
+                "left_anti"
+              ]
+            }
+          }
+        },
+        "expressions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
+          }
+        },
+        "advanced": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hint_type": {
+              "type": "select",
+              "minLength": 1,
+              "enum": [
+                "broadcast",
+                "merge",
+                "shuffle_hash",
+                "shuffle_replicate_nl",
+                "None"
+              ]
+            },
+            "propagate_all_columns": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "hints"
+          ]
+        }
+      },
+      "required": [
+        "conditions"
+      ]
+    }

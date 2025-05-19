@@ -307,7 +307,6 @@ export const stopPipeLine: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       console.log(params)
-      const { pipeline_name } = params;
       const response = await apiService.post({
         portNumber: CATALOG_API_PORT,
         url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=host.docker.internal&port=15003`,

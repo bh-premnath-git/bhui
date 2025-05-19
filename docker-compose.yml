@@ -9,7 +9,7 @@ services:
         # Pass AWS credentials as build args for CodeArtifact authentication
         - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
         - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-        - AWS_REGION=${AWS_REGION:-us-east-1}
+        - AWS_REGION=us-east-1
     ports:
       - "5000:5000"
     env_file:

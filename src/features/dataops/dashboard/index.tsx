@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/sortable';
 
 const DashboardContent = () => {
-  const { chartData, chartOrder, setChartOrder } = useDataOps()
+  const { chartData, chartOrder, customCharts, setChartOrder } = useDataOps()
   const { loadSavedFilters } = useFilters()
   
   // State to track if we're actively dragging
@@ -111,6 +111,12 @@ const DashboardContent = () => {
   };
 
   const renderChart = (chartId: string) => {
+    if (chartId.startsWith('custom-')) {
+      const customChartId = chartId.replace('custom-', '');
+      const customChart = customCharts.find(chart => chart.id === customChartId);
+      return <ProjectHealthChart title={"Latency 2"} data={customChart?.data} bars={["success"]} />
+    }
+      
     switch (chartId) {
       case "latency":
         return <LatencyTrendChart data={chartData.latency} />

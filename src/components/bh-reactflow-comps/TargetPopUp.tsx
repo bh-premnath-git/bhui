@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { Database, Save, FileText, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import targetSchema from "@/components/bh-reactflow-comps/builddata/json/Target.json";
 import writerSchema from "@/components/bh-reactflow-comps/builddata/json/Writer.json";
 import csvOptionsSchema from "@/components/bh-reactflow-comps/builddata/json/CSVOptions.json";
@@ -12,6 +13,7 @@ import connectionSchema from "@/components/bh-reactflow-comps/builddata/json/Con
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 const schemaReferences: Record<string, any> = {
     "schemas/Target.json": targetSchema,
     "transformations/writers/CSVOptions.json": csvOptionsSchema,
@@ -115,30 +117,30 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
-    console.log(source, "initialData")
-    console.log(source.source?.target_type, "pipelineJson")
+    const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
     useEffect(() => {
-        dispatch(getConnectionConfigList({offset: 0, limit: 1000}));
+        dispatch(getConnectionConfigList({ offset: 0, limit: 1000 }));
     }, [dispatch]);
 
     useEffect(() => {
+
         if (source) {
-            let connection={...source.source?.connection};
-            connection.connection_config_id=source?.source?.connection?.connection_config_id ||connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
-            console.log(source,"sdsd")
-            console.log(connection,"connection")
+            let connection = { ...source.source?.connection };
+            connection.connection_config_id = source?.source?.connection?.connection_config_id || connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
+            console.log(source, "sdsd")
+            console.log(connection, "connection")
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
             const initialFormData: FormData = {
                 name: source.title,
                 target: {
-                    target_type: source.source?.target_type||pipelineJsonData?.target?.target_type,
+                    target_type: source.source?.target_type || pipelineJsonData?.target?.target_type,
                     target_name: source.source?.target_name,
                     table_name: source.source?.table_name,
                     load_mode: source.source?.load_mode,
                     file_name: source.source?.file_name,
                     connection: connection
                 },
-                file_type: source.source?.file_type||pipelineJsonData?.target?.file_type?.toUpperCase()||'CSV',
+                file_type: source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV',
                 write_options: source.transformationData?.write_options
             };
 
@@ -160,7 +162,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 setSelectedConnection(selectedConn || null);
             }
         }
-        console.log(selectedConnection,"formData")
+        console.log(selectedConnection, "formData")
     }, [source, initialData, connectionConfigList]);
 
     useEffect(() => {
@@ -186,17 +188,19 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         setCurrentSchema(resolvedSchema);
     };
 
+
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
         const { name, value } = e.target;
-        
+
         setFormData(prev => {
             // Create a deep copy of the previous state
             const newData = JSON.parse(JSON.stringify(prev));
-            
+
             if (name === 'connection_config_id') {
                 const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
                 setSelectedConnection(selectedConn);
-                
+
                 if (selectedConn) {
                     if (!newData.target) newData.target = {};
                     if (!newData.target.connection) newData.target.connection = {};
@@ -210,7 +214,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             } else if (name === 'target_type') {
                 if (!newData.target) newData.target = {};
                 newData.target.target_type = value;
-                
+
                 // Set default values based on target type while preserving other fields
                 if (value === 'Relational') {
                     newData.write_options = {
@@ -218,7 +222,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         createDisposition: 'CREATE_IF_NEEDED',
                         writeMethod: 'direct'
                     };
-                    
+
                     // If target_name exists but table_name doesn't, set table_name to match target_name
                     if (newData.target.target_name && (!newData.target.table_name || newData.target.table_name === '')) {
                         newData.target.table_name = newData.target.target_name;
@@ -304,7 +308,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         // Special handling for connection field
         if (fieldName === 'connection') {
             const filteredConnections = getFilteredConnections();
-            
+
             return (
                 <div key={fieldName} className="space-y-4">
                     <div className="w-full space-y-1">
@@ -358,7 +362,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                     placeholder="Enter table name"
                                 />
                             </div>
-                            
+
                             {/* PostgreSQL Write Options Section */}
                             <div className="space-y-3">
                                 <Label className="text-xs font-medium text-gray-700">
@@ -399,7 +403,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
         // Handle enum fields (select boxes)
         if (fieldSchema.enum) {
-            const currentValue = path.length > 0 
+            const currentValue = path.length > 0
                 ? path.reduce((obj, key) => obj?.[key] || {}, formData)[fieldName]
                 : formData[fieldName];
 
@@ -470,17 +474,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             toast.error("Please fill all required fields");
             return;
         }
-        console.log(formData,"formData")
 
         try {
             const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
-            let connection ={...connectionData?.custom_metadata};
-            connection.connection_config_id=formData.target?.connection?.connection_config_id;
-            console.log(selectedConnection,"connectionData")
-            console.log(connectionData?.custom_metadata,"connectionData")
-            console.log(connection,"formData")
-            // Use formData.name as the nodeTitle
-            // const nodeTitle = formData.name;
+            let connection = { ...connectionData?.custom_metadata };
+            connection.connection_config_id = formData.target?.connection?.connection_config_id;
+
             // Create a properly structured source data object
             const sourceData = {
                 nodeId,
@@ -509,7 +508,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
-            console.log(sourceData,"sourceData")
+
             if (onSourceUpdate) {
                 onSourceUpdate(sourceData);
             }
@@ -524,7 +523,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     // Add a new function to filter connections based on target type
     const getFilteredConnections = () => {
         if (!formData.target?.target_type) return [];
-        
+
         return connectionConfigList.filter(conn => {
             if (formData.target?.target_type === 'File') {
                 // For File type, show only S3 and Local connections
@@ -541,20 +540,20 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     if (isOpen === false) {
         // Inline mode - render as a Card
         return (
-            <Card className="w-full shadow-md border border-gray-200 my-2">
-                <CardContent className="p-6">
-                <form onSubmit={handleSubmit} className="flex flex-col h-full">
-                    {/* Header */}
-                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
-                        <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">T</span>
+            <Card className="w-full shadow-md border border-gray-200 my-2 overflow-hidden">
+                <CardContent className="p-0">
+                    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                        {/* Header */}
+                        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md">
+                                    <Database className="h-4 w-4 text-white" />
+                                </div>
+                                <h2 className="text-lg font-semibold text-gray-800">
+                                    Target Configuration
+                                </h2>
                             </div>
-                            <h2 className="text-lg font-medium text-gray-800">
-                                Target Configuration
-                            </h2>
-                        </div>
-                        {/* <Button
+                            {/* <Button
                             variant="ghost"
                             size="icon"
                             onClick={onClose}
@@ -562,87 +561,95 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         >
                             <X className="h-4 w-4 text-gray-400" />
                         </Button> */}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
-                        {/* Basic Info Section */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
-                                <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                                {renderField('name', currentSchema.properties.name)}
-                                {renderField('target_name', targetSchema.properties.target_name, ['target'])}
-                            </div>
                         </div>
 
-                        {/* Target Config Section */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
-                                <h3 className="text-sm font-medium text-gray-700">Target Configuration</h3>
-                            </div>
-                            <div className="space-y-4">
+                        {/* Content */}
+                        <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
+                            {/* Basic Info Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
+                                    <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
+                                </div>
                                 <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                                    {renderField('target_type', targetSchema.properties.target_type, ['target'])}
-                                    {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
+                                    {renderField('name', currentSchema.properties.name)}
+                                    {renderField('target_name', targetSchema.properties.target_name, ['target'])}
                                 </div>
-                                
-                                <div className="p-3 bg-gray-50 rounded-lg">
-                                    {renderField('connection', targetSchema.properties.connection, ['target'])}
-                                </div>
+                            </div>
 
-                                {formData.target?.load_mode === 'merge' && (
-                                    <div className="p-3 bg-gray-50 rounded-lg">
-                                        {renderField('merge_keys', targetSchema.properties.merge_keys, ['target'])}
+                            {/* Target Config Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
+                                    <h3 className="text-sm font-medium text-gray-700">Target Configuration</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                        {renderField('target_type', targetSchema.properties.target_type, ['target'])}
+                                        {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
                                     </div>
-                                )}
 
-                                {formData.target?.target_type === 'File' && (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                                            {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
-                                            {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        {renderField('connection', targetSchema.properties.connection, ['target'])}
+                                    </div>
+
+                                    {formData.target?.load_mode === 'merge' && (
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            {renderField('merge_keys', targetSchema.properties.merge_keys, ['target'])}
                                         </div>
-                                        
-                                        {formData.file_type === 'CSV' && (
-                                            <div className="p-3 bg-gray-50 rounded-lg">
-                                                <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
-                                                <div className="grid grid-cols-3 gap-3">
-                                                    {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
-                                                        <div key={key}>
-                                                            {renderField(key, schema, ['write_options'])}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                    )}
+
+                                    {formData.target?.target_type === 'File' && (
+                                        <>
+                                            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                                {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
+                                                {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
                                             </div>
-                                        )}
-                                    </>
-                                )}
+
+                                            <div className="text-blue-600 flex items-center gap-2 cursor-pointer mt-2" onClick={() => setIsAdvanvce(!isAdvance)}>
+                                                <span className="font-medium">Advanced</span>
+                                                <span>{isAdvance ? <ChevronUp /> : <ChevronDown />}</span>
+                                            </div>
+                                            {isAdvance && (
+                                                <div>
+                                                    {formData.file_type === 'CSV' && (
+                                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                                            <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
+                                                            <div className="grid grid-cols-3 gap-3">
+                                                                {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
+                                                                    <div key={key}>
+                                                                        {renderField(key, schema, ['write_options'])}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 bg-white">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
-                        >
-                            Save Configuration
-                        </Button>
-                    </div>
-                </form>
+                        {/* Footer */}
+                        <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 bg-white">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
+                            >
+                                Save Configuration
+                            </Button>
+                        </div>
+                    </form>
                 </CardContent>
             </Card>
         );
@@ -657,12 +664,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-hidden flex flex-col">
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-white">
+                    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                         <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-black to-black flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">T</span>
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md">
+                                <Database className="h-4 w-4 text-white" />
                             </div>
-                            <h2 className="text-lg font-medium text-gray-800">
+                            <h2 className="text-lg font-semibold text-gray-800">
                                 Target Configuration
                             </h2>
                         </div>
@@ -701,7 +708,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                     {renderField('target_type', targetSchema.properties.target_type, ['target'])}
                                     {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
                                 </div>
-                                
+
                                 <div className="p-3 bg-gray-50 rounded-lg">
                                     {renderField('connection', targetSchema.properties.connection, ['target'])}
                                 </div>
@@ -714,25 +721,33 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
                                 {formData.target?.target_type === 'File' && (
                                     <>
-                                        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-lg shadow-sm">
                                             {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
                                             {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
                                         </div>
-                                        
-                                        {formData.file_type === 'CSV' && (
-                                            <div className="p-3 bg-gray-50 rounded-lg">
-                                                <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
-                                                <div className="grid grid-cols-3 gap-3">
-                                                    {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
-                                                        <div key={key}>
-                                                            {renderField(key, schema, ['write_options'])}
+                                        <div className="text-blue-600 flex items-center gap-2 cursor-pointer mt-2" onClick={() => setIsAdvanvce(!isAdvance)}>
+                                            <span className="font-medium">Advanced</span>
+                                            <span>{isAdvance ? <ChevronUp /> : <ChevronDown />}</span>
+                                        </div>
+                                        {isAdvance && (
+                                            <div className="mt-3">
+                                                {formData.file_type === 'CSV' && (
+                                                    <div className="p-4 bg-gray-100 rounded-lg shadow-sm">
+                                                        <h3 className="text-sm font-semibold text-gray-700 mb-3">CSV Options</h3>
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
+                                                                <div key={key}>
+                                                                    {renderField(key, schema, ['write_options'])}
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </>
                                 )}
+
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,25 @@
-import { createContext, useState, useContext, useMemo, useCallback } from "react"
+import { createContext, useState, useContext, useMemo, useCallback, useEffect } from "react"
 import { generateData, processChartData, setCookie, getCookie } from "@/lib/utils"
 import type { FilterOption, DataItem, ChartData } from "@/types/dataops/data-ops-hub.d"
+import { CHART_ADDED_EVENT } from "@/components/shared/GenericChatUI"
+
+interface CustomChart {
+  id: string
+  title: string
+  type: string
+  data: any[]
+  config?: {
+    xAxis?: {
+      label?: string
+      labelOffset?: number
+    }
+    yAxis?: {
+      label?: string
+      labelOffset?: number
+    }
+    children?: string
+  }
+}
 
 interface DataOpsContextType {
   allData: DataItem[]
@@ -24,6 +43,8 @@ interface DataOpsContextType {
   handleFilterChange: (key: string, value: FilterOption) => void
   resetFilters: () => void
   loadSavedFilters: () => void
+  customCharts: CustomChart[]
+  addCustomChart: (chart: CustomChart) => void
 }
 
 const DataOpsContext = createContext<DataOpsContextType | undefined>(undefined)
@@ -44,6 +65,7 @@ export const DataOpsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     "quality",
     "incident",
   ])
+  const [customCharts, setCustomCharts] = useState<CustomChart[]>([])
 
   const allData = useMemo(() => generateData(), [])
 
@@ -105,6 +127,34 @@ export const DataOpsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [])
 
+  const addCustomChart = useCallback((chart: CustomChart) => {
+    setCustomCharts(prev => {
+      // Check if a chart with this ID already exists
+      const exists = prev.some(c => c.id === chart.id)
+      if (exists) {
+        // Update existing chart
+        return prev.map(c => c.id === chart.id ? chart : c)
+      } else {
+        // Add new chart and update the chartOrder to include new chart
+        setChartOrder(prev => [...prev, `custom-${chart.id}`])
+        return [...prev, chart]
+      }
+    })
+  }, [setChartOrder])
+
+  useEffect(() => {
+    const handleChartAdded = (event: CustomEvent) => {
+      const chartData = event.detail;
+      addCustomChart(chartData);
+    };
+
+    document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+
+    return () => {
+      document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+    };
+  }, [addCustomChart]);
+
   const value = {
     allData,
     chartData,
@@ -115,6 +165,8 @@ export const DataOpsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     handleFilterChange,
     resetFilters,
     loadSavedFilters,
+    customCharts,
+    addCustomChart,
   }
 
   return <DataOpsContext.Provider value={value}>{children}</DataOpsContext.Provider>

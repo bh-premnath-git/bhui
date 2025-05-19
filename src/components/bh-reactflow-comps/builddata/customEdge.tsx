@@ -9,6 +9,9 @@ import { Loader } from 'lucide-react';
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { useSidebar } from "@/context/SidebarContext";
 import MetricsDrawerContent from "./MetricsDrawerContent";
+import { DataTable } from "@/components/bh-table/data-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Terminal, PreviewData } from "./LogsPage";
 
 const edgeStyles = {
     stroke: '#b1b1b7',
@@ -22,12 +25,51 @@ const MetricsDrawerWrapper: React.FC<{
     isLoading: boolean;
 }> = ({ metricsData }) => {
     console.log(metricsData, "metricsData");
+    
+    // Create columns for the DataTable based on the first row of data
+    const columns = useMemo(() => {
+        if (!metricsData?.[0]?.rows?.length) return [];
+        
+        // Get all keys from the first row
+        const keys = Object.keys(metricsData[0].rows[0] || {});
+        
+        // Create column definitions for each key
+        return keys.map(key => ({
+            accessorKey: key,
+            header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '), // Format header with capitalization
+            cell: ({ row }: any) => <div className="truncate max-w-[200px]" title={row.getValue(key)}>{row.getValue(key)}</div>
+        }));
+    }, [metricsData]);
+    
     return (
         <div className="w-full h-full">
-            <MetricsDrawerContent
-                transformData={metricsData?.[0]?.rows ?? []}
-                pipelineName={metricsData?.[0]?.name ?? ''}
-            />
+            <Tabs defaultValue="table" className="w-full">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="table">Table View</TabsTrigger>
+                    <TabsTrigger value="metrics">Metrics View</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="table" className="w-full">
+                    {metricsData?.[0]?.rows?.length > 0 ? (
+                        <DataTable 
+                            data={metricsData[0].rows}
+                            columns={columns}
+                            pagination={true}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-40 text-gray-500">
+                            No data available
+                        </div>
+                    )}
+                </TabsContent>
+                
+                <TabsContent value="metrics">
+                    <MetricsDrawerContent
+                        transformData={metricsData?.[0]?.rows ?? []}
+                        pipelineName={metricsData?.[0]?.name ?? ''}
+                    />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
@@ -65,7 +107,7 @@ export const CustomEdge = memo(({
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
-    const { debuggedNodesList } = usePipelineContext();
+    const { debuggedNodesList,pipelineName } = usePipelineContext();
     
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -112,22 +154,39 @@ export const CustomEdge = memo(({
         // Only proceed if rowCount exists (meaning the node is in debug list)
         if (rowCount) {
             setIsEdgeLoading(true);
-            setIsShowingInDrawer(true);
+            // setIsShowingInDrawer(true);
             
             try {
                 // First fetch the data
-                await dispatch(fetchTransformationOutput({
-                    pipelineName: pipelineDtl?.pipeline_name,
+                const result = await dispatch(fetchTransformationOutput({
+                    pipelineName: pipelineName||pipelineDtl?.name,
                     transformationName: sourceNode?.data.title
-                }));
+                })).unwrap();
                 
-                // Then set the drawer content and open it
-                const title = `${sourceNode?.data.title || 'Transformation'} Metrics`;
+                console.log("Transformation output data:", result);
                 
-                // Use setTimeout to ensure this runs after the current event loop
-                setTimeout(() => {
-                    setBottomDrawerContent(createDrawerContent(), title);
-                }, 0);
+                // Format the data for the Terminal component
+                const previewData: PreviewData = {
+                    transformationName: sourceNode?.data.title || 'Transformation',
+                    outputs: result.outputs || []
+                };
+                
+                // Create the Terminal component with the preview data
+                const terminalComponent = (
+                    <Terminal 
+                        isOpen={true}  // Set to true since we're opening it in the drawer
+                        onClose={closeBottomDrawer}
+                        title={`${sourceNode?.data.title || 'Transformation'} Data`}
+                        previewData={previewData}
+                        pipelineName={pipelineDtl?.pipeline_name}
+                        activeTabOnOpen="preview"
+                    />
+                );
+                
+                // Set the drawer content
+                setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+            } catch (error) {
+                console.error("Error fetching transformation output:", error);
             } finally {
                 setIsEdgeLoading(false);
             }
@@ -142,6 +201,30 @@ export const CustomEdge = memo(({
             setIsShowingInDrawer(false);
         }
         
+        // If we have new metrics data and we're showing in drawer, update the drawer content
+        if (metricsData && isShowingInDrawer && isBottomDrawerOpen) {
+            // Format the data for the Terminal component
+            const previewData: PreviewData = {
+                transformationName: sourceNode?.data.title || 'Transformation',
+                outputs: metricsData || []
+            };
+            
+            // Create the Terminal component with the preview data
+            const terminalComponent = (
+                <Terminal 
+                    isOpen={true}
+                    onClose={closeBottomDrawer}
+                    title={`${sourceNode?.data.title || 'Transformation'} Data`}
+                    previewData={previewData}
+                    pipelineName={pipelineDtl?.pipeline_name}
+                    activeTabOnOpen="preview"
+                />
+            );
+            
+            // Set the drawer content
+            setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+        }
+        
         // Clean up when component unmounts
         return () => {
             // If we're showing our content in the drawer, close it when unmounting
@@ -150,7 +233,7 @@ export const CustomEdge = memo(({
                 setIsShowingInDrawer(false);
             }
         };
-    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer,metricsData]);
+    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, metricsData, sourceNode?.data.title, pipelineDtl?.pipeline_name]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -219,17 +302,17 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     debuggedNodesList
 }) => (
     <foreignObject
-        width={120}
-        height={24}
-        x={edgeCenter.x - 60}
-        y={edgeCenter.y - 12}
+        width={140}
+        height={40}
+        x={edgeCenter.x - 70}
+        y={edgeCenter.y - 20}
         className="edge-buttons"
         style={{ zIndex: 1000, pointerEvents: 'all' }}
         onMouseEnter={() => onHoverChange(true)}
         onMouseLeave={() => onHoverChange(false)}
         onClick={e => e.stopPropagation()}
     >
-        <div className="flex items-center justify-between w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between w-full h-full" onClick={e => e.stopPropagation()}>
             <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} debuggedNodesList={debuggedNodesList} />
             <RemoveButton isHovered={isHovered} onClick={onRemove} />
         </div>
@@ -260,23 +343,40 @@ const MetricsButton: React.FC<MetricsButtonProps & { isLoading?: boolean }> = ({
         }
     };
 
+    // Determine if the button is clickable
+    const isClickable = rowCount && debuggedNodesList?.length > 0;
+
     return (
         <div className="flex items-center" onClick={e => e.stopPropagation()}>
             {rowCount && (
-                <div className="flex flex-col items-center ml-8">
+                <div className={`
+                    flex flex-col items-center ml-8
+                    ${isClickable ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-60'}
+                    transition-opacity duration-200
+                    bg-transparent p-0 rounded-md 
+                `}>
                     <button
-                        className="w-3 h-3"
+                        className={`
+                            w-6 h-6 rounded-full flex items-center justify-center
+                            ${isClickable ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-gray-100'}
+                            transition-colors duration-200
+                        `}
                         onClick={handleMetricsClick}
-                        disabled={isLoading}
-                        title="View Metrics in Bottom Drawer"
+                        disabled={isLoading || !isClickable}
+                        title={isClickable ? "View Data in Bottom Drawer" : "Debug mode not active"}
                     >
                         {isLoading ? (
-                            <Loader size={12} className="animate-spin text-emerald-600" />
+                            <Loader size={14} className="animate-spin text-emerald-600" />
                         ) : (
-                            <HiChartBar className="w-3 h-3 text-emerald-600" />
+                            <HiChartBar className={`w-4 h-4 ${isClickable ? 'text-emerald-600' : 'text-gray-400'}`} />
                         )}
                     </button>
-                    <span style={{ fontSize: '6px' }} className="font-medium text-gray-700 min-w-[24px] text-center">
+                    <span 
+                        className={`
+                            font-medium min-w-[30px] text-center mt-1 text-[10px]
+                            ${isClickable ? 'text-emerald-700 font-bold' : 'text-gray-500'}
+                        `}
+                    >
                         {rowCount} rows
                     </span>
                 </div>
@@ -292,7 +392,7 @@ interface RemoveButtonProps {
 
 const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
     <button
-        className={`flex items-center justify-center w-4 h-4
+        className={`flex items-center justify-center w-6 h-6
                  bg-white rounded-full 
                  shadow-md border border-gray-200
                  hover:bg-red-50 hover:border-red-200
@@ -301,12 +401,12 @@ const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
         onClick={onClick}
         style={{
             pointerEvents: isHovered ? 'all' : 'none',
-            transform: 'translateX(-50px)'
+            transform: 'translateX(-40px)'
         }}
         title="Remove Edge"
     >
         <svg
-            className="w-2.5 h-2.5 text-gray-500 hover:text-red-500
+            className="w-3.5 h-3.5 text-gray-500 hover:text-red-500
                      transition-colors duration-200"
             fill="none"
             stroke="currentColor"

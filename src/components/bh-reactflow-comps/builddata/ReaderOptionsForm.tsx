@@ -4,7 +4,7 @@ import readerSchema from "./json/Reader.json";
 import csvOptionsSchema from "./json/CSVOptions.json";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {  Info } from "lucide-react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 // import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
@@ -43,7 +43,7 @@ const getSourceTypeFields = (sourceType: string) => {
 
 const validateFormData = (schema: FormSchema, formData: FormData): string[] => {
     const missingFields: string[] = [];
-    
+
     const validateFields = (schema: any, path: string[] = []) => {
         Object.entries(schema.properties || {}).forEach(([key, fieldSchema]: [string, any]) => {
             const fullPath = [...path, key];
@@ -78,16 +78,17 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     const [errors, setErrors] = useState<Record<string, string>>({});
     const { connectionConfigList } = useAppSelector((state) => state.datasource);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
+    const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
 
     useEffect(() => {
         if (initialData) {
             const selectedConn = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
             );
-            
+
             // Set source_name from data_src_name if it's not already set
             const sourceName = initialData.source?.name || initialData.source?.data_src_name || initialData.data_src_name || '';
-            
+
             setFormData({
                 ...initialData,
                 reader_name: initialData.reader_name || sourceName,
@@ -112,7 +113,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     }, [initialData, connectionConfigList]);
 
-   
+
     const resolveFileTypeSchema = (schema: any) => {
         const fileTypeCondition = readerSchema.allOf?.find(
             (condition: any) => condition.if.properties.file_type?.const === formData.file_type
@@ -167,14 +168,14 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
         const { name, value } = e.target;
-        
+
         setFormData(prev => {
             const newData = { ...prev };
-            
+
             if (name === 'connection_config_id') {
                 const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
                 setSelectedConnection(selectedConn);
-                
+
                 if (selectedConn) {
                     newData.source = {
                         ...newData.source,
@@ -227,11 +228,11 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             return newData;
         });
     };
-   
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-console.log(formData,"formData")
+        console.log(formData, "formData")
         const missingFields = validateFormData(currentSchema, formData);
 
         if (missingFields.length > 0) {
@@ -239,16 +240,16 @@ console.log(formData,"formData")
                 ...acc,
                 [field]: 'This field is required'
             }), {}));
-            
+
             toast.error('Please fill out all required fields.');
             return;
         }
 
         try {
-            const connectionData = connectionConfigList.find(conn => 
+            const connectionData = connectionConfigList.find(conn =>
                 conn.id === formData.source?.connection?.connection_config_id
             );
-            
+
             const sourceData = {
                 nodeId,
                 sourceData: {
@@ -266,7 +267,7 @@ console.log(formData,"formData")
                             file_type: formData?.file_type,
                             table_name: formData.source?.table_name,
                             type: formData.source?.type,
-                            connection_config:{
+                            connection_config: {
                                 custom_metadata: formData.source?.connection,
                                 connection_config_name: formData.source?.connection?.name
                             },
@@ -275,7 +276,7 @@ console.log(formData,"formData")
                     }
                 }
             };
-console.log(sourceData,"sourceData")
+            console.log(sourceData, "sourceData")
             onSourceUpdate?.(sourceData);
             onClose?.();
             toast.success("Reader configuration saved successfully");
@@ -334,18 +335,25 @@ console.log(sourceData,"sourceData")
                                                     </div>
                                                 ))}
                                         </div>
+                                        <div className="text-blue-600 flex items-center gap-2 cursor-pointer mt-2" onClick={() => setIsAdvanvce(!isAdvance)}>
+                                            <span className="font-medium">Advanced</span>
+                                            <span>{isAdvance ? <ChevronUp /> : <ChevronDown />}</span>
+                                        </div>
+                                        {isAdvance && (
 
-                                        {/* CSV Options */}
-                                        {formData.source.type === 'File' && formData.file_type === 'CSV' && (
-                                            <div className="mt-6">
-                                                <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
-                                                <div className="grid grid-cols-3 gap-6">
-                                                    {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
-                                                        <div key={key}>
-                                                            {ReaderFormField({ fieldName: key, fieldSchema: schema, path: ['read_options'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
+                                            <div>
+                                                {formData.source.type === 'File' && formData.file_type === 'CSV' && (
+                                                    <div className="mt-6">
+                                                        <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
+                                                        <div className="grid grid-cols-3 gap-6">
+                                                            {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
+                                                                <div key={key}>
+                                                                    {ReaderFormField({ fieldName: key, fieldSchema: schema, path: ['read_options'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </>

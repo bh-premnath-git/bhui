@@ -10,11 +10,15 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle } from 'lucide-react';
-import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
+// import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useSidebar } from '@/context/SidebarContext';
 import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
+import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+import CreateForm from './pipeline/components/form-sections/CreateFormNew';
 
 const BuildPlayGround: React.FC = () => {
+    const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
     const { conversionLogs,
         terminalLogs, pipelineDtl,
         handleRun,
@@ -41,7 +45,7 @@ const BuildPlayGround: React.FC = () => {
     const filteredNodes = useMemo(() => nodeData.nodes, []);
     // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
-
+console.log(selectedSchema)
     // Update memoizedNodeTypes to include debug props
     const memoizedNodeTypes = useMemo(() => ({
         custom: (props: any) => (
@@ -68,7 +72,50 @@ const BuildPlayGround: React.FC = () => {
     // console.log(transformationCounts,"transformationCounts")
     useEffect(() => {
         fetchPipelineDetails();
-    }, [])
+    }, []);
+    
+    // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
+    useEffect(() => {
+        const handleResize = () => {
+            // Force a resize event to make ReactFlow recalculate dimensions
+            window.dispatchEvent(new Event('resize'));
+        };
+        
+        // Trigger resize after a short delay when the layout state changes
+        const timer = setTimeout(handleResize, 100);
+        // Trigger another resize after a longer delay for smoother transition
+        const secondTimer = setTimeout(handleResize, 300);
+        const thirdTimer = setTimeout(handleResize, 600);
+        
+        // Try to trigger fitView if possible through the context
+        if (handleCenter) {
+            const fitViewTimer = setTimeout(() => {
+                try {
+                    handleCenter();
+                    // Make sure nodes are visible when layout changes
+                    if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
+                        console.log('Centering nodes after layout change');
+                        handleCenter();
+                    }
+                } catch (error) {
+                    console.error('Error calling handleCenter:', error);
+                }
+            }, 350);
+            
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(secondTimer);
+                clearTimeout(thirdTimer);
+                clearTimeout(fitViewTimer);
+            };
+        }
+        
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(secondTimer);
+            clearTimeout(thirdTimer);
+        };
+    }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
     const edgeTypes = useMemo(() => ({
         default: (props: any) => (
             <CustomEdge {...props} transformationCounts={transformationCounts} pipelineDtl={pipelineDtl} debuggedNodesList={debuggedNodesList} />
@@ -150,18 +197,21 @@ const BuildPlayGround: React.FC = () => {
     //   };
 
     return (
-            <div className="relative h-full">
+            <div className={`relative h-full w-[98%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
                 {/* <ResolveSchema/> */}
-                <div className="p-1 ml-8">
+                <div className="p-1 ml-8" style={{
+                    height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
+                    width: isRightAsideOpen ? 'calc(100% - 500px)' : '100%',
+                    transition: 'all 0.3s ease-in-out'
+                }}>
 
-
-                    <div className="absolute  mt-2 z-50">
-                        <div className=" rounded-lg  p-2 text-sm">
+                    <div className={`absolute mt-2 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
+                        <div className="rounded-lg p-2 text-sm">
                             <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
                         </div>
                     </div>
                     {debuggedNodesList?.length > 0 && (
-                        <div className="absolute top-2 right-4 z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[50vh] overflow-auto">
+                        <div className={`absolute top-2 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[${isBottomDrawerOpen ? '30vh' : '50vh'}] overflow-auto transition-all duration-300`}>
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -196,7 +246,13 @@ const BuildPlayGround: React.FC = () => {
                         </div>
                     )}
 
-                    <div style={{ height: '75vh', width: '100%', }}>
+                    <div 
+                        className={`transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
+                        style={{ 
+                            height: isBottomDrawerOpen ? 'calc(75vh - 300px)' : '75vh', 
+                            width: '100%',
+                            transition: 'all 0.3s ease-in-out'
+                        }}>
                         <ReactFlow
                             nodes={nodes?.map(node => ({
                                 ...node,
@@ -229,7 +285,7 @@ const BuildPlayGround: React.FC = () => {
                         />
                     </div>
                     {/* Updated FlowControls container positioning */}
-                    <div className="fixed bottom-4 right-[25%] z-50">
+                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-50 transition-all duration-300`}>
                         <FlowControls
                             onZoomIn={handleZoomIn}
                             onZoomOut={handleZoomOut}
@@ -254,7 +310,7 @@ const BuildPlayGround: React.FC = () => {
                     >
                         <DialogContent className="max-w-[60%]">
                             {selectedSchema && (
-                                <CreateFormFormik
+                                <CreateForm
                                     schema={selectedSchema}
                                     sourceColumns={sourceColumns}
                                     onClose={handleDialogClose}

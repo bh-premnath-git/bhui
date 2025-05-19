@@ -17,7 +17,7 @@ const MainContentInternal = () => {
       <div className="flex-shrink-0"> 
         <Header />
       </div>
-      <main className="flex-1 p-2 mt-10 overflow-auto h-[calc(100vh-64px)]"> 
+      <main className="flex-1 p-2 mt-10 overflow-auto h-[calc(100vh-64px)] "> 
         <Outlet />
       </main>
     </div>
@@ -51,7 +51,7 @@ const LayoutWrapper = () => {
         )}
       </div>
       {isRightAsideOpen && rightAsideContent && (
-        <div className="flex-shrink-0 h-full z-50 w-[25%]">
+        <div className="flex-shrink-0 h-full z-50 w-[30%]">
           <RightAside title={rightAsideTitle} width={rightAsideWidth}>
             {rightAsideContent}
           </RightAside>

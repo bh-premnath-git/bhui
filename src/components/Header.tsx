@@ -20,24 +20,34 @@ export const Header = () => {
     path === "/data-catalog/notebook";
   const isDataOpsHubRoute = (path: string) =>
     path === "/dataops-hub";
+  const isDataXploreRoute = (path: string) =>
+    path === "/data-catalog/xplorer";
 
   // Decide which header content to render
   const renderHeaderContent = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
-      return <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
-      return <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>
     }
     if (isDataOpsHubRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[74%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
           <NavigationBreadcrumb />
           <AIChatButton variant="dataops" />
+        </div>
+      );
+    }
+    if (isDataXploreRoute(location.pathname)) {
+      return (
+        <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
+          <NavigationBreadcrumb />
+          <AIChatButton variant="explorer" />
         </div>
       );
     }

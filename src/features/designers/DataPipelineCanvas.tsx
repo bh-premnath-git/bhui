@@ -10,11 +10,12 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle } from 'lucide-react';
-import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
+// import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';
 import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+import CreateForm from './pipeline/components/form-sections/CreateFormNew';
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
@@ -44,7 +45,7 @@ const BuildPlayGround: React.FC = () => {
     const filteredNodes = useMemo(() => nodeData.nodes, []);
     // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
-
+console.log(selectedSchema)
     // Update memoizedNodeTypes to include debug props
     const memoizedNodeTypes = useMemo(() => ({
         custom: (props: any) => (
@@ -309,7 +310,7 @@ const BuildPlayGround: React.FC = () => {
                     >
                         <DialogContent className="max-w-[60%]">
                             {selectedSchema && (
-                                <CreateFormFormik
+                                <CreateForm
                                     schema={selectedSchema}
                                     sourceColumns={sourceColumns}
                                     onClose={handleDialogClose}

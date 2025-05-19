@@ -21,6 +21,8 @@ import mdataJson from "@/pages/designers/data-pipeline/data/mdata.json";
 import { motion } from 'framer-motion';
 import SuggestionButton from "./SuggestionButton";
 import { cn } from "@/lib/utils";
+import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
+
 
 export const PipeLineChatPanel = ({
   onClose,
@@ -30,6 +32,7 @@ export const PipeLineChatPanel = ({
   color = '#009459'
 }: any) => {
 
+  const filteredNodes = useMemo(() => nodeData.nodes, []);
 
 
   const dispatch = useAppDispatch();
@@ -186,7 +189,7 @@ export const PipeLineChatPanel = ({
     handleSelectFormSubmit,
     setShowSelectForm,
   } = usePipeLineChat();
-  const { nodes, edges } = usePipelineContext()
+  const { nodes, edges,handleNodeClick } = usePipelineContext()
 
   // Debug log to see available nodes
   useEffect(() => {

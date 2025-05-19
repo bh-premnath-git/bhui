@@ -2,11 +2,9 @@
   import { ScrollArea } from '@/components/ui/scroll-area';
   import { AIChatInput } from '@/components/shared/AIChatInput';
   import { motion } from 'framer-motion';
-  import { addEdge } from 'reactflow';
   import SuggestionButton from './SuggestionButton'; // Import the SuggestionButton
   import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
   import { Input } from '@/components/ui/input';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
   import { Button } from '@/components/ui/button';
   import { useForm } from 'react-hook-form';
   import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +20,8 @@
   import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
   import { Dialog, DialogContent } from '@/components/ui/dialog';
   import CreateFormFormik from './form-sections/CreateForm';
+  import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
+  // No longer need these imports since we're using TargetPopUp directly
 
   // Define the form schema based on Reader.json
   const readerFormSchema = z.object({
@@ -50,6 +50,7 @@
       sourceColumns: any[];
       currentNodeId: string;
       initialValues: any;
+      isTarget?: boolean;
     };
   };
 
@@ -66,6 +67,7 @@
     const [selectedSchema, setSelectedSchema] = useState<any>(null);
     const [sourceColumns, setSourceColumns] = useState<any[]>([]);
     const [formsHanStates, setformsHanStates] = useState<Record<string, any>>({});
+    const scrollAreaRef = React.useRef<HTMLDivElement>(null);
     const pipelineContext = usePipelineContext();
     const { 
       handleNodeClick, 
@@ -78,8 +80,16 @@
       handleAlignHorizontal,
       handleFormSubmit,
       pipelineDtl,
-      setFormStates,formStates
+      setFormStates,
+      formStates,
+      handleSourceUpdate
     } = pipelineContext;
+    
+    // Keep local form states in sync with context form states
+    useEffect(() => {
+      console.log('Form states updated in context:', formStates);
+      setformsHanStates(formStates);
+    }, [formStates]);
     
     // Initialize the Reader node from node_display.json and load connection configs
     useEffect(() => {
@@ -144,6 +154,29 @@
     useEffect(() => {
       console.log('Current edges:', edges);
     }, [edges]);
+    
+    // Track form states changes
+    useEffect(() => {
+      console.log('Form states changed:', formStates);
+    }, [formStates]);
+    
+    // Auto-scroll to bottom when messages change
+    useEffect(() => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollContainer) {
+          // Use smooth scrolling for better UX
+          setTimeout(() => {
+            scrollContainer.scrollTo({
+              top: scrollContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, 100);
+        }
+      }
+    }, [messages]);
+    
+    // We're now using the handleSourceUpdate from the context
 
     const form = useForm<ReaderFormValues>({
       resolver: zodResolver(readerFormSchema),
@@ -362,6 +395,13 @@
                     addNodeToHistory();
                     handleNodeClick(readerNode, mockDataSource);
                     
+                    // Apply horizontal alignment after adding the node
+                    setTimeout(() => {
+                      if (pipelineContext.handleAlignHorizontal) {
+                        pipelineContext.handleAlignHorizontal();
+                      }
+                    }, 100);
+                    
                     setMessages(prevMessages => [
                       ...prevMessages,
                       { 
@@ -493,20 +533,13 @@
         // Add the node to the pipeline
         handleNodeClick(readerNode, sourceData.sourceData.data.source);
         
-        // Add a confirmation message with transformation suggestions
+        // Apply horizontal alignment after adding the node
         setTimeout(() => {
-          setMessages(prevMessages => [
-            ...prevMessages,
-            { 
-              role: 'assistant', 
-              content: `Great! I've added a Reader node with the "${sourceData.sourceData.data.label}" data source to your pipeline. What would you like to do next?`,
-              suggestions: [
-                { text: "Add another source", onClick: handleAddAnotherSource },
-                { text: "Add transformation", onClick: handleShowTransformations }
-              ]
-            },
-          ]);
-        }, 300);
+          if (pipelineContext.handleAlignHorizontal) {
+            pipelineContext.handleAlignHorizontal();
+          }
+        }, 100);
+       
       } else {
         toast.error("Reader node not found. Please try again.");
       }
@@ -586,9 +619,9 @@
                 setLastAddedTransformation(transformationInfo);
                 
                 // Add the transformation node to the pipeline
-                handleNodeClick(node);
+                handleNodeClick(node, null);
                 
-                // Add a message to confirm the transformation was added
+               
                 setTimeout(() => {
                   setMessages(prevMessages => [
                     ...prevMessages,
@@ -679,7 +712,9 @@
       // Create a connection between the source node and the target node
       const connection = {
         source: sourceNode.id,
-        target: targetNodeId
+        target: targetNodeId,
+        sourceHandle: null,  // Add sourceHandle property
+        targetHandle: null   // Add targetHandle property
       };
       
       // Create a unique edge ID
@@ -741,6 +776,41 @@
         const transformationType = targetNodeType.ui_properties.module_name;
         console.log("Transformation type:", transformationType);
         
+        // Check if this is a Target transformation
+        const isTarget = transformationType === 'Target';
+        console.log("Is Target:", isTarget);
+        
+        // If this is a Target transformation, show the Target form immediately
+        if (isTarget) {
+          console.log("Showing Target form immediately");
+          
+          // Add a message to show that we're configuring the Target
+          setTimeout(() => {
+            setMessages(prevMessages => [
+              ...prevMessages,
+              { 
+                role: 'assistant', 
+                content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your Target transformation. Now let's configure it:`,
+                formData: {
+                  schema: { title: 'Target' },
+                  sourceColumns: [], // Add empty sourceColumns array to satisfy the type requirement
+                  currentNodeId: targetNodeId,
+                  isTarget: true,
+                  initialValues: {
+                    nodeId: targetNodeId,
+                    name: `Target_${targetNodeId}`,
+                    dependent_on: edges
+                      .filter(edge => edge.target === targetNodeId)
+                      .map(edge => edge.source)
+                  }
+                }
+              },
+            ]);
+          }, 300);
+          
+          return; // Skip the rest of the function
+        }
+        
         // Check if schemaData has a schema property (array) or is an array itself
         const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
         console.log("Schema array:", schemaArray);
@@ -766,6 +836,9 @@
                 
                 // Add a message to show that we're configuring the transformation
                 setTimeout(() => {
+                  // Check if this is a Target transformation
+                  const isTarget = transformationType === 'Target';
+                  
                   const newMessage = { 
                     role: 'assistant', 
                     content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your ${transformationType} transformation. Now let's configure it:`,
@@ -773,8 +846,9 @@
                       schema: schemaWithNodeId,
                       sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
                       currentNodeId: targetNodeId,
+                      isTarget: isTarget, // Add flag to indicate if this is a Target
                       initialValues: {
-                        ...formsHanStates[targetNodeId],
+                        ...formStates[targetNodeId],
                         nodeId: targetNodeId,
                         dependent_on: edges
                           .filter(edge => edge.target === targetNodeId)
@@ -785,7 +859,7 @@
                   
                   console.log("Adding form message to chat (single-input):", newMessage);
                   
-                  setMessages(prevMessages => {
+                  setMessages((prevMessages:any) => {
                     const newMessages = [...prevMessages, newMessage];
                     console.log("New messages array (single-input):", newMessages);
                     return newMessages;
@@ -797,6 +871,9 @@
                 
                 // Fallback if we can't get column suggestions
                 setTimeout(() => {
+                  // Check if this is a Target transformation
+                  const isTarget = transformationType === 'Target';
+                  
                   const newMessage = { 
                     role: 'assistant', 
                     content: `Great! I've connected the ${sourceNode.data.title || sourceNode.data.label} to your ${transformationType} transformation. Now let's configure it:`,
@@ -804,8 +881,9 @@
                       schema: schemaWithNodeId,
                       sourceColumns: [],
                       currentNodeId: targetNodeId,
+                      isTarget: isTarget, // Add flag to indicate if this is a Target
                       initialValues: {
-                        ...formsHanStates[targetNodeId],
+                        ...formStates[targetNodeId],
                         nodeId: targetNodeId,
                         dependent_on: edges
                           .filter(edge => edge.target === targetNodeId)
@@ -816,7 +894,7 @@
                   
                   console.log("Adding form message to chat (fallback):", newMessage);
                   
-                  setMessages(prevMessages => {
+                  setMessages((prevMessages:any) => {
                     const newMessages = [...prevMessages, newMessage];
                     console.log("New messages array (fallback):", newMessages);
                     return newMessages;
@@ -902,6 +980,9 @@
                         console.log(`Adding form for ${transformationType} with node ID ${targetNodeId} to chat`);
                         
                         // Add the form to the chat messages
+                        // Check if this is a Target transformation
+                        const isTarget = transformationType === 'Target';
+                        
                         const newMessage = { 
                           role: 'assistant', 
                           content: `Please configure your ${transformationType} transformation:`,
@@ -909,8 +990,9 @@
                             schema: schemaWithNodeId,
                             sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
                             currentNodeId: targetNodeId,
+                            isTarget: isTarget, // Add flag to indicate if this is a Target
                             initialValues: {
-                              ...formsHanStates[targetNodeId],
+                              ...formStates[targetNodeId],
                               nodeId: targetNodeId,
                               dependent_on: edges
                                 .filter(edge => edge.target === targetNodeId)
@@ -921,7 +1003,7 @@
                         
                         console.log("Adding form message to chat:", newMessage);
                         
-                        setMessages(prevMessages => {
+                        setMessages((prevMessages:any) => {
                           const newMessages = [...prevMessages, newMessage];
                           console.log("New messages array:", newMessages);
                           return newMessages;
@@ -945,6 +1027,9 @@
                         console.log(`Adding form for ${transformationType} with node ID ${targetNodeId} to chat (fallback)`);
                         
                         // Add the form to the chat messages
+                        // Check if this is a Target transformation
+                        const isTarget = transformationType === 'Target';
+                        
                         const newMessage = { 
                           role: 'assistant', 
                           content: `Please configure your ${transformationType} transformation:`,
@@ -952,8 +1037,9 @@
                             schema: schemaWithNodeId,
                             sourceColumns: [],
                             currentNodeId: targetNodeId,
+                            isTarget: isTarget, // Add flag to indicate if this is a Target
                             initialValues: {
-                              ...formsHanStates[targetNodeId],
+                              ...formStates[targetNodeId],
                               nodeId: targetNodeId,
                               dependent_on: edges
                                 .filter(edge => edge.target === targetNodeId)
@@ -964,7 +1050,7 @@
                         
                         console.log("Adding form message to chat (multi-input fallback):", newMessage);
                         
-                        setMessages(prevMessages => {
+                        setMessages((prevMessages:any) => {
                           const newMessages = [...prevMessages, newMessage];
                           console.log("New messages array (multi-input fallback):", newMessages);
                           return newMessages;
@@ -1053,7 +1139,7 @@
 
     return (
       <div className="h-full w-full flex flex-col">
-        <ScrollArea className="flex-1 w-full">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 w-full">
           <div className="px-6 py-4 w-full mx-auto">
             {messages.length === 0 ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -1104,45 +1190,295 @@
                     
                     {/* Render form if formData exists */}
                     {message.role === 'assistant' && message.formData && (
+                      console.log('Rendering form with data:', message.formData),
                       <div className="ml-12 mt-3 bg-white rounded-xl shadow-md border border-gray-200 p-4">
                         
                         <div className="space-y-4">
                           <h3 className="text-lg font-semibold">{message.formData.schema?.title} Configuration</h3>
                           
-                          {/* Use the CreateFormFormik component directly */}
-                          <div className="form-wrapper">
-                            <CreateFormFormik
-                              schema={message.formData.schema}
-                              sourceColumns={message.formData.sourceColumns || []}
-                              onClose={() => {
-                                // Handle form close
-                                setMessages(prevMessages => [
-                                  ...prevMessages,
-                                  { 
-                                    role: 'user', 
-                                    content: `Cancelled ${message.formData?.schema?.title} configuration`
-                                  },
-                                  {
-                                    role: 'assistant',
-                                    content: 'What would you like to do next?',
-                                    suggestions: [
-                                      { text: "Add another source", onClick: handleAddAnotherSource },
-                                      { text: "Add another transformation", onClick: handleShowTransformations }
-                                    ]
+                          {/* Check if this is a target node */}
+                          {message.formData.isTarget || message.formData.schema?.title === 'Target' ? (
+                            <div className="form-wrapper">
+                              {/* 
+                                Use TargetPopUp for Target nodes in inline mode (not as a dialog)
+                                When isOpen is false, TargetPopUp renders directly in the parent component
+                              */}
+                              <TargetPopUp
+                                isOpen={false} // Use inline mode
+                                onClose={() => {
+                                  // Handle form close
+                                  setMessages(prevMessages => [
+                                    ...prevMessages,
+                                    { 
+                                      role: 'user', 
+                                      content: `Cancelled Target configuration`
+                                    },
+                                    {
+                                      role: 'assistant',
+                                      content: 'What would you like to do next?',
+                                      suggestions: [
+                                        { text: "Add another source", onClick: handleAddAnotherSource },
+                                        { text: "Add another transformation", onClick: handleShowTransformations }
+                                      ]
+                                    }
+                                  ]);
+                                }}
+                                nodeId={message.formData.currentNodeId}
+                                initialData={formStates[message.formData.currentNodeId] || message.formData.initialValues}
+                                onSourceUpdate={(sourceData) => {
+                                  console.log('onSourceUpdate called in chat panel with data:', sourceData);
+                                  console.log('Current node ID:', message.formData.currentNodeId);
+                                  
+                                  // Update the node with the source data
+                                  // First, log the current state of the node
+                                  console.log('Current node before update:', 
+                                    nodes.find(node => node.id === message.formData.currentNodeId)
+                                  );
+                                  
+                                  handleSourceUpdate({ 
+                                    nodeId: message.formData.currentNodeId, 
+                                    sourceData 
+                                  });
+                                  
+                                  // Log the node after update (in next tick)
+                                  setTimeout(() => {
+                                    const updatedNode = nodes.find(node => node.id === message.formData.currentNodeId);
+                                    console.log('Node after update:', updatedNode);
+                                    
+                                    if (!updatedNode) {
+                                      console.error('Could not find updated node with ID:', message.formData.currentNodeId);
+                                      console.error('Available nodes:', nodes.map(n => ({ id: n.id, label: n.label })));
+                                    }
+                                  }, 0);
+                                  
+                                  // Also update the form states in the context to ensure consistency
+                                  // This is the key fix - we need to update formStates with the target configuration
+                                  console.log('Updating form states with target data:', {
+                                    nodeId: message.formData.currentNodeId,
+                                    sourceData: sourceData
+                                  });
+                                  
+                                  // Handle the nested structure from TargetPopUp component
+                                  // The structure can be either:
+                                  // 1. { sourceData: { data: { ... } } } - from TargetPopUp
+                                  // 2. { data: { ... } } - from other components
+                                  let data;
+                                  
+                                  if (sourceData.sourceData?.data) {
+                                    // Structure from TargetPopUp
+                                    data = sourceData.sourceData.data;
+                                    console.log('Using nested sourceData.sourceData.data structure');
+                                  } else if (sourceData.data) {
+                                    // Direct structure
+                                    data = sourceData.data;
+                                    console.log('Using direct sourceData.data structure');
+                                  } else {
+                                    // Try to use sourceData directly as a fallback
+                                    data = sourceData;
+                                    console.log('Using sourceData directly as fallback');
                                   }
-                                ]);
-                              }}
-                              currentNodeId={message.formData.currentNodeId}
-                              initialValues={{
-                                        ...formStates[message.formData.currentNodeId],
-                                        nodeId: message.formData.currentNodeId
-                                    }}
-                              nodes={nodes}
-                              edges={edges}
-                              pipelineDtl={pipelineDtl}
-                              onSubmit={handleFormSubmit}
-                            />
-                          </div>
+                                  
+                                  if (!data) {
+                                    console.error('Invalid sourceData structure:', sourceData);
+                                    // Create a minimal data object to avoid errors
+                                    data = {
+                                      title: 'Unnamed Target',
+                                      label: 'Unnamed Target',
+                                      source: {
+                                        target_type: 'File',
+                                        load_mode: 'append'
+                                      },
+                                      transformationData: {
+                                        write_options: {
+                                          header: true,
+                                          sep: ",",
+                                          createDisposition: 'CREATE_IF_NEEDED',
+                                          writeMethod: 'APPEND'
+                                        }
+                                      }
+                                    };
+                                  }
+                                  
+                                  // Create a safe form state object with fallbacks for missing properties
+                                  const updatedFormState = {
+                                    ...(data.transformationData || {}),
+                                    name: data.title || data.label || 'Unnamed Target',
+                                    target: {
+                                      target_type: data.source?.target_type || 'File',
+                                      target_name: data.source?.target_name || '',
+                                      table_name: data.source?.table_name || '',
+                                      file_name: data.source?.file_name || '',
+                                      load_mode: data.source?.load_mode || 'append',
+                                      connection: data.source?.connection || {}
+                                    },
+                                    file_type: data.source?.file_type || 'CSV',
+                                    write_options: data.transformationData?.write_options || {
+                                      header: true,
+                                      sep: ",",
+                                      createDisposition: 'CREATE_IF_NEEDED',
+                                      writeMethod: data.source?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                                    }
+                                  };
+                                  
+                                  console.log('Updated form state:', updatedFormState);
+                                  
+                                  try {
+                                    setFormStates(prevStates => {
+                                      const newStates = {
+                                        ...prevStates,
+                                        [message.formData.currentNodeId]: updatedFormState
+                                      };
+                                      console.log('New form states:', newStates);
+                                      return newStates;
+                                    });
+                                  } catch (error) {
+                                    console.error('Error updating form states:', error);
+                                    console.error('Node ID:', message.formData.currentNodeId);
+                                    console.error('Updated form state:', updatedFormState);
+                                  }
+                                  
+                                  // Update the local form states to ensure consistency
+                                  try {
+                                    setformsHanStates(prevStates => {
+                                      const newLocalStates = {
+                                        ...prevStates,
+                                        [message.formData.currentNodeId]: updatedFormState
+                                      };
+                                      console.log('New local form states:', newLocalStates);
+                                      return newLocalStates;
+                                    });
+                                  } catch (error) {
+                                    console.error('Error updating local form states:', error);
+                                    console.error('Node ID:', message.formData.currentNodeId);
+                                    console.error('Updated form state:', updatedFormState);
+                                  }
+                                  
+                                  // Mark unsaved changes
+                                  setUnsavedChanges();
+                                  
+                                  // Add a message to show the form was submitted
+                                  setMessages(prevMessages => [
+                                    ...prevMessages,
+                                    { 
+                                      role: 'user', 
+                                      content: `Configured Target`
+                                    },
+                                    {
+                                      role: 'assistant',
+                                      content: `Great! I've updated the Target with your configuration. What would you like to do next?`,
+                                      suggestions: [
+                                        { text: "Add another source", onClick: handleAddAnotherSource },
+                                        { text: "Add another transformation", onClick: handleShowTransformations }
+                                      ]
+                                    }
+                                  ]);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            /* Use CreateFormFormik for other transformations */
+                            <div className="form-wrapper">
+                              <CreateFormFormik
+                                schema={message.formData.schema}
+                                sourceColumns={message.formData.sourceColumns || []}
+                                onClose={() => {
+                                  // Handle form close
+                                  setMessages(prevMessages => [
+                                    ...prevMessages,
+                                    { 
+                                      role: 'user', 
+                                      content: `Cancelled ${message.formData?.schema?.title} configuration`
+                                    },
+                                    {
+                                      role: 'assistant',
+                                      content: 'What would you like to do next?',
+                                      suggestions: [
+                                        { text: "Add another source", onClick: handleAddAnotherSource },
+                                        { text: "Add another transformation", onClick: handleShowTransformations }
+                                      ]
+                                    }
+                                  ]);
+                                }}
+                                currentNodeId={message.formData.currentNodeId}
+                                initialValues={{
+                                          ...formStates[message.formData.currentNodeId],
+                                          nodeId: message.formData.currentNodeId
+                                      }}
+                                nodes={nodes}
+                                edges={edges}
+                                pipelineDtl={pipelineDtl}
+                                onSubmit={(data) => {
+                                  console.log('Form submitted with data:', data);
+                                  console.log('Current node ID:', message.formData.currentNodeId);
+                                  console.log('Current form states before update:', formStates);
+                                  
+                                  // First, call the context's handleFormSubmit to update the global state
+                                  handleFormSubmit(data);
+                                  
+                                  // Also update the form states in the context directly to ensure consistency
+                                  setFormStates(prevStates => ({
+                                    ...prevStates,
+                                    [message.formData.currentNodeId]: data
+                                  }));
+                                  
+                                  // Update the node data with transformation data (similar to what handleFormSubmit does)
+                                  const nodeId = message.formData.currentNodeId;
+                                  const updatedNodes = nodes.map(node => {
+                                    if (node.id === nodeId) {
+                                      // Preserve existing source data if it exists
+                                      const existingSource = node.data.source || {};
+                                      
+                                      return {
+                                        ...node,
+                                        data: {
+                                          ...node.data,
+                                          transformationData: {
+                                            ...node.data.transformationData,
+                                            ...data,
+                                            name: data.name || node.data.title
+                                          },
+                                          // Preserve existing source data
+                                          source: existingSource
+                                        }
+                                      };
+                                    }
+                                    return node;
+                                  });
+                                  
+                                  // Update the nodes in the context
+                                  pipelineContext.setNodes(updatedNodes);
+                                  
+                                  // Mark unsaved changes
+                                  setUnsavedChanges();
+                                  
+                                  // Update the local form states to ensure consistency
+                                  setformsHanStates(prevStates => ({
+                                    ...prevStates,
+                                    [message.formData.currentNodeId]: data
+                                  }));
+                                  
+                                  console.log('Form states after update:', formStates);
+                                  
+                                  // Add a message to show the form was submitted
+                                  setMessages(prevMessages => [
+                                    ...prevMessages,
+                                    { 
+                                      role: 'user', 
+                                      content: `Configured ${message.formData?.schema?.title} transformation`
+                                    },
+                                    {
+                                      role: 'assistant',
+                                      content: `Great! I've updated the ${message.formData?.schema?.title} transformation with your configuration. What would you like to do next?`,
+                                      suggestions: [
+                                        { text: "Add another source", onClick: handleAddAnotherSource },
+                                        { text: "Add another transformation", onClick: handleShowTransformations }
+                                      ]
+                                    }
+                                  ]);
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1187,19 +1523,12 @@
                   <div className="mt-4 mb-6">
                     <div className="flex items-center gap-4 py-2">
                       <div className="w-8 h-8 rounded-full bg-green-500 flex-shrink-0" />
-                      <div className="flex-1 rounded-2xl px-4 py-4 shadow bg-gray-100">
-                        <h3 className="text-lg font-medium text-gray-800 mb-4">Configure Reader</h3>
-                        <div className="max-h-[500px] overflow-y-auto">
-                          <div className="transform scale-[0.85] origin-top -mt-6 -ml-6">
                             <ReaderOptionsForm
                               initialData={selectedDataSource}
                               onSourceUpdate={handleReaderOptionsSubmit}
                               onClose={handleReaderOptionsClose}
                               nodeId={`reader-${Date.now()}`}
                             />
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}

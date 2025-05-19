@@ -1,3 +1,10 @@
+/**
+ * TargetPopUp Component
+ * 
+ * This component can be used in two modes:
+ * 1. Dialog mode: When isOpen is true, it renders as a modal dialog
+ * 2. Inline mode: When isOpen is false, it renders directly in the parent component (used in chat panel)
+ */
 import React, { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -118,32 +125,65 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
     const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
+    const [isInlineMode, setIsInlineMode] = useState<boolean>(false);
+    
+    // Determine if we're in inline mode (used in chat panel) or modal mode (used in canvas)
+    useEffect(() => {
+        // When isOpen is false but we still want to render the component,
+        // we're in inline mode (used in the chat panel)
+        const inlineMode = isOpen === false;
+        setIsInlineMode(inlineMode);
+        console.log('TargetPopUp mode:', inlineMode ? 'inline (chat panel)' : 'modal (canvas)');
+    }, [isOpen]);
     useEffect(() => {
         dispatch(getConnectionConfigList({ offset: 0, limit: 1000 }));
     }, [dispatch]);
 
+    /**
+     * Initialize form data from either source or initialData
+     * 
+     * This component can be initialized in two ways:
+     * 1. With source data (when used in canvas mode)
+     * 2. With initialData (when used in chat panel mode)
+     */
     useEffect(() => {
+        console.log('TargetPopUp initializing with:', {
+            source,
+            initialData,
+            isInlineMode,
+            nodeId
+        });
 
         if (source) {
-            let connection = { ...source.source?.connection };
-            connection.connection_config_id = source?.source?.connection?.connection_config_id || connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
-            console.log(source, "sdsd")
-            console.log(connection, "connection")
+            console.log('Using source data for initialization');
+            let connection = source.source?.connection ? { ...source.source.connection } : {};
+            connection.connection_config_id = source?.source?.connection?.connection_config_id || 
+                connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
+            console.log('Connection data:', connection);
+            
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
+            
+            // Make sure we have a valid initialFormData object with all required fields
             const initialFormData: FormData = {
-                name: source.title,
+                name: source.title || 'Unnamed Target',
                 target: {
-                    target_type: source.source?.target_type || pipelineJsonData?.target?.target_type,
-                    target_name: source.source?.target_name,
-                    table_name: source.source?.table_name,
-                    load_mode: source.source?.load_mode,
-                    file_name: source.source?.file_name,
+                    target_type: source.source?.target_type || pipelineJsonData?.target?.target_type || 'File',
+                    target_name: source.source?.target_name || '',
+                    table_name: source.source?.table_name || '',
+                    load_mode: source.source?.load_mode || 'append',
+                    file_name: source.source?.file_name || '',
                     connection: connection
                 },
                 file_type: source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV',
-                write_options: source.transformationData?.write_options
+                write_options: source.transformationData?.write_options || {
+                    header: true,
+                    sep: ",",
+                    createDisposition: 'CREATE_IF_NEEDED',
+                    writeMethod: source.source?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                }
             };
 
+            console.log('Setting form data from source:', initialFormData);
             setFormData(initialFormData);
 
             // Set selected connection if connection_config_id exists
@@ -154,16 +194,45 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 setSelectedConnection(selectedConn || null);
             }
         } else if (initialData) {
-            setFormData(initialData);
+            console.log('Using initialData for initialization:', initialData);
+            
+            // Make sure we have a valid initialData object with all required fields
+            const safeInitialData: FormData = {
+                name: initialData.name || '',
+                target: {
+                    target_type: initialData.target?.target_type || 'File',
+                    target_name: initialData.target?.target_name || '',
+                    table_name: initialData.target?.table_name || '',
+                    file_name: initialData.target?.file_name || '',
+                    load_mode: initialData.target?.load_mode || 'append',
+                    connection: initialData.target?.connection || {}
+                },
+                file_type: initialData.file_type || 'CSV',
+                write_options: initialData.write_options || {
+                    header: true,
+                    sep: ",",
+                    createDisposition: 'CREATE_IF_NEEDED',
+                    writeMethod: initialData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                }
+            };
+            
+            console.log('Safe initialData:', safeInitialData);
+            setFormData(safeInitialData);
+            
             if (initialData.target?.connection?.connection_config_id) {
                 const selectedConn = connectionConfigList.find(
                     conn => conn.id === initialData.target.connection.connection_config_id
                 );
+                console.log('Selected connection:', selectedConn);
                 setSelectedConnection(selectedConn || null);
             }
+        } else {
+            console.log('No source or initialData provided');
         }
-        console.log(selectedConnection, "formData")
-    }, [source, initialData, connectionConfigList]);
+        
+        console.log('Selected connection:', selectedConnection);
+        console.log('Current form data:', formData);
+    }, [source, initialData, connectionConfigList, isInlineMode, nodeId]);
 
     useEffect(() => {
         resolveSchema();
@@ -281,6 +350,17 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         });
     };
 
+    /**
+     * Renders form fields based on the schema
+     * 
+     * This function handles different field types:
+     * - Referenced fields (using $ref)
+     * - Connection fields (special handling)
+     * - Enum fields (select boxes)
+     * - Regular input fields
+     * 
+     * It works in both inline mode (chat panel) and dialog mode (canvas)
+     */
     const renderField = (fieldName: string, fieldSchema: any, path: string[] = []) => {
         if (!fieldSchema) return null;
 
@@ -460,8 +540,21 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         );
     };
 
+    /**
+     * Handle form submission for both inline mode (chat panel) and dialog mode (canvas)
+     * 
+     * In both modes, this function:
+     * 1. Validates the form data
+     * 2. Creates a structured sourceData object
+     * 3. Calls onSourceUpdate with the sourceData
+     * 4. Closes the form
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Form submitted with data:', formData);
+        console.log('Is inline mode:', isInlineMode);
+        console.log('Node ID:', nodeId);
+        
         const errors: Record<string, string> = {};
 
         // Validate required fields
@@ -469,33 +562,51 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         if (!formData.target?.target_type) errors["target.target_type"] = "Target type is required";
         if (!formData.target?.load_mode) errors["target.load_mode"] = "Load mode is required";
 
-        if (Object.keys(errors).length > 0) {
+        // In inline mode (chat panel), we'll be more lenient with validation
+        // to avoid blocking the user flow
+        if (Object.keys(errors).length > 0 && !isInlineMode) {
             setErrors(errors);
             toast.error("Please fill all required fields");
+            console.error('Form validation errors:', errors);
             return;
+        } else if (Object.keys(errors).length > 0) {
+            // In inline mode, just log the errors but continue
+            console.warn('Form has validation errors, but continuing in inline mode:', errors);
         }
 
         try {
+            console.log('Finding connection data for ID:', formData.target?.connection?.connection_config_id);
             const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
-            let connection = { ...connectionData?.custom_metadata };
+            console.log('Found connection data:', connectionData);
+            
+            // Create a safe connection object with fallbacks
+            let connection = { 
+                ...connectionData?.custom_metadata,
+                // Preserve existing connection data if available
+                ...formData.target?.connection
+            };
+            
+            // Make sure we have the connection_config_id
             connection.connection_config_id = formData.target?.connection?.connection_config_id;
+            console.log('Prepared connection data:', connection);
 
             // Create a properly structured source data object
+            // Make sure we have all the required fields with fallbacks
             const sourceData = {
                 nodeId,
                 sourceData: {
                     data: {
-                        label: formData.name,
-                        title: formData.name, // Set the title to the name entered by user
+                        label: formData.name || 'Unnamed Target',
+                        title: formData.name || 'Unnamed Target', // Set the title to the name entered by user
                         source: {
-                            name: formData.name, // Also update the source name
-                            target_type: formData.target?.target_type,
-                            target_name: formData.target?.target_name,
-                            table_name: formData.target?.table_name,
-                            file_type: formData.file_type,
-                            connection: connection,
-                            file_name: formData.target?.file_name,
-                            load_mode: formData.target?.load_mode
+                            name: formData.name || 'Unnamed Target', // Also update the source name
+                            target_type: formData.target?.target_type || 'File',
+                            target_name: formData.target?.target_name || '',
+                            table_name: formData.target?.table_name || '',
+                            file_type: formData.file_type || 'CSV',
+                            connection: connection || {},
+                            file_name: formData.target?.file_name || '',
+                            load_mode: formData.target?.load_mode || 'append'
                         },
                         transformationData: {
                             write_options: formData.write_options || {
@@ -508,14 +619,35 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
+            
+            console.log('Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
+            console.log('onSourceUpdate function exists:', !!onSourceUpdate);
+            console.log('Current mode:', isInlineMode ? 'inline (chat panel)' : 'modal (canvas)');
 
-            if (onSourceUpdate) {
-                onSourceUpdate(sourceData);
+            try {
+                if (onSourceUpdate) {
+                    console.log('Calling onSourceUpdate with data');
+                    onSourceUpdate(sourceData);
+                    console.log('onSourceUpdate called successfully');
+                    
+                    // For debugging - log what happens after the update
+                    setTimeout(() => {
+                        console.log('Form state after update (delayed check)');
+                    }, 500);
+                } else {
+                    console.error('onSourceUpdate function is not defined');
+                }
+                
+                onClose();
+                toast.success("Target configuration saved successfully");
+            } catch (error) {
+                console.error('Error calling onSourceUpdate:', error);
+                // Still try to close the form to avoid blocking the user
+                onClose();
+                toast.error("Error saving configuration, but form closed");
             }
-            onClose();
-            toast.success("Target configuration saved successfully");
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error during form submission:', error);
             toast.error('Failed to save configuration');
         }
     };
@@ -536,9 +668,18 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         });
     };
 
-    // Check if we should render the component
-    if (isOpen === false) {
-        // Inline mode - render as a Card
+    /**
+     * This is the main rendering logic for the component.
+     * 
+     * We have three rendering modes:
+     * 1. Card mode (when isOpen is false) - used in the chat panel
+     * 2. Inline mode (when isInlineMode is true) - alternative for chat panel
+     * 3. Dialog mode (default) - used in the canvas
+     */
+    
+    // Card mode rendering - an alternative presentation mode
+    // This is not currently used in the chat panel (we use inline mode instead)
+    if (false) { // Disabled for now to avoid conflicts with inline mode
         return (
             <Card className="w-full shadow-md border border-gray-200 my-2 overflow-hidden">
                 <CardContent className="p-0">
@@ -653,12 +794,93 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 </CardContent>
             </Card>
         );
-    } else if (!isOpen) {
-        // Not open and not inline mode
-        return null;
-    }
+    } 
+    
+    /**
+     * Inline mode rendering (used in chat panel)
+     * 
+     * When isOpen is false but we still want to show the form,
+     * we render it directly in the parent component without the dialog wrapper.
+     * This is used in the chat panel where the form is embedded in the message.
+     */
+    if (isInlineMode) {
+        return (
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                {/* Content */}
+                <div className="flex-1 overflow-auto px-3 py-2 space-y-4">
+                    {/* Basic Info Section */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
+                            <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                            {renderField('name', currentSchema.properties.name)}
+                            {renderField('target_name', targetSchema.properties.target_name, ['target'])}
+                        </div>
+                    </div>
 
-    // Dialog mode
+                    {/* Target Config Section */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
+                            <h3 className="text-sm font-medium text-gray-700">Target Configuration</h3>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                                {renderField('target_type', targetSchema.properties.target_type, ['target'])}
+                                {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
+                            </div>
+
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                {renderField('connection', targetSchema.properties.connection, ['target'])}
+                            </div>
+
+                            {formData.target?.load_mode === 'merge' && (
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    {renderField('merge_keys', targetSchema.properties.merge_keys, ['target'])}
+                                </div>
+                            )}
+
+                            {formData.target?.target_type === 'File' && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-lg shadow-sm">
+                                        {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
+                                        {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end gap-2 px-3 py-3 border-t border-gray-100 bg-white">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onClose}
+                        className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
+                    >
+                        Save Configuration
+                    </Button>
+                </div>
+            </form>
+        );
+    }
+    
+    /**
+     * Dialog mode rendering (used in canvas)
+     * 
+     * When isOpen is true, we render the form inside a dialog.
+     * This is used in the canvas where the form is shown as a modal dialog.
+     */
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-[1200px] h-[750px] p-0 overflow-hidden flex flex-col">

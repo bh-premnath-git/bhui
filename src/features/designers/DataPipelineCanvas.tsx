@@ -13,9 +13,8 @@ import { LoaderCircle } from 'lucide-react';
 // import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';
-import ResolveSchema from '@/components/bh-reactflow-comps/builddata/components/ResolveSchema';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
-import CreateForm from './pipeline/components/form-sections/CreateFormNew';
+import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
@@ -310,7 +309,7 @@ console.log(selectedSchema)
                     >
                         <DialogContent className="max-w-[60%]">
                             {selectedSchema && (
-                                <CreateForm
+                                <CreateFormFormik
                                     schema={selectedSchema}
                                     sourceColumns={sourceColumns}
                                     onClose={handleDialogClose}

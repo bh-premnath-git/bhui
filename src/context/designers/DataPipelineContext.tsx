@@ -578,23 +578,69 @@ const makePipeline = async (result: any,isModify=true) => {
 
     const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
-        console.log(sourceData)
-        setNodes(prevNodes =>
-            prevNodes.map(node => {
-                if (node.id === nodeId) {
-                    return {
-                        ...node,
-                        label: sourceData.data.label,
-                        data: {
-                            ...node.data,
-                            title: sourceData.data.label,
-                            source: sourceData.data.source,
+        console.log('handleSourceUpdate received:', { nodeId, sourceData });
+        
+        // Handle the nested structure from TargetPopUp component
+        // The structure can be either:
+        // 1. { sourceData: { data: { ... } } } - from TargetPopUp
+        // 2. { data: { ... } } - from other components
+        let data;
+        
+        if (sourceData.sourceData?.data) {
+            // Structure from TargetPopUp
+            data = sourceData.sourceData.data;
+            console.log('Using nested sourceData.sourceData.data structure');
+        } else if (sourceData.data) {
+            // Direct structure
+            data = sourceData.data;
+            console.log('Using direct sourceData.data structure');
+        } else {
+            // Try to use sourceData directly as a fallback
+            data = sourceData;
+            console.log('Using sourceData directly as fallback');
+        }
+        
+        if (!data) {
+            console.error('Invalid sourceData structure:', sourceData);
+            // Create a minimal data object to avoid errors
+            data = {
+                label: 'Unnamed Node',
+                title: 'Unnamed Node',
+                source: {},
+                transformationData: {}
+            };
+        }
+        
+        console.log('Using data:', data);
+        
+        try {
+            setNodes(prevNodes =>
+                prevNodes.map((node:any) => {
+                    if (node.id === nodeId) {
+                        // Make sure we have all the required data
+                        if (!data.label) {
+                            console.warn('Missing label in sourceData, using fallback');
                         }
-                    };
-                }
-                return node;
-            })
-        );
+                        
+                        return {
+                            ...node,
+                            label: data.label || node.label || 'Unnamed Node',
+                            data: {
+                                ...node.data,
+                                title: data.label || node.data?.title || 'Unnamed Node',
+                                source: data.source || node.data?.source || {},
+                                transformationData: data.transformationData || node.data?.transformationData || {}
+                            }
+                        };
+                    }
+                    return node;
+                })
+            );
+        } catch (error) {
+            console.error('Error updating node:', error);
+            console.error('Node ID:', nodeId);
+            console.error('Source data:', sourceData);
+        }
         setUnsavedChanges();
        
     }, [setSanitizedNodes, dispatch]);

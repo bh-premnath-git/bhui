@@ -201,7 +201,9 @@ export function GithubFields({
               <RequiredFormLabel>GitHub Token</RequiredFormLabel>
               <div className="flex gap-2">
                 <FormControl>
-                  <Input type="password" placeholder="Enter token" {...field} />
+                  <Input type="password" placeholder={isEditMode ? "••••••••••••••••" : "Enter token"} 
+
+                  {...field} />
                 </FormControl>
                 <ValidationButton
                   onValidate={handleValidation}

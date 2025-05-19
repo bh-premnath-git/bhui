@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import { navigationItems } from "@/config/navigation";
+import { useAppSelector } from "@/hooks/useRedux";
+import { RootState } from "@/store";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,6 +21,7 @@ interface BreadcrumbItem {
 export function NavigationBreadcrumb() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const selectedProject = useAppSelector((state: RootState) => state.projects.selectedProject);
 
   // Redirect authenticated users from root to dataops-hub
   if (location.pathname === "/" && isAuthenticated) {
@@ -67,6 +70,23 @@ export function NavigationBreadcrumb() {
         items.push({ title: formattedName, path: currentPath });
       }
       
+      return items;
+    }
+
+    // Special case for project edit page
+    if (currentPath.match(/\/admin-console\/projects\/edit\/\d+/)) {
+      items.push({ title: "Admin Console", path: "/admin-console" });
+      items.push({ title: "Projects", path: "/admin-console/projects" });
+      
+      // Add project name if available in Redux
+      if (selectedProject) {
+        items.push({ 
+          title: `${selectedProject.bh_project_name}`, 
+          path: currentPath 
+        });
+      } else {
+        items.push({ title: "Project", path: currentPath });
+      }
       return items;
     }
 

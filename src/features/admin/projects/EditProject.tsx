@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RootState } from "@/store/"
-import { useAppSelector } from '@/hooks/useRedux';
+import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectFormData, transformFormToApiData } from './components/projectFormSchema';
 import { useProjects } from './hooks/useProjects';
@@ -9,6 +9,7 @@ import { ROUTES } from '@/config/routes';
 import { ProjectPageLayout } from './components/ProjectPageLayout';
 import { encrypt_string } from '@/lib/encryption';
 import { Project, ProjectGitValidation } from '@/types/admin/project';
+import { setSelectedProject } from '@/store/slices/admin/projectsSlice';
 
 const transformProjectToFormData = (project: Project): Partial<ProjectFormData> => {
   let parsedTags = [];
@@ -44,6 +45,7 @@ const transformProjectToFormData = (project: Project): Partial<ProjectFormData> 
 
 export function EditProject() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { id } = useParams();
   const { selectedProject } = useAppSelector((state: RootState) => state.projects);
   const {
@@ -58,6 +60,13 @@ export function EditProject() {
 
   // Use selectedProject if available, otherwise use fetched project
   const project = selectedProject || interProject;
+
+  useEffect(() => {
+    // Only dispatch once when interProject becomes available
+    if (!selectedProject && interProject && interProject.bh_project_id) {
+      dispatch(setSelectedProject(interProject));
+    }
+  }, [interProject?.bh_project_id]); // Only depend on the ID changing, not the entire object
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);

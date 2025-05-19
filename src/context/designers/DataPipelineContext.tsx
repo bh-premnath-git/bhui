@@ -507,13 +507,8 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     }, [fitView]);
 const makePipeline = async (result: any,isModify=true) => {
     let optimised;
-     
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-        console.log(optimised, "optimised");
-        setPipelineJson(optimised);
         let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-    
-    
     
     // Set the pipeline JSON first
     setPipelineJson(optimised);
@@ -788,7 +783,7 @@ const makePipeline = async (result: any,isModify=true) => {
   console.log(debuggedNodesList)
   console.log(pipelineDtl)
   const params = new URLSearchParams({
-    pipeline_name: `${pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
+    pipeline_name: `${pipelineName || pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
     pipeline_json: JSON.stringify(pipeline_json),
     mode: 'DEBUG',
 });
@@ -826,7 +821,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
   
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName
+                params: pipelineName||pipelineDtl?.name
             })).unwrap();
             console.log(countsResponse,"countsResponse")
             
@@ -874,10 +869,10 @@ debuggedNodesList.forEach(checkpoint => {
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName})).unwrap();
+            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName||pipelineDtl?.name})).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-              let countsResponse=await dispatch(getTransformationCount({params:pipelineName})).unwrap();
+              let countsResponse=await dispatch(getTransformationCount({params:pipelineName||pipelineDtl?.name})).unwrap();
               console.log(countsResponse,"countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);

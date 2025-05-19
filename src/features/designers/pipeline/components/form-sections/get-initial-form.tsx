@@ -180,15 +180,33 @@ console.log(initialValues,"initialValues")
       };
 
     case 'Drop':
+      console.log(initialValues,'drop')
+      
+      // Extract column_list based on the input format
+      let columnList = [];
+      
+      // Case 1: If column_list is directly available as an array of strings
+      if (Array.isArray(initialValues.column_list)) {
+        // If it's already an array of strings, use it directly
+        columnList = initialValues.column_list;
+      } 
+      // Case 2: If column is an array with column_list property that is an array
+      else if (Array.isArray(initialValues.column) && initialValues.column.length > 0 && 
+               Array.isArray(initialValues.column[0]?.column_list)) {
+        columnList = initialValues.column[0].column_list;
+      }
+      // Case 3: If column is an array with column_list properties as strings
+      else if (Array.isArray(initialValues.column)) {
+        columnList = initialValues.column
+          .map(item => item.column_list)
+          .filter(item => item); // Filter out undefined/null values
+      }
+      
       return {
         ...baseValues,
         transformation: initialValues.transformation || '',
-        column_list: initialValues.column_list?.map((col: any) => ({
-          column: col?.column || ''
-        })) || [{
-          column: ''
-        }],
-        limit: initialValues.limit || ''
+        column_list: columnList.length > 0 ? columnList : [],
+        pattern: initialValues.pattern || '',
       };
 
     case 'Dedup':

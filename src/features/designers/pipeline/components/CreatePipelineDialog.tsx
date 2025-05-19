@@ -30,7 +30,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {setPipeline_id} = usePipelineContext()
+    const {setPipeline_id,setPipeLineName} = usePipelineContext()
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
         defaultValues: {
             bh_project_id: '',
@@ -52,7 +52,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
             
             const body = { ...values, tags: {} };
             const response = await dispatch(insertPipeline(body)).unwrap();
-            
+            setPipeLineName(values.pipeline_name);
             if (response?.error) {
                 // Handle error - you might want to show a toast notification here
             } else {

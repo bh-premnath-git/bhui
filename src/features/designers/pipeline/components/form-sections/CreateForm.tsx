@@ -1394,7 +1394,6 @@ const FormContent: React.FC<{
     return false;
   };
 
-
   // Update renderField to properly handle different field types
   const renderField = (
     fieldKey: string, 
@@ -1884,4 +1883,3 @@ const FormContent: React.FC<{
 };
 
 export default CreateFormFormik;
-

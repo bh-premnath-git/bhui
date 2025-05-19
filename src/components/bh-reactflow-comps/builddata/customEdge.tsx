@@ -107,7 +107,7 @@ export const CustomEdge = memo(({
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
-    const { debuggedNodesList } = usePipelineContext();
+    const { debuggedNodesList,pipelineName } = usePipelineContext();
     
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -159,7 +159,7 @@ export const CustomEdge = memo(({
             try {
                 // First fetch the data
                 const result = await dispatch(fetchTransformationOutput({
-                    pipelineName: pipelineDtl?.name,
+                    pipelineName: pipelineName||pipelineDtl?.name,
                     transformationName: sourceNode?.data.title
                 })).unwrap();
                 

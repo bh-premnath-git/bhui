@@ -193,7 +193,7 @@ export function GenericChatUI({
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
-        <div className="px-6 py-4 w-full  mx-auto">
+        <div className="px-4 py-4 w-full  mx-auto">
           {messages.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
               <div className="flex items-center gap-4 mb-4">

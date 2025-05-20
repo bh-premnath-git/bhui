@@ -4,11 +4,10 @@ import { Connection } from "@/types/admin/connection";
 import { Badge } from "@/components/ui/badge";
 import { ROUTES } from "@/config/routes";
 import { useNavigation } from "@/hooks/useNavigation";
-import { PlusIcon, Cable, Trash2, Edit } from "lucide-react";
+import { PlusIcon, Cable } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ConnectionForm } from "../components/ConnectionForm";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 const columnHelper = createColumnHelper<Connection>();
 
@@ -41,27 +40,16 @@ const columns: ColumnDefWithFilters<Connection>[] = [
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => {
-        const [showEditDialog, setShowEditDialog] = useState(false);
-        const connection = row.original;
-
         return (
-          <>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 p-0"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowEditDialog(true);
-                }}
-              >
-                <Edit className="h-4 w-4" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreVertical className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 p-0"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="right">
+              <DropdownMenuItem
                 onClick={(event) => {
                   event.stopPropagation();
                   window.dispatchEvent(
@@ -71,23 +59,10 @@ const columns: ColumnDefWithFilters<Connection>[] = [
                   );
                 }}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-              <DialogContent className="max-w-4xl">
-                <ConnectionForm
-                  connectionType={connection.connection_type}
-                  connectionDisplayName={connection.connection_name}
-                  connectionName={connection.connection_name}
-                  connectionId={connection.connection_id.toString()}
-                  connectionConfigName={connection.connection_config_name}
-                  onBack={() => setShowEditDialog(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       },
       enableColumnFilter: false,

@@ -14,9 +14,9 @@ export function PromptPageLayout({ description, children }: ProjectPageLayoutPro
 
   return (
     <div className="max-w-4xl mx-auto p-2 m-4">
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-2">
         <div>
-          <p className="text-muted-foreground mt-1">{description}</p>
+          <p className="text-muted-foreground mt-5">{description}</p>
         </div>
         <Button
           variant="outline"

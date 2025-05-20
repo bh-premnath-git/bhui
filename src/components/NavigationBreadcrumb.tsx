@@ -22,6 +22,8 @@ export function NavigationBreadcrumb() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const selectedProject = useAppSelector((state: RootState) => state.projects.selectedProject);
+  const selectedConnection = useAppSelector((state: RootState) => state.connections.selectedconnection);
+  const selectedEnvironment = useAppSelector((state: RootState) => state.environments.selectedEnvironment);
 
   // Redirect authenticated users from root to dataops-hub
   if (location.pathname === "/" && isAuthenticated) {
@@ -86,6 +88,39 @@ export function NavigationBreadcrumb() {
         });
       } else {
         items.push({ title: "Project", path: currentPath });
+      }
+      return items;
+    }
+    // Special case for connection edit page
+    if (currentPath.match(/\/admin-console\/connection\/edit\/\d+/)) {
+      items.push({ title: "Admin Console", path: "/admin-console" });
+      items.push({ title: "connection", path: "/admin-console/connection" });
+      
+      // Add project name if available in Redux
+      if (selectedConnection) {
+        items.push({ 
+          title: `${selectedConnection.connection_config_name}`, 
+          path: currentPath 
+        });
+      } else {
+        items.push({ title: "connection", path: currentPath });
+      }
+      return items;
+    }
+    
+    // Special case for environment edit page
+    if (currentPath.match(/\/admin-console\/environment\/edit\/\d+/)) {
+      items.push({ title: "Admin Console", path: "/admin-console" });
+      items.push({ title: "Environment", path: "/admin-console/environment" });
+      
+      // Add environment name if available in Redux
+      if (selectedEnvironment) {
+        items.push({ 
+          title: `${selectedEnvironment.bh_env_name}`, 
+          path: currentPath 
+        });
+      } else {
+        items.push({ title: "Environment", path: currentPath });
       }
       return items;
     }

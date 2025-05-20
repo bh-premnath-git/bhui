@@ -1,6 +1,6 @@
 import { Connection } from "@/types/admin/connection";
 import { useAppDispatch  } from "@/hooks/useRedux";
-import { setconnection, setSelectedconnection } from "@/store/slices/admin/connection";
+import { setconnection, setSelectedconnection } from "@/store/slices/admin/connectionSlice";
 
 export interface ConnectionManagementService {
     setConnection(connection: Connection[]): void;

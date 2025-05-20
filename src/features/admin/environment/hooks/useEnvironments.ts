@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { debounce, get } from 'lodash';
+import { debounce } from 'lodash';
 import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';

@@ -71,7 +71,7 @@ export function EditUser() {
     <UserPageLayout
       description="Update user information and permissions"
     >
-      <div className="p-6">
+      <div className="p-3">
         <div className="max-w-5xl mx-auto">
           <UserForm
             mode="edit"

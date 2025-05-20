@@ -11,7 +11,7 @@ import layoutFiedlReducer from './slices/dataCatalog/layoutFieldSlice';
 import autoSaveReducer from './slices/designer/features/autoSaveSlice';
 import taskDetailSlice from './slices/dataops/taskDetailSlice';
 import globalReducer from './slices/globalGitSlice';
-import connectionReducer from './slices/admin/connection'
+import connectionReducer from './slices/admin/connectionSlice'
 import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
 import promptsReducer from './slices/admin/promptsSlice';

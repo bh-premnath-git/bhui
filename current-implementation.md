@@ -12,237 +12,471 @@
   - `src/components/RightAside.tsx`
   - `src/components/BottomDrawer.tsx`
 
-### Component Hierarchy
-- Wraps app content with theme and sidebar contexts
-- Orchestrates:
-  - `Sidebar` (collapsible)
-  - `Header` (fixed position)
-  - Main content area (`Outlet` for router)
-  - `RightAside` (conditional sidebar)
-  - `BottomDrawer` (conditional bottom panel)
-
-## Navigation Components
-
-### File Locations
-- Header Component: `src/components/Header.tsx`
-- Breadcrumb Component: `src/components/NavigationBreadcrumb.tsx`
-
-### Header Component
-
-#### Core Functionality
-- Renders the fixed application header at the top of the layout
-- Dynamically adjusts content based on current route
-- Integrates with sidebar state to manage responsive behavior
-- Provides integration points for route-specific AI chat buttons
-
 #### Route-Specific Rendering
-- **Playground Routes**: Renders specialized `PlaygroundHeader` component 
-- **DataOps Hub**: Combines breadcrumb with DataOps-specific AI chat button
-- **Data Xplorer**: Shows navigation breadcrumb with explorer AI chat functionality
-- **Notebook Route**: Displays notebook-specific AI button
-- **Default**: Renders standard breadcrumb navigation
 
-#### Dynamic Adjustments
-- Automatically adapts to sidebar expanded/collapsed state
-- Adjusts width based on right aside panel open/closed state
-- Uses backdrop blur effect for modern UI appearance
 
-#### Integration Points
-```tsx
-// AI Chat Button integration example
-if (isDataOpsHubRoute(location.pathname)) {
-  return (
-    <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
-      <NavigationBreadcrumb />
-      <AIChatButton variant="dataops" />
-    </div>
-  );
-}
+## Admin Connection Management Implementation
+
+### Architecture Overview
+- **Pages Layer**: Lightweight wrapper components that render feature components
+- **Feature Layer**: Core implementation of connection management functionality
+- **Redux Store**: Central state management for connection data
+- **API Integration**: RESTful operations through custom hooks
+- **Services**: Connection management service for Redux interaction
+
+### Flow Diagram
 ```
-
-### Navigation Breadcrumb
-
-#### Core Functionality
-- Provides hierarchical navigation indicators
-- Dynamically generates breadcrumb path based on current route
-- Handles special routes with custom breadcrumb generation
-- Implements home redirect for authenticated users
-
-#### Special Features
-- Handles deep navigation paths by analyzing all path segments
-- Matches routes against navigation configuration from `navigation.ts`
-- Formats report names from URL parameters (e.g., converts 'orders-report' to 'Orders Report')
-- Provides Home icon for root navigation item
-
-#### Implementation Notes
-- Uses shadcn/ui breadcrumb components with custom styling
-- Integrates with React Router for navigation
-- Implements special case handling for specific routes like Xplorer and Data Catalog
-- Auto-generates breadcrumb items by parsing URL segments
-
-## Admin Project Management Implementation
+Page Component
+    ↓
+Feature Component
+    ↓
+Hooks (useConnections) → API Calls → Backend
+    ↓
+Redux Store ← Service (connMgtSrv)
+    ↓
+UI Components
+```
 
 ### File Locations
 - Page Components:
-  - `src/pages/admin/project/ProjectList.tsx`
-  - `src/pages/admin/project/ProjectAdd.tsx`
-  - `src/pages/admin/project/ProjectEdit.tsx`
+  - `src/pages/admin/connection/ConnectionList.tsx`
+  - `src/pages/admin/connection/ConnectionAdd.tsx`
+  - `src/pages/admin/connection/ConnectionEdit.tsx`
 - Feature Implementation:
-  - `src/features/admin/projects/AddProject.tsx`
-  - `src/features/admin/projects/EditProject.tsx`
-  - `src/features/admin/projects/hooks/useProjects.ts`
+  - `src/features/admin/connection/AddConnection.tsx`
+  - `src/features/admin/connection/EditConnection.tsx`
+  - `src/features/admin/connection/ListConnection.tsx`
 - UI Components:
-  - `src/features/admin/projects/components/ProjectForm.tsx`
-  - `src/features/admin/projects/components/FormFields.tsx`
-  - `src/features/admin/projects/components/ProjectPageLayout.tsx`
+  - `src/features/admin/connection/components/ConnectionForm.tsx`
+  - `src/features/admin/connection/components/FormFields.tsx`
+  - `src/features/admin/connection/components/ConnectionPageLayout.tsx`
+  - `src/features/admin/connection/components/DeleteConnectionDialog.tsx`
+- Data Access Layer:
+  - `src/features/admin/connection/hooks/useConnection.ts`
+  - `src/features/admin/connection/services/connMgtSrv.ts`
+- State Management:
+  - `src/store/slices/admin/connection.ts`
 - Data Schema:
-  - `src/features/admin/projects/components/projectFormSchema.ts`
-  - `src/types/admin/project.ts`
+  - `src/types/admin/connection.ts`
 
-### Project Add Page
+### Data Flow
+1. **Listing Connections**:
+   - Page component renders feature component
+   - `useConnections` hook fetches connection data via API call
+   - Data stored in Redux for shared access
+   - `ListConnection` renders connections in data table
 
-#### Component Hierarchy
-1. **ProjectAdd** (Pages layer)
-   - Wrapped with `withPageErrorBoundary` for error handling
-   - Renders `AddProject` feature component
+2. **Creating Connections**:
+   - Two-step process: select connection type → configure connection
+   - Connection type search with debounced name validation
+   - Dynamic schema loading based on connection type
+   - Form validation with custom schema
+   - Encrypted credential handling for sensitive data
+   - API submission with success/error toast notifications
 
-2. **AddProject** (Feature layer)
-   - Manages state for project creation:
-     - Form submission state
-     - GitHub token validation
-     - Error handling
-   - Renders `ProjectPageLayout` with `ProjectForm`
+3. **Editing Connections**:
+   - Connection data loaded from API with connection ID
+   - Existing credentials properly handled with encryption
+   - Same form component used but with edit mode flag
+   - Form prefilled with existing connection data
 
-3. **ProjectForm** (UI Component)
-   - Implements form with React Hook Form and Zod validation
-   - Manages form sections:
-     - Project name with real-time validation
-     - GitHub configuration fields
-     - Tag management
-   - Handles form submission and validation state
+4. **Deleting Connections**:
+   - Modal confirmation dialog 
+   - Uses custom event for triggering delete dialog
+   - API call to delete with Redux state update
 
-#### Data Flow
-1. User enters project name → `debounceSearchProject` checks for duplicates
-2. User fills GitHub details → `handleValidateGitHub` validates the token
-3. User submits form → Data transformed via `transformFormToApiData`
-4. `handleCreateProject` executes API call
-5. On success → Redirect to projects list
-6. On error → Error displayed in form
+### Redux Implementation
+```typescript
+// connection.ts Redux slice
+const connectionsSlice = createSlice({
+  name: 'connections',
+  initialState,
+  reducers: {
+    setconnection: (state, action: PayloadAction<Connection[]>) => {
+      state.connection = action.payload;
+    },
+    setSelectedconnection: (state, action: PayloadAction<Connection | null>) => {
+      state.selectedconnection = action.payload;
+    },
+    // Additional reducers...
+  },
+});
+```
 
-#### API Integration
-- Uses `useResource` custom hook (Abstraction over React Query)
-- Key API endpoints:
-  - `/bh_project` (POST) - Project creation
-  - `/bh_project/validate-token/` (POST) - Token validation
-  - `/bh_project/search` (GET) - Duplicate project check
-- Security features:
-  - GitHub token encryption with `encrypt_string`
-  - Separate validation before token usage
+### API Integration with Custom Hooks
+```typescript
+// useConnections hook for API operations
+export const useConnections = (options: UseConnectionsOptions = { shouldFetch: true }) => {
+  const { getOne, getAll } = useResource<Connection>(
+    '/connection_registry/connection_config',
+    CATALOG_API_PORT,
+    true
+  );
+  
+  const { create, update, remove } = useResource<ConnectionValue>(
+    '/connection_registry/connection_config',
+    CATALOG_API_PORT,
+    true
+  );
 
-### Project Edit Page
+  // API operations implemented with callbacks
+  const handleCreateConnection = useCallback(async (data: ConnectionValue) => {
+    await createConnectionMutation.mutateAsync({ data });
+  }, [createConnectionMutation]);
+  
+  // Other handler methods...
+  
+  return {
+    connections,
+    isLoading,
+    handleCreateConnection,
+    handleUpdateConnection,
+    handleDeleteConnection,
+    // Other properties...
+  };
+}
+```
 
-#### Component Hierarchy
-1. **ProjectEdit** (Pages layer)
-   - Wrapped with `withPageErrorBoundary` for error handling
-   - Renders `EditProject` feature component
+### Connection Type Management
+- Source vs. Destination categorization
+- Visual card-based selection interface
+- Dynamic schema loading based on connection type
+- Type-specific configuration generation
 
-2. **EditProject** (Feature layer)
-   - Retrieves project data using ID from URL params
-   - Manages state for:
-     - Project loading
-     - Form submission
-     - Token validation (conditional)
-     - Error handling
-   - Transforms API data to form format with `transformProjectToFormData`
-   - Renders `ProjectPageLayout` with `ProjectForm`
+### Dynamic Form Generation
+- Schema-driven form rendering
+- Custom handling for special fields (JSON credentials)
+- Zod validation schema generation from connection specification
+- Specialized field transformations for different connection types
 
-3. **ProjectForm** (UI Component)
-   - Shared with Add page but in "edit" mode
-   - Pre-fills form with project data
-   - Handles conditional GitHub token validation
+### Error Handling
+- Toast notifications for user feedback
+- Connection validation with immediate feedback
+- Form validation with field-level error messages
+- API error handling with standardized approach
 
-#### Data Flow
-1. Component loads → Fetches project data if not in Redux store
-2. User modifies form → Form validates changes
-3. If GitHub token changed → `handleValidateGitHub` validates
-4. User submits form → `transformFormToApiData` formats data
-5. `handleUpdateProject` executes API call with project ID
-6. On success → Redirect to projects list 
-7. On error → Error displayed in form
+### UI Implementation Patterns
+- Card-based connection type selection
+- Tabs for source/destination categorization
+- Search filtering for connection types
+- Tailwind styling with consistent UI elements
+- Table view for connection list with sort/filter
 
-#### Security Implementation
-- GitHub token handling:
-  - Never displays existing token in form (security)
-  - Only encrypts and sends token if modified
-  - Uses encryption with initialization vectors for token security
-- Form validation:
-  - Zod schema validation for all fields
-  - Separate token validation via API
+### Component Structure
+1. **AddConnection Component**
+   - Manages connection type selection workflow
+   - Provides search functionality for connection types
+   - Validates connection name availability in real-time
+   - Groups connections by source/destination with tab navigation
+   - Displays visual cards for each connection type with images
 
-### Shared Components and Utilities
+2. **ConnectionForm Component**
+   - Dynamically loads schema based on connection type
+   - Handles both creation and editing modes
+   - Manages form validation with Zod schemas
+   - Processes connection-specific configuration
+   - Securely handles credentials with encryption
 
-#### Forms and Validation
-- Uses React Hook Form + Zod schema validation
-- Shared project form schema between add/edit modes
-- Data transformation utilities:
-  - `transformFormToApiData`: Form → API format
-  - `transformProjectToFormData`: API → Form format
-  - `transformApiToFormData`: General utility
+3. **FormFields Component**
+   - Renders dynamic form fields based on connection schema
+   - Supports various input types (text, password, number, etc.)
+   - Handles specialized fields (textarea for JSON credentials)
+   - Shows proper validation feedback
 
-#### API and Data Management
-- Custom `useProjects` hook for all project operations
-- Features:
-  - CRUD operations for projects
-  - Token validation
-  - Real-time project name validation
-  - Error handling with toast notifications
-- Redux integration for selected project state
+### Key Features
+1. **Dynamic Schema Loading**:
+   - Loads connection schemas from JSON files
+   - Adapts UI based on connection type requirements
+   - Custom handling for special connections (BigQuery, Local)
 
-#### UI Components
-- `ProjectPageLayout`: Consistent layout for project pages
-- Form field components with validation states
-- Error display and success notifications
-- Loading states for all async operations
+2. **Secure Credential Handling**:
+   - Encrypts sensitive connection information
+   - Uses the same encryption library as environment management
+   - Handles decryption for edit scenarios
 
-### Redux State Management
+3. **Real-time Validation**:
+   - Connection name availability checking
+   - Form field validation with immediate feedback
+   - Custom validation rules per connection type
 
-#### File Locations
-- Redux Store:
-  - `src/store/index.ts` - Main Redux store configuration
-  - `src/store/slices/admin/projectsSlice.ts` - Projects slice
+4. **Connection Type Management**:
+   - Visual categorization (source/destination)
+   - Searchable connection type catalog
+   - Visual representation with appropriate icons
 
-#### Projects Slice Implementation
-- **State Structure**:
-  ```typescript
-  interface ProjectsState {
-    projects: Project[];
-    selectedProject: Project | null;
-    loading: boolean;
-    error: string | null;
+5. **Connection Configuration**:
+   - Type-specific form generation
+   - Custom configuration for database-specific parameters
+   - Support for connection testing
+
+### Technical Implementation
+```tsx
+// Dynamic schema loading based on connection type
+useEffect(() => {
+  const loadSchema = async () => {
+    setIsLoading(true);
+    try {
+      if (connectionName.toLowerCase() === 'local') {
+        // Custom schema for local connections
+        const localSchema = {
+          connectionSpecification: {
+            properties: {
+              file_path_prefix: {
+                type: "string",
+                title: "File Path Prefix",
+                description: "The path prefix for local files",
+                minLength: 1
+              }
+            },
+            required: ["file_path_prefix"]
+          }
+        };
+        setSchema(localSchema.connectionSpecification);
+      } else {
+        // Load schema from JSON file for other connection types
+        const module = await import(
+          `@/components/bh-reactflow-comps/builddata/json/${connectionName.toLowerCase()}.json`
+        );
+        setSchema(module.default.connectionSpecification);
+      }
+    } catch (error) {
+      console.error('Failed to load schema:', error);
+      toast.error('Failed to load connection schema');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  loadSchema();
+}, [connectionName]);
+
+// Connection-specific configuration handling
+const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
+  const type = connectionName.toLowerCase();
+  const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
+  
+  // Base configuration with type
+  const commonFields = {
+    [dynamicTypeField]: type,
+  };
+
+  // Connection-specific handling (example: Postgres)
+  if (type === 'postgres') {
+    return {
+      host: data.host || '',
+      port: data.port ? String(data.port) : '5432',
+      database: data.database || '',
+      username: data.username || '',
+      password: data.password || '',
+      schemas: Array.isArray(data.schemas) ? data.schemas[0] : data.schemas || 'public',
+      ...(data.ssl_mode && { ssl_mode: data.ssl_mode }),
+      ...(data.jdbc_url_params && { jdbc_url_params: data.jdbc_url_params }),
+      ...commonFields,
+    };
   }
-  ```
+  
+  // Additional connection types handled similarly...
+};
 
-- **Action Creators**:
-  - `setProjects`: Updates the list of projects in the store
-  - `setSelectedProject`: Sets the currently selected project
-  - `setLoading`: Manages loading state for async operations
-  - `setError`: Handles error states
+### Data Flow
+- User selects connection type from categorized grid
+- Dynamic form loads based on connection type
+- Form validation ensures required fields are complete
+- Submission process handles special encoding for credentials
+- Success/failure feedback provided via toast notifications
 
-- **Integration Points**:
-  - `ProjectList.tsx`: Sets projects in store when fetched
-  - `EditProject.tsx`: Retrieves/updates selected project
-  - `useProjects` hook: Interfaces with Redux for project operations
+### User Experience Considerations
+- Visual categorization with source/destination tabs
+- Searchable connection type catalog
+- Intuitive form validation with clear error messages
+- Connection name availability checking in real-time
+- Consistent styling with connection-specific icons
 
-#### State Management Flow
-1. API data fetched via React Query in `useProjects` hook
-2. Data dispatched to Redux store via slice actions
-3. Components access projects data via Redux selectors
-4. UI updates based on store state (loading, error, data)
-5. Form operations update local state before API submission
-6. On successful operations, store is updated to reflect changes
+## Connection Management UI/UX Enhancements
 
-#### Benefits of Approach
-- Centralized project state accessible across components
-- Separation of concerns between API fetching and state management
-- Consistent loading and error states throughout the application
-- Optimized re-renders with Redux's shallow equality checks
+### Visual Design Improvements
+
+1. **Connection Selection Cards**
+   - Implement subtle hover animations with scale transform (1.02-1.05)
+   - Add gradient borders or accent colors based on connection category
+   - Use consistent icon sizing with proper padding (56px x 56px container)
+   - Apply soft drop shadows on hover (0 8px 30px rgba(0,0,0,0.12))
+   - Add subtle branded background patterns for each card
+
+2. **Layout Refinements**
+   - Change grid layout to responsive masonry grid for better space utilization
+   - Implement virtualized scrolling for performance with many connection types
+   - Group connections by category with visual separators
+   - Add "Featured" or "Recently Used" section at the top
+
+3. **Navigation & Workflow**
+   - Add stepper component to visualize multi-step connection process
+   - Implement breadcrumb navigation for context awareness
+   - Use slide/fade transitions between selection and form states
+   - Add connection type comparison tooltips
+
+### Interactive Enhancements
+
+1. **Connection Type Selection**
+   - Add visual tags for connection types (Database, Storage, API, etc.)
+   - Implement quick-filter chips above the search (e.g., Databases, Cloud Storage)
+   - Show connection popularity or usage metrics as small badges
+   - Add keyboard navigation support for accessibility
+
+2. **Search Experience**
+   - Implement search highlighting for matched terms
+   - Add voice search capability for accessibility
+   - Show recent searches in dropdown
+   - Implement search suggestions based on partial matches
+
+3. **Form Interactions**
+   - Add field auto-completion for common inputs
+   - Implement progressive disclosure for complex form sections
+   - Add inline validation with helpful suggestions
+   - Provide "Test Connection" button with inline results
+
+### Visual Styling Updates
+
+```tsx
+// Enhanced connection card component with improved UI
+<Card 
+  key={type.id}
+  className={`
+    transition-all duration-300 
+    border-[1.5px] 
+    ${connectionConfigName.trim() 
+      ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg border-transparent hover:border-primary/30' 
+      : 'opacity-70 cursor-not-allowed'}
+    ${isRecommended(type) ? 'bg-gradient-to-r from-primary/5 to-transparent' : ''}
+  `}
+  onClick={() => handleCardClick(type)}
+>
+  <CardContent className="p-6 flex flex-col items-center relative">
+    {isPopular(type) && (
+      <span className="absolute top-2 right-2 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
+        Popular
+      </span>
+    )}
+    <div className="w-16 h-16 mb-4 flex items-center justify-center bg-background rounded-xl p-2 shadow-sm">
+      <img 
+        src={connectionImages[type.connection_name]} 
+        alt={type.connection_display_name}
+        className="max-w-[80%] max-h-[80%] object-contain transition-all"
+      />
+    </div>
+    <CardTitle className="text-center text-sm mb-1 line-clamp-1">
+      {type.connection_display_name}
+    </CardTitle>
+    <CardDescription className="text-center text-xs line-clamp-2">
+      {type.connection_description}
+    </CardDescription>
+    <div className="mt-3 flex flex-wrap justify-center gap-1">
+      {getTags(type).map(tag => (
+        <span key={tag} className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
+          {tag}
+        </span>
+      ))}
+    </div>
+  </CardContent>
+</Card>
+```
+
+### Search Component Enhancements
+
+```tsx
+// Enhanced search component with better UX
+<div className="relative mb-6">
+  <div className="flex items-center space-x-2 mb-2">
+    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">All</Badge>
+    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Databases</Badge>
+    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Cloud</Badge>
+    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Local</Badge>
+  </div>
+  
+  <div className="relative">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search connections..."
+      className="pl-10 pr-8"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+    {searchTerm && (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+        onClick={() => setSearchTerm('')}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    )}
+  </div>
+  
+  {searchTerm && filteredConnections?.length === 0 && (
+    <p className="text-sm text-muted-foreground mt-1">
+      No connections found. Try different keywords.
+    </p>
+  )}
+</div>
+```
+
+### Form Navigation Improvements
+
+```tsx
+// Multi-step form navigation with progress indicator
+<div className="mb-6">
+  <div className="flex items-center justify-between max-w-lg mb-8">
+    <div className="flex flex-col items-center">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
+        1
+      </div>
+      <span className="text-xs mt-1">Basics</span>
+    </div>
+    <div className="flex-1 h-1 bg-muted mx-2">
+      <div className={`h-full bg-primary ${currentStep >= 2 ? 'w-full' : 'w-0'} transition-all duration-300`}></div>
+    </div>
+    <div className="flex flex-col items-center">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
+        2
+      </div>
+      <span className="text-xs mt-1">Details</span>
+    </div>
+    <div className="flex-1 h-1 bg-muted mx-2">
+      <div className={`h-full bg-primary ${currentStep >= 3 ? 'w-full' : 'w-0'} transition-all duration-300`}></div>
+    </div>
+    <div className="flex flex-col items-center">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-primary text-white' : 'bg-muted'}`}>
+        3
+      </div>
+      <span className="text-xs mt-1">Test</span>
+    </div>
+  </div>
+  
+  {/* Form content based on current step */}
+</div>
+```
+
+### Additional UX Enhancements
+
+1. **Onboarding Features**:
+   - Add tooltips for first-time users
+   - Implement guided setup for common connection types
+   - Add interactive examples for complex fields
+
+2. **Feedback Mechanisms**:
+   - Enhance success/error states with animated feedback
+   - Add progress indicators for operations like testing connections
+   - Provide inline help text with examples
+
+3. **Connection Management**:
+   - Add connection grouping/tagging capability
+   - Implement favorites system for frequently used connections
+   - Add bulk operations for connection management
+   - Provide connection health status indicators
+
+### Mobile Responsiveness
+- Optimize card sizes for smaller screens
+- Implement collapsible sections for form fields
+- Use bottom sheets instead of modals on mobile
+- Add touch-optimized interactions

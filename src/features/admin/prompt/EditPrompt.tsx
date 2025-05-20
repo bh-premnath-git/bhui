@@ -137,7 +137,7 @@ export function EditPrompt() {
 
   return (
     <PromptPageLayout description="Modify environment details and configuration">
-      <div className="p-6">
+      <div className="p-3">
         {formInitialData && (
           <PromptForm
             initialData={formInitialData}

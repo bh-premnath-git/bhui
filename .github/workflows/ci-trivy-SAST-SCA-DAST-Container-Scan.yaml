@@ -54,29 +54,27 @@ jobs:
           name: trivy-bh-ui-sast-sca-scan-report
           path: trivy_bh_ui_sast_sca_scan_report.html
 
-      - name: MS Teams Notification - SAST & SCA Scan
-        if: always()
-        run: |
-          cat << EOF > sast_sca_message.json
-          {
-            "@type": "MessageCard",
-            "@context": "https://schema.org/extensions",
-            "summary": "Trivy SAST/SCA Scan Completed",
-            "themeColor": "0076D7",
-            "title": "Trivy SAST/SCA Scan for bh-ui",
-            "sections": [
-              {
-                "facts": [
-                  {"name": "Repository:", "value": "${{ github.repository }}"},
-                  {"name": "Branch:", "value": "${{ github.ref_name }}"},
-                  {"name": "Commit:", "value": "${{ github.sha }}"}
-                ],
-                "text": "The SAST & SCA scan has completed. [Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-              }
-            ]
-          }
-          EOF
-          curl -X POST "${{ secrets.BH_CI_PIPELINE_ALERTS }}" --header 'Content-Type: application/json' -d @sast_sca_message.json
+      - name: MS Teams Notification - SAST & SCA Scan (Success)
+        if: success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ✅ Trivy SAST & SCA scan for **${{ github.repository }}** completed successfully.
+            [View scan report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00FF00
+
+      - name: MS Teams Notification - SAST & SCA Scan (Failure)
+        if: failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ❌ Trivy SAST & SCA scan for **${{ github.repository }}** failed.
+            Please check the workflow logs for more details.
+          notification-color: FF0000
 
   dast_scan:
     name: DAST Scan
@@ -104,29 +102,27 @@ jobs:
           name: trivy-bh-ui-dast-scan-report
           path: trivy_bh_ui_dast_scan_report.html
 
-      - name: MS Teams Notification - DAST Scan
-        if: always()
-        run: |
-          cat << EOF > dast_message.json
-          {
-            "@type": "MessageCard",
-            "@context": "https://schema.org/extensions",
-            "summary": "Trivy DAST Scan Completed",
-            "themeColor": "FFA500",
-            "title": "Trivy DAST Scan for bh-ui",
-            "sections": [
-              {
-                "facts": [
-                  {"name": "Repository:", "value": "${{ github.repository }}"},
-                  {"name": "Branch:", "value": "${{ github.ref_name }}"},
-                  {"name": "Commit:", "value": "${{ github.sha }}"}
-                ],
-                "text": "The DAST scan has completed. [Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-              }
-            ]
-          }
-          EOF
-          curl -X POST "${{ secrets.BH_CI_PIPELINE_ALERTS }}" --header 'Content-Type: application/json' -d @dast_message.json
+      - name: MS Teams Notification - DAST Scan (Success)
+        if: success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ✅ Trivy DAST scan for **${{ github.repository }}** completed successfully.
+            [View scan report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00BFFF
+
+      - name: MS Teams Notification - DAST Scan (Failure)
+        if: failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ❌ Trivy DAST scan for **${{ github.repository }}** failed.
+            Please check the workflow logs for more details.
+          notification-color: FF0000
 
   container_scan:
     name: Container Image Scan
@@ -181,26 +177,24 @@ jobs:
           name: trivy-bhui-container-scan-report
           path: trivy_bh_ui_container_scan_report.html
 
-      - name: MS Teams Notification - Container Scan
-        if: always()
-        run: |
-          cat << EOF > container_message.json
-          {
-            "@type": "MessageCard",
-            "@context": "https://schema.org/extensions",
-            "summary": "Trivy Container Scan Completed",
-            "themeColor": "00BFFF",
-            "title": "Trivy Container Image Scan for bh-ui",
-            "sections": [
-              {
-                "facts": [
-                  {"name": "Repository:", "value": "${{ github.repository }}"},
-                  {"name": "Branch:", "value": "${{ github.ref_name }}"},
-                  {"name": "Commit:", "value": "${{ github.sha }}"}
-                ],
-                "text": "The container image scan has completed. [Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-              }
-            ]
-          }
-          EOF
-          curl -X POST "${{ secrets.BH_CI_PIPELINE_ALERTS }}" --header 'Content-Type: application/json' -d @container_message.json
+      - name: MS Teams Notification - Container Scan (Success)
+        if: success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ✅ Trivy container image scan for **${{ github.repository }}** completed successfully.
+            [View scan report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 32CD32
+
+      - name: MS Teams Notification - Container Scan (Failure)
+        if: failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            ❌ Trivy container image scan for **${{ github.repository }}** failed.
+            Please check the workflow logs for more details.
+          notification-color: FF0000

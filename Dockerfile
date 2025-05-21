@@ -36,7 +36,6 @@ RUN --mount=type=secret,id=aws_access_key_id \
     npm install --force
 
 COPY .npmrc ./
-COPY node_modules/ ./node_modules/
 COPY . .
 
 EXPOSE 5000

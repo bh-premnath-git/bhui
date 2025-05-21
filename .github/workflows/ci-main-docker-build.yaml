@@ -20,6 +20,8 @@ env:
   MAIN_GAR_URL: '058264070106.dkr.ecr.us-east-1.amazonaws.com'
   ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   AWS_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 # A wrkfow is made up of ome or more jobs that can run sequentially or parallel
 
@@ -68,8 +70,11 @@ jobs:
           echo "Image Tag is: $IMAGE_TAG"
           echo "Image Name is: $IMAGE_NAME"
           docker build --no-cache \
+            --build-arg AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+            --build-arg AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+            --build-arg AWS_REGION="${AWS_REGION}" \
             --tag "$PR_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" .
-      
+
       - name: Pull Request -- Push Docker image
         if: github.event_name == 'pull_request'
         run: |
@@ -89,6 +94,9 @@ jobs:
         if: github.event_name == 'push'
         run: |-        
           docker build --no-cache \
+            --build-arg AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+            --build-arg AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+            --build-arg AWS_REGION="${AWS_REGION}" \
             --tag "$MAIN_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" \
             --tag "$MAIN_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG" \
             --tag "$MAIN_GAR_URL/$IMAGE_NAME:$GIT_HASH" .

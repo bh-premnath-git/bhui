@@ -8,7 +8,7 @@ import React, {
     useRef,
     useContext
 } from 'react';
-import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
+import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
 import { CATALOG_API_PORT } from '@/config/platformenv';
 import {
     useNodesState,
@@ -23,8 +23,9 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
 import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
-import { getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
-    } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import {
+    getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
+} from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';
@@ -35,6 +36,7 @@ interface UIProperties {
     icon: string;
     module_name: string;
     ports: any;
+    id?: string;
 }
 
 interface Node {
@@ -42,7 +44,7 @@ interface Node {
     [key: string]: any;
 }
 
-interface  bnPipelineContextProps {
+interface bnPipelineContextProps {
     nodes: any;
     setNodes: React.Dispatch<React.SetStateAction<any>>;
     onNodesChange: (changes: any) => void;
@@ -132,7 +134,7 @@ interface  bnPipelineContextProps {
     handleZoomIn: () => void;
     handleZoomOut: () => void;
     handleCenter: () => void;
-    makePipeline: (result:any) =>void;
+    makePipeline: (result: any) => void;
     ctrlDTimeout: MutableRefObject<NodeJS.Timeout | null>;
     isSaving: boolean;
     hasUnsavedChanges: boolean;
@@ -147,12 +149,17 @@ interface  bnPipelineContextProps {
     setPipelineJson: (json: any) => void;
     pipelineName: any;
     pipelineJson: any;
+    isNodeFormOpen: boolean;
+    setIsNodeFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    selectedNodeId: string | null;
+    setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+    updatedSelectedNodeId: any
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
 
 export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const location=useLocation()
+    const location = useLocation()
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
@@ -161,9 +168,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [debuggedNodesList, setDebuggedNodesList] = useState<Array<{ id: string; title: string }>>([]);
     const [isPipelineRunning, setIsPipelineRunning] = useState(false);
     const [transformationCounts, setTransformationCounts] = useState<Array<{ transformationName: string; rowCount: string }>>([]);
-    const id  = localStorage.getItem("pipeline_id");
+    const id = localStorage.getItem("pipeline_id");
     const dispatch = useDispatch<AppDispatch>();
-    
+
     const ctrlDTimeout = useRef<NodeJS.Timeout | null>(null);
     const [history, setHistory] = useState<Array<{ nodes: any; edges: any }>>([]);
     const [redoStack, setRedoStack] = useState<Array<{ nodes: any; edges: any }>>([]);
@@ -180,9 +187,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const {pipelineDtl}=useSelector((state:RootState)=>state.buildPipeline)
-  
-const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
+    const { pipelineDtl,isFlow } = useSelector((state: RootState) => state.buildPipeline)
+    const [isNodeFormOpen, setIsNodeFormOpen] = useState(false);
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     const [formStates, setFormStates] = useState<{ [key: string]: any }>({});
     const [runDialogOpen, setRunDialogOpen] = useState(false);
     const [selectedFormState, setSelectedFormState] = useState<any>(null);
@@ -204,7 +212,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
     // Add this at the component level, outside any callbacks
     const { selectedPipeline } = useAppSelector((state) => state.pipeline);
     const fetchedIdsRef = useRef(new Set<string>());
-
     const setSaving = useCallback(() => {
         setIsSaving(true);
         setHasUnsavedChanges(true);
@@ -230,108 +237,107 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         setIsSaving(false);
         setSaveErrorState(error);
     }, []);
- console.log(id,"id")
     // useEffect(() => { 
-        const fetchPipelineDetails = async () => {
-            // alert("fetchPipelineDetails")
-            try {
-                // Check if id exists and is valid
-                if (!id) {
-                    return;
-                }
-
-                // Fetch pipeline details
-                const response = await dispatch(getPipelineById({ id })).unwrap();
-                console.log(response,"response")
-                if (!response || !response.pipeline_json) {
-                    setNodes([])
-                    setEdges([])
-                    console.log("response.pipeline_json",response.pipeline_json)
-                    throw new Error('Invalid pipeline data received');
-                }
-                
-                console.log(response,"response")
-                // Update pipeline name and JSON safely
-                setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name );
-                dispatch(setBuildPipeLineDtl(response.pipeline_json));
-                let optimised=await resolveRefsPipelineJson(response?.pipeline_json,response?.pipeline_json)
-                console.log(optimised,"optimised")
-                setPipelineJson(optimised);
-
-                // Convert pipeline to UI JSON
-                const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-                console.log(uiJson,"uiJson")
-                
-                if (!uiJson || !uiJson.nodes) {
-                    setNodes([])
-                    setEdges([])
-                    throw new Error('Failed to convert pipeline to UI format');
-                }
-
-                // Map nodes with titles safely
-                const nodesWithTitles = uiJson.nodes.map(node => {
-                    const matchingTransformation = response.pipeline_json.transformations?.find(
-                        (t: any) => t?.title === node?.data?.title && t?.name
-                    );
-
-                    if (matchingTransformation) {
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                title: matchingTransformation.name,
-                                transformationData: {
-                                    ...node.data.transformationData,
-                                    name: matchingTransformation.name
-                                }
-                            }
-                        };
-                    }
-                    return node;
-                });
-                console.log(nodesWithTitles,"nodesWithTitles")
-                console.log(response?.pipeline_json,"response?.pipeline_json")
-                if(response?.pipeline_json==null){
-                    setPipelineJson(null)
-                    setNodes([])
-                    setEdges([])
-
-                }else{
-                    setNodes(nodesWithTitles);
-                    setEdges(uiJson.edges || []);
-                }
-                // Update nodes and edges
-                
-
-                // Initialize form states
-                const initialFormStates = {};
-                response.pipeline_json.transformations?.forEach((transformation: any) => {
-                    const matchingNode = nodesWithTitles.find(
-                        (node: any) => 
-                            node?.data?.label === transformation?.transformation && 
-                            node?.data?.title === transformation?.name
-                    );
-
-                    if (matchingNode?.id) {
-                        initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
-                    }
-                });
-
-                setFormStates(initialFormStates);
-
-            } catch (error) {
-                console.error("Error fetching pipeline details:", error);
-                // Optionally set an error state or show a notification
+    const fetchPipelineDetails = async () => {
+        // alert("fetchPipelineDetails")
+        try {
+            // Check if id exists and is valid
+            if (!id) {
+                return;
             }
-        };
 
-        // Only fetch if we have an ID
-        // const expectedPath = `/designers/build-playground/${id}`;
+            // Fetch pipeline details
+            const response = await dispatch(getPipelineById({ id })).unwrap();
+            console.log(response, "response")
+            if (!response || !response.pipeline_json) {
+                setNodes([])
+                setEdges([])
+                console.log("response.pipeline_json", response.pipeline_json)
+                throw new Error('Invalid pipeline data received');
+            }
 
-        // Only fetch if we have an ID and the pathname matches
-        // if (id && location.pathname === expectedPath) {
-            // fetchPipelineDetails();
-        // }
+            console.log(response, "response")
+            // Update pipeline name and JSON safely
+            setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);
+            dispatch(setBuildPipeLineDtl(response.pipeline_json));
+            let optimised = await resolveRefsPipelineJson(response?.pipeline_json, response?.pipeline_json)
+            console.log(optimised, "optimised")
+            setPipelineJson(optimised);
+
+            // Convert pipeline to UI JSON
+            const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+            console.log(uiJson, "uiJson")
+
+            if (!uiJson || !uiJson.nodes) {
+                setNodes([])
+                setEdges([])
+                throw new Error('Failed to convert pipeline to UI format');
+            }
+
+            // Map nodes with titles safely
+            const nodesWithTitles = uiJson.nodes.map(node => {
+                const matchingTransformation = response.pipeline_json.transformations?.find(
+                    (t: any) => t?.title === node?.data?.title && t?.name
+                );
+
+                if (matchingTransformation) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            title: matchingTransformation.name,
+                            transformationData: {
+                                ...node.data.transformationData,
+                                name: matchingTransformation.name
+                            }
+                        }
+                    };
+                }
+                return node;
+            });
+            console.log(nodesWithTitles, "nodesWithTitles")
+            console.log(response?.pipeline_json, "response?.pipeline_json")
+            if (response?.pipeline_json == null) {
+                setPipelineJson(null)
+                setNodes([])
+                setEdges([])
+
+            } else {
+                setNodes(nodesWithTitles);
+                setEdges(uiJson.edges || []);
+            }
+            // Update nodes and edges
+
+
+            // Initialize form states
+            const initialFormStates = {};
+            response.pipeline_json.transformations?.forEach((transformation: any) => {
+                const matchingNode = nodesWithTitles.find(
+                    (node: any) =>
+                        node?.data?.label === transformation?.transformation &&
+                        node?.data?.title === transformation?.name
+                );
+
+                if (matchingNode?.id) {
+                    initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+                }
+            });
+
+            setFormStates(initialFormStates);
+
+        } catch (error) {
+            console.error("Error fetching pipeline details:", error);
+            // Optionally set an error state or show a notification
+        }
+    };
+
+    // Only fetch if we have an ID
+    // const expectedPath = `/designers/build-playground/${id}`;
+
+    // Only fetch if we have an ID and the pathname matches
+    // if (id && location.pathname === expectedPath) {
+    // fetchPipelineDetails();
+    // }
     // }, [ ]);
 
     // Add type safety for the getInitialFormState function
@@ -353,28 +359,33 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Update the auto-save effect
     useEffect(() => {
+        // Skip auto-save if isFlow is true
+        if (isFlow) {
+            return;
+        }
+        
         const intervalId = setInterval(async () => {
             if (hasUnsavedChanges) {
                 try {
                     setSaving();
-                    
+
                     // Convert nodes to ensure all data is serializable
                     const serializedNodes = nodes.map(node => ({
                         ...node,
                         data: {
                             ...node.data,
-                            debuggedNodes: Array.isArray(node.data?.debuggedNodes) 
-                                ? node.data.debuggedNodes 
-                                : node.data?.debuggedNodes instanceof Set 
-                                    ? Array.from(node.data.debuggedNodes) 
+                            debuggedNodes: Array.isArray(node.data?.debuggedNodes)
+                                ? node.data.debuggedNodes
+                                : node.data?.debuggedNodes instanceof Set
+                                    ? Array.from(node.data.debuggedNodes)
                                     : []
                         }
                     }));
                     // Your save logic here
-                    const pipeline_json:any =await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl,pipelineName);
-                    console.log(pipeline_json,"pipeline_json")
+                    const pipeline_json: any = await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl, pipelineName);
+                    console.log(pipeline_json, "pipeline_json")
 
-                    console.log(pipeline_json?.transformations,"pipeline_json")
+                    console.log(pipeline_json?.transformations, "pipeline_json")
 
                     pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json?.transformations?.map(transform => {
                         if (transform.transformation.toLowerCase() === "target") {
@@ -385,27 +396,28 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
                         }
                         return transform;
                     });
-                    console.log(pipeline_json,"pipeline_json")
+                    console.log(pipeline_json, "pipeline_json")
 
-                    if(id){
-                      await apiService.patch({
-                        portNumber: CATALOG_API_PORT,
-                        url: `/pipeline/${id}`,
-                        usePrefix: true,
-                        method: 'PATCH',
-                        data: pipeline_json
-                    });
-                }
+                    if (id) {
+                        await apiService.patch({
+                            portNumber: CATALOG_API_PORT,
+                            url: `/pipeline/${id}`,
+                            usePrefix: true,
+                            method: 'PATCH',
+                            data: pipeline_json
+                        });
+                    }
                     if ('pipeline_json' in pipeline_json) {
-                        let optimised=await resolveRefsPipelineJson(pipeline_json.pipeline_json,pipeline_json.pipeline_json)
-                        setPipelineJson(optimised);                    }
-                  
+                        let optimised = await resolveRefsPipelineJson(pipeline_json.pipeline_json, pipeline_json.pipeline_json)
+                        setPipelineJson(optimised);
+                    }
+
                     // Ensure we're updating the save status after successful save
                     // Add a small delay to ensure UI updates properly
                     // setTimeout(() => {
-        setLastSaved(new Date());
+                    setLastSaved(new Date());
 
-                        setSaved();
+                    setSaved();
                     // }, 100);
 
                 } catch (error) {
@@ -416,22 +428,21 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         }, autoSaveInterval);
 
         return () => clearInterval(intervalId);
-    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl]);
-
+    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow]);
     // Update sanitizeNode function
     const sanitizeNode = useCallback((node: any) => {
         if (!node) return node;
-        
+
         // Convert Set to Array if it exists
         const debuggedNodes = node.data?.debuggedNodes;
         return {
             ...node,
             data: {
                 ...node.data,
-                debuggedNodes: Array.isArray(debuggedNodes) 
-                    ? debuggedNodes 
-                    : debuggedNodes instanceof Set 
-                        ? Array.from(debuggedNodes) 
+                debuggedNodes: Array.isArray(debuggedNodes)
+                    ? debuggedNodes
+                    : debuggedNodes instanceof Set
+                        ? Array.from(debuggedNodes)
                         : []
             }
         };
@@ -439,7 +450,6 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        console.log(nodesOrUpdater)
         // alert()
         // console.log(typeof nodesOrUpdater)
         // if (typeof nodesOrUpdater === 'function') {
@@ -449,7 +459,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
         // } else {
         //     setNodes(nodesOrUpdater.map(sanitizeNode));
         // }
-    }, [ sanitizeNode]);
+    }, [sanitizeNode]);
 
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
@@ -505,87 +515,87 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
             console.error('FitView error:', error);
         }
     }, [fitView]);
-const makePipeline = async (result: any,isModify=true) => {
-    let optimised;
+    const makePipeline = async (result: any, isModify = true) => {
+        let optimised;
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
         let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-    
-    // Set the pipeline JSON first
-    setPipelineJson(optimised);
-    
-    console.log(uiJson, "uiJson");
-    if (!uiJson || !uiJson.nodes) {
-      throw new Error('Failed to convert pipeline to UI format');
-    }
 
-    const nodesWithTitles = await uiJson.nodes.map(node => {
-      const matchingTransformation = result.pipeline_definition.transformations?.find(
-          (t: any) => t?.title === node?.data?.title && t?.name
-      );
+        // Set the pipeline JSON first
+        setPipelineJson(optimised);
 
-      if (matchingTransformation) {
-          return {
-              ...node,
-              data: {
-                  ...node.data,
-                  title: matchingTransformation.name,
-                  transformationData: {
-                      ...node.data.transformationData,
-                      name: matchingTransformation.name
-                  }
-              }
-          };
-      }
-      return node;
-    });
-    
-    console.log(result.pipeline_definition,"nodesWithTitles");
-    
-    if(result.pipeline_definition==null){
-      setPipelineJson(null);
-      setNodes([]);
-      setEdges([]);
-    } else {
-      console.log(nodesWithTitles,"nodesWithTitles");
-      setNodes([]);
-      
-      // Set nodes and edges with the new data
-      await setNodes(nodesWithTitles);
-      await setEdges(uiJson.edges);
-      
-      // Center and align the nodes
-      await handleCenter();
-      await handleAlignHorizontal();
-    }
-
-    // Initialize form states for the new nodes
-    const initialFormStates = {};
-    await result.pipeline_definition.transformations?.forEach((transformation: any) => {
-        const matchingNode = nodesWithTitles.find(
-            (node: any) => 
-                node?.data?.label === transformation?.transformation && 
-                node?.data?.title === transformation?.name
-        );
-
-        if (matchingNode?.id) {
-            initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+        console.log(uiJson, "uiJson");
+        if (!uiJson || !uiJson.nodes) {
+            throw new Error('Failed to convert pipeline to UI format');
         }
-    });
 
-    // Set the form states with the new data
-    setFormStates(initialFormStates);
-  }
+        const nodesWithTitles = await uiJson.nodes.map(node => {
+            const matchingTransformation = result.pipeline_definition.transformations?.find(
+                (t: any) => t?.title === node?.data?.title && t?.name
+            );
 
-    const handleSourceUpdate = useCallback(async({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
+            if (matchingTransformation) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        title: matchingTransformation.name,
+                        transformationData: {
+                            ...node.data.transformationData,
+                            name: matchingTransformation.name
+                        }
+                    }
+                };
+            }
+            return node;
+        });
+
+        console.log(result.pipeline_definition, "nodesWithTitles");
+
+        if (result.pipeline_definition == null) {
+            setPipelineJson(null);
+            setNodes([]);
+            setEdges([]);
+        } else {
+            console.log(nodesWithTitles, "nodesWithTitles");
+            setNodes([]);
+
+            // Set nodes and edges with the new data
+            await setNodes(nodesWithTitles);
+            await setEdges(uiJson.edges);
+
+            // Center and align the nodes
+            await handleCenter();
+            await handleAlignHorizontal();
+        }
+
+        // Initialize form states for the new nodes
+        const initialFormStates = {};
+        await result.pipeline_definition.transformations?.forEach((transformation: any) => {
+            const matchingNode = nodesWithTitles.find(
+                (node: any) =>
+                    node?.data?.label === transformation?.transformation &&
+                    node?.data?.title === transformation?.name
+            );
+
+            if (matchingNode?.id) {
+                initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+            }
+        });
+
+        // Set the form states with the new data
+        setFormStates(initialFormStates);
+    }
+
+    const handleSourceUpdate = useCallback(async ({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         // debugger
         console.log('handleSourceUpdate received:', { nodeId, sourceData });
-        
+
         // Handle the nested structure from TargetPopUp component
         // The structure can be either:
         // 1. { sourceData: { data: { ... } } } - from TargetPopUp
         // 2. { data: { ... } } - from other components
         let data;
-        
+
         if (sourceData.sourceData?.data) {
             // Structure from TargetPopUp
             data = sourceData.sourceData.data;
@@ -599,7 +609,7 @@ const makePipeline = async (result: any,isModify=true) => {
             data = sourceData;
             console.log('Using sourceData directly as fallback');
         }
-        
+
         if (!data) {
             console.error('Invalid sourceData structure:', sourceData);
             // Create a minimal data object to avoid errors
@@ -610,18 +620,18 @@ const makePipeline = async (result: any,isModify=true) => {
                 transformationData: {}
             };
         }
-        
+
         console.log('Using data:', data);
-        
+
         try {
             setNodes(prevNodes =>
-                prevNodes.map((node:any) => {
+                prevNodes.map((node: any) => {
                     if (node.id === nodeId) {
                         // Make sure we have all the required data
                         if (!data.label) {
                             console.warn('Missing label in sourceData, using fallback');
                         }
-                        
+
                         return {
                             ...node,
                             label: data.label || node.label || 'Unnamed Node',
@@ -642,7 +652,7 @@ const makePipeline = async (result: any,isModify=true) => {
             console.error('Source data:', sourceData);
         }
         setUnsavedChanges();
-       
+
     }, [setSanitizedNodes, dispatch]);
 
     const handleEdgesChange = useCallback((changes: any) => {
@@ -665,7 +675,7 @@ const makePipeline = async (result: any,isModify=true) => {
                     if (node.id === selectedSchema.nodeId) {
                         // Preserve existing source data if it exists
                         const existingSource = node.data.source || {};
-                        
+
                         return {
                             ...node,
                             data: {
@@ -691,28 +701,28 @@ const makePipeline = async (result: any,isModify=true) => {
         setIsFormOpen(false);
     }, []);
 
-    const handleRunClick = useCallback(async(e: React.MouseEvent) => {
-    
-        const pipelineConfig:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
-          setSelectedFormState(pipelineConfig);
-          return pipelineConfig;
-      }, [edges, formStates, reactFlowInstance]);
+    const handleRunClick = useCallback(async (e: React.MouseEvent) => {
+
+        const pipelineConfig: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
+        setSelectedFormState(pipelineConfig);
+        return pipelineConfig;
+    }, [edges, formStates, reactFlowInstance]);
 
 
     const handleNodeForm = useCallback((targetNodeId: string) => {
         const targetNode = nodes.find(node => node.id === targetNodeId);
-  console.log(targetNode,"targetNode")
+        console.log(targetNode, "targetNode")
         if (targetNode) {
             const moduleName = targetNode.data.label.split(' ')[0];
             const schemaArray = Array.isArray(schemaData) ? schemaData : Object.values(schemaData);
             const moduleSchema = schemaArray.find((schema: any) => schema.title === moduleName);
-  
+
             if (moduleSchema) {
                 // Find the corresponding form state based on node type and ID
                 const existingFormState = formStates[targetNodeId] ||
                     Object.entries(formStates).find(([key]) =>
                         key.toLowerCase().includes(moduleName.toLowerCase()))?.[1];
-  
+
                 setSelectedSchema({
                     ...moduleSchema,
                     nodeId: targetNodeId,
@@ -724,10 +734,10 @@ const makePipeline = async (result: any,isModify=true) => {
     }, [nodes, formStates]);
 
     const checkConnectionExists = useCallback((connection: Connection): boolean => {
-      return edges.some(
-          edge => edge.source === connection.source && edge.target === connection.target
-      );
-  }, [edges]);
+        return edges.some(
+            edge => edge.source === connection.source && edge.target === connection.target
+        );
+    }, [edges]);
 
     const checkForCircularDependency = (source: string, target: string): boolean => {
         const graph: { [key: string]: string[] } = {};
@@ -758,33 +768,33 @@ const makePipeline = async (result: any,isModify=true) => {
         if (checkConnectionExists(connection)) {
             return;
         }
-  
+
         // Get source and target nodes
         const sourceNode = nodes.find(n => n.id === connection.source);
         const targetNode = nodes.find(n => n.id === connection.target);
-  
+
         if (!sourceNode || !targetNode) return;
-  
+
         // Check input limits
         const targetInputs = edges.filter(e => e.target === connection.target).length;
         const maxInputs = targetNode.data.ports?.maxInputs;
-  
+
         if (maxInputs !== "unlimited" && targetInputs >= maxInputs) {
             console.warn("Maximum inputs reached for this node");
             return;
         }
-  
+
         // Check for circular dependency
         const isCircular = checkForCircularDependency(connection.source!, connection.target!);
         if (isCircular) {
             console.error("Circular dependency detected, connection not added.");
             return;
         }
-  
+
         setEdges((eds: any) => addEdge(connection, eds));
         handleNodeForm(connection.target!);
     }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, nodes, edges]);
-  
+
 
     const handleDebugToggle = useCallback((nodeId: string, title: string) => {
         setDebuggedNodes(prev => {
@@ -806,17 +816,17 @@ const makePipeline = async (result: any,isModify=true) => {
             setIsCanvasLoading(true);
             setIsPipelineRunning(true);
             // setShowLogs(true);
-            
+
             setConversionLogs([{
                 timestamp: new Date().toISOString(),
                 message: 'Starting pipeline validation...',
                 level: 'info'
             }]);
-  
-          
-            const {pipeline_json}:any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
+
+
+            const { pipeline_json }: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
             console.log(pipeline_json)
-  
+
             pipeline_json.transformations = pipeline_json.transformations.map(transform => {
                 if (transform.transformation.toLowerCase() === "target") {
                     return {
@@ -826,16 +836,16 @@ const makePipeline = async (result: any,isModify=true) => {
                 }
                 return transform;
             });
-  console.log(debuggedNodesList)
-  console.log(pipelineDtl)
-  const params = new URLSearchParams({
-    pipeline_name: `${pipelineName || pipelineDtl?.name||pipelineDtl?.pipeline_name }`,
-    pipeline_json: JSON.stringify(pipeline_json),
-    mode: 'DEBUG',
-});
-debuggedNodesList.forEach(checkpoint => {
-    params.append('checkpoints', checkpoint?.title);
-});
+            console.log(debuggedNodesList)
+            console.log(pipelineDtl)
+            const params = new URLSearchParams({
+                pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
+                pipeline_json: JSON.stringify(pipeline_json),
+                mode: 'DEBUG',
+            });
+            debuggedNodesList.forEach(checkpoint => {
+                params.append('checkpoints', checkpoint?.title);
+            });
             // Create the request data object with array
             // const requestData = {
             //     pipeline_name: pipelineDtl?.pipeline_name,
@@ -844,18 +854,18 @@ debuggedNodesList.forEach(checkpoint => {
             //     checkpoints: debuggedNodesList.map(checkpoint => checkpoint.title)
             // };
             // console.log(requestData,"requestData")
-  
+
             setSelectedFormState(pipeline_json);
             setRunDialogOpen(true);
-  console.log(pipeline_json,"params")
+            console.log(pipeline_json, "params")
             // setConversionLogs(prevLogs => [...prevLogs, {
             //     timestamp: new Date().toISOString(),
             //     message: 'Pipeline validation successful. Starting execution...',
             //     level: 'info'
             // }]);
-  
+
             // Pass the request data directly
-            let response:any = await apiService.post({
+            let response: any = await apiService.post({
                 portNumber: CATALOG_API_PORT,
                 url: `/pipeline/debug/start_pipeline?${params.toString()}`,
                 usePrefix: true,
@@ -865,43 +875,43 @@ debuggedNodesList.forEach(checkpoint => {
             if (response.error) {
                 throw new Error(response.error);
             }
-  
+
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName||pipelineDtl?.name
+                params: pipelineName || pipelineDtl?.name
             })).unwrap();
-            console.log(countsResponse,"countsResponse")
-            
+            console.log(countsResponse, "countsResponse")
+
             if (countsResponse.transformationOutputCounts) {
                 setTransformationCounts(countsResponse.transformationOutputCounts);
             }
-  
+
         } catch (error) {
             console.error('Error starting pipeline:', error);
-            
+
             // Add error log
             setTerminalLogs(prevLogs => [...prevLogs, {
                 timestamp: new Date().toISOString(),
                 message: `Error: ${error.message}`,
                 level: 'error'
             }]);
-  
+
             if (error.message.includes('Pipeline is incomplete or broken:')) {
                 const errorMessages = error.message.split('\n').slice(1);
                 setValidationErrors(errorMessages);
             }
-  
+
             setSaveError(error.message);
             setIsPipelineRunning(false);
         } finally {
             setIsCanvasLoading(false);
         }
     }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl]);
-  
+
 
     const handleStop = useCallback(async () => {
         try {
             console.log(pipelineName)
-          let response=await dispatch(stopPipeLine({params:pipelineName||pipelineDtl?.name})).unwrap();
+            let response = await dispatch(stopPipeLine({ params: pipelineName || pipelineDtl?.name })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -915,11 +925,11 @@ debuggedNodesList.forEach(checkpoint => {
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result:any = await dispatch(runNextCheckpoint({pipeline_name:pipelineName||pipelineDtl?.name})).unwrap();
+            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineName || pipelineDtl?.name })).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-              let countsResponse=await dispatch(getTransformationCount({params:pipelineName||pipelineDtl?.name})).unwrap();
-              console.log(countsResponse,"countsResponse")
+                let countsResponse = await dispatch(getTransformationCount({ params: pipelineName || pipelineDtl?.name })).unwrap();
+                console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);
                 }
@@ -969,7 +979,7 @@ debuggedNodesList.forEach(checkpoint => {
                         // Mark as fetched before the API call
                         fetchedIdsRef.current.add(dataSrcId);
 
-                        const response:any = await apiService.get({
+                        const response: any = await apiService.get({
                             portNumber: CATALOG_API_PORT,
                             url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
                             usePrefix: true,
@@ -999,7 +1009,7 @@ debuggedNodesList.forEach(checkpoint => {
                 const newColumns = results
                     .flatMap(result => result.columns)
                     .filter(col => !existingColumnNames.has(col.name));
-                
+
                 return [...prevColumns, ...newColumns];
             });
 
@@ -1029,7 +1039,7 @@ debuggedNodesList.forEach(checkpoint => {
             setHighlightedNodeId(null);
             return;
         }
-  
+
         const results = nodes.filter(node =>
             node.data.label?.toLowerCase().includes(term.toLowerCase()) ||
             node.data.title?.toLowerCase().includes(term.toLowerCase())
@@ -1038,13 +1048,13 @@ debuggedNodesList.forEach(checkpoint => {
             label: node.data.label,
             title: node.data.title || node.data.label
         }));
-  
+
         setSearchResults(results);
     }, [nodes]);
 
     const handleSearchResultClick = useCallback((nodeId: string) => {
         setHighlightedNodeId(nodeId);
-  
+
         // Find the node and center the view on it
         const node = nodes.find(n => n.id === nodeId);
         if (node) {
@@ -1059,14 +1069,14 @@ debuggedNodesList.forEach(checkpoint => {
     const handleLeavePage = useCallback(async () => {
         try {
             setSaving();
-            const pipeline_json =await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl,pipelineName);
+            const pipeline_json = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
             if (id) {
-              await dispatch(updatePipeline({ id: id, data: pipeline_json }));
-  
+                await dispatch(updatePipeline({ id: id, data: pipeline_json }));
+
                 setSaved();
                 setUnsavedChanges();
                 setShowLeavePrompt(false);
-  
+
                 navigate("/designers/build-datapipeline/", { replace: true });
             } else {
                 console.error("Pipeline ID is not defined.");
@@ -1091,7 +1101,7 @@ debuggedNodesList.forEach(checkpoint => {
             const targetNode = selectedNodes.find(node => node.id === edge.target);
             return sourceNode && targetNode;
         });
-  
+
         // Copy form states for selected nodes
         const selectedFormStates = selectedNodes.reduce((acc, node) => {
             if (formStates[node.id]) {
@@ -1099,7 +1109,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
             return acc;
         }, {});
-  
+
         setCopiedNodes(selectedNodes);
         setCopiedEdges(selectedEdges);
         // Store copied form states
@@ -1113,7 +1123,7 @@ debuggedNodesList.forEach(checkpoint => {
         const newNodes = copiedNodes.map(node => {
             const newId = `${node.id}_copy_${Date.now()}`;
             idMapping[node.id] = newId;
-  
+
             return {
                 ...node,
                 id: newId,
@@ -1131,7 +1141,7 @@ debuggedNodesList.forEach(checkpoint => {
             target: idMapping[edge.target],
             selected: false
         }));
-  
+
         const newFormStates = {};
         Object.entries(copiedFormStates).forEach(([oldNodeId, formState]) => {
             const newNodeId = idMapping[oldNodeId];
@@ -1139,13 +1149,13 @@ debuggedNodesList.forEach(checkpoint => {
                 newFormStates[newNodeId] = { ...formState };
             }
         });
-  
+
         setNodes(prevNodes => [...prevNodes, ...newNodes]);
         setEdges(prevEdges => [...prevEdges, ...newEdges]);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
             ...newFormStates
-        })); 
+        }));
         setUnsavedChanges();
     }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setSanitizedNodes, setEdges, setFormStates, dispatch]);
 
@@ -1156,16 +1166,16 @@ debuggedNodesList.forEach(checkpoint => {
             const targetNode = selectedNodes.find(node => node.id === edge.target);
             return sourceNode && targetNode;
         });
-  
+
         setCopiedNodes(selectedNodes);
         setCopiedEdges(selectedEdges);
-  
+
         addNodeToHistory();
         setSanitizedNodes(nds => nds.filter(node => !node.selected));
         setEdges(eds => eds.filter(edge => !edge.selected));
         setUnsavedChanges();
     }, [nodes, edges, addNodeToHistory, setSanitizedNodes, setEdges, dispatch]);
-  
+
     const handleRedo = useCallback(() => {
         if (redoStack.length > 0) {
             const lastState = redoStack[redoStack.length - 1];
@@ -1175,7 +1185,7 @@ debuggedNodesList.forEach(checkpoint => {
             setEdges(lastState.edges);
         }
     }, [redoStack, nodes, edges]);
-  
+
     const handleUndo = useCallback(() => {
         if (history.length > 0) {
             const lastState = history[history.length - 1];
@@ -1185,51 +1195,51 @@ debuggedNodesList.forEach(checkpoint => {
             setEdges(lastState.edges);
         }
     }, [history, nodes, edges]);
-  
+
     const handleLogsClick = useCallback(() => {
         setShowLogs(prev => !prev);  // Toggle logs visibility
     }, []);
     const handleZoomIn = useCallback(() => {
         zoomIn({ duration: 800 });
     }, [zoomIn]);
-  
+
     // Add new function for zoom out
     const handleZoomOut = useCallback(() => {
         zoomOut({ duration: 800 });
     }, [zoomOut]);
-  
+
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        const isFormElement = document.activeElement instanceof HTMLInputElement || 
-                             document.activeElement instanceof HTMLTextAreaElement ||
-                             document.activeElement instanceof HTMLSelectElement;
-  
+        const isFormElement = document.activeElement instanceof HTMLInputElement ||
+            document.activeElement instanceof HTMLTextAreaElement ||
+            document.activeElement instanceof HTMLSelectElement;
+
         if (!isFormElement) {
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
                 event.preventDefault();
                 handleCopy();
             }
-    
+
             // Paste (Ctrl + V)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
                 event.preventDefault();
                 handlePaste();
             }
-    
+
             // Cut (Ctrl + X)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
                 event.preventDefault();
                 handleCut();
             }
-    
+
             // Undo (Ctrl + Z)
             if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
                 event.preventDefault();
                 handleUndo();
             }
-    
+
             // Redo (Ctrl + Y or Ctrl + Shift + Z)
-            if ((event.ctrlKey || event.metaKey) && 
+            if ((event.ctrlKey || event.metaKey) &&
                 (event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z'))) {
                 event.preventDefault();
                 handleRedo();
@@ -1237,7 +1247,7 @@ debuggedNodesList.forEach(checkpoint => {
             // Debug mode toggle (Ctrl + D)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
                 event.preventDefault();
-                
+
                 // Add selected nodes to debug list
                 const selectedNodes = nodes.filter(node => node.selected);
                 if (selectedNodes.length > 0) {
@@ -1250,9 +1260,9 @@ debuggedNodesList.forEach(checkpoint => {
                     // Optionally add a UI notification here
                 }
             }
-  
-          
-  
+
+
+
             // Existing shortcuts
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
                 event.preventDefault();
@@ -1262,64 +1272,83 @@ debuggedNodesList.forEach(checkpoint => {
                     searchInput.select();
                 }
             }
-  
+
             // Run pipeline (Ctrl + R)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
                 event.preventDefault();
                 handleRun();
             }
-  
+
             // Open logs (Ctrl + L)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
                 event.preventDefault();
                 handleLogsClick();
             }
-  
+
             // Stop pipeline (Ctrl + K)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
                 event.preventDefault();
                 handleStop();
             }
-  
+
             // Next step (Ctrl + N)
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
                 event.preventDefault();
                 handleNext();
             }
-  
+
             // Zoom in (Ctrl + Plus)
             if ((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')) {
                 event.preventDefault();
                 handleZoomIn();
             }
-  
+
             // Zoom out (Ctrl + Minus)
             if ((event.ctrlKey || event.metaKey) && event.key === '-') {
                 event.preventDefault();
                 handleZoomOut();
             }
-  
+
             // ... rest of existing shortcuts (Copy, Paste, Cut, etc.) ...
         }
     };
-
+    const updatedSelectedNodeId = useCallback(
+        (nodeId: string, selectedType: string) => {
+            alert(2)
+            console.log(selectedType, "selectedType")
+            setNodes((prevNodes) =>
+                prevNodes.map((node) => {
+                    const selectionId = node.id === nodeId;
+                    return selectionId
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                type: selectedType,
+                                selectedData: selectedType,
+                            },
+                        }
+                        : node;
+                })
+            );
+        },
+        []
+    );
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
-        console.log(source);
-        
+
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
             return;
         }
         const baseModuleName = node.ui_properties.module_name;
-        const existingNodes = nodes.filter(n => 
+        const existingNodes = nodes.filter(n =>
             n.data.label.toLowerCase().startsWith(baseModuleName.toLowerCase())
         );
         const nodeNumber = existingNodes.length + 1;
-        const nodeLabel = existingNodes.length > 0 
+        const nodeLabel = existingNodes.length > 0
             ? `${baseModuleName} ${nodeNumber}`
             : baseModuleName;
-        console.log(baseModuleName)
         // Find the last selected node's position
         const lastNode = nodes[nodes.length - 1];
         const basePosition = lastNode ? {
@@ -1329,10 +1358,10 @@ debuggedNodesList.forEach(checkpoint => {
             x: 50,
             y: 100
         };
-  
+
         const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
-        console.log(baseModuleName,"baseModuleName")
-  // debugger
+        // debugger
+        console.log(node.ui_properties)
         // Create a more detailed node data structure
         const newNode = {
             id: uniqueId,
@@ -1342,15 +1371,21 @@ debuggedNodesList.forEach(checkpoint => {
                 label: baseModuleName, // Use the numbered label here
                 icon: node.ui_properties.icon,
                 ports: node.ui_properties.ports,
+                id: node.ui_properties.id,
+                meta: node.ui_properties.meta,
+                selectedData: node.ui_properties.type,
+                requiredFields: node.ui_properties.operators?.map?.((op: any) => {
+                    return ({ [op.type]: op.requiredFields })
+                }) || [],
                 source: source,
                 title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
-  
+
         setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
-  
+
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
@@ -1358,25 +1393,25 @@ debuggedNodesList.forEach(checkpoint => {
 
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;
-  
+
         // Create a map of node levels (columns)
         const nodeLevels = new Map<string, number>();
         const visited = new Set<string>();
-  
+
         // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node => 
+        const sourceNodes = nodes.filter(node =>
             !edges.some(edge => edge.target === node.id)
         );
-  
+
         // Assign levels through BFS
         const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
         while (queue.length > 0) {
             const { id, level } = queue.shift()!;
             if (visited.has(id)) continue;
-            
+
             visited.add(id);
             nodeLevels.set(id, level);
-  
+
             // Find all outgoing edges from this node
             const outgoingEdges = edges.filter(edge => edge.source === id);
             outgoingEdges.forEach(edge => {
@@ -1385,12 +1420,12 @@ debuggedNodesList.forEach(checkpoint => {
                 }
             });
         }
-  
+
         // Get maximum level for spacing calculation
         const maxLevel = Math.max(...Array.from(nodeLevels.values()));
         const levelWidth = 200; // Horizontal spacing between levels
         const nodeSpacing = 150; // Vertical spacing between nodes in the same level
-  
+
         // Group nodes by their levels
         const nodesByLevel = new Map<number, string[]>();
         nodeLevels.forEach((level, nodeId) => {
@@ -1399,7 +1434,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
             nodesByLevel.get(level)!.push(nodeId);
         });
-  
+
         // Calculate new positions
         const startX = 50;
         const startY = 50;
@@ -1407,7 +1442,7 @@ debuggedNodesList.forEach(checkpoint => {
             const level = nodeLevels.get(node.id) || 0;
             const nodesInLevel = nodesByLevel.get(level) || [];
             const indexInLevel = nodesInLevel.indexOf(node.id);
-            
+
             return {
                 ...node,
                 position: {
@@ -1416,9 +1451,9 @@ debuggedNodesList.forEach(checkpoint => {
                 }
             };
         });
-  
+
         setSanitizedNodes(newNodes);
-  
+
         // Center the view
         setTimeout(() => {
             const centerX = startX + (maxLevel * levelWidth) / 2;
@@ -1426,31 +1461,31 @@ debuggedNodesList.forEach(checkpoint => {
             const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
             reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
         }, 50);
-  
+
         setUnsavedChanges();
     }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
-  
+
     const handleAlignVertical = useCallback(() => {
         if (nodes.length === 0) return;
-  
+
         // Create a map of node levels (rows)
         const nodeLevels = new Map<string, number>();
         const visited = new Set<string>();
-  
+
         // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node => 
+        const sourceNodes = nodes.filter(node =>
             !edges.some(edge => edge.target === node.id)
         );
-  
+
         // Assign levels through BFS
         const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
         while (queue.length > 0) {
             const { id, level } = queue.shift()!;
             if (visited.has(id)) continue;
-            
+
             visited.add(id);
             nodeLevels.set(id, level);
-  
+
             // Find all outgoing edges from this node
             const outgoingEdges = edges.filter(edge => edge.source === id);
             outgoingEdges.forEach(edge => {
@@ -1459,12 +1494,12 @@ debuggedNodesList.forEach(checkpoint => {
                 }
             });
         }
-  
+
         // Get maximum level for spacing calculation
         const maxLevel = Math.max(...Array.from(nodeLevels.values()));
         const levelHeight = 150; // Vertical spacing between levels
         const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
-  
+
         // Group nodes by their levels
         const nodesByLevel = new Map<number, string[]>();
         nodeLevels.forEach((level, nodeId) => {
@@ -1473,7 +1508,7 @@ debuggedNodesList.forEach(checkpoint => {
             }
             nodesByLevel.get(level)!.push(nodeId);
         });
-  
+
         // Calculate new positions
         const startX = 50;
         const startY = 50;
@@ -1481,7 +1516,7 @@ debuggedNodesList.forEach(checkpoint => {
             const level = nodeLevels.get(node.id) || 0;
             const nodesInLevel = nodesByLevel.get(level) || [];
             const indexInLevel = nodesInLevel.indexOf(node.id);
-            
+
             return {
                 ...node,
                 position: {
@@ -1490,9 +1525,9 @@ debuggedNodesList.forEach(checkpoint => {
                 }
             };
         });
-  
+
         setSanitizedNodes(newNodes);
-  
+
         // Center the view
         setTimeout(() => {
             const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
@@ -1500,10 +1535,10 @@ debuggedNodesList.forEach(checkpoint => {
             const centerY = startY + (maxLevel * levelHeight) / 2;
             reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
         }, 50);
-  
+
         setUnsavedChanges();
     }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
-  
+
     const value = useMemo(() => ({
         nodes,
         setNodes: setSanitizedNodes,
@@ -1607,7 +1642,12 @@ debuggedNodesList.forEach(checkpoint => {
         setPipeLineName,
         setPipelineJson,
         pipelineName,
-        pipelineJson
+        pipelineJson,
+        isNodeFormOpen,
+        setIsNodeFormOpen,
+        selectedNodeId,
+        setSelectedNodeId,
+        updatedSelectedNodeId
     }), [
         nodes,
         setSanitizedNodes,
@@ -1707,7 +1747,12 @@ debuggedNodesList.forEach(checkpoint => {
         setPipeLineName,
         setPipelineJson,
         pipelineName,
-        pipelineJson
+        pipelineJson,
+        isNodeFormOpen,
+        setIsNodeFormOpen,
+        selectedNodeId,
+        setSelectedNodeId,
+        updatedSelectedNodeId
     ]);
 
     return (

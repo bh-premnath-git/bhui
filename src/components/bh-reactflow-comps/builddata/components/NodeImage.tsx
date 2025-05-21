@@ -31,7 +31,7 @@ return (
                         src={data.icon}
                         alt={data.label}
                         className="w-14 h-14 object-contain cursor-pointer relative"
-                        onDoubleClick={onImageClick}
+                        onClick={onImageClick}
                         style={{ display: 'block' }}
                     />
                     {(data.label?.toLowerCase() === 'reader' || data.title?.toLowerCase() === 'reader') && (

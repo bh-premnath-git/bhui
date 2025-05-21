@@ -48,6 +48,11 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setRightAsideContentState(null);
     setRightAsideTitle('Details');
     setRightAsideWidth(DEFAULT_ASIDE_WIDTH);
+    
+    // Close bottom drawer and clear its content when route changes
+    setIsBottomDrawerOpen(false);
+    setBottomDrawerContentState(null);
+    setBottomDrawerTitle('Console');
   }, [location.pathname]);
   
   // Bottom Drawer state
@@ -101,6 +106,11 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const closeBottomDrawer = () => {
     setIsBottomDrawerOpen(false);
+    // Clear content after a delay (similar to closeRightAside)
+    setTimeout(() => {
+      setBottomDrawerContentState(null);
+      setBottomDrawerTitle('Console');
+    }, 300);
   };
   
   const setBottomDrawerContent = (content: ReactNode, title?: string) => {

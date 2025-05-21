@@ -24,6 +24,7 @@ import { useFormValidation } from "./hooks/useFormValidation";
 import { ParametersSection } from "./components/ParametersSection";
 import { TabType, ParameterItem } from "./types";
 import { FormLayout } from "../Form/FormLayout";
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
 interface NodeFormProps {
     id: string;
@@ -40,7 +41,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         prevNodeFn,
         updateNodeFormData,
         updateNodeMeta,
-        updatedSelectedNodeId,
         getNodeFormData,
         revertOrSaveData,
         updateNodeDependencies,
@@ -49,6 +49,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         getPipelineDetails,
         flowPipeline,
     } = useFlow();
+    const { updatedSelectedNodeId } = usePipelineContext();
 
     const dispatch = useAppDispatch();
     const { selectedFlow } = useAppSelector((s: RootState) => s.flow);
@@ -60,7 +61,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const paramsInitRef = useRef(false);
 
     const [pipelineData, setPipelineData] = useState<any>(null);
-    
+    console.log(selectedNode)
     // When the pipeline changes, reset the pipeline data
     useEffect(() => {
         console.log("Resetting pipeline data due to pipeline change");
@@ -75,7 +76,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         console.log("Updated pipelineDetails in NodeForm:", details);
     }, [getPipelineDetails, flowPipeline]); // Added flowPipeline as dependency
     
-    if (!selectedNode) return null;
+    if (!selectedNode) {
+        console.log("NodeForm: No selected node found for id:", id);
+        return null;
+    }
+    
+    console.log("NodeForm: Rendering form for node:", id, selectedNode);
 
     /* -------------------------- Derived values --------------------------- */
     const typesMatched = useOtherTypes(selectedNode.data.selectedData);

@@ -7,6 +7,7 @@ import type {
 } from '@/types/designer/pipeline';
 import { toast } from 'sonner';
 import { CATALOG_API_PORT } from '@/config/platformenv';
+import { orderBy } from 'lodash';
 
 interface UsePipelineOptions {
     shouldFetch?: boolean;
@@ -56,7 +57,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
                 enabled,
                 retry: 2
             },
-            params: { limit: 1000 }
+            params: { limit: 1000,order_desc:true }
         });
 
     // Fetch single pipeline by ID

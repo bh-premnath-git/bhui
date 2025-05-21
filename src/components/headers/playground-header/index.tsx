@@ -21,6 +21,7 @@ import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
+import { useModules } from '@/hooks/useModules';
 
 
 export interface PlayGroundHeaderProps {
@@ -44,17 +45,45 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [isJsonToPipelineOpen, setIsJsonToPipelineOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
-
+  const [moduleTypes] = useModules();
+  // const activeModule = moduleTypes.find((type) => type.id === activeType);
+  let flowNodes = moduleTypes.map((type) => {
+    return {
+      "ui_properties": {
+        "module_name": type.label,
+        "color": type.color,
+        "icon": type.icon,
+        "id": type.id,
+        "ports": {
+          "inputs": type.label?.toLowerCase()?.toString()=="sensor"?0:1,
+          "outputs": 1,
+          "maxInputs": 1
+        },
+        meta: {
+          type: type?.type,
+          moduleInfo: {
+            color: type?.color,
+            icon: type?.icon,
+            label: type?.label,
+          },
+          properties:  type.operators.map((op) => op.properties),
+          description: type?.description,
+          fullyOptimized: false,
+        }
+      }
+    };
+  });
+  console.log(moduleTypes)
   const {
     handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun
   } = usePipelineContext();
 
-  const currentItem = isFlow ? selectedFlow : (selectedPipeline||pipelineDtl);
+  const currentItem = isFlow ? selectedFlow : (selectedPipeline || pipelineDtl);
 
   const itemName = isFlow
     ? (currentItem as Flow)?.flow_name
-    : (currentItem as Pipeline)?.pipeline_name||(currentItem as any)?.name;
+    : (currentItem as Pipeline)?.pipeline_name || (currentItem as any)?.name;
 
   const itemId = isFlow
     ? (currentItem as Flow)?.flow_id
@@ -87,15 +116,15 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             lastSaved={lastSavedTime}
             onToggle={toggleAutoSave}
           />
-  
+
           <NameEditor
             initialName={itemName || ''}
             onSave={handleSave}
             placeholder={isFlow ? 'Flow name...' : 'Pipeline name...'}
           />
-  
+
           {isFlow && <SettingsModal />}
-  
+
           {!isFlow && (
             <div className="flex items-center space-x-2">
               <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
@@ -118,7 +147,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <ClusterConfigDialog />
                 </PopoverContent>
               </Popover>
-  
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -134,8 +163,8 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <p>Pipeline settings</p>
                 </TooltipContent>
               </Tooltip>
-  
-  
+
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -154,19 +183,16 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             </div>
           )}
         </div>
-  
+
         {/* Middle section - Node controls */}
         <div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
-          {isFlow && <ToolbarNodes />}
-          {!isFlow && (
-            <NodeDropList
-              filteredNodes={filteredNodes}
-              handleNodeClick={handleNodeClick}
-              addNodeToHistory={addNodeToHistory}
-            />
-          )}
+          <NodeDropList
+            filteredNodes={isFlow ? flowNodes : filteredNodes}
+            handleNodeClick={handleNodeClick}
+            addNodeToHistory={addNodeToHistory}
+          />
         </div>
-  
+
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">
           {!isFlow && (
@@ -177,7 +203,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               isPipelineRunning={isPipelineRunning}
             />
           )}
-  
+
           {isFlow && (
             <div className="flex items-center space-x-3">
               <EnvironmentSelect />
@@ -187,22 +213,22 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               <PlaybackButton />
             </div>
           )}
-  
+
           <div className="border-l border-border pl-4">
             <AIButton variant={playGroundHeader} color="#009f59" />
           </div>
         </div>
       </div>
-  
+
       {!isFlow && (
         <>
           <ParameterModal
-  isOpen={isPipelineParamOpen || isSparkParamOpen}
-  onClose={() => {
-    setIsPipelineParamOpen(false);
-    setIsSparkParamOpen(false);
-  }}
-/>
+            isOpen={isPipelineParamOpen || isSparkParamOpen}
+            onClose={() => {
+              setIsPipelineParamOpen(false);
+              setIsSparkParamOpen(false);
+            }}
+          />
           <JsonToPipelineDialog
             isOpen={isJsonToPipelineOpen}
             onClose={() => setIsJsonToPipelineOpen(false)}

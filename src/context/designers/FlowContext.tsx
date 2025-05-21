@@ -304,6 +304,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const selectNode = useCallback(
     (nodeId: string) => {
       const node = nodes.find((n) => n.id === nodeId);
+      console.log(node?.data)
       setSelectedNode(node || null);
     },
     [nodes]
@@ -338,26 +339,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   );
 
 
-  const updatedSelectedNodeId = useCallback(
-    (nodeId: string, selectedType: string) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          const selectionId = node.id === nodeId;
-          return selectionId
-            ? {
-              ...node,
-              data: {
-                ...node.data,
-                type: selectedType,
-                selectedData: selectedType,
-              },
-            }
-            : node;
-        })
-      );
-    },
-    []
-  );
+  
 
   const revertOrSaveData = useCallback(
     (nodeId: string, save: boolean) => {
@@ -751,7 +733,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     addNode,
     updateNodeMeta,
     setSelectedFlowId: setSelectedFlowIdState,
-    updatedSelectedNodeId,
     revertOrSaveData,
     selectedNodeConnection,
     selectedNodeOptimized,
@@ -770,6 +751,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     flowPipeline,
     setFlowPipeline,
     getPipelineDetails,
+    setSelectedNode
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

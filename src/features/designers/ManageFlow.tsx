@@ -49,7 +49,7 @@ export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefr
   const onRowClickHandler = (row: Row<Flow>) => {
     flowSrv.selectedFlow(row.original);
     setSelectedFlowId(row.original.flow_id.toString());
-    handleNavigation(ROUTES.DESIGNERS.FLOW_PLAYGROUND(row.original.flow_id.toString()));
+    handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(row.original.flow_id.toString()));
   }
   
   // Handle page change

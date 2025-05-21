@@ -10,6 +10,9 @@ import { NodeHandles } from './components/NodeHandles';
 import { NodeInfo } from './components/NodeInfo';
 import { ValidationIndicator } from './components/ValidationIndicator';
 import TargetPopUp from '../TargetPopUp';
+import { useFlow } from "@/context/designers/FlowContext";
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useSelector } from 'react-redux';
 
 interface Schema {
     title: string;
@@ -17,7 +20,7 @@ interface Schema {
     [key: string]: any;
 }
 
-export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl, setEdges, style, selectedSchema,handleSearchResultClick }: {
+export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl, setEdges, style, selectedSchema, handleSearchResultClick, onNodeDoubleClick, onImageClick }: {
     data: any;
     id: string;
     setNodes: any;
@@ -35,10 +38,12 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     style?: React.CSSProperties;
     selectedSchema?: any;
     handleSearchResultClick: (data: any) => void;
+    onNodeDoubleClick?: (nodeId: string) => void;
+    onImageClick?: (nodeId: string) => void;
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [titleValue, setTitleValue] = useState(data.title );
+    const [titleValue, setTitleValue] = useState(data.title);
     const edges = useEdges();
     const reactFlowInstance = useReactFlow();
     const [showInfo, setShowInfo] = useState(false);
@@ -50,7 +55,13 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [selectedSource, setSelectedSource] = useState(null);
     const [isSelected, setIsSelected] = useState(false);
     const [titleError, setTitleError] = useState<string | null>(null);
-// console.log(data,"data")
+    const { selectNode, revertOrSaveData, updateNodeDimensions, setSelectedNode } = useFlow();
+    const { isNodeFormOpen,
+        setIsNodeFormOpen,
+        selectedNodeId,
+        setSelectedNodeId, nodes } = usePipelineContext();
+    const { isFlow } = useSelector((state: any) => state.buildPipeline);
+
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -70,21 +81,33 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         }
 
         // Validation logic
-        if (isSource ) {
-            const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
-            setValidationStatus(isValid ? 'valid' : 'error');
-            setValidationMessages(warnings);
-            return;
-        }
- 
-        if (formData) {
-            const { isValid, warnings } = validateFormData(formData, nodeSchema, false,data.label?.toLowerCase()=="target"? formData.target:null);
-            setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
-            setValidationMessages(warnings);
+        if (isFlow) { 
+            if (formData) {
+                const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
+                setValidationStatus(isValid ? 'valid' : 'error');
+                setValidationMessages(warnings);
+            } else {
+                setValidationStatus('error');
+                setValidationMessages(['Form not filled']);
+            }
         } else {
-            setValidationStatus('error');
-            setValidationMessages(['Form not filled']);
+            if (isSource) {
+                const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
+                setValidationStatus(isValid ? 'valid' : 'error');
+                setValidationMessages(warnings);
+                return;
+            }
+
+            if (formData) {
+                const { isValid, warnings } = validateFormData(formData, nodeSchema, false, data.label?.toLowerCase() == "target" ? formData.target : null);
+                setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
+                setValidationMessages(warnings);
+            } else {
+                setValidationStatus('error');
+                setValidationMessages(['Form not filled']);
+            }
         }
+
     }, [formStates, id, data.label, data.source, setNodes]);
 
     // Add effect to track form state
@@ -96,8 +119,15 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsEditingTitle(true);
-    }, []);
+
+        // If onNodeDoubleClick is provided, use it to open the NodeForm
+        if (onNodeDoubleClick) {
+            onNodeDoubleClick(id);
+        } else {
+            // Otherwise, fall back to the original behavior
+            setIsEditingTitle(true);
+        }
+    }, [id, onNodeDoubleClick]);
 
     const handleImageHover = useCallback(() => {
         // Clear any existing timeout
@@ -126,7 +156,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     const handleDelete = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        const { setEdges,setNodes } = reactFlowInstance;
+        const { setEdges, setNodes } = reactFlowInstance;
         setNodes((nodes: any[]) => nodes.filter(node => node.id !== id));
         setEdges((edges: any[]) => edges.filter(edge =>
             edge.source !== id && edge.target !== id
@@ -134,7 +164,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         if (debuggedNodes.has(id)) {
             onDebugToggle(id, data.title);
         }
-        
+
     }, [id, setNodes, reactFlowInstance, debuggedNodes, onDebugToggle, data.title]);
 
     const handleClone = useCallback((e: React.MouseEvent) => {
@@ -173,8 +203,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     // Add function to check if title already exists
     const isTitleDuplicate = useCallback((newTitle: string, currentId: string) => {
         const existingNodes = reactFlowInstance.getNodes();
-        return existingNodes.some(node => 
-            node.id !== currentId && 
+        return existingNodes.some(node =>
+            node.id !== currentId &&
             (node.data.title === newTitle || node.data.label === newTitle)
         );
     }, [reactFlowInstance]);
@@ -184,7 +214,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setTitleError(null);
 
         const baseModuleName = data.label.split(' ')[0];
-        
+
         if (titleValue === baseModuleName && isTitleDuplicate(baseModuleName, id)) {
             setTitleError('This name is already in use');
             setTitleValue(data.title);
@@ -216,6 +246,10 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setIsSelected(true);
         handleSearchResultClick(id);
 
+        // Don't open the NodeForm on single click, only on double click
+        // The onNodeDoubleClick handler is used in handleDoubleClick
+
+        // Otherwise, use the original form opening logic
         const schema = schemaData.schema.find(
             (s: Schema) => s.title === data.label
         );
@@ -223,7 +257,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         if (schema) {
             // Get the existing form state for this node
             const existingFormState = formStates[id];
-            
+
             // Get the transformation data from the node
             const transformationData = data.transformationData;
 
@@ -235,8 +269,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 name: data.title || existingFormState?.name
             };
 
-            setSelectedSchema({ 
-                ...schema, 
+            setSelectedSchema({
+                ...schema,
                 nodeId: id,
                 // Pass the combined state as initial values
                 initialValues: combinedState
@@ -255,12 +289,12 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 setSelectedSourceLabel("Source");
                 setSelectedSource(data?.source);
             }
-            if(data?.label.toLowerCase() === "target" || data?.title.toLowerCase() === "target"){
+            if (data?.label.toLowerCase() === "target" || data?.title.toLowerCase() === "target") {
                 setSelectedSourceLabel("target");
                 let targetData = data;
                 targetData.source = data?.source ? data?.source : data;
                 setSelectedSource(targetData);
-                
+
                 // Update the node title immediately when target configuration is updated
                 setNodes((nodes: any[]) =>
                     nodes.map(node =>
@@ -280,7 +314,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         }
     }, [data, id, formStates, setSelectedSchema, setFormStates, setIsFormOpen, handleSearchResultClick, setNodes]);
 
-    
+
 
     const handleDebug = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -292,11 +326,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         handleSearchResultClick(id);
     }, [id, handleSearchResultClick]);
 
-   
+
     return (
-        <div 
+        <div
             className="relative group"
-            style={{ 
+            style={{
                 minWidth: 50,
                 ...style
             }}
@@ -309,7 +343,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
             {/* Main node content */}
             <div className="relative">
-                <NodeToolbar 
+                <NodeToolbar
                     show={showToolbar}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -319,7 +353,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     isDebugged={debuggedNodes.has(id)}
                 />
 
-                <NodeTitle 
+                <NodeTitle
                     isEditing={isEditingTitle}
                     value={titleValue}
                     onChange={handleTitleChange}
@@ -330,10 +364,28 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     label={data.label}
                 />
 
-                <NodeImage 
+                <NodeImage
                     data={data}
                     isSelected={isSelected}
-                    onImageClick={handleImageClick}
+                    onImageClick={(e: React.MouseEvent) => {
+                        if (onImageClick) {
+                            e.stopPropagation();
+                            console.log(data)
+                            onImageClick(id);
+                            let node = nodes.find((n) => n.data.id == data.id)
+                            selectNode(data?.id?.toString());
+                            setSelectedNode(node)
+                            setSelectedNodeId(data?.id)
+
+                            // Set a small timeout to ensure the FlowContext has time to update
+                            setTimeout(() => {
+                                setSelectedNodeId(data?.id);
+                                setIsNodeFormOpen(true);
+                            }, 50);
+                        } else {
+                            handleImageClick(e);
+                        }
+                    }}
                     onMouseEnter={handleImageHover}
                     onMouseLeave={handleImageLeave}
                     formStates={formStates}
@@ -341,7 +393,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 />
             </div>
 
-            <ValidationIndicator 
+            <ValidationIndicator
                 data={data}
                 validationStatus={validationStatus}
                 validationMessages={validationMessages}
@@ -353,7 +405,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             <NodeHandles data={data} />
 
             {showInfo && (
-                <NodeInfo 
+                <NodeInfo
                     data={data}
                     titleValue={titleValue}
                     debuggedNodes={debuggedNodes}
@@ -365,22 +417,22 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
             {/* Popups */}
             {selectedSourceLabel === "Source" && (
-                <OrderPopUp 
-                    isOpen={true} 
-                    onClose={() => setSelectedSourceLabel(null)} 
-                    source={selectedSource} 
-                    nodeId={id} 
-                    onSourceUpdate={onSourceUpdate} 
+                <OrderPopUp
+                    isOpen={true}
+                    onClose={() => setSelectedSourceLabel(null)}
+                    source={selectedSource}
+                    nodeId={id}
+                    onSourceUpdate={onSourceUpdate}
                 />
             )}
-            
+
             {selectedSourceLabel === "target" && (
-                <TargetPopUp 
-                    isOpen={true} 
-                    onClose={() => setSelectedSourceLabel(null)} 
-                    source={selectedSource} 
-                    nodeId={id} 
-                    onSourceUpdate={onSourceUpdate} 
+                <TargetPopUp
+                    isOpen={true}
+                    onClose={() => setSelectedSourceLabel(null)}
+                    source={selectedSource}
+                    nodeId={id}
+                    onSourceUpdate={onSourceUpdate}
                 />
             )}
         </div>

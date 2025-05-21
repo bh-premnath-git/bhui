@@ -5,17 +5,21 @@ import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
+import { useDispatch, useSelector } from "react-redux";
+import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 
 export const Header = () => {
   const { isExpanded } = useSidebar();
   const location = useLocation();
   const { isRightAsideOpen } = useSidebar();
+  const dispatch=useDispatch();
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>
     path.startsWith("/designers/build-playground/");
   const isFlowPlaygroundRoute = (path: string) =>
-    path.startsWith("/designers/flow-playground/");
+    path.startsWith("/designers/flow-playground/" ) ||
+    path.startsWith("/designers/data-flow-playground/");
   const isNotebookRoute = (path: string) =>
     path === "/data-catalog/notebook";
   const isDataOpsHubRoute = (path: string) =>
@@ -26,11 +30,14 @@ export const Header = () => {
   // Decide which header content to render
   const renderHeaderContent = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
+            dispatch(setIsFlow(false))
+
       return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
+      dispatch(setIsFlow(true))
       return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>

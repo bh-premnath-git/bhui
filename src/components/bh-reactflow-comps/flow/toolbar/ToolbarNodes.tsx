@@ -10,8 +10,22 @@ export function ToolbarNodes() {
   const [hoveredType, setHoveredType] = React.useState<number | null>(null);
 
   const [moduleTypes] = useModules();
-
   const activeModule = moduleTypes.find((type) => type.id === activeType);
+  let flowNodes=moduleTypes.map((type) => {
+    return {
+      "ui_properties": {
+        "module_name": type.label,
+        "color": type.color,
+        "icon":type.icon,
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    };
+  });
+  console.log(flowNodes)
   // Update handleOperatorSelect to accept requiredFields
   const handleOperatorSelect = React.useCallback(
     (moduleInfo: ModuleType, requiredFields: string[]) => {

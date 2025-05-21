@@ -11,6 +11,7 @@ export const ROUTES = {
     BUILD_PLAYGROUND: (id:string) => `/designers/build-playground/${id}`,
     MANAGE_FLOW: '/designers/manage-flow',
     FLOW_PLAYGROUND: (id:string) => `/designers/flow-playground/${id}`,
+    Data_FLOW_PLAYGROUND: (id:string) => `/designers/data-flow-playground/${id}`,
     NOTEBOOK: '/designers/notebook',
   },
   DATAOPS: {

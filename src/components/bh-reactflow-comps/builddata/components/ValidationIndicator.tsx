@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 
 interface ValidationIndicatorProps {
     data: {
@@ -11,6 +12,7 @@ interface ValidationIndicatorProps {
                 connection_config_id?: string;
             };
         };
+        selectedData?: any;
     };
     validationStatus: 'none' | 'valid' | 'warning' | 'error';
     validationMessages: string[];
@@ -28,63 +30,72 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
     onTooltipLeave
 }) => {
     const getIndicatorColor = () => {
-        if (!data?.label) return 'bg-gray-300';
+        const { isFlow } = useSelector((state: any) => state.buildPipeline);
+        console.log(data)
+        if (isFlow) {
+            if (data?.selectedData) return 'bg-green-500';
+            else return 'bg-red-500';
 
-        if (data.label.toLowerCase() === "reader") {
-            // console.log("data.source", data.source);
-            if (!data.source) return 'bg-red-500';
-            return (data?.source?.data_src_desc && data?.source?.connection_config_id) 
-                ? 'bg-green-500' 
-                : (data?.source?.data_src_desc || data?.source?.connection_config_id)
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500';
-        }
+        } else {
+            if (!data?.label) return 'bg-gray-300';
 
-        if (data.label.toLowerCase() === "target") {
-            if (!data.source) return 'bg-red-500';
-            return (data.source.target_type && data.source.connection?.connection_config_id)
+            if (data.label.toLowerCase() === "reader") {
+                // console.log("data.source", data.source);
+                if (!data.source) return 'bg-red-500';
+                return (data?.source?.data_src_desc && data?.source?.connection_config_id)
+                    ? 'bg-green-500'
+                    : (data?.source?.data_src_desc || data?.source?.connection_config_id)
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500';
+            }
+
+            if (data.label.toLowerCase() === "target") {
+                if (!data.source) return 'bg-red-500';
+                return (data.source.target_type && data.source.connection?.connection_config_id)
+                    ? 'bg-green-500'
+                    : (data.source.target_type || data.source.connection?.connection_config_id)
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500';
+            }
+
+            return validationStatus === 'valid'
                 ? 'bg-green-500'
-                : (data.source.target_type || data.source.connection?.connection_config_id)
+                : validationStatus === 'warning'
                     ? 'bg-yellow-500'
-                    : 'bg-red-500';
+                    : validationStatus === 'error'
+                        ? 'bg-red-500'
+                        : 'bg-gray-300';
         }
 
-        return validationStatus === 'valid'
-            ? 'bg-green-500'
-            : validationStatus === 'warning'
-                ? 'bg-yellow-500'
-                : validationStatus === 'error'
-                    ? 'bg-red-500'
-                    : 'bg-gray-300';
     };
 
     const getStatusIcon = () => {
         if (validationStatus === 'error') {
             return (
-                <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
             );
         }
         if (validationStatus === 'warning') {
             return (
-                <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
             );
         }
         return (
-            <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth={2}
-                d="M5 13l4 4L19 7" 
+                d="M5 13l4 4L19 7"
             />
         );
     };
@@ -116,13 +127,13 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
     return (
         <div className="absolute -bottom-6 left-0 right-0 flex flex-col items-center">
             <div className="flex items-center gap-1">
-                <div 
+                <div
                     className="flex items-center justify-center"
                     onMouseEnter={onTooltipEnter}
                     onMouseLeave={onTooltipLeave}
                 >
                     <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${getIndicatorColor()}`} />
-                    
+
                     {showTooltip && (
                         <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50
                                       bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100
@@ -133,10 +144,10 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
 
                             <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-gray-100">
                                 <div className={`p-1.5 rounded-lg ${getStatusBgColor()}`}>
-                                    <svg 
-                                        className={`w-4 h-4 ${getStatusColor()}`} 
-                                        fill="none" 
-                                        viewBox="0 0 24 24" 
+                                    <svg
+                                        className={`w-4 h-4 ${getStatusColor()}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
                                         stroke="currentColor"
                                     >
                                         {getStatusIcon()}

@@ -25,6 +25,9 @@ RUN --mount=type=secret,id=aws_access_key_id \
     export AWS_ACCESS_KEY_ID=$(cat /run/secrets/aws_access_key_id) && \
     export AWS_SECRET_ACCESS_KEY=$(cat /run/secrets/aws_secret_access_key) && \
     export AWS_REGION=$(cat /run/secrets/aws_region) && \
+    echo "AWS_ACCESS_KEY_ID length: ${#AWS_ACCESS_KEY_ID}" && \
+    echo "AWS_SECRET_ACCESS_KEY length: ${#AWS_SECRET_ACCESS_KEY}" && \
+    echo "AWS_REGION: $AWS_REGION" && \
     aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
     aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
     aws configure set region $AWS_REGION && \

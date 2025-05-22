@@ -49,22 +49,18 @@ jobs:
           AWS_REGION: us-east-1
 
       - name: Configure npm for AWS CodeArtifact
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
         run: |
           TOKEN=$(aws codeartifact get-authorization-token \
             --domain bighammer \
             --domain-owner 058264070106 \
             --query authorizationToken \
             --output text)
-          
+    
           echo "registry=https://bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/" > .npmrc
           echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:always-auth=true" >> .npmrc
           echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=${TOKEN}" >> .npmrc
-
-
+          echo "AWS CodeArtifact configured successfully"
+          
       - name: Extract Branch Name
         run: |
           echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV

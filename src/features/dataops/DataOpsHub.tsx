@@ -1,65 +1,108 @@
-import { useEffect, useState } from "react";
-import { DataOpsProvider } from "@/context/dataops/DataOpsContext"
+import { useEffect } from "react";
 import Dashboard from "@/features/dataops/dashboard"
 import { useDataOpsDashboards, useDataOpsWidgets } from "@/features/dataops/dataOpsHubs/hooks/useDataOpsDash"
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-
+import { useDataOps } from "@/context/dataops/DataOpsContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export function DataOpsHub() {
-  const [widgetIds, setWidgetIds] = useState<number[]>([]);
-
-  const { 
+  const { state, dispatch } = useDataOps();
+  const { getUserInfo } = useAuth();
+  const {
     dashboards,
-    isLoading,
-    isError,
-    isDashboardLoading 
+    isLoading: isDashboardsLoading,
+    isError: isDashboardsError,
   } = useDataOpsDashboards({
     shouldFetch: true,
   });
-  
-  // Extract widget IDs from the first dashboard
-  useEffect(() => {
-    if (dashboards && dashboards.length > 0) {
-      // Extract widget IDs from the dashboard layout
-      if (dashboards[0].dashboard_layout && dashboards[0].dashboard_layout.length > 0) {
-        const ids = dashboards[0].dashboard_layout.map(layout => layout.widget_id);
-        setWidgetIds(ids as number[]);
-      }
-    }
-  }, [dashboards]);
 
-  // Fetch widget data for all widgets in the dashboard using individual IDs
-  const { 
+  const widgetIds = dashboards?.[0]?.dashboard_layout?.map(layout => layout.widget_id) || [];
+
+  const {
     widgets,
     isLoading: isWidgetsLoading,
-    isError: isWidgetsError
+    isError: isWidgetsError,
   } = useDataOpsWidgets({
     shouldFetch: widgetIds.length > 0,
-    widgetIds: widgetIds // Pass the array of widget IDs to fetch
+    widgetIds: widgetIds
   });
-  
-  // Show loading state
-  if (isLoading || isDashboardLoading || isWidgetsLoading) {
+
+  useEffect(() => {
+    const currentOverallLoading = isDashboardsLoading || isWidgetsLoading;
+    if (state.isLoading !== currentOverallLoading) {
+      dispatch({ type: "SET_LOADING", payload: currentOverallLoading });
+    }
+  }, [isDashboardsLoading, isWidgetsLoading, dispatch, state.isLoading]);
+
+  useEffect(() => {
+    try {
+      let newErrorMessage: string | null = null;
+      if (isDashboardsError) {
+        newErrorMessage = (isDashboardsError as any)?.message || "Failed to load dashboards. Please try again later.";
+      } else if (isWidgetsError) {
+        newErrorMessage = (isWidgetsError as any)?.message || "Failed to load widget data. Some items may not display correctly.";
+      }
+
+      if (state.error !== newErrorMessage) {
+        dispatch({ type: "SET_ERROR", payload: newErrorMessage });
+      }
+    } catch (e) {
+      console.error("[DataOpsHub] Error in error handling effect:", e);
+      const unexpectedErrorMessage = "An unexpected error occurred while processing error state.";
+      if (state.error !== unexpectedErrorMessage) {
+        dispatch({ type: "SET_ERROR", payload: unexpectedErrorMessage });
+      }
+    }
+  }, [isDashboardsError, isWidgetsError, isDashboardsError, isWidgetsError, dispatch, state.error]);
+
+  useEffect(() => {
+    try {
+      if (dashboards?.length && !state.dashboards.length) {
+        dispatch({ type: "SET_DASHBOARDS", payload: dashboards });
+        if (dashboards[0]) {
+          dispatch({ type: "SET_SELECTED_DASHBOARD", payload: dashboards[0] });
+        }
+      }
+    } catch (error) {
+      console.error("[DataOpsHub] Failed to process and set dashboards:", error);
+      dispatch({ type: "SET_ERROR", payload: "Error processing dashboard data." });
+    }
+  }, [dashboards, dispatch, state.dashboards.length]);
+
+  useEffect(() => {
+    try {
+      if (widgets?.length && !state.widgets.length) {
+        dispatch({ type: "SET_WIDGETS", payload: widgets });
+      }
+    } catch (error) {
+      console.error("[DataOpsHub] Failed to process and set widgets:", error);
+      dispatch({ type: "SET_ERROR", payload: "Error processing widget data." });
+    }
+  }, [widgets, dispatch, state.widgets.length]);
+
+  if (state.isLoading) {
     return <LoadingState />;
   }
 
-  if (isError || isWidgetsError) {
+  if (state.error) {
     return (
       <div className="p-6">
-        <ErrorState 
-          message="Failed to load dashboard data"
-          />
+        <ErrorState
+          message={state.error}
+        />
       </div>
     );
   }
-  
-  console.log("dashboards", dashboards);
-  console.log("widgets", widgets);
 
+  console.log("user info", getUserInfo(), state.selectedDashboard, state.widgets);
+
+  {/* 
+    <Dashboard />
+  */}
   return (
-    <DataOpsProvider>
-      <Dashboard />
-    </DataOpsProvider>
+    <>
+
+    </>
   );
 }

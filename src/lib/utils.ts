@@ -174,9 +174,6 @@ export function createShortUUID() {
   return uuid;
 }
 
-
-// utils.ts
-
 export const mapFileTypeToLayoutType = (fileType: string): 'delimiter' | 'json' | 'xml' | 'xlsx' => {
   switch (fileType) {
       case 'csv':

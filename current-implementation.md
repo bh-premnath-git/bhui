@@ -1,482 +1,771 @@
-## ProtectedLayout Component Implementation
+##  Component Implementation
 ## Application Root Implementation
 
 ### File Location
 - Main component: `src/App.tsx`
 
-### File Locations
-- Main component: `src/components/ProtectedLayout.tsx`
-- Dependent components:
-  - `src/components/Sidebar.tsx`
-  - `src/components/Header.tsx`
-  - `src/components/RightAside.tsx`
-  - `src/components/BottomDrawer.tsx`
+## ProtectedLayout page routing 
 
-#### Route-Specific Rendering
+### File Location
+- Main component: `src/routes/index.tsx`
+- my focus - `src\routes\dataOpsRoutes.tsx`
+---------------------------
 
+## DataOps Hub Implementation
 
-## Admin Connection Management Implementation
+### File Location
+- Main component: `src/pages/dataops/DataopsHub.tsx`
 
-### Architecture Overview
-- **Pages Layer**: Lightweight wrapper components that render feature components
-- **Feature Layer**: Core implementation of connection management functionality
-- **Redux Store**: Central state management for connection data
-- **API Integration**: RESTful operations through custom hooks
-- **Services**: Connection management service for Redux interaction
+### File Location
+- Main component: `src/features/dataops/DataOpsHub.tsx`
+- Context: `src/context/dataops/DataOpsContext.tsx`
+- Dashboard: `src\features\dataops\dashboard\index.tsx`
 
-### Flow Diagram
-```
-Page Component
-    ↓
-Feature Component
-    ↓
-Hooks (useConnections) → API Calls → Backend
-    ↓
-Redux Store ← Service (connMgtSrv)
-    ↓
-UI Components
-```
+# DataOpsHub Dashboard Implementation
 
-### File Locations
-- Page Components:
-  - `src/pages/admin/connection/ConnectionList.tsx`
-  - `src/pages/admin/connection/ConnectionAdd.tsx`
-  - `src/pages/admin/connection/ConnectionEdit.tsx`
-- Feature Implementation:
-  - `src/features/admin/connection/AddConnection.tsx`
-  - `src/features/admin/connection/EditConnection.tsx`
-  - `src/features/admin/connection/ListConnection.tsx`
-- UI Components:
-  - `src/features/admin/connection/components/ConnectionForm.tsx`
-  - `src/features/admin/connection/components/FormFields.tsx`
-  - `src/features/admin/connection/components/ConnectionPageLayout.tsx`
-  - `src/features/admin/connection/components/DeleteConnectionDialog.tsx`
-- Data Access Layer:
-  - `src/features/admin/connection/hooks/useConnection.ts`
-  - `src/features/admin/connection/services/connMgtSrv.ts`
-- State Management:
-  - `src/store/slices/admin/connection.ts`
-- Data Schema:
-  - `src/types/admin/connection.ts`
+## Architecture Overview
 
-### Data Flow
-1. **Listing Connections**:
-   - Page component renders feature component
-   - `useConnections` hook fetches connection data via API call
-   - Data stored in Redux for shared access
-   - `ListConnection` renders connections in data table
+The DataOpsHub dashboard follows a modern React architecture with context-based state management, dynamic layout, and interactive components. This document details the implementation of the dashboard's features and components.
 
-2. **Creating Connections**:
-   - Two-step process: select connection type → configure connection
-   - Connection type search with debounced name validation
-   - Dynamic schema loading based on connection type
-   - Form validation with custom schema
-   - Encrypted credential handling for sensitive data
-   - API submission with success/error toast notifications
+## Component Hierarchy
 
-3. **Editing Connections**:
-   - Connection data loaded from API with connection ID
-   - Existing credentials properly handled with encryption
-   - Same form component used but with edit mode flag
-   - Form prefilled with existing connection data
-
-4. **Deleting Connections**:
-   - Modal confirmation dialog 
-   - Uses custom event for triggering delete dialog
-   - API call to delete with Redux state update
-
-### Redux Implementation
-```typescript
-// connection.ts Redux slice
-const connectionsSlice = createSlice({
-  name: 'connections',
-  initialState,
-  reducers: {
-    setconnection: (state, action: PayloadAction<Connection[]>) => {
-      state.connection = action.payload;
-    },
-    setSelectedconnection: (state, action: PayloadAction<Connection | null>) => {
-      state.selectedconnection = action.payload;
-    },
-    // Additional reducers...
-  },
-});
+```mermaid
+graph TD
+    A[DataOpsHub] --> B[DataOpsProvider]
+    B --> C[DashboardContent]
+    C --> D[Filters]
+    C --> E[DndContext]
+    E --> F[SortableContext]
+    F --> G[SortableChartCard]
+    G --> G1[LatencyTrendChart]
+    G --> G2[CostTrendChart]
+    G --> G3[StatusDonutChart]
+    G --> G4[ProjectHealthChart]
+    G --> G5[ProjectQualityChart]
+    G --> G6[IncidentSummaryChart]
+    G --> G7[Custom Charts]
 ```
 
-### API Integration with Custom Hooks
-```typescript
-// useConnections hook for API operations
-export const useConnections = (options: UseConnectionsOptions = { shouldFetch: true }) => {
-  const { getOne, getAll } = useResource<Connection>(
-    '/connection_registry/connection_config',
-    CATALOG_API_PORT,
-    true
-  );
-  
-  const { create, update, remove } = useResource<ConnectionValue>(
-    '/connection_registry/connection_config',
-    CATALOG_API_PORT,
-    true
-  );
+## File Structure
 
-  // API operations implemented with callbacks
-  const handleCreateConnection = useCallback(async (data: ConnectionValue) => {
-    await createConnectionMutation.mutateAsync({ data });
-  }, [createConnectionMutation]);
-  
-  // Other handler methods...
-  
-  return {
-    connections,
-    isLoading,
-    handleCreateConnection,
-    handleUpdateConnection,
-    handleDeleteConnection,
-    // Other properties...
-  };
+- **Main Component**: `src/features/dataops/DataOpsHub.tsx`
+- **Context Provider**: `src/context/dataops/DataOpsContext.tsx`
+- **Dashboard Implementation**: `src/features/dataops/dashboard/index.tsx`
+- **Filter Components**: `src/features/dataops/dashboard/filterSelect.tsx`
+- **Chart Components**: `src/features/dataops/dashboard/charts.tsx`
+- **Chart Container**: `src/features/dataops/dashboard/SortableChartCard.tsx`
+- **Hooks**: `src/hooks/useFilter.tsx`
+- **Routing Configuration**: `src/routes/dataOpsRoutes.tsx`
+
+## State Management
+
+### DataOpsContext
+
+The dashboard uses a centralized context for state management:
+
+1. **Data Management**:
+   - `allData`: Raw data generated for the dashboard
+   - `filteredData`: Data filtered by user-selected criteria
+   - `chartData`: Processed data for each chart type
+
+2. **Filter Management**:
+   - Four filter types: Project, Pipeline, Status, and Duration
+   - Filter persistence via cookies
+   - Filter reset and load functionality
+
+3. **Chart Management**:
+   - `chartOrder`: Array controlling chart display order
+   - `customCharts`: Array of dynamically added charts
+   - Chart addition mechanism with event listener integration
+
+### useFilter Hook Implementation
+
+The dashboard uses a custom hook to abstract filter operations from the DataOpsContext:
+
+```tsx
+// src/hooks/useFilter.tsx
+import { useDataOps } from "@/context/dataops/DataOpsContext"
+
+export const useFilters = () => {
+  const { filters, handleFilterChange, resetFilters, loadSavedFilters } = useDataOps()
+  return { filters, handleFilterChange, resetFilters, loadSavedFilters }
 }
 ```
 
-### Connection Type Management
-- Source vs. Destination categorization
-- Visual card-based selection interface
-- Dynamic schema loading based on connection type
-- Type-specific configuration generation
+This hook provides a clean abstraction that:
+- Simplifies component access to filter functionality
+- Maintains consistent filter operations across components
+- Follows the React hooks pattern for state consumption
 
-### Dynamic Form Generation
-- Schema-driven form rendering
-- Custom handling for special fields (JSON credentials)
-- Zod validation schema generation from connection specification
-- Specialized field transformations for different connection types
+## Features
 
-### Error Handling
-- Toast notifications for user feedback
-- Connection validation with immediate feedback
-- Form validation with field-level error messages
-- API error handling with standardized approach
+### 1. Drag-and-Drop Chart Reordering
 
-### UI Implementation Patterns
-- Card-based connection type selection
-- Tabs for source/destination categorization
-- Search filtering for connection types
-- Tailwind styling with consistent UI elements
-- Table view for connection list with sort/filter
+The dashboard implements drag-and-drop functionality using `@dnd-kit/core` and `@dnd-kit/sortable`:
 
-### Component Structure
-1. **AddConnection Component**
-   - Manages connection type selection workflow
-   - Provides search functionality for connection types
-   - Validates connection name availability in real-time
-   - Groups connections by source/destination with tab navigation
-   - Displays visual cards for each connection type with images
+- Draggable charts with visual feedback during drag operations
+- Automatic reordering of charts with animation
+- Persistence of chart order in state
+- Optimized sensor configuration to prevent accidental drags
 
-2. **ConnectionForm Component**
-   - Dynamically loads schema based on connection type
-   - Handles both creation and editing modes
-   - Manages form validation with Zod schemas
-   - Processes connection-specific configuration
-   - Securely handles credentials with encryption
+### 2. Advanced Filtering System
 
-3. **FormFields Component**
-   - Renders dynamic form fields based on connection schema
-   - Supports various input types (text, password, number, etc.)
-   - Handles specialized fields (textarea for JSON credentials)
-   - Shows proper validation feedback
+The filtering system offers:
 
-### Key Features
-1. **Dynamic Schema Loading**:
-   - Loads connection schemas from JSON files
-   - Adapts UI based on connection type requirements
-   - Custom handling for special connections (BigQuery, Local)
+- Multiple filter dimensions: Project, Pipeline, Status, Duration
+- Duration-based filtering with automatic date calculations
+- Filter persistence between sessions via cookies
+- Reset functionality to clear all filters at once
 
-2. **Secure Credential Handling**:
-   - Encrypts sensitive connection information
-   - Uses the same encryption library as environment management
-   - Handles decryption for edit scenarios
+### 3. Responsive Layout
 
-3. **Real-time Validation**:
-   - Connection name availability checking
-   - Form field validation with immediate feedback
-   - Custom validation rules per connection type
+The dashboard implements responsive design:
 
-4. **Connection Type Management**:
-   - Visual categorization (source/destination)
-   - Searchable connection type catalog
-   - Visual representation with appropriate icons
+- Dynamic grid layout (1-3 columns based on viewport width)
+- Optimized chart heights based on available space
+- ResizeObserver for real-time layout adjustments
+- Local storage for persisting optimal chart heights
 
-5. **Connection Configuration**:
-   - Type-specific form generation
-   - Custom configuration for database-specific parameters
-   - Support for connection testing
+### 4. Chart Integration
 
-### Technical Implementation
+Charts are implemented as standalone components with:
+
+- Consistent interface for data consumption
+- Type-specific rendering based on chart ID
+- Support for custom charts added via chat interface
+- Integration with the AI chat system for dynamic chart generation
+
+### 5. Custom Chart Support
+
+The system supports dynamic addition of custom charts:
+
+- Event-based chart addition mechanism
+- Automatic chart order updates when new charts are added
+- Chart config options (axes, labels, etc.)
+- Integration with chat UI for natural language chart creation
+
+## Technical Implementation Details
+
+### 1. Chart Components Implementation
+
+The `charts.tsx` file implements a collection of chart components with consistent styling and behavior:
+
 ```tsx
-// Dynamic schema loading based on connection type
-useEffect(() => {
-  const loadSchema = async () => {
-    setIsLoading(true);
-    try {
-      if (connectionName.toLowerCase() === 'local') {
-        // Custom schema for local connections
-        const localSchema = {
-          connectionSpecification: {
-            properties: {
-              file_path_prefix: {
-                type: "string",
-                title: "File Path Prefix",
-                description: "The path prefix for local files",
-                minLength: 1
-              }
-            },
-            required: ["file_path_prefix"]
-          }
-        };
-        setSchema(localSchema.connectionSpecification);
-      } else {
-        // Load schema from JSON file for other connection types
-        const module = await import(
-          `@/components/bh-reactflow-comps/builddata/json/${connectionName.toLowerCase()}.json`
-        );
-        setSchema(module.default.connectionSpecification);
-      }
-    } catch (error) {
-      console.error('Failed to load schema:', error);
-      toast.error('Failed to load connection schema');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+// Color management with CSS variables
+const CHART_COLORS = {
+  chart1: "var(--chart-1-color)", 
+  chart2: "var(--chart-2-color)", 
+  chart3: "var(--chart-3-color)", 
+  chart4: "var(--chart-4-color)",
+  chart5: "var(--chart-5-color)"
+}
 
-  loadSchema();
-}, [connectionName]);
+// Organized color palettes for different chart types
+const palettes = {
+  status: [CHART_COLORS.chart1, CHART_COLORS.chart2, CHART_COLORS.chart3, CHART_COLORS.chart4],
+  trend: [CHART_COLORS.chart1, CHART_COLORS.chart2, CHART_COLORS.chart3, CHART_COLORS.chart4, CHART_COLORS.chart5],
+  comparison: [CHART_COLORS.chart1, CHART_COLORS.chart3, CHART_COLORS.chart5]
+}
 
-// Connection-specific configuration handling
-const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
-  const type = connectionName.toLowerCase();
-  const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
+// Default configurations for each chart type
+const chartDefaults = {
+  lineConfig: {
+    colors: palettes.trend,
+    stroke: CHART_COLORS.chart1,
+    strokeWidth: 2,
+    // Additional configuration...
+  },
+  // Other chart configurations...
+}
+
+// Chart component example
+export const LatencyTrendChart: React.FC<{ title?:string; data: any[] }> = ({ title="Latency", data }) => {
+  const lines = Object.keys(data[0] || {}).filter((key) => key !== "name");
   
-  // Base configuration with type
-  const commonFields = {
-    [dynamicTypeField]: type,
-  };
+  return (
+    <SortableChartCard id="latency" title={title} className="bg-gradient-to-br from-card to-card/95 overflow-hidden">
+      <LineChart 
+        data={data} 
+        xAxisDataKey="name" 
+        lines={lines}
+        colors={palettes.trend}
+        config={{
+          ...chartDefaults.lineConfig,
+          yAxisLabel: "ms"
+        }}
+      />
+    </SortableChartCard>
+  )
+}
+```
 
-  // Connection-specific handling (example: Postgres)
-  if (type === 'postgres') {
-    return {
-      host: data.host || '',
-      port: data.port ? String(data.port) : '5432',
-      database: data.database || '',
-      username: data.username || '',
-      password: data.password || '',
-      schemas: Array.isArray(data.schemas) ? data.schemas[0] : data.schemas || 'public',
-      ...(data.ssl_mode && { ssl_mode: data.ssl_mode }),
-      ...(data.jdbc_url_params && { jdbc_url_params: data.jdbc_url_params }),
-      ...commonFields,
-    };
+Key implementation details:
+- **Color System**: Uses CSS variables for theming consistency
+- **Configuration Presets**: Predefined settings for each chart type
+- **Component Pattern**: Consistent props structure across charts
+- **Chart Wrapping**: Each chart is wrapped in a SortableChartCard
+- **Dynamic Data Processing**: Extracts data keys automatically where possible
+
+### 2. SortableChartCard Implementation
+
+The SortableChartCard component in `SortableChartCard.tsx` provides the container for all chart components with advanced interactive features:
+
+```tsx
+export const SortableChartCard: React.FC<SortableChartCardProps> = ({ 
+  id,
+  title, 
+  children, 
+  className,
+  defaultHeight = 300,
+  onSaveHeight
+}) => {
+  const [height, setHeight] = useState(defaultHeight);
+  const [isResizing, setIsResizing] = useState(false);
+  
+  // Refs for resize operation
+  const startYRef = useRef<number>(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // dnd-kit sortable hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id, disabled: isResizing });
+  
+  // Debounced dimension saving
+  const debouncedSave = useCallback(
+    debounce((newHeight: number, newWidth: string) => {
+      onSaveHeight?.(newHeight);
+      localStorage.setItem(`chart-${title}-dimensions`, JSON.stringify({
+        height: newHeight,
+        width: newWidth
+      }));
+    }, 250),
+    [title, onSaveHeight]
+  );
+
+  // Additional implementation details...
+
+  return (
+    <Card
+      ref={setNodeRef}
+      className={cn(
+        "relative",
+        className,
+        isDragging && "opacity-70 z-10"
+      )}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        height: `${height}px`,
+      }}
+    >
+      {/* Card header with drag handle */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
+        <CardTitle className="text-sm font-medium flex items-center">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab mr-2 px-1 rounded-sm hover:bg-accent"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {title}
+        </CardTitle>
+        {/* Menu and options */}
+      </CardHeader>
+
+      {/* Chart content */}
+      <CardContent className="p-0 px-4 pb-4">
+        <div className="h-[calc(100%-38px)]">
+          <ResponsiveContainer width="100%" height="100%">
+            {children}
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+      
+      {/* Resize handle */}
+      <div
+        className="absolute bottom-0 w-full h-1 cursor-ns-resize bg-transparent hover:bg-accent/30"
+        onMouseDown={handleResizeStart}
+      />
+    </Card>
+  );
+};
+```
+
+Key features:
+1. **Drag-and-Drop**: Integration with `useSortable` from dnd-kit
+2. **Resizable Height**: Mouse-based resizing with min/max constraints
+3. **Persistence**: Local storage of chart dimensions with debounced saving
+4. **Adaptive Layout**: Responds to global optimal height calculations
+5. **Interaction Feedback**: Visual cues during drag and resize operations
+6. **Error Handling**: Built-in error boundary for chart rendering failures
+
+### 3. Dynamic Chart Rendering
+
+Charts are rendered conditionally using a switch statement inside the `renderChart` function:
+
+```tsx
+const renderChart = (chartId: string) => {
+  if (chartId.startsWith('custom-')) {
+    // Handle custom charts
+    const customChartId = chartId.replace('custom-', '');
+    const customChart = customCharts.find(chart => chart.id === customChartId);
+    return <ProjectHealthChart title={"Latency 2"} data={customChart?.data} bars={["success"]} />
+  }
+    
+  switch (chartId) {
+    case "latency":
+      return <LatencyTrendChart data={chartData.latency} />
+    case "cost":
+      return <CostTrendChart data={chartData.cost} />
+    // Additional chart types...
+    default:
+      return <div>Chart not implemented</div>
+  }
+}
+```
+
+### 4. Layout Optimization
+
+The dashboard uses a ResizeObserver to optimize chart heights based on available space:
+
+```tsx
+useEffect(() => {
+  const adjustChartHeights = () => {
+    if (!gridContainerRef.current) return;
+    
+    const containerHeight = gridContainerRef.current.clientHeight;
+    const containerWidth = gridContainerRef.current.clientWidth;
+    const numColumns = containerWidth >= 1024 ? 3 : containerWidth >= 768 ? 2 : 1;
+    
+    // Calculate optimal chart height
+    const numRows = Math.ceil(chartOrder.length / numColumns);
+    const availableHeight = containerHeight - 10;
+    const optimalHeight = Math.floor(availableHeight / numRows) - 30;
+    
+    // Store calculated height in localStorage
+    localStorage.setItem('optimal-chart-height', String(Math.max(80, Math.min(optimalHeight, 400))));
+  };
+  
+  // Set up observer
+  const resizeObserver = new ResizeObserver(adjustChartHeights);
+  if (gridContainerRef.current) {
+    resizeObserver.observe(gridContainerRef.current);
   }
   
-  // Additional connection types handled similarly...
+  return () => {
+    resizeObserver.disconnect();
+  };
+}, [chartOrder])
+```
+
+### 5. Drag-and-Drop Implementation
+
+The drag-and-drop functionality uses the following pattern:
+
+```tsx
+// Configure sensors with activation constraints
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: { distance: 5 },
+  })
+);
+
+// Handle drag start with visual feedback
+const handleDragStart = (event: DragStartEvent) => {
+  setIsDragging(true);
+  setActiveId(event.active.id as string);
+  document.body.classList.add('dragging-active');
 };
 
-### Data Flow
-- User selects connection type from categorized grid
-- Dynamic form loads based on connection type
-- Form validation ensures required fields are complete
-- Submission process handles special encoding for credentials
-- Success/failure feedback provided via toast notifications
+// Handle drag end with array reordering
+const handleDragEnd = (event: DragEndEvent) => {
+  setIsDragging(false);
+  setActiveId(null);
+  document.body.classList.remove('dragging-active');
+  
+  const { active, over } = event;
+  
+  if (!over) return;
+  
+  if (active.id !== over.id) {
+    const oldIndex = chartOrder.findIndex(chartId => chartId === active.id);
+    const newIndex = chartOrder.findIndex(chartId => chartId === over.id);
+    
+    setChartOrder(arrayMove(chartOrder, oldIndex, newIndex));
+  }
+};
+```
 
-### User Experience Considerations
-- Visual categorization with source/destination tabs
-- Searchable connection type catalog
-- Intuitive form validation with clear error messages
-- Connection name availability checking in real-time
-- Consistent styling with connection-specific icons
+### 6. Filter State Management
 
-## Connection Management UI/UX Enhancements
-
-### Visual Design Improvements
-
-1. **Connection Selection Cards**
-   - Implement subtle hover animations with scale transform (1.02-1.05)
-   - Add gradient borders or accent colors based on connection category
-   - Use consistent icon sizing with proper padding (56px x 56px container)
-   - Apply soft drop shadows on hover (0 8px 30px rgba(0,0,0,0.12))
-   - Add subtle branded background patterns for each card
-
-2. **Layout Refinements**
-   - Change grid layout to responsive masonry grid for better space utilization
-   - Implement virtualized scrolling for performance with many connection types
-   - Group connections by category with visual separators
-   - Add "Featured" or "Recently Used" section at the top
-
-3. **Navigation & Workflow**
-   - Add stepper component to visualize multi-step connection process
-   - Implement breadcrumb navigation for context awareness
-   - Use slide/fade transitions between selection and form states
-   - Add connection type comparison tooltips
-
-### Interactive Enhancements
-
-1. **Connection Type Selection**
-   - Add visual tags for connection types (Database, Storage, API, etc.)
-   - Implement quick-filter chips above the search (e.g., Databases, Cloud Storage)
-   - Show connection popularity or usage metrics as small badges
-   - Add keyboard navigation support for accessibility
-
-2. **Search Experience**
-   - Implement search highlighting for matched terms
-   - Add voice search capability for accessibility
-   - Show recent searches in dropdown
-   - Implement search suggestions based on partial matches
-
-3. **Form Interactions**
-   - Add field auto-completion for common inputs
-   - Implement progressive disclosure for complex form sections
-   - Add inline validation with helpful suggestions
-   - Provide "Test Connection" button with inline results
-
-### Visual Styling Updates
+The filter state management uses React's useState and useCallback:
 
 ```tsx
-// Enhanced connection card component with improved UI
-<Card 
-  key={type.id}
-  className={`
-    transition-all duration-300 
-    border-[1.5px] 
-    ${connectionConfigName.trim() 
-      ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg border-transparent hover:border-primary/30' 
-      : 'opacity-70 cursor-not-allowed'}
-    ${isRecommended(type) ? 'bg-gradient-to-r from-primary/5 to-transparent' : ''}
-  `}
-  onClick={() => handleCardClick(type)}
->
-  <CardContent className="p-6 flex flex-col items-center relative">
-    {isPopular(type) && (
-      <span className="absolute top-2 right-2 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
-        Popular
-      </span>
-    )}
-    <div className="w-16 h-16 mb-4 flex items-center justify-center bg-background rounded-xl p-2 shadow-sm">
-      <img 
-        src={connectionImages[type.connection_name]} 
-        alt={type.connection_display_name}
-        className="max-w-[80%] max-h-[80%] object-contain transition-all"
+const [filters, setFilters] = useState({
+  project: "All" as FilterOption,
+  pipeline: "All" as FilterOption,
+  status: "All" as FilterOption,
+  duration: "All" as FilterOption,
+});
+
+const handleFilterChange = useCallback((key: string, value: FilterOption) => {
+  setFilters((prev) => {
+    const newFilters = { ...prev, [key]: value }
+    setCookie("dashboardFilters", JSON.stringify(newFilters), 30)
+    return newFilters
+  })
+}, []);
+```
+
+### 7. AI Chat Integration
+
+The dashboard integrates with the AI chat system for dynamic chart generation:
+
+```tsx
+useEffect(() => {
+  const handleChartAdded = (event: CustomEvent) => {
+    const chartData = event.detail;
+    addCustomChart(chartData);
+  };
+
+  document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+
+  return () => {
+    document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+  };
+}, [addCustomChart]);
+```
+
+## Component Dependencies
+
+### Chart Library Implementation
+
+The dashboard utilizes a custom chart library implemented in `src/components/bh-charts/` that provides consistent chart components built on top of Recharts:
+
+```mermaid
+graph TD
+    Dashboard[Dashboard] --> Chart[Chart Components]
+    Chart --> Recharts[Recharts Library]
+    Chart --> ColorSystem[Color System]
+    Chart --> ConfigSystem[Configuration System]
+    
+    ColorSystem --> CSSVariables[CSS Variables]
+    ColorSystem --> ColorPalettes[Color Palettes]
+    
+    ConfigSystem --> DefaultConfigs[Default Configurations]
+    ConfigSystem --> PropOverrides[Prop Overrides]
+```
+
+#### Key Components:
+
+1. **Base Chart Components**:
+   - `LineChart.tsx`: Line charts for trend visualization
+   - `BarChart.tsx`: Bar charts for comparison data
+   - `AreaChart.tsx`: Area charts for cumulative data
+   - `DonutChart.tsx`: Donut charts for proportional data
+   - `ChartToolbar.tsx`: Interactive chart customization toolbar
+
+2. **Chart Component Example**:
+```tsx
+// LineChart simplified implementation
+export const LineChart: React.FC<LineChartProps> = ({ 
+  data, 
+  xAxisDataKey, 
+  lines, 
+  colors = colorPalettes.supersetColors,
+  config = {},
+  isMultiSeries = false
+}) => {
+  // Convert string values to numbers for chart rendering
+  const processedData = useMemo(() => {
+    // Data processing logic...
+  }, [data, lines, xAxisDataKey, isMultiSeries]);
+  
+  // Component rendering with configuration
+  return (
+    <RechartsLineChart data={processedData}>
+      <CartesianGrid 
+        strokeDasharray="3 3"
+        vertical={config.showGrid !== false} 
+        horizontal={config.showGrid !== false} 
       />
-    </div>
-    <CardTitle className="text-center text-sm mb-1 line-clamp-1">
-      {type.connection_display_name}
-    </CardTitle>
-    <CardDescription className="text-center text-xs line-clamp-2">
-      {type.connection_description}
-    </CardDescription>
-    <div className="mt-3 flex flex-wrap justify-center gap-1">
-      {getTags(type).map(tag => (
-        <span key={tag} className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
-          {tag}
-        </span>
-      ))}
-    </div>
-  </CardContent>
-</Card>
+      <XAxis 
+        dataKey={xAxisDataKey} 
+        // XAxis configuration...
+      />
+      <YAxis 
+        // YAxis configuration...
+      />
+      <Tooltip />
+      {config.showLegend !== false && (
+        <Legend 
+          // Legend configuration...
+        />
+      )}
+      
+      {/* Render lines based on data keys */}
+      {multiSeriesLines.length > 0 ? (
+        // Multi-series rendering logic
+      ) : (
+        // Standard line rendering logic
+        lines.map((line, index) => (
+          <Line
+            key={line}
+            type={config.curveType || "monotone"}
+            dataKey={line}
+            stroke={colors[index % colors.length]}
+            strokeWidth={config.strokeWidth || 2}
+            // Line configuration...
+          />
+        ))
+      )}
+    </RechartsLineChart>
+  );
+};
 ```
 
-### Search Component Enhancements
+3. **Color System**:
+   The chart library implements a sophisticated color system:
+
+   ```tsx
+   // From index.ts
+   export const colorPalettes = {
+     blueToGreen: ["#0000FF", "#00FFFF", "#00FF00"],
+     colorsOfRainbow: ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#8F00FF"],
+     modernSunset: ["#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"],
+     presetSuperset: ["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087", "#f95d6a", "#ff7c43", "#ffa600"],
+     presetColors: ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"],
+     redToYellow: ["#FF0000", "#FF7F00", "#FFFF00"],
+     supersetColors: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
+   };
+   
+   // Dynamic color palette generation
+   export function generateColorPalette(numColors: number, palette: keyof typeof colorPalettes = 'supersetColors'): string[] {
+     // Interpolation logic to generate extended palettes
+   }
+   ```
+
+4. **Chart Type System**:
+   The dashboard supports multiple chart types with consistent interfaces:
+   
+   ```tsx
+   // Standardized prop interfaces from index.ts
+   export interface LineChartProps {
+     data: any[]
+     xAxisDataKey: string
+     lines: string[]
+     colors?: string[]
+     config?: Record<string, any>
+   }
+   
+   export interface BarChartProps {
+     data: any[]
+     xAxisDataKey: string
+     bars: string[]
+     colors?: string[]
+     config?: Record<string, any>
+   }
+   
+   // Additional chart type interfaces...
+   ```
+
+### Data Processing Utilities
+
+The dashboard uses utility functions in `src/lib/utils.ts` for data processing:
+
+1. **Data Generation**:
+   ```tsx
+   export const generateData = (): DataItem[] => {
+     return months.flatMap((month, monthIndex) =>
+       projects.flatMap((project) =>
+         pipelines.map((pipeline) => ({
+           name: `${month}-${project}`,
+           project,
+           pipeline,
+           latency: Math.floor(Math.random() * 1000),
+           cost: Math.floor(Math.random() * 100),
+           freshness: Math.floor(Math.random() * 100),
+           status: ["In Progress", "Completed", "Failed", "Not Published"][
+             Math.floor(Math.random() * 4)
+           ] as DataItem["status"],
+           date: new Date(2023, monthIndex),
+         }))
+       )
+     )
+   }
+   ```
+
+2. **Chart Data Processing**:
+   ```tsx
+   export const processChartData = (filteredData: DataItem[]): ChartData => ({
+     latency: computeAverageMetrics(filteredData, "latency"),
+     cost: computeAverageMetrics(filteredData, "cost"),
+     ingestion: [
+       { name: "Completed", value: filteredData.filter((item) => item.status === "Completed").length },
+       { name: "Failed", value: filteredData.filter((item) => item.status === "Failed").length },
+       // Additional data processing...
+     ],
+     health: Object.values(
+       filteredData.reduce(
+         (acc, item) => {
+           // Aggregation logic...
+         },
+         {} as Record<string, { name: string; success: number; failed: number }>,
+       ),
+     ),
+     // Additional data transformations...
+   })
+   ```
+
+3. **Filter and Cookie Management**:
+   ```tsx
+   export const setCookie = (name: string, value: string, days: number) => {
+     const expires = new Date(Date.now() + days * 864e5).toUTCString()
+     document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + expires + "; path=/"
+   }
+   
+   export const getCookie = (name: string) => {
+     return document.cookie.split("; ").reduce((r, v) => {
+       const parts = v.split("=")
+       return parts[0] === name ? decodeURIComponent(parts[1]) : r
+     }, "")
+   }
+   ```
+
+### Data Type Definitions
+
+The dashboard uses type definitions in `src/types/dataops/data-ops-hub.d.ts`:
 
 ```tsx
-// Enhanced search component with better UX
-<div className="relative mb-6">
-  <div className="flex items-center space-x-2 mb-2">
-    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">All</Badge>
-    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Databases</Badge>
-    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Cloud</Badge>
-    <Badge variant="outline" className="cursor-pointer hover:bg-secondary">Local</Badge>
-  </div>
-  
-  <div className="relative">
-    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-    <Input
-      placeholder="Search connections..."
-      className="pl-10 pr-8"
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-    />
-    {searchTerm && (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-        onClick={() => setSearchTerm('')}
-      >
-        <X className="h-3 w-3" />
-      </Button>
-    )}
-  </div>
-  
-  {searchTerm && filteredConnections?.length === 0 && (
-    <p className="text-sm text-muted-foreground mt-1">
-      No connections found. Try different keywords.
-    </p>
-  )}
-</div>
+export type DataItem = {
+  name: string
+  project: string
+  pipeline: string
+  latency: number
+  cost: number
+  freshness: number
+  status: "In Progress" | "Completed" | "Failed" | "Did Not Arrive" | "Not Published"
+  date: Date
+}
+
+export type FilterOption = "All" | string
+
+export type ChartData = {
+  latency: any[]
+  cost: any[]
+  ingestion: any[]
+  publish: any[]
+  health: any[]
+  quality: any[]
+  incident: any[]
+}
+
+// Additional type definitions...
 ```
 
-### Form Navigation Improvements
+### External Dependencies
+
+The dashboard relies on several key external libraries:
+
+1. **dnd-kit**: For drag-and-drop functionality
+   - `@dnd-kit/core`: Core drag-and-drop functionality
+   - `@dnd-kit/sortable`: Sortable list implementation
+   - `@dnd-kit/utilities`: Utility functions for transformations
+
+2. **Recharts**: For chart rendering
+   - Components: `LineChart`, `AreaChart`, `BarChart`, `PieChart`, etc.
+   - Utilities: `ResponsiveContainer`, `CartesianGrid`, `Tooltip`, etc.
+
+3. **Framer Motion**: For animations
+   - Used for smooth transitions between states
+   - Applied to chart card movements and filter changes
+
+4. **Tailwind CSS**: For styling
+   - Uses utility classes for consistent styling
+   - Combined with CSS variables for theming
+
+5. **Lodash**: For utility functions
+   - `debounce`: Used for optimizing resize handlers
+   - Used in various data processing operations
+
+## Integration Points
+
+### 1. GenericChatUI Integration
+
+The dashboard integrates with the AI chat system through the `GenericChatUI` component:
 
 ```tsx
-// Multi-step form navigation with progress indicator
-<div className="mb-6">
-  <div className="flex items-center justify-between max-w-lg mb-8">
-    <div className="flex flex-col items-center">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
-        1
-      </div>
-      <span className="text-xs mt-1">Basics</span>
-    </div>
-    <div className="flex-1 h-1 bg-muted mx-2">
-      <div className={`h-full bg-primary ${currentStep >= 2 ? 'w-full' : 'w-0'} transition-all duration-300`}></div>
-    </div>
-    <div className="flex flex-col items-center">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
-        2
-      </div>
-      <span className="text-xs mt-1">Details</span>
-    </div>
-    <div className="flex-1 h-1 bg-muted mx-2">
-      <div className={`h-full bg-primary ${currentStep >= 3 ? 'w-full' : 'w-0'} transition-all duration-300`}></div>
-    </div>
-    <div className="flex flex-col items-center">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-primary text-white' : 'bg-muted'}`}>
-        3
-      </div>
-      <span className="text-xs mt-1">Test</span>
-    </div>
-  </div>
-  
-  {/* Form content based on current step */}
-</div>
+// Event-based communication with Chat UI
+useEffect(() => {
+  const handleChartAdded = (event: CustomEvent) => {
+    const chartData = event.detail;
+    addCustomChart(chartData);
+  };
+
+  document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+
+  return () => {
+    document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+  };
+}, [addCustomChart]);
 ```
 
-### Additional UX Enhancements
+The `CHART_ADDED_EVENT` is defined in the `GenericChatUI` component and allows for dynamic chart creation from natural language queries.
 
-1. **Onboarding Features**:
-   - Add tooltips for first-time users
-   - Implement guided setup for common connection types
-   - Add interactive examples for complex fields
+### 2. Theme Integration
 
-2. **Feedback Mechanisms**:
-   - Enhance success/error states with animated feedback
-   - Add progress indicators for operations like testing connections
-   - Provide inline help text with examples
+The dashboard integrates with the application's theme system:
 
-3. **Connection Management**:
-   - Add connection grouping/tagging capability
-   - Implement favorites system for frequently used connections
-   - Add bulk operations for connection management
-   - Provide connection health status indicators
+```tsx
+// Color system using CSS variables
+const CHART_COLORS = {
+  chart1: "var(--chart-1-color)", 
+  chart2: "var(--chart-2-color)", 
+  chart3: "var(--chart-3-color)", 
+  chart4: "var(--chart-4-color)",
+  chart5: "var(--chart-5-color)"
+}
+```
 
-### Mobile Responsiveness
-- Optimize card sizes for smaller screens
-- Implement collapsible sections for form fields
-- Use bottom sheets instead of modals on mobile
-- Add touch-optimized interactions
+This allows for dynamic theme changes that affect the dashboard's appearance without requiring a rebuild of the charts.
+
+## Summary of Implementation Details
+
+The DataOpsHub dashboard implements a comprehensive data visualization interface with these key architectural elements:
+
+1. **Component Architecture**:
+   - DataOpsProvider: Context-based state management
+   - Dashboard: Layout and organization
+   - SortableChartCard: Interactive chart container
+   - Chart Components: Visualization rendering
+   - Filter Components: Data filtering
+
+2. **Data Flow**:
+   - Raw data generation or API fetching
+   - Context-based state management
+   - Filter application and data processing
+   - Chart data transformation
+   - Visual rendering with theming
+
+3. **Interaction Systems**:
+   - Drag-and-drop chart reordering
+   - Interactive filtering
+   - Resize and layout optimization
+   - AI chat integration for custom charts
+   - Theme integration
+
+4. **Optimization Techniques**:
+   - Memoized data processing
+   - Debounced dimension handling
+   - Efficient DOM updates
+   - Lazy-loaded components
+   - Optimized chart rendering
+
+The implementation leverages modern React patterns, custom hooks, context API, and external libraries to create a responsive, interactive, and visually consistent dashboard experience.

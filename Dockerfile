@@ -1,48 +1,50 @@
-# syntax=docker/dockerfile:1.4
+# Use latest stable Node.js on Debian
 FROM node:current-bullseye
 
-RUN apt-get update && apt-get install -y curl unzip && curl --version && echo "curl installed successfully."
+# Install curl, unzip, and AWS CLI v2
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl unzip && \
+    curl --version && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws && \
+    aws --version
 
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
-    && unzip awscliv2.zip \
-    && ./aws/install \
-    && rm -rf awscliv2.zip aws \
-    && echo "AWS CLI installation completed."
-
-RUN aws --version && echo "AWS CLI verified."
-
+# Set working directory
 WORKDIR /app
 
+# Copy package files and .npmrc
 COPY package.json package-lock.json .npmrc ./
+
+# Copy entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh && ls -l /usr/local/bin/entrypoint.sh
 
-RUN chmod +x /usr/local/bin/entrypoint.sh && ls -l /usr/local/bin/entrypoint.sh && echo "entrypoint.sh is ready."
+# Optional AWS Credentials at build time (not persisted)
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+ARG AWS_REGION=us-east-1
 
-# Install dependencies using BuildKit secrets for AWS credentials
-RUN --mount=type=secret,id=aws_access_key_id \
-    --mount=type=secret,id=aws_secret_access_key \
-    --mount=type=secret,id=aws_region \
-    export AWS_ACCESS_KEY_ID=$(cat /run/secrets/aws_access_key_id) && \
-    export AWS_SECRET_ACCESS_KEY=$(cat /run/secrets/aws_secret_access_key) && \
-    export AWS_REGION=$(cat /run/secrets/aws_region) && \
-    echo "AWS_ACCESS_KEY_ID length: ${#AWS_ACCESS_KEY_ID}" && \
-    echo "AWS_SECRET_ACCESS_KEY length: ${#AWS_SECRET_ACCESS_KEY}" && \
-    echo "AWS_REGION: $AWS_REGION" && \
-    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
-    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
-    aws configure set region $AWS_REGION && \
-    TOKEN=$(aws codeartifact get-authorization-token --domain bighammer --domain-owner 058264070106 --query authorizationToken --output text) && \
-    echo "registry=https://bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/" > .npmrc && \
-    echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:always-auth=true" >> .npmrc && \
-    echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=$TOKEN" >> .npmrc && \
-    echo "Contents of .npmrc after manual token injection:" && cat .npmrc && \
+# Install dependencies with or without CodeArtifact
+RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
+        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" && \
+        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" && \
+        aws configure set region "$AWS_REGION" && \
+        TOKEN=$(aws codeartifact get-authorization-token \
+            --domain bighammer \
+            --domain-owner 058264070106 \
+            --query authorizationToken \
+            --output text) && \
+        echo "registry=https://bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/" > .npmrc && \
+        echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:always-auth=true" >> .npmrc && \
+        echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=${TOKEN}" >> .npmrc; \
+    fi && \
     npm install --force
 
-COPY .npmrc ./
+# Copy the entire application
 COPY . .
 
 EXPOSE 5000
 
-ENTRYPOINT ["sh", "-x", "entrypoint.sh"]
-
-
+ENTRYPOINT ["sh", "-x", "/usr/local/bin/entrypoint.sh"]

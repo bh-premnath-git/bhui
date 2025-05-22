@@ -101,62 +101,51 @@ jobs:
           docker push "${MAIN_GAR_URL}/${IMAGE_NAME}:${DEFAULT_IMAGE_TAG}"
           docker push "${MAIN_GAR_URL}/${IMAGE_NAME}:${GIT_HASH}"
 
-      - name: Notify MSTeams - PR Image Build
-        if: github.event_name == 'pull_request'
-        run: |
-          cat <<EOF > message.json
-          {
-            "@type": "MessageCard",
-            "@context": "https://schema.org/extensions",
-            "summary": "Docker Image Build - 'bh-ui'",
-            "themeColor": "0078D7",
-            "title": "PR Docker Image ${IMAGE_NAME}:${IMAGE_TAG} pushed",
-            "sections": [
-              {
-                "facts": [
-                  {"name": "Repository", "value": "${GITHUB_REPOSITORY}"},
-                  {"name": "Branch", "value": "${GITHUB_REF_NAME}"},
-                  {"name": "Commit", "value": "${GITHUB_SHA}"}
-                ]
-              }
-            ],
-            "potentialAction": [
-              {
-                "@type": "OpenUri",
-                "name": "View on GitHub",
-                "targets": [{"os": "default", "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"}]
-              }
-            ]
-          }
-          EOF
-          curl -X POST "${{ secrets.BH_CI_Pipeline_Alerts }}" -H 'Content-Type: application/json' -d @message.json
+      
+      # PR Build Success Notification
+      - name: MS Teams Notification (PR Success)
+        if: github.event_name == 'pull_request' && success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            PR -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00FF00
 
-      - name: Notify MSTeams - Main Image Build
-        if: github.event_name == 'push'
-        run: |
-          cat <<EOF > message.json
-          {
-            "@type": "MessageCard",
-            "@context": "https://schema.org/extensions",
-            "summary": "Docker Image Build - 'bh-ui'",
-            "themeColor": "0078D7",
-            "title": "Main Docker Image ${IMAGE_NAME}:${IMAGE_TAG} pushed",
-            "sections": [
-              {
-                "facts": [
-                  {"name": "Repository", "value": "${GITHUB_REPOSITORY}"},
-                  {"name": "Branch", "value": "${GITHUB_REF_NAME}"},
-                  {"name": "Commit", "value": "${GITHUB_SHA}"}
-                ]
-              }
-            ],
-            "potentialAction": [
-              {
-                "@type": "OpenUri",
-                "name": "View on GitHub",
-                "targets": [{"os": "default", "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"}]
-              }
-            ]
-          }
-          EOF
-          curl -X POST "${{ secrets.BH_CI_Pipeline_Alerts }}" -H 'Content-Type: application/json' -d @message.json
+      # PR Build Failure Notification
+      - name: MS Teams Notification (PR Failure)
+        if: github.event_name == 'pull_request' && failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            PR -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: FF0000
+
+      # Main Branch Build Success Notification
+      - name: MS Teams Notification (Main Success)
+        if: github.event_name == 'push' && success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            Main Branch -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00FF00
+
+      # Main Branch Build Failure Notification
+      - name: MS Teams Notification (Main Failure)
+        if: github.event_name == 'push' && failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          notification-summary: |
+            Main Branch -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: FF0000

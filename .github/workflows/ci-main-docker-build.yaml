@@ -108,7 +108,7 @@ jobs:
         uses: jdcargile/ms-teams-notification@v1.4
         with:
           github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
-          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
           notification-summary: |
             PR -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
             [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -120,7 +120,7 @@ jobs:
         uses: jdcargile/ms-teams-notification@v1.4
         with:
           github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
-          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
           notification-summary: |
             PR -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
             [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -132,7 +132,7 @@ jobs:
         uses: jdcargile/ms-teams-notification@v1.4
         with:
           github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
-          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
           notification-summary: |
             Main Branch -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
             [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -144,7 +144,7 @@ jobs:
         uses: jdcargile/ms-teams-notification@v1.4
         with:
           github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
-          ms-teams-webhook-uri: ${{ secrets.BH_CI_Pipeline_Alerts }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
           notification-summary: |
             Main Branch -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
             [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})

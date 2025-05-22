@@ -137,5 +137,5 @@ jobs:
               }
             ]
           }
-EOF
-          curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" -H 'Content-Type: application/json' -d @message.json
+          EOF
+        curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" -H 'Content-Type: application/json' -d @message.json

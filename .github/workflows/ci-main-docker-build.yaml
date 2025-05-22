@@ -107,8 +107,8 @@ jobs:
               }
             ]
           }
-EOF
-          curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" -H 'Content-Type: application/json' -d @message.json
+          EOF
+        curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" -H 'Content-Type: application/json' -d @message.json
 
       - name: Notify MSTeams - Main Image Build
         if: github.event_name == 'push'

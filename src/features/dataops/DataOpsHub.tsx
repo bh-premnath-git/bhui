@@ -18,6 +18,7 @@ export function DataOpsHub() {
   });
 
   const widgetIds = dashboards?.[0]?.dashboard_layout?.map(layout => layout.widget_id) || [];
+  console.log("widgetIds", widgetIds);
 
   const {
     widgets,
@@ -97,12 +98,9 @@ export function DataOpsHub() {
 
   console.log("user info", getUserInfo(), state.selectedDashboard, state.widgets);
 
-  {/* 
-    <Dashboard />
-  */}
   return (
-    <>
-
-    </>
+    <div className="mt-4">
+      <Dashboard />
+    </div>
   );
 }

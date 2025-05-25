@@ -69,10 +69,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   onAlignHorizontal,
   onAlignVertical,
 }) => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLogsOpen, setIsLogsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [isMaximized, setIsMaximized] = useState(false)
   const { pipelineDtl,pipelineName } = usePipelineContext()
   const [logs,setLogs]=useState<any>([])
   

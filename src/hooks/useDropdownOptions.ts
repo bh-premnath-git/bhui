@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
 const processEndpoint = (endpoint: string | undefined) => {
@@ -51,7 +51,7 @@ export const useDropdownOptions = (
 
       const data = await apiService.get({
         url,
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         method: 'GET',
         usePrefix: true
       });

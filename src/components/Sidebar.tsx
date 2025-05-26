@@ -285,10 +285,10 @@ export function Sidebar() {
         )}>
           {/* User profile section */}
           {!isExpanded ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenu>
+            <DropdownMenu>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
                         <Avatar className="h-8 w-8">
@@ -297,22 +297,22 @@ export function Sidebar() {
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-auto min-w-[8rem]"
-                    >
-                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
-                        <LogOut className="h-4 w-4" />
-                        <span>Log out</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>{userName}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{userName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-[8rem]"
+              >
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

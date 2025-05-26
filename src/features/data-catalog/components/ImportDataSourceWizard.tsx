@@ -60,7 +60,7 @@ import {
     DialogTitle 
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { getCodesValue } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { apiService } from "@/lib/api/api-service";
 import { Histogram } from "@/components/ui/Histogram";
@@ -158,10 +158,9 @@ console.log(props.gitProjectList)
                 url: '/data_source/',
                 data: data,
                 usePrefix: true,
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 method: 'POST'
             });
-            // return await ApiService(CATALOG_API_PORT, 'post', '/data_source', data);
         } catch (error) {
             console.error("Error creating data source:", error);
             return null
@@ -174,7 +173,7 @@ console.log(props.gitProjectList)
                 url: '/data_source_layout/',
                 data: data,
                 usePrefix: true,
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 method: 'POST'
             });
 
@@ -190,7 +189,7 @@ console.log(props.gitProjectList)
                 url: '/layout_fields/bulk/',
                 data: data,
                 usePrefix: true,
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 method: 'POST'
             });
         } catch (error) {

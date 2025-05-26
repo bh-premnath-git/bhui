@@ -1,7 +1,6 @@
 import { Node, Edge } from 'reactflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CATALOG_API_PORT } from '@/config/platformenv';
-import axios from 'axios';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from './api/api-service';
 import { getNodeIcon, getNodePorts } from './transformationUtils';
 
@@ -19,7 +18,7 @@ export const useUpdatePipelineMutation = () => {
         mutationFn: async ({ id, pipeline_json }: { id: string; pipeline_json: any }) => {
             if(id){
             const data =await apiService.patch({
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: `/pipeline/${id}`,
                 usePrefix: true,
                 method: 'PATCH',
@@ -43,7 +42,7 @@ export const useTransformationCountQuery = (pipelineName: string) => {
         queryKey: pipelineKeys.transformationCount(pipelineName),
         queryFn: async () => {
             const data  = await apiService.get({
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: '/pipeline/debug/get_transformation_count',
                 usePrefix: true,
                 method: 'GET',
@@ -162,7 +161,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 } else if (dataSourceId) {
                     // Fetch data and cache it
                     sourceDetails = await apiService.get({
-                        portNumber: CATALOG_API_PORT,
+                        baseUrl: CATALOG_REMOTE_API_URL,
                         url: `/data_source/${dataSourceId}`,
                         usePrefix: true,
                         method: 'GET',

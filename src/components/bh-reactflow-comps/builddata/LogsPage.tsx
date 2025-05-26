@@ -7,12 +7,9 @@ import {
 } from "@/components/ui/tabs"
 // import { fetchPipelineStreamLogs } from "@/lib/api/log-stream-service"
 import { usePipelineContext } from "@/context/designers/DataPipelineContext"
-import { Button } from "@/components/ui/button"
-import { Loader2, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEventStream } from "@/features/admin/connection/hooks/useEventStream"
 import { DataTable } from "@/components/bh-table/data-table"
-import { API_DOMAIN, API_PREFIX_URL, CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL, API_PREFIX_URL } from '@/config/platformenv';
 
 export interface Log {
   timestamp: string
@@ -64,9 +61,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   const [localProplesLogs, setLocalProplesLogs] = React.useState<Log[]>(proplesLogs)
   const [localPreviewData, setLocalPreviewData] = React.useState<PreviewData | undefined>(previewData)
   const [isStreaming, setIsStreaming] = React.useState(false)
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
   const logsEndRef = React.useRef<HTMLDivElement>(null)
-  const [logs, setLogs] = React.useState<string[]>([]);
 
   // Get pipeline name from context if not provided as prop
   const { pipelineName: contextPipelineName, pipelineDtl } = usePipelineContext()
@@ -79,7 +74,7 @@ export const Terminal: React.FC<TerminalProps> = ({
 
   // Setup event stream for logs
   const { start, stop } = useEventStream({
-    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${actualPipelineName}`,
+    url: `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${actualPipelineName}`,
     token: sessionStorage.getItem("kc_token")?.replace("Bearer ", "") || "",
     onMessage: (msg: any) => {
       console.log("SSE:", msg);

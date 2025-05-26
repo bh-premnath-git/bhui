@@ -3,7 +3,7 @@ import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import { Connection, ConnectionType, ConnectionValue } from '@/types/admin/connection';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UseConnectionsOptions {
     shouldFetch?: boolean;
@@ -34,13 +34,13 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 export const useConnections = (options: UseConnectionsOptions = { shouldFetch: true }) => {
     const { getOne: getConnection, getAll: getAllConnection } = useResource<Connection>(
         '/connection_registry/connection_config',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 
     const { create: createConnection, update: updateConnection, remove: removeConnection } = useResource<ConnectionValue>(
         '/connection_registry/connection_config',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 
@@ -138,7 +138,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
 export function useConnectionSearch() {
     const { getOne: searchConnection } = useResource<Connection[]>(
         '/connection_registry/connection_config',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 
@@ -177,7 +177,7 @@ export function useConnectionSearch() {
 export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFetch: true }) => {
     const { getOne: getConnectionType, getAll: getAllConnectionType } = useResource<ConnectionType>(
         '/connection_registry/',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
     const { data: connectionTypes, isLoading, isFetching, isError } = getAllConnectionType({

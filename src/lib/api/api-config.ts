@@ -1,6 +1,3 @@
-
-import { API_DOMAIN } from '@/config/platformenv';
-
 export interface ApiMetadata {
   errorMessage?: string;
   successMessage?: string;
@@ -13,9 +10,9 @@ declare module 'axios' {
 }
 
 export interface ApiConfig {
-  portNumber?: string;
+  baseUrl?: string;
+  url: string;   
   method: string;
-  url: string;
   data?: string | Record<string, any> | FormData;
   params?: Record<string, any>;
   query?: string;
@@ -30,5 +27,3 @@ export interface ApiResponse<T> {
   error: Error | null;
   isLoading: boolean;
 }
-
-export const API_BASE_URL = API_DOMAIN;

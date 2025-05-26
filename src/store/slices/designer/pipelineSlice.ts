@@ -1,4 +1,4 @@
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { Pipeline } from '@/types/designer/pipeline';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
@@ -21,7 +21,7 @@ export const patchPipelineOperation = createAsyncThunk(
     "pipeline/patchPipelineOperation",
     async (data: { pipelineId: number, data: Partial<Pipeline> }) => {
         const response = await apiService.patch<Pipeline>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: `/pipeline/${data.pipelineId}`,
             data: data.data,
             usePrefix: true,

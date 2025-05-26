@@ -3,7 +3,7 @@ import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation, Project } from '@/types/admin/project';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UseProjectsOptions {
   shouldFetch?: boolean;
@@ -30,21 +30,21 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
   // For queries - returns Project objects
   const { getOne: getProject, getAll: getAllProjects } = useResource<Project>(
     'bh_project',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
   // For mutations - accepts ProjectMutationData
   const { create: createProject, update: updateProject, remove: removeProject } = useResource<ProjectMutationData>(
     'bh_project',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
   // For validation - accepts ProjectGitValidation
   const { create: validateGit } = useResource<ProjectGitValidation>(
     'bh_project',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -166,7 +166,7 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 export function useProjectSearch() {
   const { getOne: searchProjects } = useResource<Project[]>(
     'bh_project',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
   

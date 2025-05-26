@@ -1,9 +1,9 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import axios from 'axios';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 const apiClient = axios.create({
-    baseURL: `http://localhost:${CATALOG_API_PORT}`
+    baseURL: CATALOG_REMOTE_API_URL
 });
 
 // Query keys for connection config

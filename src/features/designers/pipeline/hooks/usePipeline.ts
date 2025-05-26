@@ -6,7 +6,7 @@ import type {
     PipelineMutationData
 } from '@/types/designer/pipeline';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UsePipelineOptions {
     shouldFetch?: boolean;
@@ -33,7 +33,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
     // For queries
     const { getOne: getPipeline, getAll: getAllPipelines } = useResource<PipelinePaginatedResponse>(
         'pipelines',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 
@@ -44,7 +44,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
         remove: removePipeline
     } = useResource<PipelineMutationData>(
         'pipelines',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 

@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Flow, FlowAgentConversationResponse } from '@/types/designer/flow';
 import { Environment } from '@/types/admin/environment';
 import { Project } from '@/types/admin/project';
-import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
 interface FlowState {
@@ -47,7 +47,7 @@ export const fetchProjects = createAsyncThunk(
     "flows/fetchProjects",
     async () => {
         const response = await apiService.get<Project[]>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/bh_project/list/',
             usePrefix: true,
             method: 'GET',
@@ -63,7 +63,7 @@ export const fetchEnvironments = createAsyncThunk(
     "flows/fetchEnvironments",
     async () => {
         const response = await apiService.get<Environment[]>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/environment/environment/list/',
             usePrefix: true,
             method: 'GET',
@@ -79,7 +79,7 @@ export const patchFlowOperation = createAsyncThunk(
     "flows/patchFlowOperation",
     async (data: { flowId: number, data: Partial<Flow> }) => {
         const response = await apiService.patch<Flow>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: `/flow/${data.flowId}`,
             data: data.data,
             usePrefix: true,
@@ -96,7 +96,7 @@ export const updateFlowConfiguration = createAsyncThunk(
     "flows/updateFlowConfiguration",
     async (data: { flow_config_id: number, flow_config: string }) => {
         const response = await apiService.put<Flow>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: `/flow/flow-config/${data.flow_config_id}`,
             data: data.flow_config,
             usePrefix: true,
@@ -116,7 +116,7 @@ export const patchCronDeployment = createAsyncThunk(
     "flows/patchCronDeployment",
     async (data: { flow_deployment_id: number, cron_expression: { cron_expression: { cron: string } } }) => {
         const response = await apiService.patch<Flow>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: `/flow/flow-deployment/${data.flow_deployment_id}`,
             data: data.cron_expression,
             usePrefix: true,
@@ -133,7 +133,7 @@ export const fetchDagParserTime = createAsyncThunk(
     "flows/fetchDagParserTime",
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.get<string>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/bh_airflow/dag_parse_time',
             params: query,
             usePrefix: true,
@@ -150,7 +150,7 @@ export const commitFlowVersion = createAsyncThunk(
     "flows/commitFlowVersion",
     async (data: { flow_deployment_id: number; comment: string }) => {
         const response = await apiService.post<Flow>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/flow/flow-version',
             data,
             usePrefix: true,
@@ -170,7 +170,7 @@ export const updateFlowDefinition = createAsyncThunk(
         flow_json: Record<string, any>
     }) => {
         const response = await apiService.patch<Flow>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: `/flow/flow-definition/update-by-flow-id/${data.flow_id}`,
             data: data.flow_json,
             usePrefix: true,
@@ -187,7 +187,7 @@ export const triggerDagDeployment = createAsyncThunk(
     "flows/triggerDagDeployment",
     async (data: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.post<{ dag_run_id: string }>({
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/bh_airflow/trigger_dag',
             query: `dag_id=${data.dag_id}&airflow_env_name=${data.airflow_env_name}&bh_env_name=${data.bh_env_name}`,
             usePrefix: true,
@@ -204,7 +204,7 @@ export const createFlowAgentConversationEntry = createAsyncThunk(
     "flows/createFlowAgentConversationEntry",
     async (data: { flow_id: string; request: string; thread_id: string }) => {
         const response = await apiService.post<FlowAgentConversationResponse>({
-            portNumber: AGENT_PORT,
+            baseUrl:AGENT_REMOTE_URL,
             url: '/flow_agent/create_flow',
             data,
             usePrefix: true,
@@ -221,7 +221,7 @@ export const deployDag = createAsyncThunk(
     "flows/deployDag",
     async (data: { flow_definition_id: number; flow_deployment_id: number }) => {
         const response = await apiService.post<any>({ // Assuming 'any' response type for now
-            portNumber: CATALOG_API_PORT,
+            baseUrl:CATALOG_REMOTE_API_URL,
             url: '/flow/flow-definition/deploy-dag',
             params: data, // Sending data as query parameters
             usePrefix: true,

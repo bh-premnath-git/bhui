@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { apiService } from "@/lib/api/api-service";
-import { CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 
 export interface GithubProvider {
   id: number;
@@ -46,7 +46,7 @@ export const fetchGithubProviders = createAsyncThunk(
   "global/fetchGithubProviders",
   async () => {
     const response = await apiService.get<GithubProvidersResponse>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: '/codes_hdr/30',
       usePrefix: true,
       method: 'GET',
@@ -62,7 +62,7 @@ export const fetchDataSourceTypes = createAsyncThunk(
   "global/fetchDataSourceTypes",
   async () => {
     const response = await apiService.get<DataTypeId>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: '/codes_hdr/13',
       method: 'GET',
       usePrefix: true,

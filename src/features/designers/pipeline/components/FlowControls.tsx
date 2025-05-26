@@ -5,32 +5,19 @@ import {
 } from 'react-icons/bi'
 import {
   MdOutlineCenterFocusStrong,
-  MdOutlineSkipNext,
-  MdOutlineStop,
-  MdSettings,
   MdTerminal,
   MdAlignHorizontalCenter,
   MdAlignVerticalCenter
 } from 'react-icons/md'
-import { HiOutlinePlay } from 'react-icons/hi'
 
 // shadcn/ui imports (adjust import paths to match your project setup)
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet'
 
-import { Terminal, PreviewData } from '@/components/bh-reactflow-comps/builddata/LogsPage';
+import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext'
 import { useEventStream } from '@/features/admin/connection/hooks/useEventStream'
 import { useSidebar } from '@/context/SidebarContext'
-import { API_DOMAIN, API_PREFIX_URL, CATALOG_API_PORT } from '@/config/platformenv';
+import { API_PREFIX_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface Log {
   timestamp: string
@@ -58,13 +45,9 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   onZoomIn,
   onZoomOut,
   onCenter,
-  handleRunClick,
-  onStop,
-  onNext,
   isPipelineRunning,
   isLoading,
   pipelineConfig,
-  terminalLogs,
   proplesLogs,
   onAlignHorizontal,
   onAlignVertical,
@@ -74,7 +57,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
-    url: `${API_DOMAIN}:${CATALOG_API_PORT}/api/v1/pipeline/stream-logs/${pipelineName||pipelineDtl?.name}`,
+    url: `$${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${pipelineName||pipelineDtl?.name}`,
      token: sessionStorage.getItem("kc_token")!.replace("Bearer ", ""),
      onMessage: (msg) => {
        console.log("SSE:", msg);

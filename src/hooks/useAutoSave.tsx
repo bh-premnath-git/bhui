@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSaving, setSaved, setSaveError } from '@/store/slices/designer/features/autoSaveSlice';
 import {  useUpdatePipelineMutation } from '@/lib/pipelineJsonConverter';
-import { CATALOG_API_PORT } from '@/config/platformenv';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useParams } from 'react-router-dom';
 import { convertOptimisedPipelineJsonToPipelineJson } from '@/lib/convertUIToPipelineJson';

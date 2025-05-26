@@ -1,5 +1,5 @@
 import { useResource } from '@/hooks/api/useResource';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { Dashboard, Dashboards, Widget } from '@/types/dataops/dataops-dash';
 import { useQueries } from '@tanstack/react-query';
 import { apiService } from '@/lib/api/api-service';
@@ -26,7 +26,7 @@ interface UseWidgetOptions {
 export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFetch: true }) => {
   const { getOne: getDashboard, getAll: getAllDashboards } = useResource<Dashboard>(
     DASHBOARD_API_PATH,
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -92,7 +92,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = { shouldFetch: tru
   // For single widget fetching
   const { getOne: getWidget } = useResource<Widget>(
     WIDGET_API_PATH,
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
   
@@ -129,7 +129,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = { shouldFetch: tru
           const config: ApiConfig = {
             url: `/${WIDGET_API_PATH}/${id}`,
             method: 'GET',
-            portNumber: CATALOG_API_PORT,
+            baseUrl: CATALOG_REMOTE_API_URL,
             usePrefix: true
           };
           

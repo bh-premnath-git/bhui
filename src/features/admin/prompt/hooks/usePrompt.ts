@@ -3,7 +3,7 @@ import { useResource } from '@/hooks/api/useResource';
 import { debounce, remove, update } from 'lodash';
 import { Prompt, PromptModule } from '@/types/admin/prompt';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UsePromptsOptions {
     shouldFetch?: boolean;
@@ -34,13 +34,13 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 export const usePrompts = (options: UsePromptsOptions = { shouldFetch: true }) => {
     const { getOne: getPrompt, getAll: getAllPrompt } = useResource<Prompt>(
         '/prompt/prompt',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 
     const { create: createPrompt, update: updatePrompt, remove: removePrompt } = useResource<Prompt>(
             '/prompt/prompt/',
-            CATALOG_API_PORT,
+            CATALOG_REMOTE_API_URL,
             true
     );
 

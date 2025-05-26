@@ -24,7 +24,7 @@ import { toast, Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { useDispatch } from 'react-redux';
 import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
 import { AppDispatch } from '@/store';
@@ -531,7 +531,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
 
       const descriptionResponse: any = await apiService.post(
         {
-          portNumber: AGENT_PORT,
+          baseUrl: AGENT_REMOTE_URL,
           method: 'POST',
           url: '/pipeline_agent/generate',
           data: body,
@@ -604,7 +604,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
       let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
       await apiService.patch({
         url: `/data_source/${selectedSource.data_src_id}`,
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         method: 'PATCH',
         usePrefix: true,
         data: {

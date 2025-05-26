@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { DataSourcePaginatedResponse, DataSourceMutationData } from '@/types/data-catalog/dataCatalog';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UseDataCatalogOptions {
   shouldFetch?: boolean;
@@ -29,7 +29,7 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
   // For queries - returns DataSourcePaginatedResponse
   const { getOne: getDataSource, getAll: getAllDataSources } = useResource<DataSourcePaginatedResponse>(
     'data_source',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -40,7 +40,7 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     remove: removeDataSource
   } = useResource<DataSourceMutationData>(
     'data_source',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 

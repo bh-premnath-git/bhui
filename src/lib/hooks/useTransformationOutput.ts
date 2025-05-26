@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '../api/api-service';
 
 // Query keys for transformation output
@@ -33,7 +32,7 @@ export const useTransformationOutputQuery = ({
             }
             
             const response:any = await apiService.get({
-                portNumber: CATALOG_API_PORT,
+                baseUrl:CATALOG_REMOTE_API_URL,
                 url: '/pipeline/debug/get_transformation_output',
                 usePrefix: true,
                 params: {

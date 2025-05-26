@@ -15,7 +15,7 @@ import {
 } from '@/store/slices/designer/buildPipeLine/clusterSlice';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface Environment {
   bh_env_id: number;
@@ -72,7 +72,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
     setIsLoadingEnvironments(true);
     try {
       const response:any = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/environment/environment/list/',
         usePrefix: true,
         method: 'GET',

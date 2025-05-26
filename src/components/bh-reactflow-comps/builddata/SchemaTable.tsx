@@ -16,7 +16,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useEffect } from 'react';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { DataTable } from '@/components/bh-table/data-table';
 import { useAppSelector } from '@/hooks/useRedux';
@@ -39,7 +39,7 @@ function SchemaTable({ initialData }: any) {
             setIsLoading(true);
             try {
                 const response = await apiService.get({
-                    portNumber: CATALOG_API_PORT,
+                    baseUrl: CATALOG_REMOTE_API_URL,
                     url: `/data_source_layout/list_full/?data_src_id=${initialData?.source?.data_src_id}`,
                     method: 'GET',
                     usePrefix: true,

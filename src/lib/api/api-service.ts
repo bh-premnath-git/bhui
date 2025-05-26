@@ -2,9 +2,8 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { useMutation, useQuery, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ApiConfig } from './api-config';
-import { API_DOMAIN, API_PREFIX_URL } from '@/config/platformenv';
+import {  API_PREFIX_URL } from '@/config/platformenv';
 
-const DEFAULT_API_DOMAIN = API_DOMAIN;
 const DEFAULT_API_PREFIX = API_PREFIX_URL;
 
 interface ErrorResponse {
@@ -90,23 +89,20 @@ class ApiService {
   }
 
   private getUrl(config: ApiConfig): string {
-    const baseUrl = config.portNumber
-      ? `${DEFAULT_API_DOMAIN}:${config.portNumber}`
-      : DEFAULT_API_DOMAIN;
-    const prefix = config.usePrefix ? DEFAULT_API_PREFIX : '';
-    const path = prefix + this.buildUrl(config);
-    let url = baseUrl + path;
-
-    // Handle query parameters
-    const paramsString = new URLSearchParams(config.params || {}).toString();
-    if (paramsString) {
-      url += `?${paramsString}`;
-    }
+    // prefer explicit baseUrl, else fall back to old DOMAIN+PREFIX logic
+    const base = config.baseUrl
+      ? config.baseUrl.replace(/\/$/, '') + (config.usePrefix ? DEFAULT_API_PREFIX : '') 
+      : '';
+  
+    const path = this.buildUrl(config).replace(/^\//, '');
+    let full = `${base}/${path}`;
+  
+    const paramsStr = new URLSearchParams(config.params || {}).toString();
+    if (paramsStr) full += `?${paramsStr}`;
     if (config.query) {
-      url += url.includes('?') ? `&${config.query}` : `?${config.query}`;
+      full += full.includes('?') ? `&${config.query}` : `?${config.query}`;
     }
-
-    return url;
+    return full;
   }
 
   public async request<T>(config: ApiConfig): Promise<AxiosResponse<T>> {

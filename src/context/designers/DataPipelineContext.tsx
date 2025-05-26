@@ -9,7 +9,7 @@ import React, {
     useContext
 } from 'react';
 import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
@@ -389,7 +389,7 @@ const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
 
                     if(id){
                       await apiService.patch({
-                        portNumber: CATALOG_API_PORT,
+                        baseUrl: CATALOG_REMOTE_API_URL,
                         url: `/pipeline/${id}`,
                         usePrefix: true,
                         method: 'PATCH',
@@ -856,7 +856,7 @@ debuggedNodesList.forEach(checkpoint => {
   
             // Pass the request data directly
             let response:any = await apiService.post({
-                portNumber: CATALOG_API_PORT,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: `/pipeline/debug/start_pipeline?${params.toString()}`,
                 usePrefix: true,
                 method: 'POST',
@@ -970,7 +970,7 @@ debuggedNodesList.forEach(checkpoint => {
                         fetchedIdsRef.current.add(dataSrcId);
 
                         const response:any = await apiService.get({
-                            portNumber: CATALOG_API_PORT,
+                            baseUrl: CATALOG_REMOTE_API_URL,
                             url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
                             usePrefix: true,
                             method: 'GET',

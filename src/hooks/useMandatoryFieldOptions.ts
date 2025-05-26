@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '@/lib/api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { ApiConfig } from '@/lib/api/api-config';
 
 interface FieldSchema {
@@ -37,7 +37,7 @@ export const useMandatoryFieldOptions = (fieldSchema: FieldSchema, envId: string
       try {
         const config: ApiConfig = {
           method: 'GET',
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           url: `/api/v1/mandatory-fields/${envId}`,
           params: {
             field_key: fieldSchema.ui_properties.property_key,

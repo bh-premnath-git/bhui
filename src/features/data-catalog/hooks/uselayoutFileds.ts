@@ -1,7 +1,7 @@
 import { useResource } from "@/hooks/api/useResource";
 import { DataSourceLayout } from "@/types/data-catalog/dataCatalog";
 import { toast } from "sonner";
-import { CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { useEffect } from "react";
 
 interface UseLayoutFieldsOptions {
@@ -13,7 +13,7 @@ export const useLayoutFields = (options: UseLayoutFieldsOptions = { shouldFetch:
     // For queries - returns DataSourceLayout array which contains layout fields
     const { getAll: getAllLayoutFields } = useResource<DataSourceLayout>(
         'datasource_layout',
-        CATALOG_API_PORT,
+        CATALOG_REMOTE_API_URL,
         true
     );
 

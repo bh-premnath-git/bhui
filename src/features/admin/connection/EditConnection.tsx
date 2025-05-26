@@ -5,7 +5,7 @@ import { ConnectionForm } from './components/ConnectionForm';
 import { ConnectionPageLayout } from './components/ConnectionPageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '@/lib/api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 import { 
@@ -62,7 +62,7 @@ export function EditConnection() {
       const response: any = await apiService.get({
         url: `/connection_registry/connection_config/${id}`,
         method: 'GET',
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         usePrefix: true
       });
       

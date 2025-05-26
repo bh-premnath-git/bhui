@@ -4,7 +4,7 @@ import { X } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store/"
 // import { setUnsavedChanges } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice"
-import { CATALOG_API_PORT } from "@/config/platformenv"
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import axios from "axios"
 
@@ -63,7 +63,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
     queryKey: dataSourceKeys.list(),
     queryFn: async ({ pageParam = 1 }) => {
       const data =await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/data_source/list/',
         usePrefix: true,
         method: 'GET',

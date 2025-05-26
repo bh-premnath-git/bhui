@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, X, Save, Loader } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { apiService } from '@/lib/api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +71,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
         try {
           const parameterType = type === 'pipeline' ? 'USER' : 'SPARK_SESSION';
           const response: any = await apiService.get({
-            portNumber: CATALOG_API_PORT,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: `/pipeline/pipeline-parameters/${id}/parameter_type/${parameterType}`,
             method: 'GET',
             usePrefix: true
@@ -128,7 +128,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
     if (parameter.pipeline_parameter_id) {
       try {
         await apiService.delete({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           url: `/pipeline/pipeline-parameter/${parameter.pipeline_parameter_id}`,
           method: 'DELETE',
           usePrefix: true
@@ -181,7 +181,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
 
           if (param.pipeline_parameter_id) {
             await apiService.put({
-              portNumber: CATALOG_API_PORT,
+              baseUrl: CATALOG_REMOTE_API_URL,
               method: 'PUT',
               url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
               data: payload,
@@ -189,7 +189,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
             });
           } else {
             await apiService.post({
-              portNumber: CATALOG_API_PORT,
+              baseUrl: CATALOG_REMOTE_API_URL,
               method: 'POST',
               url: '/pipeline/pipeline-parameter',
               data: payload,
@@ -213,7 +213,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
 
           if (param.pipeline_parameter_id) {
             await apiService.put({
-              portNumber: CATALOG_API_PORT,
+              baseUrl: CATALOG_REMOTE_API_URL,
               method: 'PUT',
               url: `/pipeline/pipeline-parameter/${param.pipeline_parameter_id}`,
               data: payload,
@@ -221,7 +221,7 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
             });
           } else {
             await apiService.post({
-              portNumber: CATALOG_API_PORT,
+              baseUrl: CATALOG_REMOTE_API_URL,
               method: 'POST',
               url: '/pipeline/pipeline-parameter',
               data: payload,

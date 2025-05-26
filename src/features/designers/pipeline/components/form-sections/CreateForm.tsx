@@ -69,8 +69,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
   const initialFormValues:any = useMemo(() => {
     const values = generateInitialValues(schema, initialValues,currentNodeId);
     
-    // Add specific initialization for Dedup form
-    if (schema?.title === 'Dedup') {
+    // Add specific initialization for Deduplicator form
+    if (schema?.title === 'Deduplicator') {
       return {
         keep: 'any',
         dedup_by: [''],
@@ -85,7 +85,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         repartition_type: 'repartition',
         repartition_value: '',
         override_partition: '',
-        repartition_expression: [],
+        repartition_expression: [{
+          expression: '',
+          sort_order: '',
+          order: 'asc'
+        }],
         limit: '',
         ...values
       };
@@ -555,6 +559,71 @@ console.log(initialFormValues,"initialFormValues")
         return acc;
       }
       
+      // Special handling for Aggregator fields
+      if (key === 'aggregations' && Array.isArray(value) && schema.title === 'Aggregator') {
+        // Filter out items where either target_column or expression is empty
+        const cleanedAggregations = value.filter(item => 
+          item.target_column?.trim() && item.expression?.trim()
+        );
+        
+        if (cleanedAggregations.length > 0) {
+          acc[key] = cleanedAggregations;
+        }
+        return acc;
+      }
+      
+      // Special handling for group_by in Aggregator
+      if (key === 'group_by' && Array.isArray(value) && schema.title === 'Aggregator') {
+        // Filter out empty group_by items
+        const cleanedGroupBy = value.filter(item => 
+          item.group_by?.trim()
+        );
+        
+        if (cleanedGroupBy.length > 0) {
+          acc[key] = cleanedGroupBy;
+        }
+        return acc;
+      }
+      
+      // Special handling for dedup_by in Deduplicator
+      if (key === 'dedup_by' && Array.isArray(value) && schema.title === 'Deduplicator') {
+        // Filter out empty dedup_by items
+        const cleanedDedupBy = value.filter(item => 
+          typeof item === 'string' ? item.trim() : item
+        );
+        
+        if (cleanedDedupBy.length > 0) {
+          acc[key] = cleanedDedupBy;
+        }
+        return acc;
+      }
+      
+      // Special handling for order_by in Deduplicator
+      if (key === 'order_by' && Array.isArray(value) && schema.title === 'Deduplicator') {
+        // Filter out items where column is empty
+        const cleanedOrderBy = value.filter(item => 
+          item.column?.trim()
+        );
+        
+        if (cleanedOrderBy.length > 0) {
+          acc[key] = cleanedOrderBy;
+        }
+        return acc;
+      }
+      
+      // Special handling for repartition_expression in Repartition
+      if (key === 'repartition_expression' && Array.isArray(value) && schema.title === 'Repartition') {
+        // Filter out items where expression is empty
+        const cleanedExpressions = value.filter(item => 
+          item.expression?.trim() && item.sort_order?.trim() && (item.order === 'asc' || item.order === 'desc')
+        );
+        
+        if (cleanedExpressions.length > 0) {
+          acc[key] = cleanedExpressions;
+        }
+        return acc;
+      }
+      
       // Handle other array fields
       if (Array.isArray(value)) {
         // Filter out empty array items
@@ -593,6 +662,24 @@ console.log(initialFormValues,"initialFormValues")
       return acc;
     }, {} as Record<string, any>);
 
+    // Validate required fields based on schema
+    if (Array.isArray(schema.required) && schema.required.length > 0) {
+      // Check if all required fields are present in cleanValues
+      const missingRequiredFields = schema.required.filter(field => {
+        // For array fields, check if they have at least one valid item
+        if (Array.isArray(cleanValues[field])) {
+          return cleanValues[field].length === 0;
+        }
+        // For other fields, check if they exist and are not empty
+        return !cleanValues[field];
+      });
+
+      if (missingRequiredFields.length > 0) {
+        console.error(`Missing required fields: ${missingRequiredFields.join(', ')}`);
+        return;
+      }
+    }
+
     // Additional validation for Joiner
     if (schema.title === 'Joiner' && !cleanValues.conditions?.length) {
       console.error('No valid join conditions found after cleaning');
@@ -606,6 +693,101 @@ console.log(initialFormValues,"initialFormValues")
       if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
         console.error('SchemaTransformation requires at least one valid derived field');
         return;
+      }
+    }
+    
+    // Specific validation for Aggregator
+    if (schema.title === 'Aggregator') {
+      // Check if aggregations array exists and has at least one valid item
+      if (!cleanValues.aggregations || !Array.isArray(cleanValues.aggregations) || cleanValues.aggregations.length === 0) {
+        console.error('Aggregator requires at least one aggregation');
+        return;
+      }
+      
+      // Check if each aggregation has both target_column and expression
+      const invalidAggregations = cleanValues.aggregations.filter(agg => 
+        !agg.target_column || !agg.expression || 
+        agg.target_column.trim() === '' || agg.expression.trim() === ''
+      );
+      
+      if (invalidAggregations.length > 0) {
+        console.error('All aggregations must have both target column and expression');
+        return;
+      }
+      
+      // Check if group_by array exists and has at least one valid item
+      if (!cleanValues.group_by || !Array.isArray(cleanValues.group_by) || cleanValues.group_by.length === 0) {
+        console.error('Aggregator requires at least one group by column');
+        return;
+      }
+    }
+    
+    // Specific validation for Deduplicator
+    if (schema.title === 'Deduplicator') {
+      // Check if keep is specified
+      if (!cleanValues.keep) {
+        console.error('Deduplicator requires a keep value');
+        return;
+      }
+      
+      // Check if dedup_by array exists and has at least one valid item
+      if (!cleanValues.dedup_by || !Array.isArray(cleanValues.dedup_by) || cleanValues.dedup_by.length === 0) {
+        console.error('Deduplicator requires at least one column to dedup by');
+        return;
+      }
+      
+      // If keep is first or last, order_by is required
+      if ((cleanValues.keep === 'first' || cleanValues.keep === 'last') && 
+          (!cleanValues.order_by || !Array.isArray(cleanValues.order_by) || cleanValues.order_by.length === 0)) {
+        console.error(`Deduplicator with keep=${cleanValues.keep} requires at least one order by column`);
+        return;
+      }
+    }
+    
+    // Specific validation for Repartition
+    if (schema.title === 'Repartition') {
+      // Check if repartition_type is specified
+      if (!cleanValues.repartition_type) {
+        console.error('Repartition requires a repartition type');
+        return;
+      }
+      
+      // Check if override_partition is specified
+      if (!cleanValues.override_partition) {
+        console.error('Repartition requires an override partition value');
+        return;
+      }
+      
+      // Validate based on repartition_type
+      switch (cleanValues.repartition_type) {
+        case 'repartition':
+        case 'coalesce':
+          // These types require repartition_value
+          if (!cleanValues.repartition_value && cleanValues.repartition_value !== 0) {
+            console.error(`Repartition type ${cleanValues.repartition_type} requires a repartition value`);
+            return;
+          }
+          break;
+          
+        case 'hash_repartition':
+        case 'repartition_by_range':
+          // These types require both repartition_value and repartition_expression
+          if (!cleanValues.repartition_value && cleanValues.repartition_value !== 0) {
+            console.error(`Repartition type ${cleanValues.repartition_type} requires a repartition value`);
+            return;
+          }
+          
+          if (!cleanValues.repartition_expression || !Array.isArray(cleanValues.repartition_expression) || 
+              cleanValues.repartition_expression.length === 0) {
+            console.error(`Repartition type ${cleanValues.repartition_type} requires at least one repartition expression`);
+            return;
+          }
+          break;
+          
+        default:
+          // Unknown repartition type
+          console.error(`Unknown repartition type: ${cleanValues.repartition_type}`);
+          return;
       }
     }
 
@@ -622,7 +804,7 @@ console.log(initialFormValues,"initialFormValues")
 
   return (
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
-      {/* {schema.title === 'Dedup' && renderDedupFields(control)} */}
+      {/* {schema.title === 'Deduplicator' && renderDeduplicatorFields(control)} */}
       <FormContent
         control={control}
         schema={schema}
@@ -803,12 +985,12 @@ const renderArrayFields = (
 
   return (
     <div className="space-y-4">
-      <label className="block font-medium mb-1">
+      {/* <label className="block font-medium mb-1">
         {section.split('_').map(word => 
           word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ')}
         {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
-      </label>
+      </label> */}
       
       {/* Headers */}
       <div className="flex justify-between gap-2">
@@ -848,7 +1030,7 @@ const renderArrayFields = (
                         renderInput={(params) => (
                           <Input
                             {...params}
-                            placeholder={`Enter ${itemKey}`}
+                            placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
                             required={requiredFields.includes(itemKey)}
                           />
                         )}
@@ -931,7 +1113,7 @@ const renderArrayFields = (
   );
 };
 
-const renderDedupFields = (control: any, schema: Schema) => {
+const renderDeduplicatorFields = (control: any, schema: Schema) => {
   const {watch} = useForm();
   const keepValue = watch('keep');
   const isOrderByRequired = ['first', 'last'].includes(keepValue);
@@ -974,10 +1156,10 @@ const renderDedupFields = (control: any, schema: Schema) => {
         )}
       />
 
-      {/* Dedup By Fields */}
+      {/* Deduplicator By Fields */}
       <div>
         <label className="block font-medium mb-1">
-          Dedup By <span className="text-red-500">*</span>
+          Deduplicator By <span className="text-red-500">*</span>
         </label>
         <div className="space-y-2">
           {dedupFields.map((field, index) => (

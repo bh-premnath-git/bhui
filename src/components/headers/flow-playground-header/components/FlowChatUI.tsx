@@ -15,6 +15,7 @@ import { RootState } from "@/store";
 import { MissingFieldsForm } from "./missing-fields-form";
 import { cn } from "@/lib/utils";
 import ai from '/assets/ai/ai.svg'; 
+import FlowChatPanel from "@/features/designers/flow/components/FlowChatPanel";
 
 interface FlowChatUIProps {
   imageSrc?: string; // Make image optional or provide default

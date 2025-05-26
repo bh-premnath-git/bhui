@@ -19,6 +19,7 @@ interface ValidationIndicatorProps {
     showTooltip: boolean;
     onTooltipEnter: () => void;
     onTooltipLeave: () => void;
+    type?: string;
 }
 
 export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
@@ -27,11 +28,11 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
     validationMessages,
     showTooltip,
     onTooltipEnter,
-    onTooltipLeave
+    onTooltipLeave,
+    type
 }) => {
     const getIndicatorColor = () => {
         const { isFlow } = useSelector((state: any) => state.buildPipeline);
-        console.log(data)
         if (isFlow) {
             if (data?.selectedData) return 'bg-green-500';
             else return 'bg-red-500';
@@ -200,6 +201,7 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                 </div>
                 <span className="text-black text-[8px]">{data.label}</span>
             </div>
+            <div className="text-black text-[8px]">{data?.type}</div>
         </div>
     );
 }; 

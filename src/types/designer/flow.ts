@@ -285,4 +285,7 @@ export interface FlowContextType {
   setFlowPipeline: React.Dispatch<React.SetStateAction<any | null>>;
   getPipelineDetails: (pipelineName: string | null) => any;
   setSelectedNode:any;
+  setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsSaved: React.Dispatch<React.SetStateAction<boolean>>;
+  setNodeFormData: React.Dispatch<React.SetStateAction<NodeFormData[]>>;
 }

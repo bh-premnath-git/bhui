@@ -154,6 +154,7 @@ interface bnPipelineContextProps {
     selectedNodeId: string | null;
     setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
     updatedSelectedNodeId: any
+    updateSetNode: (node: any, edges: any) => void
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -187,7 +188,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const { pipelineDtl,isFlow } = useSelector((state: RootState) => state.buildPipeline)
+    const { pipelineDtl, isFlow } = useSelector((state: RootState) => state.buildPipeline)
     const [isNodeFormOpen, setIsNodeFormOpen] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
@@ -363,7 +364,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (isFlow) {
             return;
         }
-        
+
         const intervalId = setInterval(async () => {
             if (hasUnsavedChanges) {
                 try {
@@ -487,26 +488,58 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         onNodesChange(sanitizedChanges);
         // setUnsavedChanges();
     }, [onNodesChange, dispatch, sanitizeNode]);
-
-    const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        setNodes(prevNodes =>
-            prevNodes.map(node => {
-                if (node.id === nodeId) {
-                    return {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            label: updatedData.data.label,
-                            source: updatedData.data.source,
-                            title: updatedData.data.title
-                        }
-                    };
-                }
-                return node;
-            })
-        );
+    const updateSetNode = (newNodes, newEdges) => {
+        console.log("Updating nodes:", newNodes);
+        
+        // Force a new array reference to ensure React detects the change
+        if (Array.isArray(newNodes)) {
+            setNodes([...newNodes]);
+        } else {
+            console.error("Invalid nodes data:", newNodes);
+            return;
+        }
+        
+        // Update edges if they exist
+        if (newEdges && Array.isArray(newEdges)) {
+            setEdges([...newEdges]);
+        }
+        
+        // Mark as having unsaved changes
         setUnsavedChanges();
-    }, [setSanitizedNodes, dispatch]);
+        
+        // Force a re-render by updating a timestamp
+        setHeaderUpdateTrigger(prev => prev + 1);
+    }
+    const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
+        console.log("Updating node:", nodeId, updatedData);
+        
+        // Ensure nodes is an array before mapping
+        if (!Array.isArray(nodes) || nodes.length === 0) {
+            console.error("Cannot update node: nodes array is empty or invalid");
+            return;
+        }
+        
+        // Create updated nodes array
+        const updatedNodes = nodes.map(node => {
+            if (node.id === nodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: updatedData.data.label,
+                        source: updatedData.data.source,
+                        title: updatedData.data.title
+                    }
+                };
+            }
+            return node;
+        });
+        
+        console.log("Updated nodes:", updatedNodes);
+        
+        // Use updateSetNode for consistent state management
+        updateSetNode(updatedNodes, edges);
+    }, [nodes, edges, updateSetNode]);
 
     const handleCenter = useCallback(() => {
         try {
@@ -1150,14 +1183,20 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         });
 
-        setNodes(prevNodes => [...prevNodes, ...newNodes]);
-        setEdges(prevEdges => [...prevEdges, ...newEdges]);
+        // Use updateSetNode for consistent state management
+        const updatedNodes = Array.isArray(nodes) ? [...nodes, ...newNodes] : [...newNodes];
+        const updatedEdges = Array.isArray(edges) ? [...edges, ...newEdges] : [...newEdges];
+        
+        console.log("Pasting nodes:", newNodes);
+        console.log("Updated nodes after paste:", updatedNodes);
+        
+        updateSetNode(updatedNodes, updatedEdges);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
             ...newFormStates
         }));
         setUnsavedChanges();
-    }, [copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, setSanitizedNodes, setEdges, setFormStates, dispatch]);
+    }, [nodes, edges, copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, updateSetNode, setFormStates]);
 
     const handleCut = useCallback(() => {
         const selectedNodes = nodes.filter(node => node.selected);
@@ -1171,30 +1210,42 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setCopiedEdges(selectedEdges);
 
         addNodeToHistory();
-        setSanitizedNodes(nds => nds.filter(node => !node.selected));
-        setEdges(eds => eds.filter(edge => !edge.selected));
-        setUnsavedChanges();
-    }, [nodes, edges, addNodeToHistory, setSanitizedNodes, setEdges, dispatch]);
+        
+        // Filter out selected nodes and edges
+        const updatedNodes = nodes.filter(node => !node.selected);
+        const updatedEdges = edges.filter(edge => !edge.selected);
+        
+        console.log("Cutting nodes, remaining:", updatedNodes);
+        
+        // Use updateSetNode for consistent state management
+        updateSetNode(updatedNodes, updatedEdges);
+    }, [nodes, edges, addNodeToHistory, updateSetNode]);
 
     const handleRedo = useCallback(() => {
         if (redoStack.length > 0) {
             const lastState = redoStack[redoStack.length - 1];
             setRedoStack((prev) => prev.slice(0, -1));
             setHistory((prev) => [...prev, { nodes, edges }]);
-            setSanitizedNodes(lastState.nodes);
-            setEdges(lastState.edges);
+            
+            console.log("Redoing to state:", lastState);
+            
+            // Use updateSetNode for consistent state management
+            updateSetNode(lastState.nodes, lastState.edges);
         }
-    }, [redoStack, nodes, edges]);
+    }, [redoStack, nodes, edges, updateSetNode]);
 
     const handleUndo = useCallback(() => {
         if (history.length > 0) {
             const lastState = history[history.length - 1];
             setHistory((prev) => prev.slice(0, -1));
             setRedoStack((prev) => [...prev, { nodes, edges }]);
-            setSanitizedNodes(lastState.nodes);
-            setEdges(lastState.edges);
+            
+            console.log("Undoing to state:", lastState);
+            
+            // Use updateSetNode for consistent state management
+            updateSetNode(lastState.nodes, lastState.edges);
         }
-    }, [history, nodes, edges]);
+    }, [history, nodes, edges, updateSetNode]);
 
     const handleLogsClick = useCallback(() => {
         setShowLogs(prev => !prev);  // Toggle logs visibility
@@ -1314,7 +1365,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     const updatedSelectedNodeId = useCallback(
         (nodeId: string, selectedType: string) => {
-            alert(2)
             console.log(selectedType, "selectedType")
             setNodes((prevNodes) =>
                 prevNodes.map((node) => {
@@ -1383,13 +1433,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         };
 
-        setNodes((prevNodes) => [...prevNodes, newNode]);
-        setUnsavedChanges();
+        // Create a new array with the new node, ensuring it works even if nodes is empty
+        const updatedNodes = Array.isArray(nodes) ? [...nodes, newNode] : [newNode];
+        console.log("Adding new node:", newNode);
+        console.log("Updated nodes array:", updatedNodes);
+        
+        // Use updateSetNode to ensure consistent state updates
+        updateSetNode(updatedNodes, edges);
 
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
+    }, [nodes, edges, reactFlowInstance, dispatch, handleNodeUpdate, updateSetNode]);
 
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;
@@ -1647,7 +1702,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsNodeFormOpen,
         selectedNodeId,
         setSelectedNodeId,
-        updatedSelectedNodeId
+        updatedSelectedNodeId,
+        updateSetNode
     }), [
         nodes,
         setSanitizedNodes,
@@ -1752,7 +1808,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsNodeFormOpen,
         selectedNodeId,
         setSelectedNodeId,
-        updatedSelectedNodeId
+        updatedSelectedNodeId,
+        updateSetNode
     ]);
 
     return (

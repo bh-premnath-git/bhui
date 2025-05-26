@@ -66,15 +66,15 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
         }
     };
 
-    const renderDedupFields = (control: any) => {
-        const { fields: dedupByFields, append: appendDedupBy, remove: removeDedupBy } = useFieldArray({
+    const renderDeduplicatorFields = (control: any) => {
+        const { fields: deduplicatorByFields, append: appendDeduplicatorBy, remove: removeDeduplicatorBy } = useFieldArray({
             control,
             name: 'dedup_by'
         });
 
         return (
             <div>
-                {dedupByFields.map((field, index) => (
+                {deduplicatorByFields.map((field, index) => (
                     <div key={field.id} className="flex gap-2 mb-2">
                         <FormField
                             control={control}
@@ -90,7 +90,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                         />
                         <button
                             type="button"
-                            onClick={() => removeDedupBy(index)}
+                            onClick={() => removeDeduplicatorBy(index)}
                             className="text-gray-500 hover:text-gray-700"
                         >
                             <span className="text-xl">×</span>
@@ -99,10 +99,10 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                 ))}
                 <Button
                     type="button"
-                    onClick={() => appendDedupBy('')}
+                    onClick={() => appendDeduplicatorBy('')}
                     className="text-green-600 font-bold"
                 >
-                    Add Dedup By
+                    Add Deduplicator By
                 </Button>
             </div>
         );

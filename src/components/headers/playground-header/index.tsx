@@ -46,6 +46,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
   const [moduleTypes] = useModules();
+  console.log(moduleTypes)
   // const activeModule = moduleTypes.find((type) => type.id === activeType);
   let flowNodes = moduleTypes.map((type) => {
     return {

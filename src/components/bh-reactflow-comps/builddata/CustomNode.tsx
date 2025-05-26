@@ -20,7 +20,7 @@ interface Schema {
     [key: string]: any;
 }
 
-export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates, setRunDialogOpen, setSelectedFormState, onDebugToggle, debuggedNodes, onSourceUpdate, pipelineDtl, setEdges, style, selectedSchema, handleSearchResultClick, onNodeDoubleClick, onImageClick }: {
+export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,  onDebugToggle, debuggedNodes, onSourceUpdate, style, selectedSchema, handleSearchResultClick, onNodeDoubleClick, onImageClick,type }: {
     data: any;
     id: string;
     setNodes: any;
@@ -40,11 +40,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     handleSearchResultClick: (data: any) => void;
     onNodeDoubleClick?: (nodeId: string) => void;
     onImageClick?: (nodeId: string) => void;
+    type?: any;
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleValue, setTitleValue] = useState(data.title);
-    const edges = useEdges();
     const reactFlowInstance = useReactFlow();
     const [showInfo, setShowInfo] = useState(false);
     const [toolbarTimeout, setToolbarTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -56,12 +56,10 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [isSelected, setIsSelected] = useState(false);
     const [titleError, setTitleError] = useState<string | null>(null);
     const { selectNode, revertOrSaveData, updateNodeDimensions, setSelectedNode } = useFlow();
-    const { isNodeFormOpen,
+    const { 
         setIsNodeFormOpen,
-        selectedNodeId,
         setSelectedNodeId, nodes } = usePipelineContext();
     const { isFlow } = useSelector((state: any) => state.buildPipeline);
-
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -164,6 +162,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         if (debuggedNodes.has(id)) {
             onDebugToggle(id, data.title);
         }
+        
 
     }, [id, setNodes, reactFlowInstance, debuggedNodes, onDebugToggle, data.title]);
 
@@ -370,9 +369,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     onImageClick={(e: React.MouseEvent) => {
                         if (onImageClick) {
                             e.stopPropagation();
-                            console.log(data)
+                            console.log(nodes)
                             onImageClick(id);
-                            let node = nodes.find((n) => n.data.id == data.id)
+                            let node = nodes.find((n) => n.id == id)
+                            console.log(node)
+                            console.log(data?.id)
                             selectNode(data?.id?.toString());
                             setSelectedNode(node)
                             setSelectedNodeId(data?.id)
@@ -400,6 +401,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 showTooltip={showValidationTooltip}
                 onTooltipEnter={() => setShowValidationTooltip(true)}
                 onTooltipLeave={() => setShowValidationTooltip(false)}
+                type={type}
             />
 
             <NodeHandles data={data} />

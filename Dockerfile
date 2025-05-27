@@ -44,7 +44,6 @@ RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
     else \
         echo "AWS credentials not provided. Skipping CodeArtifact configuration."; \
     fi && \
-RUN npm install --force
 # Copy the entire application
 COPY . .
 

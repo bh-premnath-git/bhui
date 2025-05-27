@@ -38,7 +38,6 @@ export const CustomNode = memo(
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nodeRef = useRef<HTMLDivElement>(null);
     const updateNodeInternals = useUpdateNodeInternals();
-    
     // Track node dimensions for responsive layout
     useEffect(() => {
       if (nodeRef.current) {

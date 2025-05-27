@@ -303,7 +303,9 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const selectNode = useCallback(
     (nodeId: string) => {
+      console.log(nodes)
       const node = nodes.find((n) => n.id === nodeId);
+      console.log(nodeId)
       setSelectedNode(node || null);
     },
     [nodes]
@@ -338,26 +340,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   );
 
 
-  const updatedSelectedNodeId = useCallback(
-    (nodeId: string, selectedType: string) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          const selectionId = node.id === nodeId;
-          return selectionId
-            ? {
-              ...node,
-              data: {
-                ...node.data,
-                type: selectedType,
-                selectedData: selectedType,
-              },
-            }
-            : node;
-        })
-      );
-    },
-    []
-  );
+  
 
   const revertOrSaveData = useCallback(
     (nodeId: string, save: boolean) => {
@@ -471,7 +454,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const updateNodeDependencies = useCallback(() => {
     if (!selectedFlowId) return;
     setNodeFormData(currentFormData => {
-      const updatedFormData = [...currentFormData];
+      let updatedFormData = [...currentFormData];
 
       // Create a map of nodeId to task_id for quick lookup
       const nodeToTaskIdMap = new Map();
@@ -481,11 +464,18 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // First, reset all depends_on arrays
-      updatedFormData.forEach(item => {
-        if (item.formData && item.formData.depends_on) {
-          item.formData.depends_on = [];
+      // First, reset all depends_on arrays by creating new formData objects
+      updatedFormData = updatedFormData.map((item: any) => {
+        if (item.formData && item.formData?.depends_on) {
+          return {
+            ...item,
+            formData: {
+              ...item.formData,
+              depends_on: []
+            }
+          };
         }
+        return item;
       });
 
       // Then update each node's dependencies based on incoming edges
@@ -494,20 +484,35 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         if (targetNodeIndex !== -1) {
           const sourceTaskId = nodeToTaskIdMap.get(edge.source);
           if (sourceTaskId) {
-            // Ensure we have a formData object
+            // Ensure we have a formData object with depends_on array
             if (!updatedFormData[targetNodeIndex].formData) {
-              updatedFormData[targetNodeIndex].formData = {};
-            }
-
-            // Ensure we have a depends_on array
-            if (!updatedFormData[targetNodeIndex].formData.depends_on) {
-              updatedFormData[targetNodeIndex].formData.depends_on = [];
+              // Create a new object with formData
+              updatedFormData[targetNodeIndex] = {
+                ...updatedFormData[targetNodeIndex],
+                formData: { depends_on: [] }
+              };
+            } else if (!updatedFormData[targetNodeIndex].formData.depends_on) {
+              // Create a new formData object with depends_on array
+              updatedFormData[targetNodeIndex] = {
+                ...updatedFormData[targetNodeIndex],
+                formData: {
+                  ...updatedFormData[targetNodeIndex].formData,
+                  depends_on: []
+                }
+              };
             }
 
             // Add the dependency if it doesn't exist already
             const depends_on = updatedFormData[targetNodeIndex].formData.depends_on;
             if (!depends_on.includes(sourceTaskId)) {
-              updatedFormData[targetNodeIndex].formData.depends_on = [...depends_on, sourceTaskId];
+              // Create a new formData object to avoid modifying read-only properties
+              updatedFormData[targetNodeIndex] = {
+                ...updatedFormData[targetNodeIndex],
+                formData: {
+                  ...updatedFormData[targetNodeIndex].formData,
+                  depends_on: [...depends_on, sourceTaskId]
+                }
+              };
             }
           }
         }
@@ -644,6 +649,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   // Added effect to handle flow data loading
   useEffect(() => {
     if (selectedFlowId) {
+      // alert()
       const savedFlow = loadFlow(selectedFlowId);
       setNodes(savedFlow ? savedFlow.nodes : []);
       setEdges(savedFlow ? savedFlow.edges : []);
@@ -751,7 +757,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     addNode,
     updateNodeMeta,
     setSelectedFlowId: setSelectedFlowIdState,
-    updatedSelectedNodeId,
     revertOrSaveData,
     selectedNodeConnection,
     selectedNodeOptimized,
@@ -770,6 +775,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     flowPipeline,
     setFlowPipeline,
     getPipelineDetails,
+    setSelectedNode,
+    setIsSaving,
+    setIsSaved,
+    setNodeFormData
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

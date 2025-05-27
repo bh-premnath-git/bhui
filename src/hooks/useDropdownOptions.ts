@@ -46,14 +46,15 @@ export const useDropdownOptions = (
       if (id && path !== 'pipeline') {
         url = `/${path}/${id}/${connections}`;
       } else {
-        url = `/${path}/${connections}/?is_pipeline_parameter_required=true`;
+        url = `/${path}/${connections}/`;
       }
 
       const data = await apiService.get({
         url,
         baseUrl: CATALOG_REMOTE_API_URL,
         method: 'GET',
-        usePrefix: true
+        usePrefix: true,
+        params: {is_pipeline_parameter_required:true,limit: 1000},
       });
 
       // 6. If path === 'pipeline', return pipeline names specifically

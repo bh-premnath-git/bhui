@@ -1,6 +1,7 @@
-import {flowSchema as schema} from "@bh-ai/schemas";
+import { flowSchema as schema } from "@bh-ai/schemas";
 import { convertLiteralStrings } from "./formUtils";
 import { updateFlowDefinition } from "@/store/slices/designer/flowSlice";
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
 /**
  * Updates the flow definition on the server
@@ -10,10 +11,13 @@ export const updateFlowDefinitionOnServer = (
   selectedFlow: any,
   dispatch: any,
   flowConfigMap: Record<string, any>,
-  nodeFormData: any[]
+  nodeFormData: any[],
+  nodes?: any[],
+  edges?: any[]
 ) => {
-  console.log("Inside updateFlowDefinitionOnServer");
-  
+  console.log("Inside updateFlowDefinitionOnServer", nodeFormData);
+  console.log(nodes, "curr")
+
   if (!selectedFlowId || !selectedFlow?.flow_id) {
     console.error('Missing required flow data:', { selectedFlowId, selectedFlow });
     return;
@@ -25,7 +29,12 @@ export const updateFlowDefinitionOnServer = (
     return;
   }
 
-  const flowStructure = JSON.parse(raw);
+  let flowStructure: any = JSON.parse(raw);
+  delete flowStructure.nodes; // Remove flow_id from flowStructure
+  delete flowStructure.edges; // Remove flow_id from flowStructure
+  // flowStructure.nodes = nodes || flowStructure.nodes || [];
+  // flowStructure.edges = edges || flowStructure.edges || [];
+  flowStructure.nodeFormData = nodeFormData || flowStructure.nodeFormData || [];
   const formData = nodeFormData.length
     ? nodeFormData
     : flowStructure.nodeFormData;
@@ -37,20 +46,33 @@ export const updateFlowDefinitionOnServer = (
   // Log form data for debugging
   console.log("Processing form data:", formData);
 
-  const tasks = formData.map((item: any) => {
+  const tasksList = formData.map((item: any) => {
     const copy = JSON.parse(JSON.stringify(item.formData));
     if (!Array.isArray(copy.parameters)) copy.parameters = [];
     return convertLiteralStrings(copy);
   });
+  let tasks = [];
+  console.log("Processing form data:", tasks);
+  console.log("Processing form data:", nodes);
 
+  // let currentTaskList=tasks.map((task: any) => {
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = 0; j < tasksList.length; j++) {
+      if (tasksList[j].task_id === nodes[i].data?.formData?.task_id) {
+        tasks.push(tasksList[j]);
+        break; // Exit inner loop once a match is found
+      }
+    }
+  }
+  console.log(tasks, "currentTaskList");
   // Get flow config parameters safely
   let parameters = [];
   try {
-    if (flowConfigMap && 
-        typeof flowConfigMap === 'object' && 
-        flowConfigMap.flowconfig && 
-        typeof flowConfigMap.flowconfig === 'object' && 
-        flowConfigMap.flowconfig.flow_config) {
+    if (flowConfigMap &&
+      typeof flowConfigMap === 'object' &&
+      flowConfigMap.flowconfig &&
+      typeof flowConfigMap.flowconfig === 'object' &&
+      flowConfigMap.flowconfig.flow_config) {
       parameters = flowConfigMap.flowconfig.flow_config;
     }
   } catch (error) {
@@ -70,7 +92,7 @@ export const updateFlowDefinitionOnServer = (
   // Create the full payload with the required structure
   const flowDefinitionPayload = {
     flow_id: String(selectedFlow.flow_id),
-    flow_json: { flowJson, flowStructure }
+    flow_json: { flowJson }
   };
 
   // Log the full payload being sent

@@ -240,7 +240,6 @@ export interface FlowContextType {
   cloneNode: (nodeId: string) => void;
   renameNode: (nodeId: string, newLabel: string) => void;
   showNodeInfo: (nodeId: string) => void;
-  updatedSelectedNodeId: (newNodeId: string, data: string) => void;
   selectNode: (nodeId: string) => void;
   updateNodeFormData: (nodeId: string, formData: Record<string, any>) => void;
   getNodeFormData: (nodeId: string) => Record<string, any> | undefined;
@@ -285,4 +284,8 @@ export interface FlowContextType {
   flowPipeline: any | null;
   setFlowPipeline: React.Dispatch<React.SetStateAction<any | null>>;
   getPipelineDetails: (pipelineName: string | null) => any;
+  setSelectedNode:any;
+  setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsSaved: React.Dispatch<React.SetStateAction<boolean>>;
+  setNodeFormData: React.Dispatch<React.SetStateAction<NodeFormData[]>>;
 }

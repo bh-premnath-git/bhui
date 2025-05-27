@@ -11,13 +11,13 @@ const MainContentInternal = () => {
   const { isExpanded } = useSidebar(); 
   return (
     <div className={cn(
-      "flex-1 flex flex-col transition-all duration-300 overflow-hidden",
+      "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
       isExpanded ? "ml-64" : "ml-20",
     )}>
-      <div className="flex-shrink-0"> 
+      <div className="flex-shrink-0 mt-10"> 
         <Header />
       </div>
-      <main className="flex-1 p-2 mt-10 overflow-auto h-[calc(100vh-64px)] "> 
+      <main className="flex-1 relative overflow-auto h-[calc(100vh-64px)] "> 
         <Outlet />
       </main>
     </div>

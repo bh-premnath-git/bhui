@@ -1,5 +1,5 @@
 # Use latest stable Node.js on Debian
-FROM node:current-bullseye
+FROM node:current-bullseye  AS build-stage
 
 # Install curl, unzip, and AWS CLI v2
 RUN apt-get update && \
@@ -28,9 +28,11 @@ ARG AWS_REGION=us-east-1
 
 # Install dependencies with or without CodeArtifact
 RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
+        echo "Configuring AWS credentials for CodeArtifact..." && \
         aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" && \
         aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" && \
         aws configure set region "$AWS_REGION" && \
+        echo "Fetching CodeArtifact authorization token..." && \
         TOKEN=$(aws codeartifact get-authorization-token \
             --domain bighammer \
             --domain-owner 058264070106 \
@@ -39,9 +41,10 @@ RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
         echo "registry=https://bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/" > .npmrc && \
         echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:always-auth=true" >> .npmrc && \
         echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=${TOKEN}" >> .npmrc; \
+    else \
+        echo "AWS credentials not provided. Skipping CodeArtifact configuration."; \
     fi && \
-    npm install --force
-
+RUN npm install --force
 # Copy the entire application
 COPY . .
 

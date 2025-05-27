@@ -157,17 +157,17 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         </DialogHeader>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 shrink-0">
+        <div className=" shrink-0">
           <div className="flex">
             {['Reader Options', 'Schema'].map((label, index) => (
               <button
                 key={label}
                 onClick={() => handleClick(index)}
                 className={`
-                  px-4 py-1.5 text-sm font-medium
+                  p-1.5 text-sm font-medium
                   ${selected === index
                     ? 'bg-black text-white border-b-2 border-black rounded-t'
-                    : 'text-gray-600 border-b-2 border-transparent hover:border-gray-300'
+                    : 'text-gray-600 border-b-2 border-transparent '
                   }
                   transition-all duration-200
               `}

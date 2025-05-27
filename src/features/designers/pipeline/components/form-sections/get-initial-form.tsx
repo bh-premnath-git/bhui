@@ -131,7 +131,7 @@ console.log(initialValues,"initialValues")
         repartition_expression: initialValues?.repartition_expression || [{
           expression: '',
           sort_order: '',
-          order: 0
+          order: 'asc'
         }],
         limit: initialValues?.limit || ''
       };
@@ -209,7 +209,7 @@ console.log(initialValues,"initialValues")
         pattern: initialValues.pattern || '',
       };
 
-    case 'Dedup':
+    case 'Deduplicator':
       return {
         ...baseValues,
         keep: initialValues.keep || "any",

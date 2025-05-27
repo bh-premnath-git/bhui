@@ -88,7 +88,7 @@
     
     {
       "ui_properties": {
-        "module_name": "Dedup",
+        "module_name": "Deduplicator",
         "color": "#614EA7",
         "icon": "/assets/buildPipeline/squre/5.svg",
         "ports": {

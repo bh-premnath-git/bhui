@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from './api/api-service';
 import { getNodeIcon, getNodePorts } from './transformationUtils';
+import { NodeFormData } from '@/types/designer/flow';
+import { useModules } from '@/hooks/useModules';
 
 
 // Query keys
@@ -74,12 +76,12 @@ export interface UINode extends Node {
 const generateUniqueTitle = (type: string, existingTitles: Set<string>): string => {
     let counter = 1;
     let title = type;
-    
+
     while (existingTitles.has(title)) {
         title = `${type}${counter}`;
         counter++;
     }
-    
+
     existingTitles.add(title);
     return title;
 };
@@ -89,6 +91,250 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
 // Cache for data source details to avoid redundant API calls
 const dataSourceCache = new Map<string, any>();
 
+/**
+ * Converts flow.json format to ReactFlow nodes and edges
+ * @param flowJson The flow.json object from flow?.flow_definition?.flow_json
+ * @returns An object containing nodes, edges, and nodeFormData arrays
+ */
+export const convertFlowJsonToReactFlow = (flowJson: any,moduleTypes:any): { nodes: Node[], edges: Edge[], nodeFormData: NodeFormData[] } => {
+    // Handle case where flowJson might be a string
+    let parsedFlowJson = flowJson;
+    if (typeof flowJson === 'string') {
+        try {
+            parsedFlowJson = JSON.parse(flowJson);
+        } catch (error) {
+            console.error('Error parsing flow JSON string:', error);
+            return { nodes: [], edges: [], nodeFormData: [] };
+        }
+    }
+
+    if (!parsedFlowJson || !parsedFlowJson.tasks || !Array.isArray(parsedFlowJson.tasks)) {
+        console.error('Invalid flow JSON structure:', parsedFlowJson);
+        return { nodes: [], edges: [], nodeFormData: [] };
+    }
+
+    // Use the parsed flow JSON for the rest of the function
+    flowJson = parsedFlowJson;
+
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    const nodeFormData: NodeFormData[] = [];
+
+    // Track node positions to avoid overlaps
+    let xPosition = 50;
+    let yPosition = 100;
+    const xOffset = 250; // Horizontal spacing between nodes
+    const yOffset = 150; // Vertical spacing between nodes
+
+    // Map to store task_id to node_id mapping
+    const taskToNodeMap = new Map<string, string>();
+
+    // First pass: Create nodes for all tasks
+    flowJson.tasks.forEach((task: any, index: number) => {
+        // Generate a unique node ID based on task type and timestamp
+        const timestamp = Date.now();
+        const nodeType = task.type || 'Unknown';
+        const nodePrefix = getNodePrefix(nodeType);
+        const nodeId = `${nodePrefix}_${task.task_id}_${timestamp}`;
+
+        // Store mapping from task_id to node_id for creating edges later
+        taskToNodeMap.set(task.task_id, nodeId);
+
+        // Determine node position
+        const position = {
+            x: xPosition + (index % 3) * xOffset,
+            y: yPosition + Math.floor(index / 3) * yOffset
+        };
+
+        // Process parameters if they exist
+        let processedTask = { ...task };
+        if (task.parameters && Array.isArray(task.parameters) && task.parameters.length > 0) {
+            // Convert parameters array to key-value pairs in the task object
+            task.parameters.forEach((param: any) => {
+                if (param.key && param.value !== undefined) {
+                    processedTask[param.key] = param.value;
+                }
+            });
+        }
+        console.log(processedTask)
+        // Create the node with structure matching flowmode.json
+        const node: Node = {
+            id: nodeId,
+            type: 'custom',
+            position,
+            data: {
+                label: nodePrefix,
+                icon: getNodeIconForOperator(nodeType),
+                ports: getNodePortsForOperator(nodeType),
+                id:getMetaById(nodePrefix,moduleTypes),
+                meta: getMeta(nodePrefix,moduleTypes),
+                requiredFields: [],
+                selectedData: nodeType,
+                type: nodeType,
+                formData: processedTask,
+                title: nodePrefix,
+                status: "ready",
+                tempSave: false
+            }
+        };
+
+        nodes.push(node);
+
+        // Create node form data
+        nodeFormData.push({
+            nodeId,
+            formData: {
+                ...processedTask,
+                type: nodeType
+            }
+        });
+    });
+
+    // Create a sequential flow if no dependencies are specified
+    // This will connect nodes in the order they appear in the tasks array
+    const nodeIds = Array.from(nodes.map(node => node.id));
+
+    // If we have dependencies, use them to create edges
+    let hasExplicitDependencies = false;
+
+    // Second pass: Create edges based on depends_on relationships
+    flowJson.tasks.forEach((task: any) => {
+        if (task.depends_on && Array.isArray(task.depends_on) && task.depends_on.length > 0) {
+            hasExplicitDependencies = true;
+            const targetNodeId = taskToNodeMap.get(task.task_id);
+
+            if (!targetNodeId) {
+                console.warn(`Target node not found for task_id: ${task.task_id}`);
+                return;
+            }
+
+            // Create edges for each dependency
+            task.depends_on.forEach((sourceTaskId: string, index: number) => {
+                const sourceNodeId = taskToNodeMap.get(sourceTaskId);
+
+                if (!sourceNodeId) {
+                    console.warn(`Source node not found for task_id: ${sourceTaskId}`);
+                    return;
+                }
+
+                // Create edge
+                const edge: Edge = {
+                    id: `reactflow__edge-${sourceNodeId}output-0-${targetNodeId}input-0`,
+                    source: sourceNodeId,
+                    target: targetNodeId,
+                    sourceHandle: 'output-0',
+                    targetHandle: 'input-0'
+                };
+
+                edges.push(edge);
+            });
+        }
+    });
+
+    // If no explicit dependencies were found, create a sequential flow
+    if (!hasExplicitDependencies && nodeIds.length > 1) {
+        for (let i = 0; i < nodeIds.length - 1; i++) {
+            const edge: Edge = {
+                id: `reactflow__edge-${nodeIds[i]}output-0-${nodeIds[i + 1]}input-0`,
+                source: nodeIds[i],
+                target: nodeIds[i + 1],
+                sourceHandle: 'output-0',
+                targetHandle: 'input-0'
+            };
+
+            edges.push(edge);
+        }
+    }
+
+    return { nodes, edges, nodeFormData };
+};
+
+/**
+ * Gets the appropriate node prefix based on operator type
+ */
+const getNodePrefix = (operatorType: string): string => {
+    console.log(operatorType)
+    const prefixMap: { [key: string]: string } = {
+        'S3KeySensor': 'Sensor',
+        'HttpSensor': 'Sensor',
+        'BashOperator': 'Custom',
+        'EmailOperator': 'Alert',
+        'EmrAddStepsOperator': 'AWS',
+        'EmrCreateJobFlowOperator': 'AWS',
+        'EmrTerminateJobFlowOperator': 'AWS',
+        'SFTPOperator': 'Transfer',
+        'SFTPToS3Operator': 'Transfer',
+        'SimpleHttpOperator': 'API'
+    };
+    console.log(prefixMap[operatorType])
+    return prefixMap[operatorType] || 'Custom';
+};
+
+
+/**
+ * Gets the appropriate icon for an operator type
+ */
+const getNodeIconForOperator = (operatorType: string): string => {
+    const iconMap: { [key: string]: string } = {
+        'S3KeySensor': '/assets/flow/Sensor.svg',
+        'HttpSensor': '/assets/flow/Sensor.svg',
+        'BashOperator': '/assets/flow/Other.svg',
+        'EmailOperator': '/assets/flow/Notify.svg',
+        'EmrAddStepsOperator': '/assets/flow/EMR.svg',
+        'EmrCreateJobFlowOperator': '/assets/flow/EMR.svg',
+        'EmrTerminateJobFlowOperator': '/assets/flow/EMR.svg',
+        'SFTPOperator': '/assets/flow/Transfer.svg',
+        'SFTPToS3Operator': '/assets/flow/Transfer.svg',
+        'SimpleHttpOperator': '/assets/flow/API.svg'
+    };
+
+    return iconMap[operatorType] || '/assets/flow/Custom.svg';
+};
+
+
+/**
+ * Gets the appropriate ports configuration for an operator type
+ */
+const getNodePortsForOperator = (operatorType: string): { inputs: number; outputs: number; maxInputs: number } => {
+    // Default ports configuration
+    const defaultPorts = { inputs: 1, outputs: 1, maxInputs: 1 };
+
+    const portsMap: { [key: string]: { inputs: number; outputs: number; maxInputs: number } } = {
+        'S3KeySensor': { inputs: 0, outputs: 1, maxInputs: 1 },
+        'HttpSensor': { inputs: 0, outputs: 1, maxInputs: 1 },
+        'EmailOperator': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'BashOperator': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'EmrAddStepsOperator': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'EmrCreateJobFlowOperator': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'EmrTerminateJobFlowOperator': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'SFTPOperator': { inputs: 1, outputs: 0, maxInputs: 1 },
+        'SFTPToS3Operator': { inputs: 1, outputs: 0, maxInputs: 1 }
+    };
+
+    return portsMap[operatorType] || defaultPorts;
+};
+
+const getMeta = (operatorType: string,moduleTypes) => {
+    let node = moduleTypes.find((type) => type.label.toLowerCase() === operatorType.toLowerCase());
+    console.log(node)
+
+    return {
+            type: node?.type,
+            moduleInfo: {
+                color: node?.color,
+                icon: node?.icon,
+                label: node?.label,
+            },
+            properties: node.operators.map((op) => op.properties),
+            description: node?.description,
+            fullyOptimized: false,
+    }
+}
+const getMetaById = (operatorType: string,moduleTypes) => {
+        let node = moduleTypes.find((type) => type.label.toLowerCase() === operatorType.toLowerCase());
+return node?.id
+}
+
 export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpdate: (sourceData: any) => void) => {
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -96,7 +342,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     let yPosition = 100;
     const yOffset = -117;
     console.log(pipelineJson, "pipelineJson");
-    
+
     // Track existing titles to ensure uniqueness
     const existingTitles = new Set<string>();
     console.log(pipelineJson);
@@ -104,10 +350,10 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     // Helper function to resolve references
     const resolveRef = (ref: string) => {
         if (!ref || typeof ref !== 'string' || !ref.startsWith('#/')) return null;
-        
+
         const path = ref.substring(2).split('/');
         let result = pipelineJson;
-        
+
         for (const segment of path) {
             if (result && result[segment] !== undefined) {
                 result = result[segment];
@@ -115,20 +361,20 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 return null;
             }
         }
-        
+
         return result;
     };
 
     // Track processed sources to avoid duplicates
     const processedSources = new Set<string>();
-    
+
     // Process transformations
     xPosition += 130;
     const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
     let sourceIndex = 0;
 
     console.log("Starting to process transformations:", pipelineJson.transformations);
-    
+
     // First, process Reader transformations from the transformations array
     for (const transform of pipelineJson.transformations) {
         if (transform.transformation === 'Reader') {
@@ -137,23 +383,23 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             if (sourceData && sourceData.$ref) {
                 sourceData = resolveRef(sourceData.$ref);
             }
-            
+
             // Resolve connection reference if it exists
             let connection = sourceData?.connection;
             if (connection && connection.$ref) {
                 connection = resolveRef(connection.$ref);
             }
-            
+
             // Skip if this source has already been processed
             const sourceName = sourceData?.name || transform.name;
             if (processedSources.has(sourceName)) continue;
             processedSources.add(sourceName);
-            
+
             try {
                 // Check if we already have this data source in cache
                 const dataSourceId = sourceData?.data_src_id || '';
                 let sourceDetails: any;
-                
+
                 if (dataSourceId && dataSourceCache.has(dataSourceId)) {
                     // Use cached data
                     sourceDetails = dataSourceCache.get(dataSourceId);
@@ -169,7 +415,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                             errorMessage: 'Failed to fetch source details'
                         },
                     });
-                    
+
                     // Cache the result for future use
                     dataSourceCache.set(dataSourceId, sourceDetails);
                     console.log(`Fetched and cached data for source ID: ${dataSourceId}`);
@@ -178,7 +424,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     sourceDetails = { data_src_name: sourceName };
                     console.log('No data_src_id provided, using default values');
                 }
-                
+
                 if (handleSourceUpdate) {
                     const nodeId = `Reader_${sourceIndex + 1}`;
                     const sourceUpdateData = {
@@ -204,17 +450,17 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                             }
                         }
                     };
-                    
+
                     handleSourceUpdate(sourceUpdateData);
                 }
-                
+
                 const nodeTitle = sourceName;
                 existingTitles.add(nodeTitle);
-                
+
                 const nodeId = `Reader_${sourceIndex + 1}`;
                 transformationNodes.set(transform.name, nodeId);
                 console.log(`Mapped Reader transformation: ${transform.name} -> ${nodeId}`);
-                
+
                 nodes.push({
                     id: nodeId,
                     type: 'custom',
@@ -251,7 +497,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     width: 56,
                     height: 72
                 });
-                
+
                 sourceIndex++;
             } catch (error) {
                 console.error(`Error processing Reader transformation:`, error);
@@ -264,17 +510,17 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     const nonReaderWriterTransformations = pipelineJson.transformations.filter(
         (t: any) => t.transformation !== 'Reader' && t.transformation !== 'Writer' && t.transformation !== 'Target'
     );
-    
+
     // Create a dependency map to track which transformations depend on which
     const dependencyMap = new Map<string, string[]>();
-    
+
     // Add Reader transformations to the dependency map
     pipelineJson.transformations.forEach((transform: any) => {
         if (transform.transformation === 'Reader') {
             dependencyMap.set(transform.name, []);
         }
     });
-    
+
     // Add non-Reader, non-Writer transformations to the dependency map
     nonReaderWriterTransformations.forEach((transform: any) => {
         if (transform.dependent_on && Array.isArray(transform.dependent_on)) {
@@ -283,65 +529,65 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             dependencyMap.set(transform.name, []);
         }
     });
-    
+
     // Sort transformations based on dependencies using a topological sort
     // This ensures that transformations appear in the correct dependency order
     const sortedTransformations: any[] = [];
     const visited = new Set<string>();
     const temp = new Set<string>();
-    
+
     // Topological sort function to handle dependency chains
     const visit = (transformName: string) => {
         // If we've already processed this node, skip it
         if (visited.has(transformName)) return;
-        
+
         // If we're currently processing this node, we have a cycle
         if (temp.has(transformName)) {
             console.warn(`Dependency cycle detected involving ${transformName}`);
             return;
         }
-        
+
         // Mark the node as being processed
         temp.add(transformName);
-        
+
         // Process all dependencies first
         const dependencies = dependencyMap.get(transformName) || [];
         for (const dependency of dependencies) {
             visit(dependency);
         }
-        
+
         // Mark the node as processed
         temp.delete(transformName);
         visited.add(transformName);
-        
+
         // Add the transformation to the sorted list
         // Skip Reader transformations as they're handled separately
         const transform = pipelineJson.transformations.find(
-            (t: any) => t.name === transformName && 
-            t.transformation !== 'Reader' && 
-            t.transformation !== 'Writer' && 
-            t.transformation !== 'Target'
+            (t: any) => t.name === transformName &&
+                t.transformation !== 'Reader' &&
+                t.transformation !== 'Writer' &&
+                t.transformation !== 'Target'
         );
         if (transform) {
             sortedTransformations.push(transform);
         }
     };
-    
+
     // Process all transformations
     for (const transform of nonReaderWriterTransformations) {
         if (!visited.has(transform.name)) {
             visit(transform.name);
         }
     }
-    
+
     console.log("Sorted transformations:", sortedTransformations.map((t: any) => t.name));
-    
+
     // Process non-Reader, non-Writer transformations in sorted order
     // First pass: create all nodes
     for (const transform of sortedTransformations) {
         const type = transform.transformation;
         const nodeId = `${type}_${nodes.length + 1}`;
-        
+
         // Use the original transformation name if it exists
         const nodeTitle = transform.name || generateUniqueTitle(type, existingTitles);
         transformationNodes.set(transform.name, nodeId);
@@ -369,32 +615,32 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
         xPosition += 130;
     }
-    
+
     // Log the complete transformation nodes map for debugging
     console.log("Complete transformation nodes map:");
     transformationNodes.forEach((nodeId, transformName) => {
         console.log(`${transformName} -> ${nodeId}`);
     });
-    
+
     // Second pass: create all edges after all nodes have been created
     // This ensures that all node IDs are available in the transformationNodes map
     // Use the sorted transformations to maintain the correct order
     for (const transform of sortedTransformations) {
         // Get the node ID for this transformation
         const nodeId = transformationNodes.get(transform.name);
-        
+
         if (!nodeId) continue; // Skip if node ID not found
-        
+
         // Create edges based on dependencies
         if (transform.dependent_on && Array.isArray(transform.dependent_on)) {
             console.log(`Creating edges for ${transform.name} with dependencies:`, transform.dependent_on);
-            
+
             transform.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
-                
+
                 if (sourceNodeId) {
                     console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to ${transform.name} (${nodeId})`);
-                    
+
                     edges.push({
                         source: sourceNodeId,
                         sourceHandle: 'output-0',
@@ -415,33 +661,33 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     const writerTransformation = pipelineJson.transformations.find(
         (t: any) => t.transformation === 'Writer' || t.transformation === 'Target'
     );
-    
+
     if (writerTransformation) {
         const targetId = `Target_${nodes.length + 1}`;
         const targetTitle = writerTransformation.name || generateUniqueTitle('Target', existingTitles);
         transformationNodes.set(writerTransformation.name, targetId);
         console.log(`Mapped Target transformation: ${writerTransformation.name} -> ${targetId}`);
-        
+
         // Resolve target reference if it exists
         let targetData = writerTransformation.target || writerTransformation;
         if (targetData && targetData.$ref) {
             targetData = resolveRef(targetData.$ref);
         }
-        
+
         // If targets is an array, use the first target
         const targets = pipelineJson.targets || {};
         if (Array.isArray(targets) && targets.length > 0) {
             targetData = targets[0];
         }
-        
+
         // Resolve connection reference if it exists
         let connection = targetData?.connection;
         if (connection && connection.$ref) {
             connection = resolveRef(connection.$ref);
         }
-        
+
         console.log(writerTransformation, "writerTransformation");
-        
+
         nodes.push({
             id: targetId,
             type: 'custom',
@@ -479,13 +725,13 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         // Create edges based on dependencies
         if (writerTransformation.dependent_on && Array.isArray(writerTransformation.dependent_on)) {
             console.log(`Creating edges for target ${writerTransformation.name} with dependencies:`, writerTransformation.dependent_on);
-            
+
             writerTransformation.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
-                
+
                 if (sourceNodeId) {
                     console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to target ${writerTransformation.name} (${targetId})`);
-                    
+
                     edges.push({
                         source: sourceNodeId,
                         sourceHandle: 'output-0',
@@ -504,7 +750,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
     // Log the final edges array for debugging
     console.log("Final edges array:", edges);
-    
+
     return await { nodes, edges };
 };
 
@@ -513,191 +759,191 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
  * @param currentJson The current pipeline JSON
  * @returns The optimized pipeline JSON with references
  */
-export const convertToOptimizedPipelineJson = (currentJson: any,pipelineName?:string) => {
-  console.log(currentJson,"currentJson");
-  // Create the base structure for the optimized JSON
-  const optimizedJson: any = {
-    $schema: currentJson.$schema || "https://json-schema.org/draft-07/schema#",
-    name: pipelineName||currentJson.name || "pipeline",
-    description: currentJson.description || "",
-    version: currentJson.version || "1.0.0",
-    parameters: currentJson.parameters || [],
-    connections: {},
-    sources: {},
-    targets: {},
-    transformations: []
-  };
+export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: string) => {
+    console.log(currentJson, "currentJson");
+    // Create the base structure for the optimized JSON
+    const optimizedJson: any = {
+        $schema: currentJson.$schema || "https://json-schema.org/draft-07/schema#",
+        name: pipelineName || currentJson.name || "pipeline",
+        description: currentJson.description || "",
+        version: currentJson.version || "1.0.0",
+        parameters: currentJson.parameters || [],
+        connections: {},
+        sources: {},
+        targets: {},
+        transformations: []
+    };
 
-  // Extract and organize connections
-  const connections: Record<string, any> = {};
-  
-  // Process sources and their connections
-  if (Array.isArray(currentJson.sources)) {
-    currentJson.sources.forEach((source: any, index: number) => {
-      const connectionKey = `${source.name}`;
-      
-      // Add connection to connections section
-      if (source.connection) {
-        connections[connectionKey] = {
-          ...source.connection,
-          name: source.connection.name || connectionKey
-        };
-      }
-      
-      // Add source to sources section with reference to connection
-      optimizedJson.sources[source.name] = {
-        name: source.name,
-        source_type: source.source_type,
-        table_name: source.table_name,
-        data_src_id: source.data_src_id,
-        file_name: source.file_name || undefined
-      };
-      
-      // Add connection reference if it exists
-      if (source.connection) {
-        optimizedJson.sources[source.name].connection = { 
-          $ref: `#/connections/${connectionKey}` 
-        };
-      }
-    });
-  }
-  
-  // Process targets and their connections
-  if (Array.isArray(currentJson.targets)) {
-    currentJson.targets.forEach((target: any, index: number) => {
-      const targetKey = target.name || 'target' + index;
-      const connectionKey = `${targetKey}`;
-      
-      // Add connection to connections section
-      if (target.connection) {
-        connections[connectionKey] = {
-          ...target.connection,
-          name: target.connection.name || connectionKey
-        };
-      }
-      console.log(target)
-      // Add target to targets section with reference to connection
-      optimizedJson.targets[targetKey] = {
-        name: target.name || targetKey,
-        target_type: target?.connection?.connection_type?.toLowerCase()=='local'||target?.connection?.connection_type?.toLowerCase()=='s3' ? 'File' : 'Relational',
-        target_name: target.target_name,
-        table_name: target.table_name|| target.name || targetKey,
-        load_mode: target.load_mode || 'append',
-        file_name: target.file_name
-      };
-      
-      // Add connection reference if it exists
-      if (target.connection) {
-        optimizedJson.targets[targetKey].connection = { 
-          $ref: `#/connections/${connectionKey}` 
-        };
-      }
-    });
-  }
-  
-  // Process transformations to extract targets if they're embedded there
-  if (Array.isArray(currentJson.transformations)) {
-    currentJson.transformations.forEach((transform: any) => {
-      // Extract targets from Writer transformations if they're not already in the targets section
-      if ((transform.transformation === 'Writer' || transform.transformation === 'Target') && transform.target) {
-        const targetKey = transform.target.name || 'target';
-        const connectionKey = `${targetKey}`;
-        
-        // Only add if not already present
-        if (!optimizedJson.targets[targetKey]) {
-          // Add connection to connections section if it exists
-          if (transform.target.connection) {
-            connections[connectionKey] = {
-              ...transform.target.connection,
-              name: transform.target.connection.name || connectionKey
+    // Extract and organize connections
+    const connections: Record<string, any> = {};
+
+    // Process sources and their connections
+    if (Array.isArray(currentJson.sources)) {
+        currentJson.sources.forEach((source: any, index: number) => {
+            const connectionKey = `${source.name}`;
+
+            // Add connection to connections section
+            if (source.connection) {
+                connections[connectionKey] = {
+                    ...source.connection,
+                    name: source.connection.name || connectionKey
+                };
+            }
+
+            // Add source to sources section with reference to connection
+            optimizedJson.sources[source.name] = {
+                name: source.name,
+                source_type: source.source_type,
+                table_name: source.table_name,
+                data_src_id: source.data_src_id,
+                file_name: source.file_name || undefined
             };
-          }
-          console.log(transform)
-          // Add target to targets section
-          optimizedJson.targets[targetKey] = {
-            name: transform.target.name || targetKey,
-            target_type: transform.target?.connection?.connection_type?.toLowerCase()=='local'||transform.target?.connection?.connection_type?.toLowerCase()=='s3' ? 'File' : 'Relational',
-            target_name: transform.target.target_name,
-            table_name: transform.target.table_name,
-            load_mode: transform.target.load_mode || 'append',
-            file_name: transform.target.file_name
-          };
-          
-          // Add connection reference if it exists
-          if (transform.target.connection) {
-            optimizedJson.targets[targetKey].connection = { 
-              $ref: `#/connections/${connectionKey}` 
+
+            // Add connection reference if it exists
+            if (source.connection) {
+                optimizedJson.sources[source.name].connection = {
+                    $ref: `#/connections/${connectionKey}`
+                };
+            }
+        });
+    }
+
+    // Process targets and their connections
+    if (Array.isArray(currentJson.targets)) {
+        currentJson.targets.forEach((target: any, index: number) => {
+            const targetKey = target.name || 'target' + index;
+            const connectionKey = `${targetKey}`;
+
+            // Add connection to connections section
+            if (target.connection) {
+                connections[connectionKey] = {
+                    ...target.connection,
+                    name: target.connection.name || connectionKey
+                };
+            }
+            console.log(target)
+            // Add target to targets section with reference to connection
+            optimizedJson.targets[targetKey] = {
+                name: target.name || targetKey,
+                target_type: target?.connection?.connection_type?.toLowerCase() == 'local' || target?.connection?.connection_type?.toLowerCase() == 's3' ? 'File' : 'Relational',
+                target_name: target.target_name,
+                table_name: target.table_name || target.name || targetKey,
+                load_mode: target.load_mode || 'append',
+                file_name: target.file_name
             };
-          }
-        }
-      }
-    });
-  }
-  
-  // Add all connections to the optimized JSON
-  optimizedJson.connections = connections;
-  
-  // Process transformations
-  if (Array.isArray(currentJson.transformations)) {
-    currentJson.transformations.forEach((transform: any) => {
-      const transformCopy = { ...transform };
-      
-      // For Reader transformations, replace source with reference
-      if (transform.transformation === 'Reader' && transform.source) {
-        const sourceName = transform.source.name;
-        if (optimizedJson.sources[sourceName]) {
-          transformCopy.source = { $ref: `#/sources/${sourceName}` };
-        }
-      }
-      
-      // For Writer transformations, replace target with reference
-      if ((transform.transformation === 'Writer' || transform.transformation === 'Target') && transform.target) {
-        const targetName = transform.target.name || 'target';
-        if (optimizedJson.targets[targetName]) {
-          transformCopy.target = { $ref: `#/targets/${targetName}` };
-        }
-      }
-      
-      optimizedJson.transformations.push(transformCopy);
-    });
-  }
-  
-  return optimizedJson;
+
+            // Add connection reference if it exists
+            if (target.connection) {
+                optimizedJson.targets[targetKey].connection = {
+                    $ref: `#/connections/${connectionKey}`
+                };
+            }
+        });
+    }
+
+    // Process transformations to extract targets if they're embedded there
+    if (Array.isArray(currentJson.transformations)) {
+        currentJson.transformations.forEach((transform: any) => {
+            // Extract targets from Writer transformations if they're not already in the targets section
+            if ((transform.transformation === 'Writer' || transform.transformation === 'Target') && transform.target) {
+                const targetKey = transform.target.name || 'target';
+                const connectionKey = `${targetKey}`;
+
+                // Only add if not already present
+                if (!optimizedJson.targets[targetKey]) {
+                    // Add connection to connections section if it exists
+                    if (transform.target.connection) {
+                        connections[connectionKey] = {
+                            ...transform.target.connection,
+                            name: transform.target.connection.name || connectionKey
+                        };
+                    }
+                    console.log(transform)
+                    // Add target to targets section
+                    optimizedJson.targets[targetKey] = {
+                        name: transform.target.name || targetKey,
+                        target_type: transform.target?.connection?.connection_type?.toLowerCase() == 'local' || transform.target?.connection?.connection_type?.toLowerCase() == 's3' ? 'File' : 'Relational',
+                        target_name: transform.target.target_name,
+                        table_name: transform.target.table_name,
+                        load_mode: transform.target.load_mode || 'append',
+                        file_name: transform.target.file_name
+                    };
+
+                    // Add connection reference if it exists
+                    if (transform.target.connection) {
+                        optimizedJson.targets[targetKey].connection = {
+                            $ref: `#/connections/${connectionKey}`
+                        };
+                    }
+                }
+            }
+        });
+    }
+
+    // Add all connections to the optimized JSON
+    optimizedJson.connections = connections;
+
+    // Process transformations
+    if (Array.isArray(currentJson.transformations)) {
+        currentJson.transformations.forEach((transform: any) => {
+            const transformCopy = { ...transform };
+
+            // For Reader transformations, replace source with reference
+            if (transform.transformation === 'Reader' && transform.source) {
+                const sourceName = transform.source.name;
+                if (optimizedJson.sources[sourceName]) {
+                    transformCopy.source = { $ref: `#/sources/${sourceName}` };
+                }
+            }
+
+            // For Writer transformations, replace target with reference
+            if ((transform.transformation === 'Writer' || transform.transformation === 'Target') && transform.target) {
+                const targetName = transform.target.name || 'target';
+                if (optimizedJson.targets[targetName]) {
+                    transformCopy.target = { $ref: `#/targets/${targetName}` };
+                }
+            }
+
+            optimizedJson.transformations.push(transformCopy);
+        });
+    }
+
+    return optimizedJson;
 };
 
 
 
-export const resolveRefs = (obj:any, root:any) => {
+export const resolveRefs = (obj: any, root: any) => {
     // Handle null or undefined inputs
     if (obj === null || obj === undefined) return obj;
     if (root === null || root === undefined) return obj;
-    
+
     // Handle non-object types
     if (typeof obj !== "object") return obj;
-  
+
     if (Array.isArray(obj)) {
-      return obj.map((item:any) => resolveRefs(item, root));
+        return obj.map((item: any) => resolveRefs(item, root));
     }
-  
+
     if (obj.$ref) {
-      const refPath = obj.$ref.replace("#/", "").split("/");
-      let resolved = root;
-  
-      for (const key of refPath) {
-        if (!resolved || typeof resolved !== 'object') {
-          console.error("Invalid $ref path:", obj.$ref, "at key:", key);
-          return obj; // Return as is if reference is broken
+        const refPath = obj.$ref.replace("#/", "").split("/");
+        let resolved = root;
+
+        for (const key of refPath) {
+            if (!resolved || typeof resolved !== 'object') {
+                console.error("Invalid $ref path:", obj.$ref, "at key:", key);
+                return obj; // Return as is if reference is broken
+            }
+            resolved = resolved[key];
+            if (!resolved) {
+                console.error("Invalid $ref:", obj.$ref, "at key:", key);
+                return obj; // Return as is if reference is broken
+            }
         }
-        resolved = resolved[key];
-        if (!resolved) {
-          console.error("Invalid $ref:", obj.$ref, "at key:", key);
-          return obj; // Return as is if reference is broken
-        }
-      }
-      return resolveRefs(resolved, root); // Recursively resolve further
+        return resolveRefs(resolved, root); // Recursively resolve further
     }
-  
+
     return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, resolveRefs(value, root)])
+        Object.entries(obj).map(([key, value]) => [key, resolveRefs(value, root)])
     );
-  };
+};

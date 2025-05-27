@@ -24,6 +24,7 @@ import { useFormValidation } from "./hooks/useFormValidation";
 import { ParametersSection } from "./components/ParametersSection";
 import { TabType, ParameterItem } from "./types";
 import { FormLayout } from "../Form/FormLayout";
+import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
 interface NodeFormProps {
     id: string;
@@ -40,7 +41,6 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         prevNodeFn,
         updateNodeFormData,
         updateNodeMeta,
-        updatedSelectedNodeId,
         getNodeFormData,
         revertOrSaveData,
         updateNodeDependencies,
@@ -49,33 +49,58 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         getPipelineDetails,
         flowPipeline,
     } = useFlow();
+    const {
+        updatedSelectedNodeId,
+        nodes,
+        formStates,
+        setFormStates,
+        setNodes,
+        updateSetNode
+    } = usePipelineContext();
 
     const dispatch = useAppDispatch();
     const { selectedFlow } = useAppSelector((s: RootState) => s.flow);
-
+    const { edges } = usePipelineContext();
     /* ------------------------------ State -------------------------------- */
     const [activeTab, setActiveTab] = useState<TabType>("property");
-    const [selectedValue, setSelectedValue] = useState<string>("");
+    // Get the initial value from the node's form data in formStates
+    const nodeFormState = useMemo(() => formStates[id] || {}, [formStates, id]);
+    const initialNodeType = useMemo(() => {
+        // First check if the node has a type in formStates
+        if (nodeFormState.type) {
+            return nodeFormState.type;
+        }
+        // Then check if the node has a selectedData property
+        const node = nodes.find(n => n.id === id);
+        return node?.data?.selectedData || "";
+    }, [nodeFormState, nodes, id]);
+
+    const [selectedValue, setSelectedValue] = useState<string>(initialNodeType);
     const [requiredFieldsState, setRequiredFieldsState] = useState<string[]>([]);
     const paramsInitRef = useRef(false);
 
     const [pipelineData, setPipelineData] = useState<any>(null);
-    
+    console.log(selectedNode)
     // When the pipeline changes, reset the pipeline data
     useEffect(() => {
         console.log("Resetting pipeline data due to pipeline change");
         setPipelineData(null); // Clear current data
         // Then fetch the new data (happens in the next effect)
     }, [flowPipeline]); // Only flowPipeline, not getPipelineDetails to avoid over-triggering
-    
+
     // Use effect to update pipeline data when it changes
     useEffect(() => {
         const details = getPipelineDetails(null);
         setPipelineData(details);
         console.log("Updated pipelineDetails in NodeForm:", details);
     }, [getPipelineDetails, flowPipeline]); // Added flowPipeline as dependency
-    
-    if (!selectedNode) return null;
+
+    if (!selectedNode) {
+        console.log("NodeForm: No selected node found for id:", id);
+        return null;
+    }
+
+    console.log("NodeForm: Rendering form for node:", id, selectedNode);
 
     /* -------------------------- Derived values --------------------------- */
     const typesMatched = useOtherTypes(selectedNode.data.selectedData);
@@ -136,20 +161,46 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
     /* ---------------------- Parameters initialisation -------------------- */
     useEffect(() => {
-        const hasExistingParams =
+        console.log(nodes)
+        // Check if we have existing parameters in the node form state
+        const hasExistingParamsInNodeState =
+            Array.isArray(nodeFormState.parameters) &&
+            nodeFormState.parameters.length > 0;
+
+        // Check if we have existing parameters in the current form data
+        const hasExistingParamsInFormData =
             Array.isArray(currentFormData.parameters) &&
             currentFormData.parameters.length > 0;
 
-        if (!hasExistingParams) {
+        if (!hasExistingParamsInFormData && !hasExistingParamsInNodeState) {
             paramsInitRef.current = false;
 
             if (hasParameters && defaultParameters.length) {
-                updateNodeFormData(selectedNode.id, {
+                // Initialize with default parameters
+                const updatedData = {
                     ...currentFormData,
                     parameters: defaultParameters,
-                });
+                    type: selectedValue || currentFormData.type,
+                };
+
+                // Update both the node form data and the form states
+                updateNodeFormData(selectedNode.id, updatedData);
+
+                // Also update in the pipeline context form states
+                setFormStates(prev => ({
+                    ...prev,
+                    [selectedNode.id]: updatedData
+                }));
+
                 paramsInitRef.current = true;
             }
+        } else if (hasExistingParamsInNodeState && !hasExistingParamsInFormData) {
+            // If we have parameters in the node state but not in form data, use those
+            updateNodeFormData(selectedNode.id, {
+                ...currentFormData,
+                parameters: nodeFormState.parameters,
+                type: selectedValue || nodeFormState.type || currentFormData.type,
+            });
         }
     }, [
         selectedNode.id,
@@ -158,6 +209,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         defaultParameters,
         updateNodeFormData,
         currentFormData,
+        nodeFormState,
+        setFormStates
     ]);
 
     useEffect(() => {
@@ -172,10 +225,22 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             hasNoParameters &&
             !paramsInitRef.current
         ) {
-            updateNodeFormData(selectedNode.id, {
+            // Create updated data with default parameters
+            const updatedData = {
                 ...currentFormData,
                 parameters: defaultParameters,
-            });
+                type: selectedValue || currentFormData.type,
+            };
+
+            // Update both the node form data and the form states
+            updateNodeFormData(selectedNode.id, updatedData);
+
+            // Also update in the pipeline context form states
+            setFormStates(prev => ({
+                ...prev,
+                [selectedNode.id]: updatedData
+            }));
+
             paramsInitRef.current = true;
         }
     }, [
@@ -184,6 +249,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateNodeFormData,
         currentFormData,
         selectedNode.id,
+        selectedValue,
+        setFormStates
     ]);
 
     /* ------------------------------ Save --------------------------------- */
@@ -202,8 +269,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
         console.log("Creating form data");
         const newFormData = [...nodeFormData];
+        console.log(newFormData)
+        console.log(selectedNode.id)
         const idx = newFormData.findIndex((i) => i.nodeId === selectedNode.id);
-
+        console.log(idx)
         let rawParameters: ParameterItem[] = [];
         if (Array.isArray(currentFormData.parameters)) {
             rawParameters = [...currentFormData.parameters];
@@ -213,11 +282,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             rawParameters = [];
         }
 
-        console.log("[NodeForm] Raw parameters before filtering:", JSON.stringify(rawParameters));
+        // console.log("[NodeForm] Raw parameters before filtering:", JSON.stringify(rawParameters));
 
         // Filter out parameters where the value is null OR the parameter itself is null
         const parameters = rawParameters.filter(p => p !== null && p.value !== null);
-        console.log("[NodeForm] Parameters after filtering:", JSON.stringify(parameters));
+        // console.log("[NodeForm] Parameters after filtering:", JSON.stringify(parameters));
 
         const updatedFormData = {
             nodeId: selectedNode.id,
@@ -232,7 +301,44 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
         if (idx >= 0) newFormData[idx] = updatedFormData;
         else newFormData.push(updatedFormData);
+        console.log(updatedFormData.formData)
+
+        // Update the form data in the Flow context
         updateNodeFormData(selectedNode.id, updatedFormData.formData);
+
+        // Update the form data in the Pipeline context
+        setFormStates(prev => ({
+            ...prev,
+            [selectedNode.id]: updatedFormData.formData
+        }));
+            console.log(selectedNode.id)
+console.log(nodes)
+
+        // Update the node data in the Pipeline context
+        // First create the updated nodes array
+        const updatedNodes = nodes.map(node => {
+            if (node.id === selectedNode.id) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        selectedData: selectedValue,
+                        formData: updatedFormData.formData,
+                        // Update any other relevant node data
+                        transformationData: {
+                            ...node.data.transformationData,
+                            ...updatedFormData.formData,
+                            type: selectedValue
+                        }
+                    }
+                };
+            }
+            return node;
+        });
+        
+        // Use updateSetNode to update both nodes and edges at once
+        updateSetNode(updatedNodes, edges);
+
         updateNodeDependencies();
         setFormDataNum((p) => p + 1);
 
@@ -244,7 +350,9 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             selectedFlow,
             dispatch,
             flowConfigMap,
-            newFormData
+            newFormData,
+            updatedNodes,
+            edges
         );
 
         console.log("Closing form");
@@ -269,6 +377,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         prevNodeFn,
         updateNodeFormData,
         defaultParameters,
+        nodes,
+        edges,
+        setFormStates,
+        updateSetNode
     ]);
 
     /* -------------------------- Parameter CRUD --------------------------- */
@@ -280,12 +392,47 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             const updated = [...list];
             if (!updated[index]) updated[index] = { key: "", value: "" };
             (updated[index] as any)[field] = value;
-            updateNodeFormData(selectedNode.id, {
+            
+            // Create updated form data
+            const updatedData = {
                 ...currentFormData,
                 parameters: updated,
+                type: selectedValue
+            };
+            
+            // Update in Flow context
+            updateNodeFormData(selectedNode.id, updatedData);
+            
+            // Update in Pipeline context form states
+            setFormStates(prev => ({
+                ...prev,
+                [selectedNode.id]: updatedData
+            }));
+            
+            // Update the node data in the Pipeline context
+            const updatedNodes = nodes.map(node => {
+                if (node.id === selectedNode.id) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            selectedData: selectedValue,
+                            formData: updatedData,
+                            transformationData: {
+                                ...node.data.transformationData,
+                                ...updatedData,
+                                type: selectedValue
+                            }
+                        }
+                    };
+                }
+                return node;
             });
+            
+            // Use updateSetNode to update nodes
+            updateSetNode(updatedNodes, edges);
         },
-        [currentFormData, defaultParameters, selectedNode.id, updateNodeFormData]
+        [currentFormData, defaultParameters, selectedNode, updateNodeFormData, selectedValue, setFormStates, nodes, edges, updateSetNode]
     );
 
     const addParameterRow = useCallback(() => {
@@ -302,18 +449,55 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
         currentParams.push({ key: "", value: "" });
 
-        updateNodeFormData(selectedNode.id, {
+        // Create updated form data
+        const updatedData = {
             ...currentFormData,
             parameters: currentParams,
             type: selectedValue || selectedNode.data.selectedData,
             task_id: currentFormData.task_id || `task-${selectedNode.id}`,
+        };
+        
+        // Update in Flow context
+        updateNodeFormData(selectedNode.id, updatedData);
+        
+        // Update in Pipeline context form states
+        setFormStates(prev => ({
+            ...prev,
+            [selectedNode.id]: updatedData
+        }));
+        
+        // Update the node data in the Pipeline context
+        const updatedNodes = nodes.map(node => {
+            if (node.id === selectedNode.id) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        selectedData: selectedValue || selectedNode.data.selectedData,
+                        formData: updatedData,
+                        transformationData: {
+                            ...node.data.transformationData,
+                            ...updatedData,
+                            type: selectedValue || selectedNode.data.selectedData
+                        }
+                    }
+                };
+            }
+            return node;
         });
+        
+        // Use updateSetNode to update nodes
+        updateSetNode(updatedNodes, edges);
     }, [
         currentFormData,
         defaultParameters,
         selectedNode,
         selectedValue,
         updateNodeFormData,
+        setFormStates,
+        nodes,
+        edges,
+        updateSetNode
     ]);
 
     const removeParameterRow = useCallback(
@@ -335,17 +519,57 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
             if (currentParams.length > 1) {
                 const newParams = currentParams.filter((_, i) => i !== index);
-                updateNodeFormData(selectedNode.id, {
+                
+                // Create updated form data
+                const updatedData = {
                     ...currentFormData,
                     parameters: newParams,
+                    type: selectedValue || selectedNode.data.selectedData
+                };
+                
+                // Update in Flow context
+                updateNodeFormData(selectedNode.id, updatedData);
+                
+                // Update in Pipeline context form states
+                setFormStates(prev => ({
+                    ...prev,
+                    [selectedNode.id]: updatedData
+                }));
+                
+                // Update the node data in the Pipeline context
+                const updatedNodes = nodes.map(node => {
+                    if (node.id === selectedNode.id) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                selectedData: selectedValue || selectedNode.data.selectedData,
+                                formData: updatedData,
+                                transformationData: {
+                                    ...node.data.transformationData,
+                                    ...updatedData,
+                                    type: selectedValue || selectedNode.data.selectedData
+                                }
+                            }
+                        };
+                    }
+                    return node;
                 });
+                
+                // Use updateSetNode to update nodes
+                updateSetNode(updatedNodes, edges);
             }
         },
         [
             currentFormData,
             defaultParameters,
-            selectedNode.id,
+            selectedNode,
+            selectedValue,
             updateNodeFormData,
+            setFormStates,
+            nodes,
+            edges,
+            updateSetNode
         ]
     );
     /* --------------------------- Misc handlers --------------------------- */
@@ -358,6 +582,21 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             );
             const fields = req?.[val] || [];
             setRequiredFieldsState(fields);
+
+            // Create basic updated form data
+            const updatedData = {
+                ...currentFormData,
+                type: val
+            };
+            
+            // Update in Flow context
+            updateNodeFormData(selectedNode.id, updatedData);
+            
+            // Update in Pipeline context form states
+            setFormStates(prev => ({
+                ...prev,
+                [selectedNode.id]: updatedData
+            }));
             
             // Update node metadata
             updateNodeMeta(
@@ -365,44 +604,121 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 { type: val },
                 { type: val, requiredFields: fields }
             );
+            
+            // Update the node data in the Pipeline context
+            const updatedNodes = nodes.map(node => {
+                if (node.id === selectedNode.id) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            selectedData: val,
+                            formData: updatedData,
+                            transformationData: {
+                                ...node.data.transformationData,
+                                ...updatedData,
+                                type: val
+                            }
+                        }
+                    };
+                }
+                return node;
+            });
+            
+            // Use updateSetNode to update nodes
+            updateSetNode(updatedNodes, edges);
+            
             updatedSelectedNodeId(selectedNode.id, val);
 
             // When EmrAddStepsOperator is selected, initialize with pipeline parameters
             if (val === 'EmrAddStepsOperator' && pipelineData?.pipeline_parameters?.length) {
                 console.log("Adding pipeline parameters to form data for EmrAddStepsOperator");
-                
+
                 // Get current parameters (if any)
-                let currentParams = Array.isArray(currentFormData.parameters) 
-                    ? [...currentFormData.parameters] 
+                let currentParams = Array.isArray(currentFormData.parameters)
+                    ? [...currentFormData.parameters]
                     : [];
-                
+
                 // Create a map of current parameters by key for efficient lookup
                 const paramMap = new Map();
                 currentParams.forEach(p => {
                     if (p && p.key) paramMap.set(p.key, p);
                 });
-                
+
                 // Add pipeline parameters that aren't already in currentParams
                 pipelineData.pipeline_parameters.forEach(p => {
                     if (p && p.key && !paramMap.has(p.key)) {
                         currentParams.push(p);
                     }
                 });
-                
-                // Update form data with combined parameters
-                updateNodeFormData(selectedNode.id, {
+
+                // Create updated form data
+                const updatedData = {
                     ...currentFormData,
                     parameters: currentParams,
+                    type: val
+                };
+                
+                // Update in Flow context
+                updateNodeFormData(selectedNode.id, updatedData);
+                
+                // Update in Pipeline context form states
+                setFormStates(prev => ({
+                    ...prev,
+                    [selectedNode.id]: updatedData
+                }));
+                
+                // Update the node data in the Pipeline context
+                const updatedNodes = nodes.map(node => {
+                    if (node.id === selectedNode.id) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                selectedData: val,
+                                formData: updatedData,
+                                transformationData: {
+                                    ...node.data.transformationData,
+                                    ...updatedData,
+                                    type: val
+                                }
+                            }
+                        };
+                    }
+                    return node;
                 });
+                
+                // Use updateSetNode to update nodes
+                updateSetNode(updatedNodes, edges);
             }
         },
-        [selectedNode, updateNodeMeta, updatedSelectedNodeId, pipelineData, currentFormData, updateNodeFormData]
+        [selectedNode, updateNodeMeta, updatedSelectedNodeId, pipelineData, currentFormData, updateNodeFormData, setFormStates, nodes, edges, updateSetNode]
     );
 
+    // Effect to initialize selectedValue from node data or form state
     useEffect(() => {
-        if (selectedNode.data.selectedData)
+        if (initialNodeType) {
+            setSelectedValue(initialNodeType);
+
+            if (selectedNode && selectedNode.id) {
+                const req = selectedNode.data.requiredFields.find(
+                    (i: any) => Object.keys(i)[0] === initialNodeType
+                );
+                const fields = req?.[initialNodeType] || [];
+                setRequiredFieldsState(fields);
+
+                // Update node metadata with the type
+                updateNodeMeta(
+                    selectedNode.id,
+                    { type: initialNodeType },
+                    { type: initialNodeType, requiredFields: fields }
+                );
+                updatedSelectedNodeId(selectedNode.id, initialNodeType);
+            }
+        } else if (selectedNode?.data?.selectedData) {
             setSelectedValue(selectedNode.data.selectedData);
-    }, [selectedNode.data.selectedData]);
+        }
+    }, [selectedNode, initialNodeType, updateNodeMeta, updatedSelectedNodeId]);
 
     useEffect(() => {
         setRequiredFieldsState(selectedNode.data.requiredFields);
@@ -412,18 +728,18 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     useEffect(() => {
         if (selectedValue === 'EmrAddStepsOperator' && pipelineData?.pipeline_parameters?.length) {
             console.log("Initializing pipeline parameters for EmrAddStepsOperator from effect");
-            
+
             // Get current parameters (if any)
-            let currentParams = Array.isArray(currentFormData.parameters) 
-                ? [...currentFormData.parameters] 
+            let currentParams = Array.isArray(currentFormData.parameters)
+                ? [...currentFormData.parameters]
                 : [];
-            
+
             // Create a map of current parameters by key
             const paramMap = new Map();
             currentParams.forEach(p => {
                 if (p && p.key) paramMap.set(p.key, p);
             });
-            
+
             // Add pipeline parameters that aren't already in currentParams
             let hasNewParams = false;
             pipelineData.pipeline_parameters.forEach(p => {
@@ -432,7 +748,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     hasNewParams = true;
                 }
             });
-            
+
             // Only update if we added new parameters
             if (hasNewParams) {
                 updateNodeFormData(selectedNode.id, {
@@ -536,8 +852,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                                     onRemoveParameter={removeParameterRow}
                                     defaultParameters={defaultParameters}
                                     pipeline_parameters={
-                                        selectedValue === 'EmrAddStepsOperator' 
-                                            ? (pipelineData?.pipeline_parameters || []) 
+                                        (selectedValue) === 'EmrAddStepsOperator'
+                                            ? (pipelineData?.pipeline_parameters || [])
                                             : []
                                     }
                                 />

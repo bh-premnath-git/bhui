@@ -11,7 +11,12 @@ export const FormField: React.FC<FieldProps> = ({
   onChange 
 }) => {
   const uiProps = fieldInfo.uiProperties || {};
-  const fieldLabel = uiProps.propertyName || field;
+  // Format the field label to be more business-friendly
+  let fieldLabel = uiProps.propertyName || field;
+  // Convert snake_case to Title Case
+  fieldLabel = fieldLabel.replace(/_/g, ' ').split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
   const uiType = uiProps.uiType || '';
 
   // Map ui_type to appropriate form controls

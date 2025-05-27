@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
-import { FlowChatUI } from '../flow-playground-header/components/FlowChatUI'; 
+import { FlowChatSlidingPortal } from '../flow-playground-header/components/FlowChatSlidingPortal';
 import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
 import { DataTable } from '@/components/bh-table/data-table';
 
@@ -97,7 +97,7 @@ export const AIButton = ({ variant, color = '#ffffff' }: AIButtonProps) => {
                                 (rightAsideContent as React.ReactElement).key === CHAT_UI_COMPONENT_KEY;
 
     const handleButtonClick = () => {
-        const ChatComponentToRender = variant === 'flow' ? FlowChatUI : PipeLineChatSlidingPortal;
+        const ChatComponentToRender = variant === 'flow' ? FlowChatSlidingPortal : PipeLineChatSlidingPortal;
 
         if (isChatCurrentlyOpen) {
             closeRightAside();

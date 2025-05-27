@@ -139,13 +139,7 @@ export const CustomEdge = memo(({
                   ${targetX} ${targetY}`;
     }, [sourceX, sourceY, targetX, targetY]);
 
-    // Create drawer content with the metrics data
-    const createDrawerContent = () => (
-        <MetricsDrawerWrapper 
-            metricsData={metricsData} 
-            isLoading={isMetricsLoading} 
-        />
-    );
+ 
 
     const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -154,7 +148,7 @@ export const CustomEdge = memo(({
         // Only proceed if rowCount exists (meaning the node is in debug list)
         if (rowCount) {
             setIsEdgeLoading(true);
-            // setIsShowingInDrawer(true);
+            setIsShowingInDrawer(true);
             
             try {
                 // First fetch the data

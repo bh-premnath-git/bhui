@@ -1,3 +1,5 @@
+import { useSelector } from "react-redux";
+
 interface NodeToolbarProps {
     show: boolean;
     onEdit: (e: React.MouseEvent) => void;
@@ -9,6 +11,8 @@ interface NodeToolbarProps {
 }
 
 export const NodeToolbar = ({ show, onEdit, onDelete, onInfo, onClone, onDebug, isDebugged }: NodeToolbarProps) => {
+      const {isFlow}=useSelector((state:any)=>state.buildPipeline)
+    
     if (!show) return null;
 
     return (
@@ -29,7 +33,7 @@ export const NodeToolbar = ({ show, onEdit, onDelete, onInfo, onClone, onDebug, 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </ToolbarButton>
             
-            <ToolbarButton 
+           {!isFlow&&( <ToolbarButton 
                 title="Debug" 
                 onClick={onDebug}
                 className={isDebugged ? 'bg-blue-100' : ''}
@@ -40,7 +44,7 @@ export const NodeToolbar = ({ show, onEdit, onDelete, onInfo, onClone, onDebug, 
                     strokeWidth={2}
                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                 />
-            </ToolbarButton>
+            </ToolbarButton>)}
         </div>
     );
 };

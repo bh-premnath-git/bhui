@@ -56,7 +56,7 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
                 enabled,
                 retry: 2
             },
-            params: { limit: 1000 }
+            params: { limit: 1000,order_desc:true }
         });
 
     // Fetch single pipeline by ID

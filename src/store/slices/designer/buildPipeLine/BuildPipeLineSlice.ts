@@ -51,6 +51,7 @@ export interface BuildPipelineState {
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   lastSaved: string | null;
+  isFlow: boolean;
 }
 
 const initialState: BuildPipelineState = {
@@ -77,7 +78,8 @@ const initialState: BuildPipelineState = {
   aiSuggestion:'',
   isSaving: false,
   hasUnsavedChanges: false,
-  lastSaved: null
+  lastSaved: null,
+  isFlow:false
 };
 
 interface ApiResponse {
@@ -171,6 +173,7 @@ export const getAllPipeline = createAsyncThunk<Pipeline[], void>(
       url: '/pipeline/list/',
       usePrefix: true,
       method: 'GET',
+      params:{order_desc:true},
       metadata: {
         errorMessage: 'Failed to fetch pipelines'
       }
@@ -531,6 +534,10 @@ const buildPipeLineSlice = createSlice({
     setBuildPipeLineDtl: (state, action: PayloadAction<any>) => {
       state.pipelineDtl = action.payload;
     },
+    setIsFlow: (state, action: PayloadAction<any>) => {
+      state.isFlow = action.payload;
+    },
+    
     setBuildPipeLineNodes: (state, action: PayloadAction<any[]>) => {
       state.nodesList = action.payload;
     },
@@ -862,6 +869,7 @@ export const {
   setIsPipelineRunning,
   setNestedField,
   setBuildPipeLineDtl,
+  setIsFlow,
   setBuildPipeLineNodes,
   setIsDebug,
   setIsRun,

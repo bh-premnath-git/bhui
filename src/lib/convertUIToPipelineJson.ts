@@ -186,7 +186,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         limit: node.data.transformationData?.limit,
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
-                case 'Dedup':
+                case 'Deduplicator':
                     return {
                         ...baseConfig,
                         keep: node.data.transformationData?.keep || "any",

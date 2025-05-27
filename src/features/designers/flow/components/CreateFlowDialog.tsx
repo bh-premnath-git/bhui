@@ -73,7 +73,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 dispatch(setSelectedEnv(Number(data.basicInformation.environment)));
                 dispatch(setSelectedFlow(result));
                 setSelectedFlowId(result.flow_id.toString());
-                handleNavigation(ROUTES.DESIGNERS.FLOW_PLAYGROUND(result.flow_id.toString()));
+                handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(result.flow_id.toString()));
                 onOpenChange(false);
             }).catch(err => console.log(err));
 

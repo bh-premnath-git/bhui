@@ -43,7 +43,7 @@ RUN if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then \
         echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=${TOKEN}" >> .npmrc; \
     else \
         echo "AWS credentials not provided. Skipping CodeArtifact configuration."; \
-    fi && \
+    fi
 # Copy the entire application
 COPY . .
 

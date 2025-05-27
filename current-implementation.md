@@ -1,61 +1,28 @@
-## ProtectedLayout Component Implementation
+##  Component Implementation
+## Application Root Implementation
 
-### File Locations
-- Main component: `src/components/ProtectedLayout.tsx`
-- Dependent components:
-  - `src/components/Sidebar.tsx`
-  - `src/components/Header.tsx`
-  - `src/components/RightAside.tsx`
-  - `src/components/BottomDrawer.tsx`
+### File Location
+- Main component: `src/App.tsx`
 
-### Component Hierarchy
-- Wraps app content with theme and sidebar contexts
-- Orchestrates:
-  - `Sidebar` (collapsible)
-  - `Header` (fixed position)
-  - Main content area (`Outlet` for router)
-  - `RightAside` (conditional sidebar)
-  - `BottomDrawer` (conditional bottom panel)
+## ProtectedLayout page routing 
 
-### Key Features
-1. **Context Providers**:
-   - `ThemeProvider`: Manages UI theme
-   - `SidebarProvider`: Controls all sidebar/drawer states
+### File Location
+- Main component: `src/routes/index.tsx`
+- my focus - `src\routes\dataOpsRoutes.tsx`
+---------------------------
 
-2. **Responsive Layout**:
-   - Animated sidebar width transition (64px ↔ 20px)
-   - Main content area automatically adjusts margin
-   - Fixed header with scrollable content below
+## DataOps Hub Implementation
 
-3. **Conditional Panels**:
-   - RightAside: 25% width sidebar for supplementary content
-   - BottomDrawer: Flexible-height bottom panel
-   - Both render conditionally based on context state
+### File Location
+- Main component: `src/pages/dataops/DataopsHub.tsx`
+- Main component: `src/features/dataops/DataOpsHub.tsx`
+- Context: `src/context/dataops/DataOpsContext.tsx`
+- Dashboard: `src\features\dataops\dashboard\index.tsx`
 
-4. **Layout Structure**:
-```tsx
-<ThemeProvider>
-  <SidebarProvider>
-    <LayoutWrapper> // Handles panel states
-      <Sidebar />
-      <MainContent> // Responsive margin
-        <Header />
-        <Outlet /> // Router content
-      </MainContent>
-      <ConditionalPanels /> // RightAside + BottomDrawer
-    </LayoutWrapper>
-  </SidebarProvider>
-</ThemeProvider>
-```
+## DataOps Dashboard Implementation
 
-### Technical Notes
-- Uses `cn` utility for conditional Tailwind classes
-- Maintains scrollable content area with `h-[calc(100vh-64px)]`
-- Implements z-index layering for overlays (z-50)
-- Follows React Router layout patterns with Outlet
+This document outlines the current implementation of the DataOps Dashboard feature in the `bh-ui` codebase.
 
-## Chat System Architecture
+### 1. Overview
 
-### File Locations
-- Core components:
-  - `src/components/Header.tsx` (integration point)
+The DataOps Dashboard provides a user interface to visualize various DataOps metrics through a series of charts. It's designed to fetch dashboard configurations and widget data from an API, though currently, the chart rendering part relies on mock data.

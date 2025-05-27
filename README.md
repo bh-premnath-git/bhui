@@ -5,7 +5,7 @@
 This application provides a comprehensive platform for managing data workflows, including:
 
 * **Data Catalog:** Discover, organize, and manage your data assets.
-* **Data Pipeline Designer:** Visually create and orchestrate data pipelines.
+* **Data Pipeline Designer, Data Flow:** Visually create and orchestrate data pipelines and data flows.
 * **DataOps Hub:** Monitor and manage data processing jobs.
 * **Admin Console:** Tools for user, project, and environment administration.
 
@@ -308,9 +308,34 @@ services/: Classes or modules that encapsulate business logic (e.g., data manipu
 ## Setup
 
 1.  **Clone the repository:** `git clone <repository_url>`
-2.  **Install dependencies:** `npm install` or `yarn install`
-3.  **Configure environment variables:** (See `.env.example` for required variables)
-4.  **Run the application:** `npm run dev` or `yarn dev`
+2.  **Install AWS cli v2**
+3.  **GetToken through entrypoint sh or ps1:**
+    - `./entrypoint.sh`
+    - `./entrypoint.ps1`
+4.  **Install dependencies:** `npm install` or `yarn install`
+5.  **Configure environment variables:** (See `.env.example` for required variables)
+6.  **Run the application:** `npm run dev` or `yarn dev`
+
+## system environments ##
+VITE_API_PREFIX_URL
+VITE_DECRYPTION_KEY
+VITE_KEYCLOAK_REALM
+VITE_KEYCLOAK_CLIENT_ID
+VITE_AUTO_SAVE_TIME
+VITE_KEYCLOAK_URL
+VITE_CATALOG_REMOTE_API_URL
+VITE_AGENT_REMOTE_URL
+VITE_AUDIT_REMOTE_URL
+VITE_MONITOR_REMOTE_URL
+VITE_KEYCLOAK_API_REMOTE_URL
+VITE_KEYCLOAK_REDIRECT_REMOTE_URI
+VITE_AUTO_SAVE_TIME
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+AWS_CODEARTIFACT_DOMAIN
+AWS_CODEARTIFACT_DOMAIN_OWNER
+AWS_CODEARTIFACT_REPOSITORY
 
 ## Key Features
 Project Tree Map:

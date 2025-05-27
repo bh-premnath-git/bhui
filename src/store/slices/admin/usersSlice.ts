@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { apiService } from "@/lib/api/api-service";
-import { KEYCLOAK_API_PORT, CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { User } from '@/types/admin/user';
 import { Project } from "@/types/admin/project";
 
@@ -27,7 +27,7 @@ export const fetchProjects = createAsyncThunk(
   "users/fetchProjects",
   async () => {
     const response = await apiService.get<Project[]>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: '/bh_project/list/',
       usePrefix: true,
       method: 'GET',

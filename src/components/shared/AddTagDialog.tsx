@@ -45,7 +45,7 @@ export function AddTagDialog({ onAddTag }: AddTagDialogProps) {
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add New Tag</DialogTitle>
-            <DialogDescription>Add a tag to identify compute instances in your AWS account.</DialogDescription>
+            <DialogDescription>Add a tag to identify resources created in the cloud.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">

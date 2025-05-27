@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { debounce, get } from 'lodash';
+import { debounce } from 'lodash';
 import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
 import { toast } from 'sonner';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import {     CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
   environmentId?: string;
@@ -33,14 +33,14 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   // For queries - returns Environment objects
   const { getOne: getEnvironment, getAll: getAllEnvironments } = useResource<Environment | MWAAEnvironments>(
     'environments',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
   // For mutations - accepts EnvironmentMutationData
   const { create: createEnvironment, create: createValidation, update: updateEnvironment, remove: removeEnvironment } = useResource<EnvironmentMutationData | AWSValidationData>(
     'environments',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -155,7 +155,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
 export const useEnvironmentSearch = () => {
   const { getOne: getEnvironment } = useResource<Environment>(
     'environments',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -202,7 +202,7 @@ export const useEnvironmentSearch = () => {
 export const useMwaaEnvironments = ({ mwaaQueryParams }: { mwaaQueryParams?: { bh_env_name: string; location: string } }) => {
   const { getOne: getMwaaEnvironments } = useResource<string[]>(  
     'mwaaEnvironments',  
-    CATALOG_API_PORT,  
+    CATALOG_REMOTE_API_URL,  
     true  
   );  
   const { data, isLoading, error } = getMwaaEnvironments({  
@@ -222,7 +222,7 @@ export const useMwaaEnvironments = ({ mwaaQueryParams }: { mwaaQueryParams?: { b
 export const useAirflowEnvironment = ({ airflowParams }: {airflowParams?:  { airflow_env_name: string, bh_env_name: string; location: string }}) =>{
   const {getOne: getAirflowEnv} = useResource<{ }>(
     'bh_airflow',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
   const { data, isLoading, error } = getAirflowEnv({  

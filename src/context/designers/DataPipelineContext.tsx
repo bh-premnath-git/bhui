@@ -8,8 +8,8 @@ import React, {
     useRef,
     useContext
 } from 'react';
-import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
@@ -399,15 +399,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     });
                     console.log(pipeline_json, "pipeline_json")
 
-                    if (id) {
-                        await apiService.patch({
-                            portNumber: CATALOG_API_PORT,
-                            url: `/pipeline/${id}`,
-                            usePrefix: true,
-                            method: 'PATCH',
-                            data: pipeline_json
-                        });
-                    }
+                    if(id){
+                      await apiService.patch({
+                        baseUrl: CATALOG_REMOTE_API_URL,
+                        url: `/pipeline/${id}`,
+                        usePrefix: true,
+                        method: 'PATCH',
+                        data: pipeline_json
+                    });
+                }
                     if ('pipeline_json' in pipeline_json) {
                         let optimised = await resolveRefsPipelineJson(pipeline_json.pipeline_json, pipeline_json.pipeline_json)
                         setPipelineJson(optimised);
@@ -898,8 +898,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // }]);
 
             // Pass the request data directly
-            let response: any = await apiService.post({
-                portNumber: CATALOG_API_PORT,
+            let response:any = await apiService.post({
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: `/pipeline/debug/start_pipeline?${params.toString()}`,
                 usePrefix: true,
                 method: 'POST',
@@ -1012,8 +1012,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         // Mark as fetched before the API call
                         fetchedIdsRef.current.add(dataSrcId);
 
-                        const response: any = await apiService.get({
-                            portNumber: CATALOG_API_PORT,
+                        const response:any = await apiService.get({
+                            baseUrl: CATALOG_REMOTE_API_URL,
                             url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
                             usePrefix: true,
                             method: 'GET',

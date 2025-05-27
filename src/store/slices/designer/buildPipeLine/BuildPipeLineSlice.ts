@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 
 const token: any = sessionStorage?.getItem("token");
@@ -92,7 +92,7 @@ export const getSource = createAsyncThunk<DataSource[], void>(
   'build-pipeline/datasource',
   async () => {
     const response = await apiService.get<DataSource[]>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: '/data_source/list/',
       usePrefix: true,
       method: 'GET',
@@ -113,7 +113,7 @@ export const getConfig: any = createAsyncThunk(
     // alert(JSON.stringify(params))
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/connection_registry/list/',
         usePrefix: true,
         method: 'GET',
@@ -133,7 +133,7 @@ export const getDynamicCon: any = createAsyncThunk(
     // alert(JSON.stringify(params))
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/connection_registry/connections_json/list/',
         usePrefix: true,
         method: 'GET',
@@ -152,7 +152,7 @@ export const insertPipeline: any = createAsyncThunk(
     // alert(JSON.stringify(params))
     try {
       const response = await apiService.post({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/pipeline/',
         usePrefix: true,
         method: 'POST',
@@ -169,7 +169,7 @@ export const getAllPipeline = createAsyncThunk<Pipeline[], void>(
   'build-pipeline/getAllPipeline',
   async () => {
     const response = await apiService.get<Pipeline[]>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: '/pipeline/list/',
       usePrefix: true,
       method: 'GET',
@@ -191,7 +191,7 @@ export const getCodesValue: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/codes_hdr/${params.value}`,
         usePrefix: true,
         method: 'GET',
@@ -209,7 +209,7 @@ export const getOrderBy: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/codes_hdr/${params.value}`,
         usePrefix: true,
         method: 'GET',
@@ -229,7 +229,7 @@ export const getTransformationCount: any = createAsyncThunk(
     console.log(params)
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_count`,
         usePrefix: true,
         method: 'GET',
@@ -252,7 +252,7 @@ export const getTransformationOutput: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_output`,
         usePrefix: true,
         method: 'GET',
@@ -291,7 +291,7 @@ export const startPipeLine = createAsyncThunk(
       params.append('port', '15003');
       console.log(Object.fromEntries(params),"Object.fromEntries(params)")
       const response = await apiService.post({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/start_pipeline`,
         usePrefix: true,
         method: 'POST',
@@ -311,7 +311,7 @@ export const stopPipeLine: any = createAsyncThunk(
     try {
       console.log(params)
       const response = await apiService.post({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=host.docker.internal&port=15003`,
         usePrefix: true,
         method: 'POST',
@@ -333,7 +333,7 @@ export const getPipelineById: any = createAsyncThunk(
       }
 
       const response = await apiService.get({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/${params.id}`,
         usePrefix: true,
         method: 'GET',
@@ -352,7 +352,7 @@ export const fetchTransformationOutput = createAsyncThunk<
   'pipeline/fetchTransformationOutput',
   async ({ pipelineName, transformationName }) => {
     const response = await apiService.get<TransformationMetrics>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: `/pipeline/debug/get_transformation_output`,
       usePrefix: true,
       method: 'GET',
@@ -376,7 +376,7 @@ export const deletePipelineById = createAsyncThunk(
   'build-pipeline/deletePipelineById',
   async (pipelineId: number) => {
     await apiService.delete({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: `/pipeline/${pipelineId}`,
       usePrefix: true,
       method: 'DELETE',
@@ -392,7 +392,7 @@ export const updatePipeline = createAsyncThunk(
   'build-pipeline/updatePipeline',
   async ({ id, data }: { id: string; data: any }) => {
     const response = await apiService.patch({
-      portNumber: CATALOG_API_PORT,
+      baseUrl: CATALOG_REMOTE_API_URL,
       url: `/pipeline/${id}`,
       usePrefix: true,
       method: 'PATCH',
@@ -410,7 +410,7 @@ export const runNextCheckpoint = createAsyncThunk(
   async (params: { pipeline_name: string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=host.docker.internal&port=15003`,
         usePrefix: true,
         method: 'POST'
@@ -428,7 +428,7 @@ export const generatePipelineAgent = createAsyncThunk(
   async ({ params,operation_type,thread_id }: { params:any,operation_type:string,thread_id:string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: AGENT_PORT,
+        baseUrl:AGENT_REMOTE_URL,
         url: '/pipeline_agent/generate',
         usePrefix: true,
         method: 'POST',
@@ -451,7 +451,7 @@ export const createPipelineSchema = createAsyncThunk(
   async ({ pipelineId, request }: { pipelineId: string; request: string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: AGENT_PORT,
+        baseUrl:AGENT_REMOTE_URL,
         url: '/pipeline_schema/create_pipeline',
         usePrefix: true,
         method: 'POST',
@@ -474,7 +474,7 @@ export const createStaticPipelineSchema = createAsyncThunk(
   async ({ pipelineId, request }: { pipelineId: string; request: string }, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: AGENT_PORT,
+        baseUrl:AGENT_REMOTE_URL,
         url: '/pipeline_schema/static/pipeline_schema',
         usePrefix: true,
         method: 'POST',
@@ -497,7 +497,7 @@ export const recommendDataSources = createAsyncThunk(
   async (request: string, thunkAPI) => {
     try {
       const response = await apiService.post({
-        portNumber: AGENT_PORT,
+        baseUrl:AGENT_REMOTE_URL,
         url: '/pipeline_schema/recommend_data_sources',
         usePrefix: true,
         method: 'POST',

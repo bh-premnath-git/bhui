@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
 interface Cluster {
@@ -35,7 +35,7 @@ export const fetchClusters = createAsyncThunk(
   'clusters/fetchClusters',
   async (params: { bh_env_id: string, region: string }) => {
     const response = await apiService.get<{ clusters: Cluster[] }>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl:CATALOG_REMOTE_API_URL,
       url: '/bh_cluster/list-clusters',
       params,
       usePrefix: true,
@@ -52,7 +52,7 @@ export const createCluster = createAsyncThunk(
   'clusters/createCluster',
   async (data: { cluster_name: string, bh_env_id: string, region: string }) => {
     const response = await apiService.post<Cluster>({
-      portNumber: CATALOG_API_PORT,
+      baseUrl:CATALOG_REMOTE_API_URL,
       url: '/bh_cluster/create-cluster',
       data,
       usePrefix: true,
@@ -69,7 +69,7 @@ export const terminateCluster = createAsyncThunk(
   'clusters/terminateCluster',
   async (data: { clusterId: string, bh_env_id: string, region: string }) => {
     await apiService.post({
-      portNumber: CATALOG_API_PORT,
+      baseUrl:CATALOG_REMOTE_API_URL,
       url: `/bh_cluster/terminate-cluster/${data.clusterId}`,
       data: { bh_env_id: data.bh_env_id, region: data.region },
       usePrefix: true,

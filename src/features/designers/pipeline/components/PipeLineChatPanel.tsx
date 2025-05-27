@@ -11,7 +11,7 @@
   import * as z from 'zod';
   import { apiService } from '@/lib/api/api-service';
   import { toast } from 'sonner';
-  import { CATALOG_API_PORT } from '@/config/platformenv';
+  import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
   import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/ReaderOptionsForm';
   import { usePipelineContext } from '@/context/designers/DataPipelineContext';
   import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.json';
@@ -241,7 +241,7 @@
       try {
         // Call the API to get data sources
         const response: any = await apiService.get({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           url: `/data_source/list/`,
           usePrefix: true,
           method: 'GET',

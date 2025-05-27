@@ -1,6 +1,6 @@
 import { useResource } from "@/hooks/api/useResource";
 import { TaskDetails } from '@/types/dataops/dataOpsHub';
-import { AUDIT_PORT } from "@/config/platformenv";
+import { AUDIT_REMOTE_URL } from "@/config/platformenv";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -12,7 +12,7 @@ interface UseTaskDetailsOptions {
   export const useTaskDetails = (options: UseTaskDetailsOptions = { shouldFetch: true }) => { 
     const {  getAll: getAllTaskDetails } = useResource<TaskDetails>(
         'task_details',
-        AUDIT_PORT,
+        AUDIT_REMOTE_URL,
         true
     );
 

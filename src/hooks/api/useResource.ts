@@ -12,9 +12,9 @@ type ResourceMutationOptions<T> = Omit<
   'mutationFn'
 >;
 
-export function useResource<T>(resource: string, portNumber: string, usePrefix: boolean) {
+export function useResource<T>(resource: string, baseUrl: string, usePrefix: boolean) {
   const baseConfig: Partial<ApiConfig> = {
-    portNumber,
+    baseUrl,
     usePrefix,
   };
 
@@ -26,6 +26,7 @@ export function useResource<T>(resource: string, portNumber: string, usePrefix: 
     params?: Record<string, any>;
     query?: string;
     queryOptions?: Omit<UseQueryOptions<T[], Error>, 'queryKey' | 'queryFn'>;
+    
   }) => {
     const { url, params, query, queryOptions } = options || {};
     const queryKey = [resource, 'list', JSON.stringify({ params, query })];

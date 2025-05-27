@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import type {
   Flow,
   FlowMutationData,
@@ -33,14 +33,14 @@ export const useFlow = () => {
   // For queries - returns Flow objects
   const { getOne: getFlow, getAll: getAllFlows } = useResource<Flow>(
     'flows',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
   // For mutations - accepts FlowMutationData
   const { create: createFlow, update: updateFlow, remove: removeFlow } = useResource<FlowMutationData>(
     'flows',
-    CATALOG_API_PORT,
+    CATALOG_REMOTE_API_URL,
     true
   );
 
@@ -130,7 +130,7 @@ export const useFlow = () => {
 };
 
 export const useFlowSearch = () => {
-  const { getOne } = useResource<Flow[]>('flows', CATALOG_API_PORT, true);
+  const { getOne } = useResource<Flow[]>('flows', CATALOG_REMOTE_API_URL, true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const searchFlow = (query: string, enabled = true) =>

@@ -8,8 +8,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpCircle, Eye, EyeOff } from 'lucide-react';
@@ -24,13 +22,14 @@ interface FormFieldsProps {
   };
   form: any;
   parentKey?: string;
+  twoColumnLayout?: boolean;
+  mode?: 'edit' | 'new';
 }
 
-export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
+export function FormFields({ schema, form, parentKey = '', twoColumnLayout = true, mode = 'new' }: FormFieldsProps) {
   if (!schema || !schema.properties) {
     return null;
   }
-
   // Group fields by category if defined in schema
   const fieldsByCategory: Record<string, { key: string, field: any }[]> = {
     'General': []
@@ -44,13 +43,41 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     fieldsByCategory[category].push({ key, field });
   });
 
+  // Add a helper function to determine if a field should be masked
+  const isSensitiveField = (key: string, field: any): boolean => {
+    // Check field key names that typically contain sensitive data
+    const sensitiveKeys = [
+      'password', 'credentials', 'secret', 'key', 'token', 'auth',
+      'host', 'port', 'username', 'bucket', 'schema' // Add connection fields
+    ];
+    
+    // Check if any of the sensitive keys are present in the field key
+    const keyContainsSensitive = sensitiveKeys.some(
+      sensitiveKey => key.toLowerCase().includes(sensitiveKey)
+    );
+    
+    // Check if the field is specifically a password field
+    const isPasswordField = field.format === 'password' || 
+                           (field.type === 'string' && field.airbyte_secret === true);
+    
+    return keyContainsSensitive || isPasswordField;
+  };
+
+  // Function to generate masked value
+  const getMaskedValue = (value: string | undefined, isMasked: boolean): string => {
+    // Only mask values in edit mode
+    if (!isMasked || mode !== 'edit') return value || '';
+    // Return a masked string only in edit mode
+    return 'xxxxxxxxxx';
+  };
+
   const renderPasswordField = (key: string, field: any, fieldKey: string, formField: any, isRequired: boolean) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showDescription, setShowDescription] = useState(false);
     
     if (field.enum) {
       return (
-        <FormItem>
+        <FormItem className="w-full">
           <div className="flex items-center">
             <FormLabel>
               {field.title || key}
@@ -95,7 +122,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     
     // Add this return statement for standard password fields
     return (
-      <FormItem>
+      <FormItem className="w-full">
         <div className="flex items-center">
           <FormLabel>
             {field.title || key}
@@ -139,6 +166,23 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     );
   };
 
+  // Check if the field should take a full row (like textareas or complex fields)
+  const shouldUseFullWidth = (field: any) => {
+    // Special fields that should take full width
+    if (field.format === 'textarea' || field.type === 'object') {
+      return true;
+    }
+    
+    // Any field with a long description might be better as full width
+    if (field.description && field.description.length > 100) {
+      return true;
+    }
+    
+    // Special known fields that should be full width
+    const fullWidthFields = ['credentials_json', 'file_path_prefix', 'jdbc_url_params'];
+    return fullWidthFields.includes(field.name);
+  };
+
   const renderField = (key: string, field: any) => {
     const fieldKey = parentKey ? `${parentKey}.${key}` : key;
     const isRequired = schema.required?.includes(key);
@@ -157,7 +201,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
           control={form.control}
           name={fieldKey}
           render={({ field: formField }) => (
-            <FormItem>
+            <FormItem className="col-span-2 w-full">
               <div className="flex items-center">
                 <FormLabel>
                   {field.title || key}
@@ -191,29 +235,50 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
 
     if (field.type === 'object' && field.properties) {
       return (
-        <div key={fieldKey} className="space-y-4">
+        <div key={fieldKey} className="space-y-4 col-span-2 w-full">
           <h3 className="text-lg font-semibold">{field.title || key}</h3>
           <div className="p-4 rounded-lg">
-            <FormFields schema={field} form={form} parentKey={fieldKey} />
+            <FormFields schema={field} form={form} parentKey={fieldKey} twoColumnLayout={twoColumnLayout} />
           </div>
         </div>
       );
     }
 
+    // For regular form fields (not objects)
     return (
       <FormField
         key={fieldKey}
         control={form.control}
         name={fieldKey}
         render={({ field: formField }) => {
-          // Handle different field types
-          if (field.bh_secret || fieldKey.includes('password') || fieldKey.includes('secret')) {
-            return renderPasswordField(key, field, fieldKey, formField, isRequired);
+          if (field.type === 'boolean') {
+            return (
+              <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
+                <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>
+                      {field.title || key}
+                      {isRequired && <span className="text-destructive ml-1">*</span>}
+                    </FormLabel>
+                    {field.description && (
+                      <FormDescription>{field.description}</FormDescription>
+                    )}
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={formField.value === true || formField.value === "true"}
+                      onCheckedChange={formField.onChange}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            );
           }
 
           if (field.enum) {
             return (
-              <FormItem>
+              <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
                 <div className="flex items-center">
                   <FormLabel>
                     {field.title || key}
@@ -242,9 +307,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                  {field.enum
-                    .filter((option: string) => option !== "")
-                    .map((option: string) => (
+                    {field.enum.map((option: string) => (
                       <SelectItem key={option} value={option}>
                         {option}
                       </SelectItem>
@@ -256,37 +319,9 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
             );
           }
 
-          if (field.type === 'boolean') {
+          if (field.format === 'textarea') {
             return (
-              <FormItem className="flex flex-row items-center justify-between p-3">
-                <div className="space-y-0.5 flex items-center">
-                  <FormLabel>{field.title || key}</FormLabel>
-                  {field.description && (
-                    <button
-                      type="button"
-                      className="ml-1 text-muted-foreground"
-                      onClick={() => setShowDescription(!showDescription)}
-                    >
-                      <HelpCircle size={16} />
-                    </button>
-                  )}
-                  {showDescription && field.description && (
-                    <FormDescription className="ml-2">{field.description}</FormDescription>
-                  )}
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={formField.value}
-                    onCheckedChange={formField.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            );
-          }
-
-          if (field.type === 'string' && (field.format === 'textarea' || field.format === 'json' || key.includes('json') || key === 'credentials_json')) {
-            return (
-              <FormItem>
+              <FormItem className="col-span-2 w-full">
                 <div className="flex items-center">
                   <FormLabel>
                     {field.title || key}
@@ -308,7 +343,7 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                 <FormControl>
                   <Textarea
                     {...formField}
-                    className="font-mono h-48 resize-y"
+                    placeholder={field.examples?.[0] || field.default || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -316,9 +351,12 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
             );
           }
 
-          // Default input field
+          if (field.format === 'password') {
+            return renderPasswordField(key, field, fieldKey, formField, isRequired);
+          }
+          
           return (
-            <FormItem>
+            <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
               <div className="flex items-center">
                 <FormLabel>
                   {field.title || key}
@@ -338,19 +376,12 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
                 <FormDescription>{field.description}</FormDescription>
               )}
               <FormControl>
-                {field.type === "number" ? (
-                  <Input
-                    {...formField}
-                    type="number"
-                    onChange={(e) => {
-                      // Convert string to number for number fields
-                      const value = e.target.value ? Number(e.target.value) : '';
-                      formField.onChange(value);
-                    }}
-                  />
-                ) : (
-                  <Input {...formField} type={field.type === "string" ? "text" : field.type} />
-                )}
+                <Input
+                  {...formField}
+                  type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
+                  placeholder={field.examples?.[0] || field.default || ''}
+                  value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -360,39 +391,18 @@ export function FormFields({ schema, form, parentKey = '' }: FormFieldsProps) {
     );
   };
 
-  // If we have more than one category, use accordion without borders
-  if (Object.keys(fieldsByCategory).length > 1) {
-    return (
-      <Accordion type="single" collapsible className="w-full">
-        {Object.entries(fieldsByCategory).map(([category, fields]) => {
-          if (fields.length === 0) return null;
-          
-          return (
-            <AccordionItem key={category} value={category} className="border-none">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center">
-                  <span>{category}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {fields.length}
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  {fields.map(({ key, field }) => renderField(key, field))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
-    );
-  }
-
-  // Otherwise render fields directly without separations
   return (
-    <div className="space-y-6">
-      {Object.entries(schema.properties).map(([key, value]) => renderField(key, value))}
+    <div>
+      {Object.entries(fieldsByCategory).map(([category, fields]) => (
+        <div key={category} className="mb-6">
+          {category !== 'General' && fields.length > 0 && (
+            <h3 className="text-md font-semibold mb-4">{category}</h3>
+          )}
+          <div className={twoColumnLayout ? "grid grid-cols-2 gap-4" : "space-y-4"}>
+            {fields.map(({ key, field }) => renderField(key, field))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

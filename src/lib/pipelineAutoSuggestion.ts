@@ -1,7 +1,7 @@
 import { Node, Edge } from 'reactflow';
 import { UINode } from "./pipelineJsonConverter";
 import { apiService } from './api/api-service';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 
@@ -20,7 +20,7 @@ async function fetchLayoutFields(dataSrcId: string): Promise<LayoutField[]> {
 
   // If not in cache, fetch from API
   const response = await apiService.get({
-    portNumber: CATALOG_API_PORT,
+    baseUrl: CATALOG_REMOTE_API_URL,
     url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
     usePrefix: true,
     method: 'GET',

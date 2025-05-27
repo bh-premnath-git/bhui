@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, Terminal, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/hooks/useRedux';
 import { useQuery } from '@tanstack/react-query';
-import { CATALOG_API_PORT } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { useSidebar } from '@/context/SidebarContext';
 import { apiService } from '@/lib/api/api-service';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -57,7 +57,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       try {
         const {dag_run_id, ...other} = dagEunID;
         const response = await apiService.get<{ task_instances: any[] }>({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           url: '/bh_airflow/get_dag_task_id',
           params: dagEunID,
           usePrefix: true,
@@ -87,7 +87,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
       }
       
       const response = await apiService.get<string>({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/bh_airflow/get_dag_logs',
         params: { ...dagEunID, task_id: selectedTask },
         usePrefix: true,

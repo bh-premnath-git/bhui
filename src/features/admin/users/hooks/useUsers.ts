@@ -3,7 +3,7 @@ import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
 import { toast } from 'sonner';
-import { KEYCLOAK_API_PORT } from '@/config/platformenv';
+import { KEYCLOAK_API_REMOTE_URL } from '@/config/platformenv';
 
 // Define the API response structure to match the server
 export interface ApiUsersResponse {
@@ -59,7 +59,7 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
   // For queries - returns User objects - using 'any' here to handle various response formats
   const { getOne: getUser, getAll: getAllUsers } = useResource<any>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 
@@ -67,25 +67,25 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
   // For mutations - accepts different types for different operations
   const { create: createUser } = useResource<UserMutationData>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 
   const { update: updateUserResource } = useResource<UserMutationData>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 
   const { update: updateUserProjects } = useResource<{ projects: string[] }>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 
   const { update: updateUserRoles } = useResource<{ realm_roles: string[] }>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 

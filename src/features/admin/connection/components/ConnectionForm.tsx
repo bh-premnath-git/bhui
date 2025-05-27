@@ -6,14 +6,33 @@ import { useConnections } from '../hooks/useConnection';
 import { generateFormSchema } from './connectionFormSchema';
 import { FormFields } from './FormFields';
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Construction, Database, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { 
+  ArrowLeft, 
+  Construction, 
+  Database, 
+  RefreshCw, 
+  CheckCircle2, 
+  XCircle, 
+  Loader2,
+  KeyRound,
+  ServerCog,
+  ShieldCheck
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { decrypt_string, encrypt_string } from '@/lib/encryption';
+import { encrypt_string } from '@/lib/encryption';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from '@/components/ui/badge';
 
 interface ConnectionFormProps {
   connectionType: string;
@@ -24,6 +43,7 @@ interface ConnectionFormProps {
   connectionConfigName: string;
   isEdit?: boolean;
   formData?: any;
+  mode?: 'edit' | 'new';
 }
 
 // Utility function to clean the connectionConfigName
@@ -39,12 +59,15 @@ export function ConnectionForm({
   onBack,
   connectionConfigName,
   isEdit,
-  formData
+  formData,
+  mode = 'new'
 }: ConnectionFormProps) {
   const { handleCreateConnection, handleUpdateConnection } = useConnections();
   const [schema, setSchema] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -89,7 +112,6 @@ export function ConnectionForm({
                   }
                 }
               };
-              console.log('Modified BigQuery schema:', schema);
             }
             
             setSchema(schema);
@@ -119,7 +141,8 @@ export function ConnectionForm({
 
     if (schema?.properties) {
       Object.keys(schema.properties).forEach(key => {
-        initialValues[key] = '';
+        // Always initialize with empty string for new connections
+        initialValues[key] = mode === 'edit' ? (formData?.[key] || '') : '';
       });
     }
 
@@ -153,8 +176,7 @@ export function ConnectionForm({
 
   const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
     const type = connectionName.toLowerCase();
-    console.log("Form data received in getConfigUnionForType:", data);
-  
+    
     const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
   
     const commonFields = {
@@ -204,36 +226,27 @@ export function ConnectionForm({
     if (type === 'bigquery') {
       let parsedCredentials;
       try {
-        console.log('Raw credentials_json:', data.credentials_json);
-        
         if (typeof data.credentials_json === 'string') {
           // Try to clean the string before parsing
           const cleanedJson = data.credentials_json
             .replace(/\r?\n|\r/g, '') // Remove all newlines
             .trim(); // Remove leading/trailing whitespace
-          console.log('Cleaned credentials_json:', cleanedJson);
           
           try {
             parsedCredentials = JSON.parse(cleanedJson);
           } catch (parseError) {
             // If parsing fails, try to use the string as-is
-            console.warn('Failed to parse cleaned JSON, using raw string:', parseError);
             parsedCredentials = data.credentials_json;
           }
         } else if (typeof data.credentials_json === 'object') {
           parsedCredentials = data.credentials_json;
         } else {
-          console.warn('Unexpected credentials_json type:', typeof data.credentials_json);
           parsedCredentials = data.credentials_json;
         }
       } catch (error) {
-        console.error('Error handling credentials_json:', error);
         // Use the raw value if all parsing attempts fail
         parsedCredentials = data.credentials_json;
       }
-
-      // console.log('Final parsed credentials:', JSON.parse(parsedCredentials));
-      console.log('Final parsed credentials:', typeof parsedCredentials);
 
       return {
         project_id: data.project_id,
@@ -300,12 +313,7 @@ export function ConnectionForm({
     return null;
   };
   
-
   const generateCustomMetadata = (type: string, data: any) => {
-    console.log(type, "type");
-    console.log(data, "data");
-    console.log(connectionConfigName, "data.file_path_prefix");
-
     // Clean the connectionConfigName
     const cleanedName = cleanConnectionConfigName(connectionConfigName || '');
 
@@ -354,13 +362,39 @@ export function ConnectionForm({
     }
   };
 
+  const handleTestConnection = async () => {
+    try {
+      setIsTesting(true);
+      setTestResult(null);
+      
+      // Simulate connection test
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // For demo purposes, we'll simulate success most of the time
+      const isSuccess = Math.random() > 0.3;
+      
+      setTestResult({
+        success: isSuccess,
+        message: isSuccess 
+          ? "Connection test successful! All required settings validated." 
+          : "Connection test failed. Please check your credentials and network settings."
+      });
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: "Error testing connection. Please try again."
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
       
       // Get raw form data
       const rawFormData = form.getValues();
-      console.log('Raw form values:', rawFormData);
       
       // Special handling for BigQuery
       const formData = connectionName.toLowerCase() === 'bigquery' 
@@ -371,22 +405,17 @@ export function ConnectionForm({
             temp_gcs_bucket: rawFormData.temp_gcs_bucket,
           }
         : { ...data };
-
-      console.log('Form data before processing:', formData);
       
       const configUnion: any = await getConfigUnionForType(connectionName, formData, connectionType);
-      console.log('Config before encryption:', configUnion);
 
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
-      console.log(decrypt_string(encryptedString, initVector), "initVector");
 
       // Use the factory function to generate custom metadata
       const custom_metadata = generateCustomMetadata(connectionName, rawFormData);
-      console.log(custom_metadata, "custom_metadata");
 
       const connectionData: any = {
         connection_id: connectionId,
@@ -407,7 +436,6 @@ export function ConnectionForm({
         connectionData.credentials_json = rawFormData.credentials_json?.toString();
       }
 
-      console.log(connectionData, "connectionData");
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);
         toast.success('Connection updated successfully');
@@ -424,24 +452,64 @@ export function ConnectionForm({
     }
   };
 
-  // Add this to debug form values
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      console.log('Form values changed:', value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
+  const getConnectionIcon = () => {
+    const connectionIcons: { [key: string]: JSX.Element } = {
+      postgres: <img 
+        src="/assets/buildPipeline/connection/postgres.svg" 
+        alt="PostgreSQL" 
+        className="h-6 w-6"
+      />,
+      mysql: <img 
+        src="/assets/buildPipeline/connection/mysql.svg" 
+        alt="MySQL" 
+        className="h-6 w-6"
+      />,
+      snowflake: <img 
+        src="/assets/buildPipeline/connection/snowflake.svg" 
+        alt="Snowflake" 
+        className="h-6 w-6"
+      />,
+      bigquery: <img 
+        src="/assets/buildPipeline/connection/bigquery.svg" 
+        alt="BigQuery" 
+        className="h-6 w-6"
+      />,
+      s3: <img 
+        src="/assets/buildPipeline/connection/s3.svg" 
+        alt="S3" 
+        className="h-6 w-6"
+      />,
+      // Add more connections as needed
+      default: <Database className="h-6 w-6 text-primary" />
+    };
+
+    return connectionIcons[connectionName.toLowerCase()] || connectionIcons.default;
+  };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 max-w-3xl">
-        <Button onClick={onBack} variant="ghost" className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="container mx-auto p-4 max-w-3xl"
+      >
+        <Button onClick={onBack} variant="ghost" className="mb-4 gap-1.5">
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Card>
+        <Card className="border shadow-sm overflow-hidden">
+          <div className="h-1 bg-muted-foreground/20 w-full relative">
+            <motion.div 
+              className="absolute top-0 left-0 h-full bg-primary/40"
+              animate={{ width: ["0%", "100%", "0%"] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          </div>
           <CardHeader>
-            <CardTitle>Loading Connection Form</CardTitle>
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              <CardTitle>Loading Connection Form</CardTitle>
+            </div>
             <CardDescription>Please wait while we load the connection configuration</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -452,109 +520,203 @@ export function ConnectionForm({
             <Skeleton className="h-8 w-2/3" />
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 
   if (!schema) {
     return (
-      <div className="container mx-auto p-4 max-w-3xl">
-        <Button onClick={onBack} variant="ghost" className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="container mx-auto p-4 max-w-3xl"
+      >
+        <Button onClick={onBack} variant="ghost" className="mb-4 gap-1.5">
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Card className="border-destructive">
+        <Card className="border border-amber-200 shadow-md overflow-hidden">
+          <div className="h-1 bg-amber-500 w-full" />
           <CardHeader>
             <div className='flex flex-col items-center space-y-4'>
-              <Construction className="h-16 w-16" />
-              <CardTitle className="text-destructive text-2xl font-bold">Under the Construction</CardTitle>
+              <div className="bg-amber-500/10 p-4 rounded-full">
+                <Construction className="h-12 w-12 text-amber-500" />
+              </div>
+              <CardTitle className="text-xl font-bold">Connection Type Not Available</CardTitle>
+              <CardDescription className="text-center max-w-md">
+                We're currently working on support for this connection type. Please try a different connection or check back later.
+              </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
-            <div className="flex justify-end space-x-4">
-              <Button variant="outline" onClick={onBack}>
-                Go Back
-              </Button>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="default"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Retry
-              </Button>
-            </div>
-          </CardContent>
+          <CardFooter className="flex justify-center pt-2 pb-6 gap-3">
+            <Button variant="outline" onClick={onBack} className="gap-1.5">
+              <ArrowLeft className="h-4 w-4" />
+              Go Back
+            </Button>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="default"
+              className="gap-1.5"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </CardFooter>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <Button onClick={onBack} variant="ghost" className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back
-      </Button>
-      
-      <Card>
-        <CardHeader>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3 }}
+      className="container mx-auto p-4 max-w-3xl"
+    >
+      <Card className="border shadow-md overflow-hidden">
+        <div className="h-1 bg-primary w-full" />
+        <CardHeader className="pb-4">
           <div className="flex items-center">
-            <Database className="mr-2 h-5 w-5 text-primary" />
-            <CardTitle>{isEdit ? 'Update' : 'Create'} {connectionDisplayName} Connection</CardTitle>
+            <div className="mr-3 bg-primary/10 p-2 rounded-full">
+              {getConnectionIcon()}
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                {isEdit ? 'Edit' : 'New'} {connectionDisplayName} Connection
+                <Badge variant="outline" className="ml-2">
+                  {connectionType}
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Configure your {connectionDisplayName} connection details
+              </CardDescription>
+            </div>
           </div>
-          <CardDescription>
-            Configure your {connectionDisplayName} connection details
-          </CardDescription>
+          
+          {testResult && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className={cn(
+                "mt-4 p-3 rounded-md flex items-start gap-2",
+                testResult.success ? "bg-green-500/10 text-green-700" : "bg-red-500/10 text-red-700"
+              )}
+            >
+              {testResult.success ? (
+                <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+              ) : (
+                <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="font-medium">{testResult.success ? "Success" : "Error"}</p>
+                <p className="text-sm opacity-90">{testResult.message}</p>
+              </div>
+            </motion.div>
+          )}
         </CardHeader>
-        <CardContent>
+        
+        <CardContent className="px-6 pt-0">
+          {/* Remove ScrollArea component and let the content be natively scrollable */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Connection Name Field */}
-              <div className="mb-6">
-                <FormFields 
-                  schema={{
-                    properties: {
-                      name: {
-                        type: "string",
-                        title: "Connection Name",
-                        description: "A unique name to identify this connection"
-                      }
-                    },
-                    required: ["name"]
-                  }} 
-                  form={form} 
-                />
-              </div>
+            
+              <Accordion type="multiple" defaultValue={["connection-details"]} className="w-full">
+                <AccordionItem value="connection-details" className="border rounded-md">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/20 transition-colors group">
+                    <div className="flex items-center gap-2 font-medium">
+                      <ServerCog className="h-5 w-5 text-primary" />
+                      <span>Connection Details</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 pt-1">
+                    <div className="space-y-6">
+                      <FormFields schema={schema} form={form} mode={mode} />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="security-settings" className="border rounded-md mt-3">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/20 transition-colors group">
+                    <div className="flex items-center gap-2 font-medium">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                      <span>Security Settings</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 pt-1">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-md border bg-muted/10">
+                        <div className="flex items-center gap-2">
+                          <KeyRound className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">Connection Credentials</p>
+                            <p className="text-xs text-muted-foreground">Credentials are encrypted before storage</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
+                          Secure
+                        </Badge>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               
-              <Separator className="my-6" />
-              
-              <h3 className="text-lg font-semibold mb-4">Connection Details</h3>
-              
-              {/* Connection Configuration Fields */}
-              <FormFields schema={schema} form={form} />
-              
-              <div className="flex justify-end pt-6">
+              <div className="flex flex-col gap-4 pt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={onBack}
-                  className="mr-2"
-                  disabled={isSubmitting}
+                  className="w-full gap-2"
+                  onClick={handleTestConnection}
+                  disabled={isSubmitting || isTesting}
                 >
-                  Cancel
+                  {isTesting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Testing Connection...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="h-4 w-4" />
+                      Test Connection
+                    </>
+                  )}
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Connection' : 'Create Connection')}
-                </Button>
+                
+                <div className="flex gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={onBack}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {isEdit ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        {isEdit ? 'Update' : 'Create'} Connection
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }

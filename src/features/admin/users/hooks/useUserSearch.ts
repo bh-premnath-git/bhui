@@ -2,10 +2,7 @@ import { useState, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import type { User } from '@/types/admin/user';
-import { KEYCLOAK_API_PORT } from '@/config/platformenv';
-
-// Import the API response interface from useUsers to ensure consistency
-import { ApiUsersResponse } from './useUsers';
+import { KEYCLOAK_API_REMOTE_URL } from '@/config/platformenv';
 
 export const useUserSearch = () => {
   const [searchedUser, setSearchedUser] = useState<User | null>(null);
@@ -15,7 +12,7 @@ export const useUserSearch = () => {
   // Using 'any' temporarily to handle the API response structure
   const { getAll: searchUsers } = useResource<any>(
     'users',
-    KEYCLOAK_API_PORT,
+    KEYCLOAK_API_REMOTE_URL,
     false
   );
 

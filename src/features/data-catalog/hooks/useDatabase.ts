@@ -1,7 +1,7 @@
 "use client";
 
 import { apiService } from "@/lib/api/api-service";
-import { CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -35,7 +35,7 @@ export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) 
       
       try {
         const response = await apiService.get<string[]>({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           method: 'GET',
           url: `/import_db_catalog/connection_config/${connectionId}/get-schemas`,
           usePrefix: true
@@ -54,7 +54,7 @@ export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) 
     async (connectionId: string, schema: string): Promise<string[]> => {
       try {
         const response = await apiService.get<string[]>({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           method: 'GET',
           url: `/import_db_catalog/connection_config/${connectionId}/schemas/${schema}/tables`,
           usePrefix: true
@@ -72,7 +72,7 @@ export const useDatabase = (options: useDatabaseOption = { shouldFetch: true }) 
     async (connectionId: string, projectId: string, schema: string, createDescription: boolean, identifyPII: boolean, data: string[]) => {
       try {
         await apiService.post({
-          portNumber: CATALOG_API_PORT,
+          baseUrl: CATALOG_REMOTE_API_URL,
           method: 'POST',
           url: `/import_db_catalog/connection_config/${connectionId}/create_data_source`,
           usePrefix: true,

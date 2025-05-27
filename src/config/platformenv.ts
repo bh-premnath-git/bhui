@@ -1,13 +1,15 @@
-export const CATALOG_API_PORT = import.meta.env.VITE_CATALOG_API_PORT;
-export const AGENT_PORT = import.meta.env.VITE_AGENT_PORT;
-export const AUDIT_PORT = import.meta.env.VITE_AUDIT_PORT;
-export const MONITOR_PORT = import.meta.env.VITE_MONITOR_PORT;
-export const KEYCLOAK_API_PORT = import.meta.env.VITE_KEYCLOAK_API_PORT;
 export const DECRYPTION_KEY = import.meta.env.VITE_DECRYPTION_KEY;
-export const KEYCLOAK_REDIRECT_URI = import.meta.env.VITE_KEYCLOAK_REDIRECT_URI
-export const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL;
 export const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM;
 export const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID;
 export const AUTO_SAVE_TIME = import.meta.env.VITE_AUTO_SAVE_TIME;
-export const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
 export const API_PREFIX_URL = import.meta.env.VITE_API_PREFIX_URL;
+/**
+ * Remote URLs
+*/
+export const KEYCLOAK_REDIRECT_URI = import.meta.env.VITE_KEYCLOAK_REDIRECT_REMOTE_URI
+export const CATALOG_REMOTE_API_URL = import.meta.env.VITE_CATALOG_REMOTE_API_URL;
+export const AGENT_REMOTE_URL = import.meta.env.VITE_AGENT_REMOTE_URL;
+export const AUDIT_REMOTE_URL = import.meta.env.VITE_AUDIT_REMOTE_URL;
+export const MONITOR_REMOTE_URL = import.meta.env.VITE_MONITOR_REMOTE_URL;
+export const KEYCLOAK_API_REMOTE_URL = import.meta.env.VITE_KEYCLOAK_API_REMOTE_URL;
+export const KEYCLOAK_REMOTE_URL = import.meta.env.VITE_KEYCLOAK_REMOTE_URL;

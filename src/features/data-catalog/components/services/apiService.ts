@@ -1,4 +1,4 @@
-import { CATALOG_API_PORT } from "@/config/platformenv";
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { apiService } from "@/lib/api/api-service";
 
 export const mockApiCall = async (data: any) => {
@@ -8,7 +8,7 @@ export const mockApiCall = async (data: any) => {
 
 export const saveDescription = async (id: number, description: string) => {
   return apiService.patch({
-    portNumber: CATALOG_API_PORT,
+    baseUrl: CATALOG_REMOTE_API_URL,
     url: `/data_source/${id}`,
     data: {data_src_desc : description },
     usePrefix: true,

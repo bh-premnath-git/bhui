@@ -93,7 +93,6 @@ export function AddEnvironment() {
 
   return (
     <EnvironmentPageLayout description="Add New Environment">
-      <div className="p-6">
         <EnvironmentForm 
           mode="create" 
           onSubmit={onSubmit}
@@ -103,7 +102,6 @@ export function AddEnvironment() {
           isTokenValidated={isTokenValidated}
           error={error}
         />
-      </div>
     </EnvironmentPageLayout>
   );
 }

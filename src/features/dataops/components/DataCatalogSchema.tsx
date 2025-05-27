@@ -9,7 +9,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import { RootState } from "@/store/"
 import { useAppSelector } from '@/hooks/useRedux';
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_PORT, CATALOG_API_PORT } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { LayoutField, LayoutFieldTags, DataSource } from '@/types/data-catalog/dataCatalog';
 
 export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSourceId: number, selectedSource: DataSource }) {
@@ -153,7 +153,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
     try {
 
       const response: any = await apiService.post({
-        portNumber: AGENT_PORT,
+        baseUrl: AGENT_REMOTE_URL,
         method: 'POST',
         url: '/pipeline_agent/generate',
         data: body,
@@ -226,7 +226,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
 
     if (layoutFields?.data_src_lyt_id) {
       await apiService.patch({
-        portNumber: CATALOG_API_PORT,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/layout_fields/descriptions/${layoutFields?.data_src_lyt_id}`,
         data: { descriptions: descriptions },
         usePrefix: true,

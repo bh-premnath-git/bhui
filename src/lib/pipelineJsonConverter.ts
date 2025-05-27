@@ -1,7 +1,6 @@
 import { Node, Edge } from 'reactflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CATALOG_API_PORT } from '@/config/platformenv';
-import axios from 'axios';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from './api/api-service';
 import { getNodeIcon, getNodePorts } from './transformationUtils';
 import { NodeFormData } from '@/types/designer/flow';
@@ -19,17 +18,17 @@ export const useUpdatePipelineMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, pipeline_json }: { id: string; pipeline_json: any }) => {
-            if (id) {
-                const data = await apiService.patch({
-                    portNumber: CATALOG_API_PORT,
-                    url: `/pipeline/${id}`,
-                    usePrefix: true,
-                    method: 'PATCH',
-                    data: pipeline_json,
-                    metadata: {
-                        errorMessage: 'Failed to fetch projects'
-                    },
-                    params: { limit: 1000 }
+            if(id){
+            const data =await apiService.patch({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url: `/pipeline/${id}`,
+                usePrefix: true,
+                method: 'PATCH',
+                data:pipeline_json,
+                metadata: {
+                    errorMessage: 'Failed to fetch projects'
+                },
+                    params: {limit: 1000}
                 })
                 return data;
             }
@@ -44,8 +43,8 @@ export const useTransformationCountQuery = (pipelineName: string) => {
     return useQuery({
         queryKey: pipelineKeys.transformationCount(pipelineName),
         queryFn: async () => {
-            const data = await apiService.get({
-                portNumber: CATALOG_API_PORT,
+            const data  = await apiService.get({
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: '/pipeline/debug/get_transformation_count',
                 usePrefix: true,
                 method: 'GET',
@@ -408,7 +407,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 } else if (dataSourceId) {
                     // Fetch data and cache it
                     sourceDetails = await apiService.get({
-                        portNumber: CATALOG_API_PORT,
+                        baseUrl: CATALOG_REMOTE_API_URL,
                         url: `/data_source/${dataSourceId}`,
                         usePrefix: true,
                         method: 'GET',

@@ -1386,6 +1386,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
 
     const handleNodeClick = useCallback((node: Node, source: any) => {
+        console.log(source);
 
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
@@ -1399,6 +1400,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const nodeLabel = existingNodes.length > 0
             ? `${baseModuleName} ${nodeNumber}`
             : baseModuleName;
+        console.log(baseModuleName)
         // Find the last selected node's position
         const lastNode = nodes[nodes.length - 1];
         const basePosition = lastNode ? {
@@ -1410,8 +1412,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
 
         const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
+        console.log(baseModuleName, "baseModuleName")
         // debugger
-        console.log(node.ui_properties)
         // Create a more detailed node data structure
         const newNode = {
             id: uniqueId,
@@ -1421,31 +1423,19 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 label: baseModuleName, // Use the numbered label here
                 icon: node.ui_properties.icon,
                 ports: node.ui_properties.ports,
-                id: node.ui_properties.id,
-                meta: node.ui_properties.meta,
-                selectedData: node.ui_properties.type,
-                requiredFields: node.ui_properties.operators?.map?.((op: any) => {
-                    return ({ [op.type]: op.requiredFields })
-                }) || [],
                 source: source,
                 title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
 
-        // Create a new array with the new node, ensuring it works even if nodes is empty
-        const updatedNodes = Array.isArray(nodes) ? [...nodes, newNode] : [newNode];
-        console.log("Adding new node:", newNode);
-        console.log("Updated nodes array:", updatedNodes);
-        
-        // Use updateSetNode to ensure consistent state updates
-        updateSetNode(updatedNodes, edges);
+        setNodes((prevNodes) => [...prevNodes, newNode]);
+        setUnsavedChanges();
 
         setTimeout(() => {
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, edges, reactFlowInstance, dispatch, handleNodeUpdate, updateSetNode]);
-
+    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
     const handleAlignHorizontal = useCallback(() => {
         if (nodes.length === 0) return;
 

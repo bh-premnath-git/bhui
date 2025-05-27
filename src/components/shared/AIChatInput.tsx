@@ -43,7 +43,7 @@ export function AIChatInput({
     <div
       className={`
         flex items-center w-full bg-white rounded-md
-        px-3 py-1.5 space-x-2 shadow-sm
+        px-2 py-1 space-x-1 shadow-sm
         border transition-all duration-200 ease-in-out
         ${isFocused 
           ? "border-green-400 ring-1 ring-green-400/30" 
@@ -55,10 +55,10 @@ export function AIChatInput({
         onClick={onVoiceInput}
         variant="ghost"
         size="icon"
-        className="h-10 w-10 text-gray-400 hover:text-gray-600 transition-colors"
+        className="h-8 w-8 text-gray-400 hover:text-gray-600 transition-colors"
         aria-label="Voice input"
       >
-        <Mic className="h-5 w-5" />
+        <Mic className="h-4 w-4" />
       </Button>
 
       {/* Auto-resizing textarea */}
@@ -87,12 +87,13 @@ export function AIChatInput({
             !border-none
             !outline-none
             !ring-0
-            px-3 py-2 mx-2
+            px-2 py-1.5 mx-1
+            text-sm
             !shadow-none"
           style={{ 
             height: "auto", 
-            maxHeight: "10rem", 
-            minHeight: "2.5rem",
+            maxHeight: "8rem", 
+            minHeight: "2rem",
             caretColor: "#10b981",
           }}
           onInput={e => autoResize(e.currentTarget)}
@@ -107,7 +108,7 @@ export function AIChatInput({
         size="icon"
         disabled={disabled || !input.trim()}
         className={`
-          h-8 w-8 transition-all duration-150 ease-in-out
+          h-7 w-7 transition-all duration-150 ease-in-out
           ${disabled || !input.trim()
             ? "text-green-500 cursor-not-allowed opacity-50"
             : "text-green-700 hover:text-green-600 hover:bg-green-50"}

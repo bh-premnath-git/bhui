@@ -108,8 +108,8 @@ export const ReaderFormField: React.FC<{
         const referencedSchema = schemaReferences[fieldSchema.$ref];
         if (referencedSchema && referencedSchema.properties) {
             return (
-                <div key={fieldName} className="col-span-3 border p-4 ">
-                    <div className="grid grid-cols-2 gap-2">
+                <div key={fieldName} className="col-span-3  rounded-md">
+                    <div className="grid grid-cols-2 gap-3">
                         {Object.entries(referencedSchema.properties).map(
                             ([name, schema]: [string, any]) =>
                                 ReaderFormField({ fieldName: name, fieldSchema: schema, path: [...path, fieldName], formData, onChange, errors, connectionConfigList, selectedConnection, disabled, disableList })
@@ -127,8 +127,8 @@ export const ReaderFormField: React.FC<{
 
     if (fieldSchema.enum) {
         return (
-            <div key={fieldName} className="mb-4">
-                <Label>
+            <div key={fieldName} className="mb-2">
+                <Label className="text-xs font-medium text-gray-700">
                     {isFieldRequired(fieldName, fieldSchema, path, formData) ? (
                         <RequiredFieldLabel fieldName={fieldSchema.title || fieldName} />
                     ) : (
@@ -140,7 +140,7 @@ export const ReaderFormField: React.FC<{
                     value={fieldValue || ""}
                     onChange={(e) => onChange(e, path)}
                     disabled={isFieldDisabled}
-                    className={`w-full p-2 border rounded bg-white shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue ? 'border-red-500' : ''
+                    className={`w-full h-8 text-sm px-3 border rounded bg-white shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 ${isFieldRequired(fieldName, fieldSchema, path, formData) && !fieldValue ? 'border-red-500' : ''
                         }`}
                 >
                     <option value="">Select {formatFieldName(fieldName)}</option>
@@ -151,10 +151,9 @@ export const ReaderFormField: React.FC<{
                     ))}
                 </select>
                 {errors[fieldName] && (
-                    <p className="text-red-500 text-sm">{errors[fieldName]}</p>
+                    <p className="text-xs text-red-500 mt-0.5">{errors[fieldName]}</p>
                 )}
             </div>
-
         );
     }
 
@@ -162,8 +161,8 @@ export const ReaderFormField: React.FC<{
 
     if (fieldName.toLowerCase() === 'connection' && fieldSchema.endpoint) {
         return (
-            <div key={fieldName} className="space-y-4">
-                <div className="w-full space-y-1">
+            <div key={fieldName} className="space-y-3">
+                <div className="w-full space-y-0.5">
                     <Label className="text-xs font-medium text-gray-700">
                         Connection
                         {isFieldRequired(fieldName, fieldSchema, path, formData) && (
@@ -178,7 +177,7 @@ export const ReaderFormField: React.FC<{
                             onChange(e, [...path, 'connection', 'connection_config_id']);
                         }}
                         disabled={isFieldDisabled}
-                        className="w-full h-8 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="w-full h-8 text-sm px-3 border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                         <option value="">Select Connection</option>
                         {connectionConfigList?.map((conn) => (
@@ -191,7 +190,7 @@ export const ReaderFormField: React.FC<{
 
                 {/* Show file_path_prefix input when type is Local */}
                 {selectedConnection?.custom_metadata?.type === 'Local' && (
-                    <div className="w-full space-y-1">
+                    <div className="w-full space-y-0.5">
                         <Label className="text-xs font-medium text-gray-700">
                             File Path Prefix
                         </Label>
@@ -210,9 +209,9 @@ export const ReaderFormField: React.FC<{
     }
 
     return (
-        <div key={fieldName} className="w-full space-y-1">
-            <div className="flex items-center gap-1.5">
-                <Label className="text-xs font-medium text-gray-700">
+        <div key={fieldName} className="w-full space-y-0.5 mb-2">
+            <div className="flex items-center gap-1">
+                <Label className="text-xs font-medium text-gray-600">
                     {fieldSchema.title || formatFieldName(fieldName)}
                     {isFieldRequired(fieldName, fieldSchema, path, formData) && (
                         <span className="text-red-500 ml-0.5">*</span>
@@ -241,7 +240,7 @@ export const ReaderFormField: React.FC<{
                 className="h-8 text-sm"
             />
             {errors[fieldName] && (
-                <p className="text-xs text-red-500">{errors[fieldName]}</p>
+                <p className="text-xs text-red-500 mt-0.5">{errors[fieldName]}</p>
             )}
         </div>
     );

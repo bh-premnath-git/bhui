@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 
 import { FormData, ReaderFormField } from "./components/form/reader-form-field";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 
 interface FormSchema {
     type: string;
@@ -287,21 +288,18 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col h-[750px] w-full max-w-5xl mx-auto bg-white">
-            <Card className="shadow-md border border-gray-200 my-2">
-                <CardContent className="p-6 ">
-                    {/* Header Section */}
-                    <div className="mb-6 pb-3 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-900">Reader Configuration</h2>
-                        <p className="text-sm text-gray-500 mt-1">Configure your data reader settings</p>
-                    </div>
-
+        <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-white">
+            <div className="flex-1 overflow-auto">
+                <div className="p-3">
                     {/* Form Content */}
-                    <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
+                    <div className="space-y-3">
                         {/* Basic Info Section */}
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-gray-700 mb-3">Basic Information</h3>
-                            <div className="grid grid-cols-2 gap-6">
+                        <div className="bg-gray-50 p-2.5 rounded-md">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
+                                <h3 className="text-xs font-medium text-gray-700">Basic Information</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 px-2">
                                 {currentSchema.properties.reader_name && (
                                     <div>{ReaderFormField({ fieldName: 'reader_name', fieldSchema: currentSchema.properties.reader_name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
                                 )}
@@ -312,9 +310,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         </div>
 
                         {/* Source Configuration Section */}
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-gray-700 mb-3">Source Configuration</h3>
-                            <div className="space-y-4">
+                        <div className="bg-gray-50 p-2.5 rounded-md">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
+                                <h3 className="text-xs font-medium text-gray-700">Source Configuration</h3>
+                            </div>
+                            <div className="space-y-2 px-2">
                                 <div>{ReaderFormField({ fieldName: 'source', fieldSchema: currentSchema.properties.source, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
 
                                 {formData.source?.type && (
@@ -335,17 +336,19 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                                     </div>
                                                 ))}
                                         </div>
-                                        <div className="text-blue-600 flex items-center gap-2 cursor-pointer mt-2" onClick={() => setIsAdvanvce(!isAdvance)}>
-                                            <span className="font-medium">Advanced</span>
-                                            <span>{isAdvance ? <ChevronUp /> : <ChevronDown />}</span>
-                                        </div>
-                                        {isAdvance && (
-
-                                            <div>
+                                        <Collapsible className="mt-2">
+                                            <CollapsibleTrigger className="flex items-center gap-1 text-blue-600 text-xs font-medium cursor-pointer">
+                                                Advanced Options
+                                                <span>{isAdvance ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent>
                                                 {formData.source.type === 'File' && formData.file_type === 'CSV' && (
-                                                    <div className="mt-6">
-                                                        <h3 className="text-sm font-medium text-gray-700 mb-3">CSV Options</h3>
-                                                        <div className="grid grid-cols-3 gap-6">
+                                                    <div className="mt-3 bg-gray-50 p-2.5 rounded-md">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="h-4 w-1 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full" />
+                                                            <h3 className="text-xs font-medium text-gray-700">CSV Options</h3>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-3 px-2">
                                                             {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
                                                                 <div key={key}>
                                                                     {ReaderFormField({ fieldName: key, fieldSchema: schema, path: ['read_options'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
@@ -354,29 +357,29 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        )}
+                                            </CollapsibleContent>
+                                        </Collapsible>
                                     </>
                                 )}
                             </div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Footer Actions */}
-            <div className="flex justify-end gap-3 mt-6 pb-6">
+            <div className="flex justify-end gap-2 p-2 border-t border-gray-200 shrink-0 bg-gray-50">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={onClose}
-                    className="px-4 py-2 text-sm font-medium border-gray-300 hover:bg-gray-50"
+                    className="h-8 px-3 py-0 text-xs font-medium border-gray-300 hover:bg-gray-50"
                 >
                     Cancel
                 </Button>
                 <Button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium bg-black hover:bg-gray-900 text-white"
+                    className="h-8 px-3 py-0 text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white"
                 >
                     Save Configuration
                 </Button>

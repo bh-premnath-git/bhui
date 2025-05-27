@@ -4,11 +4,9 @@ import { useDataOpsDashboards, useDataOpsWidgets } from "@/features/dataops/data
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
-import { useAuth } from "@/hooks/useAuth";
 
 export function DataOpsHub() {
   const { state, dispatch } = useDataOps();
-  const { getUserInfo } = useAuth();
   const {
     dashboards,
     isLoading: isDashboardsLoading,
@@ -18,7 +16,6 @@ export function DataOpsHub() {
   });
 
   const widgetIds = dashboards?.[0]?.dashboard_layout?.map(layout => layout.widget_id) || [];
-  console.log("widgetIds", widgetIds);
 
   const {
     widgets,
@@ -96,11 +93,5 @@ export function DataOpsHub() {
     );
   }
 
-  console.log("user info", getUserInfo(), state.selectedDashboard, state.widgets);
-
-  return (
-    <div className="mt-4">
-      <Dashboard />
-    </div>
-  );
+  return (<Dashboard /> );
 }

@@ -43,7 +43,7 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
       enabled: options.shouldFetch,
       retry: 2
     },
-    query: 'dashboard_type=dataops'
+    query: 'dashboard_type=data-ops'
   }) as {
     data: Dashboards;
     isLoading: boolean;
@@ -88,72 +88,70 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
 /**
  * Hook for fetching and managing widgets for DataOps dashboards
  */
-export const useDataOpsWidgets = (options: UseWidgetOptions = { shouldFetch: true }) => {
-  // For single widget fetching
+export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
+  const { shouldFetch = true, widgetId, widgetIds = [] } = options;
+
   const { getOne: getWidget } = useResource<Widget>(
     WIDGET_API_PATH,
     CATALOG_REMOTE_API_URL,
     true
   );
-  
-  const widgetIds = options.widgetIds || [];
-  
-  // Get a specific widget by ID (if single widgetId is provided)
   const {
     data: widgetDetail,
     isLoading: isWidgetLoading,
     isFetching: isWidgetFetching,
-    isError: isWidgetError
-  } = options.widgetId ? getWidget({
-    url: `/${WIDGET_API_PATH}/${options.widgetId}`,
-    queryOptions: {
-      enabled: !!options.widgetId && options.shouldFetch,
-      retry: 2,
-      staleTime: 60000 // 1 minute
-    }
-  }) : {
-    data: undefined,
-    isLoading: false,
-    isFetching: false,
-    isError: false
-  };
-  
-  // Use useQueries with apiService public methods for fetching multiple widgets
-  const widgetQueries = useQueries({
-    queries: widgetIds
-      .filter(id => id != null)
-      .map(id => ({
-        queryKey: ['widget', id.toString()],
-        queryFn: async () => {
-          // Use the public get method of apiService
-          const config: ApiConfig = {
-            url: `/${WIDGET_API_PATH}/${id}`,
-            method: 'GET',
-            baseUrl: CATALOG_REMOTE_API_URL,
-            usePrefix: true
-          };
-          
-          return await apiService.get<Widget>(config);
+    isError: isWidgetError,
+    refetch: refetchWidgetDetail,
+  } = widgetId
+    ? getWidget({
+        url: `/${WIDGET_API_PATH}/${widgetId}/`,
+        queryOptions: {
+          enabled: shouldFetch,
+          retry: 2,
+          staleTime: 60_000,
         },
-        enabled: options.shouldFetch,
-        staleTime: 60000,
-        retry: 2
-      }))
-  });
-  
-  const isLoading = widgetQueries.some(q => q.isLoading) || isWidgetLoading;
-  const isFetching = widgetQueries.some(q => q.isFetching) || isWidgetFetching;
-  const isError = widgetQueries.some(q => q.isError) || isWidgetError;
-  const widgets = widgetQueries.map(q => q.data).filter(Boolean) as Widget[];
+      })
+    : {
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        isError: false,
+        refetch: () => {},
+      };
+
+  const { getAll: getWidgets } = useResource<Widget>(
+    WIDGET_API_PATH,
+    CATALOG_REMOTE_API_URL,
+    true
+  );
+  const {
+    data: widgets = [],
+    isLoading: isWidgetsLoading,
+    isFetching: isWidgetsFetching,
+    isError: isWidgetsError,
+    refetch: refetchWidgets,
+  } = getWidgets({
+    url: `/${WIDGET_API_PATH}/list/`,
+    queryOptions: {
+      enabled: shouldFetch && widgetIds.length > 0,
+      retry: 2,
+    },
+
+    query: widgetIds.map((id) => `ids=${id}`).join('&'),
+  }) as {
+    data: Widget[];
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+    refetch: () => void;
+  };
 
   return {
     widgets,
     widgetDetail,
-    isLoading,
-    isFetching,
-    isError,
-    refetch: () => {
-      widgetQueries.forEach(q => q.refetch());
-    }
+    isLoading: widgetId ? isWidgetLoading : isWidgetsLoading,
+    isFetching: widgetId ? isWidgetFetching : isWidgetsFetching,
+    isError: widgetId ? isWidgetError : isWidgetsError,
+    refetch: widgetId ? refetchWidgetDetail : refetchWidgets,
   };
 };

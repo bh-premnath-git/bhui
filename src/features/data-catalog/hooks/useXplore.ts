@@ -1,5 +1,5 @@
 import { apiService } from "@/lib/api/api-service";
-import { API_DOMAIN, API_PREFIX_URL, AGENT_PORT } from "@/config/platformenv";
+import { API_PREFIX_URL, AGENT_REMOTE_URL } from "@/config/platformenv";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -38,7 +38,7 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
         async (): Promise<ConversationResponse> => {
             try {
                 const response = await apiService.post<ConversationResponse>({
-                    portNumber: AGENT_PORT,
+                    baseUrl: AGENT_REMOTE_URL,
                     method: 'POST',
                     url: `/conversation/create-conversation`,
                     usePrefix: true,
@@ -63,7 +63,7 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
         (connectionId: number, userRequest: string, threadId: string, onChunk: StreamCallback, onComplete?: () => void, onError?: (error: any) => void, module?: string): () => void => {
             const controller = new AbortController();
             const { signal } = controller;
-            const baseUrl = `${API_DOMAIN}:${AGENT_PORT}${API_PREFIX_URL}`;
+            const baseUrl = `${AGENT_REMOTE_URL}${API_PREFIX_URL}`;
             let url: any;
             if (module === "dataops") {
                 url = `${baseUrl}/conversation/conversation/query/stream`;

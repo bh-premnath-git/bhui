@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useResource } from "@/hooks/api/useResource";
 import { DataOpsHub } from "@/types/dataops/dataOpsHub";
 import { toast } from "sonner";
-import { AUDIT_PORT } from "@/config/platformenv";
+import { AUDIT_REMOTE_URL } from "@/config/platformenv";
 
 interface UseDataOpsHubOptions {
   shouldFetch?: boolean;
@@ -29,7 +29,7 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
   // For queries
   const { getOne: getJob, getAll: getAllJobs } = useResource<DataOpsHub>(
     'job_details',
-    AUDIT_PORT,
+    AUDIT_REMOTE_URL,
     true
   );
 
@@ -40,7 +40,7 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
     remove: removeJob
   } = useResource<DataOpsHub>(
     'job_details',
-    AUDIT_PORT,
+    AUDIT_REMOTE_URL,
     true
   );
 

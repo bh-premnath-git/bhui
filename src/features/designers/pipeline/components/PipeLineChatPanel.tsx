@@ -21,6 +21,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import CreateFormFormik from './form-sections/CreateForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 // No longer need these imports since we're using TargetPopUp directly
 
 // Define the form schema based on Reader.json
@@ -563,6 +564,7 @@ const PipeLineChatPanel = () => {
 
   // Function to handle adding another source
   const handleAddAnotherSource = () => {
+    dispatch(setIsRightPanelOpen(true));
     setMessages(prevMessages => [
       ...prevMessages,
       {
@@ -1181,11 +1183,10 @@ const PipeLineChatPanel = () => {
                       style={{ backgroundColor: message.role === 'assistant' ? '#009459' : '#000000' }}
                     />
                     <div
-                      className={`flex-1 rounded-lg px-3 py-2 shadow-sm ${
-                        message.role === 'assistant' 
-                          ? 'bg-gray-100 text-black' 
+                      className={`flex-1 rounded-lg px-3 py-2 shadow-sm ${message.role === 'assistant'
+                          ? 'bg-gray-100 text-black'
                           : 'bg-gradient-to-r from-white to-slate-50'
-                      }`}
+                        }`}
                     >
                       <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
                     </div>

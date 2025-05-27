@@ -12,28 +12,37 @@ import "react-grid-layout/css/styles.css";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'dashboard_layout';
 
-export const DashboardLayout = () => {
-  const { state } = useDataOps();
-  const { widgets, selectedDashboard, filters } = state;
+// Default widget dimensions
+const DEFAULT_WIDGET_WIDTH = 6;
+const DEFAULT_WIDGET_HEIGHT = 4;
 
-  const { layouts, handleLayoutChange } = useLayoutPersistence({
+const GridLayout = () => {
+  const { state } = useDataOps();
+  const { widgets, selectedDashboard, filters, dashboards } = state;
+  console.log(selectedDashboard, dashboards, widgets);
+
+  const { handleLayoutChange } = useLayoutPersistence({
     storageKey: LAYOUT_STORAGE_KEY,
-    dashboard: selectedDashboard
+    dashboard: selectedDashboard,
+    defaultDimensions: {
+      w: DEFAULT_WIDGET_WIDTH,
+      h: DEFAULT_WIDGET_HEIGHT
+    }
   });
 
   const orderedWidgets = useMemo(() => {
     if (!selectedDashboard?.dashboard_layout || !widgets.length) return widgets;
-    
+
     const orderMap = new Map(
       selectedDashboard.dashboard_layout.map(layout => [
         layout.widget_id,
         parseInt(layout.order_index)
       ])
     );
-    
+
     return [...widgets].sort((a, b) => {
-      const orderA = orderMap.get(a.widget_id) || 0;
-      const orderB = orderMap.get(b.widget_id) || 0;
+      const orderA = orderMap.get(a.id) || 0;
+      const orderB = orderMap.get(b.id) || 0;
       return orderA - orderB;
     });
   }, [widgets, selectedDashboard]);
@@ -45,9 +54,13 @@ export const DashboardLayout = () => {
     }));
   }, [orderedWidgets, filters]);
 
+  const renderableWidgets = useMemo(() => {
+    return filteredWidgets.filter(widget => widget.id != null);
+  }, [filteredWidgets]);
+
   const onLayoutChange = async (layout: Layout[], allLayouts: any) => {
     const processedLayout = handleLayoutChange(layout, allLayouts);
-    
+
     if (!selectedDashboard) return;
 
     try {
@@ -58,57 +71,84 @@ export const DashboardLayout = () => {
         widget_size: { w: item.w, h: item.h }
       }));
 
-      await updateWidgetLayout( state.dashboards, selectedDashboard.dashboard_id, updates);
+      await updateWidgetLayout(dashboards, selectedDashboard.dashboard_id, updates);
     } catch (error) {
       console.error('Failed to update layout:', error);
     }
   };
 
-  return (
-    <div className="p-2 transition-all duration-300">
-      {filteredWidgets.length > 0 ? (
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={layouts}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={80}
-          margin={[8, 8]}
-          containerPadding={[0, 0]}
-          onLayoutChange={onLayoutChange}
-          isDraggable
-          isResizable
-          resizeHandles={['se']}
-          draggableHandle=".widget-header"
-          compactType="vertical"
-          measureBeforeMount={false}
-          useCSSTransforms={true}
-          transformScale={1}
-        >
-          {filteredWidgets.map((widget) => (
-            <div 
-              key={widget.widget_id.toString()} 
-              className="rounded-lg shadow-sm transition-all duration-300"
-            >
-              <Widget widget={widget} />
-            </div>
-          ))}
-        </ResponsiveGridLayout>
-      ) : (
-        <div className="min-h-[300px] flex flex-col items-center justify-center p-4 bg-card border rounded-lg">
-          <div className="bg-primary/10 p-3 rounded-full mb-4">
-            <LayoutDashboard className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            {filters.projectName ? 'No Data Available' : 'Dashboard is Empty'}
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {filters.projectName 
-              ? `No widgets found for project "${filters.projectName}". Try selecting a different project or clearing the filters.`
-              : "No widgets have been added to this dashboard yet. Widgets will appear here once they're configured."}
-          </p>
+  if (renderableWidgets.length === 0) {
+    return (
+      <div className="min-h-[300px] flex flex-col items-center justify-center p-4 bg-card border rounded-lg">
+        <div className="bg-primary/10 p-3 rounded-full mb-4">
+          <LayoutDashboard className="h-6 w-6 text-primary" />
         </div>
-      )}
+        <h3 className="text-lg font-semibold text-foreground mb-1">
+          {filters.projectName ? 'No Data Available' : 'Dashboard is Empty'}
+        </h3>
+        <p className="text-sm text-muted-foreground text-center max-w-md">
+          {filters.projectName
+            ? `No widgets found for project "${filters.projectName}". Try selecting a different project or clearing the filters.`
+            : "No widgets have been added to this dashboard yet. Widgets will appear here once they're configured."}
+        </p>
+      </div>
+    );
+  }
+
+  const initialLayout = renderableWidgets.map((widget, index) => ({
+    i: widget.id.toString(),
+    x: (index % 2) * DEFAULT_WIDGET_WIDTH,
+    y: Math.floor(index / 2) * DEFAULT_WIDGET_HEIGHT,
+    w: DEFAULT_WIDGET_WIDTH,
+    h: DEFAULT_WIDGET_HEIGHT,
+    minW: 3,
+    minH: 3,
+    maxW: 12,
+    maxH: 8
+  }));
+
+  return (
+    <div className="mt-4">
+    <ResponsiveGridLayout
+      className="layout"
+      layouts={{
+        lg: initialLayout,
+        md: initialLayout,
+        sm: initialLayout,
+        xs: initialLayout,
+        xxs: initialLayout
+      }}
+      breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+      cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
+      rowHeight={65}
+      margin={[16, 16]}
+      containerPadding={[16, 16]}
+      onLayoutChange={onLayoutChange}
+      isDraggable
+      isResizable
+      resizeHandles={['se']}
+      draggableHandle=".widget-header"
+      compactType="vertical"
+      measureBeforeMount={false}
+      useCSSTransforms={true}
+    >
+      {renderableWidgets.map((widget) => (
+        <div
+          key={widget.id.toString()}
+          className="rounded-lg shadow-sm bg-card"
+        >
+          <Widget widget={widget} />
+        </div>
+      ))}
+    </ResponsiveGridLayout>
+    </div>
+  );
+};
+
+export const DashboardLayout = () => {
+  return (
+    <div className="absolute inset-0 p-4">
+      <GridLayout />
     </div>
   );
 };

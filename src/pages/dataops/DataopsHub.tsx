@@ -3,9 +3,11 @@ import { DataOpsProvider } from "@/context/dataops/DataOpsContext"
 import { DataOpsHub } from '@/features/dataops/DataOpsHub';
 function DataOpsHubPage() {
     return (
-        <DataOpsProvider>
-            <DataOpsHub />
-        </DataOpsProvider>
+        <div className="pt-4">
+            <DataOpsProvider>
+                <DataOpsHub />
+            </DataOpsProvider>
+        </div>
     )
 }
 

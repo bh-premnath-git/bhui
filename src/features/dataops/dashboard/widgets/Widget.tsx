@@ -38,7 +38,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
     
     try {
       setIsRefreshing(true);
-      const [refreshedWidget] = await fetchWidgetsByIds(state.widgets, [widget.widget_id]);
+      const [refreshedWidget] = await fetchWidgetsByIds(state.widgets, [widget.id]);
       
       if (refreshedWidget) {
         dispatch({ 
@@ -51,7 +51,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [widget.widget_id, dispatch]);
+  }, [widget.id, dispatch]);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(prev => !prev);
@@ -156,7 +156,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
         <Card className="absolute w-full h-full bg-card border border-border/40 rounded-lg hover:shadow-md transition-all duration-200 backface-hidden">
           <CardContent className="p-3">
             <WidgetHeader 
-              title={widget.widget_name} 
+              title={widget.name} 
               description={widget.chart_config.metric}
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
@@ -175,7 +175,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
           <CardContent className="p-3">
             <WidgetHeader 
               title="SQL Query"
-              description={widget.widget_name}
+              description={widget.name}
               onFlip={handleFlip}
               onViewChange={handleViewToggle}
               showFlip

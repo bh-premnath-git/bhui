@@ -127,13 +127,13 @@ function SchemaTable({ initialData }: any) {
 
     
     return (
-        <div className="">
+        <div className="h-full flex flex-col">
             {isLoading ? (
-                <div className="flex justify-center items-center min-h-[200px]">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+                <div className="flex justify-center items-center flex-1">
+                    <div className="animate-spin rounded-full h-6 w-6 border-green-600" />
                 </div>
             ) : (
-                <>
+                <div className="flex-1 overflow-auto">
                     <DataTable
                         data={tableData}
                         columns={columns}
@@ -176,13 +176,13 @@ function SchemaTable({ initialData }: any) {
                             Save
                         </button>
                     </div> */}
-                </>
+                </div>
             )}
 
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <div className="flex justify-between items-center mb-4">
-                        <DialogTitle>Add Description</DialogTitle>
+                <DialogContent className="sm:max-w-[400px]">
+                    <div className="flex justify-between items-center mb-3">
+                        <DialogTitle className="text-base">Add Description</DialogTitle>
                         <DialogClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                             <X className="h-4 w-4" />
                             <span className="sr-only">Close</span>
@@ -190,20 +190,20 @@ function SchemaTable({ initialData }: any) {
                     </div>
                     <Input
                         autoFocus
-                        className="min-h-[100px]"
+                        className="min-h-[80px] text-sm"
                         placeholder="Enter Description Here"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                     />
-                    <div className="flex justify-center gap-4 mt-6">
+                    <div className="flex justify-end gap-2 mt-4">
                         <button
-                            className="px-7 py-2 border border-black rounded-md hover:bg-gray-50 transition-colors"
+                            className="px-3 py-1.5 text-xs border border-black rounded-md hover:bg-gray-50 transition-colors"
                             onClick={() => setOpenDialog(false)}
                         >
-                            Close
+                            Cancel
                         </button>
                         <button
-                            className="px-7 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                            className="px-3 py-1.5 text-xs bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
                             onClick={() => {
                                 console.log('Saved:', inputValue);
                                 setOpenDialog(false);

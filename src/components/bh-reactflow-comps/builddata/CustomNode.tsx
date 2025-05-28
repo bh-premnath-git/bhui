@@ -12,7 +12,8 @@ import { ValidationIndicator } from './components/ValidationIndicator';
 import TargetPopUp from '../TargetPopUp';
 import { useFlow } from "@/context/designers/FlowContext";
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 interface Schema {
     title: string;
@@ -60,6 +61,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setIsNodeFormOpen,
         setSelectedNodeId, nodes } = usePipelineContext();
     const { isFlow } = useSelector((state: any) => state.buildPipeline);
+    const dispatch=useDispatch();
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -285,6 +287,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         } else {
             // console.log('Schema not found for:', data);
             if (data?.source || data?.label === "Reader") {
+                dispatch(setIsRightPanelOpen(false))
                 setSelectedSourceLabel("Source");
                 setSelectedSource(data?.source);
             }

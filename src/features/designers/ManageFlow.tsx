@@ -10,6 +10,8 @@ import { CreateFlowDialog } from './flow/components/CreateFlowDialog';
 import { DeleteFlowDialog } from './flow/components/DeleteFlowDialog';
 import { useFlow } from './flow/hooks/useFlow';
 import { useFlow as useFlowCtx } from '@/context/designers/FlowContext'
+import { setCurrentFlow, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+import { useDispatch } from 'react-redux';
 
 export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefresh?: () => void }) {
   const { setSelectedFlowId } = useFlowCtx();
@@ -25,7 +27,7 @@ export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefr
   
   // Keep this active so we can refetch after deleting a flow
   const { refetch: refetchFlows } = fetchFlowsList(1, 1000, true);
-  
+  const dispatch = useDispatch();
   // When flows array changes, update total count for pagination
   useEffect(() => {
     if (flows && flows.length > 0) {
@@ -48,6 +50,9 @@ export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefr
 
   const onRowClickHandler = (row: Row<Flow>) => {
     flowSrv.selectedFlow(row.original);
+    console.log(row)
+    dispatch(setCurrentFlow(row.original));
+
     setSelectedFlowId(row.original.flow_id.toString());
     handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(row.original.flow_id.toString()));
   }

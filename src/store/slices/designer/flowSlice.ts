@@ -8,6 +8,7 @@ import { apiService } from '@/lib/api/api-service';
 interface FlowState {
     flows: Flow[];
     selectedFlow: Flow | null;
+    currentFlow:any;
     environment: Environment | null;
     dagEunID: Record<string, any> | null;
     dagParserTime: string | null;
@@ -41,6 +42,7 @@ const initialState: FlowState = {
     formDefinition: null,
     formValues: {},
     dependencies: {}, // Initialize empty dependencies
+    currentFlow: null // Added currentFlow to track the flow being edited
 };
 
 export const fetchProjects = createAsyncThunk(
@@ -243,6 +245,9 @@ const flowSlice = createSlice({
         },
         setSelectedFlow: (state, action: PayloadAction<Flow | null>) => {
             state.selectedFlow = action.payload;
+        },
+        setCurrentFlow: (state, action: PayloadAction<any>) => {
+            state.currentFlow = action.payload;
         },
         setSelectedProject: (state, action: PayloadAction<number>) => {
             state.selectedProject = state.projects.find(p => p.bh_project_id === action.payload) || null;
@@ -519,6 +524,7 @@ export const {
     setFormValues,
     updateFormValues,
     clearFormStates,
-    setTaskDependencies
+    setTaskDependencies,
+    setCurrentFlow
 } = flowSlice.actions;
 export default flowSlice.reducer;

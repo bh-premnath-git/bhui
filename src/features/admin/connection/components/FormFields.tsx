@@ -307,11 +307,13 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {field.enum.map((option: string) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
+                    {field.enum
+                      .filter((option: string) => option !== "") // Filter out empty strings
+                      .map((option: string) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

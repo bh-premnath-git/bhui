@@ -23,6 +23,7 @@ import { updateFlowDefinitionOnServer } from "./utils/updateFlowDefinitionOnServ
 import { useFormValidation } from "./hooks/useFormValidation";
 import { ParametersSection } from "./components/ParametersSection";
 import { TabType, ParameterItem } from "./types";
+import { Property } from "@/types/designer/flow";
 import { FormLayout } from "../Form/FormLayout";
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 
@@ -55,11 +56,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         formStates,
         setFormStates,
         setNodes,
-        updateSetNode
+        updateSetNode,
+        updateAllNodeDependencies
     } = usePipelineContext();
 
     const dispatch = useAppDispatch();
-    const { selectedFlow } = useAppSelector((s: RootState) => s.flow);
+    const { selectedFlow, currentFlow } = useAppSelector((s: RootState) => s.flow);
     const { edges } = usePipelineContext();
     /* ------------------------------ State -------------------------------- */
     const [activeTab, setActiveTab] = useState<TabType>("property");
@@ -80,7 +82,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const paramsInitRef = useRef(false);
 
     const [pipelineData, setPipelineData] = useState<any>(null);
-    console.log(selectedNode)
+    console.log(currentFlow, "currentFlow")
     // When the pipeline changes, reset the pipeline data
     useEffect(() => {
         console.log("Resetting pipeline data due to pipeline change");
@@ -122,12 +124,51 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         return p1 || p2 || [];
     }, [selectedProperties]);
 
-    const groupedProperties =
+    // Get the base grouped properties
+    const baseGroupedProperties =
         useGroupedProperties({ properties: selectedProperties }) ?? {
             property: [],
             settings: [],
             parameters: [],
         };
+
+    // Add a custom property for cluster_task_id if the node type is EmrAddStepsOperator or EmrTerminateJobFlowOperator
+    const groupedProperties = useMemo(() => {
+        // Only add the cluster_task_id field for specific node types
+        if (selectedValue === 'EmrAddStepsOperator' || selectedValue === 'EmrTerminateJobFlowOperator') {
+            const clusterTaskIdProperty: Property = {
+                key: "cluster_task_id",
+                description: "The task ID of the EMR cluster creation task",
+                ui_properties: {
+                    property_name: "Cluster Task ID",
+                    property_key: "cluster_task_id",
+                    ui_type: "get_from_ui",
+                    parameter_name: "task_id",
+                    order: 4,
+                    mandatory: true,
+                    group_key: "property"
+                }
+            };
+            
+            // Check if cluster_task_id property already exists
+            const clusterTaskIdExists = baseGroupedProperties.property.some(
+                prop => prop.key === "cluster_task_id"
+            );
+            
+            // Only add if it doesn't already exist
+            if (!clusterTaskIdExists) {
+                return {
+                    ...baseGroupedProperties,
+                    property: [
+                        ...baseGroupedProperties.property,
+                        clusterTaskIdProperty
+                    ]
+                };
+            }
+        }
+        
+        return baseGroupedProperties;
+    }, [baseGroupedProperties, selectedValue]);
 
     const hasParameters = useMemo(
         () => groupedProperties.parameters.length > 0 && !!selectedValue,
@@ -288,20 +329,120 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         const parameters = rawParameters.filter(p => p !== null && p.value !== null);
         // console.log("[NodeForm] Parameters after filtering:", JSON.stringify(parameters));
 
-        const updatedFormData = {
+        // Get the dependencies based on incoming edges
+        const incomingEdges = edges.filter(edge => edge.target === selectedNode.id);
+        const dependsOn: string[] = [];
+
+        console.log(`[NodeForm] Processing dependencies for node ${selectedNode.id}`);
+        console.log(`[NodeForm] Found ${incomingEdges.length} incoming edges:`, incomingEdges);
+
+        // Collect task_ids from source nodes
+        incomingEdges.forEach(edge => {
+            console.log(`[NodeForm] Processing edge from ${edge.source} to ${edge.target}`);
+
+            // Try to find the source node in the nodes array
+            const sourceNode = nodes.find(n => n.id === edge.source);
+            if (sourceNode && sourceNode.data?.formData?.task_id) {
+                const taskId = sourceNode.data.formData.task_id;
+                console.log(`[NodeForm] Found task_id in nodes data: ${taskId}`);
+                dependsOn.push(taskId);
+            } else {
+                // If not found in nodes, try to find in formStates
+                const sourceFormState = formStates[edge.source];
+                if (sourceFormState && sourceFormState.task_id) {
+                    const taskId = sourceFormState.task_id;
+                    console.log(`[NodeForm] Found task_id in formStates: ${taskId}`);
+                    dependsOn.push(taskId);
+                } else {
+                    console.log(`[NodeForm] Could not find task_id for source node: ${edge.source}`);
+                }
+            }
+        });
+
+        // Use the dependencies from edges, or fall back to prevNodeFn if no edges found
+        const finalDependsOn = dependsOn.length > 0 ? dependsOn : (prevNodeFn(selectedNode.id) || []);
+        console.log(`[NodeForm] Final depends_on array: ${JSON.stringify(finalDependsOn)}`);
+
+        // Prepare the form data
+        const formData: any = {
+            ...currentFormData,
+            task_id: `${currentFormData.task_id || taskID}`.toLowerCase(),
+            type: selectedValue,
+            depends_on: finalDependsOn,
+            parameters,
+        };
+
+        // Add cluster_task_id for EmrAddStepsOperator and EmrTerminateJobFlowOperator
+        if (selectedValue === 'EmrAddStepsOperator' || selectedValue === 'EmrTerminateJobFlowOperator') {
+            console.log("NodeForm - Setting cluster_task_id for", selectedValue);
+            console.log("NodeForm - Current formData:", currentFormData);
+
+            // If cluster_task_id is not set, initialize it with a task_id from EmrCreateJobFlowOperator node
+            if (!currentFormData.cluster_task_id) {
+                console.log("NodeForm - No cluster_task_id found, looking for EMR cluster nodes");
+
+                // Find all EMR cluster creation nodes
+                const clusterNodes = nodes.filter(node =>
+                    node.data?.formData?.type === 'EmrCreateJobFlowOperator'
+                );
+
+                console.log("NodeForm - Found EMR cluster nodes:", clusterNodes.map(n => ({
+                    id: n.id,
+                    label: n.data?.label,
+                    task_id: n.data?.formData?.task_id
+                })));
+
+                // Use the first EMR cluster node found
+                const clusterNode = clusterNodes[0];
+
+                if (clusterNode && clusterNode.data?.formData?.task_id) {
+                    console.log("NodeForm - Using task_id from EMR cluster node:", clusterNode.data.formData.task_id);
+                    formData.cluster_task_id = clusterNode.data.formData.task_id;
+                } else {
+                    // If no EmrCreateJobFlowOperator node is found, use the current task_id
+                    console.log("NodeForm - No EMR cluster node found, using current task_id:", formData.task_id);
+                    formData.cluster_task_id = formData.task_id;
+                }
+            } else {
+                // Keep the existing cluster_task_id
+                console.log("NodeForm - Using existing cluster_task_id:", currentFormData.cluster_task_id);
+                formData.cluster_task_id = currentFormData.cluster_task_id;
+            }
+        }
+
+        const updatedFormData: any = {
             nodeId: selectedNode.id,
-            formData: {
-                ...currentFormData,
-                task_id: `${currentFormData.task_id || taskID}`.toLowerCase(),
-                type: selectedValue,
-                depends_on: prevNodeFn(selectedNode.id) || [],
-                parameters,
-            },
+            formData,
         };
 
         if (idx >= 0) newFormData[idx] = updatedFormData;
         else newFormData.push(updatedFormData);
-        console.log(updatedFormData.formData)
+        console.log(updatedFormData.formData);
+
+        // Safely parse pipeline_name if it exists and appears to be JSON
+        if (updatedFormData.formData?.pipeline_name) {
+            try {
+                // Check if the pipeline_name looks like JSON (starts with { and ends with })
+                if (typeof updatedFormData.formData.pipeline_name === 'string' &&
+                    updatedFormData.formData.pipeline_name.trim().startsWith('{') &&
+                    updatedFormData.formData.pipeline_name.trim().endsWith('}')) {
+
+                    let pipeline = JSON.parse(updatedFormData.formData.pipeline_name);
+                    console.log("Parsed pipeline:", pipeline);
+
+                    if (pipeline && typeof pipeline === 'object') {
+                        updatedFormData.formData.pipeline_name = pipeline?.pipeline_key;
+                        updatedFormData.formData.pipeline_id = pipeline?.id;
+
+                    }
+                }
+                // If it's not JSON, keep the original value
+            } catch (error) {
+                console.error("Error parsing pipeline_name:", error);
+                // Keep the original value if parsing fails
+            }
+        }
+
 
         // Update the form data in the Flow context
         updateNodeFormData(selectedNode.id, updatedFormData.formData);
@@ -311,8 +452,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             ...prev,
             [selectedNode.id]: updatedFormData.formData
         }));
-            console.log(selectedNode.id)
-console.log(nodes)
+        console.log(selectedNode.id)
+        console.log(nodes)
 
         // Update the node data in the Pipeline context
         // First create the updated nodes array
@@ -328,21 +469,25 @@ console.log(nodes)
                         transformationData: {
                             ...node.data.transformationData,
                             ...updatedFormData.formData,
-                            type: selectedValue
+                            type: selectedValue,
+                            cluster_task_id: updatedFormData.formData.cluster_task_id
                         }
                     }
                 };
             }
             return node;
         });
-        
+
         // Use updateSetNode to update both nodes and edges at once
         updateSetNode(updatedNodes, edges);
 
         updateNodeDependencies();
         setFormDataNum((p) => p + 1);
 
-        console.log("[NodeForm] Final newFormData being sent:", JSON.stringify(newFormData));
+
+        // Update all node dependencies based on the current edges
+        console.log("Updating all node dependencies before saving");
+        updateAllNodeDependencies();
 
         // Call updateFlowDefinitionOnServer directly without setTimeout
         updateFlowDefinitionOnServer(
@@ -352,7 +497,8 @@ console.log(nodes)
             flowConfigMap,
             newFormData,
             updatedNodes,
-            edges
+            edges,
+            currentFlow
         );
 
         console.log("Closing form");
@@ -379,8 +525,11 @@ console.log(nodes)
         defaultParameters,
         nodes,
         edges,
+        formStates,
         setFormStates,
-        updateSetNode
+        updateSetNode,
+        currentFlow,
+        updateAllNodeDependencies
     ]);
 
     /* -------------------------- Parameter CRUD --------------------------- */
@@ -392,23 +541,23 @@ console.log(nodes)
             const updated = [...list];
             if (!updated[index]) updated[index] = { key: "", value: "" };
             (updated[index] as any)[field] = value;
-            
+
             // Create updated form data
             const updatedData = {
                 ...currentFormData,
                 parameters: updated,
                 type: selectedValue
             };
-            
+
             // Update in Flow context
             updateNodeFormData(selectedNode.id, updatedData);
-            
+
             // Update in Pipeline context form states
             setFormStates(prev => ({
                 ...prev,
                 [selectedNode.id]: updatedData
             }));
-            
+
             // Update the node data in the Pipeline context
             const updatedNodes = nodes.map(node => {
                 if (node.id === selectedNode.id) {
@@ -428,7 +577,7 @@ console.log(nodes)
                 }
                 return node;
             });
-            
+
             // Use updateSetNode to update nodes
             updateSetNode(updatedNodes, edges);
         },
@@ -456,16 +605,16 @@ console.log(nodes)
             type: selectedValue || selectedNode.data.selectedData,
             task_id: currentFormData.task_id || `task-${selectedNode.id}`,
         };
-        
+
         // Update in Flow context
         updateNodeFormData(selectedNode.id, updatedData);
-        
+
         // Update in Pipeline context form states
         setFormStates(prev => ({
             ...prev,
             [selectedNode.id]: updatedData
         }));
-        
+
         // Update the node data in the Pipeline context
         const updatedNodes = nodes.map(node => {
             if (node.id === selectedNode.id) {
@@ -485,7 +634,7 @@ console.log(nodes)
             }
             return node;
         });
-        
+
         // Use updateSetNode to update nodes
         updateSetNode(updatedNodes, edges);
     }, [
@@ -519,23 +668,23 @@ console.log(nodes)
 
             if (currentParams.length > 1) {
                 const newParams = currentParams.filter((_, i) => i !== index);
-                
+
                 // Create updated form data
                 const updatedData = {
                     ...currentFormData,
                     parameters: newParams,
                     type: selectedValue || selectedNode.data.selectedData
                 };
-                
+
                 // Update in Flow context
                 updateNodeFormData(selectedNode.id, updatedData);
-                
+
                 // Update in Pipeline context form states
                 setFormStates(prev => ({
                     ...prev,
                     [selectedNode.id]: updatedData
                 }));
-                
+
                 // Update the node data in the Pipeline context
                 const updatedNodes = nodes.map(node => {
                     if (node.id === selectedNode.id) {
@@ -555,7 +704,7 @@ console.log(nodes)
                     }
                     return node;
                 });
-                
+
                 // Use updateSetNode to update nodes
                 updateSetNode(updatedNodes, edges);
             }
@@ -584,27 +733,64 @@ console.log(nodes)
             setRequiredFieldsState(fields);
 
             // Create basic updated form data
-            const updatedData = {
+            const updatedData: any = {
                 ...currentFormData,
                 type: val
             };
-            
+
+            // Initialize cluster_task_id for EmrAddStepsOperator and EmrTerminateJobFlowOperator
+            if (val === 'EmrAddStepsOperator' || val === 'EmrTerminateJobFlowOperator') {
+                console.log("handleValueChange - Setting cluster_task_id for", val);
+
+                // If cluster_task_id is not set, initialize it with a task_id from EmrCreateJobFlowOperator node
+                if (!currentFormData.cluster_task_id) {
+                    console.log("handleValueChange - No cluster_task_id found, looking for EMR cluster nodes");
+
+                    // Find all EMR cluster creation nodes
+                    const clusterNodes = nodes.filter(node =>
+                        node.data?.formData?.type === 'EmrCreateJobFlowOperator'
+                    );
+
+                    console.log("handleValueChange - Found EMR cluster nodes:", clusterNodes.map(n => ({
+                        id: n.id,
+                        label: n.data?.label,
+                        task_id: n.data?.formData?.task_id
+                    })));
+
+                    // Use the first EMR cluster node found
+                    const clusterNode = clusterNodes[0];
+
+                    if (clusterNode && clusterNode.data?.formData?.task_id) {
+                        console.log("handleValueChange - Using task_id from EMR cluster node:", clusterNode.data.formData.task_id);
+                        updatedData.cluster_task_id = clusterNode.data.formData.task_id;
+                    } else {
+                        // If no EmrCreateJobFlowOperator node is found, use the current task_id
+                        console.log("handleValueChange - No EMR cluster node found, using current task_id:", currentFormData.task_id);
+                        updatedData.cluster_task_id = currentFormData.task_id || `task-${selectedNode.id}`;
+                    }
+                } else {
+                    // Keep the existing cluster_task_id
+                    console.log("handleValueChange - Using existing cluster_task_id:", currentFormData.cluster_task_id);
+                    updatedData.cluster_task_id = currentFormData.cluster_task_id;
+                }
+            }
+
             // Update in Flow context
             updateNodeFormData(selectedNode.id, updatedData);
-            
+
             // Update in Pipeline context form states
             setFormStates(prev => ({
                 ...prev,
                 [selectedNode.id]: updatedData
             }));
-            
+
             // Update node metadata
             updateNodeMeta(
                 selectedNode.id,
                 { type: val },
                 { type: val, requiredFields: fields }
             );
-            
+
             // Update the node data in the Pipeline context
             const updatedNodes = nodes.map(node => {
                 if (node.id === selectedNode.id) {
@@ -624,10 +810,10 @@ console.log(nodes)
                 }
                 return node;
             });
-            
+
             // Use updateSetNode to update nodes
             updateSetNode(updatedNodes, edges);
-            
+
             updatedSelectedNodeId(selectedNode.id, val);
 
             // When EmrAddStepsOperator is selected, initialize with pipeline parameters
@@ -653,21 +839,21 @@ console.log(nodes)
                 });
 
                 // Create updated form data
-                const updatedData = {
+                const updatedData: any = {
                     ...currentFormData,
                     parameters: currentParams,
                     type: val
                 };
-                
+
                 // Update in Flow context
                 updateNodeFormData(selectedNode.id, updatedData);
-                
+
                 // Update in Pipeline context form states
                 setFormStates(prev => ({
                     ...prev,
                     [selectedNode.id]: updatedData
                 }));
-                
+
                 // Update the node data in the Pipeline context
                 const updatedNodes = nodes.map(node => {
                     if (node.id === selectedNode.id) {
@@ -680,19 +866,20 @@ console.log(nodes)
                                 transformationData: {
                                     ...node.data.transformationData,
                                     ...updatedData,
-                                    type: val
+                                    type: val,
+                                    cluster_task_id: updatedData.cluster_task_id
                                 }
                             }
                         };
                     }
                     return node;
                 });
-                
+
                 // Use updateSetNode to update nodes
                 updateSetNode(updatedNodes, edges);
             }
         },
-        [selectedNode, updateNodeMeta, updatedSelectedNodeId, pipelineData, currentFormData, updateNodeFormData, setFormStates, nodes, edges, updateSetNode]
+        [selectedNode, updateNodeMeta, updatedSelectedNodeId, pipelineData, currentFormData, updateNodeFormData, setFormStates, nodes, edges, updateSetNode, selectedValue]
     );
 
     // Effect to initialize selectedValue from node data or form state

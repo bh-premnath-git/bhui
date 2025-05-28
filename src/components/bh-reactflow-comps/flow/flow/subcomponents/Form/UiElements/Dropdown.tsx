@@ -2,6 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { AlertCircle, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePipeline } from '@/hooks/usePipeline';
+import { useFlow } from '@/context/designers/FlowContext';
 
 interface DropdownFieldProps {
     id: string;
@@ -31,10 +32,31 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
     default: defaultValue,
     error
 }) => {
+    const { flowPipeline } = useFlow();
+    const isPipelineField = property_key.includes('pipeline');
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        onChange(property_key, e.target.value);
-    }, [onChange, property_key]);
+        const selectedValue = e.target.value;
+        console.log(selectedValue)
+        // Special handling for pipeline selection to include pipeline_id
+        if (isPipelineField && flowPipeline && Array.isArray(flowPipeline)) {
+            const selectedPipeline = flowPipeline.find((p: any) => p.pipeline_name === selectedValue || p.pipeline_key === selectedValue);
+            console.log(selectedPipeline)
+            if (selectedPipeline && selectedPipeline.pipeline_id) {
+                // Store both name and ID in JSON format
+                const pipelineData = JSON.stringify({
+                    name: selectedValue,
+                    id: selectedPipeline.pipeline_id,
+                    pipeline_key: selectedPipeline.pipeline_key
+                });
+                onChange(property_key, pipelineData);
+                return;
+            }
+        }
+        
+        // Default behavior for non-pipeline fields
+        onChange(property_key, selectedValue);
+    }, [onChange, property_key, isPipelineField, flowPipeline]);
 
     // Only auto-select for non-node type dropdowns
     // This prevents auto-selection for the main node type dropdown while
@@ -59,13 +81,44 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
                 }
             }
 
+            // For pipeline fields, handle the same way as manual selection
+            if (isPipelineField && flowPipeline && Array.isArray(flowPipeline)) {
+                const selectedPipeline = flowPipeline.find((p: any) => p.pipeline_name === chosenOption || p.pipeline_key === chosenOption);
+                
+                if (selectedPipeline && selectedPipeline.pipeline_id) {
+                    const pipelineData = JSON.stringify({
+                        name: chosenOption,
+                        id: selectedPipeline.pipeline_id
+                    });
+                    onChange(property_key, pipelineData);
+                    return;
+                }
+            }
+
             onChange(property_key, chosenOption);
         }
-    }, [value, defaultValue, options, onChange, property_key, isNodeTypeDropdown]);
+    }, [value, defaultValue, options, onChange, property_key, isNodeTypeDropdown, isPipelineField, flowPipeline]);
     
     // Always load pipeline data for pipeline fields, regardless of selection
-    const isPipelineField = property_key.includes('pipeline');
     usePipeline(isPipelineField ? (value || 'load_pipeline_data') : null);
+
+    // For display in the dropdown, extract the name if value is a JSON string
+    const displayValue = React.useMemo(() => {
+        if (isPipelineField && value) {
+            try {
+                const parsedValue = JSON.parse(value);
+
+                console.log(parsedValue)
+                if (parsedValue && parsedValue.name) {
+                    return parsedValue.name;
+                }
+            } catch (e) {
+                // If not valid JSON, use the value as is
+                return value;
+            }
+        }
+        return value;
+    }, [value, isPipelineField]);
 
     return (
         <div className="w-full max-w-sm space-y-4">
@@ -94,7 +147,7 @@ export const DropdownField: React.FC<DropdownFieldProps> = ({
             <select
                 id={property_key}
                 name={property_key}
-                value={value}
+                value={displayValue}
                 onChange={handleChange}
                 disabled={isLoading}
                 className={`w-full border px-3 py-2 text-sm bg-white rounded-md

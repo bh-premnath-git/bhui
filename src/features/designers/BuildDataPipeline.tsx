@@ -97,11 +97,20 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
       }
     };
     
-    window.addEventListener("openCreatePipelineDialog", handleOpenCreate);
-    window.addEventListener("openPipelineDeleteDialog", handleOpenDelete);
-    window.addEventListener("pipelineDeleted", handlePipelineDeleted);
+    // Use a more specific event target to avoid global event listener issues
+    const eventTarget = document.getElementById('pipeline-list-container') || document;
+    
+    eventTarget.addEventListener("openCreatePipelineDialog", handleOpenCreate);
+    eventTarget.addEventListener("openPipelineDeleteDialog", handleOpenDelete);
+    eventTarget.addEventListener("pipelineDeleted", handlePipelineDeleted);
 
     return () => {
+      // Make sure to clean up all event listeners
+      eventTarget.removeEventListener("openCreatePipelineDialog", handleOpenCreate);
+      eventTarget.removeEventListener("openPipelineDeleteDialog", handleOpenDelete);
+      eventTarget.removeEventListener("pipelineDeleted", handlePipelineDeleted);
+      
+      // Also clean up any potential window event listeners
       window.removeEventListener("openCreatePipelineDialog", handleOpenCreate);
       window.removeEventListener("openPipelineDeleteDialog", handleOpenDelete);
       window.removeEventListener("pipelineDeleted", handlePipelineDeleted);
@@ -110,7 +119,7 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
 
 
   return (
-    <>
+    <div id="pipeline-list-container">
       <DataTable<Pipeline>
         columns={columns}
         data={paginatedData || []}
@@ -126,6 +135,6 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
       />
       <CreatePipelineDialog open={createDialogOpen} handleClose={() => setCreateDialogOpen(false)} />
       <DeletePipelineDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
-    </>
+    </div>
   );
 }

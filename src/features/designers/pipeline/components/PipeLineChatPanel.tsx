@@ -309,6 +309,24 @@ const PipeLineChatPanel = () => {
                         connection_config_id: item?.connection_config_id || ''
                       }
                     };
+                    console.log(readerNode,"readerNode");
+                    
+                    // Find the existing node ID for the reader
+                    const readerNodeId = nodes.find(node => 
+                      node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+                    )?.id;
+                    
+                    if (readerNodeId) {
+                      // Update the existing node with the new source data
+                      handleSourceUpdate({
+                        nodeId: readerNodeId,
+                        sourceData: { data: initialData }
+                      });
+                    } else {
+                      // If no reader node exists yet, add a new one
+                      handleNodeClick(readerNode, initialData);
+                    }
+
 
 
                     // Add a message to show that the data source was selected
@@ -410,14 +428,40 @@ const PipeLineChatPanel = () => {
                 if (readerNode) {
                   setUnsavedChanges();
                   addNodeToHistory();
-                  handleNodeClick(readerNode, mockDataSource);
+                  console.log(readerNode,"readerNode");
+                  
+                  // Find the existing node ID for the reader
+                  const readerNodeId = nodes.find(node => 
+                    node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+                  )?.id;
+                  
+                  if (readerNodeId) {
+                    // Update the existing node with the new source data
+                    handleSourceUpdate({
+                      nodeId: readerNodeId,
+                      sourceData: { data: mockDataSource }
+                    });
+                  } else {
+                    // If no reader node exists yet, add a new one
+                    handleNodeClick(readerNode, mockDataSource);
+                  }
 
-                  // Apply horizontal alignment after adding the node
+                  // Apply horizontal alignment after adding the node with improved timing
                   setTimeout(() => {
                     if (pipelineContext.handleAlignHorizontal) {
+                      console.log('Calling handleAlignHorizontal after adding new data source');
                       pipelineContext.handleAlignHorizontal();
+                      
+                      // Force a re-render of the ReactFlow component
+                      window.dispatchEvent(new Event('resize'));
+                      
+                      // Call alignment again after a short delay to ensure proper positioning
+                      setTimeout(() => {
+                        pipelineContext.handleAlignHorizontal();
+                        window.dispatchEvent(new Event('resize'));
+                      }, 200);
                     }
-                  }, 100);
+                  }, 500);
 
                   setMessages(prevMessages => [
                     ...prevMessages,
@@ -508,21 +552,6 @@ const PipeLineChatPanel = () => {
     setSelectedDataSource(initialData);
     setShowReaderOptionsForm(true);
 
-    // Create a mock data source object with the provided name and source type
-    const mockDataSource = {
-      data_src_name: readerName,
-      data_src_id: `new-${Date.now()}`, // Generate a temporary ID
-      file_name: sourceType === "File" ? `${readerName}.csv` : null,
-      connection_config: {
-        connection_config_name: "New Connection",
-        custom_metadata: {
-          connection_type: sourceType === "File" ? "Local" : "Postgres",
-          file_path_prefix: sourceType === "File" ? "data" : ""
-        }
-      }
-    };
-
-
 
   };
 
@@ -547,15 +576,40 @@ const PipeLineChatPanel = () => {
       // Add node to history for undo functionality
       addNodeToHistory();
 
-      // Add the node to the pipeline
-      handleNodeClick(readerNode, sourceData.sourceData.data.source);
+console.log(readerNode,"readerNode");
+      
+      // Find the existing node ID for the reader
+      const readerNodeId = nodes.find(node => 
+        node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+      )?.id;
+      
+      if (readerNodeId) {
+        // Update the existing node with the new source data
+        handleSourceUpdate({
+          nodeId: readerNodeId,
+          sourceData: sourceData
+        });
+      } else {
+        // If no reader node exists yet, add a new one
+        handleNodeClick(readerNode, sourceData.sourceData.data.source);
+      }
 
-      // Apply horizontal alignment after adding the node
+      // Apply horizontal alignment after adding the node with improved timing
       setTimeout(() => {
         if (pipelineContext.handleAlignHorizontal) {
+          console.log('Calling handleAlignHorizontal after adding reader node');
           pipelineContext.handleAlignHorizontal();
+          
+          // Force a re-render of the ReactFlow component
+          window.dispatchEvent(new Event('resize'));
+          
+          // Call alignment again after a short delay to ensure proper positioning
+          setTimeout(() => {
+            pipelineContext.handleAlignHorizontal();
+            window.dispatchEvent(new Event('resize'));
+          }, 200);
         }
-      }, 100);
+      }, 500);
 
     } else {
       toast.error("Reader node not found. Please try again.");
@@ -637,8 +691,27 @@ const PipeLineChatPanel = () => {
               setLastAddedTransformation(transformationInfo);
 
               // Add the transformation node to the pipeline
-              handleNodeClick(node, null);
+console.log(node,"readerNode")
 
+              handleNodeClick(node, null);
+              
+              // Explicitly call handleAlignHorizontal to ensure proper node positioning
+              // Use a longer delay to ensure the node is fully added to the state
+              setTimeout(() => {
+                if (pipelineContext.handleAlignHorizontal) {
+                  console.log('Calling handleAlignHorizontal from chat panel');
+                  pipelineContext.handleAlignHorizontal();
+                  
+                  // Force a re-render of the ReactFlow component
+                  window.dispatchEvent(new Event('resize'));
+                  
+                  // Call it again after a short delay to ensure proper alignment
+                  setTimeout(() => {
+                    pipelineContext.handleAlignHorizontal();
+                    window.dispatchEvent(new Event('resize'));
+                  }, 200);
+                }
+              }, 500);
 
               setTimeout(() => {
                 setMessages(prevMessages => [
@@ -770,15 +843,25 @@ const PipeLineChatPanel = () => {
     // This is important as it may update node forms or other state
     onConnect(connection);
 
-    // Force a re-render of the ReactFlow component
+    // Force a re-render of the ReactFlow component with improved timing
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
 
       // Try to trigger a layout update to make the connection visible
       if (pipelineContext.handleAlignHorizontal) {
+        console.log('Calling handleAlignHorizontal after adding dependency');
         pipelineContext.handleAlignHorizontal();
+        
+        // Force another re-render after alignment
+        window.dispatchEvent(new Event('resize'));
+        
+        // Call alignment again after a short delay to ensure proper positioning
+        setTimeout(() => {
+          pipelineContext.handleAlignHorizontal();
+          window.dispatchEvent(new Event('resize'));
+        }, 200);
       }
-    }, 100);
+    }, 500);
 
     // Check if the connection was added after a short delay
     setTimeout(() => {

@@ -48,7 +48,28 @@ export function useNavigation(): NavigationHook {
       });
     }
 
-    navigate(finalPath, { state: { refetch: forceRefetch } });
+    // Clean up any event listeners that might be interfering with navigation
+    const cleanupEvents = () => {
+      // Remove common event listeners that might be causing issues
+      const commonEvents = ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend'];
+      commonEvents.forEach(event => {
+        window.removeEventListener(event, (e) => e.stopPropagation(), true);
+      });
+    };
+
+    // Use a timeout to ensure any pending state updates are completed before navigation
+    setTimeout(() => {
+      cleanupEvents();
+      
+      // Use window.location for direct navigation to ensure it works
+      window.location.href = finalPath;
+      
+      // As a fallback, also try the React Router navigation
+      navigate(finalPath, { 
+        state: { refetch: forceRefetch, timestamp: Date.now() },
+        replace: true
+      });
+    }, 10);
   };
 
   const handleAction = (action: string, itemPath: string) => {

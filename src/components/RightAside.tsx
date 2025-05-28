@@ -37,7 +37,7 @@ export function RightAside({
         onClick={closeRightAside}
         className="
           absolute left-0 top-1/2 -translate-y-1/2 -ml-4
-          h-10 w-10 rounded-full border bg-background
+          h-6 w-6 rounded-full border bg-background
           hover:bg-accent shadow-sm hover:shadow-md
           transition-all duration-200
           group z-10

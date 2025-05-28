@@ -55,8 +55,8 @@ export interface ExecutedQueryItem {
 }
 
 export interface Widget {
-  widget_id: number;
-  widget_name: string;
+  id: number;
+  name: string;
   owner: string;
   widget_type: string;
   visibility: string;

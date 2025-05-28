@@ -20,14 +20,12 @@ export const useChatMessages = () => {
   }, []);
 
   const updateLastAssistantMessage = useCallback((content: string) => {
+    const newAssistantMessage: Message = {
+      role: 'assistant',
+      content: content
+    };
     setMessages(prev => {
-      const newMessages = [...prev];
-      for (let i = newMessages.length - 1; i >= 0; i--) {
-        if (newMessages[i].role === 'assistant') {
-          newMessages[i].content = content;
-          break;
-        }
-      }
+      const newMessages = [...prev, newAssistantMessage];
       return newMessages;
     });
   }, []);

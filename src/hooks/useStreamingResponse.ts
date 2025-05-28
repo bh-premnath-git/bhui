@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { QueryResult, StreamMessage, TableSchema } from '@/types/data-catalog/xplore/type';
 import { updateTableSchemas } from './useTableSchemas';
-import { useXplore } from '@/features/data-catalog/hooks/useXplore';
+import { useConversation } from '@/hooks/useConversation';
 import { toast } from 'sonner';
 
 export function useStreamingResponse() {
@@ -11,7 +11,7 @@ export function useStreamingResponse() {
   const [lastExplanation, setLastExplanation] = useState<string | null>(null);
   const [abortStreamingFunction, setAbortStreamingFunction] = useState<(() => void) | null>(null);
   
-  const { streamConversation } = useXplore();
+  const { streamConversation } = useConversation();
 
   useEffect(() => {
     const schemas: TableSchema[] = [

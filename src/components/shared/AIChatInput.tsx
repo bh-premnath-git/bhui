@@ -36,8 +36,14 @@ export function AIChatInput({
 
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 250)}px`;
   };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      autoResize(textareaRef.current);
+    }
+  }, [input]);
 
   return (
     <div

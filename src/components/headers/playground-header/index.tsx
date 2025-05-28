@@ -166,7 +166,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               </Tooltip>
 
 
-              <Tooltip>
+              {/* <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
@@ -180,7 +180,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                 <TooltipContent>
                   <p>Convert JSON to Pipeline</p>
                 </TooltipContent>
-              </Tooltip>
+              </Tooltip> */}
             </div>
           )}
         </div>
@@ -230,10 +230,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               setIsSparkParamOpen(false);
             }}
           />
-          <JsonToPipelineDialog
+          {/* <JsonToPipelineDialog
             isOpen={isJsonToPipelineOpen}
             onClose={() => setIsJsonToPipelineOpen(false)}
-          />
+          /> */}
         </>
       )}
     </div>

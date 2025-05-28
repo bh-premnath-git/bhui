@@ -52,6 +52,7 @@ export interface BuildPipelineState {
   hasUnsavedChanges: boolean;
   lastSaved: string | null;
   isFlow: boolean;
+  isRightPanelOpen: boolean;
 }
 
 const initialState: BuildPipelineState = {
@@ -79,7 +80,8 @@ const initialState: BuildPipelineState = {
   isSaving: false,
   hasUnsavedChanges: false,
   lastSaved: null,
-  isFlow:false
+  isFlow:false,
+  isRightPanelOpen:false
 };
 
 interface ApiResponse {
@@ -537,7 +539,9 @@ const buildPipeLineSlice = createSlice({
     setIsFlow: (state, action: PayloadAction<any>) => {
       state.isFlow = action.payload;
     },
-    
+    setIsRightPanelOpen: (state, action: PayloadAction<boolean>) => {
+      state.isRightPanelOpen = action.payload;
+    },
     setBuildPipeLineNodes: (state, action: PayloadAction<any[]>) => {
       state.nodesList = action.payload;
     },
@@ -875,4 +879,5 @@ export const {
   setIsRun,
   setSavedSlice,
   setUnsavedChangesSlice,
+  setIsRightPanelOpen
 } = buildPipeLineSlice.actions;

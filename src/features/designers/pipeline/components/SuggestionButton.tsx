@@ -30,18 +30,18 @@ const SuggestionButton = ({
 
   return (
     <motion.div
-      className="mb-2 flex flex-row justify-start align-middle items-center"
+      className="mb-1 inline-flex"
       initial={{ x: -10, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      transition={{ delay: 0.2 + index * 0.1 }}
+      transition={{ delay: 0.1 + index * 0.05 }}
     >
       <div
         onClick={handleClick}
-        className={`w-80 flex flex-row justify-start align-middle items-center rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition-all duration-300 hover:shadow-md ${className}`}
+        className={`flex-shrink-0 flex items-center rounded-lg bg-gray-100 border border-border/40 px-3 py-1.5 cursor-pointer hover:bg-gray-200 transition-all duration-200 hover:shadow-md ${className}`}
         style={{ color: assistantColor }}
       >
-        <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
-        <span className="truncate font-medium">{text}</span>
+        <Zap className="w-4 h-4 mr-1.5 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+        <span className="truncate font-medium text-sm">{text}</span>
       </div>
     </motion.div>
   );

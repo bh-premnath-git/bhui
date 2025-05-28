@@ -223,7 +223,7 @@ useEffect(() => {
     };
     
     return (
-      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[10px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[31%]' : 'right-4'} z-20 transition-all duration-300`}>
+      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[10px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-20 transition-all duration-300`}>
         <FlowControls
           onZoomIn={localZoomIn}
           onZoomOut={localZoomOut}

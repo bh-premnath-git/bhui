@@ -20,7 +20,7 @@ export interface FlowDefinition {
   deleted_by: number | null;
   flow_definition_id: number;
   flow_id: number;
-  flow_json: string[];
+  flow_json: any;
 }
 
 export interface FlowConfig {

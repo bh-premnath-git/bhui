@@ -32,13 +32,13 @@ export const Header = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
             dispatch(setIsFlow(false))
 
-      return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
       dispatch(setIsFlow(true))
-      return <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>
     }

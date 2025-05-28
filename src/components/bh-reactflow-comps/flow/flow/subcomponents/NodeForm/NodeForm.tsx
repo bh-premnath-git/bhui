@@ -136,7 +136,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const groupedProperties = useMemo(() => {
         // Only add the cluster_task_id field for specific node types
         if (selectedValue === 'EmrAddStepsOperator' || selectedValue === 'EmrTerminateJobFlowOperator') {
-            const clusterTaskIdProperty: Property = {
+            const clusterTaskIdProperty: any = {
                 key: "cluster_task_id",
                 description: "The task ID of the EMR cluster creation task",
                 ui_properties: {

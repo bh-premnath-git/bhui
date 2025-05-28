@@ -7,6 +7,7 @@ import { EnumDropdown } from "./UiElements/EnumDropdown";
 import { CheckboxField } from "./UiElements/CheckboxField";
 import { MultiWordInput } from "./UiElements/MultiWordInput";
 import { CodeEditor } from "./UiElements/MonocoEditor";
+import { TaskIdSelector } from "./UiElements/TaskIdSelector";
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from "@/store";
@@ -38,14 +39,20 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
       (state: RootState) => state.flow
     );
     const columnSpan = spancol && spancol > 0 && spancol <= 2 ? spancol : 1;
+    
+    // Determine if this is a pipeline field
+    const isPipelineField = property_key.includes('pipeline');
+    
+    // For pipeline list endpoint, don't pass environment ID
     const { options, isLoading } = useDropdownOptions(
       endpoint ?? '',
       endpoint !== "{catalog_base_url}/api/v1/pipeline/list" ? `${environment?.bh_env_id}` : null,
       setFlowPipeline
     );
-    const defaultValue = property.ui_properties.default
-    const description = property.description
-    //defaultValue
+    
+    const defaultValue = property.ui_properties.default;
+    const description = property.description;
+    
     const renderField = () => {
       switch (ui_type) {
         case 'json':
@@ -159,6 +166,20 @@ export const FormField: React.FC<FormFieldProps> = React.memo(
               className={`col-span-${columnSpan}`}
               default={defaultValue}
               description={description}
+            />
+          );
+        case "get_from_ui":
+          return (
+            <TaskIdSelector
+              id={property_key}
+              label={property_name}
+              value={value || ""}
+              onChange={onChange}
+              placeholder={`Select ${property_name}`}
+              mandatory={mandatory}
+              default={defaultValue}
+              description={description}
+              parameter_name={property.ui_properties.parameter_name}
             />
           );
         default:

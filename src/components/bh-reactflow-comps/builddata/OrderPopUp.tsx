@@ -71,6 +71,10 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
 
       const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
       console.log(pipelineJsonData, "pipelineJsonData")
+      console.log('Connection data:', connection);
+      console.log('Source file_path_prefix:', source?.file_path_prefix);
+      console.log('Pipeline connection:', pipelineJsonData?.connection);
+      
       const initialData = {
         reader_name: source?.data_src_name || pipelineJsonData?.name || '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
@@ -89,7 +93,12 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
           bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
           data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || 'CSV',
-          connection: pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata,
+          connection: {
+            ...(pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata),
+            file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || 
+                             source?.file_path_prefix || 
+                             connection?.custom_metadata?.file_path_prefix || '',
+          },
           connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
         }
       };

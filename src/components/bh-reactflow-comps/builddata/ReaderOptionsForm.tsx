@@ -105,7 +105,8 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                         connection_type: selectedConn?.custom_metadata?.connection_type || initialData.source.connection.connection_type,
                         database: selectedConn?.custom_metadata?.database || initialData.source.connection.database,
                         schema: selectedConn?.custom_metadata?.schema || initialData.source.connection.schema,
-                        secret_name: selectedConn?.custom_metadata?.secret_name || initialData.source.connection.secret_name
+                        secret_name: selectedConn?.custom_metadata?.secret_name || initialData.source.connection.secret_name,
+                        file_path_prefix: initialData.source.connection.file_path_prefix || selectedConn?.custom_metadata?.file_path_prefix || ''
                     },
                     table_name: initialData.source?.table_name || ''
                 }

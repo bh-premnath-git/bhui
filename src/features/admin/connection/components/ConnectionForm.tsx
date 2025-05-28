@@ -435,7 +435,7 @@ export function ConnectionForm({
         connectionData.dataset_id = rawFormData.dataset_id;
         connectionData.credentials_json = rawFormData.credentials_json?.toString();
       }
-
+console.log(connectionData, "connectionData")
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);
         toast.success('Connection updated successfully');

@@ -57,12 +57,22 @@ export const useDropdownOptions = (
         params: {is_pipeline_parameter_required:true,limit: 1000},
       });
 
-      // 6. If path === 'pipeline', return pipeline names specifically
+      // If path === 'pipeline', store the full pipeline data and return pipeline names
       if (path === 'pipeline') {
-        setFlowPipeline(data);
-        return Array.isArray(data)
-          ? data.map((item: any) => item.pipeline_key || '')
-          : [];
+        // Store the complete pipeline data for later use
+        if (setFlowPipeline && Array.isArray(data)) {
+          setFlowPipeline(data);
+          
+          // Log the pipeline data for debugging
+          console.log('Pipeline data loaded:', data);
+          
+          // Return pipeline names for the dropdown
+          return data.map((item: any) => {
+            // Prefer pipeline_name if available, fall back to pipeline_key
+            return item.pipeline_name || item.pipeline_key || '';
+          });
+        }
+        return [];
       }
 
       if (Array.isArray(data)) {
@@ -81,7 +91,6 @@ export const useDropdownOptions = (
       return [];
     },
     enabled: !!endpoint,
-
   });
 
   const { data: options = [], isLoading, isError, error } = queryResult;

@@ -687,11 +687,94 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUnsavedChanges();
 
     }, [setSanitizedNodes, dispatch]);
+ const updateAllNodeDependencies = useCallback(() => {
+        console.log("Updating all node dependencies based on current edges");
+        
+        // Create a map of node IDs to task IDs
+        const nodeIdToTaskIdMap = new Map();
+        
+        // First, populate from formStates
+        for (const [nodeId, formState] of Object.entries(formStates)) {
+            if (formState && formState.task_id) {
+                nodeIdToTaskIdMap.set(nodeId, formState.task_id);
+            }
+        }
+        
+        // Then, add from nodes data as fallback
+        for (const node of nodes) {
+            if (node.id && node.data?.formData?.task_id && !nodeIdToTaskIdMap.has(node.id)) {
+                nodeIdToTaskIdMap.set(node.id, node.data.formData.task_id);
+            }
+        }
+        
+        console.log("Node ID to Task ID Map:", Object.fromEntries(nodeIdToTaskIdMap));
+        
+        // Create a map of node dependencies based on edges
+        const nodeDependencies = new Map();
+        
+        // Process all edges to build dependencies
+        for (const edge of edges) {
+            if (!nodeDependencies.has(edge.target)) {
+                nodeDependencies.set(edge.target, []);
+            }
+            
+            if (nodeIdToTaskIdMap.has(edge.source)) {
+                const sourceTaskId = nodeIdToTaskIdMap.get(edge.source);
+                console.log(`Adding dependency: ${edge.target} depends on ${sourceTaskId}`);
+                nodeDependencies.get(edge.target).push(sourceTaskId);
+            }
+        }
+        
+        console.log("Node Dependencies Map:", Object.fromEntries([...nodeDependencies.entries()].map(
+            ([k, v]) => [k, v]
+        )));
+        
+        // Update all form states with their dependencies
+        setFormStates(prevFormStates => {
+            const newFormStates = { ...prevFormStates };
+            
+            // Update each node's form state with its dependencies
+            for (const [nodeId, dependsOnTaskIds] of nodeDependencies.entries()) {
+                if (newFormStates[nodeId]) {
+                    console.log(`Updating form state for node ${nodeId} with dependencies:`, dependsOnTaskIds);
+                    newFormStates[nodeId] = {
+                        ...newFormStates[nodeId],
+                        depends_on: dependsOnTaskIds
+                    };
+                }
+            }
+            
+            // For nodes with no dependencies, ensure depends_on is an empty array
+            for (const nodeId of Object.keys(newFormStates)) {
+                if (!nodeDependencies.has(nodeId)) {
+                    newFormStates[nodeId] = {
+                        ...newFormStates[nodeId],
+                        depends_on: []
+                    };
+                }
+            }
+            
+            return newFormStates;
+        });
+    }, [nodes, edges, formStates, setFormStates]);
 
     const handleEdgesChange = useCallback((changes: any) => {
+        // Check if any edges are being removed
+        const hasRemovals = changes.some(change => change.type === 'remove');
+        
+        // Apply the edge changes
         onEdgesChange(changes);
         setUnsavedChanges();
-    }, [onEdgesChange, dispatch]);
+        
+        // If edges were removed, update all node dependencies
+        if (hasRemovals) {
+            console.log("Edges were removed, updating all node dependencies");
+            // Use setTimeout to ensure the edge changes are applied first
+            setTimeout(() => {
+                updateAllNodeDependencies();
+            }, 0);
+        }
+    }, [onEdgesChange, dispatch, updateAllNodeDependencies]);
 
     const handleFormSubmit = useCallback((data: any) => {
         console.log('Form data:', data);
@@ -797,6 +880,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return false;
     };
 
+    // Function to update all nodes' dependencies based on current edges
+   
     const onConnect = useCallback((connection: Connection) => {
         if (checkConnectionExists(connection)) {
             return;
@@ -824,9 +909,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
 
+        // Add the edge
         setEdges((eds: any) => addEdge(connection, eds));
+        
+        // Update all nodes' dependencies based on the new edge
+        setTimeout(() => {
+            updateAllNodeDependencies();
+        }, 0);
+        
+        // Open the node form for the target node
         handleNodeForm(connection.target!);
-    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, nodes, edges]);
+    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, updateAllNodeDependencies]);
 
 
     const handleDebugToggle = useCallback((nodeId: string, title: string) => {
@@ -1423,12 +1516,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 label: baseModuleName, // Use the numbered label here
                 icon: node.ui_properties.icon,
                 ports: node.ui_properties.ports,
+                id: node.ui_properties.id,
+                meta: node.ui_properties.meta,
+                selectedData: node.ui_properties.type,
+                requiredFields: node.ui_properties.operators?.map?.((op: any) => {
+                    return ({ [op.type]: op.requiredFields })
+                }) || [],
                 source: source,
                 title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
-
         setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
 
@@ -1693,7 +1791,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         selectedNodeId,
         setSelectedNodeId,
         updatedSelectedNodeId,
-        updateSetNode
+        updateSetNode,
+        updateAllNodeDependencies
     }), [
         nodes,
         setSanitizedNodes,

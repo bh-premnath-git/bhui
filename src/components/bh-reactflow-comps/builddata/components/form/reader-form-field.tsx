@@ -188,8 +188,11 @@ export const ReaderFormField: React.FC<{
                     </select>
                 </div>
 
-                {/* Show file_path_prefix input when type is Local */}
-                {selectedConnection?.custom_metadata?.type === 'Local' && (
+                {/* Show file_path_prefix input when type is Local or S3 */}
+                {(selectedConnection?.custom_metadata?.type === 'Local' || 
+                  selectedConnection?.custom_metadata?.type === 'S3' ||
+                  selectedConnection?.connection_name?.toLowerCase() === 'local' ||
+                  selectedConnection?.connection_name?.toLowerCase() === 's3') && (
                     <div className="w-full space-y-0.5">
                         <Label className="text-xs font-medium text-gray-700">
                             File Path Prefix

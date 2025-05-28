@@ -3,10 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { AIChatInput } from '@/components/shared/AIChatInput';
 import { motion } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
-import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
-import { Button } from '@/components/ui/button';
+import { AIDataVisualizer } from '@/components/shared/chat-components/DataVizualizer';
 import { Zap } from 'lucide-react';
 import { useConversation } from '@/hooks/useConversation';
 import { useRecommendation } from '@/hooks/useRecommendation';
@@ -37,7 +34,6 @@ export function GenericChatUI({
   const [threadId, setThreadId] = useState<string | null>(null);
   const { createConversation, streamConversation } = useConversation();
   const [response, setResponse] = useState<{ sql: any; chart: any; table: any; explanation: any } | null>(null);
-  const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart');
   const streamAbortRef = useRef<() => void>();
 
   useEffect(() => {
@@ -71,7 +67,9 @@ export function GenericChatUI({
           if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
             const responseTypeKey = parsedChunk.response_type.toLowerCase();
             setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
-            addAssistantMessage(JSON.stringify(parsedChunk));
+            if(parsedChunk?.response_type === "EXPLANATION"){
+              addAssistantMessage(JSON.stringify(parsedChunk));
+            }
           }
         } catch (error) {
           console.error("Error parsing chunk:", error);
@@ -140,6 +138,9 @@ export function GenericChatUI({
     }
   };
 
+  console.log("response", response);
+
+
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
@@ -148,7 +149,7 @@ export function GenericChatUI({
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
               <div className="flex items-center gap-4 mb-4">
                 <div
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-6 h-6 rounded-full flex-shrink-0"
                   style={{ backgroundColor: assistantColor }}
                 />
                 <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
@@ -196,7 +197,7 @@ export function GenericChatUI({
                 return (
                   <div key={i} className="flex items-start gap-4 py-2">
                     <div
-                      className="w-4 h-4 rounded-full flex-shrink-0 mt-2"
+                      className="w-6 h-6 rounded-full flex-shrink-0 mt-2"
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
@@ -210,64 +211,12 @@ export function GenericChatUI({
               })}
               {response && (
                 <>
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={v => setActiveTab(v as 'chart' | 'sql')}
-                    className="mt-6"
-                  >
-                    <TabsList className="flex space-x-2 mb-2">
-                      <TabsTrigger
-                        value="chart"
-                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'chart'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        Chart
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="sql"
-                        className={`px-2 py-2 rounded-t-lg ${activeTab === 'sql'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        SQL
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="chart" className="pt-4">
-                      <div className="mt-3 bg-card rounded-md p-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm text-foreground">
-                            {messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data'}
-                          </h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddToDashboard(response.chart)}
-                            className="h-7 text-xs"
-                          >
-                            Add to Dashboard
-                          </Button>
-                        </div>
-                        <ChatChartView data={response.chart} />
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="sql" className="pt-4">
-                      <ChatSQLView sql={response.sql} />
-                    </TabsContent>
-                  </Tabs>
-                  <div className="flex items-center gap-4 mt-4">
-                    <div
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: assistantColor }}
-                    />
-                    <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
-                      <p className="leading-relaxed text-black">
-                        Do you want me to analyze the reasons for the latency issue?
-                      </p>
-                    </div>
-                  </div>
+                  <AIDataVisualizer
+                    sql={response.sql}
+                    chart={response.chart}
+                    data={response.table}
+                    onAddToDashboard={handleAddToDashboard}
+                  />
                 </>
               )}
             </>

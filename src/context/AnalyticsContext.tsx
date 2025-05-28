@@ -3,7 +3,7 @@ import { Connection, RecentChat, useConnections } from '@/hooks/useConnections';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { Message } from '@/types/data-catalog/xplore/type';
 import { useDashboard } from './DashboardContext';
-import { useXplore } from '@/features/data-catalog/hooks/useXplore';
+import { useConversation } from '@/hooks/useConversation';
 import { toast } from 'sonner';
 
 interface AnalyticsContextType {
@@ -64,7 +64,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3; // Configure maximum number of retries
 
-  const { createConversation } = useXplore();
+  const { createConversation } = useConversation();
 
   const {
     connections,

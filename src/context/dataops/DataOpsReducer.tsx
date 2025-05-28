@@ -39,7 +39,7 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
       return {
         ...state,
         widgets: state.widgets.map(widget =>
-          widget.widget_id === action.payload.widget_id
+          widget.id === action.payload.id
             ? action.payload
             : widget
         )

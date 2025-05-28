@@ -3,7 +3,7 @@ import { API_PREFIX_URL, AGENT_REMOTE_URL } from "@/config/platformenv";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
-interface UseXploreOptions {
+interface UseConversationOptions {
     shouldFetch?: boolean;
     connectionId?: string;
 }
@@ -33,7 +33,7 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
     throw error;
 };
 
-export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => {
+export const useConversation = (options: UseConversationOptions = { shouldFetch: true }) => {
     const createConversation = useCallback(
         async (): Promise<ConversationResponse> => {
             try {
@@ -60,7 +60,7 @@ export const useXplore = (options: UseXploreOptions = { shouldFetch: true }) => 
     );
 
     const streamConversation = useCallback(
-        (connectionId: number, userRequest: string, threadId: string, onChunk: StreamCallback, onComplete?: () => void, onError?: (error: any) => void, module?: string): () => void => {
+        (connectionId: number | null , userRequest: string, threadId: string, onChunk: StreamCallback, onComplete?: () => void, onError?: (error: any) => void, module?: string): () => void => {
             const controller = new AbortController();
             const { signal } = controller;
             const baseUrl = `${AGENT_REMOTE_URL}${API_PREFIX_URL}`;

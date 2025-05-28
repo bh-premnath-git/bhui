@@ -1,10 +1,6 @@
 import { useResource } from '@/hooks/api/useResource';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { Dashboard, Dashboards, Widget } from '@/types/dataops/dataops-dash';
-import { useQueries } from '@tanstack/react-query';
-import { apiService } from '@/lib/api/api-service';
-import { ApiConfig } from '@/lib/api/api-config';
-
 // URL paths for DataOps dashboard API
 const DASHBOARD_API_PATH = 'dashboard';
 const WIDGET_API_PATH = 'widgets';

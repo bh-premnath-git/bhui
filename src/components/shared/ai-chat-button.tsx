@@ -46,7 +46,7 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
     setRightAsideContent(
       chatComponent, 
       title, 
-      'w-[18rem] md:w-[20rem] lg:w-[24rem] xl:w-[28rem]'
+      'w-full'
     )
 
     setTimeout(() => {

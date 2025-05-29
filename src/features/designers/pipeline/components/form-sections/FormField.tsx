@@ -56,7 +56,7 @@ const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
     name: col.name,
     dataType: col.dataType || 'string'
   };
-};
+}; 
 
 // Add these styles at the top of the file
 const expressionEditorStyles = {
@@ -79,11 +79,11 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   onBlur,
   sourceColumns = [],
   additionalColumns = [
-  ],
+],
   error,
-  disabled,
+  disabled, 
   onValidate,
-  onChange,
+  onChange, 
   onKeyDown,
 }) => {
   const { control, setValue, setError, formState: { errors } } = useForm();
@@ -150,7 +150,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
           if (additionalColumns && additionalColumns.length > 0) {
             const processedColumns = new Set(sourceColumns.map(col => col.name));
             const normalizedColumns = (additionalColumns as Array<any>).map(normalizeColumn);
-
+            
             normalizedColumns.forEach(col => {
               if (!processedColumns.has(col.name)) {
                 suggestions.push({
@@ -203,14 +203,14 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   };
 
   // Check for select type
-  const isSelectField =
-    fieldSchema?.type === 'select' ||
+  const isSelectField = 
+    fieldSchema?.type === 'select' || 
     (enumValues && enumValues.length > 0);
 
   // If it's a select field, use the Select component
   if (isSelectField && !isExpression) {
     const options = enumValues || fieldSchema?.enum || [];
-
+    
     return (
       <div className="form-field">
         <Controller
@@ -227,10 +227,10 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 }}
                 disabled={disabled}
               >
-                <SelectTrigger
+                <SelectTrigger 
                   className={`w-full mt-1 ${error ? 'border-red-500' : 'border-gray-300'}`}
                 >
-                  <SelectValue placeholder={`Select ${fieldKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`} />
+                  <SelectValue placeholder={`Select ${fieldKey}`} />
                 </SelectTrigger>
                 <SelectContent>
                   {options.map((option: string) => (
@@ -257,73 +257,67 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   // Handle expression fields
   if (isExpression) {
     return (
-      <div>
-        {/* Add helper text for expression fields */}
-        <div className="text-sm bg-yellow-100 p-1 rounded text-gray-800 mb-1">
-          Please enter column name and click inside expression box to automate generation of transformation using AI
-        </div>
-        <div
-          role="textbox"
-          aria-label={`SQL expression editor for ${fieldKey}`}
-          onClick={() => !disabled && onExpressionClick?.()}
-          className={`cursor-pointer ${disabled ? 'opacity-50' : ''}`}
-          tabIndex={0}
-          onFocus={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <div className={expressionEditorStyles.wrapper}>
-            <div className={expressionEditorStyles.editorContainer}>
-              <MonacoEditor
-                height="100px"
-                language="sql"
-                theme="vs-light"
-                value={typeof value === 'object' && 'expression' in value ? value.expression : value}
-                onChange={(newValue) => onChange?.(newValue || '')}
-                options={{
-                  minimap: { enabled: false },
-                  lineNumbers: 'off',
-                  folding: false,
-                  wordWrap: 'on',
-                  contextmenu: false,
-                  scrollBeyondLastLine: false,
-                  overviewRulerBorder: false,
-                  hideCursorInOverviewRuler: true,
-                  overviewRulerLanes: 0,
-                  renderLineHighlight: 'none',
-                  selectionHighlight: false,
-                  quickSuggestions: {
-                    other: true,
-                    comments: false,
-                    strings: true
-                  },
-                  suggestOnTriggerCharacters: true,
-                  acceptSuggestionOnCommitCharacter: true,
-                  acceptSuggestionOnEnter: 'on',
-                  suggest: {
-                    showWords: true,
-                    showProperties: true,
-                    showFunctions: true,
-                    showIcons: true,
-                    showStatusBar: true,
-                    preview: true,
-                    showInlineDetails: true,
-                    filterGraceful: true,
-                    selectionMode: 'always'
-                  }
-                }}
-                onMount={handleEditorMount}
-              />
-              {editorError && (
-                <div className="text-red-500 text-sm mt-1">{editorError}</div>
-              )}
-            </div>
+<div
+            role="textbox"
+            aria-label={`SQL expression editor for ${fieldKey}`}
+            onClick={() => !disabled && onExpressionClick?.()}
+            className={`cursor-pointer ${disabled ? 'opacity-50' : ''}`}
+            tabIndex={0}
+            onFocus={(e) => {
+              e.stopPropagation();
+            }}
+          >        <div className={expressionEditorStyles.wrapper}>
+          <div className={expressionEditorStyles.editorContainer}>
+            <MonacoEditor
+              height="100px"
+              language="sql"
+              theme="vs-light"
+              value={typeof value === 'object' && 'expression' in value ? value.expression : value}
+              onChange={(newValue) => onChange?.(newValue || '')}
+              options={{
+                minimap: { enabled: false },
+                lineNumbers: 'off',
+                folding: false,
+                wordWrap: 'on',
+                contextmenu: false,
+                scrollBeyondLastLine: false,
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                overviewRulerLanes: 0,
+                renderLineHighlight: 'none',
+                selectionHighlight: false,
+                quickSuggestions: {
+                  other: true,
+                  comments: false,
+                  strings: true
+                },
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnCommitCharacter: true,
+                acceptSuggestionOnEnter: 'on',
+                suggest: {
+                  showWords: true,
+                  showProperties: true,
+                  showFunctions: true,
+                  showIcons: true,
+                  showStatusBar: true,
+                  preview: true,
+                  showInlineDetails: true,
+                  filterGraceful: true,
+                  selectionMode: 'always'
+                }
+              }}
+              onMount={handleEditorMount}
+            />
+            {editorError && (
+              <div className="text-red-500 text-sm mt-1">{editorError}</div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
+  // Default input field
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     if (value && typeof value === 'object' && 'expression' in value) {
@@ -380,7 +374,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
               field.onChange(e);
               handleInputChange(e);
             }}
-            placeholder={`Enter ${fieldKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
+            placeholder={`Enter ${fieldKey}`}
             required={required}
             disabled={disabled}
             className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}

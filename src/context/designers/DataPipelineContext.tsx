@@ -783,40 +783,75 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const handleFormSubmit = useCallback((data: any) => {
         console.log('Form data:', data);
-        if (selectedSchema?.nodeId) {
-            // Update form states
-            setFormStates((prev: any) => ({
-                ...prev,
-                [selectedSchema.nodeId]: data
-            }));
+        
+        // Get the nodeId from either selectedSchema or data.nodeId
+        const nodeId = selectedSchema?.nodeId || data.nodeId;
+        
+        if (nodeId) {
+            console.log(`Updating node ${nodeId} with form data:`, data);
+            
+            // Update form states first
+            setFormStates((prev: any) => {
+                const newFormStates = {
+                    ...prev,
+                    [nodeId]: data
+                };
+                console.log('Updated form states:', newFormStates);
+                return newFormStates;
+            });
 
-            // Update node data with transformation data
-            setNodes((nds) =>
-                nds.map((node) => {
-                    if (node.id === selectedSchema.nodeId) {
-                        // Preserve existing source data if it exists
-                        const existingSource = node.data.source || {};
+            // Get the current nodes
+            const currentNodes = [...nodes];
+            
+            // Find the node to update
+            const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
+            
+            if (nodeIndex !== -1) {
+                // Preserve existing source data if it exists
+                const existingSource = currentNodes[nodeIndex].data.source || {};
+                
+                // Update the node title if name is provided
+                const updatedTitle = data.name || currentNodes[nodeIndex].data.title;
+                
+                console.log(`Updating node ${nodeId} title to: ${updatedTitle}`);
 
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                transformationData: {
-                                    ...node.data.transformationData,
-                                    ...data,
-                                    name: data.name || node.data.title
-                                },
-                                // Preserve existing source data
-                                source: existingSource
-                            }
-                        };
+                // Create a new node object with updated data
+                const updatedNode = {
+                    ...currentNodes[nodeIndex],
+                    data: {
+                        ...currentNodes[nodeIndex].data,
+                        title: updatedTitle,
+                        transformationData: {
+                            ...currentNodes[nodeIndex].data.transformationData,
+                            ...data,
+                            name: updatedTitle
+                        },
+                        // Preserve existing source data
+                        source: existingSource
                     }
-                    return node;
-                })
-            );
+                };
+                
+                // Replace the node in the array
+                currentNodes[nodeIndex] = updatedNode;
+                
+                // Update the nodes in the context
+                console.log('Setting updated nodes:', currentNodes);
+                setNodes(currentNodes);
+                
+                // Force a re-render by updating a timestamp
+                setHeaderUpdateTrigger(prev => prev + 1);
+                
+                // Force a re-render of the ReactFlow component
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 50);
+            }
+        } else {
+            console.error('No nodeId found in selectedSchema or data');
         }
+        
         setIsFormOpen(false);
-    }, [selectedSchema, setNodes]);
+    }, [selectedSchema, nodes, setNodes, setHeaderUpdateTrigger]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);

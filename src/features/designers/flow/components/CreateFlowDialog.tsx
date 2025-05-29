@@ -13,7 +13,7 @@ import { type FlowFormValues, flowFormSchema } from "./schema"
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from "@/config/routes";
 import { useAppDispatch } from '@/hooks/useRedux';
-import { setSelectedProject, setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+import { setSelectedProject, setSelectedEnv, setSelectedFlow, setCurrentFlow } from '@/store/slices/designer/flowSlice';
 
 type CreateFlowDialogProps = {
     open: boolean;
@@ -39,7 +39,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 tags: [],
             },
             monitorSettings: {
-                recipientEmails:  { emails: [] },
+                recipientEmails: { emails: [] },
                 alertSettings: {
                     onJobStart: false,
                     onJobFailure: true,
@@ -72,6 +72,8 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 dispatch(setSelectedProject(Number(data.basicInformation.project)));
                 dispatch(setSelectedEnv(Number(data.basicInformation.environment)));
                 dispatch(setSelectedFlow(result));
+                dispatch(setCurrentFlow(result));
+
                 setSelectedFlowId(result.flow_id.toString());
                 handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(result.flow_id.toString()));
                 onOpenChange(false);

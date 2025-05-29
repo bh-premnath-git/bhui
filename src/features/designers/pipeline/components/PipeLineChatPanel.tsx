@@ -309,13 +309,13 @@ const PipeLineChatPanel = () => {
                         connection_config_id: item?.connection_config_id || ''
                       }
                     };
-                    console.log(readerNode,"readerNode");
-                    
+                    console.log(readerNode, "readerNode");
+
                     // Find the existing node ID for the reader
-                    const readerNodeId = nodes.find(node => 
+                    const readerNodeId = nodes.find(node =>
                       node.data.label === "Reader" || node.data.label.startsWith("Reader ")
                     )?.id;
-                    
+
                     if (readerNodeId) {
                       // Update the existing node with the new source data
                       handleSourceUpdate({
@@ -428,13 +428,13 @@ const PipeLineChatPanel = () => {
                 if (readerNode) {
                   setUnsavedChanges();
                   addNodeToHistory();
-                  console.log(readerNode,"readerNode");
-                  
+                  console.log(readerNode, "readerNode");
+
                   // Find the existing node ID for the reader
-                  const readerNodeId = nodes.find(node => 
+                  const readerNodeId = nodes.find(node =>
                     node.data.label === "Reader" || node.data.label.startsWith("Reader ")
                   )?.id;
-                  
+
                   if (readerNodeId) {
                     // Update the existing node with the new source data
                     handleSourceUpdate({
@@ -451,10 +451,10 @@ const PipeLineChatPanel = () => {
                     if (pipelineContext.handleAlignHorizontal) {
                       console.log('Calling handleAlignHorizontal after adding new data source');
                       pipelineContext.handleAlignHorizontal();
-                      
+
                       // Force a re-render of the ReactFlow component
                       window.dispatchEvent(new Event('resize'));
-                      
+
                       // Call alignment again after a short delay to ensure proper positioning
                       setTimeout(() => {
                         pipelineContext.handleAlignHorizontal();
@@ -576,13 +576,13 @@ const PipeLineChatPanel = () => {
       // Add node to history for undo functionality
       addNodeToHistory();
 
-console.log(readerNode,"readerNode");
-      
+      console.log(readerNode, "readerNode");
+
       // Find the existing node ID for the reader
-      const readerNodeId = nodes.find(node => 
+      const readerNodeId = nodes.find(node =>
         node.data.label === "Reader" || node.data.label.startsWith("Reader ")
       )?.id;
-      
+
       if (readerNodeId) {
         // Update the existing node with the new source data
         handleSourceUpdate({
@@ -599,10 +599,10 @@ console.log(readerNode,"readerNode");
         if (pipelineContext.handleAlignHorizontal) {
           console.log('Calling handleAlignHorizontal after adding reader node');
           pipelineContext.handleAlignHorizontal();
-          
+
           // Force a re-render of the ReactFlow component
           window.dispatchEvent(new Event('resize'));
-          
+
           // Call alignment again after a short delay to ensure proper positioning
           setTimeout(() => {
             pipelineContext.handleAlignHorizontal();
@@ -691,20 +691,20 @@ console.log(readerNode,"readerNode");
               setLastAddedTransformation(transformationInfo);
 
               // Add the transformation node to the pipeline
-console.log(node,"readerNode")
+              console.log(node, "readerNode")
 
               handleNodeClick(node, null);
-              
+
               // Explicitly call handleAlignHorizontal to ensure proper node positioning
               // Use a longer delay to ensure the node is fully added to the state
               setTimeout(() => {
                 if (pipelineContext.handleAlignHorizontal) {
                   console.log('Calling handleAlignHorizontal from chat panel');
                   pipelineContext.handleAlignHorizontal();
-                  
+
                   // Force a re-render of the ReactFlow component
                   window.dispatchEvent(new Event('resize'));
-                  
+
                   // Call it again after a short delay to ensure proper alignment
                   setTimeout(() => {
                     pipelineContext.handleAlignHorizontal();
@@ -851,10 +851,10 @@ console.log(node,"readerNode")
       if (pipelineContext.handleAlignHorizontal) {
         console.log('Calling handleAlignHorizontal after adding dependency');
         pipelineContext.handleAlignHorizontal();
-        
+
         // Force another re-render after alignment
         window.dispatchEvent(new Event('resize'));
-        
+
         // Call alignment again after a short delay to ensure proper positioning
         setTimeout(() => {
           pipelineContext.handleAlignHorizontal();
@@ -1250,11 +1250,13 @@ console.log(node,"readerNode")
                   <p className="text-base font-medium text-gray-800">How can I assist you?</p>
                 </div>
               </div>
-              <SuggestionButton
-                text="Create Pipeline"
-                onClick={handleCreatePipeline}
-                assistantColor="#009459"
-              />
+              <div className="ml-8">
+                <SuggestionButton
+                  text="Create Pipeline"
+                  onClick={handleCreatePipeline}
+                  assistantColor="#009459"
+                />
+              </div>
             </motion.div>
           ) : (
             <>
@@ -1267,8 +1269,8 @@ console.log(node,"readerNode")
                     />
                     <div
                       className={`flex-1 rounded-lg px-3 py-2 shadow-sm ${message.role === 'assistant'
-                          ? 'bg-gray-100 text-black'
-                          : 'bg-gradient-to-r from-white to-slate-50'
+                        ? 'bg-gray-100 text-black'
+                        : 'bg-gradient-to-r from-white to-slate-50'
                         }`}
                     >
                       <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
@@ -1277,7 +1279,7 @@ console.log(node,"readerNode")
 
                   {/* Render suggestion buttons if they exist */}
                   {message.role === 'assistant' && message.suggestions && (
-                    <div className="ml-8 mt-0.5 flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 pl-8">
                       {message.suggestions.map((suggestion, suggestionIndex) => (
                         <SuggestionButton
                           key={suggestionIndex}
@@ -1293,7 +1295,7 @@ console.log(node,"readerNode")
                   {/* Render form if formData exists */}
                   {message.role === 'assistant' && message.formData && (
                     console.log('Rendering form with data:', message.formData),
-                    <div className="ml-8 mt-2 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
                       <div className="space-y-3">
                         <h3 className="text-base font-semibold">{message.formData.schema?.title} Configuration</h3>
 
@@ -1513,44 +1515,70 @@ console.log(node,"readerNode")
                                 console.log('Current node ID:', message.formData.currentNodeId);
                                 console.log('Current form states before update:', formStates);
 
-                                // First, call the context's handleFormSubmit to update the global state
-                                handleFormSubmit(data);
+                                // Add the nodeId to the data object to ensure handleFormSubmit can find it
+                                const formDataWithNodeId = {
+                                  ...data,
+                                  nodeId: message.formData.currentNodeId
+                                };
 
-                                // Also update the form states in the context directly to ensure consistency
-                                setFormStates(prevStates => ({
-                                  ...prevStates,
-                                  [message.formData.currentNodeId]: data
-                                }));
-
-                                // Update the node data with transformation data (similar to what handleFormSubmit does)
-                                const nodeId = message.formData.currentNodeId;
-                                const updatedNodes = nodes.map(node => {
-                                  if (node.id === nodeId) {
-                                    // Preserve existing source data if it exists
-                                    const existingSource = node.data.source || {};
-
-                                    return {
-                                      ...node,
-                                      data: {
-                                        ...node.data,
-                                        transformationData: {
-                                          ...node.data.transformationData,
-                                          ...data,
-                                          name: data.name || node.data.title
-                                        },
-                                        // Preserve existing source data
-                                        source: existingSource
-                                      }
-                                    };
-                                  }
-                                  return node;
+                                // First, update the context's selectedSchema to ensure handleFormSubmit works correctly
+                                pipelineContext.setSelectedSchema({
+                                  ...message.formData.schema,
+                                  nodeId: message.formData.currentNodeId
                                 });
-
-                                // Update the nodes in the context
-                                pipelineContext.setNodes(updatedNodes);
 
                                 // Mark unsaved changes
                                 setUnsavedChanges();
+
+                                // First, directly update the node to ensure it happens immediately
+                                const nodeId = message.formData.currentNodeId;
+                                const updatedTitle = data.name || data.title || "Transformation";
+
+                                console.log(`Directly updating node ${nodeId} with title: ${updatedTitle}`);
+
+                                // Get the current nodes
+                                const currentNodes = [...pipelineContext.nodes];
+
+                                // Find the node to update
+                                const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
+
+                                if (nodeIndex !== -1) {
+                                  // Create a new node object with updated data
+                                  const updatedNode = {
+                                    ...currentNodes[nodeIndex],
+                                    data: {
+                                      ...currentNodes[nodeIndex].data,
+                                      title: updatedTitle,
+                                      transformationData: {
+                                        ...currentNodes[nodeIndex].data.transformationData,
+                                        ...data,
+                                        name: updatedTitle
+                                      },
+                                      // Preserve existing source data
+                                      source: currentNodes[nodeIndex].data.source || {}
+                                    }
+                                  };
+
+                                  // Replace the node in the array
+                                  currentNodes[nodeIndex] = updatedNode;
+
+                                  // Update the nodes in the context
+                                  console.log('Setting updated nodes:', currentNodes);
+                                  pipelineContext.setNodes(currentNodes);
+
+                                  // Also update form states
+                                  setFormStates(prevStates => ({
+                                    ...prevStates,
+                                    [nodeId]: data
+                                  }));
+
+                                  // Force a re-render
+                                  window.dispatchEvent(new Event('resize'));
+                                }
+
+                                // Now call the context's handleFormSubmit as a backup
+                                // This will update both the formStates and the nodes
+                                handleFormSubmit(formDataWithNodeId);
 
                                 // Update the local form states to ensure consistency
                                 setformsHanStates(prevStates => ({

@@ -157,6 +157,7 @@ export const LineChart = ({ widget, height = 250 }: LineChartProps) => {
           <Legend
             verticalAlign="top"
             height={24}
+            iconType="square"
             wrapperStyle={{
               fontSize: 11,
               color: "hsl(var(--muted-foreground))"

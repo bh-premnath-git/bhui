@@ -90,12 +90,13 @@ export function Sidebar() {
     <div
       className={cn(
         "h-screen fixed left-0 top-0 z-40 flex flex-col",
-        "bg-gray-50 dark:bg-gray-900/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/95 dark:supports-[backdrop-filter]:bg-gray-900/80 border-r",
+        "bg-gray-90 dark:bg-gray-950 backdrop-blur supports-[backdrop-filter]:bg-gray-100/95 dark:supports-[backdrop-filter]:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
+        "shadow-sm",
         isExpanded ? "w-64" : "w-20"
       )}
     >
-      <div className="h-16 flex items-center px-4 border-b">
+      <div className="h-16 flex items-center px-4 border-gray-200 dark:border-gray-800">
         <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
           
           <div className="overflow-hidden">
@@ -104,6 +105,7 @@ export function Sidebar() {
                 "text-lg font-semibold font-sans ml-2",
                 "transition-all duration-300 ease-in-out",
                 "whitespace-nowrap transform",
+                "text-gray-900 dark:text-white",
                 isExpanded
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 -translate-x-4 pointer-events-none"
@@ -120,7 +122,7 @@ export function Sidebar() {
         onClick={toggleSidebar}
         className={cn(
           "absolute -right-4 top-9 text-muted-foreground hover:bg-accent",
-          "h-10 w-4 rounded-none rounded-r-md border border-l-0",
+          "h-10 w-4 rounded-none rounded-r-md border border-l-0 border-gray-200 dark:border-gray-800",
           "bg-background/90 transition-transform duration-300",
           !isExpanded && "hover:scale-125",
           isExpanded ? "justify-between" : "justify-center"
@@ -153,10 +155,10 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center py-2 rounded-md",
                   "transition-all duration-200 ease-in-out",
-                  "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100",
+                  "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
                   location.pathname === item.path ? 
-                    "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground" : 
-                    "text-gray-700 dark:text-gray-300",
+                    "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground" : 
+                    "text-gray-800 dark:text-gray-200",
                   "flex-1",
                   !isExpanded && item.showIcon && "justify-center px-3",
                   isExpanded && "px-3",
@@ -266,10 +268,10 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center px-3 py-2 rounded-md",
                             "transition-all duration-200 ease-in-out",
-                            "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100",
+                            "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
                             location.pathname === subItem.path ? 
-                              "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground" : 
-                              "text-gray-600 dark:text-gray-400",
+                              "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground" : 
+                              "text-gray-700 dark:text-gray-300",
                             "text-sm pl-6"
                           )}
                         >
@@ -285,7 +287,7 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
-      <div className="h-auto border-t">
+      <div className="h-auto border-t border-gray-200 dark:border-gray-800">
         <div className={cn(
           "p-3 flex items-center",
           isExpanded ? "justify-between" : "justify-center"
@@ -298,9 +300,9 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
                           <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
-                          <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium dark:bg-primary/20 dark:text-primary-foreground">{userName.charAt(0)}</AvatarFallback>
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
@@ -324,9 +326,9 @@ export function Sidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
                     <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
-                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium dark:bg-primary/20 dark:text-primary-foreground">{userName.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -340,8 +342,8 @@ export function Sidebar() {
                       : "opacity-0 max-w-0 pointer-events-none"
                   )}
                 >
-                  <p className="text-sm font-medium truncate">{userName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{userInfo?.email || ""}</p>
+                  <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{userName}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{userInfo?.email || ""}</p>
                 </div>
               )}
               <DropdownMenuContent

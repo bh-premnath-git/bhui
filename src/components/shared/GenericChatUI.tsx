@@ -15,7 +15,6 @@ interface GenericChatUIProps {
   assistantColor?: string;
   userColor?: string;
   suggestions?: string[];
-  onAddToDashboard?: (chart: any) => void;
 }
 
 // Custom event name constant
@@ -25,14 +24,12 @@ const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 export function GenericChatUI({
   assistantColor = '#009459',
   userColor = '#000000',
-  onAddToDashboard,
 }: GenericChatUIProps) {
   const { 
     messages, 
     addUserMessage, 
     addAssistantMessage, 
-    updateMessageById, 
-    findMessageById 
+    updateMessageById,
   } = useChatMessages();
   const { data: recommendations, isLoading, isError } = useRecommendation();
   const [input, setInput] = useState('');
@@ -183,11 +180,6 @@ export function GenericChatUI({
       cancelable: true
     });
     document.dispatchEvent(chartEvent);
-
-    // Call the prop callback if provided (for backward compatibility)
-    if (onAddToDashboard) {
-      onAddToDashboard(chartData);
-    }
   };
   
   return (

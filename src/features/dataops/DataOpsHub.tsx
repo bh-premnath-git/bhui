@@ -4,7 +4,7 @@ import { useDataOpsDashboards, useDataOpsWidgets } from "@/features/dataops/data
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
-
+import { CHART_ADDED_EVENT } from "@/components/shared/GenericChatUI";
 export function DataOpsHub() {
   const { state, dispatch } = useDataOps();
   const {
@@ -78,6 +78,20 @@ export function DataOpsHub() {
       dispatch({ type: "SET_ERROR", payload: "Error processing widget data." });
     }
   }, [widgets, dispatch, state.widgets.length]);
+
+
+  useEffect(() => {
+    const handleChartAdded = (event: CustomEvent) => {
+      const chartData = event.detail;
+      console.log("Chart added:", chartData);
+     // dispatch({ type: "ADD_WIDGET", payload: chartData });
+    };
+
+    document.addEventListener(CHART_ADDED_EVENT, handleChartAdded);
+    return () => {
+      document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded);
+    };
+  }, []);
 
   if (state.isLoading) {
     return <LoadingState />;

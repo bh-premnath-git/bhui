@@ -153,7 +153,7 @@ export const CustomEdge = memo(({
             try {
                 // First fetch the data
                 const result = await dispatch(fetchTransformationOutput({
-                    pipelineName: pipelineName||pipelineDtl?.name,
+                    pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title
                 })).unwrap();
                 

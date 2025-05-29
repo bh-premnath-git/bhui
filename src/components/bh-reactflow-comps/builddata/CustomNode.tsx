@@ -115,6 +115,23 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const isNodeSelected = formStates[id] && selectedSchema?.nodeId === id;
         setIsSelected(isNodeSelected);
     }, [formStates, id, selectedSchema]);
+    
+    // Add effect to update title when node data changes
+    useEffect(() => {
+        if (data.title) {
+            setTitleValue(data.title);
+            console.log(`CustomNode: Updating title for node ${id} to ${data.title}`);
+            
+            // Also update the node data to ensure the title is displayed correctly
+            setNodes((nodes: any[]) =>
+                nodes.map(node =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, title: data.title } }
+                        : node
+                )
+            );
+        }
+    }, [data.title, id, setNodes]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();

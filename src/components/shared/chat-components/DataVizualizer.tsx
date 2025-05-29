@@ -71,7 +71,7 @@ export function AIDataVisualizer({
   title = 'Visualized Data',
   onAddToDashboard,
 }: AIDataVisualizerProps) {
-  const [activeTab, setActiveTab] = useState<'table' | 'chart' | 'sql' | 'explanation'>('table');
+  const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>('chart');
   const [parsedChartData, setParsedChartData] = useState<GraphDataPoint[] | null>(null);
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);

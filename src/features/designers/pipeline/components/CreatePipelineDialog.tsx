@@ -60,6 +60,7 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
                 setPipeline_id(response?.pipeline_id)
                 localStorage.setItem("pipeline_id", response?.pipeline_id.toString())
                 navigate(`/designers/build-playground/${response?.pipeline_id}`);
+                window.location.reload();
             }
         } finally {
             setIsLoading(false);

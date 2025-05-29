@@ -2,10 +2,59 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Code, BarChart4, Table as TableIcon, FileText } from 'lucide-react';
+import { Plus, Code, BarChart4, Table as TableIcon } from 'lucide-react';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
+
+// Chart Data Interfaces
+interface ChartRecommendation {
+  type: string;
+  confidence: number;
+  reason: string;
+}
+
+interface GraphAxis {
+  field: string;
+  type: 'numerical' | 'categorical';
+}
+
+interface GraphConfig {
+  primary_axis: {
+    x: GraphAxis;
+    y: GraphAxis;
+  };
+}
+
+interface GraphDataPoint {
+  x_axis: string | number;
+  y_axis: string | number;
+  [key: string]: string | number; // Allow additional fields
+}
+
+interface DataCharacteristics {
+  total_records: number;
+  numerical_columns: string[];
+  categorical_columns: string[];
+  [key: string]: any; // Allow additional properties
+}
+
+interface Metadata {
+  data_characteristics?: DataCharacteristics;
+  query_time?: number;
+  [key: string]: any; // Allow additional properties
+}
+
+interface ChartData {
+  chart_type: string;
+  chart_recommendation: ChartRecommendation[];
+  title: string;
+  description: string;
+  status: string;
+  graph_config: GraphConfig;
+  graph_data: GraphDataPoint[];
+  metadata: Metadata;
+}
 
 interface AIDataVisualizerProps {
   sql?: any;
@@ -23,8 +72,10 @@ export function AIDataVisualizer({
   onAddToDashboard,
 }: AIDataVisualizerProps) {
   const [activeTab, setActiveTab] = useState<'table' | 'chart' | 'sql' | 'explanation'>('table');
-  const [parsedChartData, setParsedChartData] = useState<any>(null);
+  const [parsedChartData, setParsedChartData] = useState<GraphDataPoint[] | null>(null);
+  const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
+
   
   // Parse chart data if it's a string containing JSON
   useEffect(() => {
@@ -33,7 +84,11 @@ export function AIDataVisualizer({
         // Check if it's a string with JSON inside markdown code blocks
         if (typeof chart.content === 'string' && chart.content.includes('```json')) {
           const jsonContent = chart.content.replace(/```json\n|\n```/g, '');
-          const parsed = JSON.parse(jsonContent);
+          const parsed = JSON.parse(jsonContent) as ChartData;
+          console.log("parsed", parsed);
+          
+          // Store the full chart data for metadata and config
+          setChartMetadata(parsed);
           
           // Extract the graph data which is what the ChartView expects
           if (parsed.graph_data) {
@@ -41,7 +96,14 @@ export function AIDataVisualizer({
           }
         } else {
           // It's already a parsed object
-          setParsedChartData(chart.content);
+          if (typeof chart.content === 'object' && chart.content.graph_data) {
+            // If it's a full ChartData object
+            setChartMetadata(chart.content as ChartData);
+            setParsedChartData(chart.content.graph_data);
+          } else {
+            // If it's just the graph data
+            setParsedChartData(chart.content as GraphDataPoint[]);
+          }
         }
       } catch (error) {
         console.error("Error parsing chart data:", error);

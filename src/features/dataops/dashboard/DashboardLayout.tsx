@@ -11,7 +11,6 @@ import "react-grid-layout/css/styles.css";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'dashboard_layout';
-
 // Default widget dimensions
 const DEFAULT_WIDGET_WIDTH = 6;
 const DEFAULT_WIDGET_HEIGHT = 4;
@@ -19,7 +18,6 @@ const DEFAULT_WIDGET_HEIGHT = 4;
 const GridLayout = () => {
   const { state } = useDataOps();
   const { widgets, selectedDashboard, filters, dashboards } = state;
-  console.log(selectedDashboard, dashboards, widgets);
 
   const { handleLayoutChange } = useLayoutPersistence({
     storageKey: LAYOUT_STORAGE_KEY,

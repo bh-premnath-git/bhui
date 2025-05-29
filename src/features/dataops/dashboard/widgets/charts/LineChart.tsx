@@ -89,7 +89,7 @@ export const LineChart = ({ widget, height = 250 }: LineChartProps) => {
 
   return (
     <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height="100%">
         <RechartsLineChart
           data={chartData}
           margin={{ top: 10, right: 10, left: 10, bottom: 20 }}

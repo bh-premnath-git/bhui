@@ -22,19 +22,23 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
         dashboards: action.payload,
         selectedDashboard: action.payload.length > 0 ? action.payload[0] : null
       };
-    
+
     case "SET_SELECTED_DASHBOARD":
       return {
         ...state,
         selectedDashboard: action.payload
       };
-    
+    case "ADD_WIDGET":
+      return {
+        ...state,
+        widgets: [...state.widgets, action.payload]
+      };
     case "SET_WIDGETS":
       return {
         ...state,
         widgets: action.payload
       };
-    
+
     case "UPDATE_WIDGET":
       return {
         ...state,
@@ -44,19 +48,19 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
             : widget
         )
       };
-    
+
     case "SET_LOADING":
       return {
         ...state,
         isLoading: action.payload
       };
-    
+
     case "SET_ERROR":
       return {
         ...state,
         error: action.payload
       };
-    
+
     case "SET_PROJECT_FILTER":
       return {
         ...state,
@@ -65,7 +69,7 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
           projectName: action.payload
         }
       };
-    
+
     case "SET_TIME_RANGE_FILTER":
       return {
         ...state,
@@ -74,7 +78,7 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
           timeRange: action.payload
         }
       };
-    
+
     case "RESET_FILTERS":
       return {
         ...state,
@@ -83,7 +87,7 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
           timeRange: null
         }
       };
-      
+
     default:
       return state;
   }

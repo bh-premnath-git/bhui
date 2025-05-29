@@ -88,7 +88,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
     const columns = Object.keys(widget.executed_query[0]);
 
     return (
-      <div className="overflow-auto max-h-[200px]">
+      <div className="h-full overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -115,12 +115,12 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
 
   const renderChart = () => {
     if (isRefreshing) {
-      return <LoadingState  />;
+      return <LoadingState />;
     }
 
     if (!widget.executed_query || widget.executed_query.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-[200px] p-3">
+        <div className="flex flex-col items-center justify-center h-full p-3">
           <div className="bg-muted/20 p-2 rounded-full mb-2">
             <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -154,7 +154,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
       )}>
         {/* Front side - Chart */}
         <Card className="absolute w-full h-full bg-card border border-border/40 rounded-lg hover:shadow-md transition-all duration-200 backface-hidden">
-          <CardContent className="p-3">
+          <CardContent className="p-3 h-full flex flex-col">
             <WidgetHeader 
               title={widget.name} 
               description={widget.chart_config.metric}
@@ -164,7 +164,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               showFlip
               isFlipped={isFlipped}
             />
-            <div className="mt-2">
+            <div className="flex-grow mt-2 overflow-hidden">
               {renderChart()}
             </div>
           </CardContent>
@@ -172,7 +172,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
 
         {/* Back side - SQL Query */}
         <Card className="absolute w-full h-full bg-card border border-border/40 rounded-lg hover:shadow-md transition-all duration-200 backface-hidden rotate-y-180">
-          <CardContent className="p-3">
+          <CardContent className="p-3 h-full flex flex-col">
             <WidgetHeader 
               title="SQL Query"
               description={widget.name}
@@ -182,7 +182,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               isFlipped={isFlipped}
               isTableView={isTableView}
             />
-            <div className="mt-2 h-[200px]">
+            <div className="flex-grow mt-2 overflow-hidden">
               {isEditing ? (
                 <div className="flex flex-col h-full gap-2">
                   <Textarea

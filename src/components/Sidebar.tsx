@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
-import logo from "/logo.svg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,7 +90,7 @@ export function Sidebar() {
     <div
       className={cn(
         "h-screen fixed left-0 top-0 z-40 flex flex-col",
-        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-r",
+        "bg-gray-50 dark:bg-gray-900/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/95 dark:supports-[backdrop-filter]:bg-gray-900/80 border-r",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
         isExpanded ? "w-64" : "w-20"
       )}
@@ -154,8 +153,10 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center py-2 rounded-md",
                   "transition-all duration-200 ease-in-out",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  location.pathname === item.path && "bg-accent text-accent-foreground",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100",
+                  location.pathname === item.path ? 
+                    "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground" : 
+                    "text-gray-700 dark:text-gray-300",
                   "flex-1",
                   !isExpanded && item.showIcon && "justify-center px-3",
                   isExpanded && "px-3",
@@ -265,8 +266,10 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center px-3 py-2 rounded-md",
                             "transition-all duration-200 ease-in-out",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            location.pathname === subItem.path && "bg-accent text-accent-foreground",
+                            "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100",
+                            location.pathname === subItem.path ? 
+                              "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground" : 
+                              "text-gray-600 dark:text-gray-400",
                             "text-sm pl-6"
                           )}
                         >

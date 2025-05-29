@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { navigationItems } from '@/config/navigation';
 import { useReports } from './useReports';
 import type { NavItem } from '@/types/navigation';
@@ -19,6 +19,7 @@ export interface NavigationHook {
 export function useNavigation(): NavigationHook {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const location = useLocation();
   const [items, setItems] = useState<NavItem[]>(navigationItems);
   const { reports, loading } = useReports();
 
@@ -48,6 +49,17 @@ export function useNavigation(): NavigationHook {
       });
     }
 
+    // Check if we're currently on the build-datapipeline route and trying to navigate away
+    const isLeavingBuildDataPipeline = location.pathname === '/designers/build-datapipeline' && 
+                                       !finalPath.startsWith('/designers/build-datapipeline');
+    
+    // Use window.location.href to force a refresh when leaving the problematic route
+    if (isLeavingBuildDataPipeline) {
+      console.log('Forcing page refresh when leaving build-datapipeline route:', finalPath);
+      window.location.href = finalPath;
+      return; // Exit early as the page will refresh
+    }
+    
     // Clean up any event listeners that might be interfering with navigation
     const cleanupEvents = () => {
       // Remove common event listeners that might be causing issues
@@ -57,17 +69,13 @@ export function useNavigation(): NavigationHook {
       });
     };
 
+    // For all other routes, use React Router's navigate
+    console.log('Using React Router navigation for route:', finalPath);
     // Use a timeout to ensure any pending state updates are completed before navigation
     setTimeout(() => {
       cleanupEvents();
-      
-      // Use window.location for direct navigation to ensure it works
-      window.location.href = finalPath;
-      
-      // As a fallback, also try the React Router navigation
       navigate(finalPath, { 
-        state: { refetch: forceRefetch, timestamp: Date.now() },
-        replace: true
+        state: { refetch: forceRefetch, timestamp: Date.now() }
       });
     }, 10);
   };

@@ -29,9 +29,40 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
         selectedDashboard: action.payload
       };
     case "ADD_WIDGET":
+      const updatedWidgets = [...state.widgets, action.payload];
+      let updatedDashboards = [...state.dashboards];
+      let updatedSelectedDashboard = state.selectedDashboard;
+      
+      if (state.selectedDashboard) {
+        const newLayoutEntry = {
+          // Add required properties to match DashboardLayout interface
+          layout_id: Date.now(), // Generate a temporary ID (will be replaced by backend)
+          dashboard_id: state.selectedDashboard.dashboard_id,
+          widget_id: action.payload.id,
+          order_index: (state.widgets.length + 1).toString(),
+          widget_coordinates: { x: 0, y: Math.floor(state.widgets.length / 2) * 4 },
+          widget_size: { w: 6, h: 4 },
+          widget_type: action.payload.widget_type,
+          visibility: action.payload.visibility || 'private'
+        };
+        updatedDashboards = state.dashboards.map(dashboard => {
+          if (dashboard.dashboard_id === state.selectedDashboard?.dashboard_id) {
+            const updatedDashboard = {
+              ...dashboard,
+              dashboard_layout: [...(dashboard.dashboard_layout || []), newLayoutEntry]
+            };
+            updatedSelectedDashboard = updatedDashboard;
+            return updatedDashboard;
+          }
+          return dashboard;
+        });
+      }
+      
       return {
         ...state,
-        widgets: [...state.widgets, action.payload]
+        widgets: updatedWidgets,
+        dashboards: updatedDashboards,
+        selectedDashboard: updatedSelectedDashboard
       };
     case "SET_WIDGETS":
       return {

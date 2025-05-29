@@ -84,7 +84,7 @@ export function DataOpsHub() {
     const handleChartAdded = (event: CustomEvent) => {
       const chartData = event.detail;
       console.log("Chart added:", chartData);
-     // dispatch({ type: "ADD_WIDGET", payload: chartData });
+      dispatch({ type: "ADD_WIDGET", payload: chartData });
     };
 
     document.addEventListener(CHART_ADDED_EVENT, handleChartAdded);

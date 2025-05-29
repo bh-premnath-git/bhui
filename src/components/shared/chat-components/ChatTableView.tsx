@@ -29,26 +29,32 @@ export function ChatTableView({ data }: ChatTableViewProps) {
   return (
     <Card className="p-4">
       <ScrollArea className="h-full max-h-[400px] w-full">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column} className="text-left">
-                  {column}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((row, i) => (
-              <TableRow key={i}>
+        <div className="w-full">
+          <Table className="w-full table-fixed">
+            <TableHeader>
+              <TableRow>
                 {columns.map((column) => (
-                  <TableCell key={column}>{row[column]}</TableCell>
+                  <TableHead key={column} className="text-left truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
+                    {column}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data.map((row, i) => (
+                <TableRow key={i}>
+                  {columns.map((column) => (
+                    <TableCell key={column} className="truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
+                      <div className="truncate" title={String(row[column])}>
+                        {row[column]}
+                      </div>
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </ScrollArea>
     </Card>
   );

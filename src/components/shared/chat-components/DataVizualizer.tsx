@@ -132,12 +132,6 @@ export function AIDataVisualizer({
           <h4 className="font-medium text-sm">{title}</h4>
           <div className="flex items-center space-x-2">
             <TabsList className="h-8 p-1">
-              {data && (
-                <TabsTrigger value="table" className="h-6 px-2 text-xs">
-                  <TableIcon className="h-3.5 w-3.5 mr-1" />
-                  Table
-                </TabsTrigger>
-              )}
               {chart && (
                 <TabsTrigger value="chart" className="h-6 px-2 text-xs">
                   <BarChart4 className="h-3.5 w-3.5 mr-1" />
@@ -150,13 +144,19 @@ export function AIDataVisualizer({
                   SQL
                 </TabsTrigger>
               )}
+              {data && (
+                <TabsTrigger value="table" className="h-6 px-2 text-xs">
+                  <TableIcon className="h-3.5 w-3.5 mr-1" />
+                  Table
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {onAddToDashboard && parsedChartData && (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onAddToDashboard({chartMetadata, sql: sql.content, data: data.content})}
+                onClick={() => onAddToDashboard({ chartMetadata, sql: sql.content, data: data.content })}
                 className="h-8 text-xs"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
@@ -167,21 +167,7 @@ export function AIDataVisualizer({
         </div>
 
         <AnimatePresence mode="wait">
-          {data && (
-            <TabsContent value="table" className="p-4">
-              <motion.div
-                key="table"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChatTableView data={formattedTableData} />
-              </motion.div>
-            </TabsContent>
-          )}
-
-          {chart && (
+        {chart && (
             <TabsContent value="chart" className="p-4">
               <motion.div
                 key="chart"
@@ -205,6 +191,19 @@ export function AIDataVisualizer({
                 transition={{ duration: 0.2 }}
               >
                 <ChatSQLView sql={sql.content} />
+              </motion.div>
+            </TabsContent>
+          )}
+          {data && (
+            <TabsContent value="table" className="p-4">
+              <motion.div
+                key="table"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChatTableView data={formattedTableData} />
               </motion.div>
             </TabsContent>
           )}

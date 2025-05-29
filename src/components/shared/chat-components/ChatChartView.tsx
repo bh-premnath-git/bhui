@@ -133,7 +133,7 @@ export function ChatChartView({ data, config }: ChatChartViewProps) {
   
   // Render different chart types based on detection
   switch (chartType) {
-    case 'donut':
+    /* case 'donut':
       return (
         <div className="h-[300px]">
           <DonutChart 
@@ -143,9 +143,9 @@ export function ChatChartView({ data, config }: ChatChartViewProps) {
             colors={palettes.status}
           />
         </div>
-      );
+      ); */
       
-    case 'line':
+    /* case 'line':
       // For LineChart, include the axis labels in the config object
       const lineChartConfig = {
         ...(config || {}),
@@ -164,7 +164,7 @@ export function ChatChartView({ data, config }: ChatChartViewProps) {
           />
         </div>
       );
-      
+       */
     case 'bar':
     default:
       return (

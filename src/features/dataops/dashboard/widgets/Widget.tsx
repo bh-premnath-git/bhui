@@ -35,15 +35,15 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
 
   const handleRefresh = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     try {
       setIsRefreshing(true);
       const [refreshedWidget] = await fetchWidgetsByIds(state.widgets, [widget.id]);
-      
+
       if (refreshedWidget) {
-        dispatch({ 
-          type: "UPDATE_WIDGET", 
-          payload: refreshedWidget 
+        dispatch({
+          type: "UPDATE_WIDGET",
+          payload: refreshedWidget
         });
       }
     } catch (error) {
@@ -135,8 +135,11 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
     const chartType = widget.chart_config.type;
     switch (chartType) {
       case "line_chart":
+      case "grouped_bar_chart":
+        console.log("Rendering widget", widget);
         return <LineChart widget={widget} height={200} />;
       case "bar_chart":
+      case "column_chart":
         return <BarChart widget={widget} height={200} />;
       default:
         return <div>Unsupported chart type: {chartType}</div>;
@@ -155,8 +158,8 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
         {/* Front side - Chart */}
         <Card className="absolute w-full h-full bg-card border border-border/40 rounded-lg hover:shadow-md transition-all duration-200 backface-hidden">
           <CardContent className="p-3 h-full flex flex-col">
-            <WidgetHeader 
-              title={widget.name} 
+            <WidgetHeader
+              title={widget.name}
               description={widget.chart_config.metric}
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
@@ -173,7 +176,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
         {/* Back side - SQL Query */}
         <Card className="absolute w-full h-full bg-card border border-border/40 rounded-lg hover:shadow-md transition-all duration-200 backface-hidden rotate-y-180">
           <CardContent className="p-3 h-full flex flex-col">
-            <WidgetHeader 
+            <WidgetHeader
               title="SQL Query"
               description={widget.name}
               onFlip={handleFlip}

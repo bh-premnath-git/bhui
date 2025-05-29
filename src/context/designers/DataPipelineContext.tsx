@@ -30,6 +30,7 @@ import {
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';
 import { useAppSelector } from '@/hooks/useRedux';
+import { random } from 'lodash';
 
 interface UIProperties {
     color: string;
@@ -37,6 +38,9 @@ interface UIProperties {
     module_name: string;
     ports: any;
     id?: string;
+    meta?:any;
+    type?:any;
+    operators?: any[];
 }
 
 interface Node {
@@ -155,6 +159,7 @@ interface bnPipelineContextProps {
     setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
     updatedSelectedNodeId: any
     updateSetNode: (node: any, edges: any) => void
+    updateAllNodeDependencies: () => void
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -1495,12 +1500,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             : baseModuleName;
         console.log(baseModuleName)
         // Find the last selected node's position
-        const lastNode = nodes[nodes.length - 1];
+        const lastNode = nodes[nodes.length-1 ];
         const basePosition = lastNode ? {
             x: lastNode.position.x + 150,
             y: lastNode.position.y
         } : {
-            x: 50,
+            x: 50+random(),
             y: 100
         };
 
@@ -1531,6 +1536,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUnsavedChanges();
 
         setTimeout(() => {
+            handleAlignHorizontal()
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
     }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);

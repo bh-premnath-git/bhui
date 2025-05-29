@@ -284,7 +284,7 @@ console.log(selectedSchema)
                         />
                     </div>
                     {/* Updated FlowControls container positioning */}
-                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-50 transition-all duration-300`}>
+                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-50 transition-all duration-300`}>
                         <FlowControls
                             onZoomIn={handleZoomIn}
                             onZoomOut={handleZoomOut}

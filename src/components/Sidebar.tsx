@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
 import logo from "/logo.svg";
 import { cn } from "@/lib/utils";
@@ -79,7 +79,7 @@ export function Sidebar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigation.handleNavigation('/');
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -97,7 +97,7 @@ export function Sidebar() {
       )}
     >
       <div className="h-16 flex items-center px-4 border-b">
-        <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigate("/dataops-hub")}>
+        <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
           
           <div className="overflow-hidden">
             <h1
@@ -145,20 +145,22 @@ export function Sidebar() {
             const needsTooltip = !isExpanded && item.showIcon;
             
             const navElement = (
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center py-2 rounded-md",
-                    "transition-all duration-200 ease-in-out",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    (isActive && !hasActiveSubitem) && "bg-accent text-accent-foreground",
-                    "flex-1",
-                    !isExpanded && item.showIcon && "justify-center px-3",
-                    isExpanded && "px-3",
-                    isExpanded && item.isSubItem && "pl-6 text-sm"
-                  )
-                }
+              <a
+                href={item.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigation.handleNavigation(item.path);
+                }}
+                className={cn(
+                  "flex items-center py-2 rounded-md",
+                  "transition-all duration-200 ease-in-out",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  location.pathname === item.path && "bg-accent text-accent-foreground",
+                  "flex-1",
+                  !isExpanded && item.showIcon && "justify-center px-3",
+                  isExpanded && "px-3",
+                  isExpanded && item.isSubItem && "pl-6 text-sm"
+                )}
               >
                 {item.showIcon && item.icon && (
                   <item.icon className={cn(
@@ -177,7 +179,7 @@ export function Sidebar() {
                     {item.title}
                   </span>
                 )}
-              </NavLink>
+              </a>
             );
             
             return (
@@ -226,7 +228,7 @@ export function Sidebar() {
                               <DropdownMenuItem 
                                 className="cursor-pointer flex items-center gap-2"
                                 onClick={() => {
-                                  navigate(`${ROUTES.DATA_CATALOG}/xplorer`);
+                                  navigation.handleNavigation(`${ROUTES.DATA_CATALOG}/xplorer`);
                                 }}
                               >
                                 <PlusCircle className="h-4 w-4" />
@@ -254,21 +256,23 @@ export function Sidebar() {
                   <ul className="mt-1 space-y-1">
                     {dataXplorerSubItems.map(subItem => (
                       <li key={subItem.path}>
-                        <NavLink
-                          to={subItem.path}
-                          className={({ isActive }) =>
-                            cn(
-                              "flex items-center px-3 py-2 rounded-md",
-                              "transition-all duration-200 ease-in-out",
-                              "hover:bg-accent hover:text-accent-foreground",
-                              isActive && "bg-accent text-accent-foreground",
-                              "text-sm pl-6"
-                            )
-                          }
+                        <a
+                          href={subItem.path}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigation.handleNavigation(subItem.path);
+                          }}
+                          className={cn(
+                            "flex items-center px-3 py-2 rounded-md",
+                            "transition-all duration-200 ease-in-out",
+                            "hover:bg-accent hover:text-accent-foreground",
+                            location.pathname === subItem.path && "bg-accent text-accent-foreground",
+                            "text-sm pl-6"
+                          )}
                         >
                           {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
                           <span className="ml-3 flex-1">{subItem.title}</span>
-                        </NavLink>
+                        </a>
                       </li>
                     ))}
                   </ul>

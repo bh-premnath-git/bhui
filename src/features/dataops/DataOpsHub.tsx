@@ -93,5 +93,5 @@ export function DataOpsHub() {
     );
   }
 
-  return (<Dashboard /> );
+  return (<div className="absolute inset-0"><Dashboard /></div>);
 }

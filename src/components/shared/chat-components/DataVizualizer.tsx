@@ -75,9 +75,6 @@ export function AIDataVisualizer({
   const [parsedChartData, setParsedChartData] = useState<GraphDataPoint[] | null>(null);
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
-
-  
-  // Parse chart data if it's a string containing JSON
   useEffect(() => {
     if (chart?.content) {
       try {
@@ -85,23 +82,15 @@ export function AIDataVisualizer({
         if (typeof chart.content === 'string' && chart.content.includes('```json')) {
           const jsonContent = chart.content.replace(/```json\n|\n```/g, '');
           const parsed = JSON.parse(jsonContent) as ChartData;
-          console.log("parsed", parsed);
-          
-          // Store the full chart data for metadata and config
           setChartMetadata(parsed);
-          
-          // Extract the graph data which is what the ChartView expects
           if (parsed.graph_data) {
             setParsedChartData(parsed.graph_data);
           }
         } else {
-          // It's already a parsed object
           if (typeof chart.content === 'object' && chart.content.graph_data) {
-            // If it's a full ChartData object
             setChartMetadata(chart.content as ChartData);
             setParsedChartData(chart.content.graph_data);
           } else {
-            // If it's just the graph data
             setParsedChartData(chart.content as GraphDataPoint[]);
           }
         }
@@ -110,13 +99,13 @@ export function AIDataVisualizer({
       }
     }
   }, [chart]);
-  
+
   // Format table data from column-based to row-based objects
   useEffect(() => {
     if (data?.content?.column_names && data?.content?.column_values) {
       const columnNames = data.content.column_names;
       const rows = data.content.column_values;
-      
+
       const formatted = rows.map((row: any[]) => {
         const rowObj: Record<string, any> = {};
         columnNames.forEach((colName: string, index: number) => {
@@ -124,13 +113,13 @@ export function AIDataVisualizer({
         });
         return rowObj;
       });
-      
+
       setFormattedTableData(formatted);
     }
   }, [data]);
-  
+
   if (!sql && !data && !chart) return null;
-  
+
   return (
     <motion.div
       className="mt-6 rounded-xl border bg-card shadow-sm overflow-hidden"
@@ -162,12 +151,12 @@ export function AIDataVisualizer({
                 </TabsTrigger>
               )}
             </TabsList>
-            
+
             {onAddToDashboard && parsedChartData && (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onAddToDashboard(parsedChartData)}
+                onClick={() => onAddToDashboard({chartMetadata, sql: sql.content, data: data.content})}
                 className="h-8 text-xs"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
@@ -176,7 +165,7 @@ export function AIDataVisualizer({
             )}
           </div>
         </div>
-        
+
         <AnimatePresence mode="wait">
           {data && (
             <TabsContent value="table" className="p-4">
@@ -191,7 +180,7 @@ export function AIDataVisualizer({
               </motion.div>
             </TabsContent>
           )}
-          
+
           {chart && (
             <TabsContent value="chart" className="p-4">
               <motion.div
@@ -205,7 +194,7 @@ export function AIDataVisualizer({
               </motion.div>
             </TabsContent>
           )}
-          
+
           {sql && (
             <TabsContent value="sql" className="p-4">
               <motion.div

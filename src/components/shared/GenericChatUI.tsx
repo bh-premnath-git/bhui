@@ -113,63 +113,24 @@ export function GenericChatUI({
     streamConversation(null, q, threadId, onChunk, onComplete, onError, "dataops");
     setInput("");
   }, [input, threadId, streamConversation, addUserMessage, addAssistantMessage, updateMessageById, isProcessing]);
-
   const handleAddToDashboard = (data: any) => {
-    // Check if we have proper chart data with GraphDataPoint structure
-    if (!Array.isArray(data) || !data.length) {
-      console.error("Invalid chart data format for dashboard");
-      return;
-    }
-
-    // Determine chart type and appropriate labels based on data structure
-    const dataKeys = Object.keys(data[0] || {}).filter(key => 
-      key !== 'name' && key !== 'x_axis' && key !== 'y_axis');
-
-    // Get the latest user query to provide context for the chart title
-    const userQuery = messages[messages.length - 2]?.content.toLowerCase() || '';
-
-    // Default labels - look for x_axis and y_axis properties first (new format)
-    let xAxisLabel = data[0].hasOwnProperty('x_axis') ? 'x_axis' : 'Categories';
-    let yAxisLabel = data[0].hasOwnProperty('y_axis') ? 'y_axis' : (dataKeys[0] || 'Value');
-
-    // Try to extract more meaningful labels from the query
-    if (userQuery.includes('latency')) {
-      yAxisLabel = 'Time (minutes)';
-    } else if (userQuery.includes('cost') || userQuery.includes('expensive')) {
-      yAxisLabel = 'Cost (USD)';
-    } else if (userQuery.includes('failed') || userQuery.includes('error')) {
-      yAxisLabel = 'Count';
-    }
-
-    // Format the chart data to ensure it works with the dashboard components
-    const formattedData = data.map(point => {
-      // If the data is in the new format with x_axis and y_axis properties
-      if (point.hasOwnProperty('x_axis') && point.hasOwnProperty('y_axis')) {
-        return {
-          name: point.x_axis,
-          value: point.y_axis,
-          ...point // Include any other properties
-        };
-      }
-      // Keep existing format
-      return point;
-    });
-
+    const trasformedData = data.chartMetadata.graph_data.map(data1=>({[data.chartMetadata.graph_config.primary_axis.x.field]: data1.x_axis, [data.chartMetadata.graph_config.primary_axis.y.field]: data1.y_axis}))
+    console.log("data", trasformedData);
+    
     const chartData = {
       id: `chart-${Date.now()}`,
-      title: messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data',
-      type: 'bar', // Default type, could be customized based on chart_recommendation
-      data: formattedData,
-      config: {
-        xAxis: {
-          label: xAxisLabel,
-          labelOffset: 10
-        },
-        yAxis: {
-          label: yAxisLabel,
-          labelOffset: 15
-        },
-        children: messages[messages.length - 1]?.content || 'Chart visualization based on query results'
+      owner: "info@bighammer.ai",
+      widget_type: "user-defined",
+      visibility: "private",
+      sql_query: data.sql,
+      executed_query: trasformedData,
+      chart_config: {
+        type: "bar_chart",
+        xAxis: data.chartMetadata.graph_config.primary_axis.x.field,
+        yAxis: data.chartMetadata.graph_config.primary_axis.y.field,
+        series: "project_name",
+        title: data.chartMetadata.title,
+        metric: data.chartMetadata.graph_config.primary_axis.y.type
       }
     };
 

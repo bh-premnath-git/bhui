@@ -17,8 +17,9 @@ export const NodeImage: React.FC<NodeImageProps> = ({
     onMouseEnter,
     onMouseLeave,
 }) => {
-let source=data.source?.connection?.connection_type?.toLowerCase()||data.source?.connection_config?.custom_metadata?.connection_type?.toLowerCase()
-return (
+    let source = data.source?.connection?.connection_type?.toLowerCase() || data.source?.connection_config?.custom_metadata?.connection_type?.toLowerCase();
+    console.log(source, "source")
+    return (
         <div className="relative bg-white rounded-lg">
             <div
                 className="relative group"
@@ -34,11 +35,13 @@ return (
                         onClick={onImageClick}
                         style={{ display: 'block' }}
                     />
-                    {(data.label?.toLowerCase() === 'reader' || data.title?.toLowerCase() === 'reader') && (
-                        <img className='absolute w-5 h-5' src={`/assets/buildPipeline/connection/${source}.svg`} alt="" style={{ bottom: 0, right: 0 }} />
-                    )}
+                    {source && (<>
+                        {(data.label?.toLowerCase() === 'reader' || data.title?.toLowerCase() === 'reader' && source != null && source != undefined) && (
+                            <img className='absolute w-5 h-5' src={`/assets/buildPipeline/connection/${source}.svg`} alt="" style={{ bottom: 0, right: 0 }} />
+                        )}
+                    </>)}
 
-                    {(data.label?.toLowerCase() === 'target'  && source!=null || data.title?.toLowerCase() === 'target' && source!=null) && (
+                    {(data.label?.toLowerCase() === 'target' && source != null || data.title?.toLowerCase() === 'target' && source != null) && (
                         <img className='absolute w-5 h-5' src={`/assets/buildPipeline/connection/${source}.svg`} alt="" style={{ bottom: 0, right: 0 }} />
                     )}
                 </div>

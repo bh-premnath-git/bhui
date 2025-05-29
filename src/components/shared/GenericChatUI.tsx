@@ -115,20 +115,19 @@ export function GenericChatUI({
   }, [input, threadId, streamConversation, addUserMessage, addAssistantMessage, updateMessageById, isProcessing]);
   const handleAddToDashboard = (data: any) => {
     const trasformedData = data.chartMetadata.graph_data.map(data1=>({[data.chartMetadata.graph_config.primary_axis.x.field]: data1.x_axis, [data.chartMetadata.graph_config.primary_axis.y.field]: data1.y_axis}))
-    console.log("data", trasformedData);
-    
     const chartData = {
       id: `chart-${Date.now()}`,
       owner: "info@bighammer.ai",
       widget_type: "user-defined",
+      name: data.chartMetadata.title,
       visibility: "private",
       sql_query: data.sql,
       executed_query: trasformedData,
       chart_config: {
-        type: "bar_chart",
+        type: data.chartMetadata.chart_type,
         xAxis: data.chartMetadata.graph_config.primary_axis.x.field,
         yAxis: data.chartMetadata.graph_config.primary_axis.y.field,
-        series: "project_name",
+        series: data.chartMetadata.graph_config.primary_axis.y.field,
         title: data.chartMetadata.title,
         metric: data.chartMetadata.graph_config.primary_axis.y.type
       }

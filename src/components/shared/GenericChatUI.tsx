@@ -3,16 +3,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { AIChatInput } from '@/components/shared/AIChatInput';
 import { motion } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
-import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
-import { Button } from '@/components/ui/button';
+import { AIDataVisualizer } from '@/components/shared/chat-components/DataVizualizer';
 import { Zap } from 'lucide-react';
 import { useConversation } from '@/hooks/useConversation';
 import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
-
 
 interface GenericChatUIProps {
   imageSrc?: string;
@@ -31,13 +27,21 @@ export function GenericChatUI({
   userColor = '#000000',
   onAddToDashboard,
 }: GenericChatUIProps) {
-  const { messages, addUserMessage, addAssistantMessage, updateLastAssistantMessage } = useChatMessages();
+  const { 
+    messages, 
+    addUserMessage, 
+    addAssistantMessage, 
+    updateMessageById, 
+    findMessageById 
+  } = useChatMessages();
   const { data: recommendations, isLoading, isError } = useRecommendation();
   const [input, setInput] = useState('');
   const [threadId, setThreadId] = useState<string | null>(null);
   const { createConversation, streamConversation } = useConversation();
   const [response, setResponse] = useState<{ sql: any; chart: any; table: any; explanation: any } | null>(null);
-  const [activeTab, setActiveTab] = useState<'chart' | 'sql'>('chart');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState<'processing' | 'processed' | 'hidden'>('hidden');
+  const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
   const streamAbortRef = useRef<() => void>();
 
   useEffect(() => {
@@ -62,42 +66,74 @@ export function GenericChatUI({
     const q = input.trim();
     if (!q) return;
     streamAbortRef.current?.();
+    
+    // Reset states for new query
+    setResponse(null);
+    setProcessingState('processing');
+    setIsProcessing(true);
+    
+    // Add user message first
     addUserMessage(q);
-    addAssistantMessage('Processing...');
+    
+    // Add processing message and track its ID
+    const processingMessage = 'Processing...';
+    const msgId = addAssistantMessage(processingMessage);
+    setProcessingMessageId(msgId);
+    
     const onChunk = (chunk: string) => {
       if (typeof chunk === 'string') {
         try {
           const parsedChunk = JSON.parse(chunk);
+          
+          // Keep the processing message visible until completion
+          // Don't immediately set isProcessing to false
+          
           if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
             const responseTypeKey = parsedChunk.response_type.toLowerCase();
             setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
-            addAssistantMessage(JSON.stringify(parsedChunk));
           }
         } catch (error) {
           console.error("Error parsing chunk:", error);
         }
       }
     };
+    
     const onComplete = () => {
-      updateLastAssistantMessage('do you have any other queries?');
+      // Only when streaming is complete, update both states
+      setProcessingState('processed');
+      setIsProcessing(false);
     };
+    
     const onError = (error: any) => {
       console.error(error);
+      // On error, update the processing message to show the error
+      if (processingMessageId) {
+        updateMessageById(processingMessageId, `Error: ${error.message || 'Failed to process your request'}`);
+      }
+      setProcessingState('hidden');
     };
+    
     streamConversation(null, q, threadId, onChunk, onComplete, onError, "dataops");
     setInput("");
-  }, [input, threadId, streamConversation, addUserMessage, addAssistantMessage, updateLastAssistantMessage]);
+  }, [input, threadId, streamConversation, addUserMessage, addAssistantMessage, updateMessageById, isProcessing]);
 
   const handleAddToDashboard = (data: any) => {
-    // Determine chart type and appropriate labels based on data structure
-    const dataKeys = Object.keys(data[0] || {}).filter(key => key !== 'name');
+    // Check if we have proper chart data with GraphDataPoint structure
+    if (!Array.isArray(data) || !data.length) {
+      console.error("Invalid chart data format for dashboard");
+      return;
+    }
 
-    // Determine X and Y axis labels based on the query content and data structure
+    // Determine chart type and appropriate labels based on data structure
+    const dataKeys = Object.keys(data[0] || {}).filter(key => 
+      key !== 'name' && key !== 'x_axis' && key !== 'y_axis');
+
+    // Get the latest user query to provide context for the chart title
     const userQuery = messages[messages.length - 2]?.content.toLowerCase() || '';
 
-    // Default labels
-    let xAxisLabel = 'Categories';
-    let yAxisLabel = dataKeys[0] || 'Value';
+    // Default labels - look for x_axis and y_axis properties first (new format)
+    let xAxisLabel = data[0].hasOwnProperty('x_axis') ? 'x_axis' : 'Categories';
+    let yAxisLabel = data[0].hasOwnProperty('y_axis') ? 'y_axis' : (dataKeys[0] || 'Value');
 
     // Try to extract more meaningful labels from the query
     if (userQuery.includes('latency')) {
@@ -108,11 +144,25 @@ export function GenericChatUI({
       yAxisLabel = 'Count';
     }
 
+    // Format the chart data to ensure it works with the dashboard components
+    const formattedData = data.map(point => {
+      // If the data is in the new format with x_axis and y_axis properties
+      if (point.hasOwnProperty('x_axis') && point.hasOwnProperty('y_axis')) {
+        return {
+          name: point.x_axis,
+          value: point.y_axis,
+          ...point // Include any other properties
+        };
+      }
+      // Keep existing format
+      return point;
+    });
+
     const chartData = {
       id: `chart-${Date.now()}`,
       title: messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data',
-      type: 'bar',
-      data: data,
+      type: 'bar', // Default type, could be customized based on chart_recommendation
+      data: formattedData,
       config: {
         xAxis: {
           label: xAxisLabel,
@@ -134,12 +184,12 @@ export function GenericChatUI({
     });
     document.dispatchEvent(chartEvent);
 
-    // Still call the prop callback if provided (for backward compatibility)
+    // Call the prop callback if provided (for backward compatibility)
     if (onAddToDashboard) {
       onAddToDashboard(chartData);
     }
   };
-
+  
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
@@ -148,7 +198,7 @@ export function GenericChatUI({
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
               <div className="flex items-center gap-4 mb-4">
                 <div
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-6 h-6 rounded-full flex-shrink-0"
                   style={{ backgroundColor: assistantColor }}
                 />
                 <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
@@ -193,81 +243,108 @@ export function GenericChatUI({
             <>
               {messages.map((m, i) => {
                 const isA = m.role === 'assistant';
+                const isProcessingMessage = isA && processingMessageId === m.id;
+                
                 return (
-                  <div key={i} className="flex items-start gap-4 py-2">
+                  <div key={m.id} className="flex items-start gap-4 py-2">
                     <div
-                      className="w-4 h-4 rounded-full flex-shrink-0 mt-2"
+                      className="w-6 h-6 rounded-full flex-shrink-0 mt-2"
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
                       className={`flex-1 rounded-2xl px-3 py-3 shadow ${isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
                         }`}
                     >
-                      <p className="whitespace-pre-wrap break-words leading-relaxed max-w-full overflow-auto">{m.content}</p>
+                      {isProcessingMessage ? (
+                        // This is our processing message
+                        processingState === 'processing' ? (
+                          <div className="flex items-center">
+                            <p className="mr-2">Processing</p>
+                            <span className="flex space-x-1">
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                              >.</motion.span>
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse", delay: 0.2 }}
+                              >.</motion.span>
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse", delay: 0.4 }}
+                              >.</motion.span>
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <p>Processed</p>
+                            <motion.span 
+                              initial={{ scale: 0, opacity: 0 }} 
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="ml-2 text-green-600 font-bold"
+                            >
+                              ✓
+                            </motion.span>
+                          </div>
+                        )
+                      ) : (
+                        <p className="whitespace-pre-wrap break-words leading-relaxed max-w-full overflow-auto">{m.content}</p>
+                      )}
                     </div>
                   </div>
                 );
               })}
               {response && (
                 <>
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={v => setActiveTab(v as 'chart' | 'sql')}
-                    className="mt-6"
-                  >
-                    <TabsList className="flex space-x-2 mb-2">
-                      <TabsTrigger
-                        value="chart"
-                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'chart'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        Chart
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="sql"
-                        className={`px-2 py-2 rounded-t-lg ${activeTab === 'sql'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        SQL
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="chart" className="pt-4">
-                      <div className="mt-3 bg-card rounded-md p-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm text-foreground">
-                            {messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data'}
-                          </h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddToDashboard(response.chart)}
-                            className="h-7 text-xs"
-                          >
-                            Add to Dashboard
-                          </Button>
+                  {(response.sql || response.chart || response.table) && (
+                    <>
+                      <AIDataVisualizer
+                        sql={response.sql}
+                        chart={response.chart}
+                        data={response.table}
+                        onAddToDashboard={handleAddToDashboard}
+                      />
+                      
+                      {/* Explanation message */}
+                      {response.explanation?.content && (
+                        <div className="flex items-start gap-4 mt-4">
+                          <div
+                            className="w-6 h-6 rounded-full flex-shrink-0 mt-2"
+                            style={{ backgroundColor: assistantColor }}
+                          />
+                          <div className="flex-1 rounded-2xl bg-gray-100 px-3 py-3 shadow">
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">
+                              {response.explanation.content}
+                            </p>
+                          </div>
                         </div>
-                        <ChatChartView data={response.chart} />
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="sql" className="pt-4">
-                      <ChatSQLView sql={response.sql} />
-                    </TabsContent>
-                  </Tabs>
-                  <div className="flex items-center gap-4 mt-4">
-                    <div
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: assistantColor }}
-                    />
-                    <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
-                      <p className="leading-relaxed text-black">
-                        Do you want me to analyze the reasons for the latency issue?
-                      </p>
-                    </div>
-                  </div>
+                      )}
+                      
+                      {/* Follow-up question - only show when processing is complete */}
+                      {processingState === 'processed' && (
+                        <div className="flex items-start gap-4 mt-4">
+                          <div
+                            className="w-6 h-6 rounded-full flex-shrink-0 mt-2"
+                            style={{ backgroundColor: assistantColor }}
+                          />
+                          <div className="flex-1 rounded-2xl bg-gray-100 px-3 py-3 shadow">
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">
+                              Do you have any other queries?
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </>

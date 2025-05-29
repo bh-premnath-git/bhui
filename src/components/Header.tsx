@@ -5,7 +5,7 @@ import { NavigationBreadcrumb } from "./NavigationBreadcrumb";
 import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 
 export const Header = () => {
@@ -32,19 +32,19 @@ export const Header = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
             dispatch(setIsFlow(false))
 
-      return <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[59%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
       dispatch(setIsFlow(true))
-      return <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]")}>
+      return <div className={cn(isRightAsideOpen ? "w-[59%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>
     }
     if (isDataOpsHubRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]","flex justify-between")}>
           <NavigationBreadcrumb />
           <AIChatButton variant="dataops" />
         </div>
@@ -52,7 +52,7 @@ export const Header = () => {
     }
     if (isDataXploreRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[69%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]","flex justify-between")}>
           <NavigationBreadcrumb />
           <AIChatButton variant="explorer" />
         </div>

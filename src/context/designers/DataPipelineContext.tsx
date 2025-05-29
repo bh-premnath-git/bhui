@@ -1008,7 +1008,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
 
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName || pipelineDtl?.name
+                params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
             })).unwrap();
             console.log(countsResponse, "countsResponse")
 
@@ -1042,7 +1042,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleStop = useCallback(async () => {
         try {
             console.log(pipelineName)
-            let response = await dispatch(stopPipeLine({ params: pipelineName || pipelineDtl?.name })).unwrap();
+            let response = await dispatch(stopPipeLine({ params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -1056,10 +1056,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineName || pipelineDtl?.name })).unwrap();
+            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ params: pipelineName || pipelineDtl?.name })).unwrap();
+                let countsResponse = await dispatch(getTransformationCount({ params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
                 console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);

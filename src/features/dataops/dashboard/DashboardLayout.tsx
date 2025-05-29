@@ -79,7 +79,7 @@ const GridLayout = () => {
 
   if (renderableWidgets.length === 0) {
     return (
-      <div className="min-h-[300px] flex flex-col items-center justify-center p-4 bg-card border rounded-lg">
+      <div className="min-h-[300px] flex flex-col items-center justify-center bg-card border rounded-lg">
         <div className="bg-primary/10 p-3 rounded-full mb-4">
           <LayoutDashboard className="h-6 w-6 text-primary" />
         </div>
@@ -108,7 +108,7 @@ const GridLayout = () => {
   }));
 
   return (
-    <div className="mt-4">
+    <div className="mt-1">
     <ResponsiveGridLayout
       className="layout"
       layouts={{
@@ -135,7 +135,7 @@ const GridLayout = () => {
       {renderableWidgets.map((widget) => (
         <div
           key={widget.id.toString()}
-          className="rounded-lg shadow-sm bg-card"
+          className="rounded-lg shadow-sm bg-card h-full"
         >
           <Widget widget={widget} />
         </div>
@@ -147,7 +147,7 @@ const GridLayout = () => {
 
 export const DashboardLayout = () => {
   return (
-    <div className="absolute inset-0 p-4">
+    <div className="p-1">
       <GridLayout />
     </div>
   );

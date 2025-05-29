@@ -59,7 +59,7 @@ export const BarChart = ({ widget, height = 250 }: BarChartProps) => {
 
   return (
     <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height="100%">
         <RechartsBarChart
           data={executed_query}
           margin={{ top: 10, right: 10, left: 10, bottom: 20 }}

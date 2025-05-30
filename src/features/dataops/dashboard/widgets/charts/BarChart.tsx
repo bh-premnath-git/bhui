@@ -17,9 +17,9 @@ interface BarChartProps {
   height?: number;
 }
 
-export const BarChart = ({ widget, height = 250 }: BarChartProps) => {
+export const BarChart = ({ widget }: BarChartProps) => {
   const { chart_config, executed_query } = widget;
-  const { xAxis, yAxis, series, title, metric } = chart_config;
+  const { xAxis, yAxis, series, metric } = chart_config;
 
   // Generate colors for each series
   const colors = useMemo(() => {

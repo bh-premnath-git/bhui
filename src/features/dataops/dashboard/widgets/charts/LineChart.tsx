@@ -17,10 +17,9 @@ interface LineChartProps {
   height?: number;
 }
 
-export const LineChart = ({ widget, height = 250 }: LineChartProps) => {
+export const LineChart = ({ widget }: LineChartProps) => {
   const { chart_config, executed_query } = widget;
-  const { xAxis, yAxis, series, title, metric } = chart_config;
-  console.log("executed_query", series, "title");
+  const { xAxis, yAxis, metric } = chart_config;
 
   // Process and deduplicate data for the chart
   const chartData = useMemo(() => {

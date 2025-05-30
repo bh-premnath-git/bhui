@@ -71,9 +71,9 @@ export function ImportWizard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 relative">
-        <div className="bg-white rounded-lg shadow-lg p-8 relative">
+        <div className="bg-card rounded-lg shadow-lg p-8 relative">
           <X
             className="absolute top-4 right-4 w-6 h-6 text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
             onClick={goBack}

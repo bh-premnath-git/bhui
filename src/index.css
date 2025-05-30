@@ -42,16 +42,12 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     --radius: 0.5rem;
+    /* Chart colors with fallbacks for older browsers */
     --chart-1-color: #0D2B45;
-    /* Deep navy */
     --chart-2-color: #3b9bf5;
-    /* Dark blue */
     --chart-3-color: #29699d;
-    /* Medium blue */
     --chart-4-color: #083096;
-    /* Light blue */
     --chart-5-color: #3081bf;
-    /* Very light blue */
   }
 
   .dark {
@@ -98,19 +94,19 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
     
+    /* Chart colors with same values as light mode for consistency */
     --chart-1-color: #0D2B45;
-    /* Deep navy */
     --chart-2-color: #3b9bf5;
-    /* Dark blue */
     --chart-3-color: #29699d;
-    /* Medium blue */
     --chart-4-color: #083096;
-    /* Light blue */
     --chart-5-color: #3081bf;
-    /* Very light blue */
   }
 
+  /* Add animation compatibility for all browsers */
   .theme-transition {
+    -webkit-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    -moz-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    -ms-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
 
@@ -118,11 +114,23 @@
     @apply border-border;
   }
 
+  /* Ensure consistent box-sizing across browsers */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow: hidden;
-    /* Prevent page-level scrolling */
+    /* Prevent layout shifts */
+    min-height: 100vh;
+    /* Fallback for browsers that don't support vh units */
+    min-height: -webkit-stretch;
+    min-height: -moz-available;
+    min-height: stretch;
   }
 
   /* Hide scrollbars but keep scrolling functionality */
@@ -131,44 +139,71 @@
   }
 
   * {
-    -ms-overflow-style: none;
-    /* Internet Explorer and Edge */
-    scrollbar-width: none;
-    /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;    /* Firefox */
   }
 
-  /* Animation classes */
+  /* Animation classes with browser prefixes */
   .slide-in {
+    -webkit-animation: slideIn 0.3s ease forwards;
+    -moz-animation: slideIn 0.3s ease forwards;
+    -ms-animation: slideIn 0.3s ease forwards;
     animation: slideIn 0.3s ease forwards;
   }
 
   .slide-out {
+    -webkit-animation: slideOut 0.3s ease forwards;
+    -moz-animation: slideOut 0.3s ease forwards;
+    -ms-animation: slideOut 0.3s ease forwards;
     animation: slideOut 0.3s ease forwards;
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateX(-100%);
-    }
+  @-webkit-keyframes slideIn {
+    from { -webkit-transform: translateX(-100%); }
+    to { -webkit-transform: translateX(0); }
+  }
 
-    to {
-      transform: translateX(0);
-    }
+  @-moz-keyframes slideIn {
+    from { -moz-transform: translateX(-100%); }
+    to { -moz-transform: translateX(0); }
+  }
+
+  @-ms-keyframes slideIn {
+    from { -ms-transform: translateX(-100%); }
+    to { -ms-transform: translateX(0); }
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  @-webkit-keyframes slideOut {
+    from { -webkit-transform: translateX(0); }
+    to { -webkit-transform: translateX(-100%); }
+  }
+
+  @-moz-keyframes slideOut {
+    from { -moz-transform: translateX(0); }
+    to { -moz-transform: translateX(-100%); }
+  }
+
+  @-ms-keyframes slideOut {
+    from { -ms-transform: translateX(0); }
+    to { -ms-transform: translateX(-100%); }
   }
 
   @keyframes slideOut {
-    from {
-      transform: translateX(0);
-    }
-
-    to {
-      transform: translateX(-100%);
-    }
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
   }
 
-  /* Cursor styles during resize */
+  /* Cursor styles during resize with browser compatibility */
   .resize-dragging {
     cursor: col-resize !important;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
   }
 }
@@ -176,10 +211,12 @@
 @layer components {
   .glass-panel {
     @apply bg-white/70 backdrop-blur-sm border border-white/20 shadow-glass rounded-lg;
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .glass-button {
     @apply bg-white/50 hover:bg-white/80 backdrop-blur-sm border border-white/20 rounded-md px-4 py-2 transition-all duration-300 shadow-subtle;
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .page-transition {
@@ -195,28 +232,37 @@
     overflow-y: hidden;
   }
 
+  /* Grid layout with prefixes for better browser support */
   .layout-grid {
+    display: -ms-grid;
     display: grid;
     height: 100vh;
     width: 100%;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
     transition: all 0.3s ease;
     overflow: hidden;
   }
 
   .sidebar-expanded {
     grid-template-columns: 240px minmax(0, 1fr) auto;
+    -ms-grid-columns: 240px minmax(0, 1fr) auto;
   }
 
   .sidebar-collapsed {
     grid-template-columns: 64px minmax(0, 1fr) auto;
+    -ms-grid-columns: 64px minmax(0, 1fr) auto;
   }
 
   .aside-collapsed {
     grid-template-columns: 240px minmax(0, 1fr) 0;
+    -ms-grid-columns: 240px minmax(0, 1fr) 0;
   }
 
   .sidebar-collapsed.aside-collapsed {
     grid-template-columns: 64px minmax(0, 1fr) 0;
+    -ms-grid-columns: 64px minmax(0, 1fr) 0;
   }
 
   /* Ensure sidebar toggle buttons are always visible */
@@ -234,6 +280,9 @@
 
 body.resizing {
   cursor: ns-resize !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
   user-select: none !important;
 }
 
@@ -241,20 +290,35 @@ body.resizing * {
   cursor: ns-resize !important;
 }
 
+/* Add transitions with prefixes */
 .flex-wrap>* {
+  -webkit-transition: all 0.2s ease-in-out;
+  -moz-transition: all 0.2s ease-in-out;
+  -ms-transition: all 0.2s ease-in-out;
   transition: all 0.2s ease-in-out;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
 }
 
+@-moz-keyframes spin {
+  0% { -moz-transform: rotate(0deg); }
+  100% { -moz-transform: rotate(360deg); }
+}
+
+@-ms-keyframes spin {
+  0% { -ms-transform: rotate(0deg); }
+  100% { -ms-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* React grid components with browser prefixes */
 .react-grid-item>.react-resizable-handle {
   position: absolute;
   width: 12px;
@@ -263,10 +327,19 @@ body.resizing * {
   right: 2px;
   cursor: se-resize;
   display: flex;
+  display: -webkit-flex;
+  display: -ms-flexbox;
   align-items: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
   justify-content: center;
+  -webkit-justify-content: center;
+  -ms-flex-pack: center;
   padding: 0;
   opacity: 0;
+  -webkit-transition: opacity 0.2s ease;
+  -moz-transition: opacity 0.2s ease;
+  -ms-transition: opacity 0.2s ease;
   transition: opacity 0.2s ease;
 }
 
@@ -286,19 +359,28 @@ body.resizing * {
   opacity: 1;
 }
 
-/* 3D flip animation styles */
+/* 3D flip animation styles with prefixes */
 .perspective-1000 {
   perspective: 1000px;
+  -webkit-perspective: 1000px;
+  -moz-perspective: 1000px;
 }
 
 .transform-style-preserve-3d {
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
 }
 
 .backface-hidden {
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
 }
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  -ms-transform: rotateY(180deg);
 }

@@ -507,6 +507,15 @@ console.log(initialFormValues,"initialFormValues")
       return;
     }
 
+    // Add specific validation for Filter
+    if (schema.title === 'Filter') {
+      console.log('Processing Filter form with condition:', values.condition);
+      // Ensure condition is not undefined
+      if (!values.condition) {
+        values.condition = '';
+      }
+    }
+
     // Add specific validation for Joiner
     if (schema.title === 'Joiner') {
       // Validate conditions array
@@ -2021,8 +2030,8 @@ const FormContent: React.FC<{
         </h2>
       </div>
 
-      {schema.title === 'Dedup' ? (
-        renderDedupFields(control, schema)
+      {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
+        renderDeduplicatorFields(control, schema)
       ) : schema.title === 'Select' ? (
         renderSelectFields(control, sourceColumns, schema)
       ) : schema.title === 'SequenceGenerator' ? (

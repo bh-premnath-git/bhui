@@ -43,11 +43,47 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             }
         };
 
-        // Start with target nodes
+        // Start with target nodes if they exist
         const targetNodes = uiNodes.filter(node => node.id.startsWith('Target_'));
-        targetNodes.forEach(node => {
-            processNode(node.id);
-        });
+        
+        if (targetNodes.length > 0) {
+            // If there are target nodes, process them
+            targetNodes.forEach(node => {
+                processNode(node.id);
+            });
+        } else {
+            // If there are no target nodes, process all nodes
+            // Start with nodes that have no outgoing edges (terminal nodes)
+            const nodeIds = new Set(uiNodes.map(node => node.id));
+            const nodesWithOutgoingEdges = new Set(edges.map(edge => edge.source));
+            
+            // Find nodes that have no outgoing edges
+            const terminalNodes = uiNodes.filter(node => !nodesWithOutgoingEdges.has(node.id) || 
+                                                        // Also include nodes that only connect to themselves
+                                                        edges.filter(edge => edge.source === node.id)
+                                                             .every(edge => edge.target === node.id));
+            
+            if (terminalNodes.length > 0) {
+                // Process terminal nodes
+                terminalNodes.forEach(node => {
+                    processNode(node.id);
+                });
+            } else {
+                // If there are no terminal nodes, process all nodes
+                uiNodes.forEach(node => {
+                    if (!visited.has(node.id)) {
+                        processNode(node.id);
+                    }
+                });
+            }
+            
+            // Ensure all nodes are processed
+            uiNodes.forEach(node => {
+                if (!visited.has(node.id)) {
+                    processNode(node.id);
+                }
+            });
+        }
 
         return orderedNodes;
     };
@@ -99,6 +135,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 }
             };
         });
+        // debugger
     // Process regular transformations using ordered nodes
     const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_'))
@@ -114,6 +151,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         return sourceNode?.data?.title || '';
                     })
             };
+            
 
             // Rest of the transformation configuration...
             switch (node.data.label) {
@@ -138,9 +176,24 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         pivot: node.data.transformationData?.pivot || []
                     };
                 case 'Filter':
+                    console.log('Filter node data:', node.data);
+                    console.log('Filter transformationData:', node.data.transformationData);
+                    
+                    // Extract condition from transformationData
+                    let condition = '';
+                    if (node.data.transformationData) {
+                        if (typeof node.data.transformationData.condition === 'string') {
+                            condition = node.data.transformationData.condition;
+                        } else if (node.data.transformationData.condition !== undefined) {
+                            condition = String(node.data.transformationData.condition);
+                        }
+                    }
+                    
+                    console.log('Extracted filter condition:', condition);
+                    
                     return {
                         ...baseConfig,
-                        condition: node.data.transformationData?.condition || ''
+                        condition: condition
                     };
                 case 'SQL Transformation':
                     return {
@@ -243,7 +296,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     return {
                         ...baseConfig,
                         name: node.data.title,
-                        transformation: "Target",
+                        transformation: "Writer", // Changed from "Target" to "Writer"
                         target: {
                             name: node.data.source?.name,
                             target_type: targetType,
@@ -318,6 +371,8 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     // let resolved=resolveRefs(optimized,optimized)
     // console.log(resolved,"resolved")
     // return optimized;
+    console.log(regularTransformations)
+    // debugger
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -346,8 +401,38 @@ function capitalizeFirstLetter(str: string): string {
 export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any,pipelineName?:string, validateOnly: boolean = false) => {
     let pipelineJson: any = await convertUIToPipelineJson(nodes, edges, pipelineDtl, validateOnly);
     console.log(pipelineJson, "pipelineJson");
+    
+    // Ensure all transformations are properly converted
+    if (pipelineJson?.pipeline_json?.transformations && Array.isArray(pipelineJson.pipeline_json.transformations)) {
+        pipelineJson.pipeline_json.transformations = pipelineJson.pipeline_json.transformations.map(transform => {
+            // Convert Target to Writer
+            if (transform.transformation === "Target") {
+                return {
+                    ...transform,
+                    transformation: "Writer"
+                };
+            }
+            return transform;
+        });
+    }
+    
     let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json,pipelineName);
     console.log(optimized, "optimized");
+    
+    // Ensure all transformations in the optimized pipeline are properly converted
+    if (optimized?.transformations && Array.isArray(optimized.transformations)) {
+        optimized.transformations = optimized.transformations.map(transform => {
+            // Convert Target to Writer
+            if (transform.transformation === "Target") {
+                return {
+                    ...transform,
+                    transformation: "Writer"
+                };
+            }
+            return transform;
+        });
+    }
+    
     let resolved = resolveRefs(optimized, optimized);
     console.log(resolved, "resolved");
     return { pipeline_json: optimized };

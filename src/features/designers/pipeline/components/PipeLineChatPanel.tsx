@@ -17,7 +17,6 @@ import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.j
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import CreateFormFormik from './form-sections/CreateForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
@@ -1504,107 +1503,77 @@ const PipeLineChatPanel = () => {
                               }}
                               currentNodeId={message.formData.currentNodeId}
                               initialValues={{
+                                // First try to get values from formStates
                                 ...formStates[message.formData.currentNodeId],
-                                nodeId: message.formData.currentNodeId
+                                nodeId: message.formData.currentNodeId,
+                                // Then try to get values from the node's transformationData if it exists
+                                ...(() => {
+                                  const node = nodes.find(n => n.id === message.formData.currentNodeId);
+                                  return node?.data?.transformationData || {};
+                                })()
                               }}
                               nodes={nodes}
                               edges={edges}
                               pipelineDtl={pipelineDtl}
                               onSubmit={(data) => {
                                 console.log('Form submitted with data:', data);
-                                console.log('Current node ID:', message.formData.currentNodeId);
-                                console.log('Current form states before update:', formStates);
-
-                                // Add the nodeId to the data object to ensure handleFormSubmit can find it
-                                const formDataWithNodeId = {
-                                  ...data,
-                                  nodeId: message.formData.currentNodeId
-                                };
-
-                                // First, update the context's selectedSchema to ensure handleFormSubmit works correctly
-                                pipelineContext.setSelectedSchema({
-                                  ...message.formData.schema,
-                                  nodeId: message.formData.currentNodeId
-                                });
-
-                                // Mark unsaved changes
-                                setUnsavedChanges();
-
-                                // First, directly update the node to ensure it happens immediately
                                 const nodeId = message.formData.currentNodeId;
                                 const updatedTitle = data.name || data.title || "Transformation";
 
-                                console.log(`Directly updating node ${nodeId} with title: ${updatedTitle}`);
-
-                                // Get the current nodes
+                                // Directly update the node in the context
                                 const currentNodes = [...pipelineContext.nodes];
-
-                                // Find the node to update
                                 const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
-
                                 if (nodeIndex !== -1) {
-                                  // Create a new node object with updated data
+                                  const currentNodeData = JSON.parse(JSON.stringify(currentNodes[nodeIndex].data));
+                                  if (!currentNodeData.transformationData) {
+                                    currentNodeData.transformationData = {};
+                                  }
+                                  const cleanFormData = { ...data, nodeId: nodeId, name: updatedTitle };
+                                  
+                                  // Special handling for Filter nodes
+                                  if (currentNodes[nodeIndex].data.label === 'Filter') {
+                                    console.log('Processing Filter node in PipeLineChatPanel:', data);
+                                    // Ensure condition is properly set
+                                    if (data.condition !== undefined) {
+                                      cleanFormData.condition = data.condition;
+                                    }
+                                  }
+                                  
                                   const updatedNode = {
                                     ...currentNodes[nodeIndex],
                                     data: {
-                                      ...currentNodes[nodeIndex].data,
+                                      ...currentNodeData,
                                       title: updatedTitle,
-                                      transformationData: {
-                                        ...currentNodes[nodeIndex].data.transformationData,
-                                        ...data,
-                                        name: updatedTitle
-                                      },
-                                      // Preserve existing source data
-                                      source: currentNodes[nodeIndex].data.source || {}
+                                      transformationData: cleanFormData,
+                                      source: currentNodeData.source || {}
                                     }
                                   };
-
-                                  // Replace the node in the array
                                   currentNodes[nodeIndex] = updatedNode;
-
-                                  // Update the nodes in the context
-                                  console.log('Setting updated nodes:', currentNodes);
                                   pipelineContext.setNodes(currentNodes);
-
-                                  // Also update form states
-                                  setFormStates(prevStates => ({
-                                    ...prevStates,
-                                    [nodeId]: data
-                                  }));
-
-                                  // Force a re-render
+                                  setFormStates(prevStates => ({ ...prevStates, [nodeId]: cleanFormData }));
+                                  setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: data }));
                                   window.dispatchEvent(new Event('resize'));
                                 }
 
-                                // Now call the context's handleFormSubmit as a backup
-                                // This will update both the formStates and the nodes
-                                handleFormSubmit(formDataWithNodeId);
+                                // Call handleFormSubmit to ensure all state is updated properly
+                                handleFormSubmit({ ...data, nodeId: nodeId, name: updatedTitle });
 
-                                // Update the local form states to ensure consistency
-                                setformsHanStates(prevStates => ({
-                                  ...prevStates,
-                                  [message.formData.currentNodeId]: data
-                                }));
-
-                                console.log('Form states after update:', formStates);
+                                // Log the data being sent to handleFormSubmit
+                                console.log('Data sent to handleFormSubmit:', { ...data, nodeId: nodeId, name: updatedTitle });
 
                                 // Add a message to show the form was submitted
                                 setMessages(prevMessages => [
                                   ...prevMessages,
+                                  { role: 'user', content: `Configured ${message.formData?.schema?.title} transformation` },
                                   {
-                                    role: 'user',
-                                    content: `Configured ${message.formData?.schema?.title} transformation`
-                                  },
-                                  {
-                                    role: 'assistant',
-                                    content: `Great! I've updated the ${message.formData?.schema?.title} transformation with your configuration. What would you like to do next?`,
-                                    suggestions: [
+                                    role: 'assistant', content: `Great! I've updated the ${message.formData?.schema?.title} transformation with your configuration. What would you like to do next?`, suggestions: [
                                       { text: "Add another source", onClick: handleAddAnotherSource },
                                       { text: "Add another transformation", onClick: handleShowTransformations }
                                     ]
                                   }
                                 ]);
                               }}
+
                             />
                           </div>
                         )}

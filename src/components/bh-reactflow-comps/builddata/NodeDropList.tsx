@@ -232,7 +232,10 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
             </Popover>
           ) : (
             <button
-              onClick={() => handleButtonClick(node)}
+              onClick={() => {
+                          console.log(node)
+                
+                handleButtonClick(node)}}
               className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out"
               style={{ backgroundColor: node.ui_properties.color }}
             >

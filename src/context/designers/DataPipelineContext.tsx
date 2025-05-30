@@ -815,17 +815,29 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 
                 console.log(`Updating node ${nodeId} title to: ${updatedTitle}`);
 
+                // Special handling for Filter nodes
+                let transformationData = {
+                    ...currentNodes[nodeIndex].data.transformationData,
+                    ...data,
+                    name: updatedTitle
+                };
+                
+                // Special handling for Filter nodes
+                if (currentNodes[nodeIndex].data.label === 'Filter') {
+                    console.log('Processing Filter node in handleFormSubmit:', data);
+                    // Ensure condition is properly set
+                    if (data.condition !== undefined) {
+                        transformationData.condition = data.condition;
+                    }
+                }
+                
                 // Create a new node object with updated data
                 const updatedNode = {
                     ...currentNodes[nodeIndex],
                     data: {
                         ...currentNodes[nodeIndex].data,
                         title: updatedTitle,
-                        transformationData: {
-                            ...currentNodes[nodeIndex].data.transformationData,
-                            ...data,
-                            name: updatedTitle
-                        },
+                        transformationData: transformationData,
                         // Preserve existing source data
                         source: existingSource
                     }
@@ -1564,6 +1576,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 }) || [],
                 source: source,
                 title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
+                // Initialize an empty transformationData object to store form data
+                transformationData: {
+                    name: source?.data_src_name || nodeLabel,
+                    nodeId: uniqueId
+                },
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };

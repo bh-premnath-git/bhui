@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface BreadcrumbItem {
   title: string;
@@ -161,7 +162,7 @@ export function NavigationBreadcrumb() {
   const breadcrumbItems = getBreadcrumbItems();
 
   return (
-    <Breadcrumb>
+    <Breadcrumb className={cn("flex items-center h-full mt-2 ml-2")}>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={`${item.path}-${index}`}>

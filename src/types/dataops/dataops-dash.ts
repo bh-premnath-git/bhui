@@ -61,7 +61,9 @@ export interface Widget {
   widget_type: string;
   visibility: string;
   sql_query: string;
-  executed_query: ExecutedQueryItem[];
+  executed_query: ExecutedQueryItem[] | any;
+  plotly_data: string | any;
+  intermediate_executed_query_json?: any;
   chart_config: ChartConfig;
   meta_data: Record<string, unknown>;
   dashboard_layout: unknown[];

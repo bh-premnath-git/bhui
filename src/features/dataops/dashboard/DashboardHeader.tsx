@@ -20,9 +20,11 @@ export const DashboardHeader = () => {
   const projectNames = useMemo(() => {
     const projectSet = new Set<string>();
     state.widgets.forEach(widget => {
-      (widget.executed_query as ExecutedQueryItem[]).forEach(item => {
-        projectSet.add(item.project_name);
-      });
+      if (Array.isArray(widget.executed_query)) {
+        (widget.executed_query as ExecutedQueryItem[]).forEach(item => {
+          projectSet.add(item.project_name);
+        });
+      }
     });
     return Array.from(projectSet).sort();
   }, [state.widgets]);
@@ -46,7 +48,7 @@ export const DashboardHeader = () => {
   }, [dispatch]);
 
   return (
-    <div className="bg-background sticky top-0 z-10 border-b border-border/40 pb-2">
+    <div className="bg-background sticky top-0 z-10 border-b border-border/40 pl-5 pb-2">
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex items-center space-x-2 min-w-[200px]">
           <Filter className="h-4 w-4 text-muted-foreground" />

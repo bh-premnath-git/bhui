@@ -14,7 +14,7 @@ const MainContentInternal = () => {
       "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
       isExpanded ? "ml-64" : "ml-20",
     )}>
-      <div className="flex-shrink-0 mt-10"> 
+      <div className="flex-shrink-0 mt-12"> 
         <Header />
       </div>
       <main className="flex-1 relative overflow-auto h-[calc(100vh-64px)] "> 

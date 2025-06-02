@@ -4,11 +4,16 @@ import loaderLogo from "/assets/logo/loaderLogo.svg";
 interface SpinnerProps {
   className?: string;
   classNameContainer?: string;
+  fullScreen?: boolean;
 }
 
-export const LoadingState = ({ className, classNameContainer }: SpinnerProps) => {
+export const LoadingState = ({ className, classNameContainer, fullScreen = true }: SpinnerProps) => {
   return (
-    <div className={cn("flex flex-col items-center justify-center", className)}>
+    <div className={cn(
+      "flex flex-col items-center justify-center",
+      fullScreen && "fixed inset-0 z-50",
+      className
+    )}>
       <div className={cn("relative w-40 h-40", classNameContainer)}>
         {/* Outer rotating ring with dashed stroke */}
         <svg className="absolute inset-0 animate-spin" viewBox="0 0 100 100">

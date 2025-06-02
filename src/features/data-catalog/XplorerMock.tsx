@@ -1,24 +1,23 @@
-import { ChevronDown } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend,
-  ComposedChart,
-  LabelList,
-} from "recharts";
+import { useState, useEffect } from "react";
+import Plot from "react-plotly.js";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export function XplorerMock() {
   // State to store added charts from XplorerGenericChatUI
-  const [addedCharts, setAddedCharts] = useState([]);
+  // Each chart object also carries a `collapsed: boolean` flag
+  const [addedCharts, setAddedCharts] = useState<
+    Array<{
+      id: string;
+      title: string;
+      query?: string;
+      category?: string;
+      metric?: string;
+      data: any[];
+      collapsed: boolean;
+    }>
+  >([]);
 
-  // Color palette from the image - various shades of blue
+  // Color palette
   const colors = {
     lightBlue: "#D6E8F5",
     skyBlue: "#A7D1F0",
@@ -45,199 +44,301 @@ export function XplorerMock() {
     { month: "May", revenue: 1474 },
   ];
 
-  // Event listener to handle charts added from XplorerGenericChatUI
+  // Listen for “addChartToDashboard” events; initialize collapsed = false
   useEffect(() => {
-    // Function to handle the custom event
-    const handleAddChartToDashboard = (event) => {
-      const chartData = event.detail;
-      console.log("Adding chart to dashboard:", chartData);
-      
-      // Add the chart to the state with a unique id
-      setAddedCharts((prevCharts) => [
-        ...prevCharts,
+    const handleAddChartToDashboard = (event: CustomEvent) => {
+      const chartData = event.detail as {
+        title: string;
+        query?: string;
+        category?: string;
+        metric?: string;
+        data: any[];
+      };
+
+      setAddedCharts((prev) => [
+        ...prev,
         {
           id: `chart-${Date.now()}`,
           ...chartData,
+          collapsed: false,
         },
       ]);
     };
 
-    // Add event listener
-    document.addEventListener("addChartToDashboard", handleAddChartToDashboard);
-
-    // Cleanup function to remove event listener
+    document.addEventListener(
+      "addChartToDashboard",
+      handleAddChartToDashboard as EventListener
+    );
     return () => {
-      document.removeEventListener("addChartToDashboard", handleAddChartToDashboard);
+      document.removeEventListener(
+        "addChartToDashboard",
+        handleAddChartToDashboard as EventListener
+      );
     };
   }, []);
 
-  // Function to render individual chart based on the data type
-  const renderAddedChart = (chart) => {
-    // Check if it's the top expensive products chart
+  // Toggle “collapsed” state for a given chart ID
+  const toggleCollapse = (id: string) => {
+    setAddedCharts((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, collapsed: !c.collapsed } : c
+      )
+    );
+  };
+
+  // Render a single “added” chart: either horizontal bar, region bar, or generic bar
+  const renderAddedChart = (chart: {
+    id: string;
+    title: string;
+    query?: string;
+    category?: string;
+    metric?: string;
+    data: any[];
+    collapsed: boolean;
+  }) => {
+    // If collapsed, render nothing (empty placeholder)
+    if (chart.collapsed) {
+      return null;
+    }
+
+    // === “Top Expensive Products” horizontal bar ===
     if (
       Array.isArray(chart.data) &&
       chart.data.length > 0 &&
       "productName" in chart.data[0] &&
       "unitPrice" in chart.data[0]
     ) {
+      const xValues = chart.data.map((row: any) => row.unitPrice);
+      const yValues = chart.data.map((row: any) => row.productName);
+
       return (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chart.data}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-          >
-            <XAxis type="number" />
-            <YAxis
-              dataKey="productName"
-              type="category"
-              width={100}
-              label={{
-                value: "Product Name",
-                angle: -90,
-                position: "insideLeft",
-                offset: -30,
-              }}
-            />
-            <Tooltip formatter={(value) => [`$${value}`, "Price"]} />
-            <Legend />
-            <Bar dataKey="unitPrice" fill={colors.skyBlue} name="Unit Price ($)">
-              <LabelList
-                dataKey="unitPrice"
-                position="right"
-                formatter={(value) => `$${value}`}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <Plot
+          data={[
+            {
+              type: "bar",
+              x: xValues,
+              y: yValues,
+              orientation: "h",
+              marker: { color: colors.skyBlue },
+              name: "Unit Price ($)",
+              text: xValues.map((val: number) => `$${val}`),
+              textposition: "auto",
+            },
+          ]}
+          layout={{
+            margin: { t: 20, b: 50, l: 100, r: 20 },
+            xaxis: { title: "Unit Price ($)" },
+            yaxis: { title: "Product Name", automargin: true },
+            showlegend: false,
+          }}
+          style={{ width: "100%", height: "300px" }}
+          config={{ displayModeBar: false }}
+        />
       );
     }
 
-    // If it's a region count query
+    // === “Region Count” vertical bar ===
     if (
       Array.isArray(chart.data) &&
       chart.data.length > 0 &&
       "region" in chart.data[0] &&
       "count" in chart.data[0]
     ) {
+      const xValues = chart.data.map((row: any) => row.region);
+      const yValues = chart.data.map((row: any) => row.count);
+
       return (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chart.data}>
-            <XAxis
-              dataKey="region"
-              label={{ value: "Region", position: "insideBottom", offset: -5 }}
-            />
-            <YAxis
-              label={{
-                value: "Number of Orders",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill={colors.skyBlue} name="Number of Orders" />
-          </BarChart>
-        </ResponsiveContainer>
+        <Plot
+          data={[
+            {
+              type: "bar",
+              x: xValues,
+              y: yValues,
+              marker: { color: colors.skyBlue },
+              name: "Number of Orders",
+              text: yValues,
+              textposition: "auto",
+            },
+          ]}
+          layout={{
+            margin: { t: 20, b: 50, l: 50, r: 20 },
+            xaxis: { title: "Region" },
+            yaxis: { title: "Number of Orders" },
+            showlegend: false,
+          }}
+          style={{ width: "100%", height: "300px" }}
+          config={{ displayModeBar: false }}
+        />
       );
     }
 
-    // Default chart for orders or other data
+    // === Default: single‐series bar using chart.category & chart.metric ===
+    if (
+      Array.isArray(chart.data) &&
+      chart.data.length > 0 &&
+      chart.category &&
+      chart.metric
+    ) {
+      const xValues = chart.data.map((row: any) => row[chart.category!]);
+      const yValues = chart.data.map((row: any) => row[chart.metric!]);
+
+      return (
+        <Plot
+          data={[
+            {
+              type: "bar",
+              x: xValues,
+              y: yValues,
+              marker: { color: colors.oceanBlue },
+              name: chart.metric,
+              text: yValues.map((val: number) =>
+                chart.metric!.toLowerCase().includes("price")
+                  ? `$${val}`
+                  : val
+              ),
+              textposition: "auto",
+            },
+          ]}
+          layout={{
+            margin: { t: 20, b: 50, l: 60, r: 20 },
+            xaxis: {
+              title:
+                chart.category!.charAt(0).toUpperCase() +
+                chart.category!.slice(1),
+            },
+            yaxis: {
+              title:
+                chart.metric!.charAt(0).toUpperCase() +
+                chart.metric!.slice(1),
+            },
+            showlegend: false,
+          }}
+          style={{ width: "100%", height: "300px" }}
+          config={{ displayModeBar: false }}
+        />
+      );
+    }
+
+    // If none of the above match, show a placeholder
     return (
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chart.data}>
-          <XAxis
-            dataKey={chart.category || "id"}
-            label={{
-              value: chart.category || "ID",
-              position: "insideBottom",
-              offset: -5,
-            }}
-          />
-          <YAxis
-            label={{
-              value: chart.metric.charAt(0).toUpperCase() + chart.metric.slice(1),
-              angle: -90,
-              position: "insideLeft",
-            }}
-          />
-          <Tooltip />
-          <Legend />
-          <Bar
-            dataKey={chart.metric}
-            fill={colors.oceanBlue}
-            name={chart.metric.charAt(0).toUpperCase() + chart.metric.slice(1)}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="text-sm text-gray-500">
+        Unable to render chart: unsupported data format.
+      </div>
     );
   };
+
+  // === Prepare traces for “Order Processing Status” (stacked area) ===
+  const months = orderTimeData.map((row) => row.month);
+  const processingVals = orderTimeData.map((row) => row.processing);
+  const shippedVals = orderTimeData.map((row) => row.shipped);
+  const deliveredVals = orderTimeData.map((row) => row.delivered);
+
+  // === Prepare trace for “Order Revenue” (simple bar) ===
+  const revMonths = revenueData.map((row) => row.month);
+  const revValues = revenueData.map((row) => row.revenue);
 
   return (
     <div className="w-full p-4 bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-4">
-        {/* Original charts */}
+        {/* === Order Processing Status (Stacked Area, shows legend) === */}
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Processing Status</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={orderTimeData}>
-              <XAxis dataKey="month" />
-              <YAxis domain={[0, 120]} />
-              <Tooltip />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="processing"
-                stackId="1"
-                stroke={colors.darkBlue}
-                fill={colors.darkBlue}
-              />
-              <Area
-                type="monotone"
-                dataKey="shipped"
-                stackId="1"
-                stroke={colors.mediumBlue}
-                fill={colors.mediumBlue}
-              />
-              <Area
-                type="monotone"
-                dataKey="delivered"
-                stackId="1"
-                stroke={colors.skyBlue}
-                fill={colors.skyBlue}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h3 className="text-sm font-medium mb-2">
+            Order Processing Status
+          </h3>
+          <Plot
+            data={[
+              {
+                x: months,
+                y: processingVals,
+                type: "scatter",
+                mode: "lines",
+                fill: "tozeroy",
+                name: "Processing",
+                line: { color: colors.darkBlue },
+                fillcolor: colors.darkBlue,
+              },
+              {
+                x: months,
+                y: shippedVals,
+                type: "scatter",
+                mode: "lines",
+                fill: "tonexty",
+                name: "Shipped",
+                line: { color: colors.mediumBlue },
+                fillcolor: colors.mediumBlue,
+              },
+              {
+                x: months,
+                y: deliveredVals,
+                type: "scatter",
+                mode: "lines",
+                fill: "tonexty",
+                name: "Delivered",
+                line: { color: colors.skyBlue },
+                fillcolor: colors.skyBlue,
+              },
+            ]}
+            layout={{
+              margin: { t: 20, b: 50, l: 50, r: 20 },
+              xaxis: { title: "Month" },
+              yaxis: { title: "Count", range: [0, 120] },
+              showlegend: true,
+            }}
+            style={{ width: "100%", height: "300px" }}
+            config={{ displayModeBar: false }}
+          />
         </div>
 
+        {/* === Order Revenue (Single‐series bar, no legend) === */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-sm font-medium mb-2">Order Revenue</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={revenueData}>
-              <XAxis dataKey="month" />
-              <YAxis domain={[630, 1500]} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="revenue" barSize={30} fill={colors.oceanBlue} />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <Plot
+            data={[
+              {
+                x: revMonths,
+                y: revValues,
+                type: "bar",
+                marker: { color: colors.oceanBlue },
+                name: "Revenue",
+                text: revValues.map((v) => `$${v}`),
+                textposition: "auto",
+              },
+            ]}
+            layout={{
+              margin: { t: 20, b: 50, l: 60, r: 20 },
+              xaxis: { title: "Month" },
+              yaxis: { title: "Revenue ($)", range: [630, 1500] },
+              showlegend: false,
+            }}
+            style={{ width: "100%", height: "300px" }}
+            config={{ displayModeBar: false }}
+          />
         </div>
 
-        {/* Added charts from XplorerGenericChatUI */}
+        {/* === Dynamically Added Charts === */}
         {addedCharts.map((chart) => (
           <div key={chart.id} className="bg-white p-4 rounded-lg shadow">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium">{chart.title}</h3>
-              <button 
-                onClick={() => setAddedCharts(addedCharts.filter(c => c.id !== chart.id))}
+              <button
+                onClick={() => toggleCollapse(chart.id)}
                 className="text-xs"
               >
-                <ChevronDown/>
+                {chart.collapsed ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronUp size={16} />
+                )}
               </button>
             </div>
             <div className="text-xs text-gray-500 mb-4">
-              {chart.query && <code className="bg-gray-100 p-1 rounded">{chart.query.substring(0, 40)}...</code>}
+              {chart.query && (
+                <code className="bg-gray-100 p-1 rounded">
+                  {chart.query.substring(0, 40)}…
+                </code>
+              )}
             </div>
+            {/* Only render the Plot if not collapsed */}
             {renderAddedChart(chart)}
           </div>
         ))}

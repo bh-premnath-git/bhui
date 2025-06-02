@@ -9,6 +9,8 @@ import { useConversation } from '@/hooks/useConversation';
 import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { marked } from 'marked';
+import { createShortUUID } from '@/lib/utils';
 
 interface GenericChatUIProps {
   imageSrc?: string;
@@ -21,14 +23,21 @@ interface GenericChatUIProps {
 export const CHART_ADDED_EVENT = 'chart-added-to-dashboard';
 const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 
+// Initialize marked to use synchronous mode
+const renderer = new marked.Renderer();
+const markedOptions = {
+  renderer,
+  async: false  // Force synchronous parsing
+};
+
 export function GenericChatUI({
   assistantColor = '#009459',
   userColor = '#000000',
 }: GenericChatUIProps) {
-  const { 
-    messages, 
-    addUserMessage, 
-    addAssistantMessage, 
+  const {
+    messages,
+    addUserMessage,
+    addAssistantMessage,
     updateMessageById,
   } = useChatMessages();
   const { data: recommendations, isLoading, isError } = useRecommendation();
@@ -63,28 +72,28 @@ export function GenericChatUI({
     const q = input.trim();
     if (!q) return;
     streamAbortRef.current?.();
-    
+
     // Reset states for new query
     setResponse(null);
     setProcessingState('processing');
     setIsProcessing(true);
-    
+
     // Add user message first
     addUserMessage(q);
-    
+
     // Add processing message and track its ID
     const processingMessage = 'Processing...';
     const msgId = addAssistantMessage(processingMessage);
     setProcessingMessageId(msgId);
-    
+
     const onChunk = (chunk: string) => {
       if (typeof chunk === 'string') {
         try {
           const parsedChunk = JSON.parse(chunk);
-          
+
           // Keep the processing message visible until completion
           // Don't immediately set isProcessing to false
-          
+
           if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
             const responseTypeKey = parsedChunk.response_type.toLowerCase();
             setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
@@ -94,13 +103,13 @@ export function GenericChatUI({
         }
       }
     };
-    
+
     const onComplete = () => {
       // Only when streaming is complete, update both states
       setProcessingState('processed');
       setIsProcessing(false);
     };
-    
+
     const onError = (error: any) => {
       console.error(error);
       // On error, update the processing message to show the error
@@ -109,30 +118,25 @@ export function GenericChatUI({
       }
       setProcessingState('hidden');
     };
-    
+
     streamConversation(null, q, threadId, onChunk, onComplete, onError, "dataops");
     setInput("");
   }, [input, threadId, streamConversation, addUserMessage, addAssistantMessage, updateMessageById, isProcessing]);
+
   const handleAddToDashboard = (data: any) => {
-    const trasformedData = data.chartMetadata.graph_data.map(data1=>({[data.chartMetadata.graph_config.primary_axis.x.field]: data1.x_axis, [data.chartMetadata.graph_config.primary_axis.y.field]: data1.y_axis}))
     const chartData = {
-      id: `chart-${Date.now()}`,
+      id: `chart-${createShortUUID()}`,
       owner: "info@bighammer.ai",
       widget_type: "user-defined",
-      name: data.chartMetadata.title,
+      name: data.chartMetadata.layout.title.text,
       visibility: "private",
       sql_query: data.sql,
-      executed_query: trasformedData,
+      intermediate_executed_query_json: data.chartMetadata,
+      executed_query:  { ...data.data },
       chart_config: {
-        type: data.chartMetadata.chart_type,
-        xAxis: data.chartMetadata.graph_config.primary_axis.x.field,
-        yAxis: data.chartMetadata.graph_config.primary_axis.y.field,
-        series: data.chartMetadata.graph_config.primary_axis.y.field,
-        title: data.chartMetadata.title,
-        metric: data.chartMetadata.graph_config.primary_axis.y.type
+        title: data.chartMetadata.layout.title.text,
       }
     };
-
     // Dispatch custom event with chart data
     const chartEvent = new CustomEvent(CHART_ADDED_EVENT, {
       detail: chartData,
@@ -141,7 +145,7 @@ export function GenericChatUI({
     });
     document.dispatchEvent(chartEvent);
   };
-  
+
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
@@ -167,7 +171,7 @@ export function GenericChatUI({
                 ) : recommendations && recommendations.length > 0 ? (
                   recommendations.map((s, i) => (
                     <motion.div
-                      key={i}
+                      key={`suggestion-${s.substring(0, 10)}-${i}`}
                       className="flex items-center"
                       initial={{ x: -10, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
@@ -196,7 +200,7 @@ export function GenericChatUI({
               {messages.map((m, i) => {
                 const isA = m.role === 'assistant';
                 const isProcessingMessage = isA && processingMessageId === m.id;
-                
+
                 return (
                   <div key={m.id} className="flex items-start gap-4 py-2">
                     <div
@@ -239,8 +243,8 @@ export function GenericChatUI({
                         ) : (
                           <div className="flex items-center">
                             <p>Processed</p>
-                            <motion.span 
-                              initial={{ scale: 0, opacity: 0 }} 
+                            <motion.span
+                              initial={{ scale: 0, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               className="ml-2 text-green-600 font-bold"
                             >
@@ -265,7 +269,7 @@ export function GenericChatUI({
                         data={response.table}
                         onAddToDashboard={handleAddToDashboard}
                       />
-                      
+
                       {/* Explanation message */}
                       {response.explanation?.content && (
                         <div className="flex items-start gap-4 mt-4">
@@ -274,13 +278,14 @@ export function GenericChatUI({
                             style={{ backgroundColor: assistantColor }}
                           />
                           <div className="flex-1 rounded-2xl bg-gray-100 px-3 py-3 shadow">
-                            <p className="whitespace-pre-wrap break-words leading-relaxed">
-                              {response.explanation.content}
-                            </p>
+                            <div
+                              className="markdown-content whitespace-pre-wrap break-words leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: marked.parse(response.explanation.content, markedOptions) as string }}
+                            />
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Follow-up question - only show when processing is complete */}
                       {processingState === 'processed' && (
                         <div className="flex items-start gap-4 mt-4">

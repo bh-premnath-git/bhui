@@ -8,7 +8,7 @@ if [ -z "$CODEARTIFACT_AUTH_TOKEN" ]; then
   export CODEARTIFACT_AUTH_TOKEN=$(
   aws codeartifact get-authorization-token \
     --domain bighammer \
-    --domain-owner 211125309326 \
+    --domain-owner 058264070106 \
     --query authorizationToken \
     --output text
   )

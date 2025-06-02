@@ -182,6 +182,21 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent',
             showlegend: true,
+            // Add explicit axis styling
+            xaxis: {
+              showgrid: true,
+              gridcolor: 'rgba(128, 128, 128, 0.15)',
+              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+              linecolor: 'rgba(128, 128, 128, 0.3)',
+              ...plotlyData.layout?.xaxis
+            },
+            yaxis: {
+              showgrid: true,
+              gridcolor: 'rgba(128, 128, 128, 0.15)',
+              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+              linecolor: 'rgba(128, 128, 128, 0.3)',
+              ...plotlyData.layout?.yaxis
+            },
             legend: {
               orientation: 'h',
               xanchor: 'center', 

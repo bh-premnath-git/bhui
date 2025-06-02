@@ -20,13 +20,11 @@ import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
-
+import { useSidebar } from '@/context/SidebarContext';
 
 export interface PlayGroundHeaderProps {
   playGroundHeader?: "flow" | "pipeline";
 }
-
-
 
 export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const isFlow = playGroundHeader === "flow";
@@ -42,7 +40,6 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
   const [moduleTypes] = useModules();
-  // const activeModule = moduleTypes.find((type) => type.id === activeType);
   let flowNodes = moduleTypes.map((type) => {
     return {
       "ui_properties": {
@@ -73,6 +70,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun
   } = usePipelineContext();
+  const { isRightAsideOpen } = useSidebar();
 
   const currentItem = isFlow ? selectedFlow : (selectedPipeline || pipelineDtl);
 
@@ -192,9 +190,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             </div>
           )}
 
-          <div className="border-l border-border pl-4">
-            <AIButton variant={playGroundHeader} color="#009f59" />
-          </div>
+          {!isRightAsideOpen && (
+            <div className="border-l border-border pl-4">
+              <AIButton variant={playGroundHeader} color="#009f59" />
+            </div>
+          )}
         </div>
       </div>
 

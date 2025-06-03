@@ -48,6 +48,12 @@ export const navigationItems: NavItem[] = [
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {
+        title: "Requirements",
+        icon: FileText,
+        path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
+        parent: ROUTES.DESIGNERS.INDEX,
+      },
+      {
         title: "Data Flow",
         icon: GitBranch,
         path: ROUTES.DESIGNERS.MANAGE_FLOW,
@@ -57,12 +63,6 @@ export const navigationItems: NavItem[] = [
         title: "Notebooks",
         icon: NotebookText,
         path: ROUTES.DESIGNERS.NOTEBOOK,
-        parent: ROUTES.DESIGNERS.INDEX,
-      },
-      {
-        title: "Requirements",
-        icon: FileText,
-        path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
         parent: ROUTES.DESIGNERS.INDEX,
       },
     ],

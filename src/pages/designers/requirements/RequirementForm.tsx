@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
-import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow';
+import ReactFlow, { Background, Controls } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Table, Pencil, Trash2 } from 'lucide-react';
 
@@ -83,31 +83,19 @@ const RequirementForm: React.FC = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [newMapping, setNewMapping] = useState<Mapping>(emptyMapping);
   const [errors, setErrors] = useState<Partial<Record<keyof Mapping, string>>>({});
-  const [showPipeline, setShowPipeline] = useState(true);
   const [pipelineName, setPipelineName] = useState('');
   const [projectName, setProjectName] = useState('');
-  const [drnNumber, setDrnNumber] = useState('');
-  const [sources, setSources] = useState<string[]>([]);
-  const [targets, setTargets] = useState<string[]>([]);
   const [formErrors, setFormErrors] = useState<{ [k: string]: string }>({});
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('output');
 
-  // Generate mock sample data for sources and output
+  // Generate mock sample data for output
   const generateSampleRows = (cols: string[], n = 5) => {
     return Array.from({ length: n }, (_, i) =>
       Object.fromEntries(cols.map(col => [col, `${col}_val${i + 1}`]))
     );
   };
-  // For each selected source, generate columns and rows
-  const sourceSampleData = sources.reduce((acc, src) => {
-    // Use all mockColumns for demo; in real app, filter by source
-    acc[src] = {
-      columns: mockColumns.map(c => c.name),
-      rows: generateSampleRows(mockColumns.map(c => c.name)),
-    };
-    return acc;
-  }, {} as Record<string, { columns: string[]; rows: any[] }>);
+  
   // Output columns: all target columns in mappings
   const outputColumns = mappings.map(m => m.targetColumn).filter(Boolean);
   const outputSampleRows = generateSampleRows(outputColumns);
@@ -124,6 +112,17 @@ const RequirementForm: React.FC = () => {
     };
     return acc;
   }, {} as Record<string, { columns: string[]; rows: any[] }>);
+
+  const handleSubmit = () => {
+    const newErrors: { [k: string]: string } = {};
+    if (!pipelineName.trim()) newErrors.pipelineName = 'Pipeline Name is required';
+    if (!projectName.trim()) newErrors.projectName = 'Project Name is required';
+    if (mappings.length === 0) newErrors.mappings = 'At least one mapping is required';
+    setFormErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    // Submit logic here
+    alert('Requirement submitted!');
+  };
 
   const handleAddMapping = () => {
     const validation = validateMapping(newMapping);
@@ -153,34 +152,6 @@ const RequirementForm: React.FC = () => {
     setMappings(mappings.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = () => {
-    const newErrors: { [k: string]: string } = {};
-    if (!pipelineName.trim()) newErrors.pipelineName = 'Pipeline Name is required';
-    if (!projectName.trim()) newErrors.projectName = 'Project Name is required';
-    if (!drnNumber.trim()) newErrors.drnNumber = 'DRN/Project Number is required';
-    if (sources.length === 0) newErrors.sources = 'At least one source is required';
-    if (targets.length === 0) newErrors.targets = 'At least one target is required';
-    if (mappings.length === 0) newErrors.mappings = 'At least one mapping is required';
-    setFormErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-    // Submit logic here
-    alert('Requirement submitted!');
-  };
-
-  // Generate pipeline nodes and edges from mappings
-  const pipelineNodes: Node[] = mappings.map((m, idx) => ({
-    id: String(idx + 1),
-    data: { label: m.targetColumn || `Mapping ${idx + 1}` },
-    position: { x: idx * 200, y: 100 },
-  }));
-  const pipelineEdges: Edge[] = mappings.length > 1
-    ? mappings.slice(1).map((_, idx) => ({
-        id: `e${idx + 1}-${idx + 2}`,
-        source: String(idx + 1),
-        target: String(idx + 2),
-      }))
-    : [];
-
   return (
     <div className="max-w-7xl mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">New Pipeline Requirement</h1>
@@ -206,41 +177,6 @@ const RequirementForm: React.FC = () => {
               <label className="block font-medium mb-1">Project Name</label>
               <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Enter project name" />
               {formErrors.projectName && <div className="text-xs text-red-500 mt-1">{formErrors.projectName}</div>}
-            </div>
-            <div>
-              <label className="block font-medium mb-1">DRN/Project Number</label>
-              <Input value={drnNumber} onChange={e => setDrnNumber(e.target.value)} placeholder="Enter DRN or project number" />
-              {formErrors.drnNumber && <div className="text-xs text-red-500 mt-1">{formErrors.drnNumber}</div>}
-            </div>
-            <div>
-              <label className="block font-medium mb-1">List of Sources</label>
-              <select
-                multiple
-                className="w-full border rounded p-2 h-20"
-                value={sources}
-                onChange={e => setSources(Array.from(e.target.selectedOptions, opt => opt.value))}
-              >
-                {mockConnections.map(conn => (
-                  <option key={conn.id} value={conn.name}>{conn.name}</option>
-                ))}
-              </select>
-              <div className="text-xs text-muted-foreground mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sources.</div>
-              {formErrors.sources && <div className="text-xs text-red-500 mt-1">{formErrors.sources}</div>}
-            </div>
-            <div>
-              <label className="block font-medium mb-1">List of Targets</label>
-              <select
-                multiple
-                className="w-full border rounded p-2 h-20"
-                value={targets}
-                onChange={e => setTargets(Array.from(e.target.selectedOptions, opt => opt.value))}
-              >
-                {mockConnections.map(conn => (
-                  <option key={conn.id} value={conn.name}>{conn.name}</option>
-                ))}
-              </select>
-              <div className="text-xs text-muted-foreground mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple targets.</div>
-              {formErrors.targets && <div className="text-xs text-red-500 mt-1">{formErrors.targets}</div>}
             </div>
           </div>
         ) : (
@@ -338,15 +274,6 @@ const RequirementForm: React.FC = () => {
           >
             Output Data
           </button>
-          {sources.map(src => (
-            <button
-              key={src}
-              className={`px-3 py-1 text-sm font-medium border-b-2 transition-colors ${activeTab === src ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-primary'}`}
-              onClick={() => setActiveTab(src)}
-            >
-              {src} Input
-            </button>
-          ))}
           {uniqueSourceTables.map(tbl => (
             <button
               key={tbl}
@@ -393,33 +320,6 @@ const RequirementForm: React.FC = () => {
             )}
           </div>
         )}
-        {sources.map(src => (
-          activeTab === src ? (
-            <div key={src}>
-              <div className="font-semibold mb-2">Sample Input Data: {src}</div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-xs md:text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {sourceSampleData[src].columns.map(col => (
-                        <th key={col} className="border px-2 py-1">{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sourceSampleData[src].rows.map((row, i) => (
-                      <tr key={i}>
-                        {sourceSampleData[src].columns.map(col => (
-                          <td key={col} className="border px-2 py-1">{row[col]}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null
-        ))}
         {uniqueSourceTables.map(tbl => (
           activeTab === `table-${tbl}` ? (
             <div key={tbl}>
@@ -451,7 +351,17 @@ const RequirementForm: React.FC = () => {
           <div>
             <div className="font-semibold mb-2">Pipeline View</div>
             <div style={{ width: '100%', height: 350 }}>
-              <ReactFlow nodes={pipelineNodes} edges={pipelineEdges} fitView>
+              <ReactFlow nodes={mappings.map((m, idx) => ({
+                id: String(idx + 1),
+                data: { label: m.targetColumn || `Mapping ${idx + 1}` },
+                position: { x: idx * 200, y: 100 },
+              }))} edges={mappings.length > 1
+                ? mappings.slice(1).map((_, idx) => ({
+                  id: `e${idx + 1}-${idx + 2}`,
+                  source: String(idx + 1),
+                  target: String(idx + 2),
+                }))
+                : []} fitView>
                 <Background />
                 <Controls />
               </ReactFlow>
@@ -461,8 +371,8 @@ const RequirementForm: React.FC = () => {
       </div>
       {/* Add/Edit Mapping Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">{editIndex !== null ? 'Edit' : 'Add'} Mapping</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

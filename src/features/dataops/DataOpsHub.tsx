@@ -5,6 +5,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
 import { CHART_ADDED_EVENT } from "@/components/shared/GenericChatUI";
+import { decompressValue } from "@/lib/decompress";
 export function DataOpsHub() {
   const { state, dispatch } = useDataOps();
   const {
@@ -21,6 +22,7 @@ export function DataOpsHub() {
     widgets,
     isLoading: isWidgetsLoading,
     isError: isWidgetsError,
+    createWidget
   } = useDataOpsWidgets({
     shouldFetch: widgetIds.length > 0,
     widgetIds: widgetIds
@@ -71,7 +73,11 @@ export function DataOpsHub() {
   useEffect(() => {
     try {
       if (widgets?.length && !state.widgets.length) {
-        dispatch({ type: "SET_WIDGETS", payload: widgets });
+        const intermediateWidgets = widgets.map(widget => {
+          widget.intermediate_executed_query_json = decompressValue(widget.plotly_data);
+          return widget;
+        });
+        dispatch({ type: "SET_WIDGETS", payload: intermediateWidgets });
       }
     } catch (error) {
       console.error("[DataOpsHub] Failed to process and set widgets:", error);
@@ -83,8 +89,7 @@ export function DataOpsHub() {
   useEffect(() => {
     const handleChartAdded = (event: CustomEvent) => {
       const chartData = event.detail;
-      console.log("Chart added:", chartData);
-      dispatch({ type: "ADD_WIDGET", payload: chartData });
+      dispatch({ type: "ADD_WIDGET", payload: chartData })
     };
 
     document.addEventListener(CHART_ADDED_EVENT, handleChartAdded);
@@ -94,7 +99,7 @@ export function DataOpsHub() {
   }, []);
 
   if (state.isLoading) {
-    return <LoadingState />;
+    return <LoadingState fullScreen />;
   }
 
   if (state.error) {

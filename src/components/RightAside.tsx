@@ -3,6 +3,7 @@ import { X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/context/SidebarContext';
 import { Button } from '@/components/ui/button';
+import aiIcon from '/assets/ai/ai.svg';
 
 interface RightAsideProps {
   title?: string;
@@ -47,13 +48,25 @@ export function RightAside({
         <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Button>
 
-      <div className="p-4 border-b flex items-center justify-between w-full flex-shrink-0">
-        <h2 className="font-medium text-lg text-green-600">{title}</h2>
+      <div className="p-4 border-b flex items-center justify-between w-full flex-shrink-0 bg-muted">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-6 h-6 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: '#009f59' }}
+          >
+            <img
+              src={aiIcon}
+              alt="AI"
+              className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+            />
+          </div>
+          <h2 className="font-medium text-lg text-green-600">{title}</h2>
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={closeRightAside}
-          className="h-8 w-8 rounded-full hover:bg-muted"
+          className="h-8 w-8 rounded-full hover:bg-background"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close panel</span>

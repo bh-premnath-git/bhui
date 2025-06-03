@@ -18,6 +18,7 @@ interface WidgetHeaderProps {
   onFlip?: () => void;
   onRefresh?: (e: React.MouseEvent) => void;
   onViewChange?: () => void;
+  onRemove?: () => void;
   isRefreshing?: boolean;
   showFlip?: boolean;
   isFlipped?: boolean;
@@ -48,6 +49,7 @@ export const WidgetHeader = ({
   onFlip,
   onRefresh,
   onViewChange,
+  onRemove,
   isRefreshing,
   showFlip,
   isFlipped,
@@ -94,10 +96,12 @@ export const WidgetHeader = ({
                 <span>{isFlipped ? "Chart View" : "SQL Query"}</span>
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4" />
-              <span>Remove Widget</span>
-            </DropdownMenuItem>
+            {onRemove && (
+              <DropdownMenuItem onClick={onRemove} className="gap-2 text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4" />
+                <span>Remove Widget</span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

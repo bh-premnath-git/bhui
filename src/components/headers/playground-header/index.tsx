@@ -7,33 +7,28 @@ import { Pipeline } from "@/types/designer/pipeline";
 import { NameEditor } from "./HeaderInput";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
-import { CloudCog, Database, FileJson, Settings, Zap } from "lucide-react";
+import { CloudCog, Settings } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
 import { useMemo, useState } from 'react';
 import { CommitPart, DeployingPart, EnvironmentSelect, PlaybackButton, SchedulePicker, SettingsModal } from '../flow-playground-header';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ParameterModal } from '../build-playground-header/ParameterModal';
-import { JsonToPipelineDialog } from '../build-playground-header/JsonToPipelineDialog';
 import { AIButton } from './AIChatButton';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import { ToolbarNodes } from '@/components/bh-reactflow-comps/flow/toolbar/ToolbarNodes';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
-
+import { useSidebar } from '@/context/SidebarContext';
 
 export interface PlayGroundHeaderProps {
   playGroundHeader?: "flow" | "pipeline";
 }
 
-
-
 export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const isFlow = playGroundHeader === "flow";
   const dispatch = useAppDispatch();
-
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
   const { pipelineDtl } = useAppSelector((state: RootState) => state.buildPipeline);
@@ -42,12 +37,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const toggleAutoSave = () => { };
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
-  const [isJsonToPipelineOpen, setIsJsonToPipelineOpen] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
   const [moduleTypes] = useModules();
-  console.log(moduleTypes)
-  // const activeModule = moduleTypes.find((type) => type.id === activeType);
   let flowNodes = moduleTypes.map((type) => {
     return {
       "ui_properties": {
@@ -74,11 +66,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
       }
     };
   });
-  console.log(moduleTypes)
   const {
     handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun
   } = usePipelineContext();
+  const { isRightAsideOpen } = useSidebar();
 
   const currentItem = isFlow ? selectedFlow : (selectedPipeline || pipelineDtl);
 
@@ -164,23 +156,6 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <p>Pipeline settings</p>
                 </TooltipContent>
               </Tooltip>
-
-
-              {/* <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsJsonToPipelineOpen(true)}
-                    aria-label="Convert JSON to Pipeline"
-                  >
-                    <FileJson className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Convert JSON to Pipeline</p>
-                </TooltipContent>
-              </Tooltip> */}
             </div>
           )}
         </div>
@@ -215,9 +190,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             </div>
           )}
 
-          <div className="border-l border-border pl-4">
-            <AIButton variant={playGroundHeader} color="#009f59" />
-          </div>
+          {!isRightAsideOpen && (
+            <div className="border-l border-border pl-4">
+              <AIButton variant={playGroundHeader} color="#009f59" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -230,10 +207,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               setIsSparkParamOpen(false);
             }}
           />
-          {/* <JsonToPipelineDialog
-            isOpen={isJsonToPipelineOpen}
-            onClose={() => setIsJsonToPipelineOpen(false)}
-          /> */}
+          
         </>
       )}
     </div>

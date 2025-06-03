@@ -87,7 +87,7 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
 export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
   const { shouldFetch = true, widgetId, widgetIds = [] } = options;
 
-  const { getOne: getWidget } = useResource<Widget>(
+  const { getOne: getWidget, create } = useResource<Widget>(
     WIDGET_API_PATH,
     CATALOG_REMOTE_API_URL,
     true
@@ -142,6 +142,17 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
     refetch: () => void;
   };
 
+  const { mutateAsync: createWidgetMutation }  = create({
+    url: `/widget`,
+    mutationOptions: {
+      retry: 2
+    }
+  });
+
+  const createWidget = (payload: any) => {
+    return createWidgetMutation({ data: payload });
+  };
+
   return {
     widgets,
     widgetDetail,
@@ -149,5 +160,9 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
     isFetching: widgetId ? isWidgetFetching : isWidgetsFetching,
     isError: widgetId ? isWidgetError : isWidgetsError,
     refetch: widgetId ? refetchWidgetDetail : refetchWidgets,
+    createWidget
   };
+
+  
+
 };

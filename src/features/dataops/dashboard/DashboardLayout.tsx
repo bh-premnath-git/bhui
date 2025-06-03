@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Responsive, WidthProvider, Layout } from "react-grid-layout";
 import { Widget } from "./widgets/Widget";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
@@ -7,8 +7,10 @@ import { updateWidgetLayout } from "@/lib/widgetLayout";
 import { useLayoutPersistence } from "@/hooks/useLayoutPersistence";
 import { applyFilters } from "@/lib/filterUtils";
 import { ExecutedQueryItem } from "@/types/dataops/dataops-dash";
+import { useSidebar } from "@/context/SidebarContext";
 import "react-grid-layout/css/styles.css";
 
+const ResponsiveReactGridLayout = Responsive;
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'dashboard_layout';
 // Default widget dimensions
@@ -18,7 +20,17 @@ const DEFAULT_WIDGET_HEIGHT = 4;
 const GridLayout = () => {
   const { state } = useDataOps();
   const { widgets, selectedDashboard, filters, dashboards } = state;
+  const { isRightAsideOpen } = useSidebar();
+  const [measurementKey, setMeasurementKey] = useState(0);
 
+  // Detect sidebar state changes and trigger re-measurement
+  useEffect(() => {
+    // Force a re-measurement when sidebar state changes
+    setMeasurementKey(prev => prev + 1);
+  }, [isRightAsideOpen]);
+
+  console.log("widgets", widgets);
+  
   const { handleLayoutChange } = useLayoutPersistence({
     storageKey: LAYOUT_STORAGE_KEY,
     dashboard: selectedDashboard,
@@ -46,10 +58,17 @@ const GridLayout = () => {
   }, [widgets, selectedDashboard]);
 
   const filteredWidgets = useMemo(() => {
-    return orderedWidgets.map(widget => ({
-      ...widget,
-      executed_query: applyFilters(widget.executed_query as ExecutedQueryItem[], filters)
-    }));
+    return orderedWidgets.map(widget => {
+      // Only apply filters to system-defined widgets with array-based executed_query
+      if (widget.widget_type === "system_defined" && Array.isArray(widget.executed_query)) {
+        return {
+          ...widget,
+          executed_query: applyFilters(widget.executed_query as ExecutedQueryItem[], filters)
+        };
+      }
+      // For user-defined widgets, keep the executed_query structure as is
+      return widget;
+    });
   }, [orderedWidgets, filters]);
 
   const renderableWidgets = useMemo(() => {
@@ -109,6 +128,7 @@ const GridLayout = () => {
     <div className="mt-1">
     <ResponsiveGridLayout
       className="layout"
+      key={measurementKey} 
       layouts={{
         lg: initialLayout,
         md: initialLayout,
@@ -132,7 +152,7 @@ const GridLayout = () => {
     >
       {renderableWidgets.map((widget) => (
         <div
-          key={widget.id.toString()}
+          key={`${widget.id.toString()}`}
           className="rounded-lg shadow-sm bg-card h-full"
         >
           <Widget widget={widget} />

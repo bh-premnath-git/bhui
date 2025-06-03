@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Plus, Code, BarChart4, Table as TableIcon } from 'lucide-react';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
+import { createShortUUID } from '@/lib/utils';
 
 // Chart Data Interfaces
 interface ChartRecommendation {
@@ -72,28 +73,24 @@ export function AIDataVisualizer({
   onAddToDashboard,
 }: AIDataVisualizerProps) {
   const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>('chart');
-  const [parsedChartData, setParsedChartData] = useState<GraphDataPoint[] | null>(null);
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
+  
+  // Generate stable IDs for each tab component
+  const tabIds = useMemo(() => ({
+    chart: `chart-tab-${chart?.content?.layout?.title?.text || Date.now()}`,
+    sql: `sql-tab-${sql?.content?.substring?.(0, 20)?.replace(/\s+/g, '-') || Date.now()}`,
+    table: `table-tab-${data?.content?.column_names?.join('-')?.substring?.(0, 20) || Date.now()}`
+  }), [chart, sql, data]);
+
   useEffect(() => {
     if (chart?.content) {
       try {
         // Check if it's a string with JSON inside markdown code blocks
-        if (typeof chart.content === 'string' && chart.content.includes('```json')) {
-          const jsonContent = chart.content.replace(/```json\n|\n```/g, '');
-          const parsed = JSON.parse(jsonContent) as ChartData;
+        if (typeof chart.content === 'object' && Array.isArray(chart.content.data) && chart.content.layout) {
+          const parsed = chart.content
           setChartMetadata(parsed);
-          if (parsed.graph_data) {
-            setParsedChartData(parsed.graph_data);
-          }
-        } else {
-          if (typeof chart.content === 'object' && chart.content.graph_data) {
-            setChartMetadata(chart.content as ChartData);
-            setParsedChartData(chart.content.graph_data);
-          } else {
-            setParsedChartData(chart.content as GraphDataPoint[]);
-          }
-        }
+        } 
       } catch (error) {
         console.error("Error parsing chart data:", error);
       }
@@ -152,7 +149,7 @@ export function AIDataVisualizer({
               )}
             </TabsList>
 
-            {onAddToDashboard && parsedChartData && (
+            {onAddToDashboard && chartMetadata && (
               <Button
                 size="sm"
                 variant="outline"
@@ -170,13 +167,13 @@ export function AIDataVisualizer({
         {chart && (
             <TabsContent value="chart" className="p-4">
               <motion.div
-                key="chart"
+                key={tabIds.chart}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {parsedChartData && <ChatChartView data={parsedChartData} />}
+                {chartMetadata && <ChatChartView data={chartMetadata} />}
               </motion.div>
             </TabsContent>
           )}
@@ -184,7 +181,7 @@ export function AIDataVisualizer({
           {sql && (
             <TabsContent value="sql" className="p-4">
               <motion.div
-                key="sql"
+                key={tabIds.sql}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -197,7 +194,7 @@ export function AIDataVisualizer({
           {data && (
             <TabsContent value="table" className="p-4">
               <motion.div
-                key="table"
+                key={tabIds.table}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

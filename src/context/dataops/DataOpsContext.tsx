@@ -20,6 +20,7 @@ type DataOpsAction =
   | { type: "SET_DASHBOARDS"; payload: Dashboard[] }
   | { type: "SET_SELECTED_DASHBOARD"; payload: Dashboard }
   | { type: "ADD_WIDGET"; payload: Widget }
+  | { type: "REMOVE_WIDGET"; payload: string } // Widget ID to remove
   | { type: "SET_WIDGETS"; payload: Widget[] }
   | { type: "UPDATE_WIDGET"; payload: Widget }
   | { type: "SET_LOADING"; payload: boolean }

@@ -54,6 +54,8 @@ export const applyFilters = (
   data: ExecutedQueryItem[],
   filters: FilterState
 ): ExecutedQueryItem[] => {
+  if (!Array.isArray(data)) return [];
+  
   let filteredData = [...data];
   
   if (filters.projectName) {

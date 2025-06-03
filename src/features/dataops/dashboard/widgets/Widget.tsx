@@ -2,8 +2,6 @@ import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Widget as WidgetType } from "@/types/dataops/dataops-dash";
 import { WidgetHeader } from "./WidgetHeader";
-import { LineChart } from "./charts/LineChart";
-import { BarChart } from "./charts/BarChart";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { LayoutDashboard, X, Check } from "lucide-react";
 import { fetchWidgetsByIds } from "@/lib/widgetLayout";
@@ -11,6 +9,7 @@ import { useDataOps } from "@/context/dataops/DataOpsContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import Plot from 'react-plotly.js';
 import {
   Table,
   TableBody,
@@ -82,40 +81,193 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
     setIsEditing(false);
   }, [widget.sql_query]);
 
+  const handleRemoveWidget = useCallback(() => {
+    dispatch({
+      type: "REMOVE_WIDGET",
+      payload: widget.id.toString()
+    });
+  }, [widget.id, dispatch]);
+
   const renderTableView = () => {
-    if (!widget.executed_query?.length) return null;
-
-    const columns = Object.keys(widget.executed_query[0]);
-
-    return (
-      <div className="h-full overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column}>
-                  {column.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {widget.executed_query.map((row, index) => (
-              <TableRow key={index}>
-                {columns.map((column) => (
-                  <TableCell key={column}>{String(row[column])}</TableCell>
+    // Return early if no executed_query data exists
+    if (!widget.executed_query) return null;
+    try {
+      if (widget.widget_type === "system_defined") {
+        // System-defined widgets have executed_query as array of objects
+        if (!Array.isArray(widget.executed_query) || widget.executed_query.length === 0) {
+          return null;
+        }
+        
+        const columns = Object.keys(widget.executed_query[0] || {});
+        
+        return (
+          <div className="h-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableHead key={column}>
+                      {column.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {widget.executed_query.map((row, index) => (
+                  <TableRow key={index}>
+                    {columns.map((column) => (
+                      <TableCell key={column}>{String(row[column] ?? '')}</TableCell>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
+              </TableBody>
+            </Table>
+          </div>
+        );
+      } else {
+        // User-defined widgets have executed_query as an object with column_names and column_values
+        if (!widget.executed_query.column_names || !widget.executed_query.column_values) {
+          return null;
+        }
+        return (
+          <div className="h-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {widget.executed_query.column_names.map((column) => (
+                    <TableHead key={column}>
+                      {column.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {widget.executed_query.column_values.map((row, index) => (
+                  <TableRow key={index}>
+                    {row.map((cell, cellIndex) => (
+                      <TableCell key={cellIndex}>{String(cell ?? '')}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        );
+      }
+    } catch (error) {
+      console.error("Failed to render table view:", error);
+      return null;
+    }
+  };
+
+  const renderPlotlyChart = () => {
+    try {
+      if (widget.intermediate_executed_query_json) {
+        const plotlyData = typeof widget.intermediate_executed_query_json === 'object' 
+          ? widget.intermediate_executed_query_json 
+          : JSON.parse(widget.intermediate_executed_query_json);
+        
+        if (plotlyData && plotlyData.data && plotlyData.layout) {
+          // Enhance layout with some default settings
+          const enhancedLayout = {
+            ...plotlyData.layout,
+            autosize: true,
+            height: 200,
+            margin: { l: 40, r: 15, t: 25, b: 55, ...plotlyData.layout?.margin },
+            font: { 
+              family: 'Inter, system-ui, sans-serif', 
+              size: 10, 
+              ...plotlyData.layout?.font 
+            },
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            showlegend: true,
+            // Add explicit axis styling
+            xaxis: {
+              showgrid: true,
+              gridcolor: 'rgba(128, 128, 128, 0.15)',
+              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+              linecolor: 'rgba(128, 128, 128, 0.3)',
+              ...plotlyData.layout?.xaxis
+            },
+            yaxis: {
+              showgrid: true,
+              gridcolor: 'rgba(128, 128, 128, 0.15)',
+              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+              linecolor: 'rgba(128, 128, 128, 0.3)',
+              ...plotlyData.layout?.yaxis
+            },
+            legend: {
+              orientation: 'h',
+              xanchor: 'center', 
+              yanchor: 'top',
+              y: -0.3, // Increase distance from chart bottom to prevent overlap
+              x: 0.5,
+              font: { size: 9 },
+              itemsizing: 'constant',
+              traceorder: 'normal',
+              // Improve legend spacing and appearance
+              itemwidth: 30,
+              itemclick: 'toggleothers',
+              itemdoubleclick: 'toggle',
+              // Add spacing between legend items
+              xgap: 10,
+              ...plotlyData.layout?.legend
+            }
+          };
+          
+          // Set square markers for all data traces and ensure consistent legend style
+          const enhancedData = plotlyData.data.map(trace => {
+            // For all trace types, ensure we're showing only square markers in legend
+            return {
+              ...trace,
+              marker: {
+                ...trace.marker,
+                symbol: 'square',
+                size: 8, // Control marker size
+                line: {
+                  width: 1,
+                  color: '#fff'
+                }
+              },
+              // Force line charts to show only the marker in legend (no line)
+              line: trace.line ? {
+                ...trace.line,
+                showlegend: false
+              } : undefined,
+              // Use mode that includes markers to ensure square shows in legend
+              mode: trace.type === 'scatter' ? 'lines+markers' : trace.mode,
+              // Control legend appearance
+              showlegend: true,
+              legendgroup: trace.name || '',
+            };
+          });
+          
+          return (
+            <div className="w-full h-full">
+              <Plot
+                data={enhancedData}
+                layout={enhancedLayout}
+                config={{ 
+                  responsive: true,
+                  displayModeBar: false,
+                }}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to render Plotly chart:", error);
+    }
+    
+    return null;
   };
 
   const renderChart = () => {
     if (isRefreshing) {
-      return <LoadingState />;
+      return <LoadingState fullScreen={false} />;
     }
 
     if (!widget.executed_query || widget.executed_query.length === 0) {
@@ -132,18 +284,14 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
       );
     }
 
-    const chartType = widget.chart_config.type;
-    switch (chartType) {
-      case "line_chart":
-      case "grouped_bar_chart":
-        console.log("Rendering widget", widget);
-        return <LineChart widget={widget} height={200} />;
-      case "bar_chart":
-      case "column_chart":
-        return <BarChart widget={widget} height={200} />;
-      default:
-        return <div>Unsupported chart type: {chartType}</div>;
+    // Try to render Plotly chart first if data is available
+    const plotlyChart = renderPlotlyChart();
+    if (plotlyChart) {
+      return plotlyChart;
     }
+
+    // Fall back to chart type based rendering
+    return <div className="flex items-center justify-center h-full">Unsupported chart type</div>;
   };
 
   return (
@@ -164,6 +312,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
               onFlip={handleFlip}
+              onRemove={handleRemoveWidget}
               showFlip
               isFlipped={isFlipped}
             />
@@ -181,6 +330,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               description={widget.name}
               onFlip={handleFlip}
               onViewChange={handleViewToggle}
+              onRemove={handleRemoveWidget}
               showFlip
               isFlipped={isFlipped}
               isTableView={isTableView}

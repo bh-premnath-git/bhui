@@ -9,16 +9,15 @@ import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 
 export const Header = () => {
-  const { isExpanded } = useSidebar();
+  const { isExpanded, isRightAsideOpen } = useSidebar();
   const location = useLocation();
-  const { isRightAsideOpen } = useSidebar();
-  const dispatch=useDispatch();
+  const dispatch = useDispatch();
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>
     path.startsWith("/designers/build-playground/");
   const isFlowPlaygroundRoute = (path: string) =>
-    path.startsWith("/designers/flow-playground/" ) ||
+    path.startsWith("/designers/flow-playground/") ||
     path.startsWith("/designers/data-flow-playground/");
   const isNotebookRoute = (path: string) =>
     path === "/data-catalog/notebook";
@@ -30,7 +29,7 @@ export const Header = () => {
   // Decide which header content to render
   const renderHeaderContent = () => {
     if (isBuildPlaygroundRoute(location.pathname)) {
-            dispatch(setIsFlow(false))
+      dispatch(setIsFlow(false))
 
       return <div className={cn(isRightAsideOpen ? "w-[59%]" : "w-[100%]")}>
         <PlaygroundHeader playGroundHeader="pipeline" />
@@ -44,17 +43,17 @@ export const Header = () => {
     }
     if (isDataOpsHubRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]", "flex justify-between")}>
           <NavigationBreadcrumb />
-          <AIChatButton variant="dataops" />
+          {!isRightAsideOpen && <AIChatButton variant="dataops" />}
         </div>
       );
     }
     if (isDataXploreRoute(location.pathname)) {
       return (
-        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]","flex justify-between")}>
+        <div className={cn(isRightAsideOpen ? "w-[58%]" : "w-[100%]", "flex justify-between")}>
           <NavigationBreadcrumb />
-          <AIChatButton variant="explorer" />
+          {!isRightAsideOpen && <AIChatButton variant="explorer" />}
         </div>
       );
     }

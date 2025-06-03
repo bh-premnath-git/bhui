@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createShortUUID } from '@/lib/utils';
 
 interface ChatTableViewProps {
   data: any[];
@@ -25,6 +26,9 @@ export function ChatTableView({ data }: ChatTableViewProps) {
   }
 
   const columns = Object.keys(data[0]);
+  
+  // Generate stable row IDs once on component mount
+  const rowIds = data.map(() => `row-${createShortUUID()}`);
 
   return (
     <Card className="p-4">
@@ -34,7 +38,7 @@ export function ChatTableView({ data }: ChatTableViewProps) {
             <TableHeader>
               <TableRow>
                 {columns.map((column) => (
-                  <TableHead key={column} className="text-left truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
+                  <TableHead key={`header-${column}`} className="text-left truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
                     {column}
                   </TableHead>
                 ))}
@@ -42,9 +46,9 @@ export function ChatTableView({ data }: ChatTableViewProps) {
             </TableHeader>
             <TableBody>
               {data.map((row, i) => (
-                <TableRow key={i}>
+                <TableRow key={rowIds[i]}>
                   {columns.map((column) => (
-                    <TableCell key={column} className="truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
+                    <TableCell key={`${rowIds[i]}-${column}`} className="truncate" style={{ maxWidth: `${100 / columns.length}%` }}>
                       <div className="truncate" title={String(row[column])}>
                         {row[column]}
                       </div>

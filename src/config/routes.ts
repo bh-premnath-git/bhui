@@ -13,6 +13,11 @@ export const ROUTES = {
     FLOW_PLAYGROUND: (id:string) => `/designers/flow-playground/${id}`,
     Data_FLOW_PLAYGROUND: (id:string) => `/designers/data-flow-playground/${id}`,
     NOTEBOOK: '/designers/notebook',
+    REQUIREMENTS: {
+      INDEX: '/designers/requirements',
+      DETAILS: (id:string) => `/designers/requirements/${id}`,
+      NEW:`/designers/requirements/new`,
+    },
   },
   DATAOPS: {
     INDEX: '/dataops-hub',

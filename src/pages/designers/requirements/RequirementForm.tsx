@@ -372,7 +372,32 @@ const RequirementForm: React.FC = () => {
       {/* Add/Edit Mapping Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              .mapping-modal-container::-webkit-scrollbar {
+                width: 8px !important;
+                display: block !important;
+              }
+              .mapping-modal-container::-webkit-scrollbar-track {
+                background: #f1f1f1 !important;
+                border-radius: 4px !important;
+              }
+              .mapping-modal-container::-webkit-scrollbar-thumb {
+                background: #888 !important;
+                border-radius: 4px !important;
+              }
+              .mapping-modal-container::-webkit-scrollbar-thumb:hover {
+                background: #555 !important;
+              }
+              .mapping-modal-container {
+                scrollbar-width: thin !important;
+                scrollbar-color: #888 #f1f1f1 !important;
+              }
+            `
+          }} />
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-scroll mapping-modal-container"
+          >
             <h2 className="text-lg font-bold mb-4">{editIndex !== null ? 'Edit' : 'Add'} Mapping</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

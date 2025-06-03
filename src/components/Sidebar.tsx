@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,6 @@ export function Sidebar() {
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
-  const navigate = useNavigate();
   const location = useLocation();
   const { navigationItems: dynamicItems = [], loading } = navigation;
   
@@ -140,9 +139,7 @@ export function Sidebar() {
             
             if (!shouldShow) {
               return null;
-            }
-            const hasActiveSubitem = item.isParent && hasActiveChild(item.path);
-            
+            }            
             const needsTooltip = !isExpanded && item.showIcon;
             
             const navElement = (

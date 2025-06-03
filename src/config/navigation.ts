@@ -12,10 +12,10 @@ import {
   FolderGit2,
   Settings2,
   Cable,
-  Search,
   BarChart,
   NotebookText,
-  BookMarked
+  BookMarked,
+  FileText
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -57,6 +57,12 @@ export const navigationItems: NavItem[] = [
         title: "Notebooks",
         icon: NotebookText,
         path: ROUTES.DESIGNERS.NOTEBOOK,
+        parent: ROUTES.DESIGNERS.INDEX,
+      },
+      {
+        title: "Requirements",
+        icon: FileText,
+        path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
         parent: ROUTES.DESIGNERS.INDEX,
       },
     ],

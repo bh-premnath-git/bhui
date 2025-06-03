@@ -10,6 +10,7 @@ import { DataCatalogRoutes } from './dataCatalogRoutes';
 import { DesignerRoutes } from './designerRoutes';
 import { DataOpsRoutes } from './dataOpsRoutes';
 import { AdminRoutes } from './adminRoutes';
+import { RequirementRoutes } from './requirementRoutes'
 
 export const AppRoutes = () => {
   return (
@@ -46,6 +47,10 @@ export const AppRoutes = () => {
 
         {/* Admin Routes */}
         {AdminRoutes}
+
+        {/* Requirement Routes */}
+        {RequirementRoutes}
+
       </Route>
       
       {/* Catch all not found routes */}

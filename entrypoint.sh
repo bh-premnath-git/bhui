@@ -12,7 +12,7 @@ if [ -z "$CODEARTIFACT_AUTH_TOKEN" ]; then
     --query authorizationToken \
     --output text
   )
-  eccho "Its inside"
+  echo "Its inside"
 else
   echo "Using existing CODEARTIFACT_AUTH_TOKEN"
 fi

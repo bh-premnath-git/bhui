@@ -382,7 +382,7 @@ export const ComposableCanvas = ({
   if (loading) {
     return (
       <div className="w-full h-full bg-background relative flex items-center justify-center">
-        <LoadingState className="w-40 h-40" />
+        <LoadingState fullScreen={true} className="w-40 h-40" />
       </div>
     );
   }

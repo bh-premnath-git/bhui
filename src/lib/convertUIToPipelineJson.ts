@@ -158,7 +158,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'Aggregator':
                     // Transform the group_by array to match the expected format
                     const formattedGroupBy = Array.isArray(node.data.transformationData?.group_by)
-                        ? node.data.transformationData.group_by
+                        ? node.data.transformationData.group_by.map(group => (group.group_by || ''))
                         : [];
 
                     // Transform aggregations to match the expected format

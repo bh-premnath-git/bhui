@@ -53,6 +53,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [validationMessages, setValidationMessages] = useState<string[]>([]);
     const [showValidationTooltip, setShowValidationTooltip] = useState(false);
     const [selectedSourceLabel, setSelectedSourceLabel] = useState(null);
+    const [formHasBeenOpened, setFormHasBeenOpened] = useState(false);
     const [selectedSource, setSelectedSource] = useState(null);
     const [isSelected, setIsSelected] = useState(false);
     const [titleError, setTitleError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const formData = formStates[id];
         const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
         const isSource = data.label?.toLowerCase()?.includes("source");
-        // console.log(schemaData.schema)
+        
         // Set initial title from data.label if it exists
         if (data.title) {
             setTitleValue(data.title);
@@ -83,8 +84,14 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         // Validation logic
         if (isFlow) { 
             if (formData) {
-                const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
-                setValidationStatus(isValid ? 'valid' : 'error');
+                const { status, warnings } = validateFormData(
+                    formData, 
+                    nodeSchema, 
+                    true, 
+                    data.source, 
+                    formHasBeenOpened
+                );
+                setValidationStatus(status);
                 setValidationMessages(warnings);
             } else {
                 setValidationStatus('error');
@@ -92,15 +99,27 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }
         } else {
             if (isSource) {
-                const { isValid, warnings } = validateFormData(formData, nodeSchema, true, data.source);
-                setValidationStatus(isValid ? 'valid' : 'error');
+                const { status, warnings } = validateFormData(
+                    formData, 
+                    nodeSchema, 
+                    true, 
+                    data.source, 
+                    formHasBeenOpened
+                );
+                setValidationStatus(status);
                 setValidationMessages(warnings);
                 return;
             }
 
             if (formData) {
-                const { isValid, warnings } = validateFormData(formData, nodeSchema, false, data.label?.toLowerCase() == "target" ? formData.target : null);
-                setValidationStatus(isValid ? 'valid' : warnings.length > 0 ? 'warning' : 'error');
+                const { status, warnings } = validateFormData(
+                    formData, 
+                    nodeSchema, 
+                    false, 
+                    data.label?.toLowerCase() === "target" ? formData.target : null,
+                    formHasBeenOpened
+                );
+                setValidationStatus(status);
                 setValidationMessages(warnings);
             } else {
                 setValidationStatus('error');
@@ -108,7 +127,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }
         }
 
-    }, [formStates, id, data.label, data.source, setNodes]);
+    }, [formStates, id, data.label, data.source, setNodes, formHasBeenOpened]);
 
     // Add effect to track form state
     useEffect(() => {
@@ -139,6 +158,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
         // If onNodeDoubleClick is provided, use it to open the NodeForm
         if (onNodeDoubleClick) {
+            // Mark that the form has been opened for this node
+            setFormHasBeenOpened(true);
             onNodeDoubleClick(id);
         } else {
             // Otherwise, fall back to the original behavior
@@ -301,18 +322,24 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }));
 
             setIsFormOpen(true);
+            // Mark that the form has been opened for this node
+            setFormHasBeenOpened(true);
         } else {
             // console.log('Schema not found for:', data);
             if (data?.source || data?.label === "Reader") {
                 dispatch(setIsRightPanelOpen(false))
                 setSelectedSourceLabel("Source");
                 setSelectedSource(data?.source);
+                // Mark that the form has been opened for this node
+                setFormHasBeenOpened(true);
             }
             if (data?.label.toLowerCase() === "target" || data?.title.toLowerCase() === "target") {
                 setSelectedSourceLabel("target");
                 let targetData = data;
                 targetData.source = data?.source ? data?.source : data;
                 setSelectedSource(targetData);
+                // Mark that the form has been opened for this node
+                setFormHasBeenOpened(true);
 
                 // Update the node title immediately when target configuration is updated
                 setNodes((nodes: any[]) =>

@@ -110,7 +110,7 @@ const formatFieldName = (fieldName: string) => {
 };
 
 const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center">
         {formatFieldName(fieldName)}
         <span className="text-red-500">*</span>
     </div>
@@ -164,24 +164,32 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
             
             // Make sure we have a valid initialFormData object with all required fields
+            const targetType = source.source?.target_type || pipelineJsonData?.target?.target_type || 'File';
+            
+            // Create base form data with common fields
             const initialFormData: FormData = {
                 name: source.title || 'Unnamed Target',
                 target: {
-                    target_type: source.source?.target_type || pipelineJsonData?.target?.target_type || 'File',
+                    target_type: targetType,
                     target_name: source.source?.target_name || '',
-                    table_name: source.source?.table_name || '',
                     load_mode: source.source?.load_mode || 'append',
-                    file_name: source.source?.file_name || '',
                     connection: connection
                 },
-                file_type: source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV',
                 write_options: source.transformationData?.write_options || {
                     header: true,
                     sep: ",",
                     createDisposition: 'CREATE_IF_NEEDED',
-                    writeMethod: source.source?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                    writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
                 }
             };
+            
+            // Add target-type specific fields
+            if (targetType === 'Relational') {
+                initialFormData.target.table_name = source.source?.table_name || '';
+            } else if (targetType === 'File') {
+                initialFormData.target.file_name = source.source?.file_name || '';
+                initialFormData.file_type = source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV';
+            }
 
             console.log('Setting form data from source:', initialFormData);
             setFormData(initialFormData);
@@ -197,24 +205,32 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             console.log('Using initialData for initialization:', initialData);
             
             // Make sure we have a valid initialData object with all required fields
+            const targetType = initialData.target?.target_type || 'File';
+            
+            // Create base form data with common fields
             const safeInitialData: FormData = {
                 name: initialData.name || '',
                 target: {
-                    target_type: initialData.target?.target_type || 'File',
+                    target_type: targetType,
                     target_name: initialData.target?.target_name || '',
-                    table_name: initialData.target?.table_name || '',
-                    file_name: initialData.target?.file_name || '',
                     load_mode: initialData.target?.load_mode || 'append',
                     connection: initialData.target?.connection || {}
                 },
-                file_type: initialData.file_type || 'CSV',
                 write_options: initialData.write_options || {
                     header: true,
                     sep: ",",
                     createDisposition: 'CREATE_IF_NEEDED',
-                    writeMethod: initialData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                    writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
                 }
             };
+            
+            // Add target-type specific fields
+            if (targetType === 'Relational') {
+                safeInitialData.target.table_name = initialData.target?.table_name || '';
+            } else if (targetType === 'File') {
+                safeInitialData.target.file_name = initialData.target?.file_name || '';
+                safeInitialData.file_type = initialData.file_type || 'CSV';
+            }
             
             console.log('Safe initialData:', safeInitialData);
             setFormData(safeInitialData);
@@ -272,9 +288,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
                 if (selectedConn) {
                     if (!newData.target) newData.target = {};
-                    if (!newData.target.connection) newData.target.connection = {};
+                    // Reset connection object to avoid keeping old connection details
                     newData.target.connection = {
-                        ...newData.target.connection,
                         connection_config_id: selectedConn.id,
                         type: selectedConn.custom_metadata?.type || '',
                         connection_name: selectedConn.connection_config_name || ''
@@ -284,10 +299,28 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 if (!newData.target) newData.target = {};
                 newData.target.target_type = value;
 
-                // Set default values based on target type while preserving other fields
+                // Reset connection-specific fields when target type changes
+                if (newData.target.connection) {
+                    // Keep only the connection ID and basic info
+                    const connectionId = newData.target.connection.connection_config_id;
+                    const connectionType = newData.target.connection.type;
+                    const connectionName = newData.target.connection.connection_name;
+                    
+                    // Reset connection object to avoid keeping fields from different target types
+                    newData.target.connection = {
+                        connection_config_id: connectionId,
+                        type: connectionType,
+                        connection_name: connectionName
+                    };
+                }
+
+                // Set default values based on target type
                 if (value === 'Relational') {
+                    // Reset file-specific fields
+                    if (newData.target.file_name) delete newData.target.file_name;
+                    if (newData.target.connection?.file_path_prefix) delete newData.target.connection.file_path_prefix;
+                    
                     newData.write_options = {
-                        ...newData.write_options,
                         createDisposition: 'CREATE_IF_NEEDED',
                         writeMethod: 'direct'
                     };
@@ -297,6 +330,16 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         newData.target.table_name = newData.target.target_name;
                     }
                 } else if (value === 'File') {
+                    // Reset relational-specific fields
+                    if (newData.target.table_name) delete newData.target.table_name;
+                    
+                    newData.write_options = {
+                        header: true,
+                        sep: ",",
+                        createDisposition: 'CREATE_IF_NEEDED',
+                        writeMethod: 'APPEND'
+                    };
+                    
                     // If target_name exists but file_name doesn't, set file_name to match target_name
                     if (newData.target.target_name && (!newData.target.file_name || newData.target.file_name === '')) {
                         newData.target.file_name = newData.target.target_name;
@@ -312,6 +355,10 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 // Set table_name to match target_name if target_type is Relational
                 if (newData.target.target_type === 'Relational' && (!newData.target.table_name || newData.target.table_name === '')) {
                     newData.target.table_name = value;
+                }
+                // Set file_name to match target_name if target_type is File
+                if (newData.target.target_type === 'File' && (!newData.target.file_name || newData.target.file_name === '')) {
+                    newData.target.file_name = value;
                 }
             } else if (name === 'table_name') {
                 if (!newData.target) newData.target = {};
@@ -390,19 +437,19 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             const filteredConnections = getFilteredConnections();
 
             return (
-                <div key={fieldName} className="space-y-4">
-                    <div className="w-full space-y-1">
+                <div key={fieldName} className="space-y-2">
+                    <div className="w-full space-y-0.5">
                         <Label className="text-xs font-medium text-gray-700">
                             Connection
                             {isFieldRequired(fieldName, fieldSchema, path, formData) && (
-                                <span className="text-red-500 ml-0.5">*</span>
+                                <span className="text-red-500">*</span>
                             )}
                         </Label>
                         <select
                             name="connection_config_id"
                             value={formData.target?.connection?.connection_config_id || ""}
                             onChange={(e) => handleChange(e, path)}
-                            className="w-full h-9 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring px-3"
+                            className="w-full h-8 text-sm border rounded bg-white shadow-sm focus:ring-1 focus:ring-ring px-2"
                         >
                             <option value="">Select Connection</option>
                             {filteredConnections.map((conn) => (
@@ -414,7 +461,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     </div>
 
                     {formData.target?.target_type === 'File' && (
-                        <div className="w-full space-y-1">
+                        <div className="w-full space-y-0.5">
                             <Label className="text-xs font-medium text-gray-700">
                                 File Path Prefix
                             </Label>
@@ -422,7 +469,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                 name="file_path_prefix"
                                 value={formData.target?.connection?.file_path_prefix || ""}
                                 onChange={(e) => handleChange(e, path)}
-                                className="h-8 text-sm"
+                                className="h-7 text-sm px-2"
                                 placeholder="Enter file path prefix"
                             />
                         </div>
@@ -430,7 +477,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
                     {formData.target?.target_type === 'Relational' && (
                         <>
-                            <div className="w-full space-y-1">
+                            <div className="w-full space-y-0.5">
                                 <Label className="text-xs font-medium text-gray-700">
                                     Table Name
                                 </Label>
@@ -438,18 +485,18 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                     name="table_name"
                                     value={formData.target?.table_name || ""}
                                     onChange={(e) => handleChange(e, ['target'])}
-                                    className="h-8 text-sm"
+                                    className="h-7 text-sm px-2"
                                     placeholder="Enter table name"
                                 />
                             </div>
 
                             {/* PostgreSQL Write Options Section */}
-                            <div className="space-y-3">
+                            <div className="space-y-1 mt-1">
                                 <Label className="text-xs font-medium text-gray-700">
                                     Write Options
                                 </Label>
-                                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                                    <div className="space-y-1">
+                                <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg">
+                                    <div className="space-y-0.5">
                                         <Label className="text-xs font-medium text-gray-600">
                                             Create Disposition
                                         </Label>
@@ -457,11 +504,11 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                             name="createDisposition"
                                             value={formData.write_options?.createDisposition || "CREATE_IF_NEEDED"}
                                             onChange={(e) => handleChange(e, ['write_options'])}
-                                            className="h-8 text-sm"
+                                            className="h-7 text-sm px-2"
                                             disabled
                                         />
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-0.5">
                                         <Label className="text-xs font-medium text-gray-600">
                                             Write Method
                                         </Label>
@@ -469,7 +516,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                                             name="writeMethod"
                                             value={formData.write_options?.writeMethod || "direct"}
                                             onChange={(e) => handleChange(e, ['write_options'])}
-                                            className="h-8 text-sm"
+                                            className="h-7 text-sm px-2"
                                             disabled
                                         />
                                     </div>
@@ -488,8 +535,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 : formData[fieldName];
 
             return (
-                <div key={fieldName} className="mb-2">
-                    <Label className="text-xs font-medium text-gray-700">
+                <div key={fieldName} className="mb-1">
+                    <Label className="text-xs font-medium text-gray-700 mb-0.5 block">
                         {isFieldRequired(fieldName, fieldSchema, path, formData) ? (
                             <RequiredFieldLabel fieldName={fieldSchema.title || fieldName} />
                         ) : (
@@ -500,7 +547,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                         name={fieldName}
                         value={currentValue || ""}
                         onChange={(e) => handleChange(e, path)}
-                        className="w-full h-9 text-sm border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring px-3"
+                        className="w-full h-7 text-sm border rounded bg-white shadow-sm focus:ring-1 focus:ring-ring px-2"
                     >
                         <option value="">Select {formatFieldName(fieldName)}</option>
                         {fieldSchema.enum.map((option: string) => (
@@ -518,8 +565,8 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
         // Regular input fields
         return (
-            <div key={fieldName} className="w-full space-y-0.5">
-                <Label className="text-xs font-medium text-gray-600">
+            <div key={fieldName} className="w-full mb-1">
+                <Label className="text-xs font-medium text-gray-600 mb-0.5 block">
                     {isFieldRequired(fieldName, fieldSchema, path, formData) ? (
                         <RequiredFieldLabel fieldName={fieldSchema.title || fieldName} />
                     ) : (
@@ -530,11 +577,11 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     name={fieldName}
                     value={fieldValue || ""}
                     onChange={(e) => handleChange(e, path)}
-                    className="h-9 text-sm bg-white"
+                    className="h-7 text-sm bg-white px-2"
                     placeholder={`Enter ${formatFieldName(fieldName)}`}
                 />
                 {errors[fieldName] && (
-                    <p className="text-xs text-red-500">{errors[fieldName]}</p>
+                    <p className="text-xs text-red-500 mt-0.5">{errors[fieldName]}</p>
                 )}
             </div>
         );
@@ -602,10 +649,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                             name: formData.name || 'Unnamed Target', // Also update the source name
                             target_type: formData.target?.target_type || 'File',
                             target_name: formData.target?.target_name || '',
-                            table_name: formData.target?.table_name || '',
-                            file_type: formData.file_type || 'CSV',
                             connection: connection || {},
-                            file_name: formData.target?.file_name || '',
                             load_mode: formData.target?.load_mode || 'append'
                         },
                         transformationData: {
@@ -619,6 +663,14 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                     }
                 }
             };
+            
+            // Add target-type specific fields
+            if (formData.target?.target_type === 'Relational') {
+                sourceData.sourceData.data.source.table_name = formData.target?.table_name || '';
+            } else if (formData.target?.target_type === 'File') {
+                sourceData.sourceData.data.source.file_name = formData.target?.file_name || '';
+                sourceData.sourceData.data.source.file_type = formData.file_type || 'CSV';
+            }
             
             console.log('Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
             console.log('onSourceUpdate function exists:', !!onSourceUpdate);
@@ -807,44 +859,44 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         return (
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 {/* Content */}
-                <div className="flex-1 overflow-auto px-3 py-2 space-y-4">
+                <div className="flex-1 overflow-auto px-2 py-1 space-y-3">
                     {/* Basic Info Section */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
-                            <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                            <div className="h-3 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
+                            <h3 className="text-xs font-medium text-gray-700">Basic Information</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg">
                             {renderField('name', currentSchema.properties.name)}
                             {renderField('target_name', targetSchema.properties.target_name, ['target'])}
                         </div>
                     </div>
 
                     {/* Target Config Section */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
-                            <h3 className="text-sm font-medium text-gray-700">Target Configuration</h3>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                            <div className="h-3 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
+                            <h3 className="text-xs font-medium text-gray-700">Target Configuration</h3>
                         </div>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg">
                                 {renderField('target_type', targetSchema.properties.target_type, ['target'])}
                                 {renderField('load_mode', targetSchema.properties.load_mode, ['target'])}
                             </div>
 
-                            <div className="p-3 bg-gray-50 rounded-lg">
+                            <div className="p-2 bg-gray-50 rounded-lg">
                                 {renderField('connection', targetSchema.properties.connection, ['target'])}
                             </div>
 
                             {formData.target?.load_mode === 'merge' && (
-                                <div className="p-3 bg-gray-50 rounded-lg">
+                                <div className="p-2 bg-gray-50 rounded-lg">
                                     {renderField('merge_keys', targetSchema.properties.merge_keys, ['target'])}
                                 </div>
                             )}
 
                             {formData.target?.target_type === 'File' && (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-lg shadow-sm">
+                                    <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg">
                                         {renderField('file_name', targetSchema.allOf[1].then.properties.file_name, ['target'])}
                                         {renderField('file_type', writerSchema.allOf[0].then.properties.file_type)}
                                     </div>
@@ -855,20 +907,20 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-2 px-3 py-3 border-t border-gray-100 bg-white">
+                <div className="flex justify-end gap-1 px-2 py-2 border-t border-gray-100 bg-white">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onClose}
-                        className="px-4 py-1.5 text-sm font-medium border-gray-200 hover:bg-gray-50"
+                        className="px-3 py-1 text-xs font-medium border-gray-200 hover:bg-gray-50"
                     >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
-                        className="px-4 py-1.5 text-sm font-medium bg-gradient-to-r from-black to-black hover:from-black hover:to-black text-white"
+                        className="px-3 py-1 text-xs font-medium bg-black text-white"
                     >
-                        Save Configuration
+                        Save
                     </Button>
                 </div>
             </form>

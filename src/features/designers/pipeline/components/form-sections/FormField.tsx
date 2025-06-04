@@ -6,6 +6,7 @@ import { Schema } from '../../types/formTypes';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
+import { PythonEditor } from '@/components/ui/python-editor';
 
 interface FormFieldProps {
   className?: string;
@@ -326,6 +327,35 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
       onChange?.(newValue);
     }
   };
+
+  // Handle Python editor
+  if (fieldSchema.type === 'python_editor') {
+    return (
+      <div className="form-field">
+        <Controller
+          control={control}
+          name={name}
+          defaultValue={value || ''}
+          render={({ field }) => (
+            <PythonEditor
+              id={name}
+              label={fieldKey}
+              description={fieldSchema.description}
+              value={field.value}
+              onChange={(newValue) => {
+                field.onChange(newValue);
+                onChange?.(newValue);
+              }}
+              error={error ? (typeof error === 'string' ? error : error?.message) : undefined}
+              minHeight="400px"
+              containerClassName="w-full"
+              disabled={disabled}
+            />
+          )}
+        />
+      </div>
+    );
+  }
 
   // Inside the FormField component, before the return statement
   if (fieldSchema.type === 'boolean') {

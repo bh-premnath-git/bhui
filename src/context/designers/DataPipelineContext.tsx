@@ -1078,12 +1078,58 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 setValidationErrors(errorMessages);
             }
 
+            // Check if the error is related to pipeline already existing
+            // This will still call getTransformationCount even if there's an error from the server
+            // about the pipeline already existing
+            
+            // Extract the detailed error message from the Axios response if available
+            const errorDetail = error.response?.data?.detail || '';
+            const errorMessage = error.message || '';
+            
+            console.log('Error detail:', errorDetail);
+            
+            // Check both the error message and the nested detail for "already exist" or "already running"
+            if (
+                errorMessage.includes('already exist') || 
+                errorMessage.includes('already running') ||
+                errorDetail.includes('ALREADY_EXISTS') ||
+                errorDetail.includes('already running')
+            ) {
+                console.log('Pipeline already exists or is running, fetching transformation counts...');
+                
+                try {
+                    let countsResponse = await dispatch(getTransformationCount({
+                        params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
+                    })).unwrap();
+                    
+                    console.log(countsResponse, "countsResponse after error");
+                    
+                    if (countsResponse.transformationOutputCounts) {
+                        setTransformationCounts(countsResponse.transformationOutputCounts);
+                        
+                        // Since the pipeline is already running, update the state
+                        setIsPipelineRunning(true);
+                        
+                        // Add info log
+                        setTerminalLogs(prevLogs => [...prevLogs, {
+                            timestamp: new Date().toISOString(),
+                            message: 'Pipeline is already running. Fetched current transformation counts.',
+                            level: 'info'
+                        }]);
+                    }
+                } catch (countError) {
+                    console.error('Error getting transformation counts after pipeline error:', countError);
+                }
+                // If we successfully got transformation counts, we don't want to set isPipelineRunning to false
+                return; // Exit early to avoid setting isPipelineRunning to false
+            }
+
             setSaveError(error.message);
             setIsPipelineRunning(false);
         } finally {
             setIsCanvasLoading(false);
         }
-    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl]);
+    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch]);
 
 
     const handleStop = useCallback(async () => {

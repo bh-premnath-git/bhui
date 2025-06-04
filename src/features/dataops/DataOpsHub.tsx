@@ -5,9 +5,9 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
 import { CHART_ADDED_EVENT } from "@/components/shared/GenericChatUI";
-import { decompressValue } from "@/lib/decompress";
+import { decompressValue, compressValue } from "@/lib/decompress";
 export function DataOpsHub() {
-  const { state, dispatch } = useDataOps();
+  const { state, dispatch, dispatchAsync } = useDataOps();
   const {
     dashboards,
     isLoading: isDashboardsLoading,
@@ -89,7 +89,21 @@ export function DataOpsHub() {
   useEffect(() => {
     const handleChartAdded = (event: CustomEvent) => {
       const chartData = event.detail;
-      dispatch({ type: "ADD_WIDGET", payload: chartData })
+      const { intermediate_executed_query_json, ...rest } = chartData;
+      return dispatchAsync({ type: "ADD_WIDGET", payload: chartData }).then(()=>{
+        const payload = {
+          name: rest.name,
+          owner: rest.owner,
+          widget_type: rest.widget_type,
+          visibility: "private",
+          sql_query: rest.sql_query,
+          plotly_data: compressValue(intermediate_executed_query_json),
+          executed_query: rest.executed_query,
+          chart_config:{
+          }
+        }
+        createWidget(payload);
+      });
     };
 
     document.addEventListener(CHART_ADDED_EVENT, handleChartAdded);

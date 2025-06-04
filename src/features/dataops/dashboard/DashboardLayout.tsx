@@ -28,8 +28,6 @@ const GridLayout = () => {
     // Force a re-measurement when sidebar state changes
     setMeasurementKey(prev => prev + 1);
   }, [isRightAsideOpen]);
-
-  console.log("widgets", widgets);
   
   const { handleLayoutChange } = useLayoutPersistence({
     storageKey: LAYOUT_STORAGE_KEY,

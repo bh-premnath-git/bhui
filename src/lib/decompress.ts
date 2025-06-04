@@ -1,11 +1,5 @@
 import pako from "pako";
 
-/**
- * Decompresses a Base64-encoded, GZIP-compressed string into UTF-8 text in the browser.
- *
- * @param base64GzipStr  The input Base64(GZIP) string.
- * @returns              The decompressed UTF-8 string.
- */
 export function decompressValue(base64GzipStr: string): string {
     try {
         // check null and not string
@@ -22,6 +16,28 @@ export function decompressValue(base64GzipStr: string): string {
         return JSON.parse(decompressed);
     } catch (error) {
         console.error('Error decompressing Plotly data:', error);
+        return null;
+    }
+};
+
+export function compressValue(value: any): string {
+    try {
+        // Convert value to JSON string
+        const jsonString = JSON.stringify(value);
+        
+        // Compress the string using pako - deflate returns a Uint8Array directly
+        const uint8Array = pako.deflate(new TextEncoder().encode(jsonString));
+        
+        // Convert to base64
+        let binary = '';
+        const bytes = new Uint8Array(uint8Array);
+        bytes.forEach(byte => {
+            binary += String.fromCharCode(byte);
+        });
+        
+        return btoa(binary);
+    } catch (error) {
+        console.error('Error compressing data:', error);
         return null;
     }
 };

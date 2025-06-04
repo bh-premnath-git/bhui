@@ -14,6 +14,7 @@ import { LoaderCircle } from 'lucide-react';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+import '@/features/designers/pipeline/styles/ReactFlowPerformance.css'; // Import performance optimizations
 import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 
 const BuildPlayGround: React.FC = () => {
@@ -281,6 +282,16 @@ console.log(selectedSchema)
                             fitView
                             fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
                             proOptions={{ hideAttribution: true }}
+                            snapToGrid={true}
+                            snapGrid={[15, 15]}
+                            connectionLineStyle={{ strokeWidth: 2, stroke: '#1a192b', strokeDasharray: '5,3' }}
+                            connectionLineType="smoothstep"
+                            deleteKeyCode={['Backspace', 'Delete']}
+                            multiSelectionKeyCode={['Control', 'Meta']}
+                            selectionKeyCode={['Shift']}
+                            zoomActivationKeyCode={['Alt']}
+                            panActivationKeyCode={['Space']}
+                            elevateNodesOnSelect={true}
                         />
                     </div>
                     {/* Updated FlowControls container positioning */}

@@ -65,18 +65,9 @@ export const getInitialFormState = (
         case 'Lookup':
             return {
                 ...baseState,
-                lookup_name: transformation.lookup_name || '',
-                lookup_table: transformation.lookup_table || '',
-                lookup_columns: transformation.lookup_columns || [{
-                    source_column: '',
-                    lookup_column: '',
-                    output_column: ''
-                }],
-                lookup_conditions: transformation.lookup_conditions || [{
-                    source_column: '',
-                    lookup_column: '',
-                    operator: '='
-                }],
+                lookup_type: transformation.lookup_type || 'Column Based',
+                lookup_config: transformation.lookup_config || { name: '', source: {} },
+                lookup_conditions: transformation.lookup_conditions || [],
                 broadcast_hint: transformation.broadcast_hint || false
             };
 
@@ -103,6 +94,19 @@ export const getInitialFormState = (
                 column_list: transformation.column_list || [],
                 pattern: transformation.pattern || '',
                 transformation: transformation.transformation || ''
+            };
+            
+        case 'Set Combiner':
+            return {
+                ...baseState,
+                operation_type: transformation.operation_type || 'Union',
+                allow_missing_columns: transformation.allow_missing_columns || false
+            };
+            
+        case 'CustomPySpark':
+            return {
+                ...baseState,
+                user_code: transformation.user_code || ''
             };
 
         case 'Select':
@@ -136,14 +140,16 @@ export const getNodeIcon = (type: string): string => {
         SchemaTransformation: '/assets/buildPipeline/28.svg',
         Sorter: '/assets/buildPipeline/squre/1.svg',
         Aggregator: '/assets/buildPipeline/squre/2.svg',
-        'DQ Check': '/assets/buildPipeline/squre/4.svg',
+        'DQ Check': '/assets/buildPipeline/squre/9.svg',
         Dedup: '/assets/buildPipeline/squre/5.svg',
         Repartition: '/assets/buildPipeline/squre/6.svg',
         'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
-        Union: '/assets/buildPipeline/squre/8.svg',
+        'Set Combiner': '/assets/buildPipeline/squre/8.svg',
         Select: '/assets/buildPipeline/squre/11.svg',
         SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
-        Drop: '/assets/buildPipeline/squre/13.svg'
+        Drop: '/assets/buildPipeline/squre/13.svg',
+        Lookup: '/assets/buildPipeline/squre/3.svg',
+        CustomPySpark: '/assets/buildPipeline/squre/4.svg'
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
 };
@@ -162,7 +168,9 @@ export const getNodePorts = (type: string) => {
         Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
         'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
-        Union: { inputs: 2, outputs: 1, maxInputs: 'unlimited' }
+        'Set Combiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        Lookup: { inputs: 2, outputs: 1, maxInputs: 2 },
+        CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 }
     };
     return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };
 };

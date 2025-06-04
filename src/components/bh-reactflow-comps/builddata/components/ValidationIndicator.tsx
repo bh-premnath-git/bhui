@@ -59,6 +59,7 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                         : 'bg-red-500';
             }
 
+            // For all other node types, use the validation status directly
             return validationStatus === 'valid'
                 ? 'bg-green-500'
                 : validationStatus === 'warning'
@@ -67,7 +68,6 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                         ? 'bg-red-500'
                         : 'bg-gray-300';
         }
-
     };
 
     const getStatusIcon = () => {

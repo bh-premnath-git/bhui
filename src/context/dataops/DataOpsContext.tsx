@@ -33,15 +33,30 @@ type DataOpsAction =
 type DataOpsContextType = {
   state: DataOpsState;
   dispatch: React.Dispatch<DataOpsAction>;
+  dispatchAsync: (action: DataOpsAction) => Promise<void>;
 };
 
 const DataOpsContext = createContext<DataOpsContextType | undefined>(undefined);
 
 export const DataOpsProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(dataOpsReducer, initialState);
+  
+  // Create an async version of dispatch that returns a Promise
+  const dispatchAsync = (action: DataOpsAction): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      dispatch(action);
+      // Use requestAnimationFrame to wait for React to process the state update
+      // This is not perfect but provides a good approximation of when the state update is complete
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+  };
 
   return (
-    <DataOpsContext.Provider value={{ state, dispatch }}>
+    <DataOpsContext.Provider value={{ state, dispatch, dispatchAsync }}>
       {children}
     </DataOpsContext.Provider>
   );

@@ -42,15 +42,15 @@ export const navigationItems: NavItem[] = [
     path: ROUTES.DESIGNERS.INDEX,
     subItems: [
       {
-        title: "Data Pipelines",
-        icon: Share2,
-        path: ROUTES.DESIGNERS.BUILD_PIPELINE,
-        parent: ROUTES.DESIGNERS.INDEX,
-      },
-      {
         title: "Requirements",
         icon: FileText,
         path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
+        parent: ROUTES.DESIGNERS.INDEX,
+      },
+      {
+        title: "Data Pipelines",
+        icon: Share2,
+        path: ROUTES.DESIGNERS.BUILD_PIPELINE,
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {

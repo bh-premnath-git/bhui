@@ -143,7 +143,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
   };
 
   const { mutateAsync: createWidgetMutation }  = create({
-    url: `/widget`,
+    url: `/widgets`,
     mutationOptions: {
       retry: 2
     }

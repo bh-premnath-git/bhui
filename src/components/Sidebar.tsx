@@ -129,11 +129,41 @@ export function Sidebar() {
       >
         {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </Button>
-      <nav className="flex-1 overflow-y-auto py-4">
-      <ul className={cn(
-    "space-y-2",
-    isExpanded ? "px-2 space-y-1" : "flex flex-col items-center w-full"
-  )}>
+      
+      {/* Add custom scrollbar styles */}
+      {isExpanded && (
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .sidebar-nav-scrollable::-webkit-scrollbar {
+              width: 5px !important;
+              display: block !important;
+            }
+            .sidebar-nav-scrollable::-webkit-scrollbar-track {
+              background: transparent !important;
+            }
+            .sidebar-nav-scrollable::-webkit-scrollbar-thumb {
+              background: rgba(156, 163, 175, 0.5) !important;
+              border-radius: 20px !important;
+            }
+            .sidebar-nav-scrollable::-webkit-scrollbar-thumb:hover {
+              background: rgba(156, 163, 175, 0.8) !important;
+            }
+            .sidebar-nav-scrollable {
+              scrollbar-width: thin !important;
+              scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
+            }
+          `
+        }} />
+      )}
+      
+      <nav className={cn(
+        "flex-1 overflow-y-auto py-4",
+        isExpanded && "sidebar-nav-scrollable"
+      )}>
+        <ul className={cn(
+          "space-y-2",
+          isExpanded ? "px-2 space-y-1" : "flex flex-col items-center w-full"
+        )}>
           {navItems.map((item) => {
             const shouldShow = isExpanded || (!isExpanded && item.showIcon);
             

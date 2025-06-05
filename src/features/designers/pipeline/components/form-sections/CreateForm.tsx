@@ -38,7 +38,11 @@ interface FormValues extends Record<string, any> {
   }>;
   repartition_type?: string;
   repartition_value?: number;
-  repartition_expression?: string;
+  repartition_expression?: Array<{
+    expression: string;
+    sort_order: string;
+    order: string;
+  }>;
   column_list?: Array<{
     name: string;
     expression: string;
@@ -85,11 +89,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         repartition_type: 'repartition',
         repartition_value: '',
         override_partition: '',
-        repartition_expression: [{
-          expression: '',
-          sort_order: '',
-          order: 'asc'
-        }],
+        repartition_expression: initialValues?.repartition_expression || [],
         limit: '',
         ...values
       };
@@ -137,10 +137,31 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
-    // Add specific initialization for Union form
-    if (schema?.title === 'Union') {
+    // Add specific initialization for Set Combiner form (previously Union)
+    if (schema?.title === 'Set Combiner') {
       return {
-        union_type: initialValues?.union_type || 'distinct',
+        operation_type: initialValues?.operation_type || 'Union',
+        allow_missing_columns: initialValues?.allow_missing_columns || false,
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for Lookup form
+    if (schema?.title === 'Lookup') {
+      return {
+        lookup_type: initialValues?.lookup_type || 'Column Based',
+        lookup_config: initialValues?.lookup_config || { name: '', source: {} },
+        lookup_conditions: initialValues?.lookup_conditions || [],
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for CustomPySpark form
+    if (schema?.title === 'CustomPySpark') {
+      return {
+        user_code: initialValues?.user_code || '',
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
@@ -823,6 +844,7 @@ console.log(initialFormValues,"initialFormValues")
         currentNodeId={currentNodeId}
         nodes={nodes}
         edges={edges}
+        watch={watch}
       />
       
       <div className="mt-4">
@@ -1266,210 +1288,6 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
   );
 };
 
-const renderRepartitionFields = (control: any, schema: Schema) => {
-  const {watch} = useForm();
-  const repartitionType = watch('repartition_type');
-  
-  // Get required fields based on current repartition_type from schema
-  const getRequiredFields = () => {
-    const anyOfConditions = schema.anyOf || [];
-    const matchingCondition = anyOfConditions.find(condition => 
-      condition.if?.properties?.repartition_type?.const === repartitionType
-    );
-    return matchingCondition?.then?.required || schema.required || [];
-  };
-
-  const requiredFields = getRequiredFields();
-
-  // Setup field array for repartition_expression if needed
-  const { 
-    fields: expressionFields, 
-    append: appendExpression, 
-    remove: removeExpression 
-  } = useFieldArray({
-    control,
-    name: "repartition_expression"
-  });
-
-  // Generic function to render field based on schema
-  const renderField = (fieldName: string, fieldSchema: any) => {
-    const isRequired = requiredFields.includes(fieldName);
-
-    switch (fieldSchema.type) {
-      case 'select':
-        return (
-          <Controller
-            name={fieldName}
-            control={control}
-            defaultValue={fieldSchema.default}
-            rules={{ required: isRequired }}
-            render={({ field }) => (
-              <div>
-                <label className="block font-medium mb-1">
-                  {fieldName.split('_').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')}
-                  {isRequired && <span className="text-red-500">*</span>}
-                </label>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Select ${fieldName.replace(/_/g, ' ')}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldSchema.enum.map((option: string) => (
-                      <SelectItem key={option} value={option}>
-                        {option.split('_').map(word => 
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          />
-        );
-
-      case 'number':
-        return (
-          <Controller
-            name={fieldName}
-            control={control}
-            rules={{ required: isRequired }}
-            render={({ field }) => (
-              <div>
-                <label className="block font-medium mb-1">
-                  {fieldName.split('_').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')}
-                  {isRequired && <span className="text-red-500">*</span>}
-                </label>
-                <Input
-                  type="number"
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  placeholder={`Enter ${fieldName.replace(/_/g, ' ')}`}
-                  className="w-full"
-                />
-              </div>
-            )}
-          />
-        );
-
-      case 'string':
-        return (
-          <Controller
-            name={fieldName}
-            control={control}
-            rules={{ required: isRequired }}
-            render={({ field }) => (
-              <div>
-                <label className="block font-medium mb-1">
-                  {fieldName.split('_').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')}
-                  {isRequired && <span className="text-red-500">*</span>}
-                </label>
-                <Input
-                  {...field}
-                  placeholder={`Enter ${fieldName.replace(/_/g, ' ')}`}
-                  className="w-full"
-                />
-              </div>
-            )}
-          />
-        );
-
-      case 'array-container':
-        if (fieldName === 'repartition_expression') {
-          return (
-            <div>
-              <label className="block font-medium mb-1">
-                Repartition Expression
-                {isRequired && <span className="text-red-500">*</span>}
-              </label>
-              <div className="space-y-2">
-                {expressionFields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2">
-                    {Object.entries(fieldSchema.items.properties).map(([itemKey, itemSchema]: [string, any]) => (
-                      <Controller
-                        key={`${fieldName}.${index}.${itemKey}`}
-                        name={`${fieldName}.${index}.${itemKey}`}
-                        control={control}
-                        rules={{ required: fieldSchema.items.required.includes(itemKey) }}
-                        render={({ field }) => {
-                          if (itemSchema.type === 'select') {
-                            return (
-                              <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder={itemKey} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {itemSchema.enum.map((option: string) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            );
-                          }
-                          return (
-                            <Input
-                              {...field}
-                              placeholder={itemKey}
-                              className={itemKey === 'expression' ? 'flex-1' : 'w-32'}
-                            />
-                          );
-                        }}
-                      />
-                    ))}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => removeExpression(index)}
-                      disabled={expressionFields.length <= 1 && isRequired}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  onClick={() => appendExpression(
-                    Object.fromEntries(
-                      Object.entries(fieldSchema.items.properties).map(([key, schema]: [string, any]) => [
-                        key,
-                        schema.default || ''
-                      ])
-                    )
-                  )}
-                  variant="outline"
-                  className="w-full mt-2"
-                >
-                  Add Expression
-                </Button>
-              </div>
-            </div>
-          );
-        }
-        return null;
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {Object.entries(schema.properties).map(([fieldName, fieldSchema]: [string, any]) => (
-        <div key={fieldName}>
-          {renderField(fieldName, fieldSchema)}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const FormContent: React.FC<{
   control: any;
@@ -1479,11 +1297,11 @@ const FormContent: React.FC<{
   onClose?: () => void;
   currentNodeId: string;
   nodes: Node[];
-  edges: Edge[]
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges }) => {
+  edges: Edge[];
+  watch: any; // Add watch function as a prop
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
-  const { watch } = useForm<FormValues>();
 
   // Update useEffect to use a key to force re-render of FormField components
   const [suggestionKey, setSuggestionKey] = useState(0);
@@ -2061,7 +1879,218 @@ const FormContent: React.FC<{
           </div>
         </div>
       ) : schema.title === 'Repartition' ? (
-        renderRepartitionFields(control, schema)
+        <div className="space-y-4">
+          {(() => {
+            // Setup useFieldArray for repartition_expression
+            const { 
+              fields: expressionFields, 
+              append: appendExpression, 
+              remove: removeExpression 
+            } = useFieldArray({
+              control,
+              name: "repartition_expression"
+            });
+            
+            // Initialize expression fields when needed
+            useEffect(() => {
+              const currentType = watch('repartition_type');
+              if (['hash_repartition', 'repartition_by_range'].includes(currentType) && 
+                  (!expressionFields || expressionFields.length === 0)) {
+                appendExpression({
+                  expression: '',
+                  sort_order: '',
+                  order: 'asc'
+                });
+              }
+            }, [watch('repartition_type'), expressionFields.length, appendExpression]);
+            
+            return (
+              <>
+                {/* Repartition Type */}
+                <div>
+                  <Controller
+                    name="repartition_type"
+                    control={control}
+                    defaultValue="repartition"
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <div>
+                        <label className="block font-medium mb-1">
+                          Repartition Type<span className="text-red-500">*</span>
+                        </label>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select repartition type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {schema.properties.repartition_type.enum.map((option: string) => (
+                              <SelectItem key={option} value={option}>
+                                {option.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Repartition Value */}
+                <div>
+                  <Controller
+                    name="repartition_value"
+                    control={control}
+                    rules={{ 
+                      required: ['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(watch('repartition_type')) 
+                    }}
+                    render={({ field }) => (
+                      <div>
+                        <label className="block font-medium mb-1">
+                          Repartition Value
+                          {['repartition', 'coalesce', 'hash_repartition', 'repartition_by_range'].includes(watch('repartition_type')) && 
+                            <span className="text-red-500">*</span>
+                          }
+                        </label>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
+                          placeholder="Enter repartition value"
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Override Partition */}
+                <div>
+                  <Controller
+                    name="override_partition"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <div>
+                        <label className="block font-medium mb-1">
+                          Override Partition<span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          {...field}
+                          placeholder="Enter override partition"
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Limit */}
+                <div>
+                  <Controller
+                    name="limit"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <label className="block font-medium mb-1">Limit</label>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
+                          placeholder="Enter limit"
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Repartition Expression */}
+                {['hash_repartition', 'repartition_by_range'].includes(watch('repartition_type')) && (
+                  <div>
+                    <label className="block font-medium mb-1">
+                      Repartition Expression<span className="text-red-500">*</span>
+                    </label>
+                    <div className="space-y-2">
+                      {expressionFields.map((item, index) => (
+                        <div key={item.id} className="flex gap-2">
+                          {/* Expression */}
+                          <Controller
+                            name={`repartition_expression.${index}.expression`}
+                            control={control}
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                placeholder="Expression"
+                                className="flex-1"
+                              />
+                            )}
+                          />
+                          
+                          {/* Sort Order */}
+                          <Controller
+                            name={`repartition_expression.${index}.sort_order`}
+                            control={control}
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                placeholder="Sort Order"
+                                className="w-32"
+                              />
+                            )}
+                          />
+                          
+                          {/* Order */}
+                          <Controller
+                            name={`repartition_expression.${index}.order`}
+                            control={control}
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue placeholder="Order" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="asc">Ascending</SelectItem>
+                                  <SelectItem value="desc">Descending</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                          
+                          {/* Remove Button */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => removeExpression(index)}
+                            disabled={expressionFields.length <= 1}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      {/* Add Button */}
+                      <Button
+                        type="button"
+                        onClick={() => appendExpression({
+                          expression: '',
+                          sort_order: '',
+                          order: 'asc'
+                        })}
+                        variant="outline"
+                        className="w-full mt-2"
+                      >
+                        Add Expression
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
       ) : (
         <div className="space-y-1">
           {renderFieldsInRows(schema.properties, control)}

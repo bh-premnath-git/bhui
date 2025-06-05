@@ -2,9 +2,9 @@ import { memo, useMemo, useState, useEffect } from "react";
 import { useReactFlow } from "reactflow";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
 import { HiChartBar } from "react-icons/hi";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
-import { AppDispatch } from '@/store';
+import { AppDispatch, RootState } from '@/store';
 import { Loader } from 'lucide-react';
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { useSidebar } from "@/context/SidebarContext";
@@ -107,7 +107,9 @@ export const CustomEdge = memo(({
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
-    const { debuggedNodesList,pipelineName } = usePipelineContext();
+    const { debuggedNodesList, pipelineName } = usePipelineContext();
+    // Get isFlow from Redux store
+    const { isFlow } = useSelector((state: RootState) => state.buildPipeline);
     
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -115,9 +117,10 @@ export const CustomEdge = memo(({
     const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
         transformationName: getNode(source)?.data.title,
+        isFlow,
         // Only enable the query when our metrics are being shown in the drawer
         enabled: isShowingInDrawer && isBottomDrawerOpen
-    }), [pipelineDtl?.pipeline_name, source, getNode, isShowingInDrawer, isBottomDrawerOpen]);
+    }), [pipelineDtl?.pipeline_name, source, getNode, isShowingInDrawer, isBottomDrawerOpen, isFlow]);
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
     const sourceNode = getNode(source);
@@ -154,7 +157,8 @@ export const CustomEdge = memo(({
                 // First fetch the data
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
-                    transformationName: sourceNode?.data.title
+                    transformationName: sourceNode?.data.title,
+                    isFlow
                 })).unwrap();
                 
                 console.log("Transformation output data:", result);
@@ -172,8 +176,9 @@ export const CustomEdge = memo(({
                         onClose={closeBottomDrawer}
                         title={`${sourceNode?.data.title || 'Transformation'} Data`}
                         previewData={previewData}
-                        pipelineName={pipelineDtl?.pipeline_name}
-                        activeTabOnOpen="preview"
+                        pipelineName={pipelineDtl?.pipeline_name || pipelineName}
+                        activeTabOnOpen={isFlow ? "terminal" : "preview"}
+                        // No need to explicitly pass isFlow as it's already in the Redux store
                     />
                 );
                 
@@ -210,8 +215,9 @@ export const CustomEdge = memo(({
                     onClose={closeBottomDrawer}
                     title={`${sourceNode?.data.title || 'Transformation'} Data`}
                     previewData={previewData}
-                    pipelineName={pipelineDtl?.pipeline_name}
-                    activeTabOnOpen="preview"
+                    pipelineName={pipelineDtl?.pipeline_name || pipelineName}
+                    activeTabOnOpen={isFlow ? "terminal" : "preview"}
+                    // No need to explicitly pass isFlow as it's already in the Redux store
                 />
             );
             
@@ -227,7 +233,7 @@ export const CustomEdge = memo(({
                 setIsShowingInDrawer(false);
             }
         };
-    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, metricsData, sourceNode?.data.title, pipelineDtl?.pipeline_name]);
+    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, metricsData, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();

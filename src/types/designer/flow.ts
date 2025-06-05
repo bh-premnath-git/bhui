@@ -190,7 +190,7 @@ export interface CustomNodeData {
   type: string;
   status: string;
   meta: MetaData;
-  selectedData: string | null;
+  selectedData: any;
   position?: { x: number; y: number };
   tempSave: boolean;
   requiredFields: any

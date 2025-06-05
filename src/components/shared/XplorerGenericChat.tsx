@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
-import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
 import { motion } from 'framer-motion'
@@ -14,6 +13,7 @@ interface XplorerGenericChatUIProps {
   assistantColor?: string
   userColor?: string
   suggestions?: string[]
+  variant?: string
 }
 
 // Updated default suggestions to include the top 10 expensive products query
@@ -200,7 +200,7 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
 };
 
 export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
-  userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
+  userColor = '#000000', suggestions = defaultSuggestions, variant }: XplorerGenericChatUIProps) {
   const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
   const [mockResponse, setMockResponse] = useState(null);
   const [activeTab, setActiveTab] = useState('chart');
@@ -487,7 +487,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         </div>
       </ScrollArea>
       <div className="p-4 border-t border-slate-200 bg-white">
-        <AIChatInput input={input} onChange={setInput} onSend={() => handleSend(input)} placeholder="Type a message..." />
+        <AIChatInput input={input} onChange={setInput} onSend={() => handleSend(input)} placeholder="Type a message..." variant={variant} />
       </div>
     </div>
   );

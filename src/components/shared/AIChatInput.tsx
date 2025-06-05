@@ -1,9 +1,12 @@
 import { Mic, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
+import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
 
 interface AIChatInputProps {
+  variant: string;
   input: string;
   onChange: (value: string) => void;
   onSend: () => void;
@@ -19,9 +22,18 @@ export function AIChatInput({
   onVoiceInput,
   placeholder = "Ask about your data…",
   disabled,
+  variant,
 }: AIChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { connections, isLoading, isFetching, isError } = useAdminConnections();
+  const [selectedConnection, setSelectedConnection] = useState('');
+
+  useEffect(() => {
+    if (!selectedConnection && connections && connections.length > 0) {
+      setSelectedConnection(connections[0].id.toString());
+    }
+  }, [connections, selectedConnection]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -66,7 +78,39 @@ export function AIChatInput({
       >
         <Mic className="h-4 w-4" />
       </Button>
-
+      {/* Connection dropdown - shown only for explorer variant */}
+      {variant === 'explorer' && (
+        <Select value={selectedConnection} onValueChange={setSelectedConnection}>
+          <SelectTrigger className="h-8 w-32">
+            <SelectValue
+              placeholder={
+                isLoading || isFetching
+                  ? 'Loading...'
+                  : isError
+                  ? 'Error'
+                  : 'Connection'
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {isLoading || isFetching ? (
+              <SelectItem value="" disabled>
+                Loading...
+              </SelectItem>
+            ) : isError ? (
+              <SelectItem value="" disabled>
+                Failed to load
+              </SelectItem>
+            ) : (
+              connections.map(conn => (
+                <SelectItem key={conn.id} value={conn.id.toString()}>
+                  {conn.connection_config_name}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      )}
       {/* Auto-resizing textarea */}
       <div className="flex-grow">
         <Textarea

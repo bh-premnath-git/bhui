@@ -17,6 +17,7 @@ interface GenericChatUIProps {
   assistantColor?: string;
   userColor?: string;
   suggestions?: string[];
+  variant?: string;
 }
 
 // Custom event name constant
@@ -33,6 +34,7 @@ const markedOptions = {
 export function GenericChatUI({
   assistantColor = '#009459',
   userColor = '#000000',
+  variant
 }: GenericChatUIProps) {
   const {
     messages,
@@ -309,7 +311,7 @@ export function GenericChatUI({
         </div>
       </ScrollArea>
       <div className="p-2 border-t border-slate-200 bg-white">
-        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
+        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." variant={variant} />
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ export function decompressValue(base64GzipStr: string): string {
     }
 };
 
+
 export function compressValue(value: any): string {
     try {
         // Convert value to JSON string

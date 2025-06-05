@@ -349,17 +349,22 @@ export const getPipelineById: any = createAsyncThunk(
 
 export const fetchTransformationOutput = createAsyncThunk<
   TransformationMetrics,
-  { pipelineName: string; transformationName: string }
+  { pipelineName: string; transformationName: string; isFlow?: boolean }
 >(
   'pipeline/fetchTransformationOutput',
-  async ({ pipelineName, transformationName }) => {
+  async ({ pipelineName, transformationName, isFlow = false }) => {
+    // Determine the correct endpoint based on whether we're in flow or pipeline context
+    const url = isFlow 
+      ? `/flow/debug/get_transformation_output` 
+      : `/pipeline/debug/get_transformation_output`;
+      
     const response = await apiService.get<TransformationMetrics>({
       baseUrl: CATALOG_REMOTE_API_URL,
-      url: `/pipeline/debug/get_transformation_output`,
+      url,
       usePrefix: true,
       method: 'GET',
       params: {
-        pipeline_name: pipelineName,
+        [isFlow ? 'flow_name' : 'pipeline_name']: pipelineName,
         transformation_name: transformationName,
         page: 1,
         page_size: 50,

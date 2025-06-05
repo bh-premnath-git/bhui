@@ -22,8 +22,11 @@ export const DeployingPart = () => {
 
     useEffect(() => {
         if (selectedFlow?.flow_name && selectedEnvironment?.airflow_env_name && selectedEnvironment?.bh_env_name) {
+            // Replace spaces with underscores in dag_id to match API expectations
+            const formattedDagId = selectedFlow.flow_name.replace(/\s+/g, '_');
+            
             dispatch(fetchDagParserTime({
-                dag_id: selectedFlow.flow_name,
+                dag_id: formattedDagId,
                 airflow_env_name: selectedEnvironment.airflow_env_name,
                 bh_env_name: selectedEnvironment.bh_env_name
             }));

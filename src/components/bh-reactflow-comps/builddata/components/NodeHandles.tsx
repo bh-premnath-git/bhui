@@ -175,7 +175,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
                                 boxShadow: '0 0 3px rgba(24, 144, 255, 0.5)',
-                                zIndex: 10,
+                                zIndex: -10,
                                 left: 0,
                                 transform: 'translate(-50%, -150%)',
                             }}
@@ -244,29 +244,31 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
         );
         
         return (
-            <div key={handleId} className="relative" data-handle-id={handleId}>
+            <div key={handleId} className="relative" data-handle-id={handleId} style={{ pointerEvents: 'none' }}>
                 {/* Visual indicator to make output handle more noticeable */}
                 <div 
                     className={`absolute output-handle-indicator ${isConnectionDragging ? 'connection-dragging' : ''}`}
                     style={{
                         top: position,
                         right: '0px',
-                        width: isConnectionDragging ? '30px' : '24px',
-                        height: isConnectionDragging ? '30px' : '24px',
+                        width: isConnectionDragging ? '40px' : '36px', // Increased width for larger clickable area
+                        height: isConnectionDragging ? '40px' : '36px', // Increased height for larger clickable area
                         transform: 'translateX(50%) translateY(-50%)',
                         background: isConnectionDragging 
                             ? 'radial-gradient(circle, rgba(128,128,128,0.5) 0%, rgba(128,128,128,0) 70%)' 
                             : 'radial-gradient(circle, rgba(128,128,128,0.2) 0%, rgba(128,128,128,0) 70%)',
                         borderRadius: '50%',
-                        zIndex: -5,
-                        opacity: isConnectionDragging ? 0.9 : 0.7,
+                        zIndex: -20, // Lower z-index to ensure it doesn't block the handle
+                        opacity: isConnectionDragging ? 0.9 : 0.3, // Reduced opacity when not dragging to keep UI clean
                         transition: 'all 0.3s ease',
+                        pointerEvents: 'none', // Changed to none to prevent blocking the handle
+                        cursor: 'crosshair', // Match the cursor style of the handle
                     }}
                 />
                 
                 <Handle
                     type="source"
-                    position={Position.Right}
+                    position={Position.Right} 
                     id={handleId}
                     style={{
                         top: position,
@@ -274,18 +276,19 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                         width: isConnectionDragging ? '18px' : '16px',
                         height: isConnectionDragging ? '18px' : '16px',
                         transform: 'translateX(50%) translateY(-50%)',
-                        cursor: 'pointer',
+                        cursor: 'crosshair', // Changed to crosshair cursor to indicate connection ability
                         background: isConnected ? '#555555' : '#777777', // Gray color for better visibility
                         borderRadius: '0',
                         clipPath: 'polygon(0 0, 0 100%, 100% 50%)',
                         transition: 'all 0.3s ease',
-                        zIndex: -15,
+                        zIndex: -15, // Keeping negative z-index as per UI requirements
                         boxShadow: isConnected 
                             ? '0 0 4px rgba(85, 85, 85, 0.5)' 
                             : isConnectionDragging
                                 ? '0 0 5px rgba(119, 119, 119, 0.6)'
                                 : '0 0 3px rgba(119, 119, 119, 0.4)',
                         right: 0,
+                        pointerEvents: 'all' // Explicitly set pointer-events to ensure it's clickable
                     }}
                     className={`handle-output ${isConnected ? 'connected-output-handle' : ''}`}
                     isConnectable={true}
@@ -333,6 +336,12 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     pointer-events: all !important;
                 }
                 
+                /* Specifically target source handles to ensure they're clickable */
+                .react-flow__handle-source {
+                    pointer-events: all !important;
+                    cursor: crosshair !important;
+                }
+                
                 /* Handle container styling */
                 .node-handles-container {
                     position: absolute;
@@ -360,9 +369,10 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                 /* Enhanced hover effects for output handles */
                 .handle-output:hover {
                     transform: translateX(50%) translateY(-50%) scale(1.2) !important;
-                    z-index: 25 !important;
                     box-shadow: 0 0 6px rgba(119, 119, 119, 0.8) !important;
                     background-color: #666666 !important;
+                    cursor: crosshair !important;
+                    pointer-events: all !important;
                 }
                 
                 /* Add a highlight effect when hovering near the handle */
@@ -371,13 +381,20 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     position: absolute;
                     top: 50%;
                     right: 0;
-                    width: 24px;
-                    height: 24px;
+                    width: 36px; /* Increased to match the larger clickable area */
+                    height: 36px; /* Increased to match the larger clickable area */
                     background: radial-gradient(circle, rgba(128,128,128,0.3) 0%, rgba(128,128,128,0) 70%);
                     border-radius: 50%;
                     transform: translateX(50%) translateY(-50%);
-                    z-index: 4;
+                    z-index: -4;
                     pointer-events: none;
+                }
+                
+                /* Style for output handle indicator */
+                .output-handle-indicator {
+                    cursor: crosshair !important;
+                    pointer-events: none !important; /* Ensure it doesn't block the handle */
+                    z-index: -1 !important; /* Keep it behind the actual handle */
                 }
                 
                 /* Connected output handle styling */
@@ -397,6 +414,12 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                 .react-flow__handle-target,
                 .react-flow__handle {
                     transition: all 0.3s ease !important;
+                    pointer-events: all !important;
+                }
+                
+                /* Ensure the handle is always clickable */
+                .handle-output {
+                    pointer-events: all !important;
                 }
                 
                 /* Smoother edge connections */
@@ -441,6 +464,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                         justifyContent: 'center',
                         pointerEvents: 'none',
                         padding: '5px 0',
+                        minWidth: '40px', // Ensure enough width for the larger clickable areas
                     }}
                 >
                     {Array.from({

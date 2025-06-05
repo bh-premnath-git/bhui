@@ -18,7 +18,7 @@ interface FlowState {
     selectedEnvironment: Environment | null;
     loading: boolean;
     error: string | null;
-    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string } | null;
+    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string;airflow_env_name?:string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
     formDefinition: Record<string, string[]> | null;
     formValues: Record<string, Record<string, string>>;

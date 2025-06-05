@@ -185,10 +185,25 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [prevNodeFn, selectedNode.id]
     );
 
-    const taskID = useMemo(
-        () => `${selectedNode.data.label}_${selectedValue}_${createShortUUID()}`,
-        [selectedNode.data.label, selectedValue]
-    );
+    // Get task ID from flow JSON if available, otherwise generate a new one
+    const taskID = useMemo(() => {
+        // First check if there's an existing task_id in the form data
+        if (currentFormData && currentFormData.task_id) {
+            console.log(`Using existing task_id from form data: ${currentFormData.task_id}`);
+            return currentFormData.task_id;
+        }
+        
+        // Then check if there's a task_id in the node data
+        if (selectedNode.data?.formData?.task_id) {
+            console.log(`Using task_id from node data: ${selectedNode.data.formData.task_id}`);
+            return selectedNode.data.formData.task_id;
+        }
+        
+        // If no existing task_id is found, generate a new one
+        const newTaskId = `${selectedNode.data.label}_${selectedValue}_${createShortUUID()}`;
+        console.log(`Generated new task_id: ${newTaskId}`);
+        return newTaskId;
+    }, [selectedNode.data, selectedValue, currentFormData]);
 
     /* --------------------------- Input handler --------------------------- */
     const handleInputChange = useNodeFormInput({

@@ -64,7 +64,6 @@ const GridLayout = () => {
           executed_query: applyFilters(widget.executed_query as ExecutedQueryItem[], filters)
         };
       }
-      // For user-defined widgets, keep the executed_query structure as is
       return widget;
     });
   }, [orderedWidgets, filters]);

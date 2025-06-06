@@ -18,19 +18,30 @@ function getRandomSubset<T>(array: T[], count: number): T[] {
 
 export function useRecommendation(
   moduleName = 'dataops',
-  hookOptions?: Omit<UseQueryOptions<string[], Error, string[], readonly ["dataops-recommendations", string]>, 'queryKey' | 'queryFn'>
+  connectionId = null,
+  hookOptions?: Omit<UseQueryOptions<string[], Error, string[], readonly ["dataops-recommendations", string, string | null]>, 'queryKey' | 'queryFn'>
 ) {
-  const queryKey = ['dataops-recommendations', moduleName] as const;
+  // Include connectionId in the query key to ensure different cache entries for different connections
+  const queryKey = ['dataops-recommendations', moduleName, connectionId] as const;
 
   const queryFn = async (): Promise<string[]> => {
+    // Prepare the URL and query parameters
+    let url = '/recommendation';
+    
+    // Add connection_config_id as URL query parameter if connectionId exists
+    if (connectionId && moduleName === 'explorer') {
+      url = `${url}?connection_config_id=${connectionId}`;
+    }
+    
     // Expect the API to return the RecommendationApiResponse structure
     const response = await apiService.post<RecommendationApiResponse>({
       baseUrl: AGENT_REMOTE_URL,
       usePrefix: true,
-      url: '/recommendation',
+      url: url,
       method: 'POST',
       data: { module: moduleName }
     });
+    
     // Extract the questions and select a random subset of 3
     const allSuggestions = response.recommended_questions || [];
     return getRandomSubset(allSuggestions, 3);

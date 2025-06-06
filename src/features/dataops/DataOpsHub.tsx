@@ -87,30 +87,44 @@ export function DataOpsHub() {
 
 
   useEffect(() => {
-    const handleChartAdded = (event: CustomEvent) => {
-      const chartData = event.detail;
-      const { intermediate_executed_query_json, ...rest } = chartData;
-      return dispatchAsync({ type: "ADD_WIDGET", payload: chartData }).then(()=>{
-        const payload = {
-          name: rest.name,
-          owner: rest.owner,
-          widget_type: rest.widget_type,
-          visibility: "private",
-          sql_query: rest.sql_query,
-          plotly_data: compressValue(intermediate_executed_query_json),
-          executed_query: rest.executed_query,
-          chart_config:{
-          }
+    try {
+      // Define handler function
+      const handleChartAdded = (event: CustomEvent) => {
+        // Type safety check
+        if (!event.detail) {
+          console.error("[DataOpsHub] Chart event missing detail data");
+          return;
         }
-        createWidget(payload);
-      });
-    };
 
-    document.addEventListener(CHART_ADDED_EVENT, handleChartAdded);
-    return () => {
-      document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded);
-    };
-  }, []);
+        const chartData = event.detail;
+        const { intermediate_executed_query_json, ...rest } = chartData;
+        
+        dispatchAsync({ type: "ADD_WIDGET", payload: chartData }).then(() => {
+          const payload = {
+            dashboard_id: state.selectedDashboard.dashboard_id ?? 101,
+            name: rest.name,
+            widget_type: rest.widget_type,
+            sql_query: rest.sql_query,
+            chart_config: compressValue(intermediate_executed_query_json),
+            executed_query: rest.executed_query,
+          };
+          createWidget(payload);
+        });
+      };
+
+      // Register event listener
+      document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+      
+      // Cleanup function
+      return () => {
+        document.removeEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
+      };
+    } catch (error) {
+      console.error("[DataOpsHub] Failed to setup chart event listener:", error);
+      dispatch({ type: "SET_ERROR", payload: "Error setting up chart functionality." });
+      return () => {}; // Empty cleanup function
+    }
+  }, [state.selectedDashboard, dispatchAsync, createWidget, dispatch]);
 
   if (state.isLoading) {
     return <LoadingState fullScreen />;

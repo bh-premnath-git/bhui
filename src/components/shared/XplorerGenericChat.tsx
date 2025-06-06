@@ -1,84 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
-import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
 import { motion } from 'framer-motion'
 import { Zap } from 'lucide-react'
 import { Button } from '../ui/button'
+import { useConversation } from '@/hooks/useConversation'
+import { useRecommendation } from '@/hooks/useRecommendation'
+import { createShortUUID } from '@/lib/utils'
 
 interface XplorerGenericChatUIProps {
   imageSrc?: string
   assistantColor?: string
   userColor?: string
   suggestions?: string[]
+  variant?: 'governance' | 'explorer' | 'dataops'
 }
 
-// Updated default suggestions to include the top 10 expensive products query
-const defaultSuggestions = [
-  'List the top ten expensive products',
-  'Show me all orders above $300',
-  'Find orders with delivery status "Shipped"',
-  'Which region has the most orders?',
-]
-
-// Mock data for orders
-const mockOrders = [
-  { id: 10001, customerName: 'Alice Johnson', orderDate: '2025-04-25', total: 245.99, status: 'Delivered', region: 'North' },
-  { id: 10002, customerName: 'Bob Smith', orderDate: '2025-04-27', total: 89.50, status: 'Processing', region: 'South' },
-  { id: 10003, customerName: 'Carol White', orderDate: '2025-04-29', total: 534.75, status: 'Shipped', region: 'East' },
-  { id: 10004, customerName: 'Dave Brown', orderDate: '2025-05-01', total: 128.25, status: 'Delivered', region: 'West' },
-  { id: 10005, customerName: 'Eve Green', orderDate: '2025-05-02', total: 375.00, status: 'Processing', region: 'North' },
-  { id: 10006, customerName: 'Frank Black', orderDate: '2025-05-03', total: 612.40, status: 'Delivered', region: 'East' },
-  { id: 10007, customerName: 'Grace Lee', orderDate: '2025-05-04', total: 92.80, status: 'Shipped', region: 'South' },
-];
-
-// Mock data for order details (items in each order)
-const mockOrderDetails = [
-  { orderId: 10001, productId: 1, productName: 'Laptop', quantity: 1, unitPrice: 199.99, subtotal: 199.99 },
-  { orderId: 10001, productId: 2, productName: 'Mouse', quantity: 2, unitPrice: 23.00, subtotal: 46.00 },
-
-  { orderId: 10002, productId: 3, productName: 'Keyboard', quantity: 1, unitPrice: 49.50, subtotal: 49.50 },
-  { orderId: 10002, productId: 4, productName: 'USB Cable', quantity: 2, unitPrice: 20.00, subtotal: 40.00 },
-
-  { orderId: 10003, productId: 5, productName: 'Monitor', quantity: 2, unitPrice: 249.99, subtotal: 499.98 },
-  { orderId: 10003, productId: 6, productName: 'HDMI Cable', quantity: 1, unitPrice: 34.77, subtotal: 34.77 },
-
-  { orderId: 10004, productId: 7, productName: 'Headphones', quantity: 1, unitPrice: 78.25, subtotal: 78.25 },
-  { orderId: 10004, productId: 8, productName: 'Webcam', quantity: 1, unitPrice: 50.00, subtotal: 50.00 },
-
-  { orderId: 10005, productId: 9, productName: 'Smartphone', quantity: 1, unitPrice: 375.00, subtotal: 375.00 },
-
-  { orderId: 10006, productId: 10, productName: 'Tablet', quantity: 1, unitPrice: 499.99, subtotal: 499.99 },
-  { orderId: 10006, productId: 11, productName: 'Screen Protector', quantity: 1, unitPrice: 12.50, subtotal: 12.50 },
-  { orderId: 10006, productId: 12, productName: 'Tablet Case', quantity: 1, unitPrice: 99.91, subtotal: 99.91 },
-
-  { orderId: 10007, productId: 13, productName: 'Wireless Mouse', quantity: 2, unitPrice: 34.40, subtotal: 68.80 },
-  { orderId: 10007, productId: 14, productName: 'Mouse Pad', quantity: 2, unitPrice: 12.00, subtotal: 24.00 },
-];
-
-// New mock data for top 10 expensive products
-const topExpensiveProducts = [
-  { productName: "Côte de Blaye", unitPrice: 263.50 },
-  { productName: "Thüringer Rostbratwurst", unitPrice: 123.79 },
-  { productName: "Mishi Kobe Niku", unitPrice: 97.00 },
-  { productName: "Sir Rodney's Marmalade", unitPrice: 81.00 },
-  { productName: "Carnarvon Tigers", unitPrice: 62.50 },
-  { productName: "Raclette Courdavault", unitPrice: 55.00 },
-  { productName: "Manjimup Dried Apples", unitPrice: 53.00 },
-  { productName: "Tarte au sucre", unitPrice: 49.30 }
-];
-
-// Mock SQL queries for different suggestions
-const mockSQLQueries = {
-  'List the top ten expensive products': 'SELECT p.product_name AS product_name, p.unit_price FROM public.products AS p ORDER BY p.unit_price DESC LIMIT 10;',
-  'Show me all orders above $300': 'SELECT * FROM orders WHERE total > 300',
-  'Find orders with delivery status "Shipped"': 'SELECT * FROM orders WHERE status = "Shipped"',
-  'Show me order details for Order #10003': 'SELECT od.* FROM order_details od WHERE od.orderId = 10003',
-  'Which region has the most orders?': 'SELECT region, COUNT(*) as orderCount FROM orders GROUP BY region ORDER BY orderCount DESC',
-};
+// Custom event name constant
+export const CHART_ADDED_EVENT = 'chart-added-to-xplorer-dashboard';
+const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 
 // Component to display SQL query
 const SQLView = ({ query }) => {
@@ -200,9 +143,21 @@ const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
 };
 
 export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
-  userColor = '#000000', suggestions = defaultSuggestions }: XplorerGenericChatUIProps) {
-  const { messages, addUserMessage, addAssistantMessage } = useChatMessages();
-  const [mockResponse, setMockResponse] = useState(null);
+  userColor = '#000000', suggestions, variant = 'explorer' }: XplorerGenericChatUIProps) {
+  const { 
+    messages, 
+    addUserMessage, 
+    addAssistantMessage,
+    updateMessageById 
+  } = useChatMessages();
+  
+  // Move connectionId state declaration to before its usage
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  
+  const { data: recommendedSuggestions, isLoading: isLoadingRecommendations } = useRecommendation(
+    variant,
+    variant === 'explorer' ? connectionId : null
+  );
   const [activeTab, setActiveTab] = useState('chart');
   const [input, setInput] = useState('');
   const [sqlQuery, setSqlQuery] = useState('');
@@ -210,178 +165,208 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const [metricToVisualize, setMetricToVisualize] = useState('total');
   const [categoryKey, setCategoryKey] = useState('id');
   const [chartTitle, setChartTitle] = useState('');
+  
+  // Conversation management
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const { createConversation, streamConversation } = useConversation();
+  const [response, setResponse] = useState<{ sql: any; chart: any; table: any; explanation: any } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState<'processing' | 'processed' | 'hidden'>('hidden');
+  const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
+  const streamAbortRef = useRef<() => void>();
+  
+  // Initialize conversation
+  useEffect(() => {
+    let isActive = true;
+    createConversation()
+      .then(res => {
+        if (isActive && res.data.thread_id) {
+          setThreadId(res.data.thread_id);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+      });
+
+    return () => {
+      isActive = false;
+      streamAbortRef.current?.();
+    };
+  }, [createConversation]);
 
   // Function to handle adding data to the dashboard
   const handleAddToDashboard = (data) => {
     // Create a custom event with all the necessary chart data
     const chartData = {
-      data: filteredData,
-      metric: metricToVisualize,
-      category: categoryKey,
-      title: chartTitle,
-      chartType: 'bar', 
+      id: `chart-${createShortUUID()}`,
+      owner: "info@bighammer.ai",
+      widget_type: "user_defined",
+      name: chartTitle || "Explorer Data Chart",
+      visibility: "private",
+      sql_query: sqlQuery,
+      intermediate_executed_query_json: {
+        layout: {
+          title: { text: chartTitle }
+        }
+      },
+      executed_query: { data: filteredData },
+      chart_config: {
+        title: chartTitle,
+        metric: metricToVisualize,
+        categoryKey: categoryKey
+      }
     };
     
     // Dispatch a custom event that XplorerMock can listen for
-    const addToDashboardEvent = new CustomEvent('addChartToDashboard', {
+    const chartEvent = new CustomEvent(CHART_ADDED_EVENT, {
       detail: chartData,
-      bubbles: true
+      bubbles: true,
+      cancelable: true
     });
     
-    document.dispatchEvent(addToDashboardEvent);
+    document.dispatchEvent(chartEvent);
   };
 
-  // Handle sending a message
-  const handleSend = async (message: string) => {
-    if (!message.trim()) return;
+  const handleSend = useCallback((query: string) => {
+    const q = query.trim();
+    if (!q || !threadId) return;
+    
+    // Cancel any ongoing streams
+    streamAbortRef.current?.();
 
-    addUserMessage(message);
-
-    // Process the message to determine what data to show
-    let responseData = [];
-    let query = '';
-    let metric = 'total'; // Default metric to visualize
-    let category = 'id';
-    let responseText = '';
-    let title = '';
-
-    const lowerMsg = message.toLowerCase();
-
-    if (lowerMsg.includes('top ten expensive') || lowerMsg.includes('top 10 expensive') || lowerMsg.includes('expensive products')) {
-      responseData = topExpensiveProducts;
-      query = mockSQLQueries['List the top ten expensive products'];
-      metric = 'unitPrice';
-      category = 'productName';
-      title = 'Top 10 Most Expensive Products';
-      responseText = `Here are the top 10 most expensive products in our inventory, sorted by unit price.`;
-    }
-    else if (lowerMsg.includes('above $300') || lowerMsg.includes('over $300')) {
-      responseData = mockOrders.filter(order => order.total > 300);
-      query = mockSQLQueries['Show me all orders above $300'];
-      title = 'Orders Exceeding $300';
-      responseText = `I found ${responseData.length} orders with totals exceeding $300.`;
-    }
-    else if (lowerMsg.includes('shipped')) {
-      responseData = mockOrders.filter(order => order.status === 'Shipped');
-      query = mockSQLQueries['Find orders with delivery status "Shipped"'];
-      title = 'Orders with Shipped Status';
-      responseText = `I found ${responseData.length} orders with shipping status "Shipped".`;
-    }
-    else if (lowerMsg.includes('order details') && lowerMsg.includes('10003')) {
-      responseData = mockOrderDetails.filter(detail => detail.orderId === 10003);
-      query = mockSQLQueries['Show me order details for Order #10003'];
-      metric = 'subtotal';
-      category = 'productName';
-      title = 'Order #10003 Details';
-      responseText = `Here are the details for Order #10003. This order has ${responseData.length} items.`;
-    }
-    else if (lowerMsg.includes('region') && (lowerMsg.includes('most') || lowerMsg.includes('highest'))) {
-      // Count orders by region
-      const regionCounts = {};
-      mockOrders.forEach(order => {
-        regionCounts[order.region] = (regionCounts[order.region] || 0) + 1;
-      });
-
-      responseData = Object.entries(regionCounts).map(([region, count]) => ({
-        region,
-        count
-      })).sort((a, b) => Number(b.count) - Number(a.count));
-
-      query = mockSQLQueries['Which region has the most orders?'];
-      metric = 'count';
-      category = 'region';
-      title = 'Orders by Region';
-
-      responseText = `The ${responseData[0].region} region has the most orders with ${responseData[0].count} orders.`;
-    }
-    else if (lowerMsg.includes('order details')) {
-      // Extract order number if provided
-      const orderIdMatch = lowerMsg.match(/\d+/);
-      const orderId = orderIdMatch ? parseInt(orderIdMatch[0]) : null;
-
-      if (orderId && mockOrderDetails.some(detail => detail.orderId === orderId)) {
-        responseData = mockOrderDetails.filter(detail => detail.orderId === orderId);
-        query = `SELECT * FROM order_details WHERE orderId = ${orderId}`;
-        metric = 'subtotal';
-        category = 'productName';
-        title = `Order #${orderId} Details`;
-        responseText = `Here are the details for Order #${orderId}. This order has ${responseData.length} items.`;
-      } else {
-        // Show all order details if no specific order ID was provided or found
-        responseData = mockOrderDetails;
-        query = 'SELECT * FROM order_details';
-        metric = 'subtotal';
-        category = 'productName';
-        title = 'All Order Details';
-        responseText = `Here are all order details across all orders. There are ${responseData.length} items in total.`;
+    // Reset states for new query
+    setResponse(null);
+    setProcessingState('processing');
+    setIsProcessing(true);
+    
+    // Add user message first
+    addUserMessage(q);
+    
+    // Add processing message and track its ID
+    const processingMessage = 'Processing...';
+    const msgId = addAssistantMessage(processingMessage);
+    setProcessingMessageId(msgId);
+    
+    // Use the connectionId state directly instead of querying DOM
+    const connId = variant === 'explorer' && connectionId ? parseInt(connectionId) : null;
+    
+    const onChunk = (chunk: string) => {
+      if (typeof chunk === 'string') {
+        try {
+          const parsedChunk = JSON.parse(chunk);
+          
+          if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
+            const responseTypeKey = parsedChunk.response_type.toLowerCase();
+            
+            if (responseTypeKey === 'sql' && parsedChunk.sql) {
+              setSqlQuery(parsedChunk.sql);
+            }
+            
+            if (responseTypeKey === 'table' && parsedChunk.data) {
+              setFilteredData(parsedChunk.data);
+            }
+            
+            if (responseTypeKey === 'chart') {
+              if (parsedChunk.chart_title) {
+                setChartTitle(parsedChunk.chart_title);
+              }
+              if (parsedChunk.metric) {
+                setMetricToVisualize(parsedChunk.metric);
+              }
+              if (parsedChunk.category_key) {
+                setCategoryKey(parsedChunk.category_key);
+              }
+            }
+            
+            setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
+          }
+        } catch (error) {
+          console.error("Error parsing chunk:", error);
+        }
       }
-    }
-    else {
-      // Default to showing all orders
-      responseData = mockOrders;
-      query = 'SELECT * FROM orders';
-      title = 'All Orders';
-      responseText = `Here are all orders in the system. There are ${responseData.length} orders in total.`;
-    }
-
-    // Set the response data and SQL query
-    setFilteredData(responseData);
-    setSqlQuery(query);
-    setMetricToVisualize(metric);
-    setCategoryKey(category);
-    setChartTitle(title);
-
-    // Add assistant response
-    setTimeout(() => {
-      addAssistantMessage(responseText);
-      setMockResponse({
-        data: responseData,
-        query: query,
-        title: title
-      });
-    }, 500);
-
-    // Clear input
-    setInput('');
-  };
+    };
+    
+    const onComplete = () => {
+      // Update processing message with completion confirmation
+      if (processingMessageId) {
+        updateMessageById(processingMessageId, 'Here are the results of your query:');
+      }
+      setProcessingState('processed');
+      setIsProcessing(false);
+    };
+    
+    const onError = (error: any) => {
+      console.error(error);
+      // On error, update the processing message to show the error
+      if (processingMessageId) {
+        updateMessageById(processingMessageId, `Error: ${error.message || 'Failed to process your request'}`);
+      }
+      setProcessingState('hidden');
+      setIsProcessing(false);
+    };
+    
+    // Start streaming with the appropriate module
+    streamAbortRef.current = streamConversation(
+      connId, 
+      q, 
+      threadId, 
+      onChunk, 
+      onComplete, 
+      onError, 
+      variant
+    );
+    
+    setInput("");
+  }, [threadId, addUserMessage, addAssistantMessage, updateMessageById, variant, connectionId]);
 
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 w-full">
-        <div className="px-6 py-4 w-full mx-auto">
+        <div className="px-4 py-4 w-full mx-auto">
           {messages.length === 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <div className="flex items-start gap-4 mb-4">
+            <motion.div
+              className="flex flex-col space-y-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex gap-4">
                 <div
                   className="w-8 h-8 rounded-full mt-1"
                   style={{ backgroundColor: assistantColor }}
                 />
-                <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
-                  <p className="text-lg font-medium text-gray-800 py-1">How can I assist you?</p>
+                <div className="flex-1 rounded-2xl px-4 py-3 bg-gray-100 shadow">
+                  <p className="text-black leading-relaxed">
+                    I'm your AI assistant for data exploration. How can I help you analyze data?
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2 pl-16 ml-2">
-                {suggestions.map((s, i) => (
-                  <motion.div
-                    key={i}
-                    className="flex items-start"
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 + i * 0.1 }}
-                  >
-                    <div
-                      style={{ backgroundColor: assistantColor }}
-                    />
-                    <div
-                      onClick={() => setInput(s)}
-                      className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
-                      style={{ color: assistantColor }}
+              
+              <div>
+                <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
+                <div className="flex flex-col gap-2 ml-12">
+                  {(isLoadingRecommendations ? [] : (recommendedSuggestions || suggestions || ['List the top ten expensive products', 'Show me all orders above $300', 'Find orders with delivery status "Shipped"', 'Which region has the most orders?'])).map((s, i) => (
+                    <motion.div
+                      key={i}
+                      className="flex gap-2"
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
                     >
-                      <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
-                      {s}
-                    </div>
-                  </motion.div>
-                ))}
+                      <div
+                        style={{ backgroundColor: assistantColor }}
+                      />
+                      <div
+                        onClick={() => setInput(s)}
+                        className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
+                        style={{ color: assistantColor }}
+                      >
+                        <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+                        {s}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           ) : (
@@ -395,60 +380,30 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
                     />
                     <div
-                      className={`flex-1 rounded-2xl px-2 py-3 shadow ${isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'
-                        }`}
+                      className={`flex-1 rounded-2xl px-4 py-3 shadow ${isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'}`}
                     >
-                      <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                      <p className="leading-relaxed">{m.content}</p>
                     </div>
                   </div>
                 );
               })}
-              {mockResponse && (
+
+              {/* Only render when we have a response */}
+              {response && !isProcessing && (
                 <>
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={(value) => setActiveTab(value)}
-                    className="mt-6"
-                  >
-                    <TabsList className="flex space-x-2 mb-2">
-                      <TabsTrigger
-                        value="chart"
-                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'chart'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        Chart
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="table"
-                        className={`px-4 py-2 rounded-t-lg ${activeTab === 'table'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        Table
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="sql"
-                        className={`px-2 py-2 rounded-t-lg ${activeTab === 'sql'
-                          ? 'bg-gray-200 text-gray-800'
-                          : 'bg-white text-gray-500'
-                          }`}
-                      >
-                        SQL
-                      </TabsTrigger>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="chart">Chart</TabsTrigger>
+                      <TabsTrigger value="table">Table</TabsTrigger>
+                      <TabsTrigger value="sql">SQL</TabsTrigger>
                     </TabsList>
                     <TabsContent value="chart" className="pt-4">
-                      <div className="mt-3 bg-card rounded-md p-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm text-foreground">
-                            {messages[messages.length - 2]?.content.split('?')[0] || 'Visualized Data'}
-                          </h4>
+                      <div className="bg-white p-4 rounded-xl border">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold">{chartTitle || 'Data Visualization'}</h3>
                           <Button
-                            size="sm"
                             variant="outline"
-                            onClick={() => handleAddToDashboard(mockResponse.data)}
+                            onClick={() => handleAddToDashboard(response)}
                             className="h-7 text-xs"
                           >
                             Add to Dashboard
@@ -487,7 +442,14 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         </div>
       </ScrollArea>
       <div className="p-4 border-t border-slate-200 bg-white">
-        <AIChatInput input={input} onChange={setInput} onSend={() => handleSend(input)} placeholder="Type a message..." />
+        <AIChatInput 
+          input={input} 
+          onChange={setInput} 
+          onSend={() => handleSend(input)} 
+          placeholder="Type a message..." 
+          variant={variant} 
+          onConnectionChange={setConnectionId}
+        />
       </div>
     </div>
   );

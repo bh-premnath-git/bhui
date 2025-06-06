@@ -1,15 +1,19 @@
 import { Mic, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
+import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
 
 interface AIChatInputProps {
+  variant: string;
   input: string;
   onChange: (value: string) => void;
   onSend: () => void;
   onVoiceInput?: () => void;
   placeholder?: string;
   disabled?: boolean;
+  onConnectionChange?: (connectionId: string) => void;
 }
 
 export function AIChatInput({
@@ -19,9 +23,37 @@ export function AIChatInput({
   onVoiceInput,
   placeholder = "Ask about your data…",
   disabled,
+  variant,
+  onConnectionChange,
 }: AIChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Only initialize connection-related state when variant is explorer
+  const isExplorer = variant === 'explorer';
+  const { connections, isLoading, isFetching, isError } = isExplorer ? useAdminConnections() : { connections: [], isLoading: false, isFetching: false, isError: false };
+  const [selectedConnection, setSelectedConnection] = useState('');
+
+  // Only set initial connection when variant is explorer
+  useEffect(() => {
+    if (isExplorer && !selectedConnection && connections && connections.length > 0) {
+      const connId = connections[0].id.toString();
+      setSelectedConnection(connId);
+      // Notify parent component about initial connection ID
+      if (onConnectionChange) {
+        onConnectionChange(connId);
+      }
+    }
+  }, [connections, selectedConnection, isExplorer, onConnectionChange]);
+
+  // Handle connection change
+  const handleConnectionChange = (connId: string) => {
+    setSelectedConnection(connId);
+    // Notify parent component about connection change
+    if (onConnectionChange) {
+      onConnectionChange(connId);
+    }
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -55,6 +87,7 @@ export function AIChatInput({
           ? "border-green-400 ring-1 ring-green-400/30" 
           : "border-gray-200 hover:border-gray-300"}
       `}
+      data-connection-id={isExplorer ? selectedConnection : undefined}
     >
       {/* Voice input */}
       <Button
@@ -66,7 +99,39 @@ export function AIChatInput({
       >
         <Mic className="h-4 w-4" />
       </Button>
-
+      {/* Connection dropdown - shown only for explorer variant */}
+      {isExplorer && (
+        <Select value={selectedConnection} onValueChange={handleConnectionChange}>
+          <SelectTrigger className="h-8 w-32">
+            <SelectValue
+              placeholder={
+                isLoading || isFetching
+                  ? 'Loading...'
+                  : isError
+                  ? 'Error'
+                  : 'Connection'
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {isLoading || isFetching ? (
+              <SelectItem value="loading" disabled>
+                Loading...
+              </SelectItem>
+            ) : isError ? (
+              <SelectItem value="error" disabled>
+                Failed to load
+              </SelectItem>
+            ) : (
+              connections.map(conn => (
+                <SelectItem key={conn.id} value={conn.id?.toString() || `conn-${conn.id}`}>
+                  {conn.connection_config_name}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      )}
       {/* Auto-resizing textarea */}
       <div className="flex-grow">
         <Textarea

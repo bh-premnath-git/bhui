@@ -8,19 +8,22 @@ import { Zap } from 'lucide-react';
 import { useConversation } from '@/hooks/useConversation';
 import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { ErrorState } from '@/components/shared/ErrorState';
 import { marked } from 'marked';
 import { createShortUUID } from '@/lib/utils';
+import { useDataOps } from '@/context/dataops/DataOpsContext';
+  
 
 interface GenericChatUIProps {
   imageSrc?: string;
   assistantColor?: string;
   userColor?: string;
   suggestions?: string[];
+  variant?: string;
 }
 
 // Custom event name constant
 export const CHART_ADDED_EVENT = 'chart-added-to-dashboard';
+export const WIDGET_REMOVED_EVENT = 'widget-removed-from-dashboard';
 const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 
 // Initialize marked to use synchronous mode
@@ -33,6 +36,7 @@ const markedOptions = {
 export function GenericChatUI({
   assistantColor = '#009459',
   userColor = '#000000',
+  variant
 }: GenericChatUIProps) {
   const {
     messages,
@@ -127,7 +131,7 @@ export function GenericChatUI({
     const chartData = {
       id: `chart-${createShortUUID()}`,
       owner: "info@bighammer.ai",
-      widget_type: "user-defined",
+      widget_type: "user_defined",
       name: data.chartMetadata.layout.title.text,
       visibility: "private",
       sql_query: data.sql,
@@ -151,48 +155,61 @@ export function GenericChatUI({
       <ScrollArea className="flex-1 w-full">
         <div className="px-4 py-4 w-full  mx-auto">
           {messages.length === 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <div className="flex items-center gap-4 mb-4">
+            <motion.div 
+              className="flex flex-col space-y-8"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex gap-4">
                 <div
                   className="w-6 h-6 rounded-full flex-shrink-0"
                   style={{ backgroundColor: assistantColor }}
                 />
-                <div className="flex-1 rounded-xl bg-gray-100 px-2 py-2 shadow">
-                  <p className="text-lg font-medium text-gray-800 py-1">How can I assist you?</p>
+                <div className="flex-1 rounded-2xl px-4 py-3 bg-gray-100 shadow">
+                  <p className="text-black leading-relaxed">
+                    I'm your AI assistant for data analysis. How can I help you?
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2 pl-16 ml-2">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <LoadingState classNameContainer="w-20 h-20" />
-                  </div>
-                ) : isError ? (
-                  <ErrorState title="Error" description="Failed to load suggestions. Please try again later." />
-                ) : recommendations && recommendations.length > 0 ? (
-                  recommendations.map((s, i) => (
-                    <motion.div
-                      key={`suggestion-${s.substring(0, 10)}-${i}`}
-                      className="flex items-center"
-                      initial={{ x: -10, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 + i * 0.1 }}
-                    >
-                      <div
-                        style={{ backgroundColor: assistantColor }}
-                      />
-                      <div
-                        onClick={() => setInput(s)}
-                        className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
-                        style={{ color: assistantColor }}
+              
+              <div>
+                <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
+                <div className="flex flex-col gap-2 ml-12">
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-20">
+                      <LoadingState classNameContainer="w-16 h-16" />
+                    </div>
+                  ) : isError ? (
+                    <div className="text-sm text-gray-500 italic">
+                      Unable to load suggestions. Please try asking a question directly.
+                    </div>
+                  ) : recommendations && recommendations.length > 0 ? (
+                    recommendations.map((s, i) => (
+                      <motion.div
+                        key={`suggestion-${s.substring(0, 10)}-${i}`}
+                        className="flex gap-2"
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
                       >
-                        <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
-                        {s}
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 italic">No AI suggestions available at the moment.</p>
-                )}
+                        <div
+                          style={{ backgroundColor: assistantColor }}
+                        />
+                        <div
+                          onClick={() => setInput(s)}
+                          className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
+                          style={{ color: assistantColor }}
+                        >
+                          <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+                          {s}
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No AI suggestions available at the moment.</p>
+                  )}
+                </div>
               </div>
             </motion.div>
           ) : (
@@ -309,7 +326,7 @@ export function GenericChatUI({
         </div>
       </ScrollArea>
       <div className="p-2 border-t border-slate-200 bg-white">
-        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
+        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." variant={variant} />
       </div>
     </div>
   );

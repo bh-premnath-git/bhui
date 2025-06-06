@@ -162,7 +162,7 @@ export function NavigationBreadcrumb() {
   const breadcrumbItems = getBreadcrumbItems();
 
   return (
-    <Breadcrumb className={cn("flex items-center h-full mt-2 ml-2")}>
+    <Breadcrumb className={cn("flex items-center h-full mt-2 ml-5")}>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={`${item.path}-${index}`}>

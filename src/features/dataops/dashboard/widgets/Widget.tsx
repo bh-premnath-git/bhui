@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WIDGET_REMOVED_EVENT } from "@/components/shared/GenericChatUI";
 
 interface WidgetProps {
   widget: WidgetType;
@@ -82,11 +83,17 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
   }, [widget.sql_query]);
 
   const handleRemoveWidget = useCallback(() => {
-    dispatch({
-      type: "REMOVE_WIDGET",
-      payload: widget.id.toString()
+    // Dispatch custom event for widget removal
+    const widgetRemovedEvent = new CustomEvent(WIDGET_REMOVED_EVENT, {
+      detail: { widgetId: widget.id },
+      bubbles: true,
+      cancelable: true
     });
-  }, [widget.id, dispatch]);
+    document.dispatchEvent(widgetRemovedEvent);
+    
+    // Note: We no longer need to dispatch the REMOVE_WIDGET action here
+    // as this will be handled by the event listener in DataOpsHub.tsx
+  }, [widget.id]);
 
   const renderTableView = () => {
     // Return early if no executed_query data exists
@@ -125,7 +132,6 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
           </div>
         );
       } else {
-        // User-defined widgets have executed_query as an object with column_names and column_values
         if (!widget.executed_query.column_names || !widget.executed_query.column_values) {
           return null;
         }

@@ -4,6 +4,7 @@ import aiIcon from '/assets/ai/ai.svg'
 import { useSidebar } from '@/context/SidebarContext'
 import { GenericChatUI } from '@/components/shared/GenericChatUI'
 import { XplorerGenericChatUI } from './XplorerGenericChat'
+import { DataOpsProvider } from '@/context/dataops/DataOpsContext'
 
 interface AIChatButtonProps {
   variant: 'governance' | 'explorer' | 'dataops'
@@ -36,7 +37,7 @@ export function AIChatButton({ variant, color = '#009f59' }: AIChatButtonProps) 
     
     const chatComponent = variant === 'explorer' 
       ? <XplorerGenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} variant={variant} />
-      : <GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} variant={variant} />
+      : <DataOpsProvider><GenericChatUI key={CHAT_UI_KEY} imageSrc={aiIcon} variant={variant} /></DataOpsProvider>
     
     const title = variant === 'explorer' 
       ? 'Agent Xplorer' 

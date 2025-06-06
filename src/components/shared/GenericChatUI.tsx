@@ -8,9 +8,10 @@ import { Zap } from 'lucide-react';
 import { useConversation } from '@/hooks/useConversation';
 import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { ErrorState } from '@/components/shared/ErrorState';
 import { marked } from 'marked';
 import { createShortUUID } from '@/lib/utils';
+import { useDataOps } from '@/context/dataops/DataOpsContext';
+  
 
 interface GenericChatUIProps {
   imageSrc?: string;
@@ -22,6 +23,7 @@ interface GenericChatUIProps {
 
 // Custom event name constant
 export const CHART_ADDED_EVENT = 'chart-added-to-dashboard';
+export const WIDGET_REMOVED_EVENT = 'widget-removed-from-dashboard';
 const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 
 // Initialize marked to use synchronous mode

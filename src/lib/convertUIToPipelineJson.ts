@@ -281,6 +281,45 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         column_list: node.data.transformationData?.column_list || node.data.transformationData?.column || [],
                         pattern: node.data.transformationData?.pattern
                     };
+                case 'Lookup':
+                    return {
+                        ...baseConfig,
+                        lookup_type: node.data.transformationData?.lookup_type || 'Column Based',
+                        lookup_config: node.data.transformationData?.lookup_config || { 
+                          name: '', 
+                          source: {},
+                          read_options: {
+                            header: true
+                          }
+                        },
+                        lookup_data: node.data.transformationData?.lookup_data || [
+                          { id: 1, department: 'Engineering' },
+                          { id: 2, department: 'Medical' },
+                          { id: 3, department: 'Arts' },
+                          { id: 4, department: 'Commerce' },
+                          { id: 5, department: 'Science' },
+                          { id: 6, department: 'Mathematics' },
+                          { id: 7, department: 'Physics' },
+                          { id: 8, department: 'Chemistry' },
+                          { id: 9, department: 'Biology' },
+                          { id: 10, department: 'Geography' }
+                        ],
+                        lookup_columns: node.data.transformationData?.lookup_columns || [
+                          { column: 'id', out_column_name: 'id' },
+                          { column: 'name', out_column_name: 'name' },
+                          { column: 'department', out_column_name: 'department' },
+                          { column: 'city', out_column_name: 'city' },
+                          { column: 'state', out_column_name: 'state' },
+                          { column: 'zip', out_column_name: 'zip' },
+                          { column: 'address', out_column_name: 'address' },
+                          { column: 'age', out_column_name: 'age' }
+                        ],
+                        lookup_conditions: node.data.transformationData?.lookup_conditions || {
+                          column_name: 'id',
+                          lookup_with: 'id'
+                        },
+                        keep: node.data.transformationData?.keep || 'First'
+                    };
                 case 'Target':
                     console.log("Target node data:", node.data);
                     // Determine the correct target_type

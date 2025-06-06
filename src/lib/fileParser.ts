@@ -1,7 +1,7 @@
 // fileParser.ts
 
 import { parseString as parseXml } from 'xml2js';
-import Papa from 'papaparse';
+import * as Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
 export type FileData = string[][];

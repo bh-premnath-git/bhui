@@ -1212,16 +1212,6 @@ const PipeLineChatPanel = () => {
   const handleReaderOptionsClose = () => {
     setShowReaderOptionsForm(false);
 
-    // Add a message to show the user cancelled
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Cancelled reader configuration`
-      },
-    ]);
-
-    // Add a message asking what transformation they want next with suggestion buttons
     setTimeout(() => {
       setMessages(prevMessages => [
         ...prevMessages,

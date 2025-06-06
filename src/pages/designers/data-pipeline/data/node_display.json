@@ -124,7 +124,7 @@
     },
     {
       "ui_properties": {
-        "module_name": "Set Combiner",
+        "module_name": "SetCombiner",
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/8.svg",
         "ports": {
@@ -178,7 +178,7 @@
         "ports": {
           "inputs": 2,
           "outputs": 1,
-          "maxInputs": 2
+          "maxInputs": "unlimited"
         }
       }
     },

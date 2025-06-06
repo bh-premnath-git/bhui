@@ -151,9 +151,40 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     if (schema?.title === 'Lookup') {
       return {
         lookup_type: initialValues?.lookup_type || 'Column Based',
-        lookup_config: initialValues?.lookup_config || { name: '', source: {} },
-        lookup_conditions: initialValues?.lookup_conditions || [],
-        dependent_on: initialValues?.dependent_on || [],
+        lookup_config: initialValues?.lookup_config || { 
+          name: '', 
+          source: {},
+          read_options: {
+            header: true
+          }
+        },
+        lookup_data: initialValues?.lookup_data || [
+          { id: 1, department: 'Engineering' },
+          { id: 2, department: 'Medical' },
+          { id: 3, department: 'Arts' },
+          { id: 4, department: 'Commerce' },
+          { id: 5, department: 'Science' },
+          { id: 6, department: 'Mathematics' },
+          { id: 7, department: 'Physics' },
+          { id: 8, department: 'Chemistry' },
+          { id: 9, department: 'Biology' },
+          { id: 10, department: 'Geography' }
+        ],
+        lookup_columns: initialValues?.lookup_columns || [
+          { column: 'id', out_column_name: 'id' },
+          { column: 'name', out_column_name: 'name' },
+          { column: 'department', out_column_name: 'department' },
+          { column: 'city', out_column_name: 'city' },
+          { column: 'state', out_column_name: 'state' },
+          { column: 'zip', out_column_name: 'zip' },
+          { column: 'address', out_column_name: 'address' },
+          { column: 'age', out_column_name: 'age' }
+        ],
+        lookup_conditions: initialValues?.lookup_conditions || {
+          column_name: 'id',
+          lookup_with: 'id'
+        },
+        keep: initialValues?.keep || 'First',
         ...values
       };
     }

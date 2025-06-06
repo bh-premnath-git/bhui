@@ -411,6 +411,7 @@ export function ConnectionForm({
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }
+      
 
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
 
@@ -427,7 +428,7 @@ export function ConnectionForm({
         data_residency: 'auto',
         custom_metadata: custom_metadata,
         init_vector: initVector,
-        config: encryptedString
+        config: encryptedString,
       };
 
       if (connectionData?.connection_name?.toLowerCase() === 'bigquery') {

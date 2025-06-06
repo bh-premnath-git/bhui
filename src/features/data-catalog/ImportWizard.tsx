@@ -9,7 +9,6 @@ import { SchemaSelection } from '@/features/data-catalog/components/steps/Schema
 import { TableSelection } from '@/features/data-catalog/components/steps/TableSelection';
 import { ImportSummary } from '@/features/data-catalog/components/steps/ImportSummary';
 import { useDatabase } from './hooks/useDatabase';
-import { create } from 'lodash';
 
 export function ImportWizard() {
   const { handleNavigation } = useNavigation();

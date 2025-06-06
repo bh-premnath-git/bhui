@@ -1,4 +1,4 @@
-import { XplorerMock } from "@/features/data-catalog/XplorerMock"
+import { Xplorer } from "@/features/data-catalog/Xplorer"
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
@@ -8,7 +8,7 @@ const XplorerMockPage = () => {
     <div className="p-2">
       <DashboardProvider>
         <AnalyticsProvider>
-          <XplorerMock />
+          <Xplorer />
         </AnalyticsProvider>
       </DashboardProvider>
     </div>

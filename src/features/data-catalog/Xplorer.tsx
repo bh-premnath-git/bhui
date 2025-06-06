@@ -26,23 +26,6 @@ export function Xplorer() {
     darkBlue: "#1A4971",
   };
 
-  // Mock data for order metrics over time
-  const orderTimeData = [
-    { month: "Jan", processing: 27, shipped: 23, delivered: 31 },
-    { month: "Feb", processing: 34, shipped: 23, delivered: 28 },
-    { month: "Mar", processing: 22, shipped: 39, delivered: 33 },
-    { month: "Apr", processing: 29, shipped: 26, delivered: 31 },
-    { month: "May", processing: 43, shipped: 25, delivered: 35 },
-  ];
-
-  // Mock data for order revenue
-  const revenueData = [
-    { month: "Jan", revenue: 880 },
-    { month: "Feb", revenue: 1130 },
-    { month: "Mar", revenue: 950 },
-    { month: "Apr", revenue: 1050 },
-    { month: "May", revenue: 1474 },
-  ];
 
   // Listen for “addChartToDashboard” events; initialize collapsed = false
   useEffect(() => {
@@ -120,15 +103,15 @@ export function Xplorer() {
               y: yValues,
               orientation: "h",
               marker: { color: colors.skyBlue },
-              name: "Unit Price ($)",
+              name: "Unit Price ($)" as any,
               text: xValues.map((val: number) => `$${val}`),
               textposition: "auto",
             },
           ]}
           layout={{
             margin: { t: 20, b: 50, l: 100, r: 20 },
-            xaxis: { title: "Unit Price ($)" },
-            yaxis: { title: "Product Name", automargin: true },
+            xaxis: { title: "Unit Price ($)" as any },
+            yaxis: { title: "Product Name" as any, automargin: true },
             showlegend: false,
           }}
           style={{ width: "100%", height: "300px" }}
@@ -155,15 +138,15 @@ export function Xplorer() {
               x: xValues,
               y: yValues,
               marker: { color: colors.skyBlue },
-              name: "Number of Orders",
+              name: "Number of Orders" as any,
               text: yValues,
               textposition: "auto",
             },
           ]}
           layout={{
             margin: { t: 20, b: 50, l: 50, r: 20 },
-            xaxis: { title: "Region" },
-            yaxis: { title: "Number of Orders" },
+            xaxis: { title: "Region" as any },
+            yaxis: { title: "Number of Orders" as any },
             showlegend: false,
           }}
           style={{ width: "100%", height: "300px" }}
@@ -190,26 +173,28 @@ export function Xplorer() {
               x: xValues,
               y: yValues,
               marker: { color: colors.oceanBlue },
-              name: chart.metric,
+              name: chart.metric as any,
               text: yValues.map((val: number) =>
                 chart.metric!.toLowerCase().includes("price")
                   ? `$${val}`
                   : val
-              ),
+              ) as any,
               textposition: "auto",
             },
           ]}
           layout={{
             margin: { t: 20, b: 50, l: 60, r: 20 },
             xaxis: {
-              title:
+              title: (
                 chart.category!.charAt(0).toUpperCase() +
-                chart.category!.slice(1),
+                chart.category!.slice(1)
+              ) as any,
             },
             yaxis: {
-              title:
+              title: (
                 chart.metric!.charAt(0).toUpperCase() +
-                chart.metric!.slice(1),
+                chart.metric!.slice(1)
+              ) as any,
             },
             showlegend: false,
           }}
@@ -227,122 +212,51 @@ export function Xplorer() {
     );
   };
 
-  // === Prepare traces for “Order Processing Status” (stacked area) ===
-  const months = orderTimeData.map((row) => row.month);
-  const processingVals = orderTimeData.map((row) => row.processing);
-  const shippedVals = orderTimeData.map((row) => row.shipped);
-  const deliveredVals = orderTimeData.map((row) => row.delivered);
-
-  // === Prepare trace for “Order Revenue” (simple bar) ===
-  const revMonths = revenueData.map((row) => row.month);
-  const revValues = revenueData.map((row) => row.revenue);
 
   return (
     <div className="w-full p-4 bg-white">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-4">
-        {/* === Order Processing Status (Stacked Area, shows legend) === */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">
-            Order Processing Status
-          </h3>
-          <Plot
-            data={[
-              {
-                x: months,
-                y: processingVals,
-                type: "scatter",
-                mode: "lines",
-                fill: "tozeroy",
-                name: "Processing",
-                line: { color: colors.darkBlue },
-                fillcolor: colors.darkBlue,
-              },
-              {
-                x: months,
-                y: shippedVals,
-                type: "scatter",
-                mode: "lines",
-                fill: "tonexty",
-                name: "Shipped",
-                line: { color: colors.mediumBlue },
-                fillcolor: colors.mediumBlue,
-              },
-              {
-                x: months,
-                y: deliveredVals,
-                type: "scatter",
-                mode: "lines",
-                fill: "tonexty",
-                name: "Delivered",
-                line: { color: colors.skyBlue },
-                fillcolor: colors.skyBlue,
-              },
-            ]}
-            layout={{
-              margin: { t: 20, b: 50, l: 50, r: 20 },
-              xaxis: { title: "Month" },
-              yaxis: { title: "Count", range: [0, 120] },
-              showlegend: true,
-            }}
-            style={{ width: "100%", height: "300px" }}
-            config={{ displayModeBar: false }}
-          />
-        </div>
-
-        {/* === Order Revenue (Single‐series bar, no legend) === */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium mb-2">Order Revenue</h3>
-          <Plot
-            data={[
-              {
-                x: revMonths,
-                y: revValues,
-                type: "bar",
-                marker: { color: colors.oceanBlue },
-                name: "Revenue",
-                text: revValues.map((v) => `$${v}`),
-                textposition: "auto",
-              },
-            ]}
-            layout={{
-              margin: { t: 20, b: 50, l: 60, r: 20 },
-              xaxis: { title: "Month" },
-              yaxis: { title: "Revenue ($)", range: [630, 1500] },
-              showlegend: false,
-            }}
-            style={{ width: "100%", height: "300px" }}
-            config={{ displayModeBar: false }}
-          />
-        </div>
-
-        {/* === Dynamically Added Charts === */}
-        {addedCharts.map((chart) => (
-          <div key={chart.id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-medium">{chart.title}</h3>
-              <button
-                onClick={() => toggleCollapse(chart.id)}
-                className="text-xs"
-              >
-                {chart.collapsed ? (
-                  <ChevronDown size={16} />
-                ) : (
-                  <ChevronUp size={16} />
+      {addedCharts.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-4">
+          {/* === Dynamically Added Charts === */}
+          {addedCharts.map((chart) => (
+            <div key={chart.id} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">{chart.title}</h3>
+                <button
+                  onClick={() => toggleCollapse(chart.id)}
+                  className="text-xs"
+                >
+                  {chart.collapsed ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronUp size={16} />
+                  )}
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 mb-4">
+                {chart.query && (
+                  <code className="bg-gray-100 p-1 rounded">
+                    {chart.query.substring(0, 40)}…
+                  </code>
                 )}
-              </button>
+              </div>
+              {/* Only render the Plot if not collapsed */}
+              {renderAddedChart(chart)}
             </div>
-            <div className="text-xs text-gray-500 mb-4">
-              {chart.query && (
-                <code className="bg-gray-100 p-1 rounded">
-                  {chart.query.substring(0, 40)}…
-                </code>
-              )}
-            </div>
-            {/* Only render the Plot if not collapsed */}
-            {renderAddedChart(chart)}
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 m-4">
+          <div className="text-center p-5">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No widgets yet</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by adding widgets to your data explorer.</p>
+            <p className="text-xs text-gray-400 mt-2">Use the AI Chat to analyze data and create visualizations</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ export function DataOpsHub() {
   } = useDataOpsDashboards({
     shouldFetch: true,
   });
+const dshboardId = dashboards?.[0]?.id;
 
   const widgetIds = dashboards?.[0]?.dashboard_layout?.map(layout => layout.widget_id) || [];
 
@@ -92,6 +93,7 @@ export function DataOpsHub() {
       const { intermediate_executed_query_json, ...rest } = chartData;
       return dispatchAsync({ type: "ADD_WIDGET", payload: chartData }).then(()=>{
         const payload = {
+          dashboard_id: dshboardId,
           name: rest.name,
           owner: rest.owner,
           widget_type: rest.widget_type,
@@ -99,8 +101,7 @@ export function DataOpsHub() {
           sql_query: rest.sql_query,
           plotly_data: compressValue(intermediate_executed_query_json),
           executed_query: rest.executed_query,
-          chart_config:{
-          }
+          chart_config:""
         }
         createWidget(payload);
       });

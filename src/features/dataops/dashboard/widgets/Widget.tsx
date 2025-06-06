@@ -125,7 +125,6 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
           </div>
         );
       } else {
-        // User-defined widgets have executed_query as an object with column_names and column_values
         if (!widget.executed_query.column_names || !widget.executed_query.column_values) {
           return null;
         }

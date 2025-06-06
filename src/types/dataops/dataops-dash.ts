@@ -10,6 +10,7 @@ export interface DashboardLayout {
 }
 
 export interface Dashboard {
+  id: number;
   dashboard_id: number;
   dashboard_name: string;
   owner: string;

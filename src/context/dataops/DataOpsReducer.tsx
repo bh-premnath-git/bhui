@@ -133,7 +133,7 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
       };
     
     case "REMOVE_WIDGET":
-      const widgetIdToRemove = action.payload;
+      const widgetIdToRemove = parseInt(action.payload, 10);
       // Filter out the widget from the widgets array
       const filteredWidgets = state.widgets.filter(widget => widget.id !== widgetIdToRemove);
       

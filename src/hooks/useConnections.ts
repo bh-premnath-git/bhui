@@ -11,15 +11,6 @@ export interface RecentChat {
   name: string;
 }
 
-// Mock data just for recent chats since we don't have a real API for this yet
-// const mockRecentChats: RecentChat[] = [
-//   { id: "1", name: "Customer Analysis" },
-//   { id: "2", name: "Revenue Report" },
-//   { id: "3", name: "User Engagement" },
-//   { id: "4", name: "Sales Pipeline" },
-//   { id: "5", name: "Marketing Metrics" },
-// ];
-
 export function useConnections() {
   const { connections: adminConnections, isLoading: adminLoading, isError: adminError } = useAdminConnections();
   const [connections, setConnections] = useState<Connection[]>([]);

@@ -66,9 +66,40 @@ export const getInitialFormState = (
             return {
                 ...baseState,
                 lookup_type: transformation.lookup_type || 'Column Based',
-                lookup_config: transformation.lookup_config || { name: '', source: {} },
-                lookup_conditions: transformation.lookup_conditions || [],
-                broadcast_hint: transformation.broadcast_hint || false
+                lookup_config: transformation.lookup_config || { 
+                    name: '', 
+                    source: {},
+                    read_options: {
+                        header: true
+                    }
+                },
+                lookup_data: transformation.lookup_data || [
+                    { id: 1, department: 'Engineering' },
+                    { id: 2, department: 'Medical' },
+                    { id: 3, department: 'Arts' },
+                    { id: 4, department: 'Commerce' },
+                    { id: 5, department: 'Science' },
+                    { id: 6, department: 'Mathematics' },
+                    { id: 7, department: 'Physics' },
+                    { id: 8, department: 'Chemistry' },
+                    { id: 9, department: 'Biology' },
+                    { id: 10, department: 'Geography' }
+                ],
+                lookup_columns: transformation.lookup_columns || [
+                    { column: 'id', out_column_name: 'id' },
+                    { column: 'name', out_column_name: 'name' },
+                    { column: 'department', out_column_name: 'department' },
+                    { column: 'city', out_column_name: 'city' },
+                    { column: 'state', out_column_name: 'state' },
+                    { column: 'zip', out_column_name: 'zip' },
+                    { column: 'address', out_column_name: 'address' },
+                    { column: 'age', out_column_name: 'age' }
+                ],
+                lookup_conditions: transformation.lookup_conditions || {
+                    column_name: 'id',
+                    lookup_with: 'id'
+                },
+                keep: transformation.keep || 'First'
             };
 
         case 'Dedup':
@@ -149,7 +180,8 @@ export const getNodeIcon = (type: string): string => {
         SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
         Drop: '/assets/buildPipeline/squre/13.svg',
         Lookup: '/assets/buildPipeline/squre/3.svg',
-        CustomPySpark: '/assets/buildPipeline/squre/4.svg'
+        CustomPySpark: '/assets/buildPipeline/squre/4.svg',
+        SetCombiner:'/assets/buildPipeline/squre/8.svg'
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
 };
@@ -168,8 +200,8 @@ export const getNodePorts = (type: string) => {
         Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
         'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
-        'Set Combiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
-        Lookup: { inputs: 2, outputs: 1, maxInputs: 2 },
+        'SetCombiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        Lookup: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
         CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 }
     };
     return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };

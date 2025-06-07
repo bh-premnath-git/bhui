@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
-import { useMemo } from "react";
 import { useCreateDashboard } from "@/hooks/ueDashboard";
+import { Input } from "./ui/input";
+import { Spinner } from "./ui/spinner";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -33,7 +35,18 @@ export function Sidebar() {
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
   const location = useLocation();
-  const { navigationItems: dynamicItems = [], loading } = navigation;
+  const { navigationItems: dynamicItems = [], loading, addReport, setLoading, setError } = navigation;
+  const {
+    mutateAsync: createDashboard,
+    isPending: creatingReport,
+    isError: createError,
+    error: createErrorDetails,
+    reset: resetCreate,
+  } = useCreateDashboard();  
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [newReportOpen, setNewReportOpen] = useState(false);
+  const [newReportName, setNewReportName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   
   // Generate items for the navigation menu
   const navItems = useMemo(() => {
@@ -71,6 +84,22 @@ export function Sidebar() {
     const xplorerItem = dynamicItems.find(item => item.title === "Data Xplorer");
     return xplorerItem?.subItems || [];
   }, [dynamicItems]);
+
+  const handleCreateReport = async () => {
+    if (!newReportName.trim()) return;
+    try {
+      setIsCreating(true);
+      const result = await createDashboard({ name: newReportName, dashboard_type: 'explorer' });
+      const id = result?.id ?? newReportName.toLowerCase().replace(/\s+/g, '-');
+      addReport({ id, title: newReportName });
+      setNewReportName('');
+      setNewReportOpen(false);
+    } catch (err) {
+      console.error('Failed to create report:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   // Function to check if a parent item has an active child
   const hasActiveChild = (parentPath) => {
@@ -255,19 +284,14 @@ export function Sidebar() {
                             <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
                               <DropdownMenuItem 
                                 className="cursor-pointer flex items-center gap-2"
-                                onClick={() => {
-                                  // Open search functionality
-                                  console.log("Search clicked");
-                                }}
+                                onClick={() => setSearchOpen(true)}
                               >
                                 <Search className="h-4 w-4" />
                                 <span>Search</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="cursor-pointer flex items-center gap-2"
-                                onClick={() => {
-                                  navigation.handleNavigation(`${ROUTES.DATA_CATALOG}/xplorer`);
-                                }}
+                                onClick={() => setNewReportOpen(true)}
                               >
                                 <PlusCircle className="h-4 w-4" />
                                 <span>New Report</span>
@@ -322,6 +346,54 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
+       {/* Search Modal */}
+       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Search Reports</DialogTitle>
+          </DialogHeader>
+          <Input autoFocus placeholder="Search..." />
+          <DialogFooter>
+            <Button onClick={() => setSearchOpen(false)}>Search</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* New Report Modal */}
+      <Dialog
+        open={newReportOpen}
+        onOpenChange={value => {
+          if (!value) {
+            resetCreate();
+            setNewReportName('');
+          }
+          setNewReportOpen(value);
+        }}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>New Report</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Report Name"
+            value={newReportName}
+            onChange={e => setNewReportName(e.target.value)}
+          />
+          {createError && (
+            <p className="text-destructive text-sm mt-2">
+              {(createErrorDetails as Error)?.message || 'Failed to create report'}
+            </p>
+          )}
+          <DialogFooter>
+            <Button onClick={handleCreateReport} disabled={creatingReport || !newReportName.trim()}>
+              {creatingReport ? (
+                <Spinner className="h-4 w-4" />
+              ) : (
+                'Create'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="h-auto border-t border-gray-200 dark:border-gray-800">
         <div className={cn(
           "p-3 flex items-center",

@@ -10,7 +10,6 @@ import { ExecutedQueryItem } from "@/types/dataops/dataops-dash";
 import { useSidebar } from "@/context/SidebarContext";
 import "react-grid-layout/css/styles.css";
 
-const ResponsiveReactGridLayout = Responsive;
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'dashboard_layout';
 // Default widget dimensions
@@ -124,7 +123,7 @@ const GridLayout = () => {
   return (
     <div className="mt-1">
     <ResponsiveGridLayout
-      className="layout"
+      className="layout bg-muted/70 dark:bg-muted/45 p-1 rounded-md"
       key={measurementKey} 
       layouts={{
         lg: initialLayout,
@@ -150,7 +149,7 @@ const GridLayout = () => {
       {renderableWidgets.map((widget) => (
         <div
           key={`${widget.id.toString()}`}
-          className="rounded-lg shadow-sm bg-card h-full"
+          className="rounded-lg border border-border/40 shadow-md hover:shadow-lg transition-shadow duration-200 bg-card dark:bg-card/95 h-full backdrop-blur-[2px] hover:border-border/80"
         >
           <Widget widget={widget} />
         </div>
@@ -162,7 +161,7 @@ const GridLayout = () => {
 
 export const DashboardLayout = () => {
   return (
-    <div className="p-1">
+    <div className="p-2 rounded-lg">
       <GridLayout />
     </div>
   );

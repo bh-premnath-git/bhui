@@ -3,9 +3,9 @@ import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
 
-const XplorerPage = () => {
+const XplorerMockPage = () => {
   return (
-    <div className="min-h-screen p-1 bg-background">
+    <div className="p-2">
       <DashboardProvider>
         <AnalyticsProvider>
           <Xplorer />
@@ -15,4 +15,4 @@ const XplorerPage = () => {
   )
 }
 
-export default withPageErrorBoundary(XplorerPage, 'XplorerPage');
+export default withPageErrorBoundary(XplorerMockPage, 'XplorerMockPage');

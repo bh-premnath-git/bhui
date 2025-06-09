@@ -10,7 +10,6 @@ import { ExecutedQueryItem } from "@/types/dataops/dataops-dash";
 import { useSidebar } from "@/context/SidebarContext";
 import "react-grid-layout/css/styles.css";
 
-const ResponsiveReactGridLayout = Responsive;
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'dashboard_layout';
 // Default widget dimensions

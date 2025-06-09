@@ -96,19 +96,27 @@ export function DataOpsHub() {
           return;
         }
 
-        const chartData = event.detail;
-        const { intermediate_executed_query_json, ...rest } = chartData;
+        const chartDataFromEvent = event.detail; // Contains full structure from GenericChatUI
+        const { intermediate_executed_query_json, ...restOfChartData } = chartDataFromEvent;
         
-        dispatchAsync({ type: "ADD_WIDGET", payload: chartData }).then(() => {
-          const payload = {
+        // Optimistic update with the full structure received from the event
+        dispatchAsync({ type: "ADD_WIDGET", payload: chartDataFromEvent }).then(() => {
+          // Prepare payload for the backend
+          const payloadForCreateWidget = {
             dashboard_id: state.selectedDashboard.dashboard_id ?? 101,
-            name: rest.name,
-            widget_type: rest.widget_type,
-            sql_query: rest.sql_query,
-            chart_config: compressValue(intermediate_executed_query_json),
-            executed_query: rest.executed_query,
+            name: restOfChartData.name,
+            widget_type: restOfChartData.widget_type,
+            sql_query: restOfChartData.sql_query,
+            // Use the simple chart_config from the event detail
+            chart_config: restOfChartData.chart_config, 
+            // Store the full Plotly JSON (data & layout) compressed in plotly_data
+            plotly_data: compressValue(intermediate_executed_query_json), 
+            executed_query: restOfChartData.executed_query,
+            // Ensure other necessary fields for widget creation are included
+            // For example, if the backend expects 'description' or 'metric' in chart_config,
+            // ensure they are present in chartDataFromEvent.chart_config
           };
-          createWidget(payload);
+          createWidget(payloadForCreateWidget);
         });
       };
 

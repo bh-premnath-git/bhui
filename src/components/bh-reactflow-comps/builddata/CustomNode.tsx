@@ -416,16 +416,13 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     onImageClick={(e: React.MouseEvent) => {
                         if (onImageClick) {
                             e.stopPropagation();
-                            console.log(nodes)
                             onImageClick(id);
                             let node = nodes.find((n) => n.id == id)
-                            console.log(node)
-                            console.log(data?.id)
-                            selectNode(data?.id?.toString());
+                            console.log(data?.id, "data?.id", id, "id", node, "node")
+                            // selectNode(data?.id?.toString());
                             setSelectedNode(node)
                             setSelectedNodeId(data?.id)
 
-                            // Set a small timeout to ensure the FlowContext has time to update
                             setTimeout(() => {
                                 setSelectedNodeId(data?.id);
                                 setIsNodeFormOpen(true);

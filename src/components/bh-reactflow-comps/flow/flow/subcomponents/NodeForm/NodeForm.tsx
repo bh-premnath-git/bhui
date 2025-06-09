@@ -37,6 +37,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const {
         saveFlow,
         selectedNode,
+        setSelectedNode, // Add this to get the setSelectedNode function
         setFormDataNum,
         nodeFormData,
         prevNodeFn,
@@ -50,6 +51,9 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         getPipelineDetails,
         flowPipeline,
     } = useFlow();
+    
+    // Log the selectedNode from the Flow context
+    console.log("NodeForm: selectedNode from Flow context:", selectedNode);
     const {
         updatedSelectedNodeId,
         nodes,
@@ -96,9 +100,60 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         setPipelineData(details);
         console.log("Updated pipelineDetails in NodeForm:", details);
     }, [getPipelineDetails, flowPipeline]); // Added flowPipeline as dependency
+    
+    // Add an effect to log when selectedNode changes
+    useEffect(() => {
+        console.log("NodeForm: selectedNode changed:", selectedNode);
+        if (selectedNode) {
+            console.log("NodeForm: selectedNode ID:", selectedNode.id);
+            console.log("NodeForm: This component's ID:", id);
+            console.log("NodeForm: Do they match?", selectedNode.id === id);
+        }
+    }, [selectedNode, id]);
 
+    // Add more detailed logging for debugging
+    console.log("NodeForm: Checking selectedNode:", selectedNode);
+    console.log("NodeForm: Checking id:", id);
+    console.log("NodeForm: Checking if selectedNode exists:", !!selectedNode);
+    
+    // If selectedNode is not available, try to find it in the nodes array
     if (!selectedNode) {
         console.log("NodeForm: No selected node found for id:", id);
+        
+        // Try to find the node in the nodes array
+        const nodeFromId = nodes.find(n => n.id === id);
+        
+        if (nodeFromId) {
+            console.log("NodeForm: Found node in nodes array:", nodeFromId);
+            // We found the node, but we need to update the selectedNode in the FlowContext
+            // This is a workaround - in a real app, you'd want to fix the root cause
+            setTimeout(() => {
+                console.log("NodeForm: Setting selectedNode from nodes array");
+                setSelectedNode(nodeFromId);
+            }, 0);
+            
+            // Continue with the found node
+            console.log("NodeForm: Continuing with found node");
+            return (
+                <div className="p-4">
+                    <div className="animate-pulse flex space-x-4">
+                        <div className="flex-1 space-y-4 py-1">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div className="space-y-2">
+                                <div className="h-4 bg-gray-200 rounded"></div>
+                                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-center mt-4">Loading node data...</p>
+                </div>
+            );
+        }
+        
+        // Add a delay and check again
+        setTimeout(() => {
+            console.log("NodeForm: Checking selectedNode after delay:", selectedNode);
+        }, 500);
         return null;
     }
 
@@ -923,8 +978,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [selectedNode, initialNodeType, updateNodeMeta, updatedSelectedNodeId]);
 
     useEffect(() => {
-        setRequiredFieldsState(selectedNode.data.requiredFields);
-    }, [selectedNode.data.requiredFields]);
+        // Check if selectedNode.data.requiredFields exists before setting it
+        if (selectedNode?.data?.requiredFields) {
+            setRequiredFieldsState(selectedNode.data.requiredFields);
+        }
+    }, [selectedNode?.data?.requiredFields]);
 
     // Initialize pipeline parameters when pipelineData changes and type is EmrAddStepsOperator
     useEffect(() => {

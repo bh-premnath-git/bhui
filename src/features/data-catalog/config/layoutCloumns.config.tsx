@@ -87,24 +87,61 @@ export const createColumns = (
       enableColumnFilter: false,
     },
     {
-      id: 'lyt_fld_data_type_cd',
-      accessorKey: 'lyt_fld_data_type_cd',
+      id: 'lyt_fld_data_type',
+      accessorKey: 'lyt_fld_data_type',
       header: 'Data Type',
-      cell: ({ getValue }) => {
-        const value = getValue() as number;
-        const dataTypeMap: { [key: number]: string } = {
-          1: 'Integer',
-          2: 'String',
-          3: 'Boolean',
+      cell: ({ getValue, row }) => {
+
+        const value = getValue() as string;
+        const dataTypeMap: { [key: string]: string } = {
+          'Integer': 'Integer',
+          'String': 'String',
+          'Boolean': 'Boolean',
+          'Date': 'Date',
+          'Float': 'Float',
+          'Double': 'Double',
+          'Decimal': 'Decimal',
+          'Timestamp': 'Timestamp',
+          'Array': 'Array',
+          'Object': 'Object',
+          'Binary': 'Binary',
+          'Long': 'Long',
+          'Short': 'Short',
+          'Char': 'Char',
+          'Byte': 'Byte',
+          'Json': 'JSON',
+          'Time': 'Time',
         };
         return dataTypeMap[value] || 'String';
       },
+    },
+    {
+      id: 'pii_classification',
+      accessorKey: 'pii_classification',
+      header: 'PII Classification',
+      enableColumnFilter: false,
+      cell: ({ getValue }) => {
+        const value = getValue() as string;
+        const colorMap: Record<string, string> = {
+          'HIGH': 'text-red-600 font-medium',
+          'MEDIUM': 'text-amber-600 font-medium',
+          'LOW': 'text-green-600 font-medium',
+          'NONE': 'text-gray-600 font-medium'
+        };
+        
+        return (
+          <span className={colorMap[value] || 'text-gray-600'}>
+            {(value || 'NONE').toUpperCase()}
+          </span>
+        );
+      }
     },
     {
       id: 'lyt_fld_tags',
       accessorKey: 'lyt_fld_tags',
       header: 'Tags',
       cell: ({ getValue, row }) => {
+
         const fieldId = row.original.lyt_fld_id;
         const tags = getValue() as LayoutFieldTags | undefined;
         const rowData = row.original;

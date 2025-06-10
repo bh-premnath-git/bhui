@@ -626,11 +626,11 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
   return (
     <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
       <Toaster />
-      <Card>
+      <Card className="h-fit">
         <CardHeader className="pb-2">
           <h3 className="text-lg font-semibold">About</h3>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 max-h-[200px] overflow-y-auto">
           <DescriptionSection
             description={descriptionState.current}
             isEditingDesc={isEditingDesc}
@@ -646,7 +646,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Connection</h3>
           {isConnectionChanged && (
@@ -660,7 +660,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
             </Button>
           )}
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 max-h-[150px] overflow-y-auto">
           <div className="space-y-2">
             <Select
               value={selectedConnection || ''}
@@ -684,7 +684,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Links</h3>
           <Button
@@ -697,12 +697,12 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
             <LinkIcon className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 max-h-[200px] overflow-y-auto">
           <LinksSection links={links} onRemoveLink={handleRemoveLink} />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Owners</h3>
           <Button
@@ -715,12 +715,12 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
             <Users className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 max-h-[200px] overflow-y-auto">
           <OwnersSection owners={owners} onRemoveOwner={handleRemoveOwner} />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Tags</h3>
           <Button
@@ -733,7 +733,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
             <Tag className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 max-h-[150px] overflow-y-auto">
           <TagsSection tags={tags} onDeleteTag={handleRemoveTag} />
         </CardContent>
       </Card>

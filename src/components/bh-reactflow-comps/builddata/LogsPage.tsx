@@ -127,7 +127,7 @@ export const Terminal: React.FC<TerminalProps> = ({
       const taskParam = selectedTaskId ? `?task_id=${selectedTaskId}` : '';
       return `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/flow/stream-logs/${actualName}${taskParam}`;
     } else {
-      return `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
+      return `${CATALOG_REMOTE_API_URL}${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
     }
   }, [isFlow, actualName, selectedTaskId]);
 
@@ -239,7 +239,15 @@ export const Terminal: React.FC<TerminalProps> = ({
     }
   }, [previewData, isFlow]);
   const startStreaming = React.useCallback(async () => {
-    if (!isStreaming && actualName && actualName !== "Unknown Flow" && actualName !== "Unknown Pipeline") {
+    // First, ensure any existing stream is stopped
+    if (isStreaming && cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+      setIsStreaming(false);
+    }
+    
+    // Now start a new stream if we have a valid name
+    if (actualName && actualName !== "Unknown Flow" && actualName !== "Unknown Pipeline") {
       setIsStreaming(true);
       try {
         await start();
@@ -273,12 +281,45 @@ export const Terminal: React.FC<TerminalProps> = ({
       };
       setLocalTerminalLogs(prev => [...prev, warningLog]);
     }
-  }, [isStreaming, start, stop, actualName, isFlow]);
-  // Start streaming only for pipeline context (not flow) when the terminal tab is active AND the component is open
+  }, [isStreaming, start, stop, actualName, isFlow, cleanupRef]);
+  // We use a ref to track if we've already attempted to start streaming to prevent multiple calls
+  const hasAttemptedStreamingRef = React.useRef(false);
+  
+  // Handle tab changes
   React.useEffect(() => {
-    if (!isFlow && isOpen && activeTab === "terminal" && !isStreaming) {
+    // When switching to the terminal tab in pipeline context
+    if (activeTab === "terminal" && !isFlow && isOpen) {
+      // If we're not streaming, start streaming
+      if (!isStreaming && !hasAttemptedStreamingRef.current) {
+        hasAttemptedStreamingRef.current = true;
+        startStreaming();
+      }
+    } else {
+      // When switching away from the terminal tab, reset the attempt tracking
+      // but don't stop the stream (it will continue in the background)
+      hasAttemptedStreamingRef.current = false;
+    }
+  }, [activeTab, isFlow, isOpen, isStreaming, startStreaming]);
+  
+  // Handle initial streaming setup when component mounts or isOpen changes
+  React.useEffect(() => {
+    // Only attempt to start streaming if:
+    // 1. We're not in flow context
+    // 2. The terminal is open
+    // 3. The terminal tab is active
+    // 4. We're not already streaming
+    // 5. We haven't already attempted to start streaming
+    if (!isFlow && isOpen && activeTab === "terminal" && !isStreaming && !hasAttemptedStreamingRef.current) {
+      hasAttemptedStreamingRef.current = true;
       startStreaming();
     }
+    
+    // Cleanup function to reset the ref when component unmounts or closes
+    return () => {
+      if (!isOpen) {
+        hasAttemptedStreamingRef.current = false;
+      }
+    };
   }, [isFlow, isOpen, activeTab, isStreaming, startStreaming]);
   
   const stopStreaming = React.useCallback(() => {
@@ -538,13 +579,9 @@ export const Terminal: React.FC<TerminalProps> = ({
 
       // For flow context, fetch logs when the terminal is opened and the terminal tab is active
       if (isFlow && activeTab === "terminal") {
-      
-      } else if (!isFlow) {
-        // For pipeline context, start streaming
-        if (activeTab === "terminal" && !isStreaming) {
-          startStreaming();
-        }
+        // Flow-specific logic (if needed)
       }
+      // We'll handle pipeline streaming in a separate useEffect to avoid multiple calls
     } else {
       // When closing, clean up
       setIsMinimized(false);
@@ -553,13 +590,17 @@ export const Terminal: React.FC<TerminalProps> = ({
 
       // Always stop streaming when closed
       stopStreaming();
+      
+      // Reset the streaming attempt tracking
+      hasAttemptedStreamingRef.current = false;
     }
 
     // Return cleanup function to stop streaming when component unmounts
     return () => {
       stopStreaming();
+      hasAttemptedStreamingRef.current = false;
     };
-  }, [isOpen, defaultHeight, stopStreaming, isFlow, activeTab, dagRunId, selectedEnvironment, isStreaming, startStreaming])
+  }, [isOpen, defaultHeight, stopStreaming, isFlow, activeTab])
 
   React.useEffect(() => {
     // Only apply scroll lock when the terminal is actually open

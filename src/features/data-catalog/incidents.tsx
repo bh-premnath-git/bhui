@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BarChart, PieChart } from '@/components/bh-charts'
+// import { BarChart, PieChart } from '@/components/bh-charts'
 import { 
   Table,
   TableBody,
@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { 
   AlertTriangle, 
   Clock, 
+  PieChart, 
   Shield,
   X
 } from 'lucide-react'
+import { BarChart } from 'recharts'
 
 // Mock data
 const mockIncidents = [

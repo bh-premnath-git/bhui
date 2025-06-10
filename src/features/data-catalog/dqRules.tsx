@@ -9,8 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { BarChart } from "@/components/bh-charts"
-import { AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { AlertCircle, Clock, CheckCircle, BarChart } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Stub data - replace with API data later

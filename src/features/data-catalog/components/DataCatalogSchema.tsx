@@ -334,11 +334,36 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
   return (
     <Tabs defaultValue="schema" className="mt-6">
       <TabsList>
-        <TabsTrigger value="schema">Schema Details</TabsTrigger>
-        <TabsTrigger value="lineage">Lineage</TabsTrigger>
-        <TabsTrigger value="dataProfile">Data Profile</TabsTrigger>
-        <TabsTrigger value="incidents">Incidents</TabsTrigger>
-        <TabsTrigger value="dqRules">DQ Rules</TabsTrigger>
+        <TabsTrigger 
+          value="schema" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Schema Details
+        </TabsTrigger>
+        <TabsTrigger 
+          value="lineage" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Lineage
+        </TabsTrigger>
+        <TabsTrigger 
+          value="dataProfile" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Data Profile
+        </TabsTrigger>
+        <TabsTrigger 
+          value="incidents" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Incidents
+        </TabsTrigger>
+        <TabsTrigger 
+          value="dqRules" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          DQ Rules
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="schema">
         <div className="mt-4 flex gap-6">
@@ -376,7 +401,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
         <Lineage />
       </TabsContent>
       <TabsContent value="dataProfile">
-        <DataProfile />
+        <DataProfile dataSourceId={dataSourceId} />
       </TabsContent>
       <TabsContent value="incidents">
         <Incidents />

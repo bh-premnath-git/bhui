@@ -81,40 +81,24 @@ const BuildPlayGround: React.FC = () => {
         setSelectedNodeId,
         setNodes,
     } = usePipelineContext();
-    const {
-        zoomIn,
-        zoomOut,
-        fitView,
-        saveFlow,
-        loadFlow
-    } = useFlowOperations(
-        reactFlowInstance,
-        nodes,
-        edges,
-        nodeFormData,
-        selectedFlowId,
-        setIsSaving,
-        setIsSaved,
-        prevNodeFn
-    );
+    
     const onError = useCallback((id: string) => {
         // console.log('Flow Error:', id);
     }, []);
     const [moduleTypes] = useModules();
 
     const dispatch = useAppDispatch();
-    console.log(nodeFormData, "7858")
     const { id } = useParams();
     const { useFetchFlowById } = useFlowApi();
     const { data: flow, isLoading, isError } = useFetchFlowById(id || '');
     const handleOpenNodeForm = useCallback((nodeId: string) => {
-        console.log(nodeId)
-        // First select the node in the Flow context
-        selectNode(nodeId);
+        // console.log(nodeId)
+        // // First select the node in the Flow context
+        // selectNode(nodeId);
 
-        // Then set the selected node ID and open the form
-        setSelectedNodeId(nodeId);
-        setIsNodeFormOpen(true);
+        // // Then set the selected node ID and open the form
+        // setSelectedNodeId(nodeId);
+        // setIsNodeFormOpen(true);
     }, [selectNode, setSelectedNodeId, setIsNodeFormOpen]);
 
     const filteredNodes = useMemo(() => nodeData.nodes, []);

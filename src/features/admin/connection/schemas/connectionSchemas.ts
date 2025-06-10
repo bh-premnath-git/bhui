@@ -33,6 +33,52 @@ export const connectionSchemas = {
       required: ["host", "port", "database", "username", "password"]
     }
   },
+  oracle: {
+    connectionSpecification: {
+      properties: {
+        host: {
+          type: "string",
+          title: "Host",
+          description: "Your Oracle host name"
+        },
+        port: {
+          type: "number",
+          title: "Port",
+          default: 1521,
+          description: "Database port number"
+        },
+        service_name: {
+          type: "string",
+          title: "Service Name",
+          description: "Your Oracle service name",
+          nullable: true
+        },
+        sid: {
+          type: "string",
+          title: "SID",
+          description: "Your Oracle SID",
+          nullable: true
+        },
+        username: {
+          type: "string",
+          title: "Username",
+          description: "Your Oracle username"
+        },
+        password: {
+          type: "string",
+          title: "Password",
+          description: "Your Oracle password"
+        },
+        schemas: {
+          type: "string",
+          title: "Schemas",
+          description: "Your Oracle schemas",
+          nullable: true
+        }
+      },
+      required: ["host", "port", "username", "password", "schemas"]
+    }
+  },
   snowflake: {
     connectionSpecification: {
       properties: {
@@ -96,4 +142,4 @@ export const connectionSchemas = {
       ]
     }
   }
-}; 
+};

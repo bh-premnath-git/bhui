@@ -48,5 +48,5 @@ export interface BaseConnectionConfig {
     sid?: string;
     username: string;
     password: string;
-    db_schema?: string;
+    schema?: string;
   }

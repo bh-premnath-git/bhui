@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import ai from '/assets/ai/ai.svg';
 import { useSidebar } from '@/context/SidebarContext';
 import { FlowChatSlidingPortal } from '../flow-playground-header/components/FlowChatSlidingPortal';
-import { PipeLineChatSlidingPortal } from '../build-playground-header/components/PipeLineChatSlidingPortal';
+import PipeLineChatSlidingPortal from '../build-playground-header/components/PipeLineChatSlidingPortal';
 import { DataTable } from '@/components/bh-table/data-table';
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { useDispatch } from 'react-redux';

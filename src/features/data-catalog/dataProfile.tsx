@@ -2,9 +2,9 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-// import { BarChart } from "@/components/bh-charts/BarChart"
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw, BarChart } from "lucide-react"
+import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw } from "lucide-react"
+import { BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Bar } from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
@@ -966,16 +966,26 @@ const DataProfile = ({ dataSourceId }: DataProfileProps) => {
               <div className="p-3">
                 <p className="text-xs font-medium text-gray-700 mb-3">Distribution of {selectedColumn.name}</p>
                 <div className="h-[300px]">
-                  <BarChart
-                    data={selectedColumn.distribution}
-                    xAxisDataKey="range"
-                    bars={["count"]}
-                    colors={[COLORS.primary]}
-                    config={{
-                      valueFormatter: (value) => value.toLocaleString(),
-                      labels: ["Count"]
-                    }}
-                  />
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={selectedColumn.distribution}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="range" />
+                      <YAxis />
+                      <RechartsTooltip 
+                        formatter={(value) => value.toLocaleString()} 
+                        labelFormatter={(label) => `Range: ${label}`}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        name="Count" 
+                        fill={COLORS.primary}
+                        radius={[4, 4, 0, 0]} 
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </TabsContent>

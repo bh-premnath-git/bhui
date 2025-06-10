@@ -46,9 +46,24 @@ export function useNavigation(): NavigationHook {
     
     // Replace path parameters if provided
     if (params) {
+      const queryParams = new URLSearchParams();
+      let hasQueryParams = false;
+      
       Object.entries(params).forEach(([key, value]) => {
-        finalPath = finalPath.replace(`:${key}`, value);
+        // Check if the parameter exists in the path
+        if (finalPath.includes(`:${key}`)) {
+          finalPath = finalPath.replace(`:${key}`, value);
+        } else {
+          // Add as query parameter
+          queryParams.append(key, value);
+          hasQueryParams = true;
+        }
       });
+      
+      // Append query parameters if any
+      if (hasQueryParams) {
+        finalPath = `${finalPath}${finalPath.includes('?') ? '&' : '?'}${queryParams.toString()}`;
+      }
     }
 
     // Check if we're currently on the build-datapipeline route and trying to navigate away

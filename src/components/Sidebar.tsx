@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import { useSidebar } from "@/context/SidebarContext";
 import { useNavigation } from "@/hooks/useNavigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,9 +24,10 @@ import { useTheme } from "@/context/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
-import { useCreateDashboard, useListDashboards } from "@/hooks/ueDashboard";
+import { useCreateDashboard, useListDashboards, useUpdateDashboard, useDeleteDashboard } from "@/hooks/ueDashboard";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -35,80 +36,70 @@ export function Sidebar() {
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
   const location = useLocation();
-  const { navigationItems: dynamicItems = [], loading, addReport, setLoading, setError } = navigation;
+  const queryClient = useQueryClient();
+
+  const { navigationItems: dynamicBaseItems = [], loading: navLoading } = navigation;
+
   const {
     mutateAsync: createDashboard,
     isPending: creatingReport,
-    isError: createError,
-    error: createErrorDetails,
     reset: resetCreate,
-  } = useCreateDashboard();  
+  } = useCreateDashboard();
+  const { data: dashboards, isLoading: dashboardsLoading, error: listError } = useListDashboards();
+  const { mutateAsync: updateDashboard, isPending: updatingDashboard } = useUpdateDashboard();
+  const { mutateAsync: deleteDashboard, isPending: deletingDashboard } = useDeleteDashboard();
+
   const [searchOpen, setSearchOpen] = useState(false);
-  const [newReportOpen, setNewReportOpen] = useState(false);
-  const [newReportName, setNewReportName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  
-  // Generate items for the navigation menu
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [editingReportName, setEditingReportName] = useState("");
+
   const navItems = useMemo(() => {
     const items = [];
-    
-    dynamicItems.forEach(item => {
-      // Add parent items
+    dynamicBaseItems.forEach(item => {
       const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
-      
       items.push({
         ...item,
         showIcon: showIconForParent,
-        isParent: true // Mark as parent item
+        isParent: true
       });
-      
-      // Only add subitems for non-Data Xplorer parents
-      // Data Xplorer subitems are handled separately
       if (item.subItems && item.subItems.length > 0 && item.title !== "Data Xplorer") {
         item.subItems.forEach(subItem => {
           items.push({
             ...subItem,
             isSubItem: true,
             parentPath: item.path,
-            showIcon: true // All subitems show icons
+            showIcon: true
           });
         });
       }
     });
-    
     return items;
-  }, [dynamicItems]);
-  
-  // Get Data Xplorer specific items
-  const dataXplorerSubItems = useMemo(() => {
-    const xplorerItem = dynamicItems.find(item => item.title === "Data Xplorer");
-    return xplorerItem?.subItems || [];
-  }, [dynamicItems]);
+  }, [dynamicBaseItems]);
 
-  const handleCreateReport = async () => {
-    if (!newReportName.trim()) return;
+  const dataXplorerSubItems = useMemo(() => {
+    if (dashboardsLoading || !dashboards) return [];
+    return dashboards.map((dashboard: any) => ({
+      id: dashboard.id.toString(),
+      title: dashboard.name,
+      path: `${ROUTES.DATA_CATALOG}/xplorer/${dashboard.id}`,
+      icon: undefined,
+      isSubItem: true,
+      parentPath: `${ROUTES.DATA_CATALOG}/xplorer`
+    }));
+  }, [dashboards, dashboardsLoading]);
+
+  const handleCreateNewReport = async () => {
+    if (creatingReport) return;
+    resetCreate();
     try {
-      setIsCreating(true);
-      const result = await createDashboard({ name: newReportName, dashboard_type: 'explorer' });
-      const id = result?.id ?? newReportName.toLowerCase().replace(/\s+/g, '-');
-      addReport({ id, title: newReportName });
-      setNewReportName('');
-      setNewReportOpen(false);
+      const newDashboard = await createDashboard({ name: "Untitled Report", dashboard_type: 'explorer' });
+      await queryClient.invalidateQueries({ queryKey: ['dashboardslist'] });
+      if (newDashboard && newDashboard.id) {
+        // navigation.handleNavigation(`${ROUTES.DATA_CATALOG}/xplorer/${newDashboard.id}`);
+      }
     } catch (err) {
       console.error('Failed to create report:', err);
-    } finally {
-      setIsCreating(false);
     }
-  };
-
-  // Function to check if a parent item has an active child
-  const hasActiveChild = (parentPath) => {
-    return location.pathname.startsWith(parentPath) && 
-           navItems.some(item => 
-             item.isSubItem && 
-             item.parentPath === parentPath && 
-             location.pathname === item.path
-           );
   };
 
   const handleLogout = async () => {
@@ -118,6 +109,42 @@ export function Sidebar() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleDeleteReport = async (id: string) => {
+    if (deletingDashboard) return;
+    try {
+      await deleteDashboard(id);
+      await queryClient.invalidateQueries({ queryKey: ['dashboardslist'] });
+    } catch (err) {
+      console.error('Failed to delete report:', err);
+    }
+  };
+
+  const handleStartRenameReport = (id: string, currentName: string) => {
+    setEditingReportId(id);
+    setEditingReportName(currentName);
+  };
+
+  const handleSaveReportName = async () => {
+    if (updatingDashboard || !editingReportId || !editingReportName.trim()) return;
+    
+    try {
+      await updateDashboard({
+        dashboardId: editingReportId,
+        name: editingReportName
+      });
+      await queryClient.invalidateQueries({ queryKey: ['dashboardslist'] });
+      setEditingReportId(null);
+      setEditingReportName("");
+    } catch (err) {
+      console.error('Failed to rename report:', err);
+    }
+  };
+
+  const handleCancelRename = () => {
+    setEditingReportId(null);
+    setEditingReportName("");
   };
 
   const userName = userInfo?.name || userInfo?.username || "John Doe";
@@ -134,7 +161,6 @@ export function Sidebar() {
     >
       <div className="h-16 flex items-center px-4 border-gray-200 dark:border-gray-800">
         <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
-          
           <div className="overflow-hidden">
             <h1
               className={cn(
@@ -166,8 +192,7 @@ export function Sidebar() {
       >
         {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </Button>
-      
-      {/* Add custom scrollbar styles */}
+
       {isExpanded && (
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -206,7 +231,7 @@ export function Sidebar() {
           `
         }} />
       )}
-      
+
       <nav className={cn(
         "flex-1 overflow-y-auto py-4",
         isExpanded && "sidebar-nav-scrollable"
@@ -217,12 +242,13 @@ export function Sidebar() {
         )}>
           {navItems.map((item) => {
             const shouldShow = isExpanded || (!isExpanded && item.showIcon);
-            
+
             if (!shouldShow) {
               return null;
-            }            
+            }
+
             const needsTooltip = !isExpanded && item.showIcon;
-            
+
             const navElement = (
               <a
                 href={item.path}
@@ -234,9 +260,9 @@ export function Sidebar() {
                   "flex items-center py-2 rounded-md",
                   "transition-all duration-200 ease-in-out",
                   "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                  location.pathname === item.path ? 
-                    "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground" : 
-                    "text-gray-800 dark:text-gray-200",
+                  location.pathname === item.path
+                    ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
+                    : "text-gray-800 dark:text-gray-200",
                   "flex-1",
                   !isExpanded && item.showIcon && "justify-center px-3",
                   isExpanded && "px-3",
@@ -254,7 +280,6 @@ export function Sidebar() {
                     "flex-1 transition-opacity duration-200",
                     item.showIcon && "ml-3",
                     item.isSubItem && "text-sm",
-                    // Make parent items without icons have smaller text
                     !item.showIcon && item.isParent && "text-sm font-medium"
                   )}>
                     {item.title}
@@ -262,7 +287,7 @@ export function Sidebar() {
                 )}
               </a>
             );
-            
+
             return (
               <li key={item.path}>
                 <div className="flex">
@@ -280,7 +305,7 @@ export function Sidebar() {
                   ) : (
                     navElement
                   )}
-                  
+
                   {isExpanded && item.actions && !item.isSubItem && (
                     <div className="flex items-center">
                       {item.actions.map((action, index) => (
@@ -296,18 +321,23 @@ export function Sidebar() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="cursor-pointer flex items-center gap-2"
                                 onClick={() => setSearchOpen(true)}
                               >
                                 <Search className="h-4 w-4" />
                                 <span>Search</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="cursor-pointer flex items-center gap-2"
-                                onClick={() => setNewReportOpen(true)}
+                                onClick={handleCreateNewReport}
+                                disabled={creatingReport}
                               >
-                                <PlusCircle className="h-4 w-4" />
+                                {creatingReport ? (
+                                  <Spinner className="h-4 w-4 mr-2" />
+                                ) : (
+                                  <PlusCircle className="h-4 w-4" />
+                                )}
                                 <span>New Report</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -329,28 +359,101 @@ export function Sidebar() {
                 </div>
                 {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
                 {isExpanded && item.title === "Data Xplorer" && dataXplorerSubItems.length > 0 && (
-                  <ul className="mt-1 space-y-1">
+                  <ul className="mt-1 space-y-1 sidebar-subitems-scrollable">
                     {dataXplorerSubItems.map(subItem => (
                       <li key={subItem.path}>
-                        <a
-                          href={subItem.path}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigation.handleNavigation(subItem.path);
-                          }}
-                          className={cn(
-                            "flex items-center px-3 py-2 rounded-md",
-                            "transition-all duration-200 ease-in-out",
-                            "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                            location.pathname === subItem.path ? 
-                              "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground" : 
-                              "text-gray-700 dark:text-gray-300",
-                            "text-sm pl-6"
+                        <div className="flex items-center">
+                          {editingReportId === subItem.id ? (
+                            <div className="flex-1 flex items-center gap-1 px-3 py-1">
+                              <Input
+                                value={editingReportName}
+                                onChange={(e) => setEditingReportName(e.target.value)}
+                                className="h-7 text-sm"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSaveReportName();
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    handleCancelRename();
+                                  }
+                                }}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={handleSaveReportName}
+                                disabled={updatingDashboard || !editingReportName.trim()}
+                              >
+                                {updatingDashboard ? <Spinner className="h-3 w-3" /> : <Check className="h-3 w-3 text-green-500" />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={handleCancelRename}
+                              >
+                                <X className="h-3 w-3 text-red-500" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <a
+                                href={subItem.path}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
+                                }}
+                                className={cn(
+                                  "flex items-center px-3 py-2 rounded-md",
+                                  "transition-all duration-200 ease-in-out",
+                                  "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
+                                  location.pathname === subItem.path
+                                    ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
+                                    : "text-gray-700 dark:text-gray-300",
+                                  "text-sm pl-6 flex-1"
+                                )}
+                              >
+                                {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                <span className="ml-3 flex-1">{subItem.title}</span>
+                              </a>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                                  >
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                                  <DropdownMenuItem
+                                    className="cursor-pointer flex items-center gap-2 text-xs"
+                                    onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                    <span>Rename</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
+                                    onClick={() => handleDeleteReport(subItem.id)}
+                                    disabled={deletingDashboard}
+                                  >
+                                    {deletingDashboard ? (
+                                      <Spinner className="h-3 w-3 mr-2" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
                           )}
-                        >
-                          {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
-                          <span className="ml-3 flex-1">{subItem.title}</span>
-                        </a>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -360,8 +463,9 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
-       {/* Search Modal */}
-       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+
+      {/* Search Modal */}
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Search Reports</DialogTitle>
@@ -372,42 +476,7 @@ export function Sidebar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* New Report Modal */}
-      <Dialog
-        open={newReportOpen}
-        onOpenChange={value => {
-          if (!value) {
-            resetCreate();
-            setNewReportName('');
-          }
-          setNewReportOpen(value);
-        }}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>New Report</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Report Name"
-            value={newReportName}
-            onChange={e => setNewReportName(e.target.value)}
-          />
-          {createError && (
-            <p className="text-destructive text-sm mt-2">
-              {(createErrorDetails as Error)?.message || 'Failed to create report'}
-            </p>
-          )}
-          <DialogFooter>
-            <Button onClick={handleCreateReport} disabled={creatingReport || !newReportName.trim()}>
-              {creatingReport ? (
-                <Spinner className="h-4 w-4" />
-              ) : (
-                'Create'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
       <div className="h-auto border-t border-gray-200 dark:border-gray-800">
         <div className={cn(
           "p-3 flex items-center",
@@ -484,7 +553,7 @@ export function Sidebar() {
         </div>
         <div className={cn(
           "px-3 pb-3",
-          isExpanded ? "flex justify-between items-center" : "flex justify-center"
+          isExpanded ? "flex justify-between items-center" : "justify-center"
         )}>
           {/* Theme toggle with tooltip */}
           <TooltipProvider>
@@ -497,21 +566,21 @@ export function Sidebar() {
                       onCheckedChange={toggleTheme}
                       className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-90"
                     />
-                    
+
                     {/* Custom thumb with icon */}
-                    <div 
+                    <div
                       className={cn(
                         "absolute top-0 left-0 pointer-events-none",
                         "h-5 w-10 flex items-center",
                         "transition-all duration-300"
                       )}
                     >
-                      <div 
+                      <div
                         className={cn(
                           "h-[18px] w-[18px] rounded-full flex items-center justify-center",
                           "transition-all duration-300 transform shadow-sm",
-                          theme === 'dark' 
-                            ? "translate-x-[18px] bg-primary/90" 
+                          theme === 'dark'
+                            ? "translate-x-[18px] bg-primary/90"
                             : "translate-x-[2px] bg-amber-50"
                         )}
                       >
@@ -523,7 +592,7 @@ export function Sidebar() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {isExpanded && (
                     <span className={cn(
                       "text-sm ml-1 font-medium",

@@ -137,9 +137,7 @@ export function GenericChatUI({
       sql_query: data.sql,
       intermediate_executed_query_json: data.chartMetadata,
       executed_query:  { ...data.data },
-      chart_config: {
-        title: data.chartMetadata.layout.title.text,
-      }
+      chart_config: ""
     };
     // Dispatch custom event with chart data
     const chartEvent = new CustomEvent(CHART_ADDED_EVENT, {

@@ -4,7 +4,6 @@ import { navigationItems } from '@/config/navigation';
 import { useReports, NewReport } from './useReports';
 import type { NavItem } from '@/types/navigation';
 import { ROUTES } from '@/config/routes';
-import { PlusCircle } from 'lucide-react';
 
 export interface NavigationHook {
   expandedItems: Set<string>;

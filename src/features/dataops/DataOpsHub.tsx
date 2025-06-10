@@ -4,7 +4,7 @@ import { useDataOpsDashboards, useDataOpsWidgets } from "@/features/dataops/data
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOps } from "@/context/dataops/DataOpsContext";
-import { CHART_ADDED_EVENT } from "@/components/shared/GenericChatUI";
+import { CHART_ADDED_EVENT , WIDGET_REMOVED_EVENT} from "@/components/shared/GenericChatUI";
 import { decompressValue, compressValue } from "@/lib/decompress";
 export function DataOpsHub() {
   const { state, dispatch, dispatchAsync } = useDataOps();
@@ -22,7 +22,8 @@ export function DataOpsHub() {
     widgets,
     isLoading: isWidgetsLoading,
     isError: isWidgetsError,
-    createWidget
+    createWidget,
+    deleteWidget
   } = useDataOpsWidgets({
     shouldFetch: widgetIds.length > 0,
     widgetIds: widgetIds
@@ -85,12 +86,39 @@ export function DataOpsHub() {
     }
   }, [widgets, dispatch, state.widgets.length]);
 
+  useEffect(() => {
+    try {
+      const handleWidgetRemoved = (event: CustomEvent) => {
+        if (!event.detail) {
+          console.error("[DataOpsHub] Widget removal event missing detail data");
+          return;
+        }
+        const widgetId = event.detail.widgetId;
+
+        const widget = state.widgets.find(w => w.id?.toString() === widgetId.toString());
+        if (!widget || widget.widget_type !== "user_defined") {
+          return;
+        }
+
+        dispatch({ type: "REMOVE_WIDGET", payload: widgetId });
+        deleteWidget(widgetId);
+      };
+
+      document.addEventListener(WIDGET_REMOVED_EVENT, handleWidgetRemoved as EventListener);
+
+      return () => {
+        document.removeEventListener(WIDGET_REMOVED_EVENT, handleWidgetRemoved as EventListener);
+      };
+    } catch (error) {
+      console.error("[DataOpsHub] Failed to setup widget removed listener:", error);
+      return () => {};
+    }
+  }, [state.widgets, deleteWidget, dispatch]);
+
 
   useEffect(() => {
     try {
-      // Define handler function
       const handleChartAdded = (event: CustomEvent) => {
-        // Type safety check
         if (!event.detail) {
           console.error("[DataOpsHub] Chart event missing detail data");
           return;
@@ -99,22 +127,15 @@ export function DataOpsHub() {
         const chartDataFromEvent = event.detail; // Contains full structure from GenericChatUI
         const { intermediate_executed_query_json, ...restOfChartData } = chartDataFromEvent;
         
-        // Optimistic update with the full structure received from the event
         dispatchAsync({ type: "ADD_WIDGET", payload: chartDataFromEvent }).then(() => {
-          // Prepare payload for the backend
           const payloadForCreateWidget = {
             dashboard_id: state.selectedDashboard.dashboard_id ?? 101,
             name: restOfChartData.name,
             widget_type: restOfChartData.widget_type,
             sql_query: restOfChartData.sql_query,
-            // Use the simple chart_config from the event detail
             chart_config: restOfChartData.chart_config, 
-            // Store the full Plotly JSON (data & layout) compressed in plotly_data
             plotly_data: compressValue(intermediate_executed_query_json), 
             executed_query: restOfChartData.executed_query,
-            // Ensure other necessary fields for widget creation are included
-            // For example, if the backend expects 'description' or 'metric' in chart_config,
-            // ensure they are present in chartDataFromEvent.chart_config
           };
           createWidget(payloadForCreateWidget);
         });

@@ -161,7 +161,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
 
   const deleteWidget = (widgetId: string | number) => {
     return deleteWidgetMutation({
-      url: `/widgets/${widgetId}`
+      url: `/widgets/${widgetId}/`
     });
   };
 

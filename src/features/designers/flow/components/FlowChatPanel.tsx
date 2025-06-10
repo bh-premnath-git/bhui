@@ -1,16 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * FlowChatPanel Component
+ * 
+ * This component provides a chat interface UI for the flow designer.
+ * All functionality has been removed, keeping only the UI elements.
+ */
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIChatInput } from '@/components/shared/AIChatInput';
-import { motion } from 'framer-motion';
 import SuggestionButton from '../../pipeline/components/SuggestionButton';
 import { useFlow } from '@/context/designers/FlowContext';
-import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { useModules } from '@/hooks/useModules';
-import { createShortUUID } from '@/lib/utils';
-import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import { NodeForm } from '@/components/bh-reactflow-comps/flow/flow/subcomponents/NodeForm/NodeForm';
-// Dialog import removed as we're now embedding the form in the chat
+import { DialogContent } from '@radix-ui/react-dialog';
+import { Dialog } from '@/components/ui/dialog';
+import { NodeForm } from '@/components/bh-reactflow-comps/flow/flow/subcomponents/NodeForm';
+import { flow } from 'lodash';
 
 // Define the type for suggestion buttons
 type Suggestion = {
@@ -26,49 +33,114 @@ type ChatMessage = {
   nodeForm?: {
     nodeId: string;
     onSave: () => void;
+    showInline?: boolean; // Flag to indicate if the form should be shown inline
   };
 };
 
 const FlowChatPanel = () => {
-  const dispatch = useAppDispatch();
+    const { selectNode, revertOrSaveData, setSelectedNode } = useFlow();
+        const [nodeFormData, setNodeFormDataLocal] = useState<any[]>([]);
+        const {
+            conversionLogs, terminalLogs, pipelineDtl, handleRun, handleStop, handleNext, handleSourceUpdate, updateSetNode,
+            handleLeavePage,
+            handleFormSubmit,
+            setShowLeavePrompt,
+            handleNodesChange,
+            handleEdgesChange,
+            handleDialogClose,
+            setSelectedSchema,
+            setFormStates,
+            setIsFormOpen,
+            formStates,
+            setRunDialogOpen,
+            setSelectedFormState,
+            handleRunClick,
+            handleCut,
+            handleUndo,
+            handleRedo,
+            handleLogsClick,
+            handleKeyDown,
+            handleAlignHorizontal,
+            handleAlignVertical,
+            debuggedNodes,
+            debuggedNodesList,
+            isPipelineRunning,
+            isCanvasLoading,
+            onConnect,
+            handleDebugToggle,
+            handleCopy,
+            handlePaste,
+            handleSearchResultClick,
+            handleZoomIn,
+            handleZoomOut,
+            handleCenter,
+            transformationCounts,
+            highlightedNodeId,
+            showLogs,
+            nodes,
+            edges,
+            selectedSchema,
+            sourceColumns,
+            isFormOpen,
+            showLeavePrompt,
+            ctrlDTimeout,
+            hasUnsavedChanges,
+            setShowLogs,
+            handleNodeClick,
+            isNodeFormOpen,
+            setIsNodeFormOpen,
+            setNodes
+        } = usePipelineContext();
+ 
+  // Get module types for flow nodes
+  const [moduleTypes] = useModules();
+  console.log(nodes)
+  // Create flow nodes similar to how they're created in PlaygroundHeader
+  const flowNodes = moduleTypes.map((type) => {
+    return {
+      "ui_properties": {
+        "module_name": type.label,
+        "color": type.color,
+        "icon": type.icon,
+        "id": type.id,
+        "ports": {
+          "inputs": type.label?.toLowerCase()?.toString()=="sensor"?0:1,
+          "outputs": 1,
+          "maxInputs": 1
+        },
+        meta: {
+          type: type?.type,
+          moduleInfo: {
+            color: type?.color,
+            icon: type?.icon,
+            label: type?.label,
+          },
+          properties:  type.operators?.map((op) => op.properties),
+          description: type?.description,
+          fullyOptimized: false,
+        }
+      }
+    };
+  });
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [moduleTypes] = useModules();
-  const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
-
-  // State variables for NodeForm dialog removed as we're now embedding the form in the chat
-
-  // Get all needed functions and data from DataPipelineContext
-  const { 
-    handleNodeClick, 
-    addNodeToHistory, 
-    updateSetNode, 
-    nodes: pipelineNodes, 
-    edges: pipelineEdges 
-  } = usePipelineContext();
-
-  const {
-    nodes,
-    edges,
-    setEdges,
-    updateNodeFormData,
-    saveFlow,
-    setIsSaving,
-    setIsSaved,
-    selectedFlowId,
-    nodeFormData,
-    selectNode,
-    revertOrSaveData
-  } = useFlow();
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [lastAddedNodeId, setLastAddedNodeId] = useState<string | null>(null);
+  const [lastAddedNodeName, setLastAddedNodeName] = useState<string | null>(null);
+  
+  // Add a local state to track nodes for immediate access
+  const [localNodes, setLocalNodes] = useState<any[]>([]);
+  
+  // Add a state to track whether we're showing the form inline or in a dialog
+  const [showFormInline, setShowFormInline] = useState<boolean>(true);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollContainer) {
-        // Use smooth scrolling for better UX
-        // Increased timeout to allow NodeForm to render properly
         setTimeout(() => {
           scrollContainer.scrollTo({
             top: scrollContainer.scrollHeight,
@@ -79,11 +151,22 @@ const FlowChatPanel = () => {
     }
   }, [messages]);
   
-  // Log pipeline nodes for debugging
+  // Sync pipeline context nodes with local nodes when pipeline context nodes change
   useEffect(() => {
-    console.log("DataPipelineContext nodes:", pipelineNodes);
-    console.log("FlowContext nodes:", nodes);
-  }, [pipelineNodes, nodes]);
+    if ( nodes && Array.isArray(nodes)) {
+      // For each node in the pipeline context, check if it's in our local nodes
+      nodes.forEach(node => {
+        const existsInLocalNodes = localNodes.some(localNode => localNode.id === node.id);
+        
+        // If not in local nodes, add it
+        if (!existsInLocalNodes) {
+          setLocalNodes(prevLocalNodes => [...prevLocalNodes, node]);
+        }
+      });
+      
+      console.log('Synced nodes from pipeline context:', nodes);
+    }
+  }, [nodes, localNodes]);
 
   // Initialize with a welcome message
   useEffect(() => {
@@ -93,536 +176,423 @@ const FlowChatPanel = () => {
           role: 'assistant',
           content: 'How can I assist you with your flow today?',
           suggestions: [
-            { text: 'Create a new flow', onClick: handleCreateFlow }
+            { text: 'Create a new flow', onClick: () => handleDummyAction('Create new flow') },
+            { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
           ]
         }
       ]);
     }
   }, []);
 
+  // Dummy action handler for demonstration purposes
+  const handleDummyAction = (action: string) => {
+    // Add user message
+    setMessages(prevMessages => [
+      ...prevMessages,
+      { role: 'user', content: action }
+    ]);
+    
+    // Add assistant response
+    setTimeout(() => {
+      if (action === 'Create new flow') {
+        // Show flow nodes as suggestion buttons
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: "Let's create a new flow. Here are the available modules you can add to your flow:",
+            suggestions: flowNodes.map(node => ({
+              text: node.ui_properties.module_name,
+              onClick: () => handleAddModule(node)
+            }))
+          }
+        ]);
+      } else {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: `This is a UI-only version. The "${action}" functionality has been removed.`,
+            suggestions: [
+              { text: 'Show another option', onClick: () => handleDummyAction('Show another option') },
+              { text: 'Open configuration', onClick: () => handleOpenNodeForm() }
+            ]
+          }
+        ]);
+      }
+    }, 500);
+  };
+
+  // Handler for opening node form
+  const handleOpenNodeForm = useCallback(() => {
+    console.log('Synced nodes from pipeline context:', nodes);
+    console.log('Local nodes:', localNodes);
+    
+    // Try to get the node from localNodes first, then fall back to nodes
+    let nodeArray = localNodes.length > 0 ? localNodes : nodes;
+    
+    // Get the latest node
+    if (nodeArray && nodeArray.length > 0) {
+      let node:any = nodeArray[nodeArray.length-1];
+      node.selected=true;
+      console.log('Selected node for form:', node);
+      
+      if (node) {
+        // Set the selected node in the Flow context
+        setSelectedNode(node);
+        
+        // Set the selected node ID for the form
+        const nodeId = node.id || node.data?.id;
+        console.log('Setting node ID:', nodeId);
+        
+        if (nodeId) {
+          setSelectedNodeId(nodeId);
+          
+          if (showFormInline) {
+            // Add a message with the node form embedded
+            setMessages(prevMessages => [
+              ...prevMessages,
+              {
+                role: 'assistant',
+                content: `Configure your module:`,
+                nodeForm: {
+                  nodeId: nodeId,
+                  showInline: true,
+                  onSave: () => {
+                    // Add a success message when the form is saved
+                    setMessages(prevMessages => [
+                      ...prevMessages,
+                      {
+                        role: 'assistant',
+                        content: 'Configuration saved. What would you like to do next?',
+                        suggestions: [
+                          { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+                          { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+                        ]
+                      }
+                    ]);
+                  }
+                }
+              }
+            ]);
+          } else {
+            // Open the form dialog after a short delay to ensure state is updated
+            setTimeout(() => {
+              console.log('Opening node form for node ID:', nodeId);
+              setIsNodeFormOpen(true);
+            }, 200);
+          }
+        } else {
+          console.error('Node has no ID:', node);
+        }
+      } else {
+        console.error('Invalid node structure:', node);
+      }
+    } else {
+      console.error('No nodes available in either localNodes or nodes');
+    }
+  }, [nodes, localNodes, setSelectedNode, setSelectedNodeId, setIsNodeFormOpen, showFormInline, setMessages]);
+  
+
+  // Handle adding a module to the flow
+  const handleAddModule = (node) => {
+    // Generate a unique ID for the new node
+    const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
+    
+    // Store the node ID and name for later use in configuration
+    setLastAddedNodeId(uniqueId);
+    setLastAddedNodeName(node.ui_properties.module_name);
+    
+    // Add user message
+    setMessages(prevMessages => [
+      ...prevMessages,
+      { role: 'user', content: `Add ${node.ui_properties.module_name} module` }
+    ]);
+    
+    // Try to use the handleNodeClick function from the pipeline context
+    if ( typeof handleNodeClick === 'function') {
+      try {
+        const nodeWithUniqueId = {
+          ...node,
+          ui_properties: {
+            ...node.ui_properties,
+            id: uniqueId
+          }
+        };
+        
+        // Create a new node object that matches the structure expected in the pipeline context
+        // This is a workaround for the state update delay
+        const newNode = {
+          id: uniqueId,
+          type: 'custom',
+          position: { x: 50, y: 100 },
+          data: {
+            label: node.ui_properties.module_name,
+            icon: node.ui_properties.icon,
+            ports: node.ui_properties.ports,
+            id: uniqueId,
+            meta: node.ui_properties.meta,
+            selectedData: node.ui_properties.type,
+            title: node.ui_properties.module_name,
+            transformationData: {
+              name: node.ui_properties.module_name,
+              nodeId: uniqueId
+            }
+          }
+        };
+        
+        // Store the new node in a local state to use it immediately
+        // This is a workaround for the state update delay in the pipeline context
+        setLocalNodes(prevLocalNodes => [...prevLocalNodes, newNode]);
+        
+        // Use the handleNodeClick function from DataPipelineContext
+        handleNodeClick(nodeWithUniqueId, null);
+        setNodes(prevNodes => [...prevNodes, newNode]);
+        
+        // Get the current nodes and add the new node
+        const updatedNodes = [...nodes, newNode];
+        updateSetNode(updatedNodes, []);
+        
+        // Add a success message with configuration option
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: `Added ${node.ui_properties.module_name} module to your flow. Would you like to configure this module now?`,
+            suggestions: [
+              // Store a reference to the newly created node and pass it directly
+              { text: 'Configure module', onClick: () => {
+                // Create a direct reference to the node we just created
+                const createdNode = newNode;
+                console.log('Configuring node directly:', createdNode);
+                
+                // Set the selected node directly
+                setSelectedNode(createdNode);
+                setSelectedNodeId(createdNode.id);
+                
+                // Add a message with the node form embedded
+                setMessages(prevMessages => [
+                  ...prevMessages,
+                  {
+                    role: 'assistant',
+                    content: `Configure your ${node.ui_properties.module_name} module:`,
+                    nodeForm: {
+                      nodeId: createdNode.id,
+                      showInline: true,
+                      onSave: () => {
+                        // Add a success message when the form is saved
+                        setMessages(prevMessages => [
+                          ...prevMessages,
+                          {
+                            role: 'assistant',
+                            content: 'Configuration saved. What would you like to do next?',
+                            suggestions: [
+                              { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+                              { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+                            ]
+                          }
+                        ]);
+                      }
+                    }
+                  }
+                ]);
+              }},
+              { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+              { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+            ]
+          }
+        ]);
+      } catch (error) {
+        console.log('Error adding module:', error);
+        
+        // Add a fallback message with configuration option
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: `This is a UI-only version. The module would be added in a full implementation. Would you like to configure this module now?`,
+            suggestions: [
+              { text: 'Configure module', onClick: () => handleOpenNodeForm() },
+              { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+              { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+            ]
+          }
+        ]);
+      }
+    } else {
+      // Add a fallback message for UI-only version with configuration option
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          content: `This is a UI-only version. The ${node.ui_properties.module_name} module would be added in a full implementation. Would you like to configure this module now?`,
+          suggestions: [
+            { text: 'Configure module', onClick: () => handleOpenNodeForm() },
+            { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+            { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+          ]
+        }
+      ]);
+    }
+  };
+
+  // Handle user input
   const handleSend = () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
 
+    // Add user message
     setMessages([...messages, { role: 'user', content: trimmedInput }]);
     setInput('');
 
-    // Simulate assistant response
+    // Add a typing indicator and response
     setTimeout(() => {
       setMessages(prevMessages => [
         ...prevMessages,
         {
           role: 'assistant',
-          content: 'I understand you want to work with flows. What would you like to do?',
+          content: 'This is a UI-only version of the chat. Your message was received, but no processing functionality is implemented.',
           suggestions: [
-            { text: 'Create a new flow', onClick: handleCreateFlow },
-            { text: 'Add a module to the flow', onClick: handleShowModules }
+            { text: 'Create a new flow', onClick: () => handleDummyAction('Create new flow') },
+            { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') },
+            { text: 'Configure module', onClick: handleOpenNodeForm }
           ]
-        },
-      ]);
-    }, 500);
-  };
-
-  const handleCreateFlow = () => {
-    setMessages([...messages, { role: 'user', content: 'Create a new flow' }]);
-
-    // Get all module types
-    const availableModules = moduleTypes || [];
-
-    // Directly show modules as suggestion buttons
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Let's create a new flow. Here are the available modules you can add to your flow:",
-          suggestions: availableModules.map(module => ({
-            text: module.label || 'Module',
-            onClick: () => handleAddModule(module)
-          }))
-        },
-      ]);
-    }, 500);
-  };
-
-  const handleShowModules = () => {
-    setMessages([...messages, { role: 'user', content: 'Show all modules' }]);
-
-    // Get all module types
-    const availableModules = moduleTypes || [];
-
-    // Show modules as suggestion buttons
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Here are the available modules you can add to your flow:",
-          suggestions: availableModules.map(module => ({
-            text: module.label || 'Module',
-            onClick: () => handleAddModule(module)
-          }))
-        },
-      ]);
-    }, 500);
-  };
-
-  // Function to handle adding a module to the flow
-  const handleAddModule = (module: any) => {
-    console.log(module)
-    // Add a message to show the selection
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Add ${module.label} module`
-      },
-    ]);
-
-    // Create a node object in the format expected by handleNodeClick
-    let nodeForPipeline = {
-      ui_properties: {
-        module_name: module.label,
-        color: module.color,
-        icon: module.icon,
-        type: module.type,
-        id: createShortUUID(),
-        meta: {
-          type: module.type,
-          moduleInfo: {
-            color: module.color,
-            icon: module.icon,
-            label: module.label,
-          },
-          properties: module.operators.map((op) => op.properties),
-          fullyOptimized: false
-        },
-        requiredFields: []
-      }
-    };
-    
-    // Add node to history before adding the node
-    addNodeToHistory();
-
-    // Use the handleNodeClick function from DataPipelineContext
-    handleNodeClick(nodeForPipeline, null);
-    
-    // Show confirmation message after a delay to allow the node to be added
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: `Great! I've added a ${module.label} module to your flow. What would you like to do next?`,
-          suggestions: [
-            { text: 'Add another module', onClick: handleShowModules },
-            { text: 'Configure this module', onClick: () => handleConfigureModule(module.label, module) }
-          ]
-        },
-      ]);
-    }, 500);
-  };
-
-  const handleConfigureModule = (moduleLabel: string, module: any) => {
-    // Add a message to show the selection
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Configure ${moduleLabel} module`
-      },
-    ]);
-    
-    // Find the node with the matching label in the pipeline nodes
-    const targetNode = pipelineNodes.find(node => node.data.label === moduleLabel);
-
-    if (!targetNode) {
-      // Module not found
-      setTimeout(() => {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: `I couldn't find a ${moduleLabel} module in your flow. Would you like to add one?`,
-            suggestions: [
-              { text: 'Add module', onClick: () => handleAddModule(module) }
-            ]
-          },
-        ]);
-      }, 500);
-      return;
-    }
-
-    const nodeId = targetNode.id;
-
-    // First select the node in the Flow context
-    selectNode(nodeId);
-    
-    // Ensure the node data is properly loaded before showing the form
-    const existingNodeFormData = nodeFormData.find(item => item.nodeId === nodeId);
-    
-    // If we don't have form data for this node yet, initialize it
-    if (!existingNodeFormData) {
-      // Create a more complete initial form data
-      const initialFormData = {
-        task_id: `${moduleLabel}_${createShortUUID()}`.toLowerCase(),
-        type: targetNode.data.selectedData || '',
-        depends_on: [],
-        // Add any existing data from the node
-        ...(targetNode.data.formData || {}),
-        ...(targetNode.data.transformationData || {})
-      };
-      
-      // Update the node form data
-      updateNodeFormData(nodeId, initialFormData);
-      
-      // Also update the node data to include this form data
-      const updatedNodes = pipelineNodes.map(node => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              formData: initialFormData,
-            }
-          };
         }
-        return node;
-      });
-      
-      // Update the nodes in the pipeline context
-      updateSetNode(updatedNodes, pipelineEdges);
-    }
-
-    // Add a message with the NodeForm embedded
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: `Here's the configuration form for the ${moduleLabel} module:`,
-          nodeForm: {
-            nodeId: nodeId,
-            onSave: () => handleNodeFormSave(moduleLabel)
-          }
-        },
       ]);
     }, 500);
   };
 
-  // Handler for when the NodeForm is saved
-  const handleNodeFormSave = (moduleLabel: string) => {
-    console.log("Pipeline nodes in handleNodeFormSave:", pipelineNodes);
-    
-    // Find the node with the matching label in the pipeline nodes
-    const targetNode = pipelineNodes.find(node => node.data.label === moduleLabel);
-    
-    if (targetNode) {
-      const nodeId = targetNode.id;
-      
-      // Get the updated form data
-      const formData = nodeFormData.find(item => item.nodeId === nodeId)?.formData || {};
-      
-      // Update the node with the form data
-      const updatedNodes = pipelineNodes.map(node => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              selectedData: formData.type || node.data.selectedData,
-              formData: formData,
-              transformationData: {
-                ...node.data.transformationData,
-                ...formData,
-                type: formData.type || node.data.selectedData
-              }
-            }
-          };
-        }
-        return node;
-      });
-      
-      // Update the nodes in the pipeline context
-      updateSetNode(updatedNodes, pipelineEdges);
-    }
-    
-    // Save the flow to ensure all changes are persisted
-    saveFlow().then(() => {
-      setIsSaved(true);
-      setIsSaving(false);
-      
-      // Add a confirmation message
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: `Great! The ${moduleLabel} module configuration has been saved. What would you like to do next?`,
-          suggestions: [
-            { text: 'Add another module', onClick: handleShowModules },
-            { text: 'Connect modules', onClick: handleConnectModules }
-          ]
-        },
-      ]);
-    });
-  };
-
-  
-  const handleConnectModules = () => {
-    // Add a message to show the selection
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: 'Connect modules'
-      },
-    ]);
-
-    // Check if we have at least 2 nodes to connect
-    if (pipelineNodes.length < 2) {
-      setTimeout(() => {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: 'You need at least 2 modules to create a connection. Would you like to add another module?',
-            suggestions: [
-              { text: 'Add another module', onClick: handleShowModules }
-            ]
-          },
-        ]);
-      }, 500);
-      return;
-    }
-
-    // Show source node selection
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: 'Select the source module:',
-          suggestions: pipelineNodes.map(node => ({
-            text: node.data.label,
-            onClick: () => handleSelectSourceNode(node.id)
-          }))
-        },
-      ]);
-    }, 500);
-  };
-
-  const handleSelectSourceNode = (sourceNodeId: string) => {
-    
-    // Add a message to show the selection
-    const sourceNode = pipelineNodes.find(node => node.id === sourceNodeId);
-
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Select source: ${sourceNode?.data.label || sourceNodeId}`
-      },
-    ]);
-
-    // Show target node selection (excluding the source node)
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: 'Select the target module:',
-          suggestions: pipelineNodes
-            .filter(node => node.id !== sourceNodeId)
-            .map(node => ({
-              text: node.data.label,
-              onClick: () => handleSelectTargetNode(sourceNodeId, node.id)
-            }))
-        },
-      ]);
-    }, 500);
-  };
-
-  const handleSelectTargetNode = (sourceNodeId: string, targetNodeId: string) => {
-    
-    // Add a message to show the selection
-    const targetNode = pipelineNodes.find(node => node.id === targetNodeId);
-
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Select target: ${targetNode?.data.label || targetNodeId}`
-      },
-    ]);
-
-    // Create a unique edge ID
-    const edgeId = `e${sourceNodeId}-${targetNodeId}`;
-
-    // Create the edge
-    const newEdge = {
-      id: edgeId,
-      source: sourceNodeId,
-      target: targetNodeId,
-      type: 'default',
-      animated: false,
-      markerEnd: {
-        type: 'arrowclosed',
-      },
-      style: { stroke: '#b1b1b7', strokeWidth: 2 }
-    };
-
-    // Check if the edge already exists to avoid duplicates
-    const edgeExists = pipelineEdges.some(
-      edge => edge.source === sourceNodeId && edge.target === targetNodeId
-    );
-
-    if (!edgeExists) {
-      // Add the edge using updateSetNode to ensure both contexts are updated
-      const updatedEdges = [...pipelineEdges, newEdge];
-      updateSetNode(pipelineNodes, updatedEdges);
-    }
-
-    // Update the target node's dependencies
-    const targetNodeFormData = nodeFormData.find(item => item.nodeId === targetNodeId)?.formData || {};
-    const sourceNodeFormData = nodeFormData.find(item => item.nodeId === sourceNodeId)?.formData || {};
-
-    // Get the source node's task_id
-    const sourceTaskId = sourceNodeFormData.task_id;
-
-    if (sourceTaskId) {
-      // Update the target node's depends_on array
-      const updatedDependsOn = [...(targetNodeFormData.depends_on || [])];
-
-      if (!updatedDependsOn.includes(sourceTaskId)) {
-        updatedDependsOn.push(sourceTaskId);
-      }
-
-      const updatedFormData = {
-        ...targetNodeFormData,
-        depends_on: updatedDependsOn
-      };
-
-      updateNodeFormData(targetNodeId, updatedFormData);
-    }
-
-    // Save the flow
-    saveFlow().then(() => {
-      setIsSaved(true);
-      setIsSaving(false);
-    });
-
-    // Show confirmation message
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: 'Great! I\'ve connected the modules. What would you like to do next?',
-          suggestions: [
-            { text: 'Add another module', onClick: handleShowModules },
-            { text: 'Connect more modules', onClick: handleConnectModules }
-          ]
-        },
-      ]);
-    }, 500);
-  };
-
+  // Render the chat panel UI
   return (
     <div className="flex flex-col h-full p-4">
       {/* Message Area */}
-      <div className="flex-1 mt-4 overflow-hidden">
-        <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-          <div className="space-y-6">
+      <div className="flex-1 mt-2 overflow-hidden">
+        <ScrollArea className="h-full pr-2" ref={scrollAreaRef}>
+          <div className="space-y-4">
             {messages.map((message, i) => (
               <div
                 key={i}
-                className={`flex items-start gap-3 ${message.role === "assistant" ? "flex-row" : "flex-row-reverse"
-                  }`}
+                className="flex flex-col gap-3 mb-4"
               >
+                {/* Message sender indicator */}
+                <div className="text-xs font-medium text-gray-500 mb-1">
+                  {message.role === "assistant" ? "Assistant" : "You"}
+                </div>
+                
+                {/* Message content */}
                 <div
-                  className={`rounded-lg px-4 py-2 max-w-[80%] relative ${message.role === "assistant" ? "bg-gray-100 text-black" : "bg-blue-100 text-blue-900"
-                    } ${message.role === "assistant"
-                      ? "before:absolute before:left-[-6px] before:top-3 before:border-4 before:border-transparent before:border-r-gray-100"
-                      : "before:absolute before:right-[-6px] before:top-3 before:border-4 before:border-transparent before:border-l-blue-100"
-                    }`}
+                  className={`rounded-lg px-4 py-2 w-full relative ${
+                    message.role === "assistant" ? "bg-gray-100 text-black" : "bg-blue-100 text-blue-900"
+                  }`}
                 >
                   <div className="whitespace-pre-wrap break-words">{message.content}</div>
 
-                  {/* Render NodeForm if available */}
+                  {/* Show a message if this message is related to node configuration */}
                   {message.nodeForm && (
-                    <div className="mt-4 w-full">
-                      <NodeForm
-                        key={`node-form-${message.nodeForm.nodeId}`}
-                        id={message.nodeForm.nodeId}
-                        closeTap={() => {
-                          // Get the current node data
-                          const nodeId = message.nodeForm?.nodeId || '';
-                          const currentNode = nodes.find(n => n.id === nodeId);
-                          
-                          if (currentNode) {
-                            // Get the updated form data
-                            const formData = nodeFormData.find(item => item.nodeId === nodeId)?.formData || {};
-                            
-                            // Update the node with the form data
-                            const updatedNodes = nodes.map(node => {
-                              if (node.id === nodeId) {
-                                return {
-                                  ...node,
-                                  data: {
-                                    ...node.data,
-                                    selectedData: formData.type || node.data.selectedData,
-                                    formData: formData,
-                                    transformationData: {
-                                      ...node.data.transformationData,
-                                      ...formData,
-                                      type: formData.type || node.data.selectedData
-                                    }
-                                  }
-                                };
-                              }
-                              return node;
-                            });
-                            
-                            // Update the nodes in the pipeline context
-                            updateSetNode(updatedNodes, edges);
-                          }
-                          
-                          // Make sure to call revertOrSaveData with true to save the data
-                          revertOrSaveData(nodeId, true);
-                          
-                          // Save the flow to ensure all changes are persisted
-                          saveFlow().then(() => {
-                            setIsSaved(true);
-                            setIsSaving(false);
-                            
-                            // Then call the onSave callback
-                            message.nodeForm?.onSave();
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Render suggestion buttons if available */}
-                  {message.suggestions && message.suggestions.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {message.suggestions.map((suggestion, index) => (
-                        <SuggestionButton
-                          key={index}
-                          text={suggestion.text}
-                          onClick={suggestion.onClick}
-                          assistantColor="#009f59"
-                          index={index}
-                        />
-                      ))}
+                    <div className="mt-4 w-full bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-lg font-semibold">Module Configuration</h3>
+                        <div className="text-xs text-gray-500">
+                          ID: {message.nodeForm.nodeId.substring(0, 8)}...
+                        </div>
+                      </div>
+                      
+                      {message.nodeForm.showInline ? (
+                        // Show the NodeForm inline in the chat
+                        <div className="border rounded-md p-4 bg-gray-50">
+                          <NodeForm
+                            id={message.nodeForm.nodeId}
+                            closeTap={() => message.nodeForm?.onSave?.()}
+                          />
+                        </div>
+                      ) : (
+                        // Show a message that the form is displayed separately
+                        <div className="p-4 border border-dashed rounded-md flex items-center justify-center">
+                          <p className="text-gray-500">
+                            The module configuration panel is now displayed separately.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Render suggestion buttons if available */}
+                {message.suggestions && message.suggestions.length > 0 && (
+                  <div className="mt-4 grid grid-cols-1 gap-2">
+                    {message.suggestions.map((suggestion, index) => (
+                      <SuggestionButton
+                        key={index}
+                        text={suggestion.text}
+                        onClick={suggestion.onClick}
+                        assistantColor="#009f59"
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
+          {/* Only show the Dialog when not in inline form mode */}
+          <Dialog
+                    open={isNodeFormOpen && !showFormInline}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            if (selectedNodeId) {
+                                revertOrSaveData(selectedNodeId, false);
+                            }
+                            setSelectedNodeId(null);
+                        }
+                        setIsNodeFormOpen(open);
+                    }}
+                >
+                    <DialogContent className="max-w-[60%] max-h-[80vh]">
+                        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto pb-4">
+                            <h2 className="text-xl font-semibold mb-4">
+                                {lastAddedNodeName ? `${lastAddedNodeName} Configuration` : 'Module Configuration'}
+                            </h2>
+                            
+                            {selectedNodeId ? (
+                                <div key={`node-form-${selectedNodeId}`}>
+                                    <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                                        <p className="text-sm text-gray-600">Node ID: {selectedNodeId}</p>
+                                        {lastAddedNodeName && (
+                                            <p className="text-sm text-gray-600 mt-1">Module Type: {lastAddedNodeName}</p>
+                                        )}
+                                    </div>
+                                    <NodeForm
+                                        id={selectedNodeId}
+                                        closeTap={() => {
+                                            setIsNodeFormOpen(false);
+                                            
+                                            // Add a message to show the action
+                                            setMessages(prevMessages => [
+                                                ...prevMessages,
+                                                {
+                                                    role: 'assistant',
+                                                    content: 'Configuration saved. What would you like to do next?',
+                                                    suggestions: [
+                                                        { text: 'Add another module', onClick: () => handleDummyAction('Create new flow') },
+                                                        { text: 'Connect modules', onClick: () => handleDummyAction('Connect modules') }
+                                                    ]
+                                                }
+                                            ]);
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="p-4 border border-dashed rounded-md">
+                                    <p className="text-gray-500">No node selected for configuration</p>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
         </ScrollArea>
       </div>
+
+      {/* Node Configuration Panel is now handled by the Dialog */}
 
       {/* Input Area */}
       <div className="flex gap-2 mt-4 flex-shrink-0">
@@ -631,11 +601,8 @@ const FlowChatPanel = () => {
           onChange={setInput}
           onSend={handleSend}
           placeholder="Ask about your flow..."
-          disabled={!selectedFlowId}
         />
       </div>
-
-      {/* NodeForm Dialog removed as we're now embedding the form in the chat */}
     </div>
   );
 };

@@ -376,7 +376,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
         <Lineage />
       </TabsContent>
       <TabsContent value="dataProfile">
-        <DataProfile />
+        <DataProfile dataSourceId={dataSourceId} />
       </TabsContent>
       <TabsContent value="incidents">
         <Incidents />

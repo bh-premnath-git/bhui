@@ -7,6 +7,7 @@ import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw, BarChart as BarChartI
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState, useEffect } from "react"
+import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw, BarChart as BarChartIcon, Database, Layers, FileWarning, Copy } from "lucide-react"
 import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw } from "lucide-react"
 import { BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Bar } from "recharts"
 import { Badge } from "@/components/ui/badge"
@@ -444,6 +445,7 @@ const DataProfile = ({ dataSourceId }: DataProfileProps) => {
             </TabsContent>
 
             <TabsContent value="distribution" className="mt-0">
+              <Distribution selectedColumn={selectedColumn} COLORS={COLORS} />
 <<<<<<< HEAD
               <Distribution selectedColumn={selectedColumn} COLORS={COLORS} />
 =======

@@ -14,11 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { 
   AlertTriangle, 
   Clock, 
-  PieChart, 
+  PieChart as PieChartIcon, 
   Shield,
   X
 } from 'lucide-react'
-import { BarChart } from 'recharts'
+import { BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 // Mock data
 const mockIncidents = [
@@ -165,16 +165,26 @@ const Incidents = () => {
                       <span className="text-sm text-gray-500">Loading...</span>
                     </div>
                   ) : (
-                    <BarChart
-                      data={trendData}
-                      xAxisDataKey="name"
-                      bars={["quality", "performance", "security"]}
-                      colors={["#f43f5e", "#f59e0b", "#3b82f6"]}
-                      config={{
-                        labels: ["Quality", "Performance", "Security"],
-                        valueFormatter: (value: number) => value.toString()
-                      }}
-                    />
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={trendData}
+                        margin={{
+                          top: 5,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => value.toString()} />
+                        <Legend />
+                        <Bar dataKey="quality" name="Quality" fill="#f43f5e" />
+                        <Bar dataKey="performance" name="Performance" fill="#f59e0b" />
+                        <Bar dataKey="security" name="Security" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   )}
                 </div>
               </CardContent>
@@ -243,16 +253,24 @@ const Incidents = () => {
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <div className="h-[250px]">
-                <BarChart
-                  data={impactAnalysisData}
-                  xAxisDataKey="name"
-                  bars={["affectedRows"]}
-                  colors={["#6366f1"]}
-                  config={{
-                    labels: ["Affected Rows"],
-                    valueFormatter: (value: number) => value.toLocaleString()
-                  }}
-                />
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={impactAnalysisData}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => value.toLocaleString()} />
+                    <Legend />
+                    <Bar dataKey="affectedRows" name="Affected Rows" fill="#6366f1" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>

@@ -426,13 +426,11 @@
           "type": "number"
         },
         "override_partition": {
-          "type": "string",
-          "minLength": 1
+          "type": "string"
         },
         "repartition_expression": {
           "type": "array",
           "uniqueItems": true,
-          "minItems": 1,
           "items": {
             "required": [
               "expression",
@@ -465,8 +463,7 @@
         }
       },
       "required": [
-        "repartition_type",
-        "override_partition"
+        "repartition_type"
       ],
       "anyOf": [
         {
@@ -516,9 +513,13 @@
           },
           "then": {
             "required": [
-              "repartition_expression",
               "repartition_value"
-            ]
+            ],
+            "properties": {
+              "repartition_expression": {
+                "minItems": 1
+              }
+            }
           }
         },
         {
@@ -534,9 +535,13 @@
           },
           "then": {
             "required": [
-              "repartition_expression",
               "repartition_value"
-            ]
+            ],
+            "properties": {
+              "repartition_expression": {
+                "minItems": 1
+              }
+            }
           }
         }
       ]

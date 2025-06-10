@@ -27,12 +27,60 @@ export function useCreateDashboard() {
 
 export function useListDashboards() {
   return useQuery({
-    queryKey: ['dashboards'],
+    queryKey: ['dashboardslist'],
     queryFn: async () => {
       const response = await apiService.get<any>({
         baseUrl: CATALOG_REMOTE_API_URL,
         usePrefix: true,
-        url: '/dashboard/list?dashboard_type=explorer',
+        url: '/dashboard/list/?dashboard_type=explorer',
+        method: 'GET'
+      });
+      
+      return response;
+    }
+  });
+}
+
+export function useUpdateDashboard() {
+  return useMutation({
+    mutationFn: async (dashboard: any): Promise<any> => {
+      const { dashboardId, ...rest } = dashboard;
+      const response = await apiService.put<any>({
+        baseUrl: CATALOG_REMOTE_API_URL,
+        usePrefix: true,
+        url: `/dashboard/${dashboardId}/`,
+        method: 'PATCH',
+        data: rest
+      });
+      
+      return response;
+    }
+  });
+}
+
+export function useDeleteDashboard() {
+  return useMutation({
+    mutationFn: async (dashboardId: string): Promise<any> => {
+      const response = await apiService.delete<any>({
+        baseUrl: CATALOG_REMOTE_API_URL,
+        usePrefix: true,
+        url: `/dashboard/${dashboardId}/`,
+        method: 'DELETE'
+      });
+      
+      return response;
+    }
+  });
+}
+
+export function useGetDashboard(dashboardId: string) {
+  return useQuery({
+    queryKey: ['dashboard', dashboardId],
+    queryFn: async () => {
+      const response = await apiService.get<any>({
+        baseUrl: CATALOG_REMOTE_API_URL,
+        usePrefix: true,
+        url: `/dashboard/${dashboardId}/`,
         method: 'GET'
       });
       

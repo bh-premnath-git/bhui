@@ -1,7 +1,17 @@
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+<<<<<<< HEAD
 import { useState, useEffect } from "react"
 import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw, BarChart as BarChartIcon, Database, Layers, FileWarning, Copy } from "lucide-react"
+=======
+import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useState, useEffect } from "react"
+import { ArrowUp, ArrowDown, AlertCircle, Info, RefreshCw } from "lucide-react"
+import { BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Bar } from "recharts"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+>>>>>>> a453ffd (fixes)
 import { Button } from "@/components/ui/button"
 import { apiService } from "@/lib/api/api-service"
 import { CATALOG_REMOTE_API_URL } from "@/config/platformenv"
@@ -434,7 +444,35 @@ const DataProfile = ({ dataSourceId }: DataProfileProps) => {
             </TabsContent>
 
             <TabsContent value="distribution" className="mt-0">
+<<<<<<< HEAD
               <Distribution selectedColumn={selectedColumn} COLORS={COLORS} />
+=======
+              <div className="p-3">
+                <p className="text-xs font-medium text-gray-700 mb-3">Distribution of {selectedColumn.name}</p>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={selectedColumn.distribution}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="range" />
+                      <YAxis />
+                      <RechartsTooltip 
+                        formatter={(value) => value.toLocaleString()} 
+                        labelFormatter={(label) => `Range: ${label}`}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        name="Count" 
+                        fill={COLORS.primary}
+                        radius={[4, 4, 0, 0]} 
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+>>>>>>> a453ffd (fixes)
             </TabsContent>
           </Tabs>
         </Card>

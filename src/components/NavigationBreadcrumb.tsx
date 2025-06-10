@@ -61,16 +61,22 @@ export function NavigationBreadcrumb() {
     if (currentPath.startsWith("/data-catalog/xplorer/")) {
       items.push({ title: "Xplorer", path: "/data-catalog/xplorer" });
       
-      // Extract report name from URL if possible
-      const reportId = currentPath.split("/").pop();
-      if (reportId) {
-        // Format the report ID for display (e.g., convert 'orders-report' to 'Orders Report')
-        const formattedName = reportId
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+      const searchParams = new URLSearchParams(location.search);
+      const reportName = searchParams.get('reportName');
+      
+      if (reportName) {
+        items.push({ title: reportName, path: currentPath });
+      } else {
+        const reportId = currentPath.split("/").pop();
         
-        items.push({ title: formattedName, path: currentPath });
+        if (reportId) {
+          const formattedName = reportId
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          items.push({ title: formattedName, path: currentPath });
+        }
       }
       
       return items;

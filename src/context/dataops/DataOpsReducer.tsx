@@ -134,12 +134,10 @@ export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState =
     
     case "REMOVE_WIDGET":
       const widgetIdToRemove = action.payload.toString();
-      // Filter out the widget from the widgets array, comparing as strings to
-      // support numeric and string-based IDs
       const filteredWidgets = state.widgets.filter(
         widget => widget.id?.toString() !== widgetIdToRemove
       );
-
+      
       let dashboardsAfterRemoval = [...state.dashboards];
       let selectedDashboardAfterRemoval = state.selectedDashboard;
       

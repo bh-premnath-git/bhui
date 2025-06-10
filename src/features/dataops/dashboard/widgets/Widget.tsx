@@ -321,7 +321,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
               onFlip={handleFlip}
-              onRemove={handleRemoveWidget}
+              onRemove={widget.widget_type === "user_defined" ? handleRemoveWidget : undefined}
               showFlip
               isFlipped={isFlipped}
             />
@@ -339,7 +339,7 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
               description={widget.name}
               onFlip={handleFlip}
               onViewChange={handleViewToggle}
-              onRemove={handleRemoveWidget}
+              onRemove={widget.widget_type === "user_defined" ? handleRemoveWidget : undefined}
               showFlip
               isFlipped={isFlipped}
               isTableView={isTableView}

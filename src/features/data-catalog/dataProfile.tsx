@@ -386,7 +386,7 @@ const DataProfile = ({ dataSourceId }: DataProfileProps) => {
       });
       
       // Transform the API response into the format our UI expects
-      const transformedData: ProfileData = {
+      const transformedData: any = {
         metadata: {
           name: response.report_json.analysis.title || "Data Profile",
           description: `Profile generated for data source ${response.data_src_id}`,

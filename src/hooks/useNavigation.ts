@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { navigationItems } from '@/config/navigation';
-import { useReports } from './useReports';
+import { useReports, NewReport } from './useReports';
 import type { NavItem } from '@/types/navigation';
 import { ROUTES } from '@/config/routes';
 import { PlusCircle } from 'lucide-react';
@@ -14,6 +14,9 @@ export interface NavigationHook {
   handleAction: (action: string, itemPath: string) => void;
   navigationItems: NavItem[];
   loading: boolean;
+  addReport: (report: NewReport) => void;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setError: React.Dispatch<React.SetStateAction<Error | null>>;
 }
 
 export function useNavigation(): NavigationHook {
@@ -21,7 +24,7 @@ export function useNavigation(): NavigationHook {
   const navigate = useNavigate();
   const location = useLocation();
   const [items, setItems] = useState<NavItem[]>(navigationItems);
-  const { reports, loading } = useReports();
+  const { reports, loading, addReport, setLoading, setError } = useReports();
 
   const toggleExpanded = (path: string) => {
     setExpandedItems(prev => {
@@ -129,5 +132,8 @@ export function useNavigation(): NavigationHook {
     handleAction,
     navigationItems: items,
     loading,
+    addReport,
+    setLoading,
+    setError
   };
 }

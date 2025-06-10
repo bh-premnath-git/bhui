@@ -10,6 +10,7 @@ import { Button } from '../ui/button'
 import { useConversation } from '@/hooks/useConversation'
 import { useRecommendation } from '@/hooks/useRecommendation'
 import { createShortUUID } from '@/lib/utils'
+import { LoadingState } from '@/components/shared/LoadingState'
 
 interface XplorerGenericChatUIProps {
   imageSrc?: string
@@ -154,7 +155,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   // Move connectionId state declaration to before its usage
   const [connectionId, setConnectionId] = useState<string | null>(null);
   
-  const { data: recommendedSuggestions, isLoading: isLoadingRecommendations } = useRecommendation(
+  const { data: recommendedSuggestions, isLoading: isLoadingRecommendations, isError: isRecommendationsError } = useRecommendation(
     variant,
     variant === 'explorer' ? connectionId : null
   );
@@ -345,7 +346,15 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
               <div>
                 <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
                 <div className="flex flex-col gap-2 ml-12">
-                  {(isLoadingRecommendations ? [] : (recommendedSuggestions || suggestions || ['List the top ten expensive products', 'Show me all orders above $300', 'Find orders with delivery status "Shipped"', 'Which region has the most orders?'])).map((s, i) => (
+                  {isLoadingRecommendations ? (
+                    <div className="flex justify-center items-center h-20">
+                      <LoadingState classNameContainer="w-16 h-16" />
+                    </div>
+                  ) : isRecommendationsError ? (
+                    <div className="text-sm text-gray-500 italic">
+                      Unable to load suggestions. Please try asking a question directly.
+                    </div>
+                  ) : (recommendedSuggestions || suggestions || ['List the top ten expensive products', 'Show me all orders above $300', 'Find orders with delivery status "Shipped"', 'Which region has the most orders?']).map((s, i) => (
                     <motion.div
                       key={i}
                       className="flex gap-2"

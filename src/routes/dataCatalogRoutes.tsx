@@ -6,8 +6,7 @@ import ReportDetails from '@/pages/data-catalog/xplorer/ReportDetails';
 
 // Lazy-loaded components
 const DataCatalog = lazy(() => import("@/pages/data-catalog/DataCatalog"));
-// const XplorerPage = lazy(() => import("@/pages/data-catalog/XplorerPage"));
-const XplorerPage = lazy(() => import("@/pages/data-catalog/XplorerMockPage"));
+const XplorerPage = lazy(() => import("@/pages/data-catalog/XplorerPage"));
 const DatasourceImport = lazy(() => import("@/pages/data-catalog/DatasourceImport"));
 const Notebook = lazy(() => import("@/pages/data-catalog/Notebook"));
 

@@ -223,29 +223,32 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
           };
           
           // Set square markers for all data traces and ensure consistent legend style
-          const enhancedData = plotlyData.data.map(trace => {
-            // For all trace types, ensure we're showing only square markers in legend
+          const enhancedData = plotlyData.data.map((trace: any) => {
+            let newMode = trace.mode;
+            // If it's a line-like trace, ensure 'markers' is in the mode for legend display
+            if (typeof trace.mode === 'string' && trace.mode.includes('lines') && !trace.mode.includes('markers')) {
+              newMode = trace.mode + '+markers';
+            } else if (!trace.mode && (trace.type === 'scatter' || trace.type === 'line')) { // Default to lines+markers if mode is missing for scatter/line
+              newMode = 'lines+markers';
+            }
+
             return {
               ...trace,
+              mode: newMode, // Apply potentially modified mode
               marker: {
-                ...trace.marker,
-                symbol: 'square',
-                size: 8, // Control marker size
+                symbol: 'square', // Always use square for legend consistency
+                size: 8,
                 line: {
                   width: 1,
-                  color: '#fff'
-                }
+                  color: '#fff',
+                  ...(trace.marker?.line || {}), // Preserve original marker line settings if any
+                },
+                ...(trace.marker || {}), // Preserve other original marker settings, symbol will be overridden by above
               },
-              // Force line charts to show only the marker in legend (no line)
-              line: trace.line ? {
-                ...trace.line,
-                showlegend: false
-              } : undefined,
-              // Use mode that includes markers to ensure square shows in legend
-              mode: trace.type === 'scatter' ? 'lines+markers' : trace.mode,
-              // Control legend appearance
-              showlegend: true,
-              legendgroup: trace.name || '',
+              // Let original showlegend on trace take effect, or default to true
+              showlegend: trace.showlegend === undefined ? true : trace.showlegend,
+              // Ensure a legend group, can be based on name or a unique ID if name is missing
+              legendgroup: trace.legendgroup || trace.name || `trace-${Math.random().toString(36).substr(2, 9)}`,
             };
           });
           

@@ -24,7 +24,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
-import { useCreateDashboard } from "@/hooks/ueDashboard";
+import { useCreateDashboard, useListDashboards } from "@/hooks/ueDashboard";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 
@@ -185,9 +185,23 @@ export function Sidebar() {
             .sidebar-nav-scrollable::-webkit-scrollbar-thumb:hover {
               background: rgba(156, 163, 175, 0.8) !important;
             }
-            .sidebar-nav-scrollable {
+            .sidebar-nav-scrollable , .sidebar-subitems-scrollable{
               scrollbar-width: thin !important;
               scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
+            }
+               .sidebar-subitems-scrollable::-webkit-scrollbar {
+              width: 5px !important;
+              display: block !important;
+            }
+            .sidebar-subitems-scrollable::-webkit-scrollbar-track {
+              background: transparent !important;
+            }
+            .sidebar-subitems-scrollable::-webkit-scrollbar-thumb {
+              background: rgba(156, 163, 175, 0.5) !important;
+              border-radius: 20px !important;
+            }
+            .sidebar-subitems-scrollable::-webkit-scrollbar-thumb:hover {
+              background: rgba(156, 163, 175, 0.8) !important;
             }
           `
         }} />

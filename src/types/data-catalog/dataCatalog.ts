@@ -86,6 +86,7 @@ export interface LayoutFieldTags {
 }
 
 export interface LayoutField {
+  pii_classification: any;
   created_at: string;
   updated_at: string;
   created_by: string | null;

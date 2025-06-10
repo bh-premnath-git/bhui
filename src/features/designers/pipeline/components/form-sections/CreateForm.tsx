@@ -813,11 +813,7 @@ console.log(initialFormValues,"initialFormValues")
         return;
       }
       
-      // Check if override_partition is specified
-      if (!cleanValues.override_partition) {
-        console.error('Repartition requires an override partition value');
-        return;
-      }
+      // override_partition is optional, no validation needed
       
       // Validate based on repartition_type
       switch (cleanValues.repartition_type) {
@@ -1999,11 +1995,10 @@ const FormContent: React.FC<{
                   <Controller
                     name="override_partition"
                     control={control}
-                    rules={{ required: true }}
                     render={({ field }) => (
                       <div>
                         <label className="block font-medium mb-1">
-                          Override Partition<span className="text-red-500">*</span>
+                          Override Partition
                         </label>
                         <Input
                           {...field}

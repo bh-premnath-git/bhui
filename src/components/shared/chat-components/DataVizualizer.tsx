@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Code, BarChart4, Table as TableIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Code, BarChart4, Table as TableIcon, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
 import { DashboardSelect } from './DashboardSelect';
+import { useDashboardSelector } from '@/hooks/useDashboardSelector';
 
 // Chart Data Interfaces
 interface ChartRecommendation {
@@ -79,8 +80,13 @@ export function AIDataVisualizer({
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
   
   // Explorer-specific states
-  const [selectedDashboardId, setSelectedDashboardId] = useState<string>("0");
+  const [selectedDashboardId, setSelectedDashboardId] = useState<string>("102");
   const [showDashboardSelect, setShowDashboardSelect] = useState(false);
+  const [addedToDashboard, setAddedToDashboard] = useState(false);
+  const [addedDashboardName, setAddedDashboardName] = useState<string | null>(null);
+  
+  // Get dashboard data for name lookups
+  const { allDashboards } = useDashboardSelector();
   
   // Generate stable IDs for each tab component
   const tabIds = useMemo(() => ({
@@ -157,24 +163,42 @@ export function AIDataVisualizer({
 
             {onAddToDashboard && chartMetadata && variant === 'explorer' ? (
               <div className="relative">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowDashboardSelect(!showDashboardSelect)}
-                  className="h-8 text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add to Dashboard
-                  {showDashboardSelect ? (
-                    <ChevronUp className="h-3.5 w-3.5 ml-1" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5 ml-1" />
-                  )}
-                </Button>
+                {addedToDashboard ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Added to {addedDashboardName || "dashboard"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowDashboardSelect(!showDashboardSelect)}
+                    className="h-8 text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Add to Dashboard
+                    {showDashboardSelect ? (
+                      <ChevronUp className="h-3.5 w-3.5 ml-1" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 ml-1" />
+                    )}
+                  </Button>
+                )}
                 {showDashboardSelect && (
                   <div className="absolute right-0 mt-1 w-56 p-2 rounded-md shadow-lg bg-white z-10 border">
                     <DashboardSelect 
-                      onSelectDashboard={setSelectedDashboardId} 
+                      onSelectDashboard={(id) => {
+                        setSelectedDashboardId(id);
+                        // Find dashboard name when selected
+                        const dashboard = allDashboards.find(d => d.id === id);
+                        if (dashboard) {
+                          setAddedDashboardName(dashboard.name);
+                        }
+                      }} 
                       selectedDashboardId={selectedDashboardId} 
                     />
                     <div className="mt-2 flex justify-end">
@@ -187,7 +211,16 @@ export function AIDataVisualizer({
                             data: data?.content,
                             dashboardId: selectedDashboardId
                           });
+                          
+                          // Update UI to show success state
                           setShowDashboardSelect(false);
+                          setAddedToDashboard(true);
+                          
+                          // Reset after a few seconds (optional)
+                          setTimeout(() => {
+                            setAddedToDashboard(false);
+                            setAddedDashboardName(null);
+                          }, 5000);
                         }}
                         className="h-7 text-xs"
                       >

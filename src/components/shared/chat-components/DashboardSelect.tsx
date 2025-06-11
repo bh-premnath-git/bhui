@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useListDashboards } from '@/hooks/ueDashboard';
 import { Check, Loader2 } from 'lucide-react';
+import { useDashboardSelector } from '@/hooks/useDashboardSelector';
 
 interface DashboardSelectProps {
   onSelectDashboard: (dashboardId: string) => void;
@@ -11,20 +10,13 @@ interface DashboardSelectProps {
 }
 
 export function DashboardSelect({ onSelectDashboard, selectedDashboardId }: DashboardSelectProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { data: apiDashboards, isLoading, isError } = useListDashboards();
-
-  // Combine default dashboard with API dashboards
-  const allDashboards = useMemo(() => {
-    const defaultDashboard = { id: "0", name: "Main Dashboard" };
-    return apiDashboards ? [defaultDashboard, ...apiDashboards] : [defaultDashboard];
-  }, [apiDashboards]);
-
-  const filteredDashboards = useMemo(() => {
-    return allDashboards.filter(dashboard =>
-      dashboard.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [allDashboards, searchTerm]);
+  const {
+    searchTerm,
+    setSearchTerm,
+    filteredDashboards,
+    isLoading,
+    isError
+  } = useDashboardSelector();
 
   if (isLoading) {
     return (
@@ -41,7 +33,7 @@ export function DashboardSelect({ onSelectDashboard, selectedDashboardId }: Dash
         <div className="flex flex-col items-center">
           <div>Failed to load dashboards.</div>
           <button 
-            onClick={() => onSelectDashboard("0")}
+            onClick={() => onSelectDashboard("102")}
             className="mt-2 px-4 py-1 bg-primary/10 text-primary text-sm rounded-md hover:bg-primary/20"
           >
             Use Main Dashboard

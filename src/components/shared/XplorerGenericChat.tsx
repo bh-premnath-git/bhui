@@ -45,7 +45,6 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const [threadId, setThreadId] = useState<string | null>(null);
   const { createConversation, streamConversation } = useConversation();
   const [response, setResponse] = useState<{ sql: any; chart: any; table: any; explanation: any } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [processingState, setProcessingState] = useState<'processing' | 'processed' | 'hidden'>('hidden');
   const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
   const streamAbortRef = useRef<() => void>();
@@ -103,7 +102,6 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     // Reset states for new query
     setResponse(null);
     setProcessingState('processing');
-    setIsProcessing(true);
     
     // Add user message first
     addUserMessage(q);
@@ -137,7 +135,6 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         updateMessageById(processingMessageId, 'Here are the results of your query:');
       }
       setProcessingState('processed');
-      setIsProcessing(false);
     };
     
     const onError = (error: any) => {
@@ -146,9 +143,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
       if (processingMessageId) {
         updateMessageById(processingMessageId, `Error: ${error.message || 'Failed to process your request'}`);
       }
-      setProcessingState('hidden');
-      setIsProcessing(false);
-    };
+      setProcessingState('hidden');    };
     
     // Start streaming with the appropriate module
     streamAbortRef.current = streamConversation(

@@ -1,9 +1,8 @@
-import { useRef, useLayoutEffect, useEffect, useMemo } from 'react';
-import { debounce } from 'lodash';
-import { useResettableState } from '@/hooks/useResettableState';
+import { useMemo } from 'react';
 import { Widget as WidgetType } from "@/types/dataops/dataops-dash";
 import Plot from 'react-plotly.js';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { Layout as PlotlyLayout } from 'plotly.js';
 
 interface PlotlyChartProps {
   widget: WidgetType;
@@ -12,122 +11,7 @@ interface PlotlyChartProps {
   className?: string;
 }
 
-export const PlotlyChart = ({ widget, defaultFontSize = 12, height = 300, className = '' }: PlotlyChartProps) => {
-  // Use resettable state to track container dimensions
-  const [size, setSize] = useResettableState(
-    () => null as { width: number; height: number } | null,
-    [widget.chart_config] // Reset when chart config changes
-  );
-
-  // Refs for measurement and observation
-  const measureDiv = useRef<HTMLDivElement>(null);
-  const container = useRef<HTMLDivElement>(null);
-  
-  // Initial measurement on mount
-  useLayoutEffect(() => {
-    if (!size && measureDiv.current) {
-      const { width, height } = measureDiv.current.getBoundingClientRect();
-      setSize({ width, height });
-    }
-  }, [measureDiv.current, size]);
-
-  // Set up resize observer
-  useEffect(() => {
-    if (!container.current) return;
-
-    const parent = container.current.parentElement;
-    if (!parent) return;
-
-    const observer = new ResizeObserver(
-      debounce(() => {
-        setSize(null); // Trigger remeasurement
-      }, 500)
-    );
-
-    observer.observe(parent);
-    return () => observer.disconnect();
-  }, [container]);
-
-  // Prepare chart data from widget
-  const data = useMemo(() => {
-    // Transform widget.executed_query into Plotly data format
-    // This will depend on your data structure
-    return widget.executed_query?.map(item => ({
-      x: [item.month_label || item.date],
-      y: [item[widget.chart_config.yAxis]],
-      type: widget.chart_config.type === 'line_chart' ? 'scatter' : 'bar',
-      mode: 'lines+markers',
-      name: item.project_name,
-    })) || [];
-  }, [widget]);
-
-  // Generate layout configuration based on container size
-  const layout = useMemo(() => {
-    // Default dimensions if container not yet measured
-    const defaultWidth = 700;
-    const defaultHeight = 450;
-    
-    // Use measured size or fall back to defaults
-    const actualWidth = size?.width ?? defaultWidth;
-    const actualHeight = size?.height ?? defaultHeight;
-    
-    // Calculate scale factors for responsive sizing
-    const wScale = actualWidth / defaultWidth;
-    const hScale = actualHeight / defaultHeight;
-    
-    // Scale font size based on container dimensions
-    const fontScale = Math.min(wScale, hScale, 1);
-
-    return {
-      autosize: true,
-      width: actualWidth,
-      height: actualHeight,
-      title: widget.name,
-      font: {
-        family: 'Inter, system-ui, sans-serif',
-        size: defaultFontSize * fontScale,
-        color: 'hsl(var(--foreground))'
-      },
-      paper_bgcolor: 'transparent',
-      plot_bgcolor: 'transparent',
-      margin: {
-        l: 50 * wScale,
-        r: 30 * wScale,
-        t: 50 * hScale,
-        b: 50 * hScale,
-        pad: 5
-      },
-      xaxis: {
-        title: widget.chart_config.xAxis,
-        gridcolor: 'hsl(var(--border))',
-        zerolinecolor: 'hsl(var(--border))'
-      },
-      yaxis: {
-        title: widget.chart_config.yAxis,
-        gridcolor: 'hsl(var(--border))',
-        zerolinecolor: 'hsl(var(--border))'
-      },
-      showlegend: true,
-      legend: {
-        x: 0,
-        y: 1.1,
-        orientation: 'h',
-        itemsizing: 'constant',
-        traceorder: 'normal'
-      }
-    };
-  }, [size, widget.chart_config, widget.name, defaultFontSize]);
-
-  // Configuration for Plotly
-  const config = useMemo(
-    () => ({
-      displaylogo: false,
-      displayModeBar: false,
-      responsive: true,
-    }),
-    []
-  );
-
+export const PlotlyChart = ({ widget, defaultFontSize = 12, height = 200, className = '' }: PlotlyChartProps) => {
   const plotlyData = useMemo(() => {
     if (!widget.intermediate_executed_query_json) {
       return null;
@@ -153,102 +37,98 @@ export const PlotlyChart = ({ widget, defaultFontSize = 12, height = 300, classN
 
   const { data: plotlyDataData, layout: plotlyDataLayout } = plotlyData;
 
-  // Apply square markers to the data from widget.executed_query
-  const enhancedData = useMemo(() => {
-    return data.map(trace => {
-      const baseProps = {
-        ...trace,
-        marker: {
-          symbol: 'square',
-        },
-        showlegend: true,
-        legendgroup: trace.name || '',
-      };
-      
-      // Only add line property for scatter type charts
-      if (trace.type === 'scatter') {
-        return {
-          ...baseProps,
-          line: {
-            showlegend: false
-          }
-        };
-      }
-      
-      return baseProps;
-    });
-  }, [data]);
-
   // Apply square markers to the data from intermediate_executed_query_json
-  const enhancedPlotlyData = plotlyDataData.map(trace => {
-    const baseProps = {
-      ...trace,
-      marker: {
-        ...(trace.marker || {}),
-        symbol: 'square',
-      },
-      mode: trace.type === 'scatter' ? 'lines+markers' : trace.mode,
-      showlegend: true,
-      legendgroup: trace.name || '',
-    };
+  const enhancedData = plotlyDataData.map((trace: any) => {
+    // Use any for intermediate data since it's already untyped
+    const result: any = { ...trace };
     
-    // Only add line property for scatter type charts
-    if (trace.type === 'scatter') {
-      return {
-        ...baseProps,
+    let newMode = result.mode;
+    // If it's a line-like trace, ensure 'markers' is in the mode for legend display
+    if (typeof result.mode === 'string' && result.mode.includes('lines') && !result.mode.includes('markers')) {
+      newMode = result.mode + '+markers';
+    } else if (!result.mode && (result.type === 'scatter' || result.type === 'line')) {
+      // Default to lines+markers if mode is missing for scatter/line
+      newMode = 'lines+markers';
+    }
+
+    result.mode = newMode;
+    result.showlegend = result.showlegend === undefined ? true : result.showlegend;
+    result.legendgroup = result.legendgroup || result.name || `trace-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Apply properties based on trace type
+    if (result.type !== 'pie' && result.type !== 'violin') {
+      result.marker = {
+        symbol: 'square',
+        size: 8,
         line: {
-          ...(trace.line || {}),
-          showlegend: false
-        }
+          width: 1,
+          color: '#fff',
+          ...(trace.marker?.line || {}),
+        },
+        ...(trace.marker || {}), // Preserve other marker settings
       };
     }
     
-    return baseProps;
+    return result;
   });
 
-  // Merge the provided layout with responsive settings
-  const finalLayout = {
+  // Merge the provided layout with styling settings
+  const finalLayout: Partial<PlotlyLayout> = {
     ...plotlyDataLayout,
     autosize: true,
     height: height,
-    margin: { l: 40, r: 20, t: 30, b: 60, ...plotlyDataLayout?.margin },
-    font: { family: 'Inter, sans-serif', size: 10, ...plotlyDataLayout?.font },
+    margin: { l: 40, r: 15, t: 25, b: 55, ...plotlyDataLayout?.margin },
+    font: { 
+      family: 'Inter, system-ui, sans-serif', 
+      size: 10, 
+      ...plotlyDataLayout?.font 
+    },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     showlegend: true,
+    xaxis: {
+      showgrid: true,
+      gridcolor: 'rgba(128, 128, 128, 0.15)',
+      zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+      linecolor: 'rgba(128, 128, 128, 0.3)',
+      ...plotlyDataLayout?.xaxis
+    },
+    yaxis: {
+      showgrid: true,
+      gridcolor: 'rgba(128, 128, 128, 0.15)',
+      zerolinecolor: 'rgba(128, 128, 128, 0.3)',
+      linecolor: 'rgba(128, 128, 128, 0.3)',
+      ...plotlyDataLayout?.yaxis
+    },
     legend: {
       orientation: 'h',
-      xanchor: 'center',
+      xanchor: 'center', 
       yanchor: 'top',
-      y: -0.2,
+      y: -0.3,
       x: 0.5,
+      font: { size: 9 },
       itemsizing: 'constant',
       traceorder: 'normal',
-      ...plotlyDataLayout?.legend,
-    }
+      itemwidth: 30,
+      itemclick: 'toggleothers',
+      itemdoubleclick: 'toggle',
+      xgap: 10,
+      ...plotlyDataLayout?.legend
+    },
+    title: plotlyDataLayout?.title || (widget.name ? { text: widget.name } : undefined)
   };
 
   return (
-    <div ref={container} className={`w-full h-full ${className}`}>
-      <div ref={measureDiv} className="absolute inset-0">
-        {size && (
-          <Plot
-            data={enhancedData}
-            layout={layout}
-            config={config}
-            style={{ width: '100%', height: '100%' }}
-          />
-        )}
-        <Plot
-          data={enhancedPlotlyData}
-          layout={finalLayout}
-          config={{ 
-            responsive: true,
-            displayModeBar: false,
-          }}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </div>
+    <div className={`w-full h-full ${className}`}>
+      <Plot
+        data={enhancedData}
+        layout={finalLayout}
+        config={{ 
+          responsive: true,
+          displayModeBar: false,
+        }}
+        style={{ width: '100%', height: '100%' }}
+      />
     </div>
   );
 };

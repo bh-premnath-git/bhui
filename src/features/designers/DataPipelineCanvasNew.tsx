@@ -1,5 +1,5 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,18 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
-import { LoaderCircle } from 'lucide-react';
+import { LoadingState } from '@/components/shared/LoadingState';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
+import PipelineSidebar from './components/PipelineSidebar';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+import { useParams } from 'react-router-dom';
 
 const DataPipelineCanvasNew: React.FC = () => {
   const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
+  const { id } = useParams();
+  const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
+  const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
+  
   const {
     pipelineDtl,
     nodes,
@@ -117,8 +123,20 @@ const DataPipelineCanvasNew: React.FC = () => {
     };
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 useEffect(() => {
-  fetchPipelineDetails()
-},[]);
+  if (id && id !== currentPipelineId) {
+    setIsLoadingPipeline(true);
+    setCurrentPipelineId(id);
+    
+    // Fetch pipeline details
+    fetchPipelineDetails().then(() => {
+        setIsLoadingPipeline(false);
+      })
+      .catch((error) => {
+        console.error('Error loading pipeline:', error);
+        setIsLoadingPipeline(false);
+      });
+  }
+}, [id]);
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 
@@ -261,9 +279,12 @@ useEffect(() => {
   ];
 
   return (
-    <div className={`flex flex-col h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+    <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+      {/* Pipeline Sidebar */}
+      <PipelineSidebar className="h-full" />
+      
       <div 
-        className={`flex-1 relative p-1 ml-8 transition-all duration-300`}
+        className={`flex-1 relative p-1 transition-all duration-300`}
         style={{
           position: 'relative',
           display: 'flex',
@@ -272,9 +293,10 @@ useEffect(() => {
           height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
           width: isRightAsideOpen ? 'calc(100% - 50px)' : '100%'
         }}>
+        
 
         {/* Keyboard shortcuts panel */}
-        <div className={`fixed top-20 left-24 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
+        <div className={`fixed top-20 left-72 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
           <div className="rounded-lg p-2 text-sm">
             <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
           </div>
@@ -420,22 +442,7 @@ useEffect(() => {
         />
 
         {/* Loading Overlay */}
-        {isCanvasLoading && (
-          <div 
-            className="fixed z-50 flex items-center justify-center pointer-events-auto bg-white/50 backdrop-blur-[1px] transition-all duration-300"
-            style={{
-              top: 0,
-              bottom: 0,
-              left: 0,
-              right: isRightAsideOpen ? '520px' : 0
-            }}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <LoaderCircle size={40} />
-              <span className="text-sm text-gray-600 font-medium">Processing...</span>
-            </div>
-          </div>
-        )}
+       
       </div>
     </div>
   );

@@ -294,6 +294,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                       chart={response.chart}
                       data={response.table}
                       onAddToDashboard={handleAddToDashboard}
+                      variant={variant}
                     />
                   )}
 

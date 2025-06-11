@@ -130,11 +130,12 @@ export const PlaybackButton = () => {
         // Start a new polling interval
         pollingIntervalRef.current = setInterval(() => {
             if (selectedFlow?.flow_name && selectedEnvironment?.airflow_env_name && selectedEnvironment?.bh_env_name) {
+                // debugger
                 // Replace spaces with underscores in dag_id to match API expectations
                 const formattedDagId = selectedFlow.flow_name.replace(/\s+/g, '_');
-                
+                console.log(selectedFlow)
                 dispatch(fetchDagParserTime({
-                    dag_id: formattedDagId,
+                    dag_id: selectedFlow.flow_key,
                     airflow_env_name: selectedEnvironment.airflow_env_name,
                     bh_env_name: selectedEnvironment.bh_env_name
                 }));
@@ -162,9 +163,9 @@ export const PlaybackButton = () => {
                 if (selectedFlow?.flow_name && selectedEnvironment?.airflow_env_name && selectedEnvironment?.bh_env_name) {
                     // Replace spaces with underscores in dag_id to match API expectations
                     const formattedDagId = selectedFlow.flow_name.replace(/\s+/g, '_');
-                    
+                    console.log(selectedFlow)
                     dispatch(fetchDagParserTime({
-                        dag_id: formattedDagId,
+                        dag_id: selectedFlow.flow_key,
                         airflow_env_name: selectedEnvironment.airflow_env_name,
                         bh_env_name: selectedEnvironment.bh_env_name
                     }));

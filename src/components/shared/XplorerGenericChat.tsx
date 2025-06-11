@@ -2,15 +2,13 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useChatMessages } from '@/hooks/useChatMessages'
 import { AIChatInput } from '@/components/shared/AIChatInput'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts'
 import { motion } from 'framer-motion'
 import { Zap } from 'lucide-react'
-import { Button } from '../ui/button'
 import { useConversation } from '@/hooks/useConversation'
 import { useRecommendation } from '@/hooks/useRecommendation'
 import { createShortUUID } from '@/lib/utils'
 import { LoadingState } from '@/components/shared/LoadingState'
+import { AIDataVisualizer } from '@/components/shared/chat-components/DataVizualizer'
 
 interface XplorerGenericChatUIProps {
   imageSrc?: string
@@ -22,134 +20,16 @@ interface XplorerGenericChatUIProps {
 
 // Custom event name constant
 export const CHART_ADDED_EVENT = 'chart-added-to-xplorer-dashboard';
+export const WIDGET_REMOVED_EVENT = 'widget-removed-from-xplorer-dashboard';
 const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
-
-// Component to display SQL query
-const SQLView = ({ query }) => {
-  return (
-    <pre className="bg-gray-700 text-white p-2 rounded whitespace-pre-wrap">
-      {query}
-    </pre>
-  );
-};
-
-// Component to display table view
-const TableView = ({ data }) => {
-  if (!data || data.length === 0) return <p>No data available</p>;
-
-  // Get all column keys
-  const allColumns = Object.keys(data[0]);
-
-  return (
-    <div className="h-full w-full rounded-lg bg-white">
-      <div className="h-full overflow-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 sticky top-0">
-            <tr>
-              {allColumns.map((key) => (
-                <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {key}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((row, rowIndex) => (
-              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {allColumns.map((key, colIndex) => (
-                  <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row[key]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// Enhanced chart view component with title and better axis labels
-const ChartView = ({ data, metric, categoryKey, chartTitle }) => {
-  // If it's products data, format specifically for that
-  if (Array.isArray(data) && data.length > 0 && 'productName' in data[0] && 'unitPrice' in data[0]) {
-    return (
-      <div className="h-96 bg-gradient-to-br from-card to-card/95 overflow-hidden">
-        <h3 className="text-center text-sm mb-2">{chartTitle || "Top 10 Most Expensive Products"}</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-          >
-            <XAxis
-              type="number"
-            />
-            <YAxis
-              dataKey="productName"
-              type="category"
-              width={100}
-              label={{ value: 'Product Name', angle: -90, position: 'insideLeft', offset: -30 }}
-            />
-            <Tooltip formatter={(value) => [`$${value}`, 'Price']} />
-            <Legend />
-            <Bar dataKey="unitPrice" fill="#A7D1F0" name="Unit Price ($)">
-              <LabelList dataKey="unitPrice" position="right" formatter={(value) => `$${value}`} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  // If it's a region count query, format data differently
-  if (Array.isArray(data) && data.length > 0 && 'region' in data[0] && 'count' in data[0]) {
-    return (
-      <div className="h-96 bg-gradient-to-br from-card to-card/95 overflow-hidden">
-        <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Orders by Region"}</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <BarChart data={data}>
-            <XAxis dataKey="region" label={{ value: 'Region', position: 'insideBottom', offset: -5 }} />
-            <YAxis label={{ value: 'Number of Orders', angle: -90, position: 'insideLeft' }} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#A7D1F0" name="Number of Orders" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  // Default chart for orders or order details
-  return (
-    <div className="h-96">
-      <h3 className="text-center text-lg font-semibold mb-2">{chartTitle || "Data Visualization"}</h3>
-      <ResponsiveContainer width="100%" height="90%">
-        <BarChart data={data}>
-          <XAxis
-            dataKey={categoryKey || 'id'}
-            label={{ value: categoryKey || 'ID', position: 'insideBottom', offset: -5 }}
-          />
-          <YAxis
-            label={{ value: metric.charAt(0).toUpperCase() + metric.slice(1), angle: -90, position: 'insideLeft' }}
-          />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey={metric} fill="#A7D1F0" name={metric.charAt(0).toUpperCase() + metric.slice(1)} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
 
 export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   userColor = '#000000', suggestions, variant = 'explorer' }: XplorerGenericChatUIProps) {
-  const { 
-    messages, 
-    addUserMessage, 
+  const {
+    messages,
+    addUserMessage,
     addAssistantMessage,
-    updateMessageById 
+    updateMessageById
   } = useChatMessages();
   
   // Move connectionId state declaration to before its usage
@@ -159,13 +39,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     variant,
     variant === 'explorer' ? connectionId : null
   );
-  const [activeTab, setActiveTab] = useState('chart');
   const [input, setInput] = useState('');
-  const [sqlQuery, setSqlQuery] = useState('');
-  const [filteredData, setFilteredData] = useState([]);
-  const [metricToVisualize, setMetricToVisualize] = useState('total');
-  const [categoryKey, setCategoryKey] = useState('id');
-  const [chartTitle, setChartTitle] = useState('');
   
   // Conversation management
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -196,26 +70,17 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   }, [createConversation]);
 
   // Function to handle adding data to the dashboard
-  const handleAddToDashboard = (data) => {
-    // Create a custom event with all the necessary chart data
+  const handleAddToDashboard = (data: any) => {
     const chartData = {
       id: `chart-${createShortUUID()}`,
       owner: "info@bighammer.ai",
       widget_type: "user_defined",
-      name: chartTitle || "Explorer Data Chart",
+      name: data.chartMetadata.layout.title.text,
       visibility: "private",
-      sql_query: sqlQuery,
-      intermediate_executed_query_json: {
-        layout: {
-          title: { text: chartTitle }
-        }
-      },
-      executed_query: { data: filteredData },
-      chart_config: {
-        title: chartTitle,
-        metric: metricToVisualize,
-        categoryKey: categoryKey
-      }
+      sql_query: data.sql,
+      intermediate_executed_query_json: data.chartMetadata,
+      executed_query:  { ...data.data },
+      chart_config: ""
     };
     
     // Dispatch a custom event that XplorerMock can listen for
@@ -258,27 +123,6 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
           
           if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
             const responseTypeKey = parsedChunk.response_type.toLowerCase();
-            
-            if (responseTypeKey === 'sql' && parsedChunk.sql) {
-              setSqlQuery(parsedChunk.sql);
-            }
-            
-            if (responseTypeKey === 'table' && parsedChunk.data) {
-              setFilteredData(parsedChunk.data);
-            }
-            
-            if (responseTypeKey === 'chart') {
-              if (parsedChunk.chart_title) {
-                setChartTitle(parsedChunk.chart_title);
-              }
-              if (parsedChunk.metric) {
-                setMetricToVisualize(parsedChunk.metric);
-              }
-              if (parsedChunk.category_key) {
-                setCategoryKey(parsedChunk.category_key);
-              }
-            }
-            
             setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
           }
         } catch (error) {
@@ -308,12 +152,12 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     
     // Start streaming with the appropriate module
     streamAbortRef.current = streamConversation(
-      connId, 
-      q, 
-      threadId, 
-      onChunk, 
-      onComplete, 
-      onError, 
+      connId,
+      q,
+      threadId,
+      onChunk,
+      onComplete,
+      onError,
       variant
     );
     
@@ -382,8 +226,10 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
             <>
               {messages.map((m, i) => {
                 const isA = m.role === 'assistant';
+                const isProcessingMessage = isA && processingMessageId === m.id;
+
                 return (
-                  <div key={i} className="flex items-start gap-4 py-2">
+                  <div key={m.id} className="flex items-start gap-4 py-2">
                     <div
                       className="w-8 h-8 rounded-full mt-1"
                       style={{ backgroundColor: isA ? assistantColor : userColor }}
@@ -391,59 +237,80 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                     <div
                       className={`flex-1 rounded-2xl px-4 py-3 shadow ${isA ? 'bg-gray-100 text-black' : 'bg-gradient-to-r from-white to-slate-50'}`}
                     >
-                      <p className="leading-relaxed">{m.content}</p>
+                      {isProcessingMessage ? (
+                        processingState === 'processing' ? (
+                          <div className="flex items-center">
+                            <p className="mr-2">Processing</p>
+                            <span className="flex space-x-1">
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                              >.</motion.span>
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse", delay: 0.2 }}
+                              >.</motion.span>
+                              <motion.span
+                                className="text-xl font-bold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse", delay: 0.4 }}
+                              >.</motion.span>
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <p>Processed</p>
+                            <motion.span
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="ml-2 text-green-600 font-bold"
+                            >
+                              ✓
+                            </motion.span>
+                          </div>
+                        )
+                      ) : (
+                        <p className="leading-relaxed">{m.content}</p>
+                      )}
                     </div>
                   </div>
                 );
               })}
 
               {/* Only render when we have a response */}
-              {response && !isProcessing && (
+              {response && (
                 <>
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="chart">Chart</TabsTrigger>
-                      <TabsTrigger value="table">Table</TabsTrigger>
-                      <TabsTrigger value="sql">SQL</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="chart" className="pt-4">
-                      <div className="bg-white p-4 rounded-xl border">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold">{chartTitle || 'Data Visualization'}</h3>
-                          <Button
-                            variant="outline"
-                            onClick={() => handleAddToDashboard(response)}
-                            className="h-7 text-xs"
-                          >
-                            Add to Dashboard
-                          </Button>
-                        </div>
-                        <ChartView
-                          data={filteredData}
-                          metric={metricToVisualize}
-                          categoryKey={categoryKey}
-                          chartTitle={chartTitle}
-                        />
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="table" className="pt-4">
-                      <TableView data={filteredData} />
-                    </TabsContent>
-                    <TabsContent value="sql" className="pt-4">
-                      <SQLView query={sqlQuery} />
-                    </TabsContent>
-                  </Tabs>
-                  <div className="flex items-start gap-4 mt-4">
-                    <div
-                      className="w-8 h-8 rounded-full mt-1"
-                      style={{ backgroundColor: assistantColor }}
+                  {(response.sql || response.chart || response.table) && (
+                    <AIDataVisualizer
+                      sql={response.sql}
+                      chart={response.chart}
+                      data={response.table}
+                      onAddToDashboard={handleAddToDashboard}
                     />
-                    <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
-                      <p className="leading-relaxed text-black">
-                        Do you want to analyze the Order and other details of this data?
-                      </p>
+                  )}
+
+                  {/* Follow-up question - only show when processing is complete */}
+                  {processingState === 'processed' && (
+                    <div className="flex items-start gap-4 mt-4">
+                      <div
+                        className="w-8 h-8 rounded-full mt-1"
+                        style={{ backgroundColor: assistantColor }}
+                      />
+                      <div className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 shadow">
+                        <p className="leading-relaxed text-black">
+                          Do you have any other queries?
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               )}
             </>

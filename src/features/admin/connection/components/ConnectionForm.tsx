@@ -7,13 +7,13 @@ import { generateFormSchema } from './connectionFormSchema';
 import { FormFields } from './FormFields';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { 
-  ArrowLeft, 
-  Construction, 
-  Database, 
-  RefreshCw, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  ArrowLeft,
+  Construction,
+  Database,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
   Loader2,
   KeyRound,
   ServerCog,
@@ -33,6 +33,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
+import { debug } from 'console';
 
 interface ConnectionFormProps {
   connectionType: string;
@@ -51,8 +52,8 @@ const cleanConnectionConfigName = (name: string) => {
   return name.replace(/[_-]/g, '');
 };
 
-export function ConnectionForm({ 
-  connectionType, 
+export function ConnectionForm({
+  connectionType,
   connectionDisplayName,
   connectionName,
   connectionId,
@@ -67,9 +68,9 @@ export function ConnectionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean, message: string } | null>(null);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const loadSchema = async () => {
       setIsLoading(true);
@@ -96,7 +97,7 @@ export function ConnectionForm({
           );
           if (module?.default?.connectionSpecification) {
             let schema = module.default.connectionSpecification;
-            
+
             // Modify the schema for BigQuery to use textarea
             if (connectionName.toLowerCase() === 'bigquery' && schema.properties.credentials_json) {
               schema = {
@@ -113,7 +114,7 @@ export function ConnectionForm({
                 }
               };
             }
-            
+
             setSchema(schema);
           } else {
             console.error('Invalid schema format:', module);
@@ -151,11 +152,11 @@ export function ConnectionForm({
 
   const form = useForm({
     resolver: schema ? zodResolver(generateFormSchema(schema)) : undefined,
-    defaultValues: isEdit && formData 
+    defaultValues: isEdit && formData
       ? {
-          ...generateInitialValues(schema),
-          ...formData
-        }
+        ...generateInitialValues(schema),
+        ...formData
+      }
       : generateInitialValues(schema),
     mode: 'onChange'
   });
@@ -163,32 +164,33 @@ export function ConnectionForm({
   // Update the useEffect to properly handle schema changes
   useEffect(() => {
     if (schema) {
-      const initialValues = isEdit && formData 
+      const initialValues = isEdit && formData
         ? {
-            ...generateInitialValues(schema),
-            ...formData
-          }
+          ...generateInitialValues(schema),
+          ...formData
+        }
         : generateInitialValues(schema);
-      
+
       form.reset(initialValues);
     }
   }, [schema, connectionDisplayName, isEdit, formData]);
 
+
   const getConfigUnionForType = (connectionName: string, data: any, connectionType: string) => {
     const type = connectionName.toLowerCase();
-    
+
     const dynamicTypeField = connectionType === 'source' ? 'source_type' : 'destination_type';
-  
+
     const commonFields = {
       [dynamicTypeField]: type,
     };
 
     if (type === 'postgres') {
       // Handle schemas array properly
-      const schemasArray = Array.isArray(data.schemas) 
-        ? data.schemas 
-        : data.schemas 
-          ? [data.schemas] 
+      const schemasArray = Array.isArray(data.schemas)
+        ? data.schemas
+        : data.schemas
+          ? [data.schemas]
           : ['public']; // Default to ['public'] if no schemas provided
 
       return {
@@ -207,7 +209,7 @@ export function ConnectionForm({
         ...commonFields,
       };
     }
-  
+
     if (type === 'snowflake') {
       return {
         host: data.host || '',
@@ -222,7 +224,7 @@ export function ConnectionForm({
         ...commonFields,
       };
     }
-  
+
     if (type === 'bigquery') {
       let parsedCredentials;
       try {
@@ -231,7 +233,7 @@ export function ConnectionForm({
           const cleanedJson = data.credentials_json
             .replace(/\r?\n|\r/g, '') // Remove all newlines
             .trim(); // Remove leading/trailing whitespace
-          
+
           try {
             parsedCredentials = JSON.parse(cleanedJson);
           } catch (parseError) {
@@ -256,7 +258,7 @@ export function ConnectionForm({
         ...commonFields,
       };
     }
-  
+
     if (type === 'mysql') {
       return {
         host: data.host || '',
@@ -268,21 +270,20 @@ export function ConnectionForm({
         ...commonFields,
       };
     }
-  
+
     if (type === 'oracle') {
       return {
         host: data.host || '',
-        port: data.port || '',
-        database: data.database || 'None',
-        service_name: data.service_name || '',
-        sid: data.sid || '',
+        port: Number(data.port) || 1521,
+        service_name: data.service_name || null,
+        sid: data.sid || null,
         username: data.username || '',
         password: data.password || '',
-        db_schema: data.db_schema || 'None',
+        schemas: data.schemas || 'public',  // Ensure schemas is always set
         ...commonFields,
       };
     }
-  
+
     if (type === 'gcs') {
       return {
         bucket_name: data.bucket_name || '',
@@ -302,17 +303,17 @@ export function ConnectionForm({
         ...commonFields,
       };
     }
-  
+
     if (type === 'local') {
       return {
         file_path_prefix: data.file_path_prefix || '',
         ...commonFields,
       };
     }
-  
+
     return null;
   };
-  
+
   const generateCustomMetadata = (type: string, data: any) => {
     // Clean the connectionConfigName
     const cleanedName = cleanConnectionConfigName(connectionConfigName || '');
@@ -340,6 +341,17 @@ export function ConnectionForm({
           database: data?.database || null,
           secret_name: `bh-mysql-${cleanedName}`
         };
+      case 'oracle':
+        return {
+          name: connectionConfigName,
+          connection_type: "Oracle",
+          service_name: data.service_name || null,
+          sid: data.sid || null,
+          schema: data.schemas || null,  // Map schemas to schema in metadata
+          host: data.host || null,
+          port: Number(data.port) || 1521,
+          secret_name: `bh-oracle-${cleanedName}`
+        };
       case 's3':
         return {
           name: connectionConfigName,
@@ -366,17 +378,17 @@ export function ConnectionForm({
     try {
       setIsTesting(true);
       setTestResult(null);
-      
+
       // Simulate connection test
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // For demo purposes, we'll simulate success most of the time
       const isSuccess = Math.random() > 0.3;
-      
+
       setTestResult({
         success: isSuccess,
-        message: isSuccess 
-          ? "Connection test successful! All required settings validated." 
+        message: isSuccess
+          ? "Connection test successful! All required settings validated."
           : "Connection test failed. Please check your credentials and network settings."
       });
     } catch (error) {
@@ -392,29 +404,26 @@ export function ConnectionForm({
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
-      
+
       // Get raw form data
       const rawFormData = form.getValues();
-      
+
       // Special handling for BigQuery
-      const formData = connectionName.toLowerCase() === 'bigquery' 
+      const formData = connectionName.toLowerCase() === 'bigquery'
         ? {
-            project_id: rawFormData.project_id,
-            dataset_id: rawFormData.dataset_id,
-            credentials_json: rawFormData.credentials_json,
-            temp_gcs_bucket: rawFormData.temp_gcs_bucket,
-          }
+          project_id: rawFormData.project_id,
+          dataset_id: rawFormData.dataset_id,
+          credentials_json: rawFormData.credentials_json,
+          temp_gcs_bucket: rawFormData.temp_gcs_bucket,
+        }
         : { ...data };
       
+      
       const configUnion: any = await getConfigUnionForType(connectionName, formData, connectionType);
-
       if (!configUnion) {
         throw new Error(`Unsupported connection type: ${connectionName}`);
       }
-      
-
       const { encryptedString, initVector } = encrypt_string(JSON.stringify(configUnion));
-
       // Use the factory function to generate custom metadata
       const custom_metadata = generateCustomMetadata(connectionName, rawFormData);
 
@@ -436,7 +445,6 @@ export function ConnectionForm({
         connectionData.dataset_id = rawFormData.dataset_id;
         connectionData.credentials_json = rawFormData.credentials_json?.toString();
       }
-console.log(connectionData, "connectionData")
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);
         toast.success('Connection updated successfully');
@@ -455,29 +463,34 @@ console.log(connectionData, "connectionData")
 
   const getConnectionIcon = () => {
     const connectionIcons: { [key: string]: JSX.Element } = {
-      postgres: <img 
-        src="/assets/buildPipeline/connection/postgres.svg" 
-        alt="PostgreSQL" 
+      postgres: <img
+        src="/assets/buildPipeline/connection/postgres.svg"
+        alt="PostgreSQL"
         className="h-6 w-6"
       />,
-      mysql: <img 
-        src="/assets/buildPipeline/connection/mysql.svg" 
-        alt="MySQL" 
+      mysql: <img
+        src="/assets/buildPipeline/connection/mysql.svg"
+        alt="MySQL"
         className="h-6 w-6"
       />,
-      snowflake: <img 
-        src="/assets/buildPipeline/connection/snowflake.svg" 
-        alt="Snowflake" 
+      snowflake: <img
+        src="/assets/buildPipeline/connection/snowflake.svg"
+        alt="Snowflake"
         className="h-6 w-6"
       />,
-      bigquery: <img 
-        src="/assets/buildPipeline/connection/bigquery.svg" 
-        alt="BigQuery" 
+      bigquery: <img
+        src="/assets/buildPipeline/connection/bigquery.svg"
+        alt="BigQuery"
         className="h-6 w-6"
       />,
-      s3: <img 
-        src="/assets/buildPipeline/connection/s3.svg" 
-        alt="S3" 
+      s3: <img
+        src="/assets/buildPipeline/connection/s3.svg"
+        alt="S3"
+        className="h-6 w-6"
+      />,
+      oracle: <img
+        src="/assets/buildPipeline/connection/oracle.svg"
+        alt="Oracle"
         className="h-6 w-6"
       />,
       // Add more connections as needed
@@ -489,9 +502,9 @@ console.log(connectionData, "connectionData")
 
   if (isLoading) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="container mx-auto p-4 max-w-3xl"
       >
         <Button onClick={onBack} variant="ghost" className="mb-4 gap-1.5">
@@ -500,7 +513,7 @@ console.log(connectionData, "connectionData")
         </Button>
         <Card className="border shadow-sm overflow-hidden">
           <div className="h-1 bg-muted-foreground/20 w-full relative">
-            <motion.div 
+            <motion.div
               className="absolute top-0 left-0 h-full bg-primary/40"
               animate={{ width: ["0%", "100%", "0%"] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -527,9 +540,9 @@ console.log(connectionData, "connectionData")
 
   if (!schema) {
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }} 
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="container mx-auto p-4 max-w-3xl"
       >
         <Button onClick={onBack} variant="ghost" className="mb-4 gap-1.5">
@@ -555,8 +568,8 @@ console.log(connectionData, "connectionData")
               <ArrowLeft className="h-4 w-4" />
               Go Back
             </Button>
-            <Button 
-              onClick={() => window.location.reload()} 
+            <Button
+              onClick={() => window.location.reload()}
               variant="default"
               className="gap-1.5"
             >
@@ -568,11 +581,10 @@ console.log(connectionData, "connectionData")
       </motion.div>
     );
   }
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className="container mx-auto p-4 max-w-3xl"
     >
@@ -595,9 +607,9 @@ console.log(connectionData, "connectionData")
               </CardDescription>
             </div>
           </div>
-          
+
           {testResult && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className={cn(
@@ -617,13 +629,13 @@ console.log(connectionData, "connectionData")
             </motion.div>
           )}
         </CardHeader>
-        
+
         <CardContent className="px-6 pt-0">
           {/* Remove ScrollArea component and let the content be natively scrollable */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Connection Name Field */}
-            
+
               <Accordion type="multiple" defaultValue={["connection-details"]} className="w-full">
                 <AccordionItem value="connection-details" className="border rounded-md">
                   <AccordionTrigger className="px-4 py-3 hover:bg-muted/20 transition-colors group">
@@ -638,7 +650,7 @@ console.log(connectionData, "connectionData")
                     </div>
                   </AccordionContent>
                 </AccordionItem>
-                
+
                 <AccordionItem value="security-settings" className="border rounded-md mt-3">
                   <AccordionTrigger className="px-4 py-3 hover:bg-muted/20 transition-colors group">
                     <div className="flex items-center gap-2 font-medium">
@@ -664,11 +676,11 @@ console.log(connectionData, "connectionData")
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-              
+
               <div className="flex flex-col gap-4 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="w-full gap-2"
                   onClick={handleTestConnection}
                   disabled={isSubmitting || isTesting}
@@ -685,19 +697,19 @@ console.log(connectionData, "connectionData")
                     </>
                   )}
                 </Button>
-                
+
                 <div className="flex gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={onBack}
                     className="flex-1"
                     disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isSubmitting}
                     className="flex-1 gap-2"
                   >

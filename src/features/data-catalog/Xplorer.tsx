@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import Plot from "react-plotly.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { CHART_ADDED_EVENT, WIDGET_REMOVED_EVENT } from "@/components/shared/XplorerGenericChat";
 
-export function Xplorer() {
+interface XplorerProps {
+  dashboardId?: string;
+}
+
+export function Xplorer({ dashboardId = "0" }: XplorerProps) {
   // State to store added charts from XplorerGenericChatUI
   // Each chart object also carries a `collapsed: boolean` flag
-  const [addedCharts, setAddedCharts] = useState<
+  const [allAddedCharts, setAllAddedCharts] = useState<
     Array<{
       id: string;
       title: string;
@@ -14,6 +19,7 @@ export function Xplorer() {
       metric?: string;
       data: any[];
       collapsed: boolean;
+      dashboardId: string;
     }>
   >([]);
 
@@ -26,22 +32,22 @@ export function Xplorer() {
     darkBlue: "#1A4971",
   };
 
-
-  // Listen for “addChartToDashboard” events; initialize collapsed = false
+  // Listen for CHART_ADDED_EVENT events; initialize collapsed = false
   useEffect(() => {
     const handleAddChartToDashboard = (event: CustomEvent) => {
       const chartData = event.detail as {
+        id: string;
         title: string;
         query?: string;
         category?: string;
         metric?: string;
         data: any[];
+        dashboardId: string;
       };
 
-      setAddedCharts((prev) => [
+      setAllAddedCharts((prev) => [
         ...prev,
         {
-          id: `chart-${Date.now()}`,
           ...chartData,
           collapsed: false,
         },
@@ -49,20 +55,22 @@ export function Xplorer() {
     };
 
     document.addEventListener(
-      "addChartToDashboard",
+      CHART_ADDED_EVENT,
       handleAddChartToDashboard as EventListener
     );
     return () => {
       document.removeEventListener(
-        "addChartToDashboard",
+        CHART_ADDED_EVENT,
         handleAddChartToDashboard as EventListener
       );
     };
   }, []);
 
+  const addedCharts = allAddedCharts.filter((chart) => chart.dashboardId === dashboardId);
+
   // Toggle “collapsed” state for a given chart ID
   const toggleCollapse = (id: string) => {
-    setAddedCharts((prev) =>
+    setAllAddedCharts((prev) =>
       prev.map((c) =>
         c.id === id ? { ...c, collapsed: !c.collapsed } : c
       )
@@ -78,6 +86,7 @@ export function Xplorer() {
     metric?: string;
     data: any[];
     collapsed: boolean;
+    dashboardId: string;
   }) => {
     // If collapsed, render nothing (empty placeholder)
     if (chart.collapsed) {
@@ -211,7 +220,6 @@ export function Xplorer() {
       </div>
     );
   };
-
 
   return (
     <div className="w-full p-4 bg-white">

@@ -127,7 +127,7 @@ export const Terminal: React.FC<TerminalProps> = ({
       const taskParam = selectedTaskId ? `?task_id=${selectedTaskId}` : '';
       return `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/flow/stream-logs/${actualName}${taskParam}`;
     } else {
-      return `${CATALOG_REMOTE_API_URL}${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
+      return `http://3.215.223.128:8011${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
     }
   }, [isFlow, actualName, selectedTaskId]);
 

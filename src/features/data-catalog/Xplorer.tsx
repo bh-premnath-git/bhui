@@ -7,7 +7,7 @@ interface XplorerProps {
   dashboardId?: string;
 }
 
-export function Xplorer({ dashboardId = "0" }: XplorerProps) {
+export function Xplorer({ dashboardId = "102" }: XplorerProps) {
   // State to store added charts from XplorerGenericChatUI
   // Each chart object also carries a `collapsed: boolean` flag
   const [allAddedCharts, setAllAddedCharts] = useState<

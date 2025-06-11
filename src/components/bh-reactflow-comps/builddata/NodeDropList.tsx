@@ -101,12 +101,20 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   }
 
   const handleButtonClick = (node: Node) => {
-    setUnsavedChanges()
+    console.log("Button clicked for node:", node.ui_properties.module_name)
+    
     if (node.ui_properties.module_name === "Reader") {
-      setDropdownVisible((prev) =>
-        prev === node.ui_properties.module_name ? null : node.ui_properties.module_name
-      )
+      // Toggle dropdown visibility for Reader nodes
+      console.log("Reader node clicked, toggling dropdown")
+      setDropdownVisible((prev) => {
+        const newState = prev === node.ui_properties.module_name ? null : node.ui_properties.module_name
+        console.log("Setting dropdown visible state to:", newState)
+        return newState
+      })
     } else {
+      // For non-Reader nodes, add to history and handle click
+      console.log("Non-Reader node clicked, handling node click")
+      setUnsavedChanges()
       addNodeToHistory()
       handleNodeClick(node)
     }
@@ -125,16 +133,18 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
             <Popover
               open={dropdownVisible === node.ui_properties.module_name}
               onOpenChange={(isOpen) => {
-                if (!isOpen) {
-                  setDropdownVisible(null)
-                } else {
-                  setDropdownVisible(node.ui_properties.module_name)
-                }
+                console.log("Popover onOpenChange called with isOpen:", isOpen)
+                setDropdownVisible(isOpen ? node.ui_properties.module_name : null)
               }}
             >
               <PopoverTrigger asChild>
                 <button
-                  onClick={() => handleButtonClick(node)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log("Reader button clicked")
+                    handleButtonClick(node)
+                  }}
                   className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out"
                   style={{ backgroundColor: node.ui_properties.color }}
                 >
@@ -163,12 +173,18 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                 className="w-80 p-2 bg-white shadow-lg rounded-lg"
                 align="start"
                 side="bottom"
+                style={{zIndex: 9999}}
               >
                 <div className="flex justify-between items-center mb-2">
                   <Label className="text-black font-medium">Add Source</Label>
                   <div
                     className="bg-white text-gray-700 font-medium cursor-pointer"
-                    onClick={() => setDropdownVisible(null)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log("Close button clicked")
+                      setDropdownVisible(null)
+                    }}
                   >
                     <X size={16} />
                   </div>
@@ -188,7 +204,12 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                   {filteredSources.map((source: any, index: number) => (
                     <span key={`${source.id || index}`}>
                       <li
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("Source item clicked:", source.data_src_name)
+                          setUnsavedChanges()
+                          addNodeToHistory()
                           handleNodeClick(node, source)
                           setDropdownVisible(null)
                         }}
@@ -220,7 +241,12 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                 <div className="flex justify-center mt-2">
                   <Button
                     className="bg-black hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 shadow-sm disabled:bg-gray-400"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log("Add Source button clicked")
+                      setUnsavedChanges()
+                      addNodeToHistory()
                       handleNodeClick(node)
                       setDropdownVisible(null)
                     }}
@@ -269,12 +295,13 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
               <img src="/assets/buildPipeline/add.svg" alt="more" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[300px]">
+          <DropdownMenuContent align="end" className="w-[300px]"  style={{zIndex: 9999}}>
             {filteredNodes.slice(7).map((node: Node) => (
               <DropdownMenuItem
                 key={node.ui_properties.module_name}
                 onClick={() => handleNodeClick(node)}
                 className="py-3"
+                
               >
                 <div className="flex items-center w-full">
                   <img

@@ -10,7 +10,8 @@ import {
   BarChart4, 
   Clock, 
   Star,
-  Filter
+  Filter,
+  Workflow
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,6 @@ import { cn } from '@/lib/utils';
 import CreatePipelineDialog from '../pipeline/components/CreatePipelineDialog';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
-import { getPipelineById } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -190,13 +190,14 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
   }, []);
 
   return (
-    <div
-      className={cn(
-        "h-full bg-background border-r transition-all duration-300 flex flex-col pipeline-sidebar",
-        isOpen ? "pipeline-sidebar-expanded" : "pipeline-sidebar-collapsed",
-        className
-      )}
-    >
+    <>
+      <div
+        className={cn(
+          "h-full bg-background border-r transition-all duration-300 flex flex-col pipeline-sidebar",
+          isOpen ? "pipeline-sidebar-expanded" : "pipeline-sidebar-collapsed",
+          className
+        )}
+      >
       {/* Header with toggle button */}
       <div className="flex items-center justify-between p-3 mt-3 border-b">
         {isOpen && (
@@ -295,7 +296,7 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 truncate">
-                        <Database size={14} className="flex-shrink-0" />
+                        <Workflow size={14} className="flex-shrink-0" />
                         <span className="truncate font-medium">{pipeline.pipeline_name}</span>
                       </div>
                       <button 
@@ -333,7 +334,21 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
               <div className="flex flex-col items-center gap-2 mt-8">
                 <Filter size={24} className="text-muted-foreground/50" />
                 <p>No pipelines found</p>
-                <p className="text-xs">Try adjusting your search or filters</p>
+                {activeTab === 'all' && pipelines.length === 0 ? (
+                  <>
+                    <p className="text-xs mb-3">Get started by creating a new pipeline</p>
+                    <Button 
+                      onClick={() => setCreateDialogOpen(true)}
+                      size="sm"
+                      className="mt-2"
+                    >
+                      <PlusCircle size={14} className="mr-1" />
+                      Create Pipeline
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-xs">Try adjusting your search or filters</p>
+                )}
               </div>
             </div>
           )
@@ -375,12 +390,14 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
         )}
       </div>
 
+      </div>
+      
       {/* Create Pipeline Dialog */}
       <CreatePipelineDialog
         open={createDialogOpen}
         handleClose={() => setCreateDialogOpen(false)}
       />
-    </div>
+    </>
   );
 };
 

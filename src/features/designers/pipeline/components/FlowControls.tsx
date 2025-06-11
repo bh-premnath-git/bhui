@@ -57,7 +57,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
-    url: `$${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${pipelineName||pipelineDtl?.name}`,
+    url: `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${pipelineName||pipelineDtl?.name}`,
      token: sessionStorage.getItem("kc_token")!.replace("Bearer ", ""),
      onMessage: (msg) => {
        console.log("SSE:", msg);
@@ -105,11 +105,15 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     console.log("Zoom In clicked");
     try {
       // Try the provided handler
-      if (onZoomIn) onZoomIn();
+      if (onZoomIn) {
+        console.log("Calling onZoomIn handler");
+        onZoomIn();
+      }
       
       // Also try direct DOM manipulation
       const reactFlowViewport = document.querySelector('.react-flow__viewport');
       if (reactFlowViewport) {
+        console.log("Found reactFlowViewport, applying direct zoom");
         const currentTransform = reactFlowViewport.getAttribute('transform');
         if (currentTransform) {
           const match = currentTransform.match(/scale\(([^)]+)\)/);
@@ -126,6 +130,32 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
           }
         }
       }
+      
+      // Try to click the zoom in button directly
+      const zoomInButton = document.querySelector('.react-flow__controls-button[data-action="zoomIn"]');
+      if (zoomInButton instanceof HTMLElement) {
+        console.log("Clicking zoomIn button");
+        zoomInButton.click();
+      }
+      
+      // Dispatch a custom event for any listeners
+      const zoomEvent = new CustomEvent('flowControlZoomIn', {
+        bubbles: true,
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(zoomEvent);
+      
+      // Try to access the ReactFlow instance through the window
+      try {
+        // @ts-ignore - Access any potential global ReactFlow instance
+        if (window.reactFlowInstance && window.reactFlowInstance.zoomIn) {
+          console.log("Using global reactFlowInstance.zoomIn");
+          // @ts-ignore
+          window.reactFlowInstance.zoomIn();
+        }
+      } catch (e) {
+        console.error("Error accessing global reactFlowInstance:", e);
+      }
     } catch (error) {
       console.error("Error in zoom in:", error);
     }
@@ -135,11 +165,15 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     console.log("Zoom Out clicked");
     try {
       // Try the provided handler
-      if (onZoomOut) onZoomOut();
+      if (onZoomOut) {
+        console.log("Calling onZoomOut handler");
+        onZoomOut();
+      }
       
       // Also try direct DOM manipulation
       const reactFlowViewport = document.querySelector('.react-flow__viewport');
       if (reactFlowViewport) {
+        console.log("Found reactFlowViewport, applying direct zoom out");
         const currentTransform = reactFlowViewport.getAttribute('transform');
         if (currentTransform) {
           const match = currentTransform.match(/scale\(([^)]+)\)/);
@@ -156,6 +190,32 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
           }
         }
       }
+      
+      // Try to click the zoom out button directly
+      const zoomOutButton = document.querySelector('.react-flow__controls-button[data-action="zoomOut"]');
+      if (zoomOutButton instanceof HTMLElement) {
+        console.log("Clicking zoomOut button");
+        zoomOutButton.click();
+      }
+      
+      // Dispatch a custom event for any listeners
+      const zoomEvent = new CustomEvent('flowControlZoomOut', {
+        bubbles: true,
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(zoomEvent);
+      
+      // Try to access the ReactFlow instance through the window
+      try {
+        // @ts-ignore - Access any potential global ReactFlow instance
+        if (window.reactFlowInstance && window.reactFlowInstance.zoomOut) {
+          console.log("Using global reactFlowInstance.zoomOut");
+          // @ts-ignore
+          window.reactFlowInstance.zoomOut();
+        }
+      } catch (e) {
+        console.error("Error accessing global reactFlowInstance:", e);
+      }
     } catch (error) {
       console.error("Error in zoom out:", error);
     }
@@ -164,14 +224,62 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const handleCenterClick = () => {
     console.log("Center clicked");
     try {
-      // Try the provided handler
-      if (onCenter) onCenter();
+      // First, try the provided handler from props
+      if (onCenter) {
+        console.log("Calling onCenter handler");
+        onCenter();
+      }
       
-      // Also try to click the fitView button
+      // Then, try to click the fitView button directly
       const fitViewButton = document.querySelector('.react-flow__controls-fitview');
       if (fitViewButton instanceof HTMLElement) {
+        console.log("Clicking fitView button");
         fitViewButton.click();
       }
+      
+      // Force a resize event to ensure ReactFlow recalculates dimensions
+      window.dispatchEvent(new Event('resize'));
+      
+      // Additional approach: try to manipulate the viewport directly
+      const reactFlowViewport = document.querySelector('.react-flow__viewport');
+      if (reactFlowViewport) {
+        console.log("Manipulating viewport directly");
+        // Get all nodes to calculate their bounding box
+        const nodes = document.querySelectorAll('.react-flow__node');
+        if (nodes.length > 0) {
+          // Reset transform to a reasonable default if we can't calculate
+          reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
+        }
+      }
+      
+      // Dispatch a custom event for any listeners
+      const centerEvent = new CustomEvent('flowControlCenter', {
+        bubbles: true,
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(centerEvent);
+      
+      // Try again after a short delay to ensure everything has rendered
+      setTimeout(() => {
+        if (onCenter) onCenter();
+        if (fitViewButton instanceof HTMLElement) fitViewButton.click();
+      }, 300);
+      
+      // Try one more time after a longer delay
+      setTimeout(() => {
+        if (onCenter) onCenter();
+        
+        // Also try to access the ReactFlow instance through the window
+        try {
+          // @ts-ignore - Access any potential global ReactFlow instance
+          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
+            // @ts-ignore
+            window.reactFlowInstance.fitView();
+          }
+        } catch (e) {
+          console.error("Error accessing global reactFlowInstance:", e);
+        }
+      }, 800);
     } catch (error) {
       console.error("Error in center:", error);
     }
@@ -180,14 +288,6 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const handleAlignHorizontalClick = () => {
     console.log("Align Horizontal clicked");
     try {
-      // Try the provided handler
-      if (onAlignHorizontal) {
-        console.log("Calling onAlignHorizontal");
-        onAlignHorizontal();
-      } else {
-        console.error("onAlignHorizontal is not defined");
-      }
-      
       // Dispatch a custom event that the DataPipelineContext can listen for
       const alignHorizontalEvent = new CustomEvent('alignHorizontal', {
         bubbles: true,
@@ -196,34 +296,44 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       });
       document.dispatchEvent(alignHorizontalEvent);
       
-      // Direct DOM manipulation approach
-      const nodes = document.querySelectorAll('.react-flow__node');
-      if (nodes.length > 0) {
-        const HORIZONTAL_SPACING = 250;
-        const VERTICAL_SPACING = 150;
-        const NODES_PER_ROW = 4;
-        const STARTING_X = 50;
-        const STARTING_Y = 50;
-        
-        nodes.forEach((node, index) => {
-          const row = Math.floor(index / NODES_PER_ROW);
-          const col = index % NODES_PER_ROW;
-          
-          const x = STARTING_X + col * HORIZONTAL_SPACING;
-          const y = STARTING_Y + row * VERTICAL_SPACING;
-          
-          // Update node position using transform
-          node.setAttribute('style', `transform: translate(${x}px, ${y}px); position: absolute;`);
-        });
-        
-        // Try to fit view
+      // Add a small delay before calling the handler to ensure the event has been processed
+      setTimeout(() => {
+        // Try the provided handler
+        if (onAlignHorizontal) {
+          console.log("Calling onAlignHorizontal with delay");
+          onAlignHorizontal();
+        } else {
+          console.error("onAlignHorizontal is not defined");
+        }
+      }, 50);
+      
+      // Try to fit view after alignment with a longer delay
+      setTimeout(() => {
+        // Try to click the fitView button directly
         const fitViewButton = document.querySelector('.react-flow__controls-fitview');
         if (fitViewButton instanceof HTMLElement) {
-          setTimeout(() => {
-            fitViewButton.click();
-          }, 100);
+          console.log("Clicking fitView button after horizontal alignment");
+          fitViewButton.click();
         }
-      }
+        
+        // Also try to access the ReactFlow instance through the window
+        try {
+          // @ts-ignore - Access any potential global ReactFlow instance
+          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
+            console.log("Using global reactFlowInstance.fitView after horizontal alignment");
+            // @ts-ignore
+            window.reactFlowInstance.fitView({
+              padding: 0.2,
+              duration: 800,
+              includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.5
+            });
+          }
+        } catch (e) {
+          console.error("Error accessing global reactFlowInstance:", e);
+        }
+      }, 500);
     } catch (error) {
       console.error("Error in align horizontal:", error);
     }
@@ -232,14 +342,6 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const handleAlignVerticalClick = () => {
     console.log("Align Vertical clicked");
     try {
-      // Try the provided handler
-      if (onAlignVertical) {
-        console.log("Calling onAlignVertical");
-        onAlignVertical();
-      } else {
-        console.error("onAlignVertical is not defined");
-      }
-      
       // Dispatch a custom event that the DataPipelineContext can listen for
       const alignVerticalEvent = new CustomEvent('alignVertical', {
         bubbles: true,
@@ -248,34 +350,44 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       });
       document.dispatchEvent(alignVerticalEvent);
       
-      // Direct DOM manipulation approach
-      const nodes = document.querySelectorAll('.react-flow__node');
-      if (nodes.length > 0) {
-        const HORIZONTAL_SPACING = 250;
-        const VERTICAL_SPACING = 150;
-        const NODES_PER_COLUMN = 4;
-        const STARTING_X = 50;
-        const STARTING_Y = 50;
-        
-        nodes.forEach((node, index) => {
-          const column = Math.floor(index / NODES_PER_COLUMN);
-          const row = index % NODES_PER_COLUMN;
-          
-          const x = STARTING_X + column * HORIZONTAL_SPACING;
-          const y = STARTING_Y + row * VERTICAL_SPACING;
-          
-          // Update node position using transform
-          node.setAttribute('style', `transform: translate(${x}px, ${y}px); position: absolute;`);
-        });
-        
-        // Try to fit view
+      // Add a small delay before calling the handler to ensure the event has been processed
+      setTimeout(() => {
+        // Try the provided handler
+        if (onAlignVertical) {
+          console.log("Calling onAlignVertical with delay");
+          onAlignVertical();
+        } else {
+          console.error("onAlignVertical is not defined");
+        }
+      }, 50);
+      
+      // Try to fit view after alignment with a longer delay
+      setTimeout(() => {
+        // Try to click the fitView button directly
         const fitViewButton = document.querySelector('.react-flow__controls-fitview');
         if (fitViewButton instanceof HTMLElement) {
-          setTimeout(() => {
-            fitViewButton.click();
-          }, 100);
+          console.log("Clicking fitView button after vertical alignment");
+          fitViewButton.click();
         }
-      }
+        
+        // Also try to access the ReactFlow instance through the window
+        try {
+          // @ts-ignore - Access any potential global ReactFlow instance
+          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
+            console.log("Using global reactFlowInstance.fitView after vertical alignment");
+            // @ts-ignore
+            window.reactFlowInstance.fitView({
+              padding: 0.2,
+              duration: 800,
+              includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.5
+            });
+          }
+        } catch (e) {
+          console.error("Error accessing global reactFlowInstance:", e);
+        }
+      }, 500);
     } catch (error) {
       console.error("Error in align vertical:", error);
     }

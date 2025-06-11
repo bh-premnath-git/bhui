@@ -13,7 +13,7 @@ import { FormField } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
-interface BuildPipeLineCreatePopupProps {
+interface CreatePipelineDialogProps {
     handleClose: () => void;
     open: boolean;
 }
@@ -24,7 +24,7 @@ interface FormValues {
     notes: string;
 }
 
-const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ open, handleClose }) => {
+const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handleClose }) => {
     const { projects } = useProjects();
     const [showNotes, setShowNotes] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -196,4 +196,4 @@ const BuildPipeLineCreatePopup: React.FC<BuildPipeLineCreatePopupProps> = ({ ope
     );
 };
 
-export default BuildPipeLineCreatePopup;
+export default CreatePipelineDialog;

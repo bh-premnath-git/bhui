@@ -152,7 +152,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "h-screen fixed left-0 top-0 z-40 flex flex-col",
+        "h-screen fixed left-0 top-0 z-[100] flex flex-col",
         "bg-gray-90 dark:bg-gray-950 backdrop-blur supports-[backdrop-filter]:bg-gray-100/95 dark:supports-[backdrop-filter]:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
         "shadow-sm",

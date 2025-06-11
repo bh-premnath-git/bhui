@@ -11,6 +11,7 @@ ReactFlow Performance Optimizations
 .react-flow__pane {
   will-change: transform;
   cursor: grab;
+  z-index: 0 !important; /* Ensure pane is at the base layer */
 }
 
 .react-flow__pane.dragging {

@@ -19,7 +19,7 @@ const designerOptions = [
     title: "Data Flow",
     desc: "Manage pipeline flows in Airflow. Schedule flows using cron expressions.",
     buttonText: 'Build Flow',
-    link: ROUTES.DESIGNERS.MANAGE_FLOW,
+    link: "/designers/data-flow-playground",
     gradient: "from-emerald-500/20 via-emerald-300/20 to-blue-500/20"
   },
   {

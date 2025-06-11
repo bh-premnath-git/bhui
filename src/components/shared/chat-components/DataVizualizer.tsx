@@ -6,7 +6,7 @@ import { Plus, Code, BarChart4, Table as TableIcon } from 'lucide-react';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
-import { createShortUUID } from '@/lib/utils';
+import { DashboardSelect } from './DashboardSelect';
 
 // Chart Data Interfaces
 interface ChartRecommendation {

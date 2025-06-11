@@ -359,7 +359,7 @@ export function Sidebar() {
                 </div>
                 {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
                 {isExpanded && item.title === "Data Xplorer" && dataXplorerSubItems.length > 0 && (
-                  <ul className="mt-1 space-y-1 sidebar-subitems-scrollable">
+                  <ul className="mt-1 space-y-1 sidebar-subitems-scrollable max-h-[132px] overflow-y-auto">
                     {dataXplorerSubItems.map(subItem => (
                       <li key={subItem.path}>
                         <div className="flex items-center">

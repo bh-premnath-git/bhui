@@ -456,15 +456,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
-        console.log("setSanitizedNodes called with:", nodesOrUpdater);
-        if (typeof nodesOrUpdater === 'function') {
-            setNodes((prevNodes) => 
-                nodesOrUpdater(prevNodes).map(sanitizeNode)
-            );
-        } else {
-            setNodes(nodesOrUpdater.map(sanitizeNode));
-        }
-    }, [setNodes, sanitizeNode]);
+        // alert()
+        // console.log(typeof nodesOrUpdater)
+        // if (typeof nodesOrUpdater === 'function') {
+        //     setNodes((prevNodes) => 
+        //         nodesOrUpdater(prevNodes).map(sanitizeNode)
+        //     );
+        // } else {
+        //     setNodes(nodesOrUpdater.map(sanitizeNode));
+        // }
+    }, [sanitizeNode]);
 
     // Update handleNodesChange
     const handleNodesChange = useCallback((changes: any) => {
@@ -544,288 +545,48 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Use updateSetNode for consistent state management
         updateSetNode(updatedNodes, edges);
     }, [nodes, edges, updateSetNode]);
- const handleAlignHorizontal = useCallback(() => {
-        if (nodes.length === 0) return;
-
-        // Create a map of node levels (columns)
-        const nodeLevels = new Map<string, number>();
-        const visited = new Set<string>();
-        const nodeMap = new Map(nodes.map(node => [node.id, node]));
-
-        // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node =>
-            !edges.some(edge => edge.target === node.id)
-        );
-
-        // Handle disconnected nodes - place them at level 0
-        const disconnectedNodes = nodes.filter(node => 
-            !edges.some(edge => edge.source === node.id || edge.target === node.id)
-        );
-        
-        // Start with source nodes for BFS
-        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-        
-        // Process all nodes through BFS to assign levels
-        while (queue.length > 0) {
-            const { id, level } = queue.shift()!;
-            if (visited.has(id)) continue;
-
-            visited.add(id);
-            nodeLevels.set(id, level);
-
-            // Find all outgoing edges from this node
-            const outgoingEdges = edges.filter(edge => edge.source === id);
-            outgoingEdges.forEach(edge => {
-                if (!visited.has(edge.target)) {
-                    queue.push({ id: edge.target, level: level + 1 });
-                }
-            });
-        }
-
-        // Handle any nodes that weren't visited (disconnected from source nodes)
-        nodes.forEach(node => {
-            if (!visited.has(node.id)) {
-                // Check if this node has any connections at all
-                const hasConnections = edges.some(edge => 
-                    edge.source === node.id || edge.target === node.id
-                );
-                
-                if (hasConnections) {
-                    // This node is connected but not reachable from source nodes
-                    // Find its incoming edges and place it one level after its sources
-                    const incomingEdges = edges.filter(edge => edge.target === node.id);
-                    if (incomingEdges.length > 0) {
-                        const sourceLevels = incomingEdges
-                            .map(edge => nodeLevels.get(edge.source) || 0)
-                            .filter(level => level !== undefined);
-                        
-                        const maxSourceLevel = sourceLevels.length > 0 
-                            ? Math.max(...sourceLevels) 
-                            : 0;
-                        
-                        nodeLevels.set(node.id, maxSourceLevel + 1);
-                        visited.add(node.id);
-                    } else {
-                        // Node has only outgoing edges, treat as a source node
-                        nodeLevels.set(node.id, 0);
-                        visited.add(node.id);
-                    }
-                } else {
-                    // Completely disconnected node, place at level 0
-                    nodeLevels.set(node.id, 0);
-                    visited.add(node.id);
-                }
-            }
-        });
-
-        // Get maximum level for spacing calculation
-        const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
-        const levelWidth = 250; // Horizontal spacing between levels
-        const nodeSpacing = 150; // Vertical spacing between nodes in the same level
-
-        // Group nodes by their levels
-        const nodesByLevel = new Map<number, string[]>();
-        nodeLevels.forEach((level, nodeId) => {
-            if (!nodesByLevel.has(level)) {
-                nodesByLevel.set(level, []);
-            }
-            nodesByLevel.get(level)!.push(nodeId);
-        });
-
-        // Sort nodes within each level based on their connections
-        // This helps maintain the visual flow of the pipeline
-        for (const [level, nodeIds] of nodesByLevel.entries()) {
-            if (level > 0) {
-                // Sort nodes based on the position of their source nodes
-                nodeIds.sort((a, b) => {
-                    const aIncoming = edges.filter(edge => edge.target === a).map(edge => edge.source);
-                    const bIncoming = edges.filter(edge => edge.target === b).map(edge => edge.source);
-                    
-                    // Find the average vertical position of source nodes
-                    const aSourcePositions = aIncoming
-                        .map(sourceId => {
-                            const sourceNode = nodes.find(n => n.id === sourceId);
-                            return sourceNode ? sourceNode.position.y : 0;
-                        })
-                        .filter(y => y !== 0);
-                    
-                    const bSourcePositions = bIncoming
-                        .map(sourceId => {
-                            const sourceNode = nodes.find(n => n.id === sourceId);
-                            return sourceNode ? sourceNode.position.y : 0;
-                        })
-                        .filter(y => y !== 0);
-                    
-                    const aAvgY = aSourcePositions.length > 0 
-                        ? aSourcePositions.reduce((sum, y) => sum + y, 0) / aSourcePositions.length 
-                        : 0;
-                    
-                    const bAvgY = bSourcePositions.length > 0 
-                        ? bSourcePositions.reduce((sum, y) => sum + y, 0) / bSourcePositions.length 
-                        : 0;
-                    
-                    return aAvgY - bAvgY;
-                });
-            }
-        }
-
-        // Calculate new positions
-        const startX = 50;
-        const startY = 50;
-        const newNodes = nodes.map(node => {
-            const level = nodeLevels.get(node.id) || 0;
-            const nodesInLevel = nodesByLevel.get(level) || [];
-            const indexInLevel = nodesInLevel.indexOf(node.id);
-
-            return {
-                ...node,
-                position: {
-                    x: startX + (level * levelWidth),
-                    y: startY + (indexInLevel * nodeSpacing)
-                }
-            };
-        });
-
-        console.log("Horizontal alignment - updating nodes:", newNodes);
-        
-        // Use updateSetNode instead of setSanitizedNodes for consistent behavior
-        updateSetNode(newNodes, edges);
-
-        // Center the view
-        setTimeout(() => {
-            const centerX = startX + (maxLevel * levelWidth) / 2;
-            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 1);
-            const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
-            
-            if (reactFlowInstance) {
-                console.log("Horizontal alignment - centering view");
-                reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                
-                // Also fit view to ensure all nodes are visible
-                reactFlowInstance.fitView({ 
-                    padding: 0.2, 
-                    duration: 800,
-                    includeHiddenNodes: false,
-                    minZoom: 0.5,
-                    maxZoom: 1.5
-                });
-            }
-        }, 300);
-    }, [nodes, edges, updateSetNode, reactFlowInstance]);
 
     const handleCenter = useCallback(() => {
-        console.log('DataPipelineContext: handleCenter called');
-        
-        // Use requestAnimationFrame to ensure the DOM has updated
-        window.requestAnimationFrame(() => {
+        try {
+            // Use more generous padding and longer duration for better visibility
+            fitView({ 
+                duration: 800, 
+                padding: 0.2, 
+                includeHiddenNodes: false,
+                minZoom: 0.5,
+                maxZoom: 1.5
+            });
+            
+            // Dispatch a custom event that other components can listen for
+            const centerEvent = new CustomEvent('canvasCentered', {
+                bubbles: true,
+                detail: { timestamp: Date.now() }
+            });
+            document.dispatchEvent(centerEvent);
+            
+            // Force a resize event to ensure ReactFlow recalculates dimensions
+            window.dispatchEvent(new Event('resize'));
+        } catch (error) {
+            console.error('FitView error:', error);
+            
+            // Fallback approach - try to use the ReactFlow instance directly
             try {
-                // Use more generous padding and longer duration for better visibility
-                if (reactFlowInstance) {
-                    console.log('DataPipelineContext: Using reactFlowInstance directly');
-                    
-                    // First, make sure all nodes are visible
-                    const allNodes = document.querySelectorAll('.react-flow__node');
-                    allNodes.forEach(node => {
-                        if (node instanceof HTMLElement) {
-                            node.style.display = '';
-                            node.style.visibility = 'visible';
-                            node.style.opacity = '1';
-                        }
-                    });
-                    
-                    // Then fit view
-                    reactFlowInstance.fitView({ 
-                        duration: 800, 
-                        padding: 0.2, 
-                        includeHiddenNodes: false,
-                        minZoom: 0.5,
-                        maxZoom: 1.5
-                    });
-                    
-                    console.log('DataPipelineContext: fitView called on reactFlowInstance');
-                } else if (fitView) {
-                    console.log('DataPipelineContext: Using fitView function');
-                    fitView({ 
-                        duration: 800, 
-                        padding: 0.2, 
-                        includeHiddenNodes: false,
-                        minZoom: 0.5,
-                        maxZoom: 1.5
-                    });
+                const reactFlowViewport = document.querySelector('.react-flow__viewport');
+                if (reactFlowViewport) {
+                    // Reset transform to center view
+                    reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
                 }
                 
-                // Dispatch a custom event that other components can listen for
-                const centerEvent = new CustomEvent('canvasCentered', {
-                    bubbles: true,
-                    detail: { timestamp: Date.now() }
-                });
-                document.dispatchEvent(centerEvent);
-                
-                // Force a resize event to ensure ReactFlow recalculates dimensions
-                window.dispatchEvent(new Event('resize'));
-                
-                // Try again after a short delay
-                setTimeout(() => {
-                    try {
-                        if (reactFlowInstance) {
-                            reactFlowInstance.fitView({ 
-                                duration: 800, 
-                                padding: 0.2, 
-                                includeHiddenNodes: false,
-                                minZoom: 0.5,
-                                maxZoom: 1.5
-                            });
-                        } else if (fitView) {
-                            fitView({ 
-                                duration: 800, 
-                                padding: 0.2, 
-                                includeHiddenNodes: false,
-                                minZoom: 0.5,
-                                maxZoom: 1.5
-                            });
-                        }
-                    } catch (retryError) {
-                        console.error('DataPipelineContext: Retry fitView error:', retryError);
-                    }
-                }, 300);
-            } catch (error) {
-                console.error('DataPipelineContext: FitView error:', error);
-                
-                // Fallback approach - try to use the ReactFlow instance directly
-                try {
-                    // Try to use the viewport transform directly
-                    const reactFlowViewport = document.querySelector('.react-flow__viewport');
-                    if (reactFlowViewport) {
-                        // Get the container dimensions
-                        const container = document.querySelector('.reactflow-wrapper');
-                        if (container instanceof HTMLElement) {
-                            const width = container.clientWidth;
-                            const height = container.clientHeight;
-                            const centerX = width / 2;
-                            const centerY = height / 2;
-                            
-                            // Apply a transform that centers the view
-                            reactFlowViewport.setAttribute('transform', `translate(${centerX},${centerY}) scale(0.85)`);
-                            console.log('DataPipelineContext: Applied calculated transform');
-                        } else {
-                            // Reset transform to center view with a simple transform
-                            reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
-                            console.log('DataPipelineContext: Applied simple transform');
-                        }
-                    }
-                    
-                    // Try to click the fitView button as a last resort
-                    const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-                    if (fitViewButton instanceof HTMLElement) {
-                        fitViewButton.click();
-                        console.log('DataPipelineContext: Clicked fitView button');
-                    }
-                } catch (fallbackError) {
-                    console.error('DataPipelineContext: Fallback center approach failed:', fallbackError);
+                // Try to click the fitView button as a last resort
+                const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+                if (fitViewButton instanceof HTMLElement) {
+                    fitViewButton.click();
                 }
+            } catch (fallbackError) {
+                console.error('Fallback center approach failed:', fallbackError);
             }
-        });
-    }, [fitView, reactFlowInstance]);
+        }
+    }, [fitView]);
     const makePipeline = async (result: any, isModify = true) => {
         let optimised;
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
@@ -1528,196 +1289,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             fetchSourceColumns(nodes);
         }
     }, [nodes, fetchSourceColumns]);
-    
-    const handleAlignVertical = useCallback(() => {
-        if (nodes.length === 0) return;
-
-        // Create a map of node levels (rows)
-        const nodeLevels = new Map<string, number>();
-        const visited = new Set<string>();
-        const nodeMap = new Map(nodes.map(node => [node.id, node]));
-
-        // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node =>
-            !edges.some(edge => edge.target === node.id)
-        );
-
-        // Handle disconnected nodes - place them at level 0
-        const disconnectedNodes = nodes.filter(node => 
-            !edges.some(edge => edge.source === node.id || edge.target === node.id)
-        );
-        
-        // Start with source nodes for BFS
-        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-        
-        // Process all nodes through BFS to assign levels
-        while (queue.length > 0) {
-            const { id, level } = queue.shift()!;
-            if (visited.has(id)) continue;
-
-            visited.add(id);
-            nodeLevels.set(id, level);
-
-            // Find all outgoing edges from this node
-            const outgoingEdges = edges.filter(edge => edge.source === id);
-            outgoingEdges.forEach(edge => {
-                if (!visited.has(edge.target)) {
-                    queue.push({ id: edge.target, level: level + 1 });
-                }
-            });
-        }
-
-        // Handle any nodes that weren't visited (disconnected from source nodes)
-        nodes.forEach(node => {
-            if (!visited.has(node.id)) {
-                // Check if this node has any connections at all
-                const hasConnections = edges.some(edge => 
-                    edge.source === node.id || edge.target === node.id
-                );
-                
-                if (hasConnections) {
-                    // This node is connected but not reachable from source nodes
-                    // Find its incoming edges and place it one level after its sources
-                    const incomingEdges = edges.filter(edge => edge.target === node.id);
-                    if (incomingEdges.length > 0) {
-                        const sourceLevels = incomingEdges
-                            .map(edge => nodeLevels.get(edge.source) || 0)
-                            .filter(level => level !== undefined);
-                        
-                        const maxSourceLevel = sourceLevels.length > 0 
-                            ? Math.max(...sourceLevels) 
-                            : 0;
-                        
-                        nodeLevels.set(node.id, maxSourceLevel + 1);
-                        visited.add(node.id);
-                    } else {
-                        // Node has only outgoing edges, treat as a source node
-                        nodeLevels.set(node.id, 0);
-                        visited.add(node.id);
-                    }
-                } else {
-                    // Completely disconnected node, place at level 0
-                    nodeLevels.set(node.id, 0);
-                    visited.add(node.id);
-                }
-            }
-        });
-
-        // Get maximum level for spacing calculation
-        const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
-        const levelHeight = 150; // Vertical spacing between levels
-        const nodeSpacing = 250; // Horizontal spacing between nodes in the same level
-
-        // Group nodes by their levels
-        const nodesByLevel = new Map<number, string[]>();
-        nodeLevels.forEach((level, nodeId) => {
-            if (!nodesByLevel.has(level)) {
-                nodesByLevel.set(level, []);
-            }
-            nodesByLevel.get(level)!.push(nodeId);
-        });
-
-        // Sort nodes within each level based on their connections
-        // This helps maintain the visual flow of the pipeline
-        for (const [level, nodeIds] of nodesByLevel.entries()) {
-            if (level > 0) {
-                // Sort nodes based on the position of their source nodes
-                nodeIds.sort((a, b) => {
-                    const aIncoming = edges.filter(edge => edge.target === a).map(edge => edge.source);
-                    const bIncoming = edges.filter(edge => edge.target === b).map(edge => edge.source);
-                    
-                    // Find the average horizontal position of source nodes
-                    const aSourcePositions = aIncoming
-                        .map(sourceId => {
-                            const sourceNode = nodes.find(n => n.id === sourceId);
-                            return sourceNode ? sourceNode.position.x : 0;
-                        })
-                        .filter(x => x !== 0);
-                    
-                    const bSourcePositions = bIncoming
-                        .map(sourceId => {
-                            const sourceNode = nodes.find(n => n.id === sourceId);
-                            return sourceNode ? sourceNode.position.x : 0;
-                        })
-                        .filter(x => x !== 0);
-                    
-                    const aAvgX = aSourcePositions.length > 0 
-                        ? aSourcePositions.reduce((sum, x) => sum + x, 0) / aSourcePositions.length 
-                        : 0;
-                    
-                    const bAvgX = bSourcePositions.length > 0 
-                        ? bSourcePositions.reduce((sum, x) => sum + x, 0) / bSourcePositions.length 
-                        : 0;
-                    
-                    return aAvgX - bAvgX;
-                });
-            }
-        }
-
-        // Calculate new positions
-        const startX = 50;
-        const startY = 50;
-        const newNodes = nodes.map(node => {
-            const level = nodeLevels.get(node.id) || 0;
-            const nodesInLevel = nodesByLevel.get(level) || [];
-            const indexInLevel = nodesInLevel.indexOf(node.id);
-
-            return {
-                ...node,
-                position: {
-                    x: startX + (indexInLevel * nodeSpacing),
-                    y: startY + (level * levelHeight)
-                }
-            };
-        });
-
-        console.log("Vertical alignment - updating nodes:", newNodes);
-        
-        // Use updateSetNode instead of setSanitizedNodes for consistent behavior
-        updateSetNode(newNodes, edges);
-
-        // Center the view
-        setTimeout(() => {
-            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 1);
-            const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
-            const centerY = startY + (maxLevel * levelHeight) / 2;
-            
-            if (reactFlowInstance) {
-                console.log("Vertical alignment - centering view");
-                reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                
-                // Also fit view to ensure all nodes are visible
-                reactFlowInstance.fitView({ 
-                    padding: 0.2, 
-                    duration: 800,
-                    includeHiddenNodes: false,
-                    minZoom: 0.5,
-                    maxZoom: 1.5
-                });
-            }
-        }, 300);
-    }, [nodes, edges, updateSetNode, reactFlowInstance]);
-
-    // Add event listeners for alignment events from FlowControls
-    useEffect(() => {
-        const handleAlignHorizontalEvent = () => {
-            console.log("Received alignHorizontal event");
-            handleAlignHorizontal();
-        };
-
-        const handleAlignVerticalEvent = () => {
-            console.log("Received alignVertical event");
-            handleAlignVertical();
-        };
-
-        document.addEventListener('alignHorizontal', handleAlignHorizontalEvent);
-        document.addEventListener('alignVertical', handleAlignVerticalEvent);
-        
-        return () => {
-            document.removeEventListener('alignHorizontal', handleAlignHorizontalEvent);
-            document.removeEventListener('alignVertical', handleAlignVerticalEvent);
-        };
-    }, [handleAlignHorizontal, handleAlignVertical]);
 
     const handleSearch = useCallback((term: string) => {
         setSearchTerm(term);
@@ -2101,7 +1672,154 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
     }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
-   
+    const handleAlignHorizontal = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Create a map of node levels (columns)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node =>
+            !edges.some(edge => edge.target === node.id)
+        );
+
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
+
+            visited.add(id);
+            nodeLevels.set(id, level);
+
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
+                }
+            });
+        }
+
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelWidth = 200; // Horizontal spacing between levels
+        const nodeSpacing = 150; // Vertical spacing between nodes in the same level
+
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+
+            return {
+                ...node,
+                position: {
+                    x: startX + (level * levelWidth),
+                    y: startY + (indexInLevel * nodeSpacing)
+                }
+            };
+        });
+
+        setSanitizedNodes(newNodes);
+
+        // Center the view
+        setTimeout(() => {
+            const centerX = startX + (maxLevel * levelWidth) / 2;
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+
+        setUnsavedChanges();
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
+
+    const handleAlignVertical = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Create a map of node levels (rows)
+        const nodeLevels = new Map<string, number>();
+        const visited = new Set<string>();
+
+        // Find source nodes (nodes with no incoming edges)
+        const sourceNodes = nodes.filter(node =>
+            !edges.some(edge => edge.target === node.id)
+        );
+
+        // Assign levels through BFS
+        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (visited.has(id)) continue;
+
+            visited.add(id);
+            nodeLevels.set(id, level);
+
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === id);
+            outgoingEdges.forEach(edge => {
+                if (!visited.has(edge.target)) {
+                    queue.push({ id: edge.target, level: level + 1 });
+                }
+            });
+        }
+
+        // Get maximum level for spacing calculation
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
+        const levelHeight = 150; // Vertical spacing between levels
+        const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
+
+        // Group nodes by their levels
+        const nodesByLevel = new Map<number, string[]>();
+        nodeLevels.forEach((level, nodeId) => {
+            if (!nodesByLevel.has(level)) {
+                nodesByLevel.set(level, []);
+            }
+            nodesByLevel.get(level)!.push(nodeId);
+        });
+
+        // Calculate new positions
+        const startX = 50;
+        const startY = 50;
+        const newNodes = nodes.map(node => {
+            const level = nodeLevels.get(node.id) || 0;
+            const nodesInLevel = nodesByLevel.get(level) || [];
+            const indexInLevel = nodesInLevel.indexOf(node.id);
+
+            return {
+                ...node,
+                position: {
+                    x: startX + (indexInLevel * nodeSpacing),
+                    y: startY + (level * levelHeight)
+                }
+            };
+        });
+
+        setSanitizedNodes(newNodes);
+
+        // Center the view
+        setTimeout(() => {
+            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
+            const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
+            const centerY = startY + (maxLevel * levelHeight) / 2;
+            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }, 50);
+
+        setUnsavedChanges();
+    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
+
     const value = useMemo(() => ({
         nodes,
         setNodes: setSanitizedNodes,

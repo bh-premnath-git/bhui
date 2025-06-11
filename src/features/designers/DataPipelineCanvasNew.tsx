@@ -13,7 +13,7 @@ import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { LoadingState } from '@/components/shared/LoadingState';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
 import PipelineSidebar from './components/PipelineSidebar';
-// import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {

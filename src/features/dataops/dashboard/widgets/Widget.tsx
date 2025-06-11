@@ -9,7 +9,7 @@ import { useDataOps } from "@/context/dataops/DataOpsContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import Plot from 'react-plotly.js';
+import { PlotlyChart } from "./charts/PlotlyChart";
 import {
   Table,
   TableBody,
@@ -169,103 +169,8 @@ export const Widget = ({ widget, className = "" }: WidgetProps) => {
   const renderPlotlyChart = () => {
     try {
       if (widget.intermediate_executed_query_json) {
-        const plotlyData = typeof widget.intermediate_executed_query_json === 'object' 
-          ? widget.intermediate_executed_query_json 
-          : JSON.parse(widget.intermediate_executed_query_json);
-        
-        if (plotlyData && plotlyData.data && plotlyData.layout) {
-          // Enhance layout with some default settings
-          const enhancedLayout = {
-            ...plotlyData.layout,
-            autosize: true,
-            height: 200,
-            margin: { l: 40, r: 15, t: 25, b: 55, ...plotlyData.layout?.margin },
-            font: { 
-              family: 'Inter, system-ui, sans-serif', 
-              size: 10, 
-              ...plotlyData.layout?.font 
-            },
-            paper_bgcolor: 'transparent',
-            plot_bgcolor: 'transparent',
-            showlegend: true,
-            // Add explicit axis styling
-            xaxis: {
-              showgrid: true,
-              gridcolor: 'rgba(128, 128, 128, 0.15)',
-              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
-              linecolor: 'rgba(128, 128, 128, 0.3)',
-              ...plotlyData.layout?.xaxis
-            },
-            yaxis: {
-              showgrid: true,
-              gridcolor: 'rgba(128, 128, 128, 0.15)',
-              zerolinecolor: 'rgba(128, 128, 128, 0.3)',
-              linecolor: 'rgba(128, 128, 128, 0.3)',
-              ...plotlyData.layout?.yaxis
-            },
-            legend: {
-              orientation: 'h',
-              xanchor: 'center', 
-              yanchor: 'top',
-              y: -0.3, // Increase distance from chart bottom to prevent overlap
-              x: 0.5,
-              font: { size: 9 },
-              itemsizing: 'constant',
-              traceorder: 'normal',
-              // Improve legend spacing and appearance
-              itemwidth: 30,
-              itemclick: 'toggleothers',
-              itemdoubleclick: 'toggle',
-              // Add spacing between legend items
-              xgap: 10,
-              ...plotlyData.layout?.legend
-            }
-          };
-          
-          // Set square markers for all data traces and ensure consistent legend style
-          const enhancedData = plotlyData.data.map((trace: any) => {
-            let newMode = trace.mode;
-            // If it's a line-like trace, ensure 'markers' is in the mode for legend display
-            if (typeof trace.mode === 'string' && trace.mode.includes('lines') && !trace.mode.includes('markers')) {
-              newMode = trace.mode + '+markers';
-            } else if (!trace.mode && (trace.type === 'scatter' || trace.type === 'line')) { // Default to lines+markers if mode is missing for scatter/line
-              newMode = 'lines+markers';
-            }
-
-            return {
-              ...trace,
-              mode: newMode, // Apply potentially modified mode
-              marker: {
-                symbol: 'square', // Always use square for legend consistency
-                size: 8,
-                line: {
-                  width: 1,
-                  color: '#fff',
-                  ...(trace.marker?.line || {}), // Preserve original marker line settings if any
-                },
-                ...(trace.marker || {}), // Preserve other original marker settings, symbol will be overridden by above
-              },
-              // Let original showlegend on trace take effect, or default to true
-              showlegend: trace.showlegend === undefined ? true : trace.showlegend,
-              // Ensure a legend group, can be based on name or a unique ID if name is missing
-              legendgroup: trace.legendgroup || trace.name || `trace-${Math.random().toString(36).substr(2, 9)}`,
-            };
-          });
-          
-          return (
-            <div className="w-full h-full">
-              <Plot
-                data={enhancedData}
-                layout={enhancedLayout}
-                config={{ 
-                  responsive: true,
-                  displayModeBar: false,
-                }}
-                style={{ width: '100%', height: '100%' }}
-              />
-            </div>
-          );
-        }
+        // Return the PlotlyChart component instead of direct Plot usage
+        return <PlotlyChart widget={widget} height={200} className="w-full h-full" />;
       }
     } catch (error) {
       console.error("Failed to render Plotly chart:", error);

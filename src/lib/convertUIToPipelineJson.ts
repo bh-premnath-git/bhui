@@ -247,14 +247,29 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         order_by: node.data.transformationData?.order_by || []
                     };
                 case 'Repartition':
-                    return {
+                    const repartitionConfig = {
                         ...baseConfig,
                         repartition_type: node.data.transformationData?.repartition_type || "repartition",
-                        repartition_value: node.data.transformationData?.repartition_value,
-                        override_partition: node.data.transformationData?.override_partition || "",
-                        repartition_expression: node.data.transformationData?.repartition_expression || [],
-                        limit: node.data.transformationData?.limit
+                        repartition_value: node.data.transformationData?.repartition_value
                     };
+                    
+                    // Only add override_partition if it has a non-empty value
+                    if (node.data.transformationData?.override_partition) {
+                        repartitionConfig.override_partition = node.data.transformationData.override_partition;
+                    }
+                    
+                    // Only add repartition_expression if it's an array with at least one item
+                    if (Array.isArray(node.data.transformationData?.repartition_expression) && 
+                        node.data.transformationData.repartition_expression.length > 0) {
+                        repartitionConfig.repartition_expression = node.data.transformationData.repartition_expression;
+                    }
+                    
+                    // Only add limit if it has a value
+                    if (node.data.transformationData?.limit) {
+                        repartitionConfig.limit = node.data.transformationData.limit;
+                    }
+                    
+                    return repartitionConfig;
                 case 'Union':
                     return {
                         ...baseConfig,
@@ -262,64 +277,93 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
                     };
                 case 'Select':
-                    return {
+                    const selectConfig = {
                         ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || [],
-                        limit: node.data.transformationData?.limit || ''
+                        column_list: node.data.transformationData?.column_list || []
                     };
+                    
+                    // Only add limit if it has a value
+                    if (node.data.transformationData?.limit) {
+                        selectConfig.limit = node.data.transformationData.limit;
+                    }
+                    
+                    return selectConfig;
                 case 'SequenceGenerator':
-                    return {
+                    const seqGenConfig = {
                         ...baseConfig,
                         for_column_name: node.data.transformationData?.for_column_name || "",
-                        order_by: node.data.transformationData?.order_by || [],
-                        start_with: node.data.transformationData?.start_with || 1,
-                        step: node.data.transformationData?.step || ''
+                        start_with: node.data.transformationData?.start_with || 1
                     };
+                    
+                    // Only add order_by if it's an array with at least one item
+                    if (Array.isArray(node.data.transformationData?.order_by) && 
+                        node.data.transformationData.order_by.length > 0) {
+                        seqGenConfig.order_by = node.data.transformationData.order_by;
+                    }
+                    
+                    // Only add step if it has a value
+                    if (node.data.transformationData?.step) {
+                        seqGenConfig.step = node.data.transformationData.step;
+                    }
+                    
+                    return seqGenConfig;
                 case 'Drop':
-                    return {
-                        ...baseConfig,
-                        column_list: node.data.transformationData?.column_list || node.data.transformationData?.column || [],
-                        pattern: node.data.transformationData?.pattern
+                    const dropConfig = {
+                        ...baseConfig
                     };
+                    
+                    // Get column list from either column_list or column property
+                    const columnList = node.data.transformationData?.column_list || node.data.transformationData?.column || [];
+                    
+                    // Only add column_list if it's an array with at least one item
+                    if (Array.isArray(columnList) && columnList.length > 0) {
+                        dropConfig.column_list = columnList;
+                    }
+                    
+                    // Only add pattern if it has a value
+                    if (node.data.transformationData?.pattern) {
+                        dropConfig.pattern = node.data.transformationData.pattern;
+                    }
+                    
+                    return dropConfig;
                 case 'Lookup':
-                    return {
+                    const lookupConfig = {
                         ...baseConfig,
-                        lookup_type: node.data.transformationData?.lookup_type || 'Column Based',
-                        lookup_config: node.data.transformationData?.lookup_config || { 
-                          name: '', 
-                          source: {},
-                          read_options: {
-                            header: true
-                          }
-                        },
-                        lookup_data: node.data.transformationData?.lookup_data || [
-                          { id: 1, department: 'Engineering' },
-                          { id: 2, department: 'Medical' },
-                          { id: 3, department: 'Arts' },
-                          { id: 4, department: 'Commerce' },
-                          { id: 5, department: 'Science' },
-                          { id: 6, department: 'Mathematics' },
-                          { id: 7, department: 'Physics' },
-                          { id: 8, department: 'Chemistry' },
-                          { id: 9, department: 'Biology' },
-                          { id: 10, department: 'Geography' }
-                        ],
-                        lookup_columns: node.data.transformationData?.lookup_columns || [
-                          { column: 'id', out_column_name: 'id' },
-                          { column: 'name', out_column_name: 'name' },
-                          { column: 'department', out_column_name: 'department' },
-                          { column: 'city', out_column_name: 'city' },
-                          { column: 'state', out_column_name: 'state' },
-                          { column: 'zip', out_column_name: 'zip' },
-                          { column: 'address', out_column_name: 'address' },
-                          { column: 'age', out_column_name: 'age' }
-                        ],
-                        lookup_conditions: node.data.transformationData?.lookup_conditions || {
-                          column_name: 'id',
-                          lookup_with: 'id'
-                        },
-                        keep: node.data.transformationData?.keep || 'First'
+                        lookup_type: node.data.transformationData?.lookup_type || 'Column Based'
                     };
+                    
+                    // Only add lookup_config if it has meaningful values
+                    if (node.data.transformationData?.lookup_config && 
+                        (node.data.transformationData.lookup_config.name || 
+                         Object.keys(node.data.transformationData.lookup_config.source || {}).length > 0)) {
+                        lookupConfig.lookup_config = node.data.transformationData.lookup_config;
+                    }
+                    
+                    // Only add lookup_data if it's an array with at least one item
+                    if (Array.isArray(node.data.transformationData?.lookup_data) && 
+                        node.data.transformationData.lookup_data.length > 0) {
+                        lookupConfig.lookup_data = node.data.transformationData.lookup_data;
+                    }
+                    
+                    // Only add lookup_columns if it's an array with at least one item
+                    if (Array.isArray(node.data.transformationData?.lookup_columns) && 
+                        node.data.transformationData.lookup_columns.length > 0) {
+                        lookupConfig.lookup_columns = node.data.transformationData.lookup_columns;
+                    }
+                    
+                    // Only add lookup_conditions if it has meaningful values
+                    if (node.data.transformationData?.lookup_conditions && 
+                        (node.data.transformationData.lookup_conditions.column_name || 
+                         node.data.transformationData.lookup_conditions.lookup_with)) {
+                        lookupConfig.lookup_conditions = node.data.transformationData.lookup_conditions;
+                    }
+                    
+                    // Only add keep if it has a value
+                    if (node.data.transformationData?.keep) {
+                        lookupConfig.keep = node.data.transformationData.keep;
+                    }
+                    
+                    return lookupConfig;
                 case 'Target':
                     console.log("Target node data:", node.data);
                     // Determine the correct target_type

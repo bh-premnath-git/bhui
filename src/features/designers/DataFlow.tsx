@@ -16,7 +16,7 @@ import { useFlow } from '@/context/designers/FlowContext';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 import { NodeForm } from '@/components/bh-reactflow-comps/flow/flow/subcomponents/NodeForm/NodeForm';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 // Sheet components removed as we're using Dialog instead
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { useAppDispatch } from '@/hooks/useRedux';
@@ -24,10 +24,12 @@ import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSli
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { convertFlowJsonToReactFlow } from '@/lib/pipelineJsonConverter';
 import { useModules } from '@/hooks/useModules';
+import FlowSidebar from './components/FlowSidebar';
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
     const { selectNode, revertOrSaveData, setSelectedFlowId, reactFlowInstance, selectedFlowId, setIsSaving, setIsSaved, prevNodeFn, setNodeFormData } = useFlow();
+    const navigate = useNavigate();
     const [nodeFormData, setNodeFormDataLocal] = useState<any[]>([]);
     const {
         conversionLogs, terminalLogs, pipelineDtl, handleRun, handleStop, handleNext, handleSourceUpdate, updateSetNode,
@@ -77,7 +79,7 @@ const BuildPlayGround: React.FC = () => {
         setShowLogs,
         isNodeFormOpen,
         setIsNodeFormOpen,
-        selectedNodeId,
+        selectedNodeId, 
         setSelectedNodeId,
         setNodes,
     } = usePipelineContext();
@@ -89,8 +91,55 @@ const BuildPlayGround: React.FC = () => {
 
     const dispatch = useAppDispatch();
     const { id } = useParams();
-    const { useFetchFlowById } = useFlowApi();
-    const { data: flow, isLoading, isError } = useFetchFlowById(id || '');
+    const { useFetchFlowById, fetchFlowsList } = useFlowApi();
+    const { data: flowList, isLoading: isFlowListLoading } = fetchFlowsList(1, 1000, true);
+    const { data: flow, isLoading: isFlowLoading, isError, refetch } = useFetchFlowById(id || '');
+    
+    const isLoading = isFlowLoading || isFlowListLoading;
+    
+    // Auto-select first flow if no ID is provided
+    useEffect(() => {
+        if (!id && flowList && Array.isArray(flowList.data) && flowList.data.length > 0) {
+            const firstFlow = flowList.data[0];
+            console.log(`DataFlow: No ID provided, auto-selecting first flow ${firstFlow.flow_id}`);
+            navigate(`/designers/data-flow-playground/${firstFlow.flow_id}`);
+        }
+    }, [id, flowList, navigate]);
+    
+    // Force refetch when ID changes
+    useEffect(() => {
+        if (id) {
+            console.log(`DataFlow: ID changed to ${id}, forcing refetch of flow data`);
+            // Force a refetch of the flow data
+            refetch();
+        }
+    }, [id, refetch]);
+    
+    // Listen for custom flow selection events
+    useEffect(() => {
+        const handleFlowSelected = (event: CustomEvent) => {
+            const { flowId } = event.detail;
+            console.log(`DataFlow: Received flowSelected event for flow ${flowId}`);
+            
+            // Force a refresh regardless of whether we're on this flow
+            console.log(`DataFlow: Forcing refetch for flow ${flowId}`);
+            refetch();
+            
+            // Reset processedFlowId to ensure the flow is processed again
+            setProcessedFlowId(null);
+            
+            // Force a re-render
+            setForceRender(prev => prev + 1);
+        };
+        
+        // Add event listener
+        document.addEventListener('flowSelected', handleFlowSelected as EventListener);
+        
+        // Clean up
+        return () => {
+            document.removeEventListener('flowSelected', handleFlowSelected as EventListener);
+        };
+    }, [refetch]);
     const handleOpenNodeForm = useCallback((nodeId: string) => {
         // console.log(nodeId)
         // // First select the node in the Flow context
@@ -101,8 +150,6 @@ const BuildPlayGround: React.FC = () => {
         // setIsNodeFormOpen(true);
     }, [selectNode, setSelectedNodeId, setIsNodeFormOpen]);
 
-    const filteredNodes = useMemo(() => nodeData.nodes, []);
-    // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 
     // Update memoizedNodeTypes to include debug props
@@ -136,42 +183,120 @@ const BuildPlayGround: React.FC = () => {
         setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet,
         handleSourceUpdate, pipelineDtl, handleOpenNodeForm, setNodeFormDataLocal]);
 
+    // Key state to force re-render
+    const [forceRender, setForceRender] = useState(0);
+    
+    // Track if we've already processed this flow to prevent loops
+    const [processedFlowId, setProcessedFlowId] = useState<string | null>(null);
+    
+    // Reset processedFlowId when ID changes
     useEffect(() => {
-        if (id) { setSelectedFlowId(id); }
-
-        console.log(flow)
-        if (flow) {
+        if (id) {
+            // Check if the current processedFlowId starts with this ID
+            const isCurrentFlow = processedFlowId?.startsWith(id + '-');
             
-            if (flow?.flow_definition?.flow_json) {
-                try {
-                    // Convert flow.json to ReactFlow format
-                    console.log(flow.flow_definition.flow_json, "flow.json");
+            if (!isCurrentFlow) {
+                console.log(`DataFlow: ID changed to ${id}, resetting processedFlowId`);
+                setProcessedFlowId(null);
+            }
+        }
+    }, [id, processedFlowId]);
+    
+    // Load flow data when flow changes
+    useEffect(() => {
+        // Only update the selected flow ID if it's different
+        if (id && id !== selectedFlowId) { 
+            console.log(`DataFlow: Setting selected flow ID to ${id}`);
+            setSelectedFlowId(id);
+        }
+    }, [id, selectedFlowId, setSelectedFlowId]);
+    
+    // Separate effect for handling flow data changes
+    useEffect(() => {
+        // Skip if no flow data or no ID
+        if (!flow || !id) {
+            return;
+        }
+        
+        // Skip if we've already processed this exact flow instance
+        // We use a combination of ID and flow data to determine if this is a new fetch
+        const flowKey = `${id}-${flow.updated_at || Date.now()}`;
+        if (processedFlowId === flowKey) {
+            return;
+        }
+        
+        console.log(`DataFlow: Processing flow ${id}, data:`, flow);
+        
+        // Mark this flow as processed to prevent loops
+        setProcessedFlowId(flowKey);
+        
+        // Force a re-render when flow changes
+        setForceRender(prev => prev + 1);
+        
+        // Check if flow has valid definition
+        if (flow?.flow_definition?.flow_json) {
+            try {
+                // Safely check if flowJson exists
+                const flowJson = flow.flow_definition.flow_json?.flowJson;
+                
+                if (!flowJson) {
+                    console.log("DataFlow: No flow JSON data found, using empty nodes/edges");
+                    // Use empty arrays if no flow JSON
+                    updateSetNode([], []);
+                    return;
+                }
+                
+                console.log("DataFlow: Processing flow JSON:", flowJson);
 
-                    // The converter function will handle parsing if needed
-                    const { nodes, edges, nodeFormData } = convertFlowJsonToReactFlow(flow.flow_definition.flow_json?.flowJson, moduleTypes);
+                // The converter function will handle parsing if needed
+                const { nodes, edges, nodeFormData } = convertFlowJsonToReactFlow(flowJson, moduleTypes);
 
-                    console.log('Converted flow.json to ReactFlow format:', { nodes, edges, nodeFormData });
-                    console.log(nodes)
-                    // Update the state with the converted data
-                    console.log("DataFlow: Updating nodes and edges:", nodes, edges);
-                    
+                console.log('DataFlow: Converted flow.json to ReactFlow format:', { nodes, edges, nodeFormData });
+                
+                // Update the state with the converted data
+                console.log("DataFlow: Updating nodes and edges:", nodes, edges);
+                
+                // Clear existing nodes and edges first
+                updateSetNode([], []);
+                
+                // Use a short timeout to ensure the clear operation completes
+                setTimeout(() => {
                     // Use updateSetNode to update both nodes and edges in one call
                     updateSetNode(nodes, edges);
                     
                     // Update form data
                     setNodeFormData(nodeFormData);
                     setNodeFormDataLocal(nodeFormData);
-                } catch (error) {
-                    console.error('Error converting flow.json to ReactFlow format:', error);
-                }
+                    
+                    // Center the view after a short delay to ensure nodes are rendered
+                    setTimeout(() => {
+                        if (handleCenter) {
+                            console.log("DataFlow: Centering view after flow load");
+                            handleCenter();
+                        }
+                    }, 300);
+                }, 50);
+            } catch (error) {
+                console.error('Error converting flow.json to ReactFlow format:', error);
+                // Use empty arrays on error
+                updateSetNode([], []);
             }
+        } else {
+            console.log("DataFlow: No flow definition found, using empty nodes/edges");
+            // Use empty arrays if no flow definition
+            updateSetNode([], []);
         }
+        
+        // Update Redux state
         dispatch(setSelectedFlow(flow));
+        
+        // Set environment if available
         const flowdeployment = flow;
         if (flowdeployment?.flow_deployment?.[0]?.bh_env_id) {
             dispatch(setSelectedEnv(Number(flowdeployment.flow_deployment[0].bh_env_id)));
         }
-    }, [flow, dispatch]);
+    }, [flow, id, moduleTypes, updateSetNode, setNodeFormData, handleCenter, dispatch]);
+
     // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
     useEffect(() => {
         const handleResize = () => {
@@ -237,19 +362,7 @@ const BuildPlayGround: React.FC = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
-
+   
     useEffect(() => {
         // Handle browser back button
         const handlePopState = (event: PopStateEvent) => {
@@ -270,78 +383,121 @@ const BuildPlayGround: React.FC = () => {
         };
     }, [hasUnsavedChanges, location.pathname]);
 
+    // Calculate sidebar width based on expanded state
+    const sidebarWidth = 240; // Default expanded width
+    
+    const getMainContentStyle = () => {
+        const bottomHeight = isBottomDrawerOpen ? 300 : 0;
 
-    //   const handleFormSubmit = (values: any) => {
-    //     console.log('Form submitted with values:', values);
-    //     // Handle the form submission
-    //     // Update your state or make API calls as needed
-    //     handleDialogClose(); // Close the dialog after successful submission
-    //   };
+        // Calculate the available width
+        let availableWidth = `calc(100% - ${sidebarWidth}px`;
+        if (isRightAsideOpen) {
+            availableWidth += ` - 25%`; // Assuming right panel is 25%
+        }
+        availableWidth += ')';
+
+        return {
+            height: isBottomDrawerOpen ? `calc(100% - ${bottomHeight}px)` : '100%',
+            width: availableWidth,
+            marginLeft: `${sidebarWidth}px`,
+            transition: 'all 0.3s ease-in-out'
+        };
+    };
 
     return (
-        <div className={`relative h-full w-[98%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
-            {/* <ResolveSchema/> */}
-            <div className="p-1 ml-8" style={{
-                height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
-                width: isRightAsideOpen ? 'calc(100% - 500px)' : '100%',
-                transition: 'all 0.3s ease-in-out'
-            }}>
+        <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+            {/* Flow Sidebar */}
+            <FlowSidebar className="h-full" />
 
+            <div
+                className={`flex-1 relative p-1 transition-all duration-300`}
+                style={getMainContentStyle()}>
                 <div
-                    className={`transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
+                    className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
                     style={{
-                        height: isBottomDrawerOpen ? 'calc(75vh - 300px)' : '75vh',
-                        width: '100%',
-                        transition: 'all 0.3s ease-in-out'
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flex: '1 1 auto',
+                        height: isBottomDrawerOpen ? 'calc(100% - 20px)' : '100%'
                     }}>
-                    <ReactFlow
-                        nodes={nodes?.map(node => ({
-                            ...node,
-                            selected: node.selected || false,
-                            style: {
-                                ...node.style,
-                                ...(highlightedNodeId === node.id && {
-                                    background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1))',
-                                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.1)',
-                                    borderRadius: '12px',
-                                    padding: '4px',
-                                    zIndex: 1000,
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                                })
-                            }
-                        }))}
-                        edges={edges}
-                        onNodesChange={handleNodesChange}
-                        onEdgesChange={handleEdgesChange}
-                        onConnect={onConnect}
-                        nodeTypes={memoizedNodeTypes}
-                        edgeTypes={edgeTypes}
-                        onError={onError}
-                        defaultViewport={defaultViewport}
-                        minZoom={0.2}
-                        maxZoom={1.5}
-                        fitView
-                        fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
-                        proOptions={{ hideAttribution: true }}
-                    />
-                </div>
-                {/* Updated FlowControls container positioning */}
-                <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-50 transition-all duration-300`}>
-                    <FlowControls
-                        onZoomIn={handleZoomIn}
-                        onZoomOut={handleZoomOut}
-                        onCenter={handleCenter}
-                        onAlignHorizontal={handleAlignHorizontal}
-                        onAlignVertical={handleAlignVertical}
-                        handleRunClick={handleRun}
-                        onStop={handleStop}
-                        onNext={handleNext}
-                        isPipelineRunning={isPipelineRunning}
-                        isLoading={isCanvasLoading}
-                        pipelineConfig={handleRunClick}
-                        terminalLogs={terminalLogs}
-                        proplesLogs={conversionLogs}
-                    />
+                    {isLoading ? (
+                        <div className="w-full h-full flex items-center justify-center bg-background">
+                            <div className="flex flex-col items-center">
+                                <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
+                                <p className="mt-4 text-sm text-muted-foreground">Loading flow data...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <ReactFlow
+                            key={`flow-${id}-${forceRender}`} // Add key to force re-render
+                            nodes={nodes?.map(node => ({
+                                ...node,
+                                selected: node.selected || false,
+                                style: {
+                                    ...node.style,
+                                    ...(highlightedNodeId === node.id && {
+                                        background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1))',
+                                        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.1)',
+                                        borderRadius: '12px',
+                                        padding: '4px',
+                                        zIndex: 1000,
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    })
+                                }
+                            }))}
+                            edges={edges}
+                            onNodesChange={handleNodesChange}
+                            onEdgesChange={handleEdgesChange}
+                            onConnect={onConnect}
+                            nodeTypes={memoizedNodeTypes}
+                            edgeTypes={edgeTypes}
+                            onError={onError}
+                            defaultViewport={defaultViewport}
+                            minZoom={0.2}
+                            maxZoom={1.5}
+                            fitView
+                            fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
+                            proOptions={{ hideAttribution: true }}
+                            className="w-full h-full bg-background transition-all duration-300 reactflow-wrapper"
+                            onInit={(instance) => {
+                                // Only log once to prevent console spam
+                                console.log(`ReactFlow initialized for flow ${id}`);
+                                
+                                // Store the instance for later use
+                                if (instance && typeof instance.fitView === 'function') {
+                                    // Center the view after initialization
+                                    setTimeout(() => {
+                                        try {
+                                            instance.fitView({ padding: 0.2 });
+                                            console.log(`Centering view for flow ${id}`);
+                                        } catch (error) {
+                                            console.error('Error centering view:', error);
+                                        }
+                                    }, 300);
+                                }
+                            }}
+                        />
+                    )}
+                    
+                    {/* Flow Controls */}
+                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                        <FlowControls
+                            onZoomIn={handleZoomIn}
+                            onZoomOut={handleZoomOut}
+                            onCenter={handleCenter}
+                            onAlignHorizontal={handleAlignHorizontal}
+                            onAlignVertical={handleAlignVertical}
+                            handleRunClick={handleRun}
+                            onStop={handleStop}
+                            onNext={handleNext}
+                            isPipelineRunning={isPipelineRunning}
+                            isLoading={isCanvasLoading}
+                            pipelineConfig={handleRunClick}
+                            terminalLogs={terminalLogs}
+                            proplesLogs={conversionLogs}
+                        />
+                    </div>
                 </div>
 
                 <Dialog
@@ -370,108 +526,36 @@ const BuildPlayGround: React.FC = () => {
                 </Dialog>
 
 
-
                 <Dialog
-                    open={showLeavePrompt}
-                    onOpenChange={setShowLeavePrompt}
-                // onClose={handleLeavePage}
-
+                    open={isNodeFormOpen}
+                    onOpenChange={(open) => setIsNodeFormOpen(open)}
                 >
-                    <DialogContent >
-                        <div className="flex flex-col items-center text-center">
-                            {/* Warning Icon */}
-                            <div className="mb-4 p-3 rounded-full bg-amber-50">
-                                <svg
-                                    className="w-8 h-8 text-amber-500"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                    />
-                                </svg>
-                            </div>
-
-                            {/* Title and Description */}
-                            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                                Unsaved Changes
-                            </h2>
-                            <p className="text-gray-600 mb-6">
-                                You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
-                            </p>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-3 w-full">
-                                <Button
-                                    onClick={() => setShowLeavePrompt(false)}
-
-                                >
-                                    Stay
-                                </Button>
-                                <Button
-                                    onClick={handleLeavePage}
-
-                                >
-                                    Leave Page
-                                </Button>
-                            </div>
-                        </div>
+                    <DialogContent className="max-w-[80%] max-h-[80vh] overflow-y-auto">
+                        {selectedNodeId && (
+                            <NodeForm
+                                nodeId={selectedNodeId}
+                                onClose={() => setIsNodeFormOpen(false)}
+                            />
+                        )}
                     </DialogContent>
                 </Dialog>
 
-                {/* Add Terminal component */}
-                <Terminal
-                    isOpen={showLogs}
-                    onClose={() => setShowLogs(false)}
-                    title="Pipeline Validation Logs"
-                    terminalLogs={terminalLogs}
-                    proplesLogs={conversionLogs}
-                />
-
-                {/* Loading Overlay */}
-                {isCanvasLoading && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center pointer-events-auto">
-                        <div className="flex flex-col items-center gap-2">
-                            <LoaderCircle size={40} />
-                            <span className="text-sm text-gray-600 font-medium">Processing...</span>
+                {showLogs && (
+                    <div className={`fixed bottom-0 left-0 right-0 h-[300px] bg-background border-t z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-logs' : ''}`}>
+                        <div className="flex justify-between items-center p-2 border-b">
+                            <h3 className="text-sm font-medium">Logs</h3>
+                            <Button variant="ghost" size="sm" onClick={() => setShowLogs(false)}>
+                                Close
+                            </Button>
+                        </div>
+                        <div className="h-[calc(300px-40px)] overflow-auto p-2">
+                            <Terminal logs={terminalLogs} />
                         </div>
                     </div>
                 )}
-
-                {/* NodeForm Dialog */}
-                <Dialog
-                    open={isNodeFormOpen}
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            if (selectedNodeId) {
-                                revertOrSaveData(selectedNodeId, false);
-                            }
-                            setSelectedNodeId(null);
-                        }
-                        setIsNodeFormOpen(open);
-                    }}
-                >
-                    <DialogContent className="max-w-[60%]">
-                        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto pb-4">
-                            {selectedNodeId && isNodeFormOpen && (
-                                <div key={`node-form-${selectedNodeId}`}>
-                                    <NodeForm
-                                        id={selectedNodeId}
-                                        closeTap={() => setIsNodeFormOpen(false)}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
             </div>
         </div>
-
     );
 };
 
-export default React.memo(BuildPlayGround);
+export default BuildPlayGround;

@@ -152,7 +152,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "h-screen fixed left-0 top-0 z-40 flex flex-col",
+        "h-screen fixed left-0 top-0 z-[100] flex flex-col",
         "bg-gray-90 dark:bg-gray-950 backdrop-blur supports-[backdrop-filter]:bg-gray-100/95 dark:supports-[backdrop-filter]:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
         "shadow-sm",
@@ -400,57 +400,59 @@ export function Sidebar() {
                             </div>
                           ) : (
                             <>
-                              <a
-                                href={subItem.path}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
-                                }}
-                                className={cn(
-                                  "flex items-center px-3 py-2 rounded-md",
-                                  "transition-all duration-200 ease-in-out",
-                                  "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                                  location.pathname === subItem.path
-                                    ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
-                                    : "text-gray-700 dark:text-gray-300",
-                                  "text-sm pl-6 flex-1"
-                                )}
-                              >
-                                {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
-                                <span className="ml-3 flex-1">{subItem.title}</span>
-                              </a>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                                  >
-                                    <MoreHorizontal className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
-                                  <DropdownMenuItem
-                                    className="cursor-pointer flex items-center gap-2 text-xs"
-                                    onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                    <span>Rename</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
-                                    onClick={() => handleDeleteReport(subItem.id)}
-                                    disabled={deletingDashboard}
-                                  >
-                                    {deletingDashboard ? (
-                                      <Spinner className="h-3 w-3 mr-2" />
-                                    ) : (
-                                      <Trash2 className="h-3 w-3" />
-                                    )}
-                                    <span>Delete</span>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex items-center flex-1 group">
+                                <a
+                                  href={subItem.path}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
+                                  }}
+                                  className={cn(
+                                    "flex items-center px-3 py-2 rounded-md",
+                                    "transition-all duration-200 ease-in-out",
+                                    "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
+                                    location.pathname === subItem.path
+                                      ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
+                                      : "text-gray-700 dark:text-gray-300",
+                                    "text-sm pl-6 flex-1"
+                                  )}
+                                >
+                                  {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                  <span className="ml-3 flex-1">{subItem.title}</span>
+                                </a>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                                    >
+                                      <MoreHorizontal className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                                    <DropdownMenuItem
+                                      className="cursor-pointer flex items-center gap-2 text-xs"
+                                      onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                      <span>Rename</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
+                                      onClick={() => handleDeleteReport(subItem.id)}
+                                      disabled={deletingDashboard}
+                                    >
+                                      {deletingDashboard ? (
+                                        <Spinner className="h-3 w-3 mr-2" />
+                                      ) : (
+                                        <Trash2 className="h-3 w-3" />
+                                      )}
+                                      <span>Delete</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </>
                           )}
                         </div>

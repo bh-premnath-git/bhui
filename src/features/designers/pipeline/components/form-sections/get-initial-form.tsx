@@ -128,11 +128,7 @@ console.log(initialValues,"initialValues")
         repartition_type: initialValues?.repartition_type || 'repartition',
         repartition_value: initialValues?.repartition_value || '',
         override_partition: initialValues?.override_partition || '',
-        repartition_expression: initialValues?.repartition_expression || [{
-          expression: '',
-          sort_order: '',
-          order: 'asc'
-        }],
+        repartition_expression: initialValues?.repartition_expression || [],
         limit: initialValues?.limit || ''
       };
 

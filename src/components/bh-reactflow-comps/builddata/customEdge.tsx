@@ -5,7 +5,7 @@ import { HiChartBar } from "react-icons/hi";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { AppDispatch, RootState } from '@/store';
-import { Loader } from 'lucide-react';
+import { Loader, Scissors } from 'lucide-react';
 import { usePipelineContext } from "@/context/designers/DataPipelineContext";
 import { useSidebar } from "@/context/SidebarContext";
 import MetricsDrawerContent from "./MetricsDrawerContent";
@@ -82,6 +82,9 @@ interface CustomEdgeProps {
     targetY: number;
     style?: React.CSSProperties;
     source: string;
+    target: string;
+    sourceHandle?: string;
+    targetHandle?: string;
     transformationCounts: Array<{ transformationName: string; rowCount: number }>;
     interactionWidth?: number;
     selected?: boolean;
@@ -96,6 +99,9 @@ export const CustomEdge = memo(({
     targetY,
     style = {},
     source,
+    target,
+    sourceHandle,
+    targetHandle,
     transformationCounts,
     interactionWidth = 1,
     selected,
@@ -141,6 +147,41 @@ export const CustomEdge = memo(({
                   ${targetX - controlPointOffset} ${targetY},
                   ${targetX} ${targetY}`;
     }, [sourceX, sourceY, targetX, targetY]);
+
+    // Format connection labels with node names
+    const connectionLabels = useMemo(() => {
+        const formatHandle = (handle: string | undefined, type: 'source' | 'target') => {
+            if (!handle) return '';
+            
+            // Extract the number from handle IDs like 'input-0', 'output-1', etc.
+            const match = handle.match(/(\w+)-(\d+)/);
+            if (match) {
+                const [, handleType, index] = match;
+                const num = parseInt(index) + 1; // Convert 0-based to 1-based
+                return type === 'source' ? `out${num}` : `in${num}`;
+            }
+            return handle;
+        };
+
+        // Get node names
+        const sourceNode = getNode(source);
+        const targetNode = getNode(target);
+        const sourceNodeName = sourceNode?.data?.title || sourceNode?.data?.label || 'Source';
+        const targetNodeName = targetNode?.data?.title || targetNode?.data?.label || 'Target';
+
+        return {
+            source: {
+                port: formatHandle(sourceHandle, 'source'),
+                nodeName: sourceNodeName
+            },
+            target: {
+                port: formatHandle(targetHandle, 'target'),
+                nodeName: targetNodeName
+            },
+            // For the connection tooltip in the middle of the edge
+            connection: `${sourceNodeName} → ${targetNodeName}`
+        };
+    }, [sourceHandle, targetHandle, source, target, getNode]);
 
  
 
@@ -264,6 +305,132 @@ export const CustomEdge = memo(({
                 className="react-flow__edge-path"
                 d={path}
             />
+
+            {/* Connection Labels - Enhanced for better visibility on hover with node names */}
+            {(connectionLabels.source.port || connectionLabels.target.port) && (
+                <>
+                    {/* Source Label */}
+                    {connectionLabels.source.port && (
+                        <g>
+                            {/* Background for better visibility */}
+                            {isHovered && (
+                                <rect
+                                    x={sourceX - 120}
+                                    y={sourceY - 15}
+                                    width={110}
+                                    height={20}
+                                    rx={4}
+                                    ry={4}
+                                    fill="rgba(255, 255, 255, 0.9)"
+                                    stroke="#ddd"
+                                    strokeWidth={1}
+                                    className="connection-label-bg"
+                                />
+                            )}
+                            <text
+                                x={sourceX - 15}
+                                y={sourceY - 5}
+                                className={`text-xs font-medium ${isHovered ? 'fill-blue-600 font-bold' : 'fill-gray-600'}`}
+                                textAnchor="end"
+                                dominantBaseline="middle"
+                                style={{
+                                    transition: 'all 0.2s ease',
+                                    fontSize: isHovered ? '12px' : '10px',
+                                    opacity: isHovered ? 1 : 0.7,
+                                    textShadow: isHovered ? '0 0 3px rgba(255, 255, 255, 0.8)' : 'none'
+                                }}
+                            >
+                                {isHovered ? `${connectionLabels.source.nodeName} ${connectionLabels.source.port}` : connectionLabels.source.port}
+                            </text>
+                        </g>
+                    )}
+                    
+                    {/* Target Label */}
+                    {connectionLabels.target.port && (
+                        <g>
+                            {/* Background for better visibility */}
+                            {isHovered && (
+                                <rect
+                                    x={targetX + 10}
+                                    y={targetY - 15}
+                                    width={110}
+                                    height={20}
+                                    rx={4}
+                                    ry={4}
+                                    fill="rgba(255, 255, 255, 0.9)"
+                                    stroke="#ddd"
+                                    strokeWidth={1}
+                                    className="connection-label-bg"
+                                />
+                            )}
+                            <text
+                                x={targetX + 15}
+                                y={targetY - 5}
+                                className={`text-xs font-medium ${isHovered ? 'fill-blue-600 font-bold' : 'fill-gray-600'}`}
+                                textAnchor="start"
+                                dominantBaseline="middle"
+                                style={{
+                                    transition: 'all 0.2s ease',
+                                    fontSize: isHovered ? '12px' : '10px',
+                                    opacity: isHovered ? 1 : 0.7,
+                                    textShadow: isHovered ? '0 0 3px rgba(255, 255, 255, 0.8)' : 'none'
+                                }}
+                            >
+                                {isHovered ? `${connectionLabels.target.nodeName} ${connectionLabels.target.port}` : connectionLabels.target.port}
+                            </text>
+                        </g>
+                    )}
+                    
+                    {/* Connection tooltip in the middle of the edge (only when hovering) */}
+                    {isHovered && (
+                        <g>
+                            {/* Calculate tooltip width based on content */}
+                            {(() => {
+                                const sourceText = `${connectionLabels.source.nodeName} ${connectionLabels.source.port}`;
+                                const targetText = `→ ${connectionLabels.target.nodeName} ${connectionLabels.target.port}`;
+                                const maxLength = Math.max(sourceText.length, targetText.length);
+                                // Estimate width based on text length (approx 6px per character)
+                                const estimatedWidth = Math.max(160, maxLength * 6);
+                                
+                                return (
+                                    <>
+                                        <rect
+                                            x={edgeCenter.x - (estimatedWidth / 2)}
+                                            y={edgeCenter.y - 15}
+                                            width={estimatedWidth}
+                                            height={30}
+                                            rx={4}
+                                            ry={4}
+                                            fill="rgba(255, 255, 255, 0.95)"
+                                            stroke="#ccc"
+                                            strokeWidth={1}
+                                            className="connection-tooltip-bg"
+                                        />
+                                        <text
+                                            x={edgeCenter.x}
+                                            y={edgeCenter.y - 5}
+                                            className="text-xs font-medium fill-gray-700 text-center"
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                        >
+                                            {sourceText}
+                                        </text>
+                                        <text
+                                            x={edgeCenter.x}
+                                            y={edgeCenter.y + 10}
+                                            className="text-xs font-medium fill-gray-700 text-center"
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                        >
+                                            {targetText}
+                                        </text>
+                                    </>
+                                );
+                            })()}
+                        </g>
+                    )}
+                </>
+            )}
 
             {/* Edge Controls */}
             <EdgeControls
@@ -403,21 +570,11 @@ const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
             pointerEvents: isHovered ? 'all' : 'none',
             transform: 'translateX(-40px)'
         }}
-        title="Remove Edge"
+        title="Cut Connection"
     >
-        <svg
+        <Scissors
             className="w-3.5 h-3.5 text-gray-500 hover:text-red-500
                      transition-colors duration-200"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-            />
-        </svg>
+        />
     </button>
 );

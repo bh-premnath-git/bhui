@@ -72,14 +72,14 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const handleAddToDashboard = (data: any) => {
     const chartData = {
       id: `chart-${createShortUUID()}`,
-      owner: "info@bighammer.ai",
       widget_type: "user_defined",
       name: data.chartMetadata.layout.title.text,
       visibility: "private",
       sql_query: data.sql,
       intermediate_executed_query_json: data.chartMetadata,
       executed_query:  { ...data.data },
-      chart_config: ""
+      chart_config: "",
+      dashboardId: data.dashboardId ?? "102"
     };
     
     // Dispatch a custom event that XplorerMock can listen for

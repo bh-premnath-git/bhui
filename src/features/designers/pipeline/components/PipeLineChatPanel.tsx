@@ -309,22 +309,15 @@ const PipeLineChatPanel = () => {
                       }
                     };
                     console.log(readerNode, "readerNode");
-
-                    // Find the existing node ID for the reader
-                    const readerNodeId = nodes.find(node =>
-                      node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-                    )?.id;
-
-                    if (readerNodeId) {
-                      // Update the existing node with the new source data
-                      handleSourceUpdate({
-                        nodeId: readerNodeId,
-                        sourceData: { data: initialData }
-                      });
-                    } else {
-                      // If no reader node exists yet, add a new one
-                      handleNodeClick(readerNode, initialData);
-                    }
+                    
+                    // Create a copy of the reader node with a unique ID to ensure we create a new node
+                    const newReaderNode = {
+                      ...readerNode,
+                      id: `reader-${Date.now()}`
+                    };
+                    
+                    // When adding another source, we always want to create a new Reader node
+                    handleNodeClick(newReaderNode, initialData);
 
 
 
@@ -428,22 +421,15 @@ const PipeLineChatPanel = () => {
                   setUnsavedChanges();
                   addNodeToHistory();
                   console.log(readerNode, "readerNode");
-
-                  // Find the existing node ID for the reader
-                  const readerNodeId = nodes.find(node =>
-                    node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-                  )?.id;
-
-                  if (readerNodeId) {
-                    // Update the existing node with the new source data
-                    handleSourceUpdate({
-                      nodeId: readerNodeId,
-                      sourceData: { data: mockDataSource }
-                    });
-                  } else {
-                    // If no reader node exists yet, add a new one
-                    handleNodeClick(readerNode, mockDataSource);
-                  }
+                  
+                  // Create a copy of the reader node with a unique ID to ensure we create a new node
+                  const newReaderNode = {
+                    ...readerNode,
+                    id: `reader-${Date.now()}`
+                  };
+                  
+                  // When creating a new data source, we always want to create a new Reader node
+                  handleNodeClick(newReaderNode, mockDataSource);
 
                   // Apply horizontal alignment after adding the node with improved timing
                   setTimeout(() => {
@@ -577,20 +563,24 @@ const PipeLineChatPanel = () => {
 
       console.log(readerNode, "readerNode");
 
-      // Find the existing node ID for the reader
-      const readerNodeId = nodes.find(node =>
+      // When configuring a reader from the ReaderOptionsForm, we should update the existing node
+      // Find the most recently added Reader node to update
+      const readerNodes = nodes.filter(node => 
         node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-      )?.id;
-
-      if (readerNodeId) {
+      );
+      
+      // Get the most recently added reader node (last in the array)
+      const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : null;
+      
+      if (latestReaderNodeId) {
         // Update the existing node with the new source data
         handleSourceUpdate({
-          nodeId: readerNodeId,
+          nodeId: latestReaderNodeId,
           sourceData: sourceData
         });
       } else {
         // If no reader node exists yet, add a new one
-        handleNodeClick(readerNode, sourceData.sourceData.data.source);
+        handleNodeClick(readerNode, sourceData.sourceData?.data?.source || sourceData);
       }
 
       // Apply horizontal alignment after adding the node with improved timing
@@ -799,22 +789,58 @@ const PipeLineChatPanel = () => {
       },
     ]);
 
+    // Find existing connections to this target node to determine which handle to use
+    const existingConnections = edges.filter(edge => edge.target === targetNodeId);
+    
+    // Find the target node to get its module name
+    const targetNode = nodes.find(node => node.id === targetNodeId);
+    const targetModuleName = targetNode?.data?.label;
+    
+    // Determine if this is a multi-input node (like Joiner, Lookup, SetCombiner, CustomPySpark)
+    const isMultiInputNode = targetNodeType.ui_properties.ports.maxInputs === "unlimited" || 
+                             targetNodeType.ui_properties.ports.maxInputs > 1;
+    
+    // For multi-input nodes, we need to create distinct input handles
+    let targetHandle;
+    
+    if (isMultiInputNode) {
+      // For multi-input nodes, create a unique handle for each connection
+      // Use a consistent naming pattern that includes the source node ID to ensure uniqueness
+      targetHandle = `input-${sourceNode.id}`;
+      
+      // Check if we already have a connection from this source to this target
+      const existingConnection = existingConnections.find(
+        edge => edge.source === sourceNode.id && edge.target === targetNodeId
+      );
+      
+      if (existingConnection) {
+        // If a connection already exists, use its handle to avoid duplicates
+        targetHandle = existingConnection.targetHandle;
+      }
+    } else {
+      // For single-input nodes, use the standard approach
+      const targetHandleIndex = existingConnections.length;
+      targetHandle = `input-${targetHandleIndex}`;
+    }
+    
     // Create a connection between the source node and the target node
     const connection = {
       source: sourceNode.id,
       target: targetNodeId,
-      sourceHandle: null,  // Add sourceHandle property
-      targetHandle: null   // Add targetHandle property
+      sourceHandle: 'output-0',  // Use the first output handle of the source node
+      targetHandle: targetHandle  // Use a different input handle for each connection
     };
 
-    // Create a unique edge ID
-    const edgeId = `e${sourceNode.id}-${targetNodeId}`;
+    // Create a unique edge ID that includes the handle information
+    const edgeId = `e${sourceNode.id}-${targetNodeId}-${targetHandle}`;
 
     // Create a complete edge object with all required properties
     const newEdge = {
       id: edgeId,
       source: sourceNode.id,
       target: targetNodeId,
+      sourceHandle: 'output-0',
+      targetHandle: targetHandle,
       type: 'default',
       animated: false,
       style: { stroke: '#b1b1b7', strokeWidth: 2 }
@@ -826,12 +852,16 @@ const PipeLineChatPanel = () => {
     // Add the edge directly to the edges array
     setEdges(prevEdges => {
       // Check if the edge already exists to avoid duplicates
+      // Now we also check the specific handles to allow multiple connections between the same nodes
       const edgeExists = prevEdges.some(
-        edge => edge.source === sourceNode.id && edge.target === targetNodeId
+        edge => 
+          edge.source === sourceNode.id && 
+          edge.target === targetNodeId && 
+          edge.targetHandle === targetHandle
       );
 
       if (edgeExists) {
-        console.log('Edge already exists, not adding duplicate');
+        console.log('Edge already exists with the same handle, not adding duplicate');
         return prevEdges;
       }
 
@@ -858,6 +888,24 @@ const PipeLineChatPanel = () => {
         setTimeout(() => {
           pipelineContext.handleAlignHorizontal();
           window.dispatchEvent(new Event('resize'));
+          
+          // Force update node internals to ensure handles are properly rendered
+          // This is crucial for multi-input nodes
+          const targetNode = nodes.find(node => node.id === targetNodeId);
+          if (targetNode && targetNode.data?.ports?.maxInputs) {
+            // We can't directly use useUpdateNodeInternals here since it's a hook
+            // Instead, we'll trigger a resize event which will cause React Flow to recalculate
+            // node positions and connections
+            window.dispatchEvent(new Event('resize'));
+            
+            // Also dispatch a custom event that our NodeHandles component can listen for
+            const updateEvent = new CustomEvent('updateNodeInternals', { 
+              detail: { nodeId: targetNodeId } 
+            });
+            window.dispatchEvent(updateEvent);
+            
+            console.log('Dispatched updateNodeInternals event for target node:', targetNodeId);
+          }
         }, 200);
       }
     }, 500);
@@ -901,7 +949,10 @@ const PipeLineChatPanel = () => {
                   name: `Target_${targetNodeId}`,
                   dependent_on: edges
                     .filter(edge => edge.target === targetNodeId)
-                    .map(edge => edge.source)
+                    .map(edge => ({
+                      source: edge.source,
+                      targetHandle: edge.targetHandle
+                    }))
                 }
               }
             },
@@ -952,7 +1003,10 @@ const PipeLineChatPanel = () => {
                       nodeId: targetNodeId,
                       dependent_on: edges
                         .filter(edge => edge.target === targetNodeId)
-                        .map(edge => edge.source)
+                        .map(edge => ({
+                          source: edge.source,
+                          targetHandle: edge.targetHandle
+                        }))
                     }
                   }
                 };
@@ -987,7 +1041,10 @@ const PipeLineChatPanel = () => {
                       nodeId: targetNodeId,
                       dependent_on: edges
                         .filter(edge => edge.target === targetNodeId)
-                        .map(edge => edge.source)
+                        .map(edge => ({
+                          source: edge.source,
+                          targetHandle: edge.targetHandle
+                        }))
                     }
                   }
                 };
@@ -1096,7 +1153,10 @@ const PipeLineChatPanel = () => {
                             nodeId: targetNodeId,
                             dependent_on: edges
                               .filter(edge => edge.target === targetNodeId)
-                              .map(edge => edge.source)
+                              .map(edge => ({
+                                source: edge.source,
+                                targetHandle: edge.targetHandle
+                              }))
                           }
                         }
                       };
@@ -1143,7 +1203,10 @@ const PipeLineChatPanel = () => {
                             nodeId: targetNodeId,
                             dependent_on: edges
                               .filter(edge => edge.target === targetNodeId)
-                              .map(edge => edge.source)
+                              .map(edge => ({
+                                source: edge.source,
+                                targetHandle: edge.targetHandle
+                              }))
                           }
                         }
                       };
@@ -1616,7 +1679,14 @@ const PipeLineChatPanel = () => {
                         initialData={selectedDataSource}
                         onSourceUpdate={handleReaderOptionsSubmit}
                         onClose={handleReaderOptionsClose}
-                        nodeId={`reader-${Date.now()}`}
+                        nodeId={(() => {
+                          // Find the most recently added Reader node
+                          const readerNodes = nodes.filter(node => 
+                            node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+                          );
+                          // Get the most recently added reader node (last in the array)
+                          return readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : `reader-${Date.now()}`;
+                        })()}
                       />
                     </div>
                   </div>

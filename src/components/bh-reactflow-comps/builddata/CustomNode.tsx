@@ -150,7 +150,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 )
             );
         }
-    }, [data.title, id, setNodes]);
+    }, [data.title]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();

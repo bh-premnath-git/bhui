@@ -10,12 +10,20 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/config/routes';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { setBuildPipeLineDtl } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
 export function BuildDataPipelinePage() {
   const { pipelines, isLoading, isFetching, isError, fetchPipelineList } = usePipeline();
   const pipelineService = usePipelineManagementService();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(0);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { setPipeline_id, setDebuggedNodesList, setDebuggedNodes } = usePipelineContext();
   
   // Handle pipeline data updates
   useEffect(() => {
@@ -41,8 +49,19 @@ export function BuildDataPipelinePage() {
   useEffect(() => {
     if (Array.isArray(pipelines) && pipelines.length > 0) {
       pipelineService.setPipelines(pipelines);
+      
+      // Auto-navigate to the first pipeline if available
+      const firstPipeline = pipelines[0];
+      if (firstPipeline && firstPipeline.pipeline_id) {
+        setDebuggedNodesList([]);
+        setDebuggedNodes([]);
+        setPipeline_id(firstPipeline.pipeline_id);
+        dispatch(setBuildPipeLineDtl(firstPipeline));
+        localStorage.setItem("pipeline_id", firstPipeline.pipeline_id.toString());
+        navigate(ROUTES.DESIGNERS.BUILD_PLAYGROUND(firstPipeline.pipeline_id.toString()));
+      }
     }
-  }, [pipelines, pipelineService]);
+  }, [pipelines, pipelineService, navigate, dispatch, setPipeline_id, setDebuggedNodesList, setDebuggedNodes]);
 
   if (isLoading) {
     return (

@@ -56,7 +56,7 @@ export const navigationItems: NavItem[] = [
       {
         title: "Data Flow",
         icon: GitBranch,
-        path: ROUTES.DESIGNERS.MANAGE_FLOW,
+        path: "/designers/data-flow-playground",
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {

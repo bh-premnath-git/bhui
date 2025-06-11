@@ -13,15 +13,18 @@ import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { LoadingState } from '@/components/shared/LoadingState';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
 import PipelineSidebar from './components/PipelineSidebar';
-import '@/features/designers/pipeline/styles/PipelineCanvas.css';
+// import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
 
-const DataPipelineCanvasNew: React.FC = () => {
-  const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
+const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
+  const { isRightAsideOpen, isBottomDrawerOpen, isExpanded, rightAsideWidth } = useSidebar();
   const { id } = useParams();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
-  
+
+  // Calculate sidebar width based on expanded state
+  const sidebarWidth = isExpanded ? 240 : 64; // Adjust these values based on your actual sidebar widths
+
   const {
     pipelineDtl,
     nodes,
@@ -68,28 +71,27 @@ const DataPipelineCanvasNew: React.FC = () => {
     lastSaved,
     fetchPipelineDetails
   } = usePipelineContext();
-  
-  // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
+
+  // Add resize event handler to force canvas resizing when right aside, sidebar, or bottom drawer opens/closes
   useEffect(() => {
-    
     const handleResize = () => {
       // Force a resize event to make ReactFlow recalculate dimensions
       window.dispatchEvent(new Event('resize'));
     };
-    
+
     // Trigger resize after a short delay when the layout state changes
     const timer = setTimeout(handleResize, 100);
     // Trigger another resize after a longer delay for smoother transition
     const secondTimer = setTimeout(handleResize, 300);
     const thirdTimer = setTimeout(handleResize, 600);
-    
+
     // Try to trigger fitView if possible through the context
     if (handleCenter) {
       const fitViewTimer = setTimeout(() => {
         try {
           handleCenter();
           // Make sure nodes are visible when layout changes
-          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
+          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen || isExpanded)) {
             console.log('Centering nodes after layout change');
             handleCenter();
           }
@@ -97,7 +99,7 @@ const DataPipelineCanvasNew: React.FC = () => {
           console.error('Error calling handleCenter:', error);
         }
       }, 350);
-      
+
       // Add a second fitView attempt after a longer delay
       const secondFitViewTimer = setTimeout(() => {
         try {
@@ -106,7 +108,7 @@ const DataPipelineCanvasNew: React.FC = () => {
           console.error('Error in second fitView attempt:', error);
         }
       }, 800);
-      
+
       return () => {
         clearTimeout(timer);
         clearTimeout(secondTimer);
@@ -115,28 +117,56 @@ const DataPipelineCanvasNew: React.FC = () => {
         clearTimeout(secondFitViewTimer);
       };
     }
-    
+
     return () => {
       clearTimeout(timer);
       clearTimeout(secondTimer);
       clearTimeout(thirdTimer);
     };
-  }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
-useEffect(() => {
-  if (id && id !== currentPipelineId) {
-    setIsLoadingPipeline(true);
-    setCurrentPipelineId(id);
-    
-    // Fetch pipeline details
-    fetchPipelineDetails().then(() => {
+  }, [isRightAsideOpen, isBottomDrawerOpen, isExpanded, handleCenter, nodes.length]);
+
+  // Listen for RightAside panel resize events
+  useEffect(() => {
+    const handleRightAsideResize = (e: CustomEvent) => {
+      // Force a resize event to make ReactFlow recalculate dimensions
+      window.dispatchEvent(new Event('resize'));
+
+      // Try to center the view after a short delay
+      if (handleCenter) {
+        const timer = setTimeout(() => {
+          try {
+            handleCenter();
+          } catch (error) {
+            console.error('Error centering after RightAside resize:', error);
+          }
+        }, 200);
+
+        return () => clearTimeout(timer);
+      }
+    };
+
+    // Add event listener for the custom rightAsideResize event
+    document.addEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+
+    return () => {
+      document.removeEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+    };
+  }, [handleCenter]);
+  useEffect(() => {
+    if (id && id !== currentPipelineId) {
+      setIsLoadingPipeline(true);
+      setCurrentPipelineId(id);
+
+      // Fetch pipeline details
+      fetchPipelineDetails().then(() => {
         setIsLoadingPipeline(false);
       })
-      .catch((error) => {
-        console.error('Error loading pipeline:', error);
-        setIsLoadingPipeline(false);
-      });
-  }
-}, [id]);
+        .catch((error) => {
+          console.error('Error loading pipeline:', error);
+          setIsLoadingPipeline(false);
+        });
+    }
+  }, [id]);
   // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 
@@ -161,146 +191,59 @@ useEffect(() => {
       />
     )
   }), [
-    setNodes, 
-    setSelectedSchema, 
-    setFormStates, 
-    setIsFormOpen, 
+    setNodes,
+    setSelectedSchema,
+    setFormStates,
+    setIsFormOpen,
     formStates,
-    setRunDialogOpen, 
-    setSelectedFormState, 
-    handleDebugToggle, 
-    debuggedNodesSet, 
-    handleSourceUpdate, 
+    setRunDialogOpen,
+    setSelectedFormState,
+    handleDebugToggle,
+    debuggedNodesSet,
+    handleSourceUpdate,
     pipelineDtl
   ]);
 
   const edgeTypes = useMemo(() => ({
     default: (props: any) => (
-      <CustomEdge 
-        {...props} 
-        transformationCounts={transformationCounts} 
-        pipelineDtl={pipelineDtl} 
+      <CustomEdge
+        {...props}
+        transformationCounts={transformationCounts}
+        pipelineDtl={pipelineDtl}
         debuggedNodesList={debuggedNodesList}
       />
     )
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
-  // Custom controls component for the pipeline canvas
-  const PipelineControls = () => {
-    // Create local implementations of the zoom and center functions
-    // These will be used directly by the FlowControls component
-    const localZoomIn = () => {
-      try {
-        // Use direct DOM manipulation to trigger a zoom in event
-        const zoomInEvent = new WheelEvent('wheel', {
-          bubbles: true,
-          cancelable: true,
-          deltaY: -100,
-          ctrlKey: true
-        });
-        document.querySelector('.react-flow')?.dispatchEvent(zoomInEvent);
-        
-        // Also try to call the context function
-        handleZoomIn();
-      } catch (error) {
-        console.error('Zoom in error:', error);
-      }
+ 
+  const getMainContentStyle = () => {
+    const bottomHeight = isBottomDrawerOpen ? 300 : 0;
+
+    // Calculate the available width
+    let availableWidth = `calc(100% - ${sidebarWidth}px`;
+    if (isRightAsideOpen) {
+      // Extract percentage value from rightAsideWidth (e.g., 'w-[25%]' -> '25%')
+      const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
+      availableWidth += ` - ${rightAsidePercentage}%`;
+    }
+    availableWidth += ')';
+
+    return {
+      height: isBottomDrawerOpen ? `calc(100% - ${bottomHeight}px)` : '100%',
+      width: availableWidth,
+      marginLeft: `${sidebarWidth}px`,
+      transition: 'all 0.3s ease-in-out'
     };
-    
-    const localZoomOut = () => {
-      try {
-        // Use direct DOM manipulation to trigger a zoom out event
-        const zoomOutEvent = new WheelEvent('wheel', {
-          bubbles: true,
-          cancelable: true,
-          deltaY: 100,
-          ctrlKey: true
-        });
-        document.querySelector('.react-flow')?.dispatchEvent(zoomOutEvent);
-        
-        // Also try to call the context function
-        handleZoomOut();
-      } catch (error) {
-        console.error('Zoom out error:', error);
-      }
-    };
-    
-    const localCenter = () => {
-      try {
-        // Try to call the context function
-        handleCenter();
-        
-        // Also try to use the fitView button from ReactFlow controls
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          fitViewButton.click();
-        }
-      } catch (error) {
-        console.error('Center error:', error);
-      }
-    };
-    
-    return (
-      <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[10px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-20 transition-all duration-300`}>
-        <FlowControls
-          onZoomIn={localZoomIn}
-          onZoomOut={localZoomOut}
-          onCenter={localCenter}
-          onAlignHorizontal={handleAlignHorizontal}
-          onAlignVertical={handleAlignVertical}
-          handleRunClick={handleRun}
-          onStop={handleStop}
-          onNext={handleNext}
-          isPipelineRunning={isPipelineRunning}
-          isLoading={isCanvasLoading}
-          pipelineConfig={handleRunClick}
-          terminalLogs={terminalLogs}
-          proplesLogs={conversionLogs}
-        />
-      </div>
-    );
   };
-
-  // Define keyboard shortcuts for display
-  const keyboardShortcuts = [
-    { key: 'Ctrl + C', action: 'Copy' },
-    { key: 'Ctrl + V', action: 'Paste' },
-    { key: 'Ctrl + X', action: 'Cut' },
-    { key: 'Ctrl + Z', action: 'Undo' },
-    { key: 'Ctrl + Y', action: 'Redo' },
-    { key: 'Ctrl + F', action: 'Search' },
-    { key: 'Ctrl + D', action: 'Add to Debug List' },
-    { key: 'Ctrl + R', action: 'Run Pipeline' },
-    { key: 'Ctrl + L', action: 'Open Logs' },
-    { key: 'Ctrl + K', action: 'Stop Pipeline' },
-    { key: 'Ctrl + N', action: 'Next Step' },
-    { key: 'Ctrl + +', action: 'Zoom In' },
-    { key: 'Ctrl + -', action: 'Zoom Out' },
-  ];
-
   return (
     <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
       {/* Pipeline Sidebar */}
       <PipelineSidebar className="h-full" />
-      
-      <div 
-        className={`flex-1 relative p-1 transition-all duration-300`}
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          flexGrow: 1,
-          height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
-          width: isRightAsideOpen ? 'calc(100% - 50px)' : '100%'
-        }}>
-        
 
-        {/* Keyboard shortcuts panel */}
-        <div className={`fixed top-20 left-72 z-50 transition-all duration-300 ${isRightAsideOpen ? 'with-right-aside-panel' : ''}`}>
-          <div className="rounded-lg p-2 text-sm">
-            <KeyboardShortcutsPanel keyboardShortcuts={keyboardShortcuts} />
-          </div>
-        </div>
+      <div
+        className={`flex-1 relative p-1 transition-all duration-300`}
+        style={getMainContentStyle()}>
+
 
         {/* Debug mode panel */}
         {debuggedNodesList?.length > 0 && (
@@ -340,7 +283,7 @@ useEffect(() => {
         )}
 
         {/* Main Canvas */}
-        <div 
+        <div
           className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
           style={{
             position: 'relative',
@@ -355,7 +298,25 @@ useEffect(() => {
             type="pipeline"
             nodeTypes={memoizedNodeTypes}
             edgeTypes={edgeTypes}
-            controls={<PipelineControls />}
+            renderControls={true}
+            controls={
+              <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                <FlowControls
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onCenter={handleCenter}
+                  onAlignHorizontal={handleAlignHorizontal}
+                  onAlignVertical={handleAlignVertical}
+                  handleRunClick={handleRun}
+                  onStop={handleStop}
+                  onNext={handleNext}
+                  isPipelineRunning={isPipelineRunning}
+                  isLoading={isCanvasLoading}
+                  pipelineConfig={handleRunClick}
+                  terminalLogs={terminalLogs}
+                  proplesLogs={conversionLogs}
+                />
+              </div>}
             loading={isCanvasLoading}
             defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
             minZoom={0.2}
@@ -442,7 +403,7 @@ useEffect(() => {
         />
 
         {/* Loading Overlay */}
-       
+
       </div>
     </div>
   );

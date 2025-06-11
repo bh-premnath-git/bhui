@@ -26,7 +26,7 @@ export const DesignerRoutes = (
       path={ROUTES.DESIGNERS.BUILD_PIPELINE} 
       element={
         <Suspense fallback={<LoadingFallback />}>
-          <BuildDataPipeline />
+          <DataPipeCanvas />
         </Suspense>
       } 
     />
@@ -56,6 +56,14 @@ export const DesignerRoutes = (
     />
      <Route 
       path="/designers/data-flow-playground/:id" 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <DataFlowCanvas />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path="/designers/data-flow-playground" 
       element={
         <Suspense fallback={<LoadingFallback />}>
           <DataFlowCanvas />

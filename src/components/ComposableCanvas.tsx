@@ -101,7 +101,7 @@ export const ComposableCanvas = ({
   // Get contexts
   const flowContext = useFlow();
   const pipelineContext = usePipelineContext();
-  const { isRightAsideOpen } = useSidebar(); // Get sidebar context to check if right aside is open
+  const { isRightAsideOpen,isExpanded } = useSidebar(); // Get sidebar context to check if right aside is open
 
   // State for nodes/edges/handlers, default to undefined
   let nodes: Node[] = [];
@@ -114,17 +114,43 @@ export const ComposableCanvas = ({
   let isValidConnection: ((connection: Connection) => boolean) | undefined = undefined;
   let handleKeyDown: ((event: KeyboardEvent) => void) | undefined = undefined;
 
-  // Memoize fitView function (ensure this exists and is correct)
-  const fitView = useCallback(() => {
-    if (type === 'flow' && flowContext?.fitView) {
-      // console.log('Using flowContext.fitView');
-      flowContext.fitView();
-    } else if (reactFlowInstance) {
-      // console.log('Using reactFlowInstance.fitView');
-      reactFlowInstance.fitView();
-    } else {
-      // console.log('fitView: No instance or context method available');
-    }
+  // Memoize fitView function with improved implementation
+  const fitView = useCallback((options:any = {}) => {
+    console.log('ComposableCanvas: fitView called with options', options);
+    
+    // Use requestAnimationFrame to ensure the DOM has updated
+    window.requestAnimationFrame(() => {
+      try {
+        if (type === 'flow' && flowContext?.fitView) {
+          console.log('Using flowContext.fitView');
+          flowContext.fitView();
+        } else if (reactFlowInstance) {
+          console.log('Using reactFlowInstance.fitView');
+          
+          // Default options that work well
+          const defaultOptions = { 
+            padding: 0.2, 
+            duration: 800,
+            includeHiddenNodes: false,
+            minZoom: 0.5,
+            maxZoom: 1.5
+          };
+          
+          // Merge with provided options
+          const mergedOptions = { ...defaultOptions, ...options };
+          
+          // Call fitView with the merged options
+          reactFlowInstance.fitView(mergedOptions);
+          
+          // Force a resize event to ensure ReactFlow recalculates dimensions
+          window.dispatchEvent(new Event('resize'));
+        } else {
+          console.warn('fitView: No instance or context method available');
+        }
+      } catch (error) {
+        console.error('Error in fitView:', error);
+      }
+    });
   }, [type, flowContext, reactFlowInstance]);
 
   // Assign context values based on type
@@ -262,28 +288,84 @@ export const ComposableCanvas = ({
     handleKeyDown = pipelineContext.handleKeyDown;
   }
   
-  // Initialize ReactFlow instance
+  // Initialize ReactFlow instance with improved implementation
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
+      console.log('ReactFlow instance initialized');
+      
       // Store the instance for both flow and pipeline types
       if (type === 'flow' && setReactFlowInstance) {
         setReactFlowInstance(instance);
       }
       
+      // Expose the ReactFlow instance to the window for easier access
+      // This helps with direct manipulation from FlowControls
+      try {
+        // @ts-ignore - Add reactFlowInstance to window
+        window.reactFlowInstance = instance;
+        console.log('ReactFlow instance exposed to window.reactFlowInstance');
+      } catch (error) {
+        console.error('Error exposing ReactFlow instance to window:', error);
+      }
+      
       // For both flow and pipeline types, fit view after a delay
-      if (nodes?.length > 0 && fitView) {
-        const timer = setTimeout(() => {
-          try {
-            // Use the instance directly for fitView to ensure it works
-            instance.fitView({ duration: 800, padding: 0.1 });
-          } catch (error) {
-            console.error('FitView error:', error);
-          }
-        }, 300);
-        return () => clearTimeout(timer);
+      if (nodes?.length > 0) {
+        // Use multiple timeouts with increasing delays to ensure proper rendering
+        const timers = [
+          setTimeout(() => {
+            try {
+              console.log('First fitView attempt');
+              // Use the instance directly for fitView to ensure it works
+              instance.fitView({ 
+                duration: 800, 
+                padding: 0.2,
+                includeHiddenNodes: false,
+                minZoom: 0.5,
+                maxZoom: 1.5
+              });
+              window.dispatchEvent(new Event('resize'));
+            } catch (error) {
+              console.error('FitView error in first attempt:', error);
+            }
+          }, 300),
+          
+          setTimeout(() => {
+            try {
+              console.log('Second fitView attempt');
+              instance.fitView({ 
+                duration: 800, 
+                padding: 0.2,
+                includeHiddenNodes: false,
+                minZoom: 0.5,
+                maxZoom: 1.5
+              });
+              window.dispatchEvent(new Event('resize'));
+            } catch (error) {
+              console.error('FitView error in second attempt:', error);
+            }
+          }, 800),
+          
+          setTimeout(() => {
+            try {
+              console.log('Final fitView attempt');
+              instance.fitView({ 
+                duration: 800, 
+                padding: 0.2,
+                includeHiddenNodes: false,
+                minZoom: 0.5,
+                maxZoom: 1.5
+              });
+              window.dispatchEvent(new Event('resize'));
+            } catch (error) {
+              console.error('FitView error in final attempt:', error);
+            }
+          }, 1500)
+        ];
+        
+        return () => timers.forEach(timer => clearTimeout(timer));
       }
     },
-    [type, setReactFlowInstance, nodes, fitView]
+    [type, setReactFlowInstance, nodes]
   );
   
   // Helper function for node proximity detection
@@ -330,9 +412,9 @@ export const ComposableCanvas = ({
     };
   }, [fitView]); // Depend only on the fitView function (which depends on context/instance)
   
-  // Add effect to handle right aside panel visibility changes
+  // Add effect to handle right aside panel and sidebar visibility changes
   useEffect(() => {
-    // If the right aside panel is opened/closed, we need to make sure ReactFlow is properly resized
+    // If the right aside panel or sidebar state changes, we need to make sure ReactFlow is properly resized
     if (reactFlowInstance) {
       // First resize event to help ReactFlow detect the layout change
       const timer1 = setTimeout(() => {
@@ -376,7 +458,122 @@ export const ComposableCanvas = ({
         clearTimeout(timer4);
       };
     }
-  }, [isRightAsideOpen, reactFlowInstance]);
+  }, [isRightAsideOpen, isExpanded, reactFlowInstance]);
+  
+  // Add effect to handle right aside panel resizing
+  useEffect(() => {
+    const handleRightAsideResize = (e: CustomEvent) => {
+      if (reactFlowInstance) {
+        // Trigger resize events with increasing delays to ensure proper rendering
+        const timer1 = setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 50);
+        
+        const timer2 = setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+          try {
+            reactFlowInstance.fitView({ duration: 300, padding: 0.2 });
+          } catch (error) {
+            console.error('Error fitting view after resize:', error);
+          }
+        }, 300);
+        
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+        };
+      }
+    };
+    
+    // Handler for center events from various sources
+    const handleCenterEvent = (e: Event) => {
+      console.log('ComposableCanvas: Center event received');
+      
+      // Use requestAnimationFrame to ensure the DOM has updated
+      window.requestAnimationFrame(() => {
+        if (reactFlowInstance) {
+          try {
+            // Use a more generous padding for better visibility
+            reactFlowInstance.fitView({ 
+              duration: 800, 
+              padding: 0.2,
+              includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.5
+            });
+            console.log('ComposableCanvas: fitView called successfully');
+            
+            // Force a resize event
+            window.dispatchEvent(new Event('resize'));
+            
+            // Try again after a short delay to ensure it works
+            setTimeout(() => {
+              try {
+                reactFlowInstance.fitView({ 
+                  duration: 800, 
+                  padding: 0.2,
+                  includeHiddenNodes: false,
+                  minZoom: 0.5,
+                  maxZoom: 1.5
+                });
+                console.log('ComposableCanvas: Second fitView attempt');
+              } catch (retryError) {
+                console.error('ComposableCanvas: Error in retry fitView:', retryError);
+              }
+            }, 300);
+          } catch (error) {
+            console.error('ComposableCanvas: Error in fitView:', error);
+            
+            // Fallback approach
+            try {
+              // Try to use the viewport transform directly
+              const reactFlowViewport = document.querySelector('.react-flow__viewport');
+              if (reactFlowViewport) {
+                // Calculate the center position based on the container size
+                const container = reactFlowWrapper.current;
+                if (container) {
+                  const width = container.clientWidth;
+                  const height = container.clientHeight;
+                  const centerX = width / 2;
+                  const centerY = height / 2;
+                  
+                  // Apply a transform that centers the view
+                  reactFlowViewport.setAttribute('transform', `translate(${centerX},${centerY}) scale(0.85)`);
+                  console.log('ComposableCanvas: Applied calculated transform');
+                } else {
+                  // Fallback to a simple transform
+                  reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
+                  console.log('ComposableCanvas: Applied simple transform');
+                }
+              }
+              
+              // Also try to click the fitView button
+              const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+              if (fitViewButton instanceof HTMLElement) {
+                fitViewButton.click();
+                console.log('ComposableCanvas: Clicked fitView button');
+              }
+            } catch (fallbackError) {
+              console.error('ComposableCanvas: Fallback center failed:', fallbackError);
+            }
+          }
+        } else {
+          console.warn('ComposableCanvas: No ReactFlow instance available for centering');
+        }
+      });
+    };
+    
+    // Add event listeners for various center-related events
+    document.addEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+    document.addEventListener('canvasCentered', handleCenterEvent);
+    document.addEventListener('flowControlCenter', handleCenterEvent);
+    
+    return () => {
+      document.removeEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+      document.removeEventListener('canvasCentered', handleCenterEvent);
+      document.removeEventListener('flowControlCenter', handleCenterEvent);
+    };
+  }, [reactFlowInstance]);
   
   // Loading state
   if (loading) {
@@ -408,10 +605,17 @@ export const ComposableCanvas = ({
         height: '100%',
         width: '100%',
         overflow: 'hidden',
-        zIndex: 5
+        zIndex: 0
       }}
     >
       <ReactFlowProvider>
+        {/* Render controls outside of ReactFlow but inside the ReactFlowProvider */}
+        {renderControls !== false && controls && (
+          <div className="absolute" style={{ zIndex: 1000 }}>
+            {controls}
+          </div>
+        )}
+        
         <div 
           ref={reactFlowWrapper} 
           className={cn(
@@ -422,7 +626,7 @@ export const ComposableCanvas = ({
             position: 'absolute',
             inset: 0,
             overflow: 'hidden',
-            zIndex: 10
+            zIndex: 0
           }}
         >
           <ReactFlow
@@ -454,10 +658,20 @@ export const ComposableCanvas = ({
             snapToGrid={snapToGrid}
             snapGrid={snapGrid}
             fitView={true}
-            fitViewOptions={{ padding: 0.3, duration: 800 }}
+            fitViewOptions={{ 
+              padding: 0.2, 
+              duration: 800,
+              includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.5
+            }}
+            // onViewportChange={(viewport) => {
+            //   // Log viewport changes for debugging
+            //   console.log('Viewport changed:', viewport);
+            // }}
           >
             {showBackground && <Background variant={backgroundVariant} gap={12} size={1} />}
-            {controls}
+            {renderControls === false && controls}
             {children}
           </ReactFlow>
         </div>

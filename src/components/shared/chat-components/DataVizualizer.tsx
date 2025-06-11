@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Code, BarChart4, Table as TableIcon } from 'lucide-react';
+import { Plus, Code, BarChart4, Table as TableIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { ChatSQLView } from '@/components/shared/chat-components/ChatSQLView';
 import { ChatChartView } from '@/components/shared/chat-components/ChatChartView';
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
@@ -78,6 +78,10 @@ export function AIDataVisualizer({
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
   
+  // Explorer-specific states
+  const [selectedDashboardId, setSelectedDashboardId] = useState<string>("0");
+  const [showDashboardSelect, setShowDashboardSelect] = useState(false);
+  
   // Generate stable IDs for each tab component
   const tabIds = useMemo(() => ({
     chart: `chart-tab-${chart?.content?.layout?.title?.text || Date.now()}`,
@@ -151,7 +155,49 @@ export function AIDataVisualizer({
               )}
             </TabsList>
 
-            {onAddToDashboard && chartMetadata && (
+            {onAddToDashboard && chartMetadata && variant === 'explorer' ? (
+              <div className="relative">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowDashboardSelect(!showDashboardSelect)}
+                  className="h-8 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add to Dashboard
+                  {showDashboardSelect ? (
+                    <ChevronUp className="h-3.5 w-3.5 ml-1" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 ml-1" />
+                  )}
+                </Button>
+                {showDashboardSelect && (
+                  <div className="absolute right-0 mt-1 w-56 p-2 rounded-md shadow-lg bg-white z-10 border">
+                    <DashboardSelect 
+                      onSelectDashboard={setSelectedDashboardId} 
+                      selectedDashboardId={selectedDashboardId} 
+                    />
+                    <div className="mt-2 flex justify-end">
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          onAddToDashboard({
+                            chartMetadata, 
+                            sql: sql?.content, 
+                            data: data?.content,
+                            dashboardId: selectedDashboardId
+                          });
+                          setShowDashboardSelect(false);
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : onAddToDashboard && chartMetadata && (
               <Button
                 size="sm"
                 variant="outline"

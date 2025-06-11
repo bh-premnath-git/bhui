@@ -53,7 +53,14 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   onAlignVertical,
 }) => {
   const [isLogsOpen, setIsLogsOpen] = useState(false)
-  const { pipelineDtl,pipelineName } = usePipelineContext()
+  const { 
+    pipelineDtl, 
+    pipelineName, 
+    nodes, 
+    edges, 
+    updateSetNode, 
+    reactFlowInstance 
+  } = usePipelineContext()
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
@@ -288,52 +295,90 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const handleAlignHorizontalClick = () => {
     console.log("Align Horizontal clicked");
     try {
-      // Dispatch a custom event that the DataPipelineContext can listen for
-      const alignHorizontalEvent = new CustomEvent('alignHorizontal', {
-        bubbles: true,
-        cancelable: true,
-        detail: { timestamp: new Date().getTime() }
-      });
-      document.dispatchEvent(alignHorizontalEvent);
+      if (!nodes || nodes.length === 0) {
+        console.log("No nodes to align");
+        return;
+      }
       
-      // Add a small delay before calling the handler to ensure the event has been processed
-      setTimeout(() => {
-        // Try the provided handler
-        if (onAlignHorizontal) {
-          console.log("Calling onAlignHorizontal with delay");
-          onAlignHorizontal();
-        } else {
-          console.error("onAlignHorizontal is not defined");
+      // Create a map of node levels (columns)
+      const nodeLevels = new Map<string, number>();
+      const visited = new Set<string>();
+
+      // Find source nodes (nodes with no incoming edges)
+      const sourceNodes = nodes.filter(node =>
+        !edges.some(edge => edge.target === node.id)
+      );
+
+      // Assign levels through BFS
+      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+      while (queue.length > 0) {
+        const { id, level } = queue.shift()!;
+        if (visited.has(id)) continue;
+
+        visited.add(id);
+        nodeLevels.set(id, level);
+
+        // Find all outgoing edges from this node
+        const outgoingEdges = edges.filter(edge => edge.source === id);
+        outgoingEdges.forEach(edge => {
+          if (!visited.has(edge.target)) {
+            queue.push({ id: edge.target, level: level + 1 });
+          }
+        });
+      }
+
+      // Get maximum level for spacing calculation
+      const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
+      const levelWidth = 200; // Horizontal spacing between levels
+      const nodeSpacing = 150; // Vertical spacing between nodes in the same level
+
+      // Group nodes by their levels
+      const nodesByLevel = new Map<number, string[]>();
+      nodeLevels.forEach((level, nodeId) => {
+        if (!nodesByLevel.has(level)) {
+          nodesByLevel.set(level, []);
         }
-      }, 50);
-      
-      // Try to fit view after alignment with a longer delay
+        nodesByLevel.get(level)!.push(nodeId);
+      });
+
+      // Calculate new positions
+      const startX = 50;
+      const startY = 50;
+      const newNodes = nodes.map(node => {
+        const level = nodeLevels.get(node.id) || 0;
+        const nodesInLevel = nodesByLevel.get(level) || [];
+        const indexInLevel = nodesInLevel.indexOf(node.id);
+
+        return {
+          ...node,
+          position: {
+            x: startX + (level * levelWidth),
+            y: startY + (indexInLevel * nodeSpacing)
+          }
+        };
+      });
+
+      // Update nodes with new positions
+      updateSetNode(newNodes, edges);
+
+      // Center the view
       setTimeout(() => {
-        // Try to click the fitView button directly
+        const centerX = startX + (maxLevel * levelWidth) / 2;
+        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
+        const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
+        
+        if (reactFlowInstance && reactFlowInstance.setCenter) {
+          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }
+        
+        // Try to click the fitView button directly as a fallback
         const fitViewButton = document.querySelector('.react-flow__controls-fitview');
         if (fitViewButton instanceof HTMLElement) {
           console.log("Clicking fitView button after horizontal alignment");
           fitViewButton.click();
         }
-        
-        // Also try to access the ReactFlow instance through the window
-        try {
-          // @ts-ignore - Access any potential global ReactFlow instance
-          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
-            console.log("Using global reactFlowInstance.fitView after horizontal alignment");
-            // @ts-ignore
-            window.reactFlowInstance.fitView({
-              padding: 0.2,
-              duration: 800,
-              includeHiddenNodes: false,
-              minZoom: 0.5,
-              maxZoom: 1.5
-            });
-          }
-        } catch (e) {
-          console.error("Error accessing global reactFlowInstance:", e);
-        }
-      }, 500);
+      }, 100);
+      
     } catch (error) {
       console.error("Error in align horizontal:", error);
     }
@@ -342,52 +387,90 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const handleAlignVerticalClick = () => {
     console.log("Align Vertical clicked");
     try {
-      // Dispatch a custom event that the DataPipelineContext can listen for
-      const alignVerticalEvent = new CustomEvent('alignVertical', {
-        bubbles: true,
-        cancelable: true,
-        detail: { timestamp: new Date().getTime() }
-      });
-      document.dispatchEvent(alignVerticalEvent);
+      if (!nodes || nodes.length === 0) {
+        console.log("No nodes to align");
+        return;
+      }
       
-      // Add a small delay before calling the handler to ensure the event has been processed
-      setTimeout(() => {
-        // Try the provided handler
-        if (onAlignVertical) {
-          console.log("Calling onAlignVertical with delay");
-          onAlignVertical();
-        } else {
-          console.error("onAlignVertical is not defined");
+      // Create a map of node levels (rows)
+      const nodeLevels = new Map<string, number>();
+      const visited = new Set<string>();
+
+      // Find source nodes (nodes with no incoming edges)
+      const sourceNodes = nodes.filter(node =>
+        !edges.some(edge => edge.target === node.id)
+      );
+
+      // Assign levels through BFS
+      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+      while (queue.length > 0) {
+        const { id, level } = queue.shift()!;
+        if (visited.has(id)) continue;
+
+        visited.add(id);
+        nodeLevels.set(id, level);
+
+        // Find all outgoing edges from this node
+        const outgoingEdges = edges.filter(edge => edge.source === id);
+        outgoingEdges.forEach(edge => {
+          if (!visited.has(edge.target)) {
+            queue.push({ id: edge.target, level: level + 1 });
+          }
+        });
+      }
+
+      // Get maximum level for spacing calculation
+      const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
+      const levelHeight = 150; // Vertical spacing between levels
+      const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
+
+      // Group nodes by their levels
+      const nodesByLevel = new Map<number, string[]>();
+      nodeLevels.forEach((level, nodeId) => {
+        if (!nodesByLevel.has(level)) {
+          nodesByLevel.set(level, []);
         }
-      }, 50);
-      
-      // Try to fit view after alignment with a longer delay
+        nodesByLevel.get(level)!.push(nodeId);
+      });
+
+      // Calculate new positions
+      const startX = 50;
+      const startY = 50;
+      const newNodes = nodes.map(node => {
+        const level = nodeLevels.get(node.id) || 0;
+        const nodesInLevel = nodesByLevel.get(level) || [];
+        const indexInLevel = nodesInLevel.indexOf(node.id);
+
+        return {
+          ...node,
+          position: {
+            x: startX + (indexInLevel * nodeSpacing),
+            y: startY + (level * levelHeight)
+          }
+        };
+      });
+
+      // Update nodes with new positions
+      updateSetNode(newNodes, edges);
+
+      // Center the view
       setTimeout(() => {
-        // Try to click the fitView button directly
+        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
+        const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
+        const centerY = startY + (maxLevel * levelHeight) / 2;
+        
+        if (reactFlowInstance && reactFlowInstance.setCenter) {
+          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }
+        
+        // Try to click the fitView button directly as a fallback
         const fitViewButton = document.querySelector('.react-flow__controls-fitview');
         if (fitViewButton instanceof HTMLElement) {
           console.log("Clicking fitView button after vertical alignment");
           fitViewButton.click();
         }
-        
-        // Also try to access the ReactFlow instance through the window
-        try {
-          // @ts-ignore - Access any potential global ReactFlow instance
-          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
-            console.log("Using global reactFlowInstance.fitView after vertical alignment");
-            // @ts-ignore
-            window.reactFlowInstance.fitView({
-              padding: 0.2,
-              duration: 800,
-              includeHiddenNodes: false,
-              minZoom: 0.5,
-              maxZoom: 1.5
-            });
-          }
-        } catch (e) {
-          console.error("Error accessing global reactFlowInstance:", e);
-        }
-      }, 500);
+      }, 100);
+      
     } catch (error) {
       console.error("Error in align vertical:", error);
     }
@@ -397,8 +480,8 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
     { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
-    // { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
-    // { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
+    { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
+    { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
     // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     // { key: 'stop', icon: MdOutlineStop, handler: onStop },
     // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },

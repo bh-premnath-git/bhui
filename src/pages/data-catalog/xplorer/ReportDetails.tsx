@@ -1,4 +1,6 @@
 import React from 'react';
+import { AnalyticsProvider } from "@/context/AnalyticsContext";
+import { DashboardProvider } from "@/context/DashboardContext";
 
 const NoWidgetsDisplay = () => (
   <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 m-4">
@@ -13,11 +15,21 @@ const NoWidgetsDisplay = () => (
   </div>
 );
 
-const ReportDetails: React.FC = () => {
+const ReportDetailsContent: React.FC = () => {
   return (
     <div>
       <NoWidgetsDisplay />
     </div>
+  );
+};
+
+const ReportDetails: React.FC = () => {
+  return (
+    <DashboardProvider>
+      <AnalyticsProvider>
+        <ReportDetailsContent />
+      </AnalyticsProvider>
+    </DashboardProvider>
   );
 };
 

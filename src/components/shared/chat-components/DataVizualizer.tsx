@@ -63,6 +63,7 @@ interface AIDataVisualizerProps {
   chart?: any;
   title?: string;
   onAddToDashboard?: (data: any) => void;
+  variant?: 'governance' | 'explorer' | 'dataops' | string;
 }
 
 export function AIDataVisualizer({
@@ -71,6 +72,7 @@ export function AIDataVisualizer({
   chart,
   title = 'Visualized Data',
   onAddToDashboard,
+  variant
 }: AIDataVisualizerProps) {
   const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>('chart');
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);

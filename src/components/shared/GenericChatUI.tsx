@@ -282,6 +282,7 @@ export function GenericChatUI({
                         chart={response.chart}
                         data={response.table}
                         onAddToDashboard={handleAddToDashboard}
+                        variant={variant}
                       />
 
                       {/* Explanation message */}

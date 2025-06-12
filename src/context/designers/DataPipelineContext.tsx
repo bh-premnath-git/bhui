@@ -208,7 +208,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
 
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [saveError, setSaveErrorState] = useState<string | null>(null);
@@ -261,7 +261,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 console.log("response.pipeline_json", response.pipeline_json)
                 throw new Error('Invalid pipeline data received');
             }
-
+debugger
             console.log(response, "response")
             // Update pipeline name and JSON safely
             setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);
@@ -1169,7 +1169,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleStop = useCallback(async () => {
         try {
             console.log(pipelineName)
-            let response = await dispatch(stopPipeLine({ params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
+            console.log(pipelineDtl)
+            let response = await dispatch(stopPipeLine({ params:pipelineDtl?.name  || pipelineName || pipelineDtl?.pipeline_name })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline

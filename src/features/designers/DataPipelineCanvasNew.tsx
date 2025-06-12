@@ -10,7 +10,6 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
-import { LoadingState } from '@/components/shared/LoadingState';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
 import PipelineSidebar from './components/PipelineSidebar';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
